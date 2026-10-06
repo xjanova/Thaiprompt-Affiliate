@@ -47,6 +47,14 @@ final class StuckReadingFinder
     public const REASON_ESCALATED = 'escalated_24h';
 
     /**
+     * ขอบบนสุดของการสแกน (วัน) — ทุกกิ่งของ scope ถูกจำกัดด้วยเวลาอยู่แล้ว (24 ชม. / 30 วัน) แต่ OR ข้ามกิ่ง
+     * ทำให้ MySQL ใช้ index ไม่ได้ (ไม่มี index paid_at) → สแกนบิลจ่ายแล้วทั้งตาราง + JSON_EXTRACT ทุกแถว
+     * ใส่ created_at ชั้นบนสุดให้ใช้ index (is_paid, created_at) ได้ — admin-app:push-alerts เรียกทุก 2 นาที
+     * (บิลถูกจ่ายภายในไม่กี่ชั่วโมงหลังออกบิล ⇒ 31 วัน ครอบ ESCALATED_MAX_AGE_DAYS = 30 ได้)
+     */
+    public const SCAN_MAX_AGE_DAYS = 31;
+
+    /**
      * สถานะ "กำลังใช้บริการ" ของบิลที่จ่ายแล้ว — Deep กำลังเก็บข้อมูล/รอทำนาย + Celtic ทุกขั้นหลังจ่าย
      */
     public const IN_PROGRESS_STATUSES = [
@@ -70,6 +78,7 @@ final class StuckReadingFinder
 
         return $query->withoutJuntra()
             ->where('is_paid', true)
+            ->where($query->getModel()->getTable().'.created_at', '>=', $now->copy()->subDays(self::SCAN_MAX_AGE_DAYS))
             ->where(function ($q) use ($since, $now) {
                 $q->where(function ($a) use ($since) {
                     $a->whereIn('conversation_status', self::IN_PROGRESS_STATUSES)
@@ -94,6 +103,7 @@ final class StuckReadingFinder
 
         return $query->withoutJuntra()
             ->where('is_paid', true)
+            ->where($query->getModel()->getTable().'.created_at', '>=', $now->copy()->subDays(self::SCAN_MAX_AGE_DAYS))
             ->where(function ($q) use ($since, $cutoff, $now) {
                 $q->where(function ($a) use ($since, $cutoff) {
                     $a->whereIn('conversation_status', FortuneReading::AI_GENERATING_STATUSES)

@@ -1004,9 +1004,10 @@ Schedule::command('ekyc:purge-stale')
 // ════════════════════════════════════════════════════════════════
 // 🔔 (2026-10-06 admin app v3) แจ้งเตือนแอปแอดมินเมื่อคิวงานหน้าแรกเพิ่มขึ้น (FCM → admin_push_tokens)
 // ════════════════════════════════════════════════════════════════
-// นับกล่องคิวชุดเดียวกับ GET /api/admin/ops/summary แล้วเทียบรอบก่อน — ไม่มี credentials Firebase = จบเงียบ
+// นับกล่องคิวชุดเดียวกับ GET /api/admin/ops/summary แล้วเทียบจำนวนที่แจ้งไปล่าสุด — ไม่มี credentials Firebase = จบเงียบ
+// ทุก 2 นาที (ไม่ใช่ทุกนาที): นับบิลค้าง/คิวทุกกล่องทุกรอบ — prod เป็น VM ที่เคย IO ค้าง ไม่ต้องถี่กว่านี้
 Schedule::command('admin-app:push-alerts')
-    ->everyMinute()
+    ->everyTwoMinutes()
     ->withoutOverlapping(5)
     ->onOneServer()
     ->name('admin-app-push-alerts')

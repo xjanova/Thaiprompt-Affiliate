@@ -22,15 +22,23 @@ use Illuminate\Support\Facades\Log;
  *                        (Admin\FortuneReadingsController::recoverPayFirstReading) — ขอวันเกิดใหม่
  *   - resend             Deep ที่สร้างคำทำนายแล้วแต่ยังไม่ถึงลูกค้า (reading_sent_directly = false)
  *                        (Admin\FortuneReadingsController::resendDeepReading) + ล็อกส่ง fortune:deep_deliver + ตั้งธงส่งแล้ว
- *   - regenerate         Deep อื่น ๆ → ล้างคำทำนาย/ธงส่ง กลับเป็น paid แล้วสั่งงาน AI **หลังส่งคำตอบ**
+ *   - regenerate         Deep ที่มีวันเกิด+คำถามครบ → ล้างคำทำนาย/ธงส่ง กลับเป็น paid แล้วสั่งงาน AI **หลังส่งคำตอบ**
  *                        (Admin\FortuneReadingsController::retryDeepReading) + รีเซ็ต auto_retry_count / failure_notified
  *                        ⚠️ ต้อง register_shutdown_function — dispatchSmart() เรียก fastcgi_finish_request + Artisan::call
  *                           ถ้าเรียกกลางคำขอ/ใน terminating() งานพังเงียบ (ดูคอมเมนต์ในเมธอดเว็บ)
+ *                        🚫 Deep ที่ยังรอลูกค้ากรอก (collecting_questions / collecting_tarot) หรือไม่มีคำถาม = 409 AWAITING_CUSTOMER
+ *                           (บังคับสร้าง = ได้คำทำนายข้ามการเปิดไพ่ หรือคำทำนายว่างเปล่าที่วนกลับมาค้างอีก)
  *   - celtic_recover     Celtic → เส้นบิลเดี่ยวของ Admin\FortuneCelticCrossController::emergencyRecoverAction
- *                        (ยังไม่จ่ายผ่าน state machine → force-promote + พรอมต์ไพ่ใบแรก · อื่น ๆ → ส่งข้อความกู้ ณ จุดเดิม)
+ *                        (ยังไม่จ่ายผ่าน state machine / ค้าง paid ยังไม่เปิดไพ่ → force-promote + พรอมต์ไพ่ใบแรก
+ *                         · อื่น ๆ → ส่งข้อความกู้ ณ จุดเดิม)
+ *   - celtic_regenerate  Celtic ค้าง celtic_generating (หรือ paid ที่เปิดไพ่ครบแล้ว) → ทำแบบ recoverStuckGenerating ของ
+ *                        fortune:celtic-redeliver: เด้งเป็น awaiting + ธง celtic_regen_pending='1' ให้ cron ปั่นคำตอบใหม่
+ *                        **ไม่ส่งข้อความหาลูกค้า** (เดิมส่ง "แม่หมอกำลังพิจารณา…" ลอย ๆ = push กล่องกำลังคิดบน LINE โดยไม่มีใครปั่นให้จริง)
  *
  * ด่าน (ตามลำดับ): จ่ายแล้ว → ไม่ใช่บิลจันทรา → **ไม่อยู่ในการเทคโอเวอร์ของแอดมิน** → งาน AI ไม่ได้วิ่งอยู่
- *   → ค้างจริง (StuckReadingFinder) หรือถูกส่งต่อเกิน 24 ชม. (admin_review_needed) → ล็อก admin_retry:{id} 120 วิ (กดซ้ำ = 429)
+ *   → ค้างจริง (StuckReadingFinder) หรือถูกส่งต่อเกิน 24 ชม. (admin_review_needed)
+ *   → **ลูกค้าคนเดียวกันไม่มีบิลใหม่กว่าที่จ่ายแล้ว/ยังคุยอยู่** (409 NEWER_ACTIVE_BILL — ไม่งั้นเปิดบิลเก่าซ้อนบิลใหม่
+ *     = สอง flow ชนกัน แบบเคส rule_reconcile_competing_bills_on_pay) → ล็อก admin_retry:{id} 120 วิ (กดซ้ำ = 429)
  *
  * บิลที่ถูกส่งต่อเกิน 24 ชม. มีธง admin_review_alerted ซึ่งทำให้บอท "ไม่เห็น" บิลนี้เป็นบทสนทนาที่ยังเปิด
  * (FortuneReading::scopeActiveConversation) — ถ้าไม่ล้าง ลูกค้าตอบวันเกิด/เลือกไพ่ต่อแล้วข้อความไม่ไหลเข้าบิลที่จ่ายแล้ว
@@ -88,6 +96,19 @@ class StuckReadingRetrier
         }
         $platform = (string) ($reading->platform ?: FortuneRecipient::platformFromUserId($userId));
 
+        // ลูกค้ามีบิลใหม่กว่าที่จ่ายแล้ว/ยังคุยอยู่ → ห้ามปลุกบิลเก่า (ธง admin_review_* คงไว้ตามเดิม)
+        $newer = $this->newerActiveBill($reading);
+        if ($newer !== null) {
+            $ref = $newer->bill_reference ?: '#'.$newer->id;
+
+            return $this->refuse(
+                $reading,
+                409,
+                'NEWER_ACTIVE_BILL',
+                "ลูกค้ามีบิลใหม่กว่า ({$ref}) ที่จ่ายแล้วหรือกำลังคุยอยู่ — ห้ามปลุกบิลนี้ซ้อน ให้คืนเงินหรือปิดบิลนี้แทนการทำนายซ้ำ"
+            );
+        }
+
         $action = $this->chooseAction($reading);
         if (is_array($action)) {
             // [status, code, message] = ปฏิเสธ
@@ -113,6 +134,7 @@ class StuckReadingRetrier
                 'resend' => $this->resend($reading, $platform, $userId, $adminId),
                 'regenerate' => $this->regenerate($reading, $platform, $userId, $adminId),
                 'celtic_recover' => $this->celticRecover($reading, $platform, $userId, $adminId),
+                'celtic_regenerate' => $this->celticRegenerate($reading, $adminId),
             };
         } catch (\Throwable $e) {
             // ล้มกลางทาง → ปลดล็อกให้กดใหม่ได้ทันที
@@ -148,8 +170,15 @@ class StuckReadingRetrier
     public function chooseAction(FortuneReading $reading): string|array
     {
         if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
-            if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+            $status = (string) $reading->conversation_status;
+            if ($status === FortuneReading::STATUS_COMPLETED) {
                 return [409, 'ALREADY_COMPLETED', 'บิล Celtic นี้ทำนายจบแล้ว — ไม่มีอะไรให้กู้'];
+            }
+
+            // AI ตอบค้าง (หรือค้าง paid ทั้งที่เปิดไพ่ครบแล้ว) → ให้ cron ปั่นคำตอบใหม่ ไม่ส่งข้อความลอย ๆ
+            if ($status === FortuneReading::STATUS_CELTIC_GENERATING
+                || ($status === FortuneReading::STATUS_PAID && $reading->getCelticPickedCount() >= 10)) {
+                return 'celtic_regenerate';
             }
 
             return 'celtic_recover';
@@ -159,11 +188,7 @@ class StuckReadingRetrier
             return [422, 'UNSUPPORTED_PACKAGE', 'บิลแพคเกจนี้ไม่มีขั้นตอนทำนายซ้ำอัตโนมัติ — จัดการจากหน้าเว็บ'];
         }
 
-        // Pay-First: ยังไม่มีวันเกิด = สร้างคำทำนายไม่ได้ → ขอวันเกิดใหม่ (ตรงกับด่านในปุ่มเว็บ retryDeepReading)
-        if (empty($reading->birth_date)) {
-            return 'recover_pay_first';
-        }
-
+        // มีคำทำนายแล้ว → ส่งซ้ำ/จบ (เช็คก่อนวันเกิด — เส้นขอวันเกิดใหม่ --force ล้าง deep_response ทิ้ง)
         if (trim((string) $reading->deep_response) !== '') {
             if (! $reading->getConversationState('reading_sent_directly', false)) {
                 return 'resend';
@@ -172,7 +197,66 @@ class StuckReadingRetrier
             return [409, 'ALREADY_DELIVERED', 'คำทำนายบิลนี้ส่งถึงลูกค้าแล้ว — ไม่ส่งซ้ำ (เปิดดูในแชทก่อน)'];
         }
 
+        // Pay-First: ยังไม่มีวันเกิด = สร้างคำทำนายไม่ได้ → ขอวันเกิดใหม่ (ตรงกับด่านในปุ่มเว็บ retryDeepReading)
+        if (empty($reading->birth_date)) {
+            return 'recover_pay_first';
+        }
+
+        // ลูกค้ายังกรอกไม่จบ (คำถาม / เปิดไพ่) หรือไม่มีคำถามเลย → ห้ามบังคับสร้าง
+        //   (ด่านเดียวกับ fortune:check-pending: ไม่มีคำถาม = ข้าม)
+        $awaitingCustomer = in_array($reading->conversation_status, [
+            FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            FortuneReading::STATUS_COLLECTING_TAROT,
+        ], true);
+        $hasQuestions = ! empty($reading->getCollectedQuestions()) || ! empty($reading->questions);
+        if ($awaitingCustomer || ! $hasQuestions) {
+            return [409, 'AWAITING_CUSTOMER', 'ลูกค้ายังให้ข้อมูลไม่ครบ (คำถาม/เปิดไพ่) — สร้างคำทำนายตอนนี้ไม่ได้ แนะนำให้เทคโอเวอร์แชทคุยกับลูกค้าแทน'];
+        }
+
         return 'regenerate';
+    }
+
+    /**
+     * บิลใหม่กว่าของลูกค้าคนเดียวกันที่จ่ายแล้ว หรือยังเป็นบทสนทนาที่เปิดอยู่ — null = ไม่มี
+     *
+     * ตัวตนลูกค้าชุดเดียวกับ FortuneConversationService::cancelCompetingPrePaymentReadings()
+     * (facebook_user_id + platform_user_id — LINE เก็บ id เดียวกันทั้งสองคอลัมน์)
+     */
+    public function newerActiveBill(FortuneReading $reading): ?FortuneReading
+    {
+        $ids = array_values(array_unique(array_filter([
+            (string) $reading->facebook_user_id,
+            (string) $reading->platform_user_id,
+        ], fn (string $id) => $id !== '')));
+        if ($ids === []) {
+            return null;
+        }
+
+        $newerPaid = FortuneReading::query()
+            ->where('id', '>', $reading->id)
+            ->where(function ($q) use ($ids) {
+                $q->whereIn('facebook_user_id', $ids)->orWhereIn('platform_user_id', $ids);
+            })
+            ->where('is_paid', true)
+            ->orderByDesc('id')
+            ->first(['id', 'bill_reference']);
+        if ($newerPaid !== null) {
+            return $newerPaid;
+        }
+
+        // บทสนทนาที่ยังเปิด — นิยามเดียวกับที่บอทใช้หาบิลของลูกค้า (scopeActiveConversation)
+        foreach ($ids as $id) {
+            $active = FortuneReading::query()
+                ->activeConversation($id)
+                ->where('id', '>', $reading->id)
+                ->orderByDesc('id')
+                ->first(['id', 'bill_reference']);
+            if ($active !== null) {
+                return $active;
+            }
+        }
+
+        return null;
     }
 
     // ────────────────────────────────────────────────────────────
@@ -222,30 +306,39 @@ class StuckReadingRetrier
             return [false, false, 'ระบบกำลังส่งคำทำนายบิลนี้อยู่ — รอสักครู่แล้วค่อยเช็คใหม่'];
         }
 
-        $this->markRetried($reading, $adminId);
+        // ส่งไม่ออก/โยน error กลางทาง → ปล่อยล็อกส่งใน finally (เดิมปล่อยเฉพาะ ! $sent — โยน error = ล็อกค้าง 10 นาที
+        //   check-pending ข้ามบิลนี้ + ปุ่มนี้ตอบ GENERATION_IN_FLIGHT จนล็อกหมดอายุ) · ส่งสำเร็จ = ถือล็อกไว้ตามเดิม
+        $sent = false;
+        try {
+            $this->markRetried($reading, $adminId);
 
-        $cm = $this->channelManager();
+            $cm = $this->channelManager();
 
-        // ส่งผังดวงก่อน (ถ้ามี) — ล้มไม่เป็นไร
-        if ($reading->reading_image_url) {
-            try {
-                $cm->getPlatform($platform)?->sendImage($userId, $reading->reading_image_url);
-            } catch (\Throwable $imgErr) {
-                Log::warning('AdminApp retry resend: ส่งรูปผังดวงไม่สำเร็จ', ['reading_id' => $reading->id, 'error' => SafeLog::exceptionMessage($imgErr)]);
+            // ส่งผังดวงก่อน (ถ้ามี) — ล้มไม่เป็นไร
+            if ($reading->reading_image_url) {
+                try {
+                    $cm->getPlatform($platform)?->sendImage($userId, $reading->reading_image_url);
+                } catch (\Throwable $imgErr) {
+                    Log::warning('AdminApp retry resend: ส่งรูปผังดวงไม่สำเร็จ', ['reading_id' => $reading->id, 'error' => SafeLog::exceptionMessage($imgErr)]);
+                }
+            }
+
+            $sent = (bool) $cm->sendResponse($platform, $userId, [
+                'action' => 'resend',
+                'message' => $reading->deep_response,
+            ], ['from_admin' => true]);
+        } finally {
+            if (! $sent) {
+                Cache::forget($deliverLock);
             }
         }
 
-        $sent = $cm->sendResponse($platform, $userId, [
-            'action' => 'resend',
-            'message' => $reading->deep_response,
-        ], ['from_admin' => true]);
-
         if (! $sent) {
-            Cache::forget($deliverLock);
-
             return [false, false, 'ส่งคำทำนายไม่ออก (แพลตฟอร์มปฏิเสธ — FB อาจเกิน 24 ชม. หรือโควตา LINE หมด) — ลูกค้าทักกลับมาจะได้รับเอง'];
         }
 
+        // อ่านแถวใหม่ก่อนรวมธง — ระหว่างส่ง (หลายวินาที) webhook อาจเขียน conversation_state ไปแล้ว
+        $reading->refresh();
         $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
         $reading->update([
             'conversation_status' => FortuneReading::STATUS_COMPLETED,
@@ -320,13 +413,22 @@ class StuckReadingRetrier
         $cm = $this->channelManager($settings);
 
         $forcePromoted = false;
-        if (in_array($reading->conversation_status, [FortuneReading::STATUS_NEW, FortuneReading::STATUS_CELTIC_PENDING_PAYMENT], true)
-            && $reading->getCelticPickedCount() === 0) {
+        $picked = $reading->getCelticPickedCount();
+        if (in_array($reading->conversation_status, [
+            FortuneReading::STATUS_NEW,
+            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            // ค้าง paid = mark-paid ตั้ง PAID แล้ว handleCelticPaymentMatched ล้ม — state machine ไม่เคยเดิน
+            FortuneReading::STATUS_PAID,
+        ], true) && $picked === 0) {
             // จ่ายแล้วแต่ state machine ไม่เดินต่อ (slip matcher เปลี่ยนสถานะไม่ครบ) → เข้าเส้นยืนยันการจ่ายใหม่
             $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]);
             $response = $svc->onCelticPaymentConfirmed($reading->fresh());
             $forcePromoted = true;
         } else {
+            if ($reading->conversation_status === FortuneReading::STATUS_PAID && $picked > 0) {
+                // ค้าง paid ทั้งที่เปิดไพ่ไปบ้างแล้ว (ยังไม่ครบ 10) → กลับขั้นเปิดไพ่ ให้พรอมต์ resume ตรงกับสถานะจริง
+                $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PICKING]);
+            }
             $response = $svc->buildCelticResumeResponse($reading->fresh(), false);
         }
 
@@ -355,6 +457,52 @@ class StuckReadingRetrier
         return [true, true, $forcePromoted
             ? 'กู้บิล Celtic แล้ว — ส่งพรอมต์เปิดไพ่ใบแรกให้ลูกค้าแล้ว'
             : 'กู้บิล Celtic แล้ว — ส่งข้อความให้ลูกค้าทำต่อจากจุดเดิมแล้ว'];
+    }
+
+    /**
+     * Celtic ที่ AI ตอบค้าง — ทำแบบ FortuneCelticRedeliver::recoverStuckGenerating():
+     * เด้งเป็น celtic_awaiting_question + ธง celtic_regen_pending='1' (ค่า '1'/'0' แบบเดียวกับ cron)
+     * ให้ fortune:celtic-redeliver (ทุกนาที) ปั่นคำตอบของคำถามที่ค้างใหม่ แล้วส่งผ่านเส้น redeliver เดิม
+     * ที่รู้เรื่องโควตา LINE / หน้าต่าง 24 ชม. อยู่แล้ว
+     *
+     * ไม่ส่งข้อความหาลูกค้าเลย (ไม่ push บน LINE) — delivered = false
+     *
+     * @return array{0: bool, 1: bool, 2: string}
+     */
+    private function celticRegenerate(FortuneReading $reading, ?int $adminId): array
+    {
+        $reading->refresh();
+        $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
+
+        $reading->update([
+            'conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            'conversation_state' => array_merge($state, ['celtic_regen_pending' => '1'], $this->retriedFlags($adminId)),
+        ]);
+
+        // cron จะปั่นได้จริงไหม (เงื่อนไขเดียวกับ regenerateOrphanAnswer: มีคำถามค้าง · ไพ่ครบ · ยังอยู่ในเวลาคุย)
+        //   ไม่ได้ = อย่างน้อยปลดสถานะค้างให้ลูกค้าพิมพ์ถามต่อได้ — บอกแอดมินตามจริง
+        $willRegenerate = false;
+        try {
+            $fresh = $reading->fresh() ?? $reading;
+            $willRegenerate = \App\Models\FortuneCelticQuestion::where('fortune_reading_id', $reading->id)
+                ->whereNull('answered_at')
+                ->exists()
+                && count($fresh->getCelticCards()) >= 10
+                && $fresh->canAskMoreCeltic();
+        } catch (\Throwable $e) {
+            // ประเมินไม่ได้ — ถือว่าเข้าคิวแล้ว (cron ตัดสินเองอีกชั้น)
+            $willRegenerate = true;
+        }
+
+        Log::info('AdminApp retry: Celtic ค้าง generating → ส่งเข้าคิวปั่นคำตอบใหม่ (celtic_regen_pending)', [
+            'reading_id' => $reading->id,
+            'admin_id' => $adminId,
+            'will_regenerate' => $willRegenerate,
+        ]);
+
+        return [true, false, $willRegenerate
+            ? 'ส่งบิลเข้าคิวปั่นคำตอบใหม่แล้ว — ระบบจะสร้างคำตอบที่ค้างและส่งให้ลูกค้าเองภายในไม่กี่นาที (ยังไม่ได้ส่งข้อความหาลูกค้า)'
+            : 'ปลดสถานะค้างแล้ว ลูกค้าพิมพ์ถามต่อได้ — แต่ไม่มีคำถามค้างให้ปั่นใหม่ (หรือหมดเวลาคุยแล้ว) ยังไม่ได้ส่งข้อความหาลูกค้า'];
     }
 
     // ────────────────────────────────────────────────────────────

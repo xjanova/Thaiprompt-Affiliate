@@ -82,14 +82,19 @@ class ChatController extends Controller
                 }
 
                 // 📝 (v3) บันทึกข้อความแอดมินลง fortune_takeover_logs แบบเดียวกับแผงเว็บ (FortuneTakeoverService::logMessage)
-                //   ⇒ คำขอ "ลูกค้าขอคุยกับคน" ของบิลนี้ถือว่ามีคนรับแล้ว (หลุดจากคิว ops/summary + takeover?status=requested)
+                //   ⇒ คำขอ "ลูกค้าขอคุยกับคน" ถือว่ามีคนรับแล้ว (หลุดจากคิว ops/summary + takeover?status=requested)
                 //   และโผล่ในประวัติเทคโอเวอร์บนเว็บ · ไม่แตะผลการส่ง (best-effort)
-                if ($reading !== null && $request->user()?->id) {
+                //   หาบิลจากทั้ง reading_id และตัวตนลูกค้า (platform + platform user id) — คำขอถูกบันทึกกับบิลล่าสุด
+                //   ของลูกค้าตอนขอ ซึ่งอาจเป็นคนละใบกับที่แอดมินเปิด หรือแอดมินส่งแบบไม่มี reading_id
+                if ($request->user()?->id) {
+                    $adminId = (int) $request->user()->id;
                     try {
-                        app(FortuneTakeoverService::class)->logMessage($reading, (int) $request->user()->id, $data['text']);
+                        foreach ($this->requestLogTargets($reading, (string) $platform, (string) $userId) as $target) {
+                            app(FortuneTakeoverService::class)->logMessage($target, $adminId, $data['text']);
+                        }
                     } catch (Throwable $auditErr) {
                         Log::warning('AdminChat: บันทึก log ข้อความแอดมินไม่สำเร็จ (ข้อความส่งแล้ว)', [
-                            'reading_id' => $reading->id,
+                            'reading_id' => $reading?->id,
                             'error' => SafeLog::exceptionMessage($auditErr),
                         ]);
                     }
@@ -120,6 +125,44 @@ class ChatController extends Controller
                 'message' => 'send failed: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
+    }
+
+    /**
+     * บิลที่ต้องบันทึกข้อความแอดมิน (v3) — บิลจาก reading_id + ทุกบิลของลูกค้าคนนี้ที่มีคำขอคุยกับคนค้างอยู่
+     * ไม่มีทั้งสองอย่าง → บิลล่าสุดของลูกค้า (ให้ประวัติเทคโอเวอร์บนเว็บเห็นข้อความเหมือนส่งจากแผงเว็บ)
+     *
+     * @return array<int, FortuneReading>
+     */
+    private function requestLogTargets(?FortuneReading $reading, string $platform, string $platformUserId): array
+    {
+        $targets = [];
+        if ($reading !== null) {
+            $targets[(int) $reading->id] = $reading;
+        }
+
+        if ($platform !== '' && $platformUserId !== '') {
+            $openIds = \App\Services\AdminApp\CustomerRequestQueue::openRequestReadingIdsForCustomer($platform, $platformUserId);
+            $missing = array_values(array_diff($openIds, array_keys($targets)));
+            if ($missing !== []) {
+                foreach (FortuneReading::query()->whereIn('id', $missing)->get() as $r) {
+                    $targets[(int) $r->id] = $r;
+                }
+            }
+
+            if ($targets === []) {
+                $latest = FortuneReading::query()
+                    ->where(function ($q) use ($platformUserId) {
+                        $q->where('platform_user_id', $platformUserId)->orWhere('facebook_user_id', $platformUserId);
+                    })
+                    ->latest('id')
+                    ->first();
+                if ($latest !== null) {
+                    $targets[(int) $latest->id] = $latest;
+                }
+            }
+        }
+
+        return array_values($targets);
     }
 
     public function suggest(Request $request, FortuneAIService $aiService): JsonResponse

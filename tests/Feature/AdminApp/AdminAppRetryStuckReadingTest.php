@@ -38,6 +38,9 @@ class AdminAppRetryStuckReadingTest extends TestCase
 
     private bool $sendResult = true;
 
+    /** จำลองตัวส่งโยน error กลางทาง */
+    private bool $sendThrows = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +49,9 @@ class AdminAppRetryStuckReadingTest extends TestCase
         $test = $this;
         $cm = Mockery::mock(FortuneChannelManager::class);
         $cm->shouldReceive('sendResponse')->andReturnUsing(function ($platform, $userId, $response) use ($test) {
+            if ($test->sendThrows) {
+                throw new \RuntimeException('Graph API timeout');
+            }
             $test->sent[] = ['platform' => $platform, 'user_id' => $userId, 'response' => $response];
 
             return $test->sendResult;
@@ -113,7 +119,7 @@ class AdminAppRetryStuckReadingTest extends TestCase
         $reading = $this->makeReading([
             'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subMinutes(30), 'birth_date' => '1995-03-15',
             'conversation_status' => FortuneReading::STATUS_COMPLETED, 'updated_at' => now()->subMinutes(20),
-            'ai_response' => 'ข้อความ error เก่า',
+            'ai_response' => 'ข้อความ error เก่า', 'questions' => ['ความรักปีนี้เป็นอย่างไร'],
         ], ['auto_retry_count' => 5, 'failure_notified' => true, 'reading_sent_directly' => true, 'pay_first_mode' => true]);
 
         $res = $this->retry($reading)->assertOk();
@@ -155,6 +161,7 @@ class AdminAppRetryStuckReadingTest extends TestCase
         $reading = $this->makeReading([
             'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subHours(30), 'birth_date' => '1995-03-15',
             'conversation_status' => FortuneReading::STATUS_PAID, 'updated_at' => now()->subHours(26),
+            'questions' => ['การงานช่วงนี้'],
         ], ['admin_review_needed' => true, 'admin_review_alerted' => true]);
 
         $this->retry($reading)->assertOk()->assertJsonPath('action', 'regenerate')->assertJsonPath('data.stuck_reason', 'escalated_24h');
@@ -228,15 +235,67 @@ class AdminAppRetryStuckReadingTest extends TestCase
         $this->assertSame([], $this->deferred, 'ไม่สั่ง AI ทั้งที่ไม่มีวันเกิด');
     }
 
-    public function test_celtic_uses_the_single_bill_emergency_path(): void
+    /**
+     * (v3 จับผี L2) Celtic ค้าง celtic_generating — เดิมส่ง "แม่หมอกำลังพิจารณา… รอ 30-60 วิ" (push บน LINE)
+     * ทั้งที่ไม่มีใครปั่นคำตอบให้จริง · ตอนนี้ทำแบบ recoverStuckGenerating: เด้ง awaiting + celtic_regen_pending='1'
+     * ไม่ส่งข้อความหาลูกค้า (delivered = false)
+     */
+    public function test_celtic_stuck_generating_is_queued_for_regeneration_without_messaging_the_customer(): void
     {
-        $this->actAs($this->makeAdmin());
+        $admin = $this->actAs($this->makeAdmin());
         $reading = $this->makeReading([
             'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'platform' => 'line',
             'platform_user_id' => 'U1234567890abcdef1234567890abcdef', 'facebook_user_id' => 'U1234567890abcdef1234567890abcdef',
             'is_paid' => true, 'amount_paid' => 99, 'paid_at' => now()->subMinutes(40),
             'conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING, 'updated_at' => now()->subMinutes(5),
+        ], ['admin_review_alerted' => true]);
+
+        $res = $this->retry($reading)->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('action', 'celtic_regenerate')
+            ->assertJsonPath('data.delivered', false)
+            ->assertJsonPath('data.conversation_status', FortuneReading::STATUS_CELTIC_AWAITING_QUESTION);
+        $this->assertNotSame('', (string) $res->json('message'));
+
+        $this->assertSame([], $this->sent, 'ไม่ส่งข้อความหาลูกค้า (ไม่ push บน LINE)');
+        $fresh = $reading->fresh();
+        $this->assertSame(FortuneReading::STATUS_CELTIC_AWAITING_QUESTION, $fresh->conversation_status);
+        $this->assertSame('1', $fresh->getConversationState('celtic_regen_pending'), 'คิวเดียวกับที่ fortune:celtic-redeliver อ่าน');
+        $this->assertSame($admin->id, $fresh->getConversationState('admin_retry_by'));
+        $this->assertFalse($fresh->getConversationState('admin_review_alerted'));
+        $this->assertSame([], $this->deferred);
+    }
+
+    /**
+     * (v3 จับผี L2) Celtic ค้าง paid ยังไม่เปิดไพ่ (mark-paid ตั้ง PAID แล้ว handleCelticPaymentMatched ล้ม)
+     * → force-promote เข้าเส้นยืนยันการจ่าย + พรอมต์ไพ่ใบแรก (เดิมตกไปข้อความ "พิมพ์ พร้อม" ทั้งที่สถานะไม่เดิน)
+     */
+    public function test_celtic_stuck_at_paid_is_force_promoted(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $reading = $this->makeReading([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'facebook_user_id' => '61550000008101',
+            'platform_user_id' => '61550000008101', 'is_paid' => true, 'amount_paid' => 99, 'paid_at' => now()->subMinutes(20),
+            'conversation_status' => FortuneReading::STATUS_PAID, 'updated_at' => now()->subMinutes(8),
         ]);
+
+        $res = $this->retry($reading)->assertOk()->assertJsonPath('action', 'celtic_recover');
+        $this->assertStringContainsString('ไพ่ใบแรก', (string) $res->json('message'));
+        $this->assertNotSame(FortuneReading::STATUS_PAID, $reading->fresh()->conversation_status);
+        $this->assertCount(1, $this->sent);
+    }
+
+    public function test_celtic_uses_the_single_bill_emergency_path(): void
+    {
+        $this->actAs($this->makeAdmin());
+
+        // ถูกส่งต่อเกิน 24 ชม. ระหว่างเปิดไพ่ → ส่งพรอมต์ทำต่อ ณ จุดเดิม
+        $reading = $this->makeReading([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'platform' => 'line',
+            'platform_user_id' => 'U1234567890abcdef1234567890abcdef', 'facebook_user_id' => 'U1234567890abcdef1234567890abcdef',
+            'is_paid' => true, 'amount_paid' => 99, 'paid_at' => now()->subHours(30),
+            'conversation_status' => FortuneReading::STATUS_CELTIC_PICKING, 'updated_at' => now()->subHours(29),
+        ], ['admin_review_needed' => true, 'admin_review_alerted' => true]);
 
         $this->retry($reading)->assertOk()
             ->assertJsonPath('action', 'celtic_recover')
@@ -297,6 +356,103 @@ class AdminAppRetryStuckReadingTest extends TestCase
             FortuneReading::query()->activeConversation((string) $escalated->facebook_user_id)->value('id'),
             'บอทเห็นบิลที่จ่ายแล้วเป็นบทสนทนาที่ยังเปิดอีกครั้ง'
         );
+    }
+
+    /**
+     * (v3 จับผี L1) ลูกค้ามีบิลใหม่กว่าที่จ่ายแล้ว/ยังคุยอยู่ → ห้ามปลุกบิลเก่าที่ถูกส่งต่อ (สอง flow ชนกัน)
+     * ธง admin_review_alerted คงไว้ · ไม่ส่งข้อความ · ไม่สั่ง AI
+     */
+    public function test_retry_refuses_when_the_customer_has_a_newer_paid_or_active_bill(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $old = $this->makeReading([
+            'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subHours(40),
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE, 'updated_at' => now()->subHours(39),
+        ], ['admin_review_needed' => true, 'admin_review_alerted' => true]);
+
+        // บิลใหม่กว่าของลูกค้าคนเดียวกัน จ่ายแล้วและกำลังเปิดไพ่
+        $newer = $this->makeReading([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'is_paid' => true, 'amount_paid' => 99,
+            'paid_at' => now()->subMinutes(10), 'conversation_status' => FortuneReading::STATUS_CELTIC_PICKING,
+            'bill_reference' => 'FTU-261006-N0001',
+        ]);
+
+        $res = $this->retry($old)->assertStatus(409)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'NEWER_ACTIVE_BILL');
+        $this->assertStringContainsString('FTU-261006-N0001', (string) $res->json('message'));
+        $this->assertStringContainsString('คืนเงิน', (string) $res->json('message'));
+        $this->assertTrue($old->fresh()->getConversationState('admin_review_alerted'), 'ธงคงไว้ — บอทไม่ปลุกบิลเก่า');
+        $this->assertSame(FortuneReading::STATUS_COLLECTING_BIRTHDATE, $old->fresh()->conversation_status);
+        $this->assertSame([], $this->sent);
+        $this->assertSame([], $this->deferred);
+        $this->assertFalse(Cache::has(StuckReadingRetrier::LOCK_PREFIX.$old->id), 'ไม่ล็อกคูลดาวน์');
+
+        // บิลใหม่ยังไม่จ่ายแต่ลูกค้ากำลังคุยอยู่ (เลือกแพคเกจ) → ก็ห้ามเหมือนกัน
+        $newer->forceFill(['is_paid' => false, 'paid_at' => null, 'conversation_status' => FortuneReading::STATUS_TIER_CHOICE])->save();
+        $this->retry($old)->assertStatus(409)->assertJsonPath('error_code', 'NEWER_ACTIVE_BILL');
+
+        // บิลใหม่ปิดไปแล้ว (ไม่จ่าย) → กู้บิลเก่าได้ตามปกติ
+        $newer->forceFill(['conversation_status' => FortuneReading::STATUS_COMPLETED])->save();
+        $this->retry($old)->assertOk()->assertJsonPath('action', 'recover_pay_first');
+    }
+
+    /**
+     * (v3 จับผี L3) Deep ที่ลูกค้ายังกรอกไม่จบ / ไม่มีคำถาม → 409 AWAITING_CUSTOMER ไม่บังคับสร้าง
+     */
+    public function test_deep_waiting_on_the_customer_is_not_force_generated(): void
+    {
+        $this->actAs($this->makeAdmin());
+
+        // ถูกส่งต่อเกิน 24 ชม. ระหว่างรอเปิดไพ่ (มีวันเกิด+คำถามแล้ว)
+        $tarot = $this->makeReading([
+            'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subHours(30), 'birth_date' => '1995-03-15',
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT, 'updated_at' => now()->subHours(29),
+            'questions' => ['ภาพรวมดวง'],
+        ], ['admin_review_needed' => true, 'admin_review_alerted' => true]);
+        $res = $this->retry($tarot)->assertStatus(409)->assertJsonPath('error_code', 'AWAITING_CUSTOMER');
+        $this->assertStringContainsString('เทคโอเวอร์', (string) $res->json('message'));
+        $this->assertSame(FortuneReading::STATUS_COLLECTING_TAROT, $tarot->fresh()->conversation_status);
+        $this->assertTrue($tarot->fresh()->getConversationState('admin_review_alerted'));
+
+        // ค้าง paid มีวันเกิดแต่ไม่มีคำถามเลย (ด่านเดียวกับ check-pending) → ไม่สร้างคำทำนายว่างเปล่า
+        $noQuestions = $this->makeReading([
+            'facebook_user_id' => '61550000006201', 'platform_user_id' => '61550000006201',
+            'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subMinutes(30), 'birth_date' => '1995-03-15',
+            'conversation_status' => FortuneReading::STATUS_PAID, 'updated_at' => now()->subMinutes(10),
+        ]);
+        $this->retry($noQuestions)->assertStatus(409)->assertJsonPath('error_code', 'AWAITING_CUSTOMER');
+
+        $this->assertSame([], $this->deferred, 'ไม่สั่งงาน AI');
+        $this->assertSame([], $this->sent);
+    }
+
+    /**
+     * (v3 จับผี) มีคำทำนายแล้วแต่ยังไม่ส่ง + ไม่มีวันเกิด → ส่งซ้ำ (เดิมไปเส้นขอวันเกิด --force ที่ล้างคำทำนายทิ้ง)
+     * + ตัวส่งโยน error กลางทาง → ปล่อยล็อกส่ง (ไม่ค้าง 10 นาที)
+     */
+    public function test_existing_reading_is_resent_before_birthdate_check_and_lock_is_released_on_exception(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $reading = $this->makeReading([
+            'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subMinutes(30),
+            'conversation_status' => FortuneReading::STATUS_PAID, 'updated_at' => now()->subMinutes(10),
+            'deep_response' => 'คำทำนายแบบผังด่วน',
+        ], ['reading_sent_directly' => false]);
+
+        $this->sendThrows = true;
+        $this->retry($reading)->assertStatus(500)
+            ->assertJsonPath('error_code', 'RETRY_FAILED')
+            ->assertJsonPath('action', 'resend');
+        $this->assertFalse(Cache::has('fortune:deep_deliver:'.$reading->id), 'ล็อกส่งถูกปล่อยใน finally');
+        $this->assertSame('คำทำนายแบบผังด่วน', $reading->fresh()->deep_response, 'ไม่ล้างคำทำนายเดิม');
+
+        // ปุ่มกดใหม่ได้ทันที (ไม่ติดคูลดาวน์) — รอให้บิลกลับมาเข้าเกณฑ์ค้าง (ความพยายามแรกขยับ updated_at)
+        $this->assertFalse(Cache::has(StuckReadingRetrier::LOCK_PREFIX.$reading->id));
+        $this->travel(3)->minutes();
+        $this->sendThrows = false;
+        $this->retry($reading)->assertOk()->assertJsonPath('action', 'resend')->assertJsonPath('data.delivered', true);
+        $this->assertSame('คำทำนายแบบผังด่วน', $this->sent[0]['response']['message']);
     }
 
     private function retry(FortuneReading $reading)

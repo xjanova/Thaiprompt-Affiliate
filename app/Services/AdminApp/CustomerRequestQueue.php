@@ -135,6 +135,40 @@ final class CustomerRequestQueue
     }
 
     /**
+     * id บิลทุกใบของลูกค้าคนนี้ (platform + platform user id) ที่มีคำขอคุยกับคนค้างอยู่
+     *
+     * ใช้ตอนแอดมินส่งข้อความจากแอป (chat/send) — คำขอถูกบันทึกไว้กับ "บิลล่าสุดของลูกค้า ณ ตอนขอ"
+     * ซึ่งอาจไม่ใช่บิลที่แอดมินเปิดอยู่ หรือแอดมินส่งด้วย platform + platform_user_id โดยไม่มี reading_id
+     * ⇒ ต้องหาจากตัวตนลูกค้า ไม่งั้นคำขอค้างในคิวจนครบ 24 ชม. ทั้งที่ตอบแล้ว
+     *
+     * @return array<int, int>
+     */
+    public static function openRequestReadingIdsForCustomer(string $platform, string $platformUserId, ?CarbonInterface $now = null, int $limit = 10): array
+    {
+        if ($platformUserId === '') {
+            return [];
+        }
+
+        return self::openRequestRows($now)
+            ->where(function ($q) use ($platformUserId) {
+                $q->where('fr.platform_user_id', $platformUserId)->orWhere('fr.facebook_user_id', $platformUserId);
+            })
+            ->where(function ($q) use ($platform) {
+                $q->where('fr.platform', $platform);
+                if ($platform === 'facebook') {
+                    // แถวเก่าก่อนมีคอลัมน์ platform = Facebook
+                    $q->orWhereNull('fr.platform');
+                }
+            })
+            ->distinct()
+            ->limit($limit)
+            ->pluck('req.fortune_reading_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * ข้อความที่ลูกค้าพิมพ์ตอนขอ — ตัดหัว "🙋 ลูกค้าขอคุยกับคน:" ที่ webhook เติมไว้ · ยาวสุด 120 ตัวอักษร
      */
     public static function keyword(?string $message): ?string

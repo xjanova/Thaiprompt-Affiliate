@@ -9,6 +9,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\SmsPaymentNotification;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\BuildsAdminAppWorld;
@@ -76,7 +77,10 @@ class AdminAppBillMoneyActionsTest extends TestCase
         $res->assertJsonPath('success', true)
             ->assertJsonPath('data.id', $reading->id)
             ->assertJsonPath('data.is_paid', false);
-        $this->assertStringStartsWith('ส่งเข้าคิวคืนเงินแล้ว', (string) $res->json('message'));
+        // ข้อความตามจริง: คืนทันที ไม่ได้เข้าคิว + บอกว่าดึงค่าแนะนำคืนกี่รายการ
+        $this->assertStringStartsWith('คืนเงินแล้ว', (string) $res->json('message'));
+        $this->assertStringContainsString('ดึงค่าแนะนำคืน 1 รายการ', (string) $res->json('message'));
+        $this->assertStringNotContainsString('คิว', (string) $res->json('message'));
 
         $fresh = $reading->fresh();
         $this->assertFalse((bool) $fresh->is_paid);
@@ -113,6 +117,78 @@ class AdminAppBillMoneyActionsTest extends TestCase
         $this->postJson("/api/admin/fortune/readings/{$juntra->id}/refund")->assertStatus(422)
             ->assertJsonPath('message', FortuneReading::JUNTRA_VOID_ELSEWHERE);
         $this->assertTrue((bool) $juntra->fresh()->is_paid);
+    }
+
+    /**
+     * (v3 จับผี C1/L4) คืนเงินตอนงาน AI วิ่ง = 409 · ลูกค้ายังใช้บริการอยู่ต้องส่ง confirm · บิลจบแล้วคืนได้เลย (Warroom)
+     */
+    public function test_refund_guards_in_flight_and_in_progress_bills(): void
+    {
+        $this->actAs($this->makeAdmin());
+
+        // งาน AI กำลังสร้างคำทำนาย → ห้ามคืน (job จะเขียนธงชุดเก่าทับ + ส่งคำทำนายให้คนที่คืนเงินแล้ว)
+        $generating = $this->makeReading(['is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subMinutes(3),
+            'conversation_status' => FortuneReading::STATUS_PAID, 'birth_date' => '1995-03-15']);
+        Cache::put('fortune:deep_gen:'.$generating->id, 1, 300);
+        $this->postJson("/api/admin/fortune/readings/{$generating->id}/refund", ['confirm' => true])
+            ->assertStatus(409)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'GENERATION_IN_FLIGHT');
+        $this->assertTrue((bool) $generating->fresh()->is_paid);
+        Cache::forget('fortune:deep_gen:'.$generating->id);
+
+        // Celtic กำลังเปิดไพ่ (ยังใช้บริการอยู่) → ต้องยืนยันก่อน
+        $picking = $this->makeReading(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'facebook_user_id' => '61550000003101', 'platform_user_id' => '61550000003101',
+            'is_paid' => true, 'amount_paid' => 99, 'paid_at' => now()->subMinutes(10),
+            'conversation_status' => FortuneReading::STATUS_CELTIC_PICKING]);
+        $res = $this->postJson("/api/admin/fortune/readings/{$picking->id}/refund", ['reason' => 'ลูกค้าขอยกเลิก'])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'REFUND_CONFIRM_REQUIRED');
+        $this->assertStringContainsString('ดึงค่าแนะนำคืน', (string) $res->json('message'));
+        $this->assertStringContainsString('ปิดเซสชัน', (string) $res->json('message'));
+        $this->assertTrue((bool) $picking->fresh()->is_paid, 'ยังไม่แตะอะไร');
+        $this->assertSame(FortuneReading::STATUS_CELTIC_PICKING, $picking->fresh()->conversation_status);
+
+        // ยืนยันแล้ว → คืนได้
+        $this->postJson("/api/admin/fortune/readings/{$picking->id}/refund", ['reason' => 'ลูกค้าขอยกเลิก', 'confirm' => true])
+            ->assertOk()->assertJsonPath('success', true)->assertJsonPath('data.is_paid', false);
+        $this->assertSame(FortuneReading::STATUS_COMPLETED, $picking->fresh()->conversation_status);
+
+        // บิลจบแล้ว → คืนได้เลยไม่ต้องยืนยัน (ปุ่ม Warroom เดิมยังใช้ได้)
+        $done = $this->makeReading(['facebook_user_id' => '61550000003102', 'platform_user_id' => '61550000003102',
+            'is_paid' => true, 'amount_paid' => 39, 'paid_at' => now()->subDay(),
+            'conversation_status' => FortuneReading::STATUS_COMPLETED, 'deep_response' => 'คำทำนาย']);
+        $this->postJson("/api/admin/fortune/readings/{$done->id}/refund")->assertOk()->assertJsonPath('data.is_paid', false);
+    }
+
+    /**
+     * (v3 จับผี L6) mark-paid กดซ้ำ/สองเครื่อง — มีคำขอเดียวที่ได้ทำ · ได้ล็อกแล้วอ่านแถวใหม่ก่อนตัดสิน
+     */
+    public function test_mark_paid_is_single_flight(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $reading = $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.31]);
+
+        // อีกคำขอถือล็อกอยู่ → 409 BUSY ไม่แตะบิล
+        $held = Cache::lock('admin-app:mark-paid:'.$reading->id, 30);
+        $this->assertTrue($held->get());
+        $this->postJson("/api/admin/fortune/readings/{$reading->id}/mark-paid")
+            ->assertStatus(409)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'BUSY');
+        $this->assertFalse((bool) $reading->fresh()->is_paid);
+        $held->release();
+
+        // ปล่อยล็อกแล้ว → ทำได้ · ล็อกถูกปล่อยหลังทำเสร็จ
+        $this->postJson("/api/admin/fortune/readings/{$reading->id}/mark-paid")->assertOk();
+        $this->assertTrue((bool) $reading->fresh()->is_paid);
+        $probe = Cache::lock('admin-app:mark-paid:'.$reading->id, 1);
+        $this->assertTrue($probe->get(), 'ล็อกถูกปล่อยแล้ว');
+        $probe->release();
+
+        // คำขอที่สองหลังจ่ายแล้ว → 422 (อ่านแถวใหม่หลังได้ล็อก)
+        $this->postJson("/api/admin/fortune/readings/{$reading->id}/mark-paid")->assertStatus(422);
     }
 
     public function test_mark_paid_stores_the_real_bill_amount_not_49(): void

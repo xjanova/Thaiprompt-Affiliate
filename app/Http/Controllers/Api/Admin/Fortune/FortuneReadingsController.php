@@ -7,6 +7,7 @@ use App\Http\Resources\Admin\Fortune\FortuneReadingResource;
 use App\Models\FortuneReading;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -135,6 +136,35 @@ class FortuneReadingsController extends Controller
             'amount' => 'nullable|numeric|min:0|max:100000',
             'note' => 'nullable|string|max:500',
         ]);
+
+        // 🔒 (v3) กดซ้ำ/สองเครื่องพร้อมกัน — คำขอเดียวเท่านั้นที่ได้ทำ (เดิมเช็ค is_paid จากสำเนาในหน่วยความจำ
+        //   สองคำขอผ่านด่านพร้อมกัน → Celtic ยิง handleCelticPaymentMatched สองรอบ = ลูกค้าได้ข้อความยืนยันซ้ำ)
+        //   ใช้ cache lock แบบไม่รอ — ห้ามล็อกแถว DB ค้างข้ามการส่งข้อความหาลูกค้า (HTTP ช้าได้หลายวินาที)
+        $lock = Cache::lock('admin-app:mark-paid:'.$reading->id, 30);
+        if (! $lock->get()) {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'BUSY',
+                'message' => 'บิลนี้กำลังถูกมาร์คจ่ายจากอีกเครื่อง — รอสักครู่แล้วรีเฟรช',
+            ], 409);
+        }
+
+        try {
+            return $this->markPaidLocked($reading, $request, $data);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * ตัวทำงานของ markPaid — เรียกหลังได้ cache lock แล้วเท่านั้น
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function markPaidLocked(FortuneReading $reading, Request $request, array $data): JsonResponse
+    {
+        // อ่านแถวล่าสุดหลังได้ล็อก — คำขอที่มาก่อนอาจมาร์คจ่ายไปแล้ว
+        $reading->refresh();
 
         if ($reading->is_paid) {
             return response()->json([
@@ -288,9 +318,12 @@ class FortuneReadingsController extends Controller
 
     /**
      * POST /api/admin/fortune/readings/{reading}/refund
-     * Body: { reason?: string }
+     * Body: { reason?: string, confirm?: bool }
      *
      * คืนเงิน/ยกเลิกการอนุมัติบิลที่จ่ายแล้ว — ไม่ได้โอนเงินคืนจริง (แอดมินโอนคืนเองนอกระบบ)
+     *
+     * ด่าน (v3): งาน AI กำลังวิ่ง = 409 GENERATION_IN_FLIGHT · ลูกค้ายังใช้บริการอยู่ (IN_PROGRESS_STATUSES)
+     *   แต่ไม่ส่ง confirm = true = 409 REFUND_CONFIRM_REQUIRED · บิลจบแล้ว/ไม่ขยับคืนได้เลยเหมือนเดิม
      *
      * 🩹 (v3) เดิมพลิก is_paid = false อย่างเดียว ⇒ UPA ค้าง used (ยอดทศนิยมไม่ถูกปล่อย) · SMS ยังผูกกับบิลนี้
      *   (เงินจริงของคนอื่นที่ match ผิดไปไม่กลับไปหาบิลที่ถูก) · ค่าแนะนำไม่ถูกดึงคืน
@@ -302,6 +335,8 @@ class FortuneReadingsController extends Controller
     {
         $data = $request->validate([
             'reason' => 'nullable|string|max:500',
+            // (v3) ยืนยันคืนเงินบิลที่ลูกค้ายังใช้บริการอยู่ — ไม่ส่ง = ได้ 409 REFUND_CONFIRM_REQUIRED
+            'confirm' => 'nullable|boolean',
         ]);
 
         if (! $reading->is_paid) {
@@ -317,6 +352,27 @@ class FortuneReadingsController extends Controller
                 'success' => false,
                 'message' => FortuneReading::JUNTRA_VOID_ELSEWHERE,
             ], 422);
+        }
+
+        // ⛔ (v3) งาน AI ของบิลนี้กำลังวิ่ง — คืนเงินตอนนี้ job จะเขียน conversation_state ชุดเก่าทับ (ธง approval_voided หาย)
+        //   แล้วยังส่งคำทำนายให้ลูกค้าที่คืนเงินไปแล้ว → ให้รอจบก่อน
+        if (\App\Services\AdminApp\StuckReadingFinder::generationInFlight($reading)) {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'GENERATION_IN_FLIGHT',
+                'message' => 'ระบบกำลังสร้าง/ส่งคำทำนายบิลนี้อยู่ — รอให้เสร็จก่อนแล้วค่อยคืนเงิน',
+            ], 409);
+        }
+
+        // ⚠️ (v3) ลูกค้ายังใช้บริการอยู่ — คืนเงิน = ดึงค่าแนะนำคืน + ปิดเซสชันทันที (บอทหยุดคุยบิลนี้)
+        //   ต้องส่ง confirm = true มาด้วย · บิลที่จบแล้ว/ไม่ขยับแล้วคืนได้เลยเหมือนเดิม (Warroom ใช้ต่อได้)
+        if (in_array($reading->conversation_status, \App\Services\AdminApp\StuckReadingFinder::IN_PROGRESS_STATUSES, true)
+            && ! $request->boolean('confirm')) {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'REFUND_CONFIRM_REQUIRED',
+                'message' => 'ลูกค้ายังใช้บริการบิลนี้อยู่ — คืนเงินแล้วจะดึงค่าแนะนำคืนจากผู้แนะนำ และปิดเซสชันทันที (บอทหยุดคุยบิลนี้) ถ้าแน่ใจให้กดยืนยันอีกครั้ง',
+            ], 409);
         }
 
         $reason = trim((string) ($data['reason'] ?? ''));
@@ -356,7 +412,14 @@ class FortuneReadingsController extends Controller
             'warnings' => $result['warnings'] ?? [],
         ]);
 
-        $message = 'ส่งเข้าคิวคืนเงินแล้ว';
+        // ข้อความตามจริง: ยกเลิกการจ่ายทันที (ไม่ได้เข้าคิว) · ระบบไม่ได้โอนเงินคืน — แอดมินโอนเองนอกระบบ
+        $clawedBack = count(array_filter(
+            (array) ($result['reverted'] ?? []),
+            fn ($line) => str_starts_with((string) $line, 'commission#')
+        ));
+        $message = 'คืนเงินแล้ว — ยกเลิกการจ่ายของบิลนี้ทันทีและปิดบิล'
+            .($clawedBack > 0 ? " · ดึงค่าแนะนำคืน {$clawedBack} รายการ" : '')
+            .' (ระบบไม่ได้โอนเงินคืนให้ลูกค้า — โอนคืนเองนอกระบบ)';
         if (! empty($result['warnings'])) {
             $message .= ' ⚠️ '.implode('; ', $result['warnings']);
         }

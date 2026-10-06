@@ -518,8 +518,8 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 | 8.3 | `ops/summary.queue.withdrawals_approved` (อนุมัติแล้วรอโอน) | เพิ่ม |
 | 8.4 | บิลค้างเกิน 24 ชม. (`stuck_reason = escalated_24h`) ใน `fortune/active-readings` + `ops/summary.queue.stuck_readings` | เพิ่ม |
 | 8.5 | `POST fortune/readings/{id}/retry` ทำนายซ้ำบิลค้าง | ใหม่ |
-| 8.6 | `POST fortune/readings/{id}/refund` ถอยครบผ่าน `voidApproval()` | แก้พฤติกรรม (รูปคำตอบเดิม) |
-| 8.7 | `POST fortune/readings/{id}/mark-paid` ยอดจริงของบิล (เลิก 49 ตายตัว) | แก้พฤติกรรม (รูปคำตอบเดิม + 422 ใหม่) |
+| 8.6 | `POST fortune/readings/{id}/refund` ถอยครบผ่าน `voidApproval()` · (v3.1) 409 `GENERATION_IN_FLIGHT` / `REFUND_CONFIRM_REQUIRED` + `confirm` · message ตามจริง | แก้พฤติกรรม (รูปคำตอบเดิม) |
+| 8.7 | `POST fortune/readings/{id}/mark-paid` ยอดจริงของบิล (เลิก 49 ตายตัว) · (v3.1) 409 `BUSY` กันกดซ้ำ | แก้พฤติกรรม (รูปคำตอบเดิม + 422/409 ใหม่) |
 | 8.8 | `POST finance/withdrawals/{id}/complete` — เขียนสัญญาให้ครบ (โค้ดไม่ได้แก้) | เอกสาร |
 | 8.9 | แจ้งเตือนแอปแอดมิน: `POST/DELETE devices/push-token` + คำสั่ง `admin-app:push-alerts` | ใหม่ |
 
@@ -567,9 +567,12 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 
 `takeover/stats.requested` = จำนวนบิลตามนิยามเดียวกัน
 
-`chat/send` (แก้เพิ่ม): ส่งสำเร็จ + มี `reading_id` → บันทึก `fortune_takeover_logs` (`action = message`, `user_id = แอดมิน`)
-ด้วย `FortuneTakeoverService::logMessage()` ตัวเดียวกับแผงเว็บ ⇒ คำขอของบิลนั้นหลุดจากคิว + โผล่ในประวัติเทคโอเวอร์บนเว็บ
-(รูปคำตอบเดิม · ส่งไม่สำเร็จ = ไม่บันทึก · บันทึกพลาดไม่กระทบผลส่ง)
+`chat/send` (แก้เพิ่ม): ส่งสำเร็จ → บันทึก `fortune_takeover_logs` (`action = message`, `user_id = แอดมิน`)
+ด้วย `FortuneTakeoverService::logMessage()` ตัวเดียวกับแผงเว็บ ⇒ คำขอหลุดจากคิว + โผล่ในประวัติเทคโอเวอร์บนเว็บ
+- บันทึกกับ: บิลจาก `reading_id` (ถ้ามี) **+ ทุกบิลของลูกค้าคนเดียวกัน (platform + platform user id) ที่มีคำขอค้างอยู่**
+  — คำขอถูกบันทึกกับ "บิลล่าสุดของลูกค้าตอนขอ" ซึ่งอาจเป็นคนละใบกับที่แอดมินเปิด หรือแอดมินส่งแบบ `platform` + `platform_user_id` ไม่มี `reading_id`
+  · ไม่มีทั้งสองอย่าง → บิลล่าสุดของลูกค้า
+- รูปคำตอบเดิม · ส่งไม่สำเร็จ = ไม่บันทึก · บันทึกพลาดไม่กระทบผลส่ง
 
 ### 8.3 `ops/summary.queue.withdrawals_approved` (ใหม่)
 
@@ -599,6 +602,8 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 (ธงนี้ไม่มีใครล้างนอกจาก `voidApproval()` — บิลที่กู้สำเร็จแล้วหลุดจากคิวเองเพราะเช็ค "ยังไม่เสร็จ" ทุกครั้ง)
 งานที่ยังวิ่งอยู่จริง (ธง `fortune:deep_gen` / `deep_deliver` / Celtic in-flight) ไม่นับว่าค้าง ·
 `minutes_since_activity` / `oldest_minutes` ของบิลกลุ่มนี้นับจาก **เวลาจ่าย** · สถานะที่รอลูกค้าตอบ **นับว่าค้าง** ในข้อนี้ (เกิน 24 ชม. แล้ว)
+· (v3.1) SQL ของ `active-readings` / `stuck_readings` มีขอบบนสุด `created_at >= now - 31 วัน` ให้ใช้ index `(is_paid, created_at)`
+(เดิม OR ข้ามกิ่งทำให้สแกนบิลจ่ายแล้วทั้งตาราง + `JSON_EXTRACT` ทุกแถว ทุกรอบของ `admin-app:push-alerts`)
 
 ### 8.5 `POST fortune/readings/{id}/retry` — ทำนายซ้ำบิลค้าง (ใหม่)
 
@@ -614,8 +619,10 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 | งาน AI/ส่งยังวิ่งอยู่ (`StuckReadingFinder::generationInFlight`) | 409 | `GENERATION_IN_FLIGHT` | ระบบกำลังสร้าง/ส่งคำทำนายบิลนี้อยู่ — รอสักครู่แล้วค่อยเช็คใหม่ |
 | ไม่ค้าง (ไม่มี `stuck_reason` และไม่มีธง `admin_review_needed`) | 409 | `NOT_STUCK` | บิลนี้ไม่ได้ค้าง — ระบบยังทำงานตามปกติ ไม่ต้องสั่งซ้ำ |
 | ไม่มีไอดีลูกค้า | 422 | `NO_RECIPIENT` | ไม่พบไอดีลูกค้าของบิลนี้ — ส่งข้อความหาลูกค้าไม่ได้ |
+| **(v3.1)** ลูกค้าคนเดียวกัน (`facebook_user_id` / `platform_user_id` — ตัวตนชุดเดียวกับ `cancelCompetingPrePaymentReadings`) มี **บิลใหม่กว่า** ที่จ่ายแล้ว หรือยังเป็นบทสนทนาที่เปิดอยู่ (`scopeActiveConversation`) — ธง `admin_review_*` คงไว้ | 409 | `NEWER_ACTIVE_BILL` | ลูกค้ามีบิลใหม่กว่า (FTU-…) ที่จ่ายแล้วหรือกำลังคุยอยู่ — ห้ามปลุกบิลนี้ซ้อน ให้คืนเงินหรือปิดบิลนี้แทนการทำนายซ้ำ |
 | Celtic จบแล้ว | 409 | `ALREADY_COMPLETED` | บิล Celtic นี้ทำนายจบแล้ว — ไม่มีอะไรให้กู้ |
 | Deep ส่งถึงลูกค้าแล้ว | 409 | `ALREADY_DELIVERED` | คำทำนายบิลนี้ส่งถึงลูกค้าแล้ว — ไม่ส่งซ้ำ (เปิดดูในแชทก่อน) |
+| **(v3.1)** Deep ที่ลูกค้ายังกรอกไม่จบ (`collecting_questions` / `collecting_tarot`) หรือไม่มีคำถามเลย (ด่านเดียวกับ `fortune:check-pending`) | 409 | `AWAITING_CUSTOMER` | ลูกค้ายังให้ข้อมูลไม่ครบ (คำถาม/เปิดไพ่) — สร้างคำทำนายตอนนี้ไม่ได้ แนะนำให้เทคโอเวอร์แชทคุยกับลูกค้าแทน |
 | แพคเกจอื่น (basic/free_card) | 422 | `UNSUPPORTED_PACKAGE` | บิลแพคเกจนี้ไม่มีขั้นตอนทำนายซ้ำอัตโนมัติ — จัดการจากหน้าเว็บ |
 | กดซ้ำภายใน 2 นาที (`Cache::add("admin_retry:{id}", 120)`) | 429 | `RETRY_COOLDOWN` | เพิ่งสั่งทำนายซ้ำบิลนี้ไปแล้ว — รอ 2 นาทีก่อนสั่งอีกครั้ง |
 
@@ -623,16 +630,16 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 
 | action | เมื่อไร | ทำอะไร (ลอกจาก) |
 |---|---|---|
-| `recover_pay_first` | Deep ที่ยังไม่มีวันเกิด | `fortune:recover-paid-no-birthdate --id={id} --force` (ปุ่ม "🛟 ส่งขอวันเกิดใหม่" — `recoverPayFirstReading`) — ขอวันเกิดใหม่ / ใช้วันเกิดเดิมถ้ามีในประวัติ |
-| `resend` | Deep ที่มีคำทำนายแล้วแต่ `reading_sent_directly` ยังไม่ตั้ง | ส่งคำทำนายเดิมซ้ำ (`resendDeepReading`) + ถือล็อก `fortune:deep_deliver:{id}` + ส่งสำเร็จ = ตั้งธงส่งแล้ว + `completed` (กัน `fortune:check-pending` ส่งซ้ำ) |
-| `regenerate` | Deep อื่น ๆ | ล้างคำทำนาย/ธงส่ง → `paid` + รีเซ็ต `auto_retry_count = 0` · `failure_notified = false` แล้วสั่ง `ProcessDeepFortuneReadingJob::dispatchSmart` **หลังส่งคำตอบ** (`register_shutdown_function` แบบปุ่มเว็บ `retryDeepReading`) |
-| `celtic_recover` | Celtic ที่ยังไม่จบ | เส้นบิลเดี่ยวของ Emergency Recovery (`FortuneCelticCrossController::emergencyRecoverAction`): สถานะ `new` / `celtic_pending_payment` + ยังไม่เปิดไพ่ → ยืนยันการจ่ายใหม่ + พรอมต์ไพ่ใบแรก · อื่น ๆ → ส่งข้อความกู้ ณ จุดเดิม (`buildCelticResumeResponse`) หัวข้อ "ขออภัยที่ทำให้รอ" |
+| `resend` | Deep ที่มีคำทำนายแล้วแต่ `reading_sent_directly` ยังไม่ตั้ง (**เช็คก่อนวันเกิด** — v3.1) | ส่งคำทำนายเดิมซ้ำ (`resendDeepReading`) + ถือล็อก `fortune:deep_deliver:{id}` + ส่งสำเร็จ = ตั้งธงส่งแล้ว + `completed` (กัน `fortune:check-pending` ส่งซ้ำ) · ส่งไม่ออก/โยน error = ปล่อยล็อกใน `finally` |
+| `recover_pay_first` | Deep ที่ยังไม่มีวันเกิด (และยังไม่มีคำทำนาย) | `fortune:recover-paid-no-birthdate --id={id} --force` (ปุ่ม "🛟 ส่งขอวันเกิดใหม่" — `recoverPayFirstReading`) — ขอวันเกิดใหม่ / ใช้วันเกิดเดิมถ้ามีในประวัติ |
+| `regenerate` | Deep ที่มีวันเกิด + คำถาม และไม่ได้รอลูกค้ากรอก | ล้างคำทำนาย/ธงส่ง → `paid` + รีเซ็ต `auto_retry_count = 0` · `failure_notified = false` แล้วสั่ง `ProcessDeepFortuneReadingJob::dispatchSmart` **หลังส่งคำตอบ** (`register_shutdown_function` แบบปุ่มเว็บ `retryDeepReading`) |
+| `celtic_recover` | Celtic ที่ยังไม่จบ (ยกเว้นข้อถัดไป) | เส้นบิลเดี่ยวของ Emergency Recovery (`FortuneCelticCrossController::emergencyRecoverAction`): สถานะ `new` / `celtic_pending_payment` / **`paid` (v3.1)** + ยังไม่เปิดไพ่ → ยืนยันการจ่ายใหม่ + พรอมต์ไพ่ใบแรก · `paid` ที่เปิดไพ่ไปบ้างแล้ว → กลับเป็น `celtic_picking` · อื่น ๆ → ส่งข้อความกู้ ณ จุดเดิม (`buildCelticResumeResponse`) หัวข้อ "ขออภัยที่ทำให้รอ" |
+| `celtic_regenerate` **(v3.1)** | Celtic ค้าง `celtic_generating` (หรือ `paid` ที่เปิดไพ่ครบ 10 ใบแล้ว) | แบบ `recoverStuckGenerating()` ของ `fortune:celtic-redeliver`: → `celtic_awaiting_question` + `conversation_state.celtic_regen_pending = "1"` ให้ cron ปั่นคำตอบที่ค้างแล้วส่งผ่านเส้น redeliver เอง · **ไม่ส่งข้อความหาลูกค้า (ไม่ push LINE)** · `delivered = false` · `message` บอกว่าเข้าคิวแล้ว (หรือ "ปลดสถานะค้างแล้ว — ไม่มีคำถามค้างให้ปั่น/หมดเวลาคุย") |
 
 ทุกวิธีตั้ง `conversation_state.admin_retry_at` / `admin_retry_by` และ **ล้าง `admin_review_alerted`**
 (ธงนี้ทำให้บอทไม่นับบิลเป็นบทสนทนาที่ยังเปิด — ถ้าไม่ล้าง ลูกค้าตอบวันเกิด/เลือกไพ่ต่อแล้วข้อความไม่ไหลเข้าบิลที่จ่ายแล้ว
-· ถ้ายังค้างอีก `fortune:expire-stuck-paid` จะปักธง + แจ้งแอดมินใหม่เอง) ·
+· ถ้ายังค้างอีก `fortune:expire-stuck-paid` จะปักธง + แจ้งแอดมินใหม่เอง) — ยกเว้นถูกปฏิเสธด้วย `NEWER_ACTIVE_BILL` (ไม่แตะธง) ·
 ส่งข้อความทาง LINE = push (คำทำนาย/บริการที่จ่ายแล้ว — หมวดที่อนุญาตให้ใช้โควตา)
-· Celtic ที่ค้าง `celtic_generating`: เส้นนี้ส่งแค่ข้อความ "แม่หมอกำลังพิจารณา…" (เหมือนเว็บ) — การปั่นคำตอบใหม่เป็นงานของ `fortune:celtic-redeliver`
 
 **คำตอบ**
 
@@ -660,8 +667,20 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 - ในรายการบิลอยู่กอง `refunded` ด้วย `status_reason = approval_voided` (ป้าย "ยกเลิกการอนุมัติแล้ว")
 - ไม่โอนเงินคืนจริง และไม่แจ้งลูกค้า (แอดมินโอนคืนเองนอกระบบ) — **แอปควรถามยืนยันก่อนเรียก**
 
-คำตอบสำเร็จเหมือนเดิม: `{success: true, data: FortuneReadingResource, message: "ส่งเข้าคิวคืนเงินแล้ว"}`
-(ถ้าดึงค่าแนะนำบางแถวไม่สำเร็จ ต่อท้าย message ด้วย `⚠️ ...` ให้แอดมินแก้มือ)
+Body: `{reason?: string, confirm?: bool}` — `confirm` ใหม่ใน v3.1 (ไม่ส่ง = false)
+
+**ด่าน (v3.1)**
+
+| ไม่ผ่าน | HTTP | `error_code` | `message` |
+|---|---|---|---|
+| งาน AI/ส่งของบิลนี้ยังวิ่งอยู่ (`fortune:deep_gen` / `deep_deliver` / Celtic in-flight) — คืนตอนนี้ job จะเขียนธงชุดเก่าทับ + ส่งคำทำนายให้คนที่คืนเงินแล้ว | 409 | `GENERATION_IN_FLIGHT` | ระบบกำลังสร้าง/ส่งคำทำนายบิลนี้อยู่ — รอให้เสร็จก่อนแล้วค่อยคืนเงิน |
+| ลูกค้ายังใช้บริการอยู่ (`StuckReadingFinder::IN_PROGRESS_STATUSES`: `paid` · `collecting_*` · `celtic_picking` · `celtic_awaiting_question` · `celtic_generating` · `celtic_qa_prompt`) และไม่ได้ส่ง `confirm: true` | 409 | `REFUND_CONFIRM_REQUIRED` | ลูกค้ายังใช้บริการบิลนี้อยู่ — คืนเงินแล้วจะดึงค่าแนะนำคืนจากผู้แนะนำ และปิดเซสชันทันที (บอทหยุดคุยบิลนี้) ถ้าแน่ใจให้กดยืนยันอีกครั้ง |
+
+บิลที่จบแล้ว/ไม่ขยับ (`completed` ฯลฯ) คืนได้เลยโดยไม่ต้องส่ง `confirm` (ปุ่มเดิมของ Warroom ใช้ได้ตามเดิม)
+
+คำตอบสำเร็จรูปเดิม: `{success: true, data: FortuneReadingResource, message}` — **message เปลี่ยนให้ตรงความจริง (v3.1)**:
+"คืนเงินแล้ว — ยกเลิกการจ่ายของบิลนี้ทันทีและปิดบิล · ดึงค่าแนะนำคืน N รายการ (ระบบไม่ได้โอนเงินคืนให้ลูกค้า — โอนคืนเองนอกระบบ)"
+(เดิม "ส่งเข้าคิวคืนเงินแล้ว" — ไม่มีคิว ทำทันที · ถ้าดึงค่าแนะนำบางแถวไม่สำเร็จ ต่อท้าย message ด้วย `⚠️ ...` ให้แอดมินแก้มือ)
 · ยังไม่จ่าย / void แล้ว / จันทรา → **422** `{success: false, message}` · ฐานข้อมูลยุ่ง (deadlock) → **503** "ลองใหม่อีกครั้ง" (ยังไม่มีอะไรถูกเปลี่ยน)
 
 ### 8.7 `POST fortune/readings/{id}/mark-paid` (แก้พฤติกรรม)
@@ -673,6 +692,10 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 4. หาไม่ได้เลย (เช่นไพ่ฟรี) → **422** `{"success": false, "error_code": "AMOUNT_REQUIRED", "message": "บิลนี้ไม่มียอดให้ดึงอัตโนมัติ — กรุณาระบุยอดที่ได้รับ (amount)"}`
 
 ~~เดิม: `amount_paid = 0` → บันทึก 49 ตายตัว~~ · ส่ง `amount` มา = ใช้ค่านั้นเสมอ (เหมือนเดิม) · คำตอบสำเร็จรูปเดิม
+
+**กันกดซ้ำ (v3.1):** ถือ `Cache::lock("admin-app:mark-paid:{id}", 30)` แบบไม่รอ — อีกคำขอถือล็อกอยู่ →
+**409** `{"success": false, "error_code": "BUSY", "message": "บิลนี้กำลังถูกมาร์คจ่ายจากอีกเครื่อง — รอสักครู่แล้วรีเฟรช"}`
+· ได้ล็อกแล้วอ่านแถวใหม่ก่อนตัดสิน (คำขอที่สองหลังจ่ายแล้ว = 422 "บิลนี้ถูกมาร์คจ่ายแล้ว") · ไม่ล็อกแถว DB ข้ามการส่งข้อความหาลูกค้า
 
 ### 8.8 `POST finance/withdrawals/{id}/complete` — สัญญาเต็ม (โค้ดเดิม ไม่ได้แก้)
 
@@ -714,13 +737,20 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 - `auth/logout-all` → ลบ push token **ทุกเครื่อง** ของแอดมินคนนี้
 - (รูปคำตอบของ logout เดิม)
 
-#### คำสั่ง `admin-app:push-alerts` (scheduler ทุกนาที · `withoutOverlapping(5)` · `onOneServer`)
+#### คำสั่ง `admin-app:push-alerts` (scheduler **ทุก 2 นาที** (v3.1) · `withoutOverlapping(5)` · `onOneServer`)
 
-1. ไม่มีไฟล์ credentials Firebase (`storage/app/firebase-credentials.json` หรือ Setting `fcm_credentials_path`) / หา project ไม่ได้ → **จบเงียบ**
-2. ยังไม่มีเครื่องลงทะเบียน → ล้าง snapshot แล้วจบ
-3. นับกล่องคิวด้วย `OpsSummaryController::buildQueue()` (ตัวนับเดียวกับหน้าแรก ไม่ดึงตัวอย่าง) แล้วเทียบ snapshot รอบก่อน (cache `admin_app:push_alerts:snapshot`)
+1. ปิด FCM ในหลังบ้าน (Setting `fcm_enabled` — **สวิตช์เดียวกับแอป SMS Checker** · v3.1) / ไม่มีไฟล์ credentials Firebase
+   (`storage/app/firebase-credentials.json` หรือ Setting `fcm_credentials_path`) / หา project ไม่ได้ → **จบเงียบ**
+   · ตาราง `admin_push_tokens` ยังไม่มี (โค้ดขึ้นก่อน migrate) → จบเงียบ
+2. **เครื่องที่ส่งได้ (v3.1)** = เจ้าของยังเป็นแอดมิน (`is_super_admin` หรือ `role = admin` · ยังไม่ถูกลบ — นิยามเดียวกับ `AdminApiMiddleware`)
+   **และ** Sanctum token ที่ใช้ลงทะเบียน (`access_token_id`) ยังอยู่และยังไม่หมดอายุ — แถวอื่น **ถูกลบทุกรอบ** (ลดสิทธิ์/ถอน token แล้วต้องเลิกได้ยอดเงิน)
+   · ไม่เหลือเครื่อง → ล้างสถานะแล้วจบ
+3. นับกล่องคิวด้วย `OpsSummaryController::buildQueue()` (ตัวนับเดียวกับหน้าแรก ไม่ดึงตัวอย่าง)
+   แล้วเทียบกับ **จำนวนที่แจ้งไปล่าสุดของกล่องนั้น** (cache `admin_app:push_alerts:notified` · snapshot ล่าสุดอยู่ที่ `admin_app:push_alerts:snapshot`)
    - รอบแรก = เก็บฐาน ไม่ส่ง · กล่องที่อ่านไม่ได้ (degraded) = ไม่ส่ง + คงค่ารอบก่อน
-   - **ส่งเมื่อ count เพิ่มขึ้น** เท่านั้น (ลดลง/เท่าเดิม = เงียบ · ถ้าในนาทีเดียวมีงานหายหนึ่งงานเข้าหนึ่ง จำนวนเท่าเดิม = ไม่แจ้ง)
+   - **กันกระพริบ (v3.1):** แจ้งเมื่อจำนวน **สูงกว่าจำนวนที่แจ้งไปล่าสุด** และห่างจากครั้งก่อนของกล่องนั้น **≥ 15 นาที**
+     · จำนวนลงถึง 0 = รีเซ็ตจำนวนที่แจ้งเป็น 0 (คูลดาวน์ยังนับจากครั้งที่แจ้งจริง — ของใหม่ที่ยังค้างหลังพ้นคูลดาวน์จะถูกแจ้ง)
+     · ลดลงแต่ไม่ถึง 0 แล้วขึ้นกลับมาไม่เกินค่าที่แจ้งล่าสุด = ไม่แจ้ง (ยอมพลาดบ้างแลกกับไม่สแปม)
 4. ส่งหาทุกเครื่อง — FCM ตอบ `UNREGISTERED` / `SENDER_ID_MISMATCH` / `INVALID_ARGUMENT` ที่ระบุว่าผิดที่ token → **ลบแถวนั้น**
    (INVALID_ARGUMENT ทั่วไปไม่ลบ — อาจเป็นเพราะ payload) · ไม่ log token
 
@@ -730,7 +760,7 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 | `bills_awaiting` | `/work?tab=bills` | 🧾 บิลรอตรวจการโอน | ลูกค้าแจ้งโอน/ส่งสลิปใหม่ — รอตรวจ 3 บิล (237.84 บาท) |
 | `withdrawals_pending` | `/work?tab=withdrawals` | 🏦 คำขอถอนเงินใหม่ | รออนุมัติ 1 รายการ (500.00 บาท) |
 | `sms_unmatched` | `/work?tab=sms` | 💬 เงินเข้ายังไม่ผูกบิล | SMS เงินเข้ารอจับคู่ 4 รายการ (156.00 บาท) |
-| `stuck_readings` | `/work?tab=stuck` | ⚠️ บิลจ่ายแล้วค้าง | ลูกค้าจ่ายแล้วยังไม่ได้คำทำนาย 1 บิล — เปิดดูแล้วกดทำนายซ้ำ |
+| `stuck_readings` | `/work?tab=stuck` | ⚠️ บิลจ่ายแล้วค้าง | ลูกค้าจ่ายแล้วยังไม่ได้คำทำนาย 1 บิล — เปิดดูแล้วเลือกวิธีกู้ (v3.1: เลิกบอก "กดทำนายซ้ำ" — บางบิลลูกค้ามีบิลใหม่แล้ว retry จะตอบ `NEWER_ACTIVE_BILL`) |
 
 ข้อความ FCM (HTTP v1 · project `plptdb`):
 
@@ -746,7 +776,7 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 
 - แอป Android ควรสร้าง notification channel `admin_ops_alerts` (ไม่มี = FCM ใช้ช่องเริ่มต้น) · `tag` = แจ้งเตือนชนิดเดียวกันทับของเก่า
 - ค่าใน `data` เป็น string ทั้งหมด (`count` ด้วย) · แตะแจ้งเตือน → เปิด `data.route`
-- ไม่ผูกกับสวิตช์ `fcm_enabled` ของแอป SMS Checker (คนละแอป) — ปิดได้โดยไม่ลงทะเบียนเครื่อง / ถอด credentials
+- เคารพสวิตช์ `fcm_enabled` ตัวเดียวกับแอป SMS Checker (v3.1 — เดิมไม่ผูก) · ปิดเฉพาะแอปแอดมินได้ด้วยการไม่ลงทะเบียนเครื่อง
 
 ตัวส่ง FCM แยกเป็น `App\Services\Fcm\FcmHttpV1Client` (OAuth2 JWT → access token เก็บในหน่วยความจำเท่านั้น)
 — `FcmNotificationService` ของแอป SMS Checker เรียกผ่านตัวนี้ พฤติกรรมเดิมทุกอย่าง (ข้อความ · `sms_payment_channel` · `OPEN_ORDERS` · การล้าง token เดิม)

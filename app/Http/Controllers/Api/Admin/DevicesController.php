@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminPushToken;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -42,16 +43,21 @@ class DevicesController extends Controller
                 ->delete();
         }
 
-        $row = AdminPushToken::query()->updateOrCreate(
-            ['token' => $data['token']],
-            [
-                'user_id' => $user->id,
-                'access_token_id' => $accessTokenId,
-                'platform' => $data['platform'],
-                'device_id' => $data['device_id'] ?? null,
-                'app_version' => $data['app_version'] ?? null,
-            ]
-        );
+        $values = [
+            'user_id' => $user->id,
+            'access_token_id' => $accessTokenId,
+            'platform' => $data['platform'],
+            'device_id' => $data['device_id'] ?? null,
+            'app_version' => $data['app_version'] ?? null,
+        ];
+
+        try {
+            $row = AdminPushToken::query()->updateOrCreate(['token' => $data['token']], $values);
+        } catch (UniqueConstraintViolationException $e) {
+            // ลงทะเบียน token เดียวกันพร้อมกันสองคำขอ (แอปเปิด + onTokenRefresh) — อีกคำขอสร้างแถวไปก่อน → อัปเดตแถวนั้นแทน
+            $row = AdminPushToken::query()->where('token', $data['token'])->firstOrFail();
+            $row->fill($values)->save();
+        }
 
         Log::info('AdminApp: ลงทะเบียน push token', [
             'admin_id' => $user->id,

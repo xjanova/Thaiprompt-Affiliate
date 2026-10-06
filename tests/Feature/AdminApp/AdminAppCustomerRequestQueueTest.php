@@ -133,6 +133,35 @@ class AdminAppCustomerRequestQueueTest extends TestCase
         $this->getJson('/api/admin/takeover/stats')->assertOk()->assertJsonPath('data.requested', 1);
     }
 
+    /**
+     * (v3 จับผี) คำขอถูกบันทึกกับ "บิลล่าสุดของลูกค้าตอนขอ" — แอดมินตอบจากบิลอื่นของลูกค้าคนเดียวกัน
+     * หรือส่งแบบ platform + platform_user_id (ไม่มี reading_id) ก็ต้องปิดคำขอ
+     */
+    public function test_reply_closes_requests_found_by_customer_identity_not_just_reading_id(): void
+    {
+        $admin = $this->actAs($this->makeAdmin());
+        $this->mock(FacebookWebhookService::class, fn ($m) => $m->shouldReceive('sendMessage')->andReturn(true));
+
+        // คำขออยู่บนบิลเก่า · แอดมินเปิดบิลใหม่ของลูกค้าคนเดียวกันแล้วตอบ
+        $older = $this->reading('61550000006101', 'ลูกค้าสองบิล');
+        $this->request($older->id, now()->subMinutes(6), 'ขอคุยกับคน');
+        $newer = $this->reading('61550000006101', 'ลูกค้าสองบิล');
+        $other = $this->reading('61550000006199', 'ลูกค้าอื่น');
+        $this->request($other->id, now()->subMinutes(5), 'ขอคุยด้วยค่ะ');
+        $this->getJson('/api/admin/takeover/stats')->assertOk()->assertJsonPath('data.requested', 2);
+
+        $this->postJson('/api/admin/chat/send', ['reading_id' => $newer->id, 'text' => 'แอดมินมาแล้วค่ะ'])->assertOk();
+        $this->assertDatabaseHas('fortune_takeover_logs', ['fortune_reading_id' => $older->id, 'user_id' => $admin->id,
+            'action' => FortuneTakeoverLog::ACTION_MESSAGE]);
+        $this->getJson('/api/admin/takeover/stats')->assertOk()->assertJsonPath('data.requested', 1, 'เหลือแค่ลูกค้าอีกคน');
+
+        // ส่งแบบไม่มี reading_id (platform + platform_user_id) → หาบิลที่มีคำขอค้างจากตัวตนลูกค้า
+        $this->postJson('/api/admin/chat/send', ['platform' => 'facebook', 'platform_user_id' => '61550000006199', 'text' => 'สวัสดีค่ะ'])
+            ->assertOk();
+        $this->assertDatabaseHas('fortune_takeover_logs', ['fortune_reading_id' => $other->id, 'user_id' => $admin->id]);
+        $this->getJson('/api/admin/takeover/stats')->assertOk()->assertJsonPath('data.requested', 0);
+    }
+
     public function test_failed_send_does_not_mark_the_request_answered(): void
     {
         $this->actAs($this->makeAdmin());

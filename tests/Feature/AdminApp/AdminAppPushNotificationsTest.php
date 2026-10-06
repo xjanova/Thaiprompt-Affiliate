@@ -39,6 +39,7 @@ class AdminAppPushNotificationsTest extends TestCase
     {
         $this->tearDownAdminAppWorld();
         Cache::forget(AdminAppPushAlerts::SNAPSHOT_KEY);
+        Cache::forget(AdminAppPushAlerts::NOTIFIED_KEY);
 
         parent::tearDown();
     }
@@ -101,8 +102,8 @@ class AdminAppPushNotificationsTest extends TestCase
     public function test_push_alerts_fire_only_when_a_queue_grows_and_drop_dead_tokens(): void
     {
         $admin = $this->makeAdmin();
-        $good = AdminPushToken::query()->create(['user_id' => $admin->id, 'token' => self::TOKEN_A, 'platform' => 'android']);
-        $dead = AdminPushToken::query()->create(['user_id' => $admin->id, 'token' => self::TOKEN_B, 'platform' => 'android']);
+        $good = $this->pushToken($admin, self::TOKEN_A);
+        $dead = $this->pushToken($admin, self::TOKEN_B);
 
         $sends = [];
         $fcm = Mockery::mock(FcmHttpV1Client::class);
@@ -167,7 +168,100 @@ class AdminAppPushNotificationsTest extends TestCase
         $this->assertNull(Cache::get(AdminAppPushAlerts::SNAPSHOT_KEY));
     }
 
-    public function test_command_is_scheduled_every_minute_without_overlap(): void
+    /**
+     * (v3 จับผี L5) ส่งเฉพาะเครื่องของแอดมินตัวจริงที่ Sanctum token ยังใช้ได้ — ลดสิทธิ์/ถอน/หมดอายุ = ลบแถวทิ้ง
+     */
+    public function test_push_alerts_only_reach_current_admins_with_live_tokens(): void
+    {
+        $active = $this->makeAdmin();
+        $super = $this->makeSuperAdmin(['role' => 'user']);
+        $demoted = $this->makeAdmin();
+        $revoked = $this->makeAdmin();
+        $expired = $this->makeAdmin();
+
+        $keep1 = $this->pushToken($active, 'tokActive_0123456789abcdefghijklmnop');
+        $keep2 = $this->pushToken($super, 'tokSuper_0123456789abcdefghijklmnopq');
+        $this->pushToken($demoted, 'tokDemoted_0123456789abcdefghijklmno');
+        $demoted->forceFill(['role' => 'user'])->save();
+        $revokedRow = $this->pushToken($revoked, 'tokRevoked_0123456789abcdefghijklmno');
+        \Laravel\Sanctum\PersonalAccessToken::query()->whereKey($revokedRow->access_token_id)->delete();
+        $expiredToken = $expired->createToken('old', ['admin'], now()->subDay());
+        AdminPushToken::query()->create(['user_id' => $expired->id, 'access_token_id' => $expiredToken->accessToken->id,
+            'token' => 'tokExpired_0123456789abcdefghijklmno', 'platform' => 'android']);
+        AdminPushToken::query()->create(['user_id' => $active->id, 'token' => 'tokNoSanctum_0123456789abcdefghijk', 'platform' => 'android']);
+
+        $sends = $this->fakeFcm();
+
+        // รอบแรก (ฐาน) ก็ลบแถวที่หมดสิทธิ์แล้ว
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertEqualsCanonicalizing([$keep1->id, $keep2->id], AdminPushToken::query()->pluck('id')->all());
+
+        $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.41, 'slip_received_at' => now()]);
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertEqualsCanonicalizing(
+            ['tokActive_0123456789abcdefghijklmnop', 'tokSuper_0123456789abcdefghijklmnopq'],
+            array_column($sends->getArrayCopy(), 'token')
+        );
+    }
+
+    /**
+     * (v3 จับผี P2) กันแจ้งกระพริบ — แจ้งเมื่อสูงกว่าจำนวนที่แจ้งล่าสุด + คูลดาวน์ 15 นาทีต่อกล่อง · ลงถึง 0 = รีเซ็ต
+     */
+    public function test_push_alerts_do_not_flap(): void
+    {
+        $this->pushToken($this->makeAdmin(), self::TOKEN_A);
+        $sends = $this->fakeFcm();
+
+        $this->artisan('admin-app:push-alerts')->assertSuccessful(); // ฐาน (0)
+
+        $bill = $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.51, 'slip_received_at' => now()]);
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertCount(1, $sends, '0 → 1 แจ้ง');
+
+        // ตรวจเสร็จ (0) → รีเซ็ต · มีบิลใหม่อีกใบภายในคูลดาวน์ → ยังไม่แจ้ง
+        $bill->forceFill(['slip_received_at' => null])->save();
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->travel(4)->minutes();
+        $this->makeReading(['facebook_user_id' => '61550000002201', 'platform_user_id' => '61550000002201',
+            'conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.52, 'slip_received_at' => now()]);
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertCount(1, $sends, 'ยังอยู่ในคูลดาวน์ 15 นาที');
+
+        // พ้นคูลดาวน์แล้วยังค้าง (1 > 0 ที่รีเซ็ตไว้) → แจ้ง
+        $this->travel(12)->minutes();
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertCount(2, $sends);
+
+        // จำนวนเท่าเดิม (ไม่สูงกว่าที่แจ้งล่าสุด) → ไม่แจ้ง แม้พ้นคูลดาวน์แล้ว
+        $this->travel(20)->minutes();
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertCount(2, $sends);
+
+        // สูงกว่าที่แจ้งล่าสุด + พ้นคูลดาวน์ → แจ้ง
+        $this->makeReading(['facebook_user_id' => '61550000002202', 'platform_user_id' => '61550000002202',
+            'conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.53, 'slip_received_at' => now()]);
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertCount(3, $sends);
+        $this->assertSame('2', $sends[2]['data']['count']);
+    }
+
+    /**
+     * (v3 จับผี) ปิด FCM ในหลังบ้าน (fcm_enabled — สวิตช์เดียวกับแอป SMS Checker) → ไม่ส่ง ไม่คำนวณ
+     */
+    public function test_push_alerts_respect_the_fcm_kill_switch(): void
+    {
+        $this->pushToken($this->makeAdmin(), self::TOKEN_A);
+        $fcm = Mockery::mock(FcmHttpV1Client::class);
+        $fcm->shouldNotReceive('isConfigured');
+        $fcm->shouldNotReceive('send');
+        $this->app->instance(FcmHttpV1Client::class, $fcm);
+        $this->mock(FcmNotificationService::class, fn ($m) => $m->shouldReceive('isEnabled')->andReturn(false));
+
+        $this->artisan('admin-app:push-alerts')->assertSuccessful();
+        $this->assertNull(Cache::get(AdminAppPushAlerts::SNAPSHOT_KEY));
+    }
+
+    public function test_command_is_scheduled_every_two_minutes_without_overlap(): void
     {
         \Illuminate\Support\Facades\Artisan::call('schedule:list');
         $this->assertStringContainsString('admin-app:push-alerts', \Illuminate\Support\Facades\Artisan::output());
@@ -176,8 +270,38 @@ class AdminAppPushNotificationsTest extends TestCase
             ->first(fn ($e) => str_contains((string) $e->command, 'admin-app:push-alerts'));
 
         $this->assertNotNull($event, 'ลงทะเบียนใน routes/console.php');
-        $this->assertSame('* * * * *', $event->expression);
+        $this->assertSame('*/2 * * * *', $event->expression);
         $this->assertTrue($event->withoutOverlapping);
+    }
+
+    /**
+     * แถว push token แบบที่ DevicesController สร้างจริง (ผูก Sanctum token ที่ใช้ลงทะเบียน)
+     */
+    private function pushToken(\App\Models\User $admin, string $token): AdminPushToken
+    {
+        $sanctum = $admin->createToken('device', ['admin']);
+
+        return AdminPushToken::query()->create([
+            'user_id' => $admin->id, 'access_token_id' => $sanctum->accessToken->id, 'token' => $token, 'platform' => 'android',
+        ]);
+    }
+
+    /**
+     * FCM ปลอม — คืน ArrayObject ของสิ่งที่ "ส่ง" (token, data, notification)
+     */
+    private function fakeFcm(): \ArrayObject
+    {
+        $sends = new \ArrayObject;
+        $fcm = Mockery::mock(FcmHttpV1Client::class);
+        $fcm->shouldReceive('isConfigured')->andReturn(true);
+        $fcm->shouldReceive('send')->andReturnUsing(function ($token, $data, $notification) use ($sends) {
+            $sends[] = compact('token', 'data', 'notification');
+
+            return new FcmSendResult(true, false, null, 200);
+        });
+        $this->app->instance(FcmHttpV1Client::class, $fcm);
+
+        return $sends;
     }
 
     public function test_fcm_client_classifies_dead_tokens_and_keeps_the_sms_checker_payload(): void
