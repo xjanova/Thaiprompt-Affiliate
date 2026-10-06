@@ -55,8 +55,7 @@ class SendCelticDelayedPrediction implements ShouldQueue
         public string $message,
         public string $platform,
         public string $userId,
-    ) {
-    }
+    ) {}
 
     public function handle(): void
     {
@@ -66,6 +65,11 @@ class SendCelticDelayedPrediction implements ShouldQueue
                 'reading_id' => $this->readingId,
             ]);
 
+            return;
+        }
+
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่เด้งสถานะ ไม่ส่ง (cron celtic-redeliver ตามส่งหลังจบเทคโอเวอร์)
+        if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
             return;
         }
 

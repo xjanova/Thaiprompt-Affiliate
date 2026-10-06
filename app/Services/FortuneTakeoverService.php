@@ -39,6 +39,11 @@ class FortuneTakeoverService
     protected const CUSTOMER_HANDOFF_COOLDOWN_SECONDS = 60;
 
     /**
+     * 🤫 (2026-10-06) เวลาขั้นต่ำของเทคโอเวอร์ที่แอดมินสั่งเองโดยไม่ระบุนาที
+     */
+    public const ADMIN_TAKEOVER_DEFAULT_MINUTES = 30;
+
+    /**
      * ดึง settings สดจาก singleton (ไม่ cache ใน instance — กัน Octane/Swoole stale)
      */
     protected function settings(): FortuneTellingSetting
@@ -64,14 +69,13 @@ class FortuneTakeoverService
             return false;
         }
 
-        // ถ้าปิดระบบไว้ → ไม่เทคโอเวอร์เลย (ป้องกันบอทหยุดโดยไม่ตั้งใจ)
-        if (! $this->settings()->isTakeoverEnabled()) {
-            return false;
-        }
+        // 🤫 (2026-10-06) สวิตช์ admin_handover_enabled คุมเฉพาะ "เทคโอเวอร์อัตโนมัติ" (ลูกค้าขอคุยกับคน)
+        //    เดิม: ปิดสวิตช์ = แม้แอดมินกดเทคโอเวอร์เองบอทก็ยังคุยแทรก → ตอนนี้แอดมินสั่งเองนับเสมอ
+        $autoEnabled = $this->settings()->isTakeoverEnabled();
 
-        // Fast path: เช็ค Cache ก่อน
+        // Fast path: เช็ค Cache ก่อน (เฉพาะตอนสวิตช์เปิด — ปิดอยู่ต้องรู้เหตุผลของเทคโอเวอร์จาก DB)
         $cacheKey = $reading->getTakeoverCacheKey();
-        if (Cache::has($cacheKey)) {
+        if ($autoEnabled && Cache::has($cacheKey)) {
             return true;
         }
 
@@ -79,7 +83,8 @@ class FortuneTakeoverService
         // refresh เพื่อให้ได้ค่าล่าสุด (ข้าม attribute cache ในอ็อบเจ็กต์)
         $reading->refresh();
 
-        $active = $reading->isAdminTakenOver();
+        $active = $reading->isAdminTakenOver()
+            && ($autoEnabled || $reading->admin_takeover_reason !== FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST);
 
         // ถ้า active + มีเวลาเหลือจริง → เติม cache (กัน stale cache)
         if ($active && $reading->admin_takeover_until) {
@@ -93,20 +98,17 @@ class FortuneTakeoverService
     }
 
     /**
-     * 🎯 (2026-05-17) ตรวจว่าควร bypass takeover หรือไม่ (DRY helper)
+     * 🤫 (2026-10-06, เจ้าของสั่ง) เทคโอเวอร์อยู่ = **ไม่มีอะไร bypass แล้ว** — คืน false เสมอ
      *
-     * ใช้แทน raw isActiveByPlatform() ในทุก webhook entry point เพื่อให้
-     * /aistop ไม่หยุด flow ที่ลูกค้ากำลังจ่ายเงิน / รับคำทำนาย
+     * เจ้าของ: "ถ้าเทคโอเวอร์คือแอดมินคุยแล้ว บอทต้องหยุดแทรกก่อน"
      *
-     * Return true = bypass (ดำเนิน flow ต่อ แม้ takeover active)
+     * ของเดิม (2026-05-17) ปล่อยผ่าน: กดปุ่ม / สถานะล็อก (จ่าย-กรอกข้อมูล-Celtic) / คำทำนายที่จ่ายแล้วรอส่ง /
+     * ข้อความอยากซื้อ ("39", "99", "ดูดวง") → บอทพูดแทรกแอดมินกลางบทสนทนา
+     * ของใหม่: ลูกค้าที่ถูกเทคโอเวอร์ → บอทเงียบสนิท (ข้อความขาเข้าถูกจด/park/เก็บสลิปที่ TakeoverIngress)
+     * ของที่จ่ายเงินแล้วไม่หาย — พักไว้ใน conversation_state.takeover_deferred แล้วส่งครั้งเดียวตอนจบเทคโอเวอร์
+     * (TakeoverResumeService) · คงเมธอดไว้ให้ 7 ด่านเดิมเรียกได้ (ด่านทั้งหมดจึงบล็อก)
      *
-     * Bypass logic:
-     *   1. $isExplicitAction = true (Quick Reply / Postback — กดปุ่ม)
-     *   2. มี locked state (กำลังจ่าย / กรอกข้อมูล / Celtic active)
-     *   3. paid + รอ delivery (deep_response saved รอ user ทัก)
-     *   4. ข้อความเป็น buying intent ("39", "99", "ดูดวง", "ราคา", ฯลฯ)
-     *
-     * @param  bool  $isExplicitAction  true ถ้ามาจาก Quick Reply / Postback
+     * @param  bool  $isExplicitAction  (ไม่ใช้แล้ว — กดปุ่มก็ไม่ bypass)
      */
     public function shouldBypassTakeover(
         string $platform,
@@ -114,34 +116,6 @@ class FortuneTakeoverService
         string $messageText = '',
         bool $isExplicitAction = false,
     ): bool {
-        if ($isExplicitAction) {
-            return true;
-        }
-
-        $platformColumn = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
-        $hasActiveFlow = FortuneReading::where($platformColumn, $platformUserId)
-            ->where(function ($q) {
-                $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
-                    ->orWhere(function ($sub) {
-                        $sub->where('is_paid', true)
-                            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                            ->whereNotNull('deep_response')
-                            ->where('deep_response', '!=', '');
-                    });
-            })
-            ->where('created_at', '>=', now()->subDays(7))
-            ->exists();
-
-        if ($hasActiveFlow) {
-            return true;
-        }
-
-        if ($messageText !== ''
-            && app(\App\Services\FortuneConversationService::class)->messageHasBuyingIntent($messageText)
-        ) {
-            return true;
-        }
-
         return false;
     }
 
@@ -155,47 +129,10 @@ class FortuneTakeoverService
      */
     public function isActiveByPlatform(string $platform, string $platformUserId): bool
     {
-        if (! $this->settings()->isTakeoverEnabled()) {
-            return false;
-        }
-
-        $cacheKey = "fortune_admin_active:{$platform}:{$platformUserId}";
-
-        // Fast path: Cache
-        if (Cache::has($cacheKey)) {
-            return true;
-        }
-
-        // ค้นหา reading ล่าสุดของ user นี้ (เฉพาะที่ยังเปิดอยู่)
-        $reading = FortuneReading::where(function ($q) use ($platform, $platformUserId) {
-            // Match platform ปกติ
-            $q->where(function ($sub) use ($platform, $platformUserId) {
-                $sub->where('platform', $platform)
-                    ->where('platform_user_id', $platformUserId);
-            });
-
-            // Legacy Facebook: rows เก่าอาจไม่มี platform/platform_user_id
-            // ให้ match facebook_user_id โดยไม่ filter platform (กัน legacy rows)
-            if ($platform === 'facebook') {
-                $q->orWhere('facebook_user_id', $platformUserId);
-            }
-        })
-            ->whereNotNull('admin_takeover_until')
-            ->where('admin_takeover_until', '>', now())
-            ->latest()
-            ->first();
-
-        if (! $reading) {
-            return false;
-        }
-
-        // เติม cache เฉพาะเมื่อ TTL > 0 (กัน stale true cache 1 วิ เมื่อเวลาหมดแล้ว)
-        $ttl = (int) now()->diffInSeconds($reading->admin_takeover_until, false);
-        if ($ttl > 0) {
-            Cache::put($cacheKey, true, $ttl);
-        }
-
-        return true;
+        // 🤫 (2026-10-06) ใช้ตัวเช็คกลางตัวเดียวกับชั้นส่ง (TakeoverSendGuard) — ทุกบิลของลูกค้าคนนี้
+        //    + เทคโอเวอร์ที่แอดมินสั่งเองนับเสมอแม้ปิดสวิตช์ admin_handover_enabled (สวิตช์คุมแค่แบบอัตโนมัติ)
+        //    DB เป็นความจริง (cache:clear แล้วยังถูก) · เช็คพัง = false (fail open ธรรมเนียมเดิม)
+        return \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $platformUserId);
     }
 
     // ============================================================
@@ -210,7 +147,7 @@ class FortuneTakeoverService
      * @param  int|null  $adminId  user_id ของแอดมิน (null ถ้ามาจากลูกค้า)
      * @param  int|null  $minutes  ระยะเวลา (นาที) — null = ใช้ default
      * @param  string|null  $messagePreview  ข้อความที่ trigger
-     * @return int  นาทีที่เทคโอเวอร์จริง
+     * @return int นาทีที่เทคโอเวอร์จริง
      */
     public function takeover(
         FortuneReading $reading,
@@ -243,7 +180,16 @@ class FortuneTakeoverService
         }
 
         // ใช้ default ถ้าไม่ระบุ
-        $minutes = $minutes ?: $this->settings()->getTakeoverDefaultMinutes();
+        // 🤫 (2026-10-06) แอดมินสั่งเอง (manual / พิมพ์ในกล่องแชท) ไม่ระบุนาที → อย่างน้อย 30 นาที
+        //    migration 2026_04_27_130000 ตั้ง admin_handover_timeout = 1 (นาที) — /aistop เลยหมดอายุใน 1 นาที
+        //    แล้วบอทกลับมาพูดแทรกแอดมิน · ค่าที่ตั้งไว้ยาวกว่า 30 ยังใช้ค่าที่ตั้ง (แอดมินตั้งใจ)
+        //    เทคโอเวอร์อัตโนมัติ (ลูกค้าขอคุยกับคน) ใช้ค่าตั้งเดิม
+        if (! $minutes) {
+            $configured = $this->settings()->getTakeoverDefaultMinutes();
+            $minutes = in_array($reason, [FortuneReading::TAKEOVER_REASON_MANUAL, FortuneReading::TAKEOVER_REASON_AUTO_REPLY], true)
+                ? max(self::ADMIN_TAKEOVER_DEFAULT_MINUTES, $configured)
+                : $configured;
+        }
         $minutes = max(1, min(1440, $minutes)); // 1 นาที - 24 ชั่วโมง
 
         $until = now()->addMinutes($minutes);
@@ -299,18 +245,24 @@ class FortuneTakeoverService
     /**
      * สั่งให้ AI กลับมาทำงาน
      *
-     * @param  FortuneReading  $reading
      * @param  int|null  $adminId  user_id ของแอดมิน (null ถ้า auto-expire)
      * @param  bool  $fromCommand  มาจากคำสั่ง /ai หรือปุ่ม
+     * @param  bool  $deliverDeferred  🤫 (2026-10-06) true = ส่งของที่จ่ายแล้วแต่ถูกพักไว้ระหว่างเทคโอเวอร์
+     *                                 false = แอดมินบอก "จัดการเองแล้ว ไม่ต้องส่ง" → ล้างรายการพักทิ้ง
      */
     public function resume(
         FortuneReading $reading,
         ?int $adminId = null,
         bool $fromCommand = false,
+        bool $deliverDeferred = true,
     ): void {
         // ถ้าไม่ได้เทคโอเวอร์อยู่ → ไม่ต้องทำอะไร
         $reading->refresh();
         if (empty($reading->admin_takeover_until)) {
+            // 🤫 ไม่มีเทคโอเวอร์บนบิลนี้แล้ว แต่อาจมีของที่พักค้าง (เช่น บิลอื่นของลูกค้าเพิ่งหมดเวลา)
+            //    → ให้ตัวส่งของที่พักไว้ตัดสินเอง (มันเช็คซ้ำว่าลูกค้ายังถูกเทคโอเวอร์อยู่ไหม)
+            \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, $deliverDeferred, $adminId);
+
             return;
         }
 
@@ -336,15 +288,17 @@ class FortuneTakeoverService
             'reading_id' => $reading->id,
             'admin_id' => $adminId,
             'from_command' => $fromCommand,
+            'deliver_deferred' => $deliverDeferred,
         ]);
+
+        // 🤫 (2026-10-06) ส่งของที่จ่ายแล้วแต่ถูกพักไว้ระหว่างเทคโอเวอร์ (ครั้งเดียว ตามลำดับ) — หรือล้างทิ้งถ้าแอดมินจัดการเองแล้ว
+        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, $deliverDeferred, $adminId);
     }
 
     /**
      * ต่อเวลาเทคโอเวอร์
      *
-     * @param  FortuneReading  $reading
      * @param  int  $minutes  เวลาที่ต้องการเพิ่ม
-     * @param  int|null  $adminId
      */
     public function extend(FortuneReading $reading, int $minutes, ?int $adminId = null): int
     {
@@ -394,6 +348,39 @@ class FortuneTakeoverService
         ]);
 
         return $minutes;
+    }
+
+    /**
+     * 🤫 (2026-10-06) แอดมินพิมพ์หาลูกค้า = แอดมินคุยอยู่ → ต้องอยู่ในเทคโอเวอร์ (บอทหยุดแทรก)
+     *
+     * - ยังไม่ได้เทคโอเวอร์ → เริ่มเทคโอเวอร์ (manual · force แม้ปิดสวิตช์ · ADMIN_TAKEOVER_DEFAULT_MINUTES)
+     * - เทคโอเวอร์อยู่แต่เหลือไม่ถึง ADMIN_TAKEOVER_DEFAULT_MINUTES → ต่อให้เหลืออย่างน้อยเท่านั้น
+     *   (แอดมินคุยต่อเนื่อง บอทต้องไม่โผล่กลับมากลางบทสนทนา)
+     *
+     * @return int นาทีที่เริ่ม/ต่อ (0 = ไม่ต้องทำอะไร)
+     */
+    public function ensureAdminTakeover(FortuneReading $reading, ?int $adminId = null, ?string $messagePreview = null): int
+    {
+        $reading->refresh();
+
+        if (! $reading->isAdminTakenOver()) {
+            return $this->takeover(
+                $reading,
+                FortuneReading::TAKEOVER_REASON_MANUAL,
+                $adminId,
+                null,
+                $messagePreview,
+                true,
+            );
+        }
+
+        $minimumSeconds = self::ADMIN_TAKEOVER_DEFAULT_MINUTES * 60;
+        $remaining = $reading->takeoverRemainingSeconds();
+        if ($remaining >= $minimumSeconds) {
+            return 0;
+        }
+
+        return $this->extend($reading, (int) ceil(($minimumSeconds - $remaining) / 60), $adminId);
     }
 
     /**
@@ -482,7 +469,7 @@ class FortuneTakeoverService
             // 2. Starts-with + word break (กัน substring กลางข้อความ)
             //    "ขอแม่หมอ" + space/punct → match
             //    "ขอแม่หมอดูดวง" → ไม่ match (ไม่มี boundary หลัง keyword)
-            $pattern = '/^' . preg_quote($k, '/') . '(\s|[!?,.ๆฯ]|$)/u';
+            $pattern = '/^'.preg_quote($k, '/').'(\s|[!?,.ๆฯ]|$)/u';
             if (preg_match($pattern, $lower) || preg_match($pattern, $normalized)) {
                 return true;
             }
@@ -578,20 +565,56 @@ class FortuneTakeoverService
     {
         $expired = FortuneReading::takeoverExpired()->get();
 
+        $count = 0;
         foreach ($expired as $reading) {
-            DB::transaction(function () use ($reading) {
-                $reading->update(['admin_takeover_until' => null]);
-
-                FortuneTakeoverLog::create([
-                    'fortune_reading_id' => $reading->id,
-                    'action' => FortuneTakeoverLog::ACTION_AUTO_EXPIRE,
-                    'platform' => $reading->platform,
-                ]);
-            });
-
-            $this->clearCaches($reading);
+            if ($this->expireOne($reading)) {
+                $count++;
+            }
         }
 
-        return $expired->count();
+        return $count;
+    }
+
+    /**
+     * ปิดเทคโอเวอร์ที่หมดเวลาแล้วของบิลเดียว + ส่งของที่พักไว้ (ใช้ทั้ง cron และ "ทักมาหลังหมดเวลา")
+     *
+     * 🔒 อัปเดตแบบมีเงื่อนไข (ยังหมดเวลาอยู่จริง) — cron กับ webhook ชนกันได้ ห้ามปิดซ้ำ/ส่งของซ้ำ
+     *    และห้ามปิดเทคโอเวอร์ที่แอดมินเพิ่งต่อเวลาเข้ามาระหว่างนั้น
+     *
+     * @return bool true = ปิดได้ (ตัวนี้เป็นคนปิด)
+     */
+    public function expireOne(FortuneReading $reading): bool
+    {
+        $closed = DB::transaction(function () use ($reading) {
+            $affected = FortuneReading::query()
+                ->whereKey($reading->id)
+                ->whereNotNull('admin_takeover_until')
+                ->where('admin_takeover_until', '<=', now())
+                ->update(['admin_takeover_until' => null]);
+
+            if ($affected === 0) {
+                return false;
+            }
+
+            FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'action' => FortuneTakeoverLog::ACTION_AUTO_EXPIRE,
+                'platform' => $reading->platform,
+            ]);
+
+            return true;
+        });
+
+        if (! $closed) {
+            return false;
+        }
+
+        $this->clearCaches($reading);
+        $reading->refresh();
+
+        // 🤫 (2026-10-06) หมดเวลา = จบเทคโอเวอร์ → ส่งของที่จ่ายแล้วแต่ถูกพักไว้ (ครั้งเดียว)
+        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, true, null);
+
+        return true;
     }
 }

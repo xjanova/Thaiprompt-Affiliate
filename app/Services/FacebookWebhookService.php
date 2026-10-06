@@ -314,6 +314,25 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     }
 
     /**
+     * 🚦 ด่านก่อนส่งของ 10 เมธอดส่ง (ข้อความ/รูป/เสียง/กำลังพิมพ์/ปุ่ม/เทมเพลต/สติกเกอร์/รีแอคชัน)
+     *
+     * 1. ผู้รับผิดช่องทาง (LINE/Telegram) → ตัดทิ้ง (isMisroutedLineRecipient)
+     * 2. 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → บอทห้ามส่งอะไรเลย
+     *    แอดมินตัวจริงส่งผ่าน TakeoverSendGuard::asHumanAdmin() — ห้ามใช้ option from_admin แยก
+     *    (from_admin = "ข้อความระบบแบบ push" ที่บอทอัตโนมัติตั้งไว้หลายสิบจุด)
+     *
+     * @return bool true = ห้ามส่ง caller ต้องคืน false/ออกทันที (ห้าม mark ว่าส่งแล้ว)
+     */
+    protected function shouldSkipSend(?string $recipientId, string $method = '', ?string $preview = null): bool
+    {
+        if ($this->isMisroutedLineRecipient($recipientId, $method)) {
+            return true;
+        }
+
+        return \App\Services\Fortune\TakeoverSendGuard::blocks('facebook', $recipientId, $method, $preview);
+    }
+
+    /**
      * 🏬 (2026-08-10) ระบบสาขา — กันส่งข้อความด้วย token ผิดเพจ
      *
      * เส้นทาง webhook/queue จะ bind สาขาไว้ให้แล้ว → เมธอดนี้คืนทันที ไม่เสีย query
@@ -377,7 +396,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__, $message)) {
             return false;
         }
 
@@ -632,7 +651,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 
@@ -1125,7 +1144,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendAudio(string $recipientId, string $audioUrl, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 
@@ -1250,7 +1269,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendTypingIndicator(string $recipientId, bool $on = true): void
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return;
         }
 
@@ -1322,7 +1341,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         // ⚠️ ทุกบรรทัดต้องอยู่ใน try — ผู้เรียก (ตัวเรนเดอร์ FB) มี catch ที่ "ส่งข้อความซ้ำเป็น fallback"
         //    ถ้า Cache/Redis โยน exception หลุดออกไป = ลูกค้าได้เมนูสองรอบเพราะของประดับชิ้นเดียว
         try {
-            if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
                 return false;
             }
 
@@ -1416,7 +1435,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendQuickReplies(string $recipientId, string $message, array $quickReplies, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__, $message)) {
             return false;
         }
 
@@ -4062,7 +4081,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 
@@ -4170,7 +4189,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendGenericTemplate(string $recipientId, array $elements, array $options = []): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 
@@ -4206,7 +4225,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendTemplateWithQuickReplies(string $recipientId, array $templatePayload, array $quickReplies): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 
@@ -4240,7 +4259,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     public function sendRichMessage(string $recipientId, array $richContent): bool
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
-        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+        if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
             return false;
         }
 

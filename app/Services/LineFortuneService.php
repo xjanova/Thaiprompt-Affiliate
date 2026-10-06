@@ -4385,6 +4385,11 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function showLoadingAnimation(string $userId, int $loadingSeconds = 20): bool
     {
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ห้ามโชว์ "กำลังพิมพ์" (ลูกค้าจะนึกว่าบอทกำลังตอบ)
+        if (\App\Services\Fortune\TakeoverSendGuard::blocks('line', $userId, __FUNCTION__)) {
+            return false;
+        }
+
         // Clamp เป็น multiple of 5 ระหว่าง 5-60
         $loadingSeconds = max(5, min(60, (int) (round($loadingSeconds / 5) * 5)));
 
@@ -4466,6 +4471,11 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     protected function pushMessagePriority(string $to, array $messages): bool
     {
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → บอทห้ามส่ง (ของที่จ่ายแล้วถูกพักไว้ส่งตอนเทคโอเวอร์จบ)
+        if (\App\Services\Fortune\TakeoverSendGuard::blocks('line', $to, __FUNCTION__, self::previewOf($messages))) {
+            return false;
+        }
+
         // 🛡️ (2026-07-24) กัน recipient ตัวเลขล้วน (FB PSID) เหมือน pushMessage —
         //   ยิง LINE ไม่ได้อยู่แล้ว (400) + priority push retry 2 ครั้ง = เปลืองเปล่า
         if (ctype_digit($to)) {
@@ -4586,6 +4596,11 @@ class LineFortuneService implements MessagingPlatformInterface
 
     protected function pushMessage(string $to, array $messages): bool
     {
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → บอทห้ามส่ง
+        if (\App\Services\Fortune\TakeoverSendGuard::blocks('line', $to, __FUNCTION__, self::previewOf($messages))) {
+            return false;
+        }
+
         // 🛡️ (2026-07-24) กัน recipient ที่ไม่ใช่ LINE userId (ตัวเลขล้วน = FB PSID)
         //   LINE userId/groupId/roomId ขึ้นต้น U/C/R + hex เสมอ — ตัวเลขล้วนยิงไปได้ 400
         //   "invalid to" อย่างเดียว (เคส reading platform เพี้ยน). ตัดตั้งแต่ต้น → ไม่เปลือง
@@ -4711,6 +4726,14 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function replyMessage(string $replyToken, array $messages): bool
     {
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → บอทห้ามตอบ — replyToken ถูกผูกกับเจ้าของที่หัว webhook
+        //    (TakeoverSendGuard::bindReplyToken) · token ที่ไม่รู้เจ้าของ = ปล่อยผ่าน (fail open)
+        $tokenOwner = \App\Services\Fortune\TakeoverSendGuard::replyTokenOwner($replyToken);
+        if ($tokenOwner !== null
+            && \App\Services\Fortune\TakeoverSendGuard::blocks($tokenOwner[0], $tokenOwner[1], __FUNCTION__, self::previewOf($messages))) {
+            return false;
+        }
+
         // ⚠️ ไม่มี circuit breaker สำหรับ reply — reply ฟรี ไม่นับ quota
         // ต้องลองส่งทุกครั้ง เพราะ timeout ครั้งก่อนไม่ได้หมายความว่าครั้งนี้จะ timeout
 
@@ -4749,6 +4772,26 @@ class LineFortuneService implements MessagingPlatformInterface
 
             return false;
         }
+    }
+
+    /**
+     * 🤫 ตัวอย่างข้อความ (ข้อความแรกที่เป็น text หรือ altText) — ไว้ในแชทล็อก "บอทงดส่ง" ของแอดมิน
+     */
+    protected static function previewOf(array $messages): ?string
+    {
+        foreach ($messages as $m) {
+            if (! is_array($m)) {
+                continue;
+            }
+            if (($m['type'] ?? '') === 'text' && ! empty($m['text'])) {
+                return (string) $m['text'];
+            }
+            if (! empty($m['altText'])) {
+                return (string) $m['altText'];
+            }
+        }
+
+        return null;
     }
 
     /**

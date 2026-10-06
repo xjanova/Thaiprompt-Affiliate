@@ -108,6 +108,11 @@ class SendBillReminderJob implements ShouldQueue
         if (empty($userId)) {
             return;
         }
+
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ทวงบิล (ไม่ mark stage — cron ปล่อยใหม่หลังจบเทคโอเวอร์)
+        if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+            return;
+        }
         $platform = $reading->platform
             ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 

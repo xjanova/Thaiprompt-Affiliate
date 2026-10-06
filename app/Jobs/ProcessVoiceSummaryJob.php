@@ -201,6 +201,13 @@ class ProcessVoiceSummaryJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ยังไม่ทำ TTS/ไม่ส่ง พักไว้ทำตอนจบเทคโอเวอร์ (ของที่จ่ายแล้ว)
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_VOICE_SUMMARY);
+
+            return;
+        }
+
         $reading->setConversationState('voice_summary_status', 'processing');
         $reading->setConversationState('voice_summary_started_at', now()->toIso8601String());
 

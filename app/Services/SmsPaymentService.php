@@ -1709,11 +1709,26 @@ class SmsPaymentService
             $celticResponse['message'] = $billConfirmHeader.($celticResponse['message'] ?? '');
 
             // 3. Push ผ่าน channel manager (ใช้ POST_PURCHASE_UPDATE tag)
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ตัดบิล/เปลี่ยนสถานะ/คอมมิชชั่นเหมือนเดิมทุกอย่าง
+            //    แต่กล่อง "ตัดบิล + เริ่มเปิดไพ่" ถูกพักไว้ส่งตอนจบเทคโอเวอร์ + แจ้งแอดมิน (ไม่ใช่โควตาลูกค้า)
             $channelManager = new FortuneChannelManager($settings);
-            $pushSent = $channelManager->sendResponse($platform, $userId, $celticResponse, [
+            $celticSendOptions = [
                 'from_admin' => true,
                 'message_tag' => 'POST_PURCHASE_UPDATE',
-            ]);
+            ];
+            if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $userId)) {
+                $reading->refresh();
+                \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                    $reading,
+                    \App\Services\Fortune\TakeoverResumeService::ITEM_CELTIC_START,
+                    'Celtic 99 — กล่องตัดบิล + เริ่มเปิดไพ่',
+                    $celticResponse,
+                    $celticSendOptions
+                );
+                $pushSent = false;
+            } else {
+                $pushSent = $channelManager->sendResponse($platform, $userId, $celticResponse, $celticSendOptions);
+            }
 
             Log::info('SMS Payment (Celtic): push เริ่มเปิดไพ่ สำเร็จ', [
                 'reading_id' => $reading->id,
@@ -1865,6 +1880,7 @@ class SmsPaymentService
             //              webhook return ทันที, job retry backoff 10s/30s ใน background
             $channelManager = new FortuneChannelManager($settings);
             $pushSent = false;
+            $deferredForTakeover = false;
 
             try {
                 // 🔁 (2026-06-08) ถ้า reuse วันเกิด → ส่ง action ตั้งจิตเปิดไพ่ + ปุ่ม "พร้อมเปิดไพ่"
@@ -1883,10 +1899,26 @@ class SmsPaymentService
                     $pushPayload['show_quick_replies'] = true;
                 }
 
-                $pushSent = $channelManager->sendResponse($platform, $userId, $pushPayload, [
+                $payFirstSendOptions = [
                     'from_admin' => true,
                     'message_tag' => 'POST_PURCHASE_UPDATE',
-                ]);
+                ];
+
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ตัดบิล/เปลี่ยนสถานะเหมือนเดิม แต่กล่องขอวันเกิดถูกพักไว้
+                //    ส่งตอนจบเทคโอเวอร์ (ไม่ dispatch RetryPayFirstPushJob — ไม่เผาตัวนับ retry ระหว่างเทคโอเวอร์)
+                if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $userId)) {
+                    $reading->refresh();
+                    \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                        $reading,
+                        \App\Services\Fortune\TakeoverResumeService::ITEM_PAYFIRST_BIRTHDATE,
+                        'Deep 39 (จ่ายก่อน) — กล่องขอวันเกิด/ตั้งจิต',
+                        $pushPayload,
+                        $payFirstSendOptions
+                    );
+                    $deferredForTakeover = true;
+                } else {
+                    $pushSent = $channelManager->sendResponse($platform, $userId, $pushPayload, $payFirstSendOptions);
+                }
             } catch (\Throwable $pushErr) {
                 Log::warning('SMS Payment (Pay-First): push inline fail — จะ dispatch async job', [
                     'reading_id' => $reading->id,
@@ -1894,7 +1926,9 @@ class SmsPaymentService
                 ]);
             }
 
-            if ($pushSent) {
+            if ($deferredForTakeover) {
+                // พักไว้แล้ว — ไม่ต้อง retry
+            } elseif ($pushSent) {
                 // mark resent_at เพื่อ scheduler dedup
                 $reading->setConversationState('birthdate_resent_at', now()->toIso8601String());
             } else {

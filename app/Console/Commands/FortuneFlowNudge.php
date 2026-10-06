@@ -143,6 +143,13 @@ class FortuneFlowNudge extends Command
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ไม่ nudge/ไม่ปิดเมนู/ไม่ส่ง (ทิ้งเลย ไม่พัก — เป็นของชวนซื้อ)
+        if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+            $stats['skip']++;
+
+            return;
+        }
+
         // marker ต้องมี (กัน reading เก่าก่อนมีฟีเจอร์ — ไม่แตะ)
         $shownAtRaw = $reading->getConversationState($anchorKey);
         if (empty($shownAtRaw)) {

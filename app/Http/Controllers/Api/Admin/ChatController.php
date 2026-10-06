@@ -53,22 +53,56 @@ class ChatController extends Controller
             ], 422);
         }
 
+        // 🤫 (2026-10-06) แอดมินพิมพ์หาลูกค้า = แอดมินคุยอยู่ → เริ่ม/ต่อเทคโอเวอร์ให้เหมือนแผงเว็บ (บอทหยุดแทรก)
+        //    ไม่ได้ส่ง reading_id มา → ใช้บิลล่าสุดของลูกค้าคนนี้ (เทคโอเวอร์ผูกกับบิล แต่ด่านนับทุกบิลของคนนั้น)
+        $takeoverMinutes = 0;
+        try {
+            $reading ??= FortuneReading::query()
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                })
+                ->orderByDesc('id')
+                ->first();
+
+            if ($reading) {
+                $takeoverMinutes = app(FortuneTakeoverService::class)
+                    ->ensureAdminTakeover($reading, $request->user()?->id, $data['text']);
+            }
+        } catch (Throwable $e) {
+            Log::warning('AdminChat: เริ่ม/ต่อเทคโอเวอร์ก่อนส่งไม่สำเร็จ (ยังส่งข้อความต่อ)', [
+                'error' => SafeLog::exceptionMessage($e),
+                'platform' => $platform,
+                'platform_user_id' => $userId,
+            ]);
+        }
+
         try {
             // ✈️ (2026-09-13) Telegram → TelegramFortuneService (เดิมทุกอย่างที่ไม่ใช่ line ยิงเข้า Facebook)
-            $ok = match ($platform) {
+            // 🤫 (2026-10-06) ส่งในนาม "แอดมินตัวจริง" — ด่านเทคโอเวอร์ชั้นส่งไม่บล็อก (ห้ามใช้ from_admin แทน)
+            $ok = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => match ($platform) {
                 'line' => $this->lineService->sendMessage($userId, $data['text']),
                 'telegram' => (new \App\Services\TelegramFortuneService)->sendMessage($userId, $data['text']),
                 default => $this->fbService->sendMessage($userId, $data['text']),
-            };
+            });
 
             Log::info('AdminChat: operator message sent', [
                 'admin_id' => $request->user()?->id,
                 'platform' => $platform,
                 'platform_user_id' => $userId,
-                'reading_id' => $data['reading_id'] ?? null,
+                'reading_id' => $reading?->id ?? ($data['reading_id'] ?? null),
                 'text_preview' => mb_substr($data['text'], 0, 80),
                 'delivered' => $ok,
+                'takeover_minutes' => $takeoverMinutes,
             ]);
+
+            // บันทึก audit เหมือนแผงเว็บ (FortuneTakeoverController::sendMessage)
+            if ($ok && $reading && $request->user()?->id) {
+                try {
+                    app(FortuneTakeoverService::class)->logMessage($reading, (int) $request->user()->id, $data['text']);
+                } catch (Throwable $auditErr) {
+                    // audit เป็น best-effort
+                }
+            }
 
             // 💬 (2026-06-19) Mirror the operator's reply into the realtime chat
             //    log so it shows in the warroom transcript immediately (this path
@@ -101,6 +135,8 @@ class ChatController extends Controller
                 }
             }
 
+            $reading?->refresh();
+
             return response()->json([
                 'success' => (bool) $ok,
                 'data' => [
@@ -108,6 +144,11 @@ class ChatController extends Controller
                     'platform_user_id' => $userId,
                     'delivered' => (bool) $ok,
                     'at' => now()->toIso8601String(),
+                    // 🤫 (2026-10-06) ส่งข้อความ = เทคโอเวอร์อัตโนมัติ — แอปใช้อัปเดตแถบ "แอดมินคุยอยู่"
+                    'reading_id' => $reading?->id,
+                    'is_takeover' => (bool) $reading?->isAdminTakenOver(),
+                    'takeover_until' => optional($reading?->admin_takeover_until)->toIso8601String(),
+                    'remaining_minutes' => $reading?->isAdminTakenOver() ? $reading->takeoverRemainingMinutes() : 0,
                 ],
                 'message' => $ok ? 'sent' : 'platform service rejected',
             ], $ok ? 200 : 502);
@@ -352,6 +393,9 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'reading_id' => 'required|integer|exists:fortune_readings,id',
+            // 🤫 (2026-10-06) true (ค่าเริ่มต้น) = ให้บอทส่งของที่จ่ายแล้วซึ่งถูกพักไว้ระหว่างเทคโอเวอร์
+            //    false = "จัดการเองแล้ว ไม่ต้องส่ง" → ล้างรายการพัก + ตั้งธงว่าส่งแล้ว (cron ไม่ตามส่งซ้ำ)
+            'deliver_deferred' => 'nullable|boolean',
         ]);
 
         $reading = FortuneReading::find($data['reading_id']);
@@ -360,13 +404,20 @@ class ChatController extends Controller
         }
 
         try {
-            $takeover->resume($reading, $request->user()?->id, true);
+            ['platform' => $platform, 'user_id' => $uid] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
+            $deferredBefore = \App\Services\Fortune\TakeoverResumeService::deferredFor($platform, $uid);
+            $deliver = (bool) ($data['deliver_deferred'] ?? true);
+
+            $takeover->resume($reading, $request->user()?->id, true, $deliver);
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'reading_id' => $reading->id,
                     'is_takeover' => false,
+                    'deliver_deferred' => $deliver,
+                    // ของที่พักไว้ ณ ตอนกดคืนงาน — ส่งตามลำดับ (deliver_deferred=true) หรือถูกล้างทิ้ง (false)
+                    'deferred' => $deferredBefore,
                 ],
                 'message' => 'bot resumed',
             ]);
@@ -399,6 +450,7 @@ class ChatController extends Controller
         }
 
         $active = $takeover->isActive($reading);
+        ['platform' => $platform, 'user_id' => $uid] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
 
         return response()->json([
             'success' => true,
@@ -407,6 +459,8 @@ class ChatController extends Controller
                 'is_takeover' => $active,
                 'until' => optional($reading->admin_takeover_until)->toIso8601String(),
                 'remaining_minutes' => $active ? $reading->takeoverRemainingMinutes() : 0,
+                // 🤫 (2026-10-06) ของที่ลูกค้าจ่ายแล้วแต่บอทพักไว้ระหว่างเทคโอเวอร์ (ส่งตอนคืนงาน)
+                'deferred' => \App\Services\Fortune\TakeoverResumeService::deferredFor($platform, $uid),
             ],
         ]);
     }

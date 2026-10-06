@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\TakeoverResumeService;
+use App\Services\Fortune\TakeoverSendGuard;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Console\Command;
@@ -103,6 +105,14 @@ class FortuneCheckPendingReadings extends Command
         $skipped = 0;
 
         foreach ($pendingReadings as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้ามทั้งบิล (ไม่ส่งกล่องขอโทษ/รอ ไม่เพิ่ม auto_retry_count
+            //    ไม่ dispatch AI) — จบเทคโอเวอร์แล้วรอบถัดไปค่อยทำตามปกติ
+            if (TakeoverSendGuard::readingIsTakenOver($reading)) {
+                $skipped++;
+
+                continue;
+            }
+
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
@@ -317,6 +327,20 @@ class FortuneCheckPendingReadings extends Command
         $flagged = 0;
 
         foreach ($unsentReadings as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ส่ง ไม่จับล็อก ไม่เพิ่ม phase2_notify_retry_count
+            //    พักคำทำนายไว้ส่งครั้งเดียวตอนจบเทคโอเวอร์ (TakeoverResumeService)
+            if (TakeoverSendGuard::readingIsTakenOver($reading)) {
+                if (! $isDryRun && ! empty($reading->deep_response)) {
+                    TakeoverResumeService::deferPaid(
+                        $reading,
+                        TakeoverResumeService::ITEM_DEEP_READING,
+                        'Deep 39 — คำทำนายพร้อมแล้ว'
+                    );
+                }
+
+                continue;
+            }
+
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
 

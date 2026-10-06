@@ -300,6 +300,17 @@ class TelegramFortuneWebhookController extends Controller
         $caption = trim((string) ($message['caption'] ?? ''));
         $messageType = $this->messageTypeOf($message);
 
+        // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์อยู่ → บอทเงียบสนิทก่อนทุกด่าน (รวม /start ที่ส่งเมนูต้อนรับ)
+        //    ข้อความจดแชทล็อก + park + เก็บรูปเงียบ ๆ ที่ TakeoverIngress — ของที่จ่ายแล้วส่งตอนจบเทคโอเวอร์
+        $ingressFileId = $messageType === 'image' ? $this->imageFileId($message) : null;
+        if (\App\Services\Fortune\TakeoverIngress::intercept(FortuneRecipient::PLATFORM_TELEGRAM, $userId, [
+            'kind' => $messageType === 'other' ? 'other' : $messageType,
+            'text' => $messageType === 'image' ? $caption : $text,
+            'image_fetcher' => $ingressFileId ? fn () => $this->telegram->downloadFileAsBase64($ingressFileId) : null,
+        ])) {
+            return;
+        }
+
         // 🧭 คำสั่ง /start /menu /help — แปลงก่อนเข้าด่าน (เป็น "การกดปุ่ม" ของ Telegram)
         if ($messageType === 'text' && str_starts_with($text, '/')) {
             $text = $this->translateCommand($userId, $text);
@@ -525,6 +536,15 @@ class TelegramFortuneWebhookController extends Controller
 
         $this->telegram->rememberProfile($userId, (array) ($callback['from'] ?? []));
         $this->telegram->clearBlocked($userId);
+
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → กดปุ่มไม่ทำงาน บอทเงียบ (answerCallbackQuery ข้างบนยิงไปแล้ว — ไม่ใช่ข้อความในแชท)
+        if (\App\Services\Fortune\TakeoverIngress::intercept(FortuneRecipient::PLATFORM_TELEGRAM, $userId, [
+            'kind' => 'callback',
+            'title' => $title,
+            'payload' => $data,
+        ])) {
+            return;
+        }
 
         // 🔐 ปุ่มที่กดต้อง "มีอยู่จริง" บนข้อความนั้น — client ดัดแปลง (MTProto) ยิง callback_data อะไรก็ได้
         //    ถ้าไม่ตรวจ ข้อความใดก็ได้จะวิ่งเข้าสมองแบบ "กดปุ่ม" = ข้ามด่าน /aistop + ด่านสแปม

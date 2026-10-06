@@ -53,6 +53,17 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
     /** ไฟล์ที่ยอมอัปโหลดตรงจากดิสก์ / ดาวน์โหลดจาก Telegram */
     protected const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * 🤫 (2026-10-06) เมธอด Bot API ที่ "ไปโผล่ในแชทลูกค้า" — ถูกด่านเทคโอเวอร์บล็อก
+     * (answerCallbackQuery / getChat / getFile / setWebhook ฯลฯ ไม่อยู่ในนี้ = ยิงได้ตามปกติ)
+     */
+    public const TAKEOVER_GUARDED_METHODS = [
+        'sendMessage', 'sendPhoto', 'sendVoice', 'sendAudio', 'sendDocument', 'sendVideo',
+        'sendAnimation', 'sendSticker', 'sendMediaGroup', 'sendChatAction', 'setMessageReaction',
+        'editMessageText', 'editMessageCaption', 'editMessageMedia', 'editMessageReplyMarkup',
+        'copyMessage', 'forwardMessage',
+    ];
+
     protected FortuneTellingSetting $settings;
 
     protected string $token = '';
@@ -96,6 +107,18 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
     {
         if (! $this->isConfigured()) {
             return ['ok' => false, 'error_code' => 0, 'description' => 'telegram_not_configured'];
+        }
+
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → บอทห้ามส่ง/แก้ข้อความ/โชว์กำลังพิมพ์
+        //    ⚠️ answerCallbackQuery ยังยิงได้ (ปิดวงกลมหมุนบนปุ่ม — ไม่ใช่ข้อความในแชท)
+        //    คืนรูปเดียวกับ error ของ API → ผู้เรียกทุกตัวเห็น ok=false แล้วไม่ mark ว่าส่งแล้ว
+        if (in_array($method, self::TAKEOVER_GUARDED_METHODS, true) && isset($params['chat_id'])) {
+            $guardUserId = FortuneRecipient::telegramUserId(is_scalar($params['chat_id']) ? (string) $params['chat_id'] : '');
+            $preview = isset($params['text']) ? (string) $params['text'] : (isset($params['caption']) ? (string) $params['caption'] : null);
+            if ($guardUserId !== ''
+                && \App\Services\Fortune\TakeoverSendGuard::blocks(FortuneRecipient::PLATFORM_TELEGRAM, $guardUserId, $method, $preview)) {
+                return ['ok' => false, 'error_code' => 0, 'description' => 'admin_takeover_active'];
+            }
         }
 
         $url = self::API_BASE.'/bot'.$this->token.'/'.$method;

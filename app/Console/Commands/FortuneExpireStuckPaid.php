@@ -189,6 +189,15 @@ class FortuneExpireStuckPaid extends Command
 
         foreach ($deepStuck->merge($celticStuck) as $reading) {
             try {
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ = มีคนดูแลบิลนี้อยู่ → ห้ามนับ 24 ชม. จนตั้งธง admin_review_alerted
+                //    (ธงนั้นทำให้บิลที่จ่ายแล้วหลุดจาก "จ่ายแล้วต้องกู้ต่อเสมอ") — จบเทคโอเวอร์แล้วค่อยนับต่อ
+                //    + เทคโอเวอร์เพิ่งเริ่มใน 24 ชม. นี้ (จบไปแล้วก็ตาม) → ให้เวลาบอทส่งของที่พักไว้อีกรอบเต็ม ๆ
+                //      (เวลาที่แอดมินถือบทสนทนาไว้ไม่ควรนับเป็นเวลา "บิลค้าง")
+                if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)
+                    || \App\Services\Fortune\TakeoverSendGuard::hadTakeoverSince($reading, now()->subHours(24))) {
+                    continue;
+                }
+
                 $this->processOne($reading, $channelManager, $alertService);
                 $alerted++;
                 $processedReadingIds[] = $reading->id; // 🩹 (Batch 8) collect ตัวที่ process ผ่าน

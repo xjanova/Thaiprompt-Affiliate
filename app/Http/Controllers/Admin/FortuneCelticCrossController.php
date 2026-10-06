@@ -267,10 +267,11 @@ class FortuneCelticCrossController extends Controller
                         ."═══════════════════════\n\n"
                         .($response['message'] ?? '');
 
-                    $channelManager->sendResponse($platform, $userId, $response, [
+                    // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+                    \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, $userId, $response, [
                         'from_admin' => true,
                         'message_tag' => 'POST_PURCHASE_UPDATE',
-                    ]);
+                    ]));
                 }
             }
 
@@ -349,7 +350,8 @@ class FortuneCelticCrossController extends Controller
                     $channelManager = new FortuneChannelManager($settings);
 
                     $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
-                    $channelManager->sendResponse($platform, $userId, [
+                    // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+                    \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, $userId, [
                         'action' => 'celtic_cancelled',
                         'message' => "🙏 *แอดมินยกเลิกบิลให้แล้วค่ะ คุณ{$name}*\n\n"
                             ."📋 บิล: {$billRef}\n\n"
@@ -359,7 +361,7 @@ class FortuneCelticCrossController extends Controller
                     ], [
                         'from_admin' => true,
                         'message_tag' => 'POST_PURCHASE_UPDATE',
-                    ]);
+                    ]));
                 }
             }
 
@@ -609,7 +611,8 @@ class FortuneCelticCrossController extends Controller
                 $channelManager = new FortuneChannelManager($settings);
                 $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
 
-                $channelManager->sendResponse($platform, (string) $userId, [
+                // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+                \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, (string) $userId, [
                     'action' => 'celtic_restored',
                     'message' => "🌙✨ *แม่หมอจันทรากลับมาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
                         ."🙏 แอดมินเปิดประตูพลังกลับให้แล้ว — เจ้าชะตาคุยต่อกับแม่หมอได้เลย\n\n"
@@ -620,7 +623,7 @@ class FortuneCelticCrossController extends Controller
                 ], [
                     'from_admin' => true,
                     'message_tag' => 'POST_PURCHASE_UPDATE',
-                ]);
+                ]));
             }
 
             Log::info('Celtic admin restore active chat', [
@@ -775,14 +778,15 @@ class FortuneCelticCrossController extends Controller
                         ."💬 พิมพ์คำถามต่อมาได้เลยค่ะ แม่หมอรอฟังอยู่ ✨\n\n"
                         .'🛑 หรือพิมพ์ *"ยุติการทำนาย"* เมื่อพอใจแล้วนะคะ';
 
-                    $pushed = (bool) $channelManager->sendResponse($platform, (string) $userId, [
+                    // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+                    $pushed = (bool) \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, (string) $userId, [
                         'action' => 'celtic_time_extended',
                         'message' => $msg,
                         'reading' => $reading,
                     ], [
                         'from_admin' => true,
                         'message_tag' => 'POST_PURCHASE_UPDATE',
-                    ]);
+                    ]));
                     $pushNote = $pushed ? ' + แจ้งลูกค้าแล้ว ✓' : ' (push ล้มเหลว — ลูกค้าจะเห็นตอนทักกลับ)';
                 }
             }
@@ -933,7 +937,8 @@ class FortuneCelticCrossController extends Controller
         }
 
         $service = new CelticCrossService($settings);
-        $result = $service->askQuestionAsAdmin($reading, $validated['question']);
+        // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+        $result = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $service->askQuestionAsAdmin($reading, $validated['question']));
 
         $result['platform'] = $platform;
 

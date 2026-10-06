@@ -1947,6 +1947,12 @@ class FortuneReading extends Model
 
         foreach ($expiredReadings as $reading) {
             try {
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ (อาจกำลังพาจ่ายเงิน) → ยังไม่ปิดบิล/ไม่ส่งคำเตือน
+                //    จบเทคโอเวอร์แล้วรอบถัดไปค่อยปิดตามปกติ (ถ้ายังไม่จ่าย)
+                if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                    continue;
+                }
+
                 // 1. ยกเลิก UniquePaymentAmount (ถ้ายัง reserved)
                 $upa = $reading->uniquePaymentAmount;
                 if ($upa && $upa->status === 'reserved') {

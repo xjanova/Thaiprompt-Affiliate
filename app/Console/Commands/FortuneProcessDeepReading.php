@@ -174,6 +174,22 @@ class FortuneProcessDeepReading extends Command
             // เนื้อหาจริงจะส่งผ่าน replyMessage เมื่อ user ตอบกลับ (ฟรี!)
             // ถ้า push ล้มเหลว (หมดโควต้า) → user ส่งข้อความมาก็จะได้รับแจ้งผ่าน replyMessage
             $reading->refresh();
+
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → คำทำนายเก็บ DB แล้ว แต่ "ยังไม่ส่ง"
+            //    พักไว้ส่งตอนจบเทคโอเวอร์ — ข้ามก่อนจับล็อก/เพิ่ม retry_count (ไม่งั้นนับครบ 3 แล้วไม่มีใครส่งอีก)
+            if (! empty($reading->deep_response) && ! empty($userId)
+                && ! $reading->getConversationState('reading_sent_directly', false)
+                && \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $userId)) {
+                \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                    $reading,
+                    \App\Services\Fortune\TakeoverResumeService::ITEM_DEEP_READING,
+                    'Deep 39 — คำทำนายพร้อมแล้ว'
+                );
+                $this->info("🤫 FortuneReading #{$readingId} แอดมินเทคโอเวอร์อยู่ — พักคำทำนายไว้ส่งตอนคืนงาน");
+
+                return self::SUCCESS;
+            }
+
             if (! empty($reading->deep_response) && ! empty($userId)) {
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
                 $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);

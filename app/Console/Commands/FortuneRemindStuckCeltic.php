@@ -100,6 +100,11 @@ class FortuneRemindStuckCeltic extends Command
             //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
             \App\Services\Fortune\FortunePageContext::forget();
 
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                continue;
+            }
+
             $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
 
             // กัน duplicate: ถ้าเคย remind แล้ว skip

@@ -483,6 +483,13 @@ class FortuneChannelManager
         //   ตั้งตรงนี้ = ครอบทุก reading ที่ถูกสร้างจาก redirect helper ให้ platform ตรงกับ id จริง
         $this->conversationService->setPlatform($platform);
 
+        // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → บอทห้ามส่งอะไรเลย
+        //    คืน false = "ไม่ได้ส่ง" → ผู้เรียกต้องไม่ mark ว่าส่งแล้ว (ของที่จ่ายแล้วถูกพักไว้ส่งตอนจบเทคโอเวอร์)
+        //    ด่านชั้นส่งของแต่ละแพลตฟอร์มบล็อกซ้ำอีกชั้นอยู่แล้ว — ตรงนี้ตัดก่อนเสีย query/เรนเดอร์
+        if (\App\Services\Fortune\TakeoverSendGuard::blocks($platform, $userId, 'sendResponse:'.$action, $message !== '' ? $message : null)) {
+            return false;
+        }
+
         // ✅ Silent skip actions — ข้ามเงียบๆ ไม่ส่งข้อความตอบใดๆ
         // 🩹 (2026-05-08) เพิ่ม smart_skip / silent_skip / silent_warning
         //   เดิม fall through ไป default ทำให้ส่ง "ระบบกำลังดำเนินการ 🙏" — ตรงข้ามกับ intent

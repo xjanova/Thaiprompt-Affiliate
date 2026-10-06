@@ -202,13 +202,22 @@ class FortuneRecipientRoutingTest extends TestCase
 
             $checked++;
 
-            if (! str_contains($body, 'isMisroutedLineRecipient(')) {
+            // 🤫 (2026-10-06) ด่านก่อนส่งถูกรวมเป็น shouldSkipSend() = isMisroutedLineRecipient + ด่านเทคโอเวอร์
+            if (! str_contains($body, 'isMisroutedLineRecipient(') && ! str_contains($body, 'shouldSkipSend(')) {
                 $missing[] = $name;
             }
         }
 
         $this->assertGreaterThan(0, $checked, 'หาเมธอดที่ยิง Graph API ด้วย $recipientId ไม่เจอ — regex ผิดหรือโค้ดถูกรื้อ');
         $this->assertSame([], $missing, 'ทางส่งเหล่านี้ยังไม่มีด่านกัน LINE uid: '.implode(', ', $missing));
+
+        // ตัวรวมด่านต้องยังเรียกด่านกัน LINE uid จริง (และด่านเทคโอเวอร์)
+        $wrapper = $source;
+        $start = strpos($wrapper, 'protected function shouldSkipSend(');
+        $this->assertNotFalse($start, 'ไม่พบ shouldSkipSend()');
+        $wrapperBody = substr($wrapper, $start, 600);
+        $this->assertStringContainsString('isMisroutedLineRecipient(', $wrapperBody);
+        $this->assertStringContainsString('TakeoverSendGuard::blocks(', $wrapperBody);
     }
 
     /**

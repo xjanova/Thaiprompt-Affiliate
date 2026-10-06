@@ -367,7 +367,8 @@ class FortuneReadingsController extends Controller
 
         // สร้างแบบเดียวกับทุกจุดในระบบ (Celtic admin / job) — ผูก settings ชุดปัจจุบันชัดเจน
         $service = new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings());
-        $result = $service->answerProSessionAsAdmin($reading, $validated['question'], auth()->id());
+        // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+        $result = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $service->answerProSessionAsAdmin($reading, $validated['question'], auth()->id()));
 
         return response()->json($result);
     }
@@ -493,7 +494,8 @@ class FortuneReadingsController extends Controller
                 try {
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
-                        $platformService->sendImage($userId, $reading->reading_image_url);
+                        // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+                        \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $platformService->sendImage($userId, $reading->reading_image_url));
                         usleep(500000); // รอ 0.5 วินาที
                     }
                 } catch (\Exception $imgErr) {
@@ -504,10 +506,11 @@ class FortuneReadingsController extends Controller
             }
 
             // ส่งคำทำนายเชิงลึก
-            $channelManager->sendResponse($platform, $userId, [
+            // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+            \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, $userId, [
                 'action' => 'resend',
                 'message' => $reading->deep_response,
-            ], ['from_admin' => true]);
+            ], ['from_admin' => true]));
 
             // อัพเดท status เป็น completed ถ้ายังไม่ได้
             if ($reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {

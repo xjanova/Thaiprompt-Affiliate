@@ -89,6 +89,16 @@ class FortuneCelticSummaryRedeliver extends Command
             //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
             \App\Services\Fortune\FortunePageContext::forget();
 
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                if (! (bool) $reading->getConversationState('celtic_summary_delivered', false)) {
+                    \App\Services\Fortune\TakeoverResumeService::deferPaid($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_CELTIC_SUMMARY, 'Celtic 99 — บทสรุปรอส่ง');
+                }
+                $skipped++;
+
+                continue;
+            }
+
             $tag = "reading {$reading->id} (".($reading->bill_reference ?? $reading->order_number ?? '-').')';
 
             // ส่งไปแล้ว → ไม่ต้องส่งซ้ำ (โหมดมือก็ห้ามยิงซ้ำ — ลูกค้าจะเห็นบทสรุป 2 รอบ)

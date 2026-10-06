@@ -193,6 +193,17 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่เรียก AI ไม่หยิบของ (ไม่ take สำเนาคำถาม — rule_settle_buffer)
+        //    แอดมินคุยเรื่องนี้แทนแล้ว → ไม่ตอบซ้ำตอนจบเทคโอเวอร์ แต่พักกล่อง "แม่หมอกลับมาแล้ว ถามต่อได้เลย" ไว้
+        if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+            \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_CELTIC_RESUME);
+            Log::info('ProcessBufferedCelticMessageJob: แอดมินเทคโอเวอร์อยู่ — ไม่ตอบ (พักกล่องถามต่อไว้)', [
+                'reading_id' => $this->readingId,
+            ]);
+
+            return;
+        }
+
         // 🔢 (2026-09-12 FTU-260912-J8005) โหมดรอคิว — ข้อก่อนหน้ายังตอบ/ส่งไม่เสร็จ → ยังไม่หยิบของ
         //   นัดตัวเองมาดูใหม่ทุก IDLE_RECHECK_SECONDS จนกว่าข้อก่อนหน้าจะส่งครบทุกกล่อง
         //   ต้องเช็ค "มีของรอ" ก่อน — job อื่นอาจ flush ไปแล้ว ห้ามนัดวนเปล่า ๆ

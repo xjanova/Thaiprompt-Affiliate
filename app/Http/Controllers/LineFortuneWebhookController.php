@@ -142,12 +142,68 @@ class LineFortuneWebhookController extends Controller
             'source' => $event['source'] ?? null,
         ]);
 
+        // 🤫 (2026-10-06) ผูก replyToken → เจ้าของ เพื่อให้ replyMessage() รู้ว่ากำลังตอบใคร (ด่านเทคโอเวอร์ชั้นส่ง)
+        $eventUserId = $event['source']['userId'] ?? null;
+        \App\Services\Fortune\TakeoverSendGuard::bindReplyToken($event['replyToken'] ?? null, 'line', $eventUserId);
+
+        // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์อยู่ → บอทเงียบสนิทก่อนทุกด่าน/ทุก flow
+        //    (กลับทิศ 2026-05-17 ที่ปล่อยปุ่ม/flow จ่ายเงินผ่าน) — ข้อความจดแชทล็อก + park + เก็บรูปเงียบ ๆ
+        //    ⚠️ ไม่เผา replyToken ตรงนี้ — ไม่มีอะไรส่ง (unfollow ไม่มีอะไรส่งอยู่แล้ว ปล่อยผ่าน)
+        if (in_array($eventType, ['message', 'postback', 'follow'], true)
+            && \App\Services\Fortune\TakeoverIngress::intercept('line', $eventUserId, $this->takeoverIngressPayload($event))) {
+            // ฝาก token ที่ไม่ได้ใช้ไว้ ~55 วิ — แอดมินคืนงานทันเวลา = กล่อง "ทำต่อได้เลย" ตอบฟรีแทน push
+            if ($eventUserId && ! empty($event['replyToken'])) {
+                \App\Services\Fortune\ReplyTokenVault::remember('line', $eventUserId, $event['replyToken']);
+            }
+
+            return;
+        }
+
         match ($eventType) {
             'message' => $this->handleMessageEvent($event),
             'follow' => $this->handleFollowEvent($event),
             'unfollow' => $this->handleUnfollowEvent($event),
             'postback' => $this->handlePostbackEvent($event),
             default => Log::debug('LINE Webhook: Unhandled event type', ['type' => $eventType]),
+        };
+    }
+
+    /**
+     * 🤫 (2026-10-06) แปลง LINE event → ข้อมูลขาเข้าของ TakeoverIngress (ชนิด/ข้อความ/ตัวโหลดรูปแบบขี้เกียจ)
+     *
+     * รูป LINE ไม่มี URL สาธารณะ — ต้องโหลดผ่าน content API (ใช้ token) → ส่งเป็น closure ให้โหลดเฉพาะตอนถูกเทคโอเวอร์
+     *
+     * @return array<string, mixed>
+     */
+    protected function takeoverIngressPayload(array $event): array
+    {
+        $type = (string) ($event['type'] ?? '');
+
+        if ($type === 'postback') {
+            $data = (string) ($event['postback']['data'] ?? '');
+
+            return ['kind' => 'postback', 'title' => $data, 'payload' => $data];
+        }
+
+        if ($type === 'follow') {
+            return ['kind' => 'follow'];
+        }
+
+        $message = (array) ($event['message'] ?? []);
+        $messageType = (string) ($message['type'] ?? '');
+        $messageId = (string) ($message['id'] ?? '');
+
+        return match ($messageType) {
+            'text' => ['kind' => 'text', 'text' => (string) ($message['text'] ?? '')],
+            'image' => [
+                'kind' => 'image',
+                'image_fetcher' => $messageId !== '' ? fn () => $this->downloadLineImageAsBase64($messageId) : null,
+            ],
+            'sticker' => ['kind' => 'sticker'],
+            'audio' => ['kind' => 'audio'],
+            'video' => ['kind' => 'video'],
+            'file' => ['kind' => 'file'],
+            default => ['kind' => 'other'],
         };
     }
 

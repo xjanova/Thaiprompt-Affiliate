@@ -74,6 +74,14 @@ class FortuneCelticAnswerRecover extends Command
             ->get();
 
         foreach ($awaiting as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                // คำถามที่ค้าง buffer อาจเลยหน้าต่างกู้ 15 นาทีระหว่างเทคโอเวอร์ → จบเทคโอเวอร์ส่งกล่อง "ถามต่อได้เลย"
+                \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_CELTIC_RESUME);
+
+                continue;
+            }
+
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
             if (empty($userId)) {
                 continue;
@@ -156,6 +164,11 @@ class FortuneCelticAnswerRecover extends Command
         $channelManager = $dry ? null : new FortuneChannelManager($settings);
 
         foreach ($generating as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                continue;
+            }
+
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
             if (empty($userId)) {
                 continue;

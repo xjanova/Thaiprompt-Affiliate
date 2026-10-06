@@ -339,6 +339,13 @@ PROMPT;
                 $platform = (string) ($recipient->platform ?: 'facebook');
                 $uid = (string) $recipient->facebook_user_id;
 
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ไม่ส่งแคมเปญ (ไม่เรนเดอร์ผังดวงทิ้งเปล่า)
+                if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $uid)) {
+                    $skipped++;
+
+                    continue;
+                }
+
                 // 🔕 (2026-09-01) เคารพ opt-out — คนกด "ไม่ต้องส่งอีก" ห้ามโดนแคมเปญ
                 //   (เลน DM อื่นทุกเลนเช็คด่านนี้อยู่แล้ว เลนแคมเปญเคยหลุด)
                 if (! \App\Models\FortuneUserCredit::canReceiveOutbound($uid, $platform)) {

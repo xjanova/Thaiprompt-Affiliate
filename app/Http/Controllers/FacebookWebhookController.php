@@ -2582,10 +2582,8 @@ class FacebookWebhookController extends Controller
 
         // 🎯 (2026-05-17) Manual control mode — แทนที่ auto-takeover เดิม
         //   user spec: "อัตโนมัติมันไม่เวิร์ค ถอนออกไปก่อน"
-        //   ถ้าปิด handover → ไม่ process /aistop /aistart (Capture ทำไปแล้วข้างบน)
-        if (! ($this->settings->admin_handover_enabled ?? true)) {
-            return;
-        }
+        // 🤫 (2026-10-06) /aistop /aistart = แอดมินสั่งเอง → ทำงานเสมอแม้ปิดสวิตช์ admin_handover_enabled
+        //   (สวิตช์คุมแค่เทคโอเวอร์อัตโนมัติ — เดิมปิดสวิตช์แล้ว /aistop เงียบหายแต่บอทยังคุยแทรกแอดมิน)
 
         // 🎯 ตรวจ slash command — admin พิมพ์ /aistop หรือ /aistart เท่านั้น
         //    ที่จะ trigger pause/resume. ข้อความอื่นๆ ของ admin ปล่อยผ่าน (ไม่ takeover อัตโนมัติ)
@@ -2644,19 +2642,64 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // /aistop → manual takeover
+        // /aistop → manual takeover (แอดมินสั่งเอง → force แม้ปิดสวิตช์ · ไม่ระบุนาที = อย่างน้อย 30 นาที)
         $this->takeoverService->takeover(
             $reading,
             FortuneReading::TAKEOVER_REASON_MANUAL,
             null,
             null,
             '/aistop',
+            true,
         );
 
         Log::info('🛑 Facebook /aistop: แอดมินสั่งให้บอทหยุด', [
             'reading_id' => $reading->id,
             'user_id' => $recipientId,
         ]);
+    }
+
+    /**
+     * 🤫 (2026-10-06) แปลง messaging event → ข้อมูลขาเข้าของ TakeoverIngress (ชนิด/ข้อความ/รูป)
+     *
+     * ⚠️ สติกเกอร์ FB มาเป็น type=image + sticker_id ([[rule_fb_sticker_arrives_as_image]]) — แยกก่อน
+     *
+     * @return array<string, mixed>
+     */
+    protected function takeoverIngressPayload(array $messaging): array
+    {
+        $message = (array) ($messaging['message'] ?? []);
+        $text = (string) ($message['text'] ?? '');
+
+        if (! empty($message['quick_reply']['payload'])) {
+            return [
+                'kind' => 'quick_reply',
+                'title' => $text,
+                'payload' => (string) $message['quick_reply']['payload'],
+            ];
+        }
+
+        foreach ((array) ($message['attachments'] ?? []) as $attachment) {
+            $type = (string) ($attachment['type'] ?? '');
+            $attachPayload = (array) ($attachment['payload'] ?? []);
+
+            if ($type === 'image') {
+                if (! empty($attachPayload['sticker_id'])) {
+                    return ['kind' => 'sticker', 'text' => $text];
+                }
+
+                return [
+                    'kind' => 'image',
+                    'text' => $text,
+                    'image_url' => (string) ($attachPayload['url'] ?? ''),
+                ];
+            }
+
+            if (in_array($type, ['audio', 'video', 'file'], true)) {
+                return ['kind' => $type, 'text' => $text];
+            }
+        }
+
+        return ['kind' => $text !== '' ? 'text' : 'other', 'text' => $text];
     }
 
     /**
@@ -2742,6 +2785,13 @@ class FacebookWebhookController extends Controller
             } catch (\Throwable $e) {
                 Log::warning('คำสั่งแอดมิน (comment-link) ล้ม (non-blocking): '.$e->getMessage());
             }
+        }
+
+        // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์อยู่ → บอทเงียบสนิท ก่อนทุกด่าน/ทุก flow
+        //    (กลับทิศ 2026-05-17 ที่ปล่อยปุ่ม/flow จ่ายเงิน/ข้อความอยากซื้อผ่าน)
+        //    ข้อความถูกจดแชทล็อก + park + เก็บรูปเงียบ ๆ ที่ TakeoverIngress — ของที่จ่ายแล้วส่งตอนจบเทคโอเวอร์
+        if (\App\Services\Fortune\TakeoverIngress::intercept('facebook', $senderId, $this->takeoverIngressPayload($messaging))) {
+            return;
         }
 
         // 🎯 Quick Reply payload — explicit user selection ต้องผ่านก่อน takeover guard
@@ -4600,11 +4650,21 @@ class FacebookWebhookController extends Controller
             ]);
         }
 
+        // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์อยู่ → กดปุ่มก็ไม่ทำงาน บอทเงียบ (จดแชทล็อกให้แอดมินเห็น)
+        if (\App\Services\Fortune\TakeoverIngress::intercept('facebook', $senderId, [
+            'kind' => 'postback',
+            'title' => (string) ($messaging['postback']['title'] ?? ''),
+            'payload' => (string) $payload,
+        ])) {
+            return;
+        }
+
         // 🛑 Admin Handover: ถ้าแอดมิน /aistop → บอทข้าม postback
         //
         // 🚨 (2026-05-17) FLOW BYPASS — postback คือ explicit action (กดปุ่ม)
         //   user spec: "กดเลือกแพคเกจแล้ว ต้องเข้า flow จ่ายเงิน อย่าขัด"
         //   postback → bypass takeover เสมอ (Get Started / Persistent Menu / Quick Reply)
+        //   🤫 (2026-10-06) shouldBypassTakeover คืน false เสมอแล้ว — ด่านนี้เป็นชั้นสำรองของ TakeoverIngress ข้างบน
         if ($this->isAdminActive($senderId)) {
             if (! $this->takeoverService->shouldBypassTakeover('facebook', $senderId, '', true)) {
                 Log::info('👨‍💼 Admin /aistop: บอทข้าม postback', [

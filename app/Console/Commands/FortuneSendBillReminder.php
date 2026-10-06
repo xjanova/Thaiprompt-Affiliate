@@ -83,6 +83,11 @@ class FortuneSendBillReminder extends Command
             ->get();
 
         foreach ($pendingReadings as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                continue;
+            }
+
             $ageMinutes = (int) $reading->created_at->diffInMinutes(now());
 
             // หา stage ที่อายุบิลตกอยู่ในหน้าต่าง
@@ -147,6 +152,11 @@ class FortuneSendBillReminder extends Command
             ->get();
 
         foreach ($methodReadings as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                continue;
+            }
+
             if ($reading->getConversationState('bill_reminder_sent_at')) {
                 $skipped++;
 

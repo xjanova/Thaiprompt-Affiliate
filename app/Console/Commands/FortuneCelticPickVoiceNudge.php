@@ -59,6 +59,11 @@ class FortuneCelticPickVoiceNudge extends Command
 
         foreach ($readings as $reading) {
             try {
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+                if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                    continue;
+                }
+
                 $userId = $reading->facebook_user_id ?: $reading->platform_user_id;
                 if (empty($userId)) {
                     continue;

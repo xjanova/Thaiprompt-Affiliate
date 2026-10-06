@@ -138,6 +138,19 @@ class SendFortuneBubbleJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ส่งบับเบิ้ล ไม่แตะ bubble_pending (ของที่จ่ายแล้วค้างไว้ครบ)
+        //    จบเทคโอเวอร์แล้ว fortune:bubble-recover ส่งต่อจากจุดเดิม
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            if ($this->readingId) {
+                $bubbleReading = \App\Models\FortuneReading::find($this->readingId);
+                if ($bubbleReading) {
+                    \App\Services\Fortune\TakeoverResumeService::defer($bubbleReading, \App\Services\Fortune\TakeoverResumeService::ITEM_BUBBLES);
+                }
+            }
+
+            return;
+        }
+
         $settings = FortuneTellingSetting::getSettings();
 
         if ($this->platform === 'line') {

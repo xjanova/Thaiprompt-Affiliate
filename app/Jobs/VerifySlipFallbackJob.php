@@ -83,6 +83,19 @@ class VerifySlipFallbackJob implements ShouldQueue
 
             $result = $conversationService->trySlipOkVerifyForReading($reading, $platform, $userId);
 
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ตรวจสลิป/บันทึกเงินเหมือนเดิม แต่พักกล่องผลตรวจไว้ส่งตอนจบเทคโอเวอร์
+            if ($result !== null && \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, (string) $userId)) {
+                $reading->refresh();
+                \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                    $reading,
+                    \App\Services\Fortune\TakeoverResumeService::ITEM_SLIP_RESULT,
+                    'ผลตรวจสลิป (SlipOK)',
+                    $result,
+                    ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']
+                );
+                $result = null;
+            }
+
             if ($result !== null) {
                 $channelManager = new FortuneChannelManager($settings);
                 $channelManager->sendResponse($platform, $userId, $result, [

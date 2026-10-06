@@ -78,6 +78,16 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่เรียก AI ไม่หยิบสำเนาคำถาม (แอดมินคุยแทนแล้ว ไม่ตอบซ้ำ)
+        //    ⚠️ ต้องอยู่ก่อน isInProSessionPublic() — ตัวนั้นล้างธงคำถามค้างได้ถ้าหมดเวลา
+        if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+            Log::info('ProcessBufferedProSessionMessageJob: แอดมินเทคโอเวอร์อยู่ — ไม่ตอบ', [
+                'reading_id' => $this->readingId,
+            ]);
+
+            return;
+        }
+
         // 🛟 (2026-08-22) peek สำเนาคำถามค้างไว้ "ก่อน" เช็ค session — ห้าม take
         //   isInProSession() ไม่ใช่ read-only: หมดเวลาเมื่อไหร่มันเรียก clearProSessionFlags()
         //   ซึ่งล้าง pending_q ทิ้งในคอลเดียวกัน ⇒ บรรทัดถัดไปจะไม่เหลืออะไรให้กู้เลย

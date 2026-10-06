@@ -115,6 +115,14 @@ class FortuneCelticRedeliver extends Command
                 continue;
             }
 
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_CELTIC_ANSWERS);
+                $skipped++;
+
+                continue;
+            }
+
             // 🐛 (2026-05-29) Safety net — session จบแล้ว (completed) ไม่ต้อง re-deliver รายข้อ
             //   Grand Finale ตอนจบรวมคำตอบทุกข้อให้แล้ว — ถ้า cron ส่งคำตอบรายข้อซ้ำ
             //   ลูกค้าจะเห็นคำตอบเก่าโผล่ "หลังสรุป" (เคสจริง reading 4191 สมร: ครอบครัวซ้ำ)
@@ -319,6 +327,11 @@ class FortuneCelticRedeliver extends Command
             //   → ลบแถวคำถามแล้วปั่นซ้อน → ลูกค้าได้คำตอบข้อเดียวกัน 2 รอบ (ดู CelticCrossService::isGenerationInFlight)
             //   ธงหายเมื่อคิดเสร็จ/process ตายเกิน TTL → รอบถัดไปตัดสินด้วยเวลาตามเดิม
             $stuck = $stuck->reject(function (FortuneReading $r): bool {
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ห้ามเด้งสถานะ/ห้ามเข้าคิวปั่นคำตอบใหม่ (จบเทคโอเวอร์ค่อยทำ)
+                if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($r)) {
+                    return true;
+                }
+
                 if (! CelticCrossService::isGenerationInFlight((int) $r->id)) {
                     return false;
                 }
@@ -467,6 +480,11 @@ class FortuneCelticRedeliver extends Command
             $reading = FortuneReading::find($readingId);
             if (! $reading || ! $reading->is_paid) {
                 return 'skipped';
+            }
+
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → 'busy' (คงธงคิวไว้ ปั่นใหม่หลังจบเทคโอเวอร์ — ไม่เผาตัวนับ/ไม่เรียก AI)
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                return 'busy';
             }
 
             // 🛡️ (2026-09-01 จับผี #2) ห้ามแตะใบที่ AI กำลังตอบสดอยู่ — คิว pending เข้ามา

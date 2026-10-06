@@ -95,6 +95,11 @@ class FortuneAiPingJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ทิ้ง ping (ของจุกจิก ไม่พัก)
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $userId)) {
+            return;
+        }
+
         // ดึงข้อความตาม stage
         $message = $this->getMessageForStage();
         if (! $message) {

@@ -26,10 +26,10 @@
 | ยกเลิกบิล | `POST fortune/readings/{id}/cancel` body `{reason?}` |
 | ทำนายซ้ำบิลค้าง (**v3 ใหม่**) | `POST fortune/readings/{id}/retry` — เซิร์ฟเวอร์เลือกวิธีกู้เอง (8.5) |
 | โอนเงินถอนแล้ว (แนบสลิป) | `POST finance/withdrawals/{id}/complete` multipart `{transfer_slip?, transfer_note?}` (สัญญาเต็ม 8.8) |
-| ส่งข้อความหาลูกค้า | `POST chat/send` body `{reading_id, text}` |
-| เทคโอเวอร์ (หยุดบอท) | `POST chat/takeover` body `{reading_id, minutes?}` — ตั้งเวลาสิ้นสุดใหม่ = ตอนนี้ + minutes |
+| ส่งข้อความหาลูกค้า | `POST chat/send` body `{reading_id, text}` — **(2026-10-06) เริ่ม/ต่อเทคโอเวอร์ให้อัตโนมัติ** (เหลืออย่างน้อย 30 นาที) |
+| เทคโอเวอร์ (หยุดบอท) | `POST chat/takeover` body `{reading_id, minutes?}` — ตั้งเวลาสิ้นสุดใหม่ = ตอนนี้ + minutes (ไม่ส่ง minutes = อย่างน้อย 30 นาที) |
 | ต่อเวลาเทคโอเวอร์ (**ใหม่**) | `POST chat/extend` body `{reading_id, minutes}` — บวกเพิ่มจากเวลาสิ้นสุดเดิม (หมดเวลาไปแล้ว = เริ่มใหม่ ตอนนี้ + minutes) |
-| คืนงานให้บอท | `POST chat/resume` body `{reading_id}` |
+| คืนงานให้บอท | `POST chat/resume` body `{reading_id, deliver_deferred?}` — `deliver_deferred` (bool, ค่าเริ่มต้น `true`) = ให้บอทส่งของที่ลูกค้าจ่ายแล้วซึ่งถูกพักไว้ · `false` = "จัดการเองแล้ว ไม่ต้องส่ง" |
 
 ---
 
@@ -275,6 +275,10 @@
         "takeover_admin": null,
         "last_message": {"sender": "customer", "text": "ขอคุยกับแอดมิน", "at": "2026-10-06T13:40:00+07:00"},
         "unread": true,
+        "deferred": [
+          {"reading_id": 15001, "bill_reference": "FTU-261006-K1234", "item": "celtic_start",
+           "label": "กล่องเริ่มเปิดไพ่ Celtic หลังจ่าย 99", "at": "2026-10-06T13:45:00+07:00"}
+        ],
         "updated_at": "2026-10-06T13:40:01+07:00"
       }
     ],
@@ -284,7 +288,9 @@
 ```
 
 - `last_message` มาจากบันทึกแชทสดวันนี้ (Redis — อ่านแค่ข้อความท้ายสุด `LINDEX -1`) ถ้าไม่มี → ข้อความล่าสุดที่แอดมินส่งผ่านแผง (log เทคโอเวอร์ **ที่มี `user_id`** — v3 แก้: เดิมหยิบ log คำขอของลูกค้า/log ระบบมาโชว์เป็นข้อความแอดมิน) → `null`
-- `unread` = ข้อความล่าสุดเป็นของลูกค้า (= ลูกค้ากำลังรอคำตอบ)
+- `unread` = ข้อความล่าสุดเป็นของลูกค้า (= ลูกค้ากำลังรอคำตอบ) · `last_message.sender` อาจเป็น `system` (บันทึก "บอทงดส่ง") — ไม่นับว่ายังไม่อ่าน
+- `deferred` (**ใหม่ 2026-10-06**) — ของที่ลูกค้าจ่ายแล้วแต่บอท**พักไว้**เพราะแอดมินเทคโอเวอร์อยู่ (มีค่าเฉพาะแถวที่เทคโอเวอร์อยู่ · ว่าง = `[]`)
+  ดูรายการ `item` ที่ "เทคโอเวอร์ = บอทเงียบสนิท" ด้านล่าง
 
 ### `GET takeover/stats`
 
@@ -313,6 +319,8 @@
 ```
 
 - `sender`: `customer` | `bot` | `admin` | `system`
+  - ระหว่างเทคโอเวอร์: ข้อความลูกค้า (รวมกดปุ่ม `[กดปุ่ม] …` / รูป `📷 [ลูกค้าส่งรูป — เก็บไว้แล้ว]` / สติกเกอร์) ถูกจดเป็น `customer` ทันที
+    และสิ่งที่บอท "เกือบจะส่ง" ถูกจดเป็น `system` ข้อความขึ้นต้น `🤫 บอทงดส่ง (แอดมินคุยอยู่)` · จ่ายเงินระหว่างเทคโอเวอร์ = `system` `💰 ลูกค้าจ่ายแล้วระหว่างเทคโอเวอร์ — …`
 - `source`: `redis` = แชทสดวันนี้ (ครบทุกข้อความ) · `structured` = ประกอบจากข้อมูลที่เก็บถาวร (คำถาม/ไพ่/คำทำนาย/ข้อความแอดมิน) — ตรรกะเดียวกับ `fortune/readings/{id}/transcript`
 
 ### `POST chat/extend` (ใหม่)
@@ -333,14 +341,65 @@ body `{ "reading_id": 15001, "minutes": 15 }` (1–1440)
  "data": {"reading_id": 15001, "is_takeover": false, "minutes_added": 0, "until": null, "remaining_minutes": 0}}
 ```
 
-### พฤติกรรมของ `POST chat/send` (เดิม — ไม่ได้แก้)
+### เทคโอเวอร์ = บอทเงียบสนิท (เจ้าของสั่ง 2026-10-06)
+
+> "ถ้าเทคโอเวอร์คือแอดมินคุยแล้ว บอทต้องหยุดแทรกก่อน"
+
+- ระหว่างเทคโอเวอร์ บอท**ไม่ส่งอะไรเลย**หาลูกค้าคนนั้น (ทุกบิลของคนนั้น): ข้อความ, กล่องกำลังพิมพ์, สติกเกอร์, รีแอคชัน, ทวงบิล, เตือน, ping, follow-up, คำทำนาย
+  — ยกเลิกพฤติกรรมเดิม (2026-05-17) ที่ปล่อยปุ่ม / flow จ่ายเงิน / ข้อความ "39" "99" ผ่าน
+- ข้อความลูกค้าที่เข้ามา: จดลงแชท (`takeover/{reading}/messages`) + park เป็นบริบทของบิลที่จ่ายแล้ว + รูปถูกเก็บถาวร (อาจเป็นสลิป) — บอทไม่ตอบ ไม่เรียก AI
+- เงินเข้า (SMS / Stripe / mark-paid / force-approve) ระหว่างเทคโอเวอร์: **ตัดบิล/คอมมิชชั่น/สถานะเหมือนเดิมทุกอย่าง** แต่กล่องที่จะส่งหาลูกค้าถูกพักไว้
+  + แจ้งแอดมินผ่านช่องแจ้งเตือนแอดมิน (Telegram/LINE แอดมิน — ไม่ใช่โควตาลูกค้า)
+- ปิดสวิตช์ `admin_handover_enabled` = ปิดเฉพาะ **เทคโอเวอร์อัตโนมัติ** (ลูกค้าขอคุยกับคน) · ที่แอดมินกดเอง/พิมพ์ `/aistop` ทำงานเสมอ
+- จบเทคโอเวอร์ (`chat/resume`, หมดเวลา, หรือลูกค้าทักมาหลังหมดเวลา) → บอทส่งของที่พัก **ครั้งเดียว ตามลำดับ** แล้วกลับมาทำงานปกติ
+  ไม่ตอบข้อความที่ลูกค้าพิมพ์ระหว่างเทคโอเวอร์ซ้ำ (แอดมินคุยไปแล้ว)
+
+`item` ของ `deferred` (เรียงตามลำดับที่ส่ง):
+
+| item | ความหมาย | ตอนจบเทคโอเวอร์ (`deliver_deferred=true`) | `deliver_deferred=false` |
+|---|---|---|---|
+| `deep_reading` | คำทำนาย Deep 39 ที่ AI ทำเสร็จแล้ว | ส่งคำทำนายเต็ม (`fortune:process-deep` — ไม่เรียก AI ซ้ำ) | ตั้งธงว่าส่งแล้ว |
+| `payfirst_birthdate` | กล่องขอวันเกิด/ตั้งจิตหลังจ่าย 39 | ส่งกล่องเดิม (ถ้าสถานะบิลยังไม่เปลี่ยน) | ไม่ส่ง |
+| `celtic_start` | กล่องตัดบิล + เริ่มเปิดไพ่ Celtic 99 | ส่งกล่องเดิม (ถ้าสถานะบิลยังไม่เปลี่ยน) | ไม่ส่ง |
+| `slip_result` | ผลตรวจสลิป SlipOK | ส่งกล่องเดิม (ถ้าสถานะบิลยังไม่เปลี่ยน) | ไม่ส่ง |
+| `celtic_resume` | Celtic ค้างกลางทาง แล้วลูกค้าพยายามคุย | กล่อง "แม่หมอกลับมาแล้ว เปิดไพ่/ถามต่อได้เลย" | ไม่ส่ง |
+| `celtic_answers` | คำตอบ Celtic ที่ตอบแล้วแต่ยังไม่ถึงลูกค้า | cron `fortune:celtic-redeliver` ส่งรอบถัดไป (ภายใน 2 ชม. หลังตอบ) | ตั้งว่าส่งแล้ว |
+| `celtic_summary` | บทสรุป Celtic ที่ยังไม่ถึงลูกค้า | ส่งบทสรุป | ตั้งว่าส่งแล้ว |
+| `bubbles` | คำทำนายแบบบับเบิ้ลที่ส่งค้างครึ่งทาง | cron `fortune:bubble-recover` ส่งต่อ | ล้างคิวบับเบิ้ล |
+| `voice_summary` | สรุปเสียงคำทำนาย | ทำ/ส่งสรุปเสียง | ไม่ส่ง |
+
+### `POST chat/resume`
+
+body `{ "reading_id": 15001, "deliver_deferred": true }` (`deliver_deferred` ไม่ส่ง = `true`)
+
+```json
+{"success": true, "data": {"reading_id": 15001, "is_takeover": false, "deliver_deferred": true,
+  "deferred": [{"reading_id": 15001, "bill_reference": "FTU-261006-K1234", "item": "celtic_start", "label": "...", "at": "..."}]},
+ "message": "bot resumed"}
+```
+
+- `deferred` = รายการที่พักไว้ ณ ตอนกดคืนงาน — ถูกส่ง (เข้าคิว ไม่ถ่วง request) หรือถูกล้าง ตาม `deliver_deferred`
+- ลูกค้ายังถูกเทคโอเวอร์ด้วยบิลอื่นอยู่ → ยังไม่ส่ง (รอเทคโอเวอร์ตัวสุดท้ายจบ)
+
+### `GET chat/takeover-status?reading_id=`
+
+```json
+{"success": true, "data": {"reading_id": 15001, "is_takeover": true, "until": "...", "remaining_minutes": 12,
+  "deferred": [ ... ]}}
+```
+
+- `deferred` (**ใหม่**) — รูปเดียวกับ `takeover/conversations`
+
+### พฤติกรรมของ `POST chat/send`
 
 - Facebook: `FacebookWebhookService::sendMessage()` แบบ `RESPONSE` — ส่งได้เฉพาะลูกค้าที่ทักมาภายใน 24 ชม.
   (หน้าเว็บส่ง `message_tag = HUMAN_AGENT` แต่ `MESSAGE_TAG_USABLE = false` ตั้งแต่ 2026-08-13 เพราะ Meta ยกเลิกแท็ก ⇒ ผลเท่ากัน)
 - LINE: `LineFortuneService::sendMessage()` = **push** (กินโควตา 300/เดือน) — ไม่มี reply token ให้ใช้ เพราะแอดมินพิมพ์หลังเวลาที่ token ใช้ได้
   (หน้าเว็บก็ลงเอยที่ push เหมือนกัน) · ถ้าโควตาหมด Gatekeeper จะไม่ยิงและตอบ `502 platform service rejected`
 - Telegram: `TelegramFortuneService::sendMessage()`
-- ไม่เทคโอเวอร์ให้อัตโนมัติ — ถ้าจะกันบอทพูดแทรก ให้เรียก `chat/takeover` ก่อน
+- **(2026-10-06) เทคโอเวอร์ให้อัตโนมัติ** — ยังไม่ได้เทคโอเวอร์ = เริ่ม (30 นาที, ทำงานแม้ปิดสวิตช์อัตโนมัติ) · เทคโอเวอร์อยู่แต่เหลือไม่ถึง 30 นาที = ต่อให้เหลือ 30
+  (ไม่ส่ง `reading_id` = ใช้บิลล่าสุดของลูกค้าคนนั้น) · ข้อความแอดมินส่งผ่านด่านเทคโอเวอร์ได้เสมอ
+- ผลลัพธ์เพิ่ม `data.reading_id`, `data.is_takeover`, `data.takeover_until`, `data.remaining_minutes`
 - ส่งไม่ได้เพราะแพลตฟอร์มปฏิเสธ → `502` `{success:false, data:{delivered:false,...}, message:"platform service rejected"}`
   · เกิด exception → `500` `message: "send failed: ..."` (ข้อความผ่าน `SafeLog::exceptionMessage()` แล้ว — token ใน URL ถูกปิด; `takeover`/`resume` ก็เช่นกัน)
 

@@ -253,6 +253,13 @@ class TakeoverInboxController extends Controller
             'last_message' => $last,
             // ข้อความล่าสุดเป็นของลูกค้า = ลูกค้ารอคำตอบอยู่
             'unread' => ($last['sender'] ?? null) === 'customer',
+            // 🤫 (2026-10-06) ของที่ลูกค้าจ่ายแล้วแต่บอทพักไว้ระหว่างเทคโอเวอร์ — ส่งตอนคืนงาน (เฉพาะแถวที่เทคโอเวอร์อยู่)
+            'deferred' => $active
+                ? \App\Services\Fortune\TakeoverResumeService::deferredFor(
+                    FortuneBillPresenter::platform($r),
+                    (string) ($r->platform_user_id ?: $r->facebook_user_id)
+                )
+                : [],
             'updated_at' => $r->updated_at?->toIso8601String(),
         ];
     }
@@ -284,6 +291,8 @@ class TakeoverInboxController extends Controller
                     'sender' => match ($last['role'] ?? 'user') {
                         'bot' => 'bot',
                         'admin' => 'admin',
+                        // 🤫 (2026-10-06) บันทึก "บอทงดส่ง" ระหว่างเทคโอเวอร์ — ไม่ใช่ข้อความลูกค้า (ไม่นับว่ายังไม่อ่าน)
+                        'system' => 'system',
                         default => 'customer',
                     },
                     'text' => mb_substr((string) $last['text'], 0, 200),

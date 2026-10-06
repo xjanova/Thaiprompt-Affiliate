@@ -46,7 +46,8 @@ class FortuneChatLogService
      *
      * @param  string  $platform  'facebook' | 'line'
      * @param  string  $userId  platform user id (FB PSID / LINE userId)
-     * @param  string  $role  'user' | 'bot' | 'admin'
+     * @param  string  $role  'user' | 'bot' | 'admin' | 'system'
+     *                        🤫 (2026-10-06) 'system' = บันทึกของระบบ เช่น "บอทงดส่งเพราะแอดมินเทคโอเวอร์อยู่"
      */
     public function record(string $platform, string $userId, string $role, ?string $text, array $meta = []): void
     {
@@ -58,7 +59,7 @@ class FortuneChatLogService
         try {
             $key = $this->key($platform, $userId);
             $entry = json_encode(array_filter([
-                'role' => in_array($role, ['user', 'bot', 'admin'], true) ? $role : 'user',
+                'role' => in_array($role, ['user', 'bot', 'admin', 'system'], true) ? $role : 'user',
                 'text' => mb_substr($text, 0, self::MAX_TEXT),
                 'ts' => Carbon::now(self::TZ)->toIso8601String(),
                 'ai' => $meta['ai'] ?? null,

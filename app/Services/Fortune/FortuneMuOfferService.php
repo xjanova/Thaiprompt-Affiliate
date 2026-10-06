@@ -279,6 +279,11 @@ class FortuneMuOfferService
             return false;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ขายของ
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($platform, $platformUserId)) {
+            return false;
+        }
+
         if ($this->isMuted($platform, $platformUserId)) {
             return false;
         }

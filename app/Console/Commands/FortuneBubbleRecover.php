@@ -74,6 +74,13 @@ class FortuneBubbleRecover extends Command
             //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
             \App\Services\Fortune\FortunePageContext::forget();
 
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_BUBBLES);
+
+                continue;
+            }
+
             $pending = $reading->getConversationState('bubble_pending');
             $pendingAt = $reading->getConversationState('bubble_pending_at');
 

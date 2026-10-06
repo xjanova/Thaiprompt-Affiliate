@@ -114,6 +114,19 @@ class RetryPayFirstPushJob implements ShouldQueue
             }
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → พักกล่องนี้ไว้ส่งตอนจบเทคโอเวอร์ (ไม่ throw = ไม่เผา tries)
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                $reading,
+                \App\Services\Fortune\TakeoverResumeService::ITEM_PAYFIRST_BIRTHDATE,
+                'Deep 39 (จ่ายก่อน) — กล่องขอวันเกิด/ตั้งจิต',
+                ['action' => $this->action, 'message' => $this->messageText],
+                ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']
+            );
+
+            return;
+        }
+
         $settings = FortuneTellingSetting::getSettings();
         $channelManager = new FortuneChannelManager($settings);
 

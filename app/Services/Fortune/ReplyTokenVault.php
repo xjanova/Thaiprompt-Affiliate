@@ -50,6 +50,9 @@ class ReplyTokenVault
             return;
         }
 
+        // 🤫 (2026-10-06) token ที่ฝากข้าม job ต้องรู้เจ้าของด้วย — replyMessage() ใช้เช็คด่านเทคโอเวอร์
+        TakeoverSendGuard::bindReplyToken($replyToken, $platform, $userId);
+
         try {
             Cache::put(self::key($platform, $userId), [
                 'token' => $replyToken,

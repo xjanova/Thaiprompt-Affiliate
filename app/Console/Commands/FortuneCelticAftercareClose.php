@@ -90,6 +90,11 @@ class FortuneCelticAftercareClose extends Command
 
         foreach ($candidates as $reading) {
             try {
+                // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
+                if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+                    continue;
+                }
+
                 $platform = $reading->platform
                     ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->platform_user_id ?? $reading->facebook_user_id ?? '')));
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;

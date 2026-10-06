@@ -428,7 +428,21 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             //   - ใช้ buildFortuneReadyFlexMessage (ปุ่ม "อ่านคำทำนาย" สวยงาม)
             //   - คำทำนายเต็มยังส่งฟรีผ่าน replyMessage ตอน user กดอ่าน/ทักกลับมา
             //   - ตั้ง reading_notification_sent=true → FCS:766 จะส่งคำทำนายเต็มตอน user ตอบกลับ
-            if (! empty($reading->deep_response) && $this->userId) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → คำทำนายเก็บ DB แล้ว ส่งตอนจบเทคโอเวอร์
+            //    ข้ามก่อนจับล็อก/เพิ่ม reading_notification_retry_count (ห้ามเผาตัวนับระหว่างเทคโอเวอร์)
+            $deferredForTakeover = false;
+            if (! empty($reading->deep_response) && $this->userId
+                && ! $reading->getConversationState('reading_sent_directly', false)
+                && \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+                \App\Services\Fortune\TakeoverResumeService::deferPaid(
+                    $reading,
+                    \App\Services\Fortune\TakeoverResumeService::ITEM_DEEP_READING,
+                    'Deep 39 — คำทำนายพร้อมแล้ว'
+                );
+                $deferredForTakeover = true;
+            }
+
+            if (! $deferredForTakeover && ! empty($reading->deep_response) && $this->userId) {
                 $alreadySent = $reading->getConversationState('reading_sent_directly', false);
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
                 $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);

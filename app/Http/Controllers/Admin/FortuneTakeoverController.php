@@ -152,9 +152,10 @@ class FortuneTakeoverController extends Controller
     /**
      * สั่งให้ AI กลับมาทำงาน
      */
-    public function resume(FortuneReading $reading): JsonResponse
+    public function resume(Request $request, FortuneReading $reading): JsonResponse
     {
-        $this->takeoverService->resume($reading, Auth::id(), false);
+        // 🤫 (2026-10-06) deliver_deferred=false = "จัดการเองแล้ว ไม่ต้องส่ง" ของที่พักไว้ระหว่างเทคโอเวอร์
+        $this->takeoverService->resume($reading, Auth::id(), false, $request->boolean('deliver_deferred', true));
 
         return response()->json([
             'success' => true,
@@ -204,17 +205,9 @@ class FortuneTakeoverController extends Controller
 
         // ถ้ายังไม่ได้ takeover → takeover ก่อนเพื่อความปลอดภัย
         // ใช้ forceIgnoreDisabled เพื่อให้ทำงานได้แม้ settings ปิดอยู่ (admin สั่งเอง)
-        if (! $reading->isAdminTakenOver()) {
-            $this->takeoverService->takeover(
-                $reading,
-                FortuneReading::TAKEOVER_REASON_MANUAL,
-                Auth::id(),
-                null,
-                null,
-                true, // forceIgnoreDisabled — admin กดเอง ต้องทำงานเสมอ
-            );
-            $reading->refresh();
-        }
+        // 🤫 (2026-10-06) + เทคโอเวอร์อยู่แต่ใกล้หมด → ต่อให้เหลืออย่างน้อย 30 นาที (แอดมินกำลังคุย บอทห้ามโผล่กลับมา)
+        $this->takeoverService->ensureAdminTakeover($reading, Auth::id(), $message);
+        $reading->refresh();
 
         // ส่งข้อความผ่าน platform
         $sent = $this->sendMessageToPlatform($reading, $message);
@@ -224,9 +217,9 @@ class FortuneTakeoverController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "❌ ส่งข้อความไม่สำเร็จ — อาจเป็นเพราะ:\n"
-                    . "• ลูกค้าหายไปนานเกิน 7 วัน (Meta จำกัด — รอให้ลูกค้าทักกลับมาก่อน)\n"
-                    . "• หรือยังไม่ได้เปิด HUMAN_AGENT permission ใน Facebook App → Messenger → Advanced Messaging\n"
-                    . "• ตรวจสอบรายละเอียดใน storage/logs/laravel.log (grep error_subcode)",
+                    ."• ลูกค้าหายไปนานเกิน 7 วัน (Meta จำกัด — รอให้ลูกค้าทักกลับมาก่อน)\n"
+                    ."• หรือยังไม่ได้เปิด HUMAN_AGENT permission ใน Facebook App → Messenger → Advanced Messaging\n"
+                    .'• ตรวจสอบรายละเอียดใน storage/logs/laravel.log (grep error_subcode)',
             ], 500);
         }
 
@@ -244,7 +237,7 @@ class FortuneTakeoverController extends Controller
                     (string) $uid,
                     'admin',
                     $message,
-                    ['by' => 'admin#' . (Auth::id() ?? '?')]
+                    ['by' => 'admin#'.(Auth::id() ?? '?')]
                 );
             }
         } catch (\Throwable $logErr) {
@@ -313,7 +306,7 @@ class FortuneTakeoverController extends Controller
             platform: $platform,
             platformUserId: $userId,
             minutes: $minutes,
-            reason: 'แบนจากหน้า Takeover (Reading #' . $reading->id . ')',
+            reason: 'แบนจากหน้า Takeover (Reading #'.$reading->id.')',
             adminId: Auth::id(),
             displayName: $reading->facebook_user_name,
         );
@@ -389,6 +382,22 @@ class FortuneTakeoverController extends Controller
             return false;
         }
 
+        // 🤫 (2026-10-06) ข้อความแอดมินตัวจริง — ด่านเทคโอเวอร์ชั้นส่งไม่บล็อก (ห้ามพึ่ง option from_admin)
+        return \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(
+            fn () => $this->sendMessageToPlatformAsAdmin($reading, $settings, $platform, (string) $userId, $message)
+        );
+    }
+
+    /**
+     * ส่งจริง (เรียกภายใน TakeoverSendGuard::asHumanAdmin เท่านั้น)
+     */
+    protected function sendMessageToPlatformAsAdmin(
+        FortuneReading $reading,
+        FortuneTellingSetting $settings,
+        string $platform,
+        string $userId,
+        string $message,
+    ): bool {
         try {
             if ($platform === 'line') {
                 $service = new LineFortuneService($settings);

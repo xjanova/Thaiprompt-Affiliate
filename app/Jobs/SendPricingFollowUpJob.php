@@ -46,6 +46,11 @@ class SendPricingFollowUpJob implements ShouldQueue
 
     public function handle(): void
     {
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ทิ้งกล่องอธิบายค่าครู (ไม่ mark 7 วัน ไม่เรียก AI)
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            return;
+        }
+
         // 🛡️ Cache guard — 1 ครั้ง/ลูกค้า/7 วัน
         $cacheKey = $this->getCacheKey();
         if (Cache::has($cacheKey)) {

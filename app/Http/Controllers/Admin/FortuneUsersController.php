@@ -169,11 +169,12 @@ class FortuneUsersController extends Controller
                 return back()->with('error', "ไม่สามารถเชื่อมต่อ {$validated['platform']} ได้ กรุณาตั้งค่าช่องทางก่อน");
             }
 
-            $success = $platformService->sendMessage(
+            // 🤫 (2026-10-06) แอดมินกดเองกับลูกค้าคนนี้ = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+            $success = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $platformService->sendMessage(
                 $validated['facebook_user_id'],
                 $validated['message'],
                 ['from_admin' => true]
-            );
+            ));
 
             if ($success) {
                 Log::info('Admin sent fortune message', [
@@ -240,6 +241,7 @@ class FortuneUsersController extends Controller
                     // ข้ามผู้ใช้ที่ไม่มีข้อมูล platform
                     if (empty($recipient->platform)) {
                         $failed++;
+
                         continue;
                     }
                     $platformService = $channelManager->getPlatform($recipient->platform);

@@ -87,9 +87,12 @@ class FortuneSavedQuestionsController extends Controller
         $this->captureAdminQAForRag($question, $validated['admin_reply']);
 
         // ส่งคำตอบกลับหาผู้ใช้ (อัตโนมัติแยก platform)
-        $result = $this->sendReplyToUser($question, $validated['admin_reply']);
+        // 🤫 (2026-10-06) แอดมินพิมพ์คำตอบเอง = ข้อความแอดมินตัวจริง → ด่านเทคโอเวอร์ไม่บล็อก
+        $result = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $this->sendReplyToUser($question, $validated['admin_reply']));
 
-        $platformLabel = match ($question->platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
+        $platformLabel = match ($question->platform) {
+            'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE'
+        };
 
         if ($result['sent']) {
             $message = "ส่งคำตอบกลับหาผู้ใช้ผ่าน {$platformLabel} สำเร็จ ✅";
@@ -187,7 +190,7 @@ class FortuneSavedQuestionsController extends Controller
             $message = "📝 แอดมินตอบกลับคำถามของคุณค่ะ\n\n"
                 ."❓ คำถาม: {$question->question}\n\n"
                 ."💬 คำตอบ: {$reply}\n\n"
-                ."หากมีคำถามเพิ่มเติม พิมพ์ถามได้เลยนะคะ ✨";
+                .'หากมีคำถามเพิ่มเติม พิมพ์ถามได้เลยนะคะ ✨';
 
             $sent = false;
 
@@ -223,7 +226,9 @@ class FortuneSavedQuestionsController extends Controller
                 ]);
             }
 
-            $platformLabel = match ($platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
+            $platformLabel = match ($platform) {
+                'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE'
+            };
 
             return [
                 'sent' => $sent,
@@ -305,8 +310,11 @@ class FortuneSavedQuestionsController extends Controller
                 ->with('error', 'ยังไม่ได้ตอบคำถามนี้');
         }
 
-        $result = $this->sendReplyToUser($question, $question->admin_reply);
-        $platformLabel = match ($question->platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
+        // 🤫 (2026-10-06) แอดมินกดส่งคำตอบของตัวเองซ้ำ → ด่านเทคโอเวอร์ไม่บล็อก
+        $result = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $this->sendReplyToUser($question, $question->admin_reply));
+        $platformLabel = match ($question->platform) {
+            'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE'
+        };
 
         if ($result['sent']) {
             return redirect()

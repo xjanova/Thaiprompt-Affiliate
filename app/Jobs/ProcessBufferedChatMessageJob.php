@@ -63,6 +63,17 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ทิ้งแชทค้าง (flush แล้ว — ไม่ให้ไปตอบรวบตอนจบเทคโอเวอร์)
+        //    ข้อความลูกค้าอยู่ในแชทล็อกของแอดมินแล้ว · ไม่เรียก AI
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            Log::info('ProcessBufferedChatMessageJob: แอดมินเทคโอเวอร์อยู่ — ทิ้งแชทค้าง ไม่เรียก AI', [
+                'user_id' => $this->userId,
+                'message_count' => $flushed['count'] ?? null,
+            ]);
+
+            return;
+        }
+
         Log::info('ProcessBufferedChatMessageJob: flush + tryAIChatResponse', [
             'platform' => $this->platform,
             'user_id' => $this->userId,
