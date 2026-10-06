@@ -3,6 +3,8 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneTellingSetting;
+use App\Services\AiApiKeyPoolService;
+use App\Services\FortuneAIService;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -15,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Detection modes:
  *   - 'heuristic'    → regex/keyword เท่านั้น (เร็ว ฟรี deterministic)
- *   - 'hybrid'       → heuristic + Groq classifier (default)
+ *   - 'hybrid'       → heuristic + AI classifier (default) — ค่ายที่ตั้งไว้ ไม่มี key ก็ยืมเส้นแชท
  *   - 'hybrid_with_brain' → +ObsidianX history lookup (Phase 3)
  *
  * Outputs:
@@ -29,7 +31,7 @@ use Illuminate\Support\Facades\Log;
  * Hybrid logic:
  *   - heuristic confidence ≥ 80 → mark sensitive (skip classifier — เซฟ token)
  *   - heuristic confidence == 0 + ข้อความสั้น → mark not-sensitive (skip)
- *   - else → call Groq classifier (1 call เพิ่ม ~50-150ms)
+ *   - else → call classifier (Groq ~50-150ms · เส้นแชท gemini ~3 วิ)
  */
 class FortuneSensitivityDetector
 {
@@ -48,8 +50,40 @@ class FortuneSensitivityDetector
      */
     protected const SHORT_MESSAGE_LEN = 25;
 
+    /**
+     * เพดานรอ classifier (วินาที) — ใช้ทั้งค่ายที่ตั้งไว้และเส้นแชท
+     */
+    protected const CLASSIFIER_TIMEOUT_SEC = 5;
+
+    protected const CLASSIFIER_SYSTEM_PROMPT = <<<'PROMPT'
+You are a classifier analyzing customer messages to a Thai fortune-telling bot.
+
+Output strict JSON only — no prose.
+
+Schema:
+{
+  "mood_level": 1-5,        // 1=calm, 5=hostile/abusive
+  "complexity": 1-5,        // 1=simple, 5=very complex
+  "is_offtopic": true|false, // true if NOT about fortune/horoscope/tarot
+  "reason": "<2-5 word tag, lowercase, snake_case>"
+}
+
+Rules:
+- Profanity/abuse → mood_level >= 4
+- Multi-question / contradiction / sensitive topics (death, divorce, illness) → complexity >= 4
+- Greetings, small talk, gratitude → is_offtopic=false (still on-topic for fortune chat)
+- Asking about products, weather, math, coding → is_offtopic=true
+- Lao language → analyze same way
+PROMPT;
+
+    /**
+     * @param  FortuneAIService|null  $ai  ใช้ตอนยืมเส้นแชท — ไม่ส่งมา = สร้างเองเมื่อจำเป็นเท่านั้น
+     *                                     (ห้ามส่งตัวที่ผู้เรียกใช้อยู่ — chatWithCustomSystemPrompt
+     *                                     ล้าง callContext ใน finally = ลบบริบทลูกค้าที่ผู้เรียกตั้งไว้)
+     */
     public function __construct(
-        protected ?FortuneTellingSetting $settings = null
+        protected ?FortuneTellingSetting $settings = null,
+        protected ?FortuneAIService $ai = null
     ) {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
     }
@@ -271,13 +305,20 @@ class FortuneSensitivityDetector
     }
 
     /**
-     * 🤖 Groq classifier — รวม mood + complexity + offtopic ใน 1 call
+     * 🤖 AI classifier — รวม mood + complexity + offtopic ใน 1 call
      *
-     * ใช้ llama-3.1-8b-instant (default) — ฟรี เร็ว ~100ms
+     * 🧭 (2026-10-06) สองเส้นทาง:
+     *   1. ค่ายที่แอดมินตั้ง (sensitive_classifier_provider = groq/openai) — ถ้ามี key ใช้ได้
+     *   2. ไม่มี key ของค่ายนั้น / key ถูกปฏิเสธ (401/403) / ค่ายไม่ใช่ OpenAI-compatible
+     *      → ยืมเส้นแชท (provider/model/key ชุดเดียวกับ getChatAIProvider/Model/ApiKey)
+     *   🐛 ต้นเรื่อง: prod ปิด groq key ครบทุกตัว แต่ detector ยังยิง Groq
+     *      และ fallback เดิมหยิบ key แชท (gemini) ไปยิง Groq → 401 ทุกครั้ง → circuit เปิดวน
+     *      → hybrid เหลือ heuristic ล้วน (30 ก.ย. – 6 ต.ค. ล้ม 14-53 ครั้ง/วัน)
      *
      * 🛑 (2026-05-07 review L11) — circuit breaker:
      *   ถ้า classifier fail >= 3 ครั้งใน 60s → skip ทันทีในรอบถัดไป (5 นาที)
-     *   ป้องกัน Groq outage ทำให้ chat แต่ละ message รอนาน
+     *   ป้องกันค่าย AI ล่มแล้วทำให้ chat แต่ละ message รอนาน
+     *   ล้มทุกแบบ (รวมเส้นแชท) → โยน Exception ให้ detect() นับ fail + ใช้ heuristic ต่อ
      *
      * @return array ['is_sensitive', 'is_offtopic', 'mood_level', 'complexity', 'confidence', 'reason']
      *
@@ -298,105 +339,12 @@ class FortuneSensitivityDetector
             return $cached;
         }
 
-        $provider = $this->settings->sensitive_classifier_provider ?? 'groq';
-        // 🎯 (2026-05-24) Default ใช้ llama-3.3-70b-versatile (TPM 12000) ดีกว่า 8b-instant (TPM 6000)
-        //    ลด 413 "Request too large" ที่เกิดเมื่อหลาย classifier call พร้อมกัน
-        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.3-70b-versatile';
+        $userInput = "Classify: \"{$message}\"";
+        $raw = $this->classifyViaConfiguredProvider($userInput, $message)
+            ?? $this->classifyViaChatResolver($userInput);
 
-        $endpoint = match ($provider) {
-            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
-            'openai' => 'https://api.openai.com/v1/chat/completions',
-            default => throw new Exception("Provider {$provider} ไม่รองรับ classifier"),
-        };
-
-        $systemPrompt = <<<'PROMPT'
-You are a classifier analyzing customer messages to a Thai fortune-telling bot.
-
-Output strict JSON only — no prose.
-
-Schema:
-{
-  "mood_level": 1-5,        // 1=calm, 5=hostile/abusive
-  "complexity": 1-5,        // 1=simple, 5=very complex
-  "is_offtopic": true|false, // true if NOT about fortune/horoscope/tarot
-  "reason": "<2-5 word tag, lowercase, snake_case>"
-}
-
-Rules:
-- Profanity/abuse → mood_level >= 4
-- Multi-question / contradiction / sensitive topics (death, divorce, illness) → complexity >= 4
-- Greetings, small talk, gratitude → is_offtopic=false (still on-topic for fortune chat)
-- Asking about products, weather, math, coding → is_offtopic=true
-- Lao language → analyze same way
-PROMPT;
-
-        $payload = [
-            'model' => $model,
-            'temperature' => 0.0,
-            'max_tokens' => 150,
-            'response_format' => ['type' => 'json_object'],
-            'messages' => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user', 'content' => "Classify: \"{$message}\""],
-            ],
-        ];
-
-        // 🪙 (2026-05-24 Phase 6) Pre-flight: ประมาณ token + filter key ที่ใกล้ทะลุ TPM
-        //   เดิม: detector ขอ key 1 ตัวจาก pool → ส่ง request → 413 → exception
-        //   ใหม่: loop max 3 keys, mark TPM saturated เมื่อ 413, ลอง key ถัดไป
-        $estimatedTokens = \App\Services\AiApiKeyPoolService::estimateTokens($systemPrompt)
-            + \App\Services\AiApiKeyPoolService::estimateTokens($message)
-            + 150;  // + max_tokens
-
-        $pool = new \App\Services\AiApiKeyPoolService;
-        $response = null;
-        $lastError = null;
-        $triedKeyIds = [];
-
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
-            $keyObj = $this->acquireClassifierKey($pool, $provider, $estimatedTokens, $triedKeyIds);
-            if (! $keyObj) {
-                // ไม่มี key เหลือ — fall back to legacy single-key
-                $apiKey = $this->getClassifierApiKey($provider);
-                if (empty($apiKey)) {
-                    throw new Exception("Classifier API key หายไปสำหรับ provider={$provider} (attempt {$attempt})");
-                }
-                $response = Http::withToken($apiKey)->timeout(5)->retry(1, 200)->post($endpoint, $payload);
-                break;
-            }
-
-            $triedKeyIds[] = $keyObj->id;
-            $response = Http::withToken($keyObj->api_key)->timeout(5)->retry(1, 200)->post($endpoint, $payload);
-
-            // 413/429 → mark TPM saturated + try next key
-            if (! $response->successful() && in_array($response->status(), [413, 429], true)) {
-                $errMsg = "HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200);
-                Log::warning('Classifier: key TPM/rate-limit hit, rotating', [
-                    'key_id' => $keyObj->id,
-                    'status' => $response->status(),
-                    'attempt' => $attempt,
-                ]);
-                $pool->markTpmSaturated($keyObj, 60);
-                $keyObj->recordSmartError($errMsg, $model, true, 60);
-                $lastError = $errMsg;
-                $response = null;
-
-                continue;
-            }
-            break;
-        }
-
-        if ($response === null || ! $response->successful()) {
-            $this->recordClassifierFailure();
-            $statusInfo = $response ? "HTTP {$response->status()}: ".$response->body() : ($lastError ?? 'no response');
-            throw new Exception("Classifier {$statusInfo}");
-        }
-
-        $body = $response->json();
-        $raw = $body['choices'][0]['message']['content'] ?? '';
-        $decoded = json_decode($raw, true);
-
-        if (! is_array($decoded)) {
+        $decoded = $this->decodeClassifierJson($raw);
+        if ($decoded === null) {
             throw new Exception('Classifier ตอบไม่ใช่ JSON: '.mb_substr($raw, 0, 200));
         }
 
@@ -426,18 +374,161 @@ PROMPT;
     }
 
     /**
+     * ยิงค่ายที่แอดมินตั้งไว้ (OpenAI-compatible: groq/openai)
+     *
+     * @return string|null เนื้อคำตอบ · null = ค่ายนี้ไม่มี key ใช้ได้ → ให้ยืมเส้นแชทแทน
+     *
+     * @throws Exception ค่ายตอบผิดพลาดแบบอื่น (5xx / timeout / 413-429 ครบทุก key)
+     */
+    protected function classifyViaConfiguredProvider(string $userInput, string $message): ?string
+    {
+        $provider = $this->settings->sensitive_classifier_provider ?? 'groq';
+        // 🎯 (2026-05-24) Default ใช้ llama-3.3-70b-versatile (TPM 12000) ดีกว่า 8b-instant (TPM 6000)
+        //    ลด 413 "Request too large" ที่เกิดเมื่อหลาย classifier call พร้อมกัน
+        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.3-70b-versatile';
+
+        $endpoint = match ($provider) {
+            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
+            'openai' => 'https://api.openai.com/v1/chat/completions',
+            default => null, // ค่ายอื่น (gemini ฯลฯ) → เส้นแชทยิงเป็นอยู่แล้ว
+        };
+        if ($endpoint === null) {
+            return null;
+        }
+
+        $payload = [
+            'model' => $model,
+            'temperature' => 0.0,
+            'max_tokens' => 150,
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
+                ['role' => 'system', 'content' => self::CLASSIFIER_SYSTEM_PROMPT],
+                ['role' => 'user', 'content' => $userInput],
+            ],
+        ];
+
+        // 🪙 (2026-05-24 Phase 6) Pre-flight: ประมาณ token + filter key ที่ใกล้ทะลุ TPM
+        //   เดิม: detector ขอ key 1 ตัวจาก pool → ส่ง request → 413 → exception
+        //   ใหม่: loop max 3 keys, mark TPM saturated เมื่อ 413, ลอง key ถัดไป
+        $estimatedTokens = AiApiKeyPoolService::estimateTokens(self::CLASSIFIER_SYSTEM_PROMPT)
+            + AiApiKeyPoolService::estimateTokens($message)
+            + 150;  // + max_tokens
+
+        $pool = app(AiApiKeyPoolService::class);
+        $response = null;
+        $lastError = null;
+        $triedKeyIds = [];
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $keyObj = $this->acquireClassifierKey($pool, $provider, $estimatedTokens, $triedKeyIds);
+            if (! $keyObj) {
+                // ไม่มี key เหลือ — fall back to legacy single-key
+                $apiKey = $this->getClassifierApiKey($provider);
+                if (empty($apiKey)) {
+                    return null; // ค่ายนี้ไม่มี key เลย → เส้นแชท
+                }
+                $response = Http::withToken($apiKey)->timeout(self::CLASSIFIER_TIMEOUT_SEC)->retry(1, 200)->post($endpoint, $payload);
+                break;
+            }
+
+            $triedKeyIds[] = $keyObj->id;
+            $response = Http::withToken($keyObj->api_key)->timeout(self::CLASSIFIER_TIMEOUT_SEC)->retry(1, 200)->post($endpoint, $payload);
+
+            // 413/429 → mark TPM saturated + try next key
+            if (! $response->successful() && in_array($response->status(), [413, 429], true)) {
+                $errMsg = "HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200);
+                Log::warning('Classifier: key TPM/rate-limit hit, rotating', [
+                    'key_id' => $keyObj->id,
+                    'status' => $response->status(),
+                    'attempt' => $attempt,
+                ]);
+                $pool->markTpmSaturated($keyObj, 60);
+                $keyObj->recordSmartError($errMsg, $model, true, 60);
+                $lastError = $errMsg;
+                $response = null;
+
+                continue;
+            }
+            break;
+        }
+
+        // 401/403 = key ตาย/ถูกเพิกถอน (ตอบกลับไว ไม่ใช่ค่ายล่ม) → ยืมเส้นแชทแทน
+        if ($response !== null && in_array($response->status(), [401, 403], true)) {
+            Log::warning('Classifier: ค่ายที่ตั้งไว้ปฏิเสธ key — ยืมเส้นแชทแทน', [
+                'provider' => $provider,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        // ไม่นับ fail ตรงนี้ — detect() นับให้ทุก exception แล้ว (เดิมนับซ้ำ = circuit เปิดที่ 2 ครั้งแทน 3)
+        if ($response === null || ! $response->successful()) {
+            $statusInfo = $response ? "HTTP {$response->status()}: ".$response->body() : ($lastError ?? 'no response');
+            throw new Exception("Classifier {$statusInfo}");
+        }
+
+        return (string) ($response->json('choices.0.message.content') ?? '');
+    }
+
+    /**
+     * ยืมเส้นแชท — provider/model/key ชุดเดียวกับที่แชทใช้ (prod ตอนนี้ gemini-3.1-flash-lite)
+     *
+     * สร้าง FortuneAIService เฉพาะตอนต้องใช้จริง — constructor จองคีย์จาก pool ทันที
+     * (purpose='chat' = จองคีย์แชทฟรี ไม่ใช่คีย์ prediction ตัวแพง · __destruct คืนให้เอง)
+     *
+     * @throws Exception ไม่มี key แชท / ค่ายแชทล่ม
+     */
+    protected function classifyViaChatResolver(string $userInput): string
+    {
+        $this->ai ??= new FortuneAIService($this->settings, 'chat');
+
+        $result = $this->ai->chatWithCustomSystemPrompt(
+            self::CLASSIFIER_SYSTEM_PROMPT,
+            $userInput,
+            ['temperature' => 0.0, 'max_tokens' => 150, 'timeout' => self::CLASSIFIER_TIMEOUT_SEC]
+        );
+
+        return (string) ($result['response'] ?? '');
+    }
+
+    /**
+     * แกะ JSON จากคำตอบ classifier — เส้นแชทไม่มีโหมดบังคับ JSON อาจห่อมาด้วย ```json
+     *
+     * @return array|null null = ไม่ใช่ JSON object
+     */
+    protected function decodeClassifierJson(string $raw): ?array
+    {
+        $decoded = json_decode(trim($raw), true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/\{.*\}/s', $raw, $m)) {
+            $decoded = json_decode($m[0], true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * ดึง API key สำหรับ classifier
      *
      * Priority:
      *   1. AiApiKey pool (purpose='chat' เท่านั้น) — มี rotation/quota
      *      🚫 (2026-05-23) ลบ 'any' fallback — Pool ไม่ pick 'any' แล้ว
-     *   2. settings->chat_ai_api_key (ถ้าเป็น Groq อยู่แล้ว)
+     *   2. key แชท — เฉพาะเมื่อ resolver แชทเลือกค่ายเดียวกันจริง
+     *      🐛 (2026-10-06) เดิมเทียบคอลัมน์ chat_ai_provider ('groq' ค้างบน prod)
+     *         แต่ resolver แจก key gemini → ส่ง key gemini ไป Groq = 401 ทุกครั้ง
      */
     protected function getClassifierApiKey(string $provider): ?string
     {
         // ลอง pool ก่อน
         try {
-            $pool = new \App\Services\AiApiKeyPoolService;
+            $pool = app(AiApiKeyPoolService::class);
             $key = $pool->acquireKey($provider, 'chat');
             if ($key) {
                 // คืน key ทันที (ไม่ hold inflight) เพื่อไม่ block prediction
@@ -449,8 +540,8 @@ PROMPT;
             // pool ใช้ไม่ได้ — fallback
         }
 
-        // Fallback: settings chat_ai_api_key (ถ้าเป็น provider เดียวกัน)
-        if (($this->settings->chat_ai_provider ?? null) === $provider) {
+        // Fallback: key แชท — provider/key จาก resolver ชุดเดียวกัน (เข้าชุดกันเสมอ)
+        if ($this->settings->getChatAIProvider() === $provider) {
             return $this->settings->getChatAIApiKey();
         }
 

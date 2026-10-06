@@ -99,6 +99,7 @@ class FortuneModelRouter
      *    แต่ prod **ไม่มี key Groq ใน pool เลย** → classifier ยิงไม่ได้ ตกกลับมา heuristic ล้วน
      *    ซึ่งให้ confidence สูงสุด 40 ขณะที่ธง is_sensitive ต้องการ ≥ 80
      *    → หัวข้อหนักไม่มีทางติดธง ทั้งที่ detector จับ topic ได้แล้ว
+     *    (2026-10-06: classifier ยืมเส้นแชทได้แล้ว แต่ล้มเมื่อไรก็เหลือ heuristic ล้วน — กฎนี้ยังต้องใช้)
      *    วัดจริง: "แม่ป่วยหนัก หมอบอกอาจไม่รอด เครียดจนไม่อยากอยู่" และ
      *             "ถ้าหนูฆ่าตัวตายจะได้ไปเจอพ่อไหม" → is_sensitive=false ทั้งคู่ (complexity=4)
      *    ดังนั้นใช้ mood_level / complexity ที่ heuristic ให้มาโดยตรง เกณฑ์ ≥ 4
