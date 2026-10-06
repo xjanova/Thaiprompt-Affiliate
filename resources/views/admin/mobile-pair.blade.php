@@ -1,19 +1,6 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เชื่อมต่อ Admin Mobile App')
-
-@push('styles')
-<style>
-    .pair-glow {
-        box-shadow: 0 0 60px -10px rgba(168, 85, 247, 0.45),
-                    0 0 30px -10px rgba(236, 72, 153, 0.35);
-    }
-    .pair-code-box {
-        font-family: 'Plus Jakarta Sans', 'Noto Sans Thai', monospace;
-        letter-spacing: 0.5em;
-    }
-</style>
-@endpush
 
 @section('content')
 <div class="container mx-auto px-4 py-8" x-data="adminMobilePair()" x-init="init()">
@@ -30,7 +17,7 @@
 
     {{-- Card --}}
     <div class="max-w-md mx-auto">
-        <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 p-1 rounded-3xl pair-glow">
+        <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 p-1 rounded-3xl shadow-2xl shadow-purple-500/40">
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-8">
 
                 {{-- State: Loading --}}
@@ -54,7 +41,7 @@
                             <p class="text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">
                                 หรือกรอกรหัสด้วยมือ
                             </p>
-                            <div class="pair-code-box text-3xl font-extrabold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-6 py-3 rounded-xl">
+                            <div class="font-mono tracking-[0.5em] text-3xl font-extrabold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-6 py-3 rounded-xl">
                                 <span x-text="pairCode"></span>
                             </div>
                         </div>
@@ -141,6 +128,62 @@
             </ol>
         </div>
     </div>
+
+    {{-- เครื่องที่จับคู่แล้ว (ทุกแอดมิน) --}}
+    <div class="max-w-3xl mx-auto mt-12" x-data="adminPairedDevices()" x-init="load()"
+         @admin-pair-claimed.window="load()">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">📱 เครื่องที่จับคู่แล้ว</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400" x-show="!loading && !error">
+                    <span x-text="total"></span> เครื่อง · แอดมิน <span x-text="admins"></span> คน
+                </p>
+            </div>
+            <button @click="load()" :disabled="loading"
+                    class="px-4 py-2 text-sm rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 disabled:opacity-50 transition">
+                <i class="fas fa-sync-alt" :class="loading && 'animate-spin'"></i> รีเฟรช
+            </button>
+        </div>
+
+        <template x-if="error">
+            <div class="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm" x-text="error"></div>
+        </template>
+
+        <template x-if="!loading && !error && devices.length === 0">
+            <div class="p-8 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
+                ยังไม่มีเครื่องที่จับคู่แอปแอดมิน
+            </div>
+        </template>
+
+        <div class="space-y-3">
+            <template x-for="d in devices" :key="d.id">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div class="w-11 h-11 shrink-0 rounded-xl grid place-items-center text-white bg-gradient-to-br from-purple-500 to-pink-500">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-semibold text-gray-900 dark:text-white truncate" x-text="d.device_name"></span>
+                            <span x-show="d.is_me" class="px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">เครื่องของฉัน</span>
+                            <span class="px-2 py-0.5 text-xs rounded-full"
+                                  :class="d.push_enabled ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'"
+                                  x-text="d.push_enabled ? '🔔 รับแจ้งเตือน' : '🔕 ยังไม่รับแจ้งเตือน'"></span>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
+                            <span>👤 <span x-text="d.admin.name"></span></span>
+                            <span x-text="d.method === 'qr' ? 'จับคู่ด้วย QR' : 'ล็อกอินด้วยรหัสผ่าน'"></span>
+                            <span>ใช้ล่าสุด <span x-text="formatTime(d.last_used_at)"></span></span>
+                            <span>จับคู่เมื่อ <span x-text="formatTime(d.paired_at)"></span></span>
+                        </div>
+                    </div>
+                    <button x-show="d.can_revoke" @click="revoke(d)" :disabled="busyId === d.id"
+                            class="w-full sm:w-auto px-4 py-2 text-sm rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition">
+                        <span x-text="busyId === d.id ? 'กำลังถอด...' : 'ถอดเครื่อง'"></span>
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -221,6 +264,7 @@
                                 this.status = 'claimed';
                                 this.claimedDevice = json.data.device_name || '';
                                 this.cleanup();
+                                window.dispatchEvent(new CustomEvent('admin-pair-claimed'));
                             } else if (json.data.status === 'expired') {
                                 this.status = 'expired';
                                 this.cleanup();
@@ -263,6 +307,67 @@
             cleanup() {
                 if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
                 if (this.countdownTimer) { clearInterval(this.countdownTimer); this.countdownTimer = null; }
+            },
+        };
+    }
+
+    // รายการเครื่องที่จับคู่แล้ว + ถอดเครื่อง
+    function adminPairedDevices() {
+        return {
+            loading: false,
+            error: null,
+            devices: [],
+            total: 0,
+            admins: 0,
+            busyId: null,
+
+            async load() {
+                this.loading = true;
+                this.error = null;
+                try {
+                    const res = await fetch('{{ route('admin.mobile-pair.devices') }}', {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) throw new Error(json.message || 'โหลดรายการเครื่องไม่สำเร็จ');
+                    this.devices = json.data.devices;
+                    this.total = json.data.total;
+                    this.admins = json.data.admins;
+                } catch (e) {
+                    this.error = e.message;
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async revoke(device) {
+                const who = device.is_me ? 'ของคุณ' : 'ของ ' + device.admin.name;
+                if (!confirm('ถอดเครื่อง "' + device.device_name + '" ' + who + '?\nแอปบนเครื่องนั้นจะออกจากระบบทันที')) return;
+                this.busyId = device.id;
+                try {
+                    const url = '{{ route('admin.mobile-pair.devices.revoke', ['tokenId' => 0]) }}'.replace(/\/0\/revoke$/, '/' + device.id + '/revoke');
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        },
+                        credentials: 'same-origin',
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) throw new Error(json.message || 'ถอดเครื่องไม่สำเร็จ');
+                    await this.load();
+                } catch (e) {
+                    alert(e.message);
+                } finally {
+                    this.busyId = null;
+                }
+            },
+
+            formatTime(iso) {
+                if (!iso) return 'ยังไม่เคยใช้';
+                return new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
             },
         };
     }

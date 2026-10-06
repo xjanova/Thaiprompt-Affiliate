@@ -43,6 +43,7 @@ class PairingController extends Controller
      * Rate limit
      */
     private const MAX_INIT_PER_HOUR = 30;       // ต่อ admin user
+
     private const MAX_CLAIM_PER_IP = 10;        // ต่อ IP ต่อนาที
 
     /**
@@ -213,6 +214,10 @@ class PairingController extends Controller
 
         // ออก admin token (ability='admin')
         $tokenName = 'admin-pair-'.substr($request->device_id, 0, 12);
+        // ชื่อเครื่องต่อท้าย → หน้า "เครื่องที่จับคู่แล้ว" บอกได้ว่าเครื่องไหนของใคร
+        if ($request->filled('device_name')) {
+            $tokenName .= ' ('.Str::limit((string) $request->device_name, 24, '').')';
+        }
         $apiToken = $admin->createToken($tokenName, ['admin'])->plainTextToken;
 
         Log::info('Admin pair claim success', [

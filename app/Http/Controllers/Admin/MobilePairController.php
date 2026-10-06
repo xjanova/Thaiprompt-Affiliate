@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminPushToken;
 use App\Models\MobileAuthToken;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Admin Web: Mobile Pair Page
@@ -30,6 +35,14 @@ class MobilePairController extends Controller
      * URL scheme
      */
     private const APP_SCHEME = 'thaipromptadmin';
+
+    /**
+     * คำนำหน้าชื่อ Sanctum token ของแอปแอดมิน
+     * - admin-pair-   : จับคู่ด้วย QR (Api\Admin\PairingController::claim)
+     * - admin-mobile- : ล็อกอินด้วยอีเมล/รหัสผ่านในแอป (Api\Admin\AuthController::issueAdminToken)
+     * token อื่นที่มี ability admin (เช่น warroom) ไม่ใช่ "เครื่องแอปแอดมิน" → ไม่แสดง/ถอดจากหน้านี้ไม่ได้
+     */
+    private const DEVICE_TOKEN_PREFIXES = ['admin-pair-', 'admin-mobile-'];
 
     /**
      * แสดงหน้า "เชื่อมต่อ Admin Mobile App"
@@ -160,6 +173,177 @@ class MobilePairController extends Controller
             ->delete();
 
         return response()->json(['success' => true, 'data' => ['cancelled' => $deleted > 0]]);
+    }
+
+    /**
+     * GET /admin/mobile-pair/devices — เครื่องที่จับคู่แอปแอดมินแล้วของ "ทุกแอดมิน"
+     *
+     * ไม่คืน token / FCM token ใด ๆ — คืนแค่ชื่อเครื่อง เจ้าของ เวลาใช้ล่าสุด และสถานะแจ้งเตือน
+     * can_revoke = เครื่องของตัวเอง หรือผู้ดูเป็น super admin
+     */
+    public function devices(Request $request): JsonResponse
+    {
+        $viewer = $request->user();
+        $canRevokeAny = $this->isSuperAdmin($viewer);
+
+        $tokens = PersonalAccessToken::query()
+            ->where('tokenable_type', (new User)->getMorphClass())
+            ->where(function ($q) {
+                foreach (self::DEVICE_TOKEN_PREFIXES as $prefix) {
+                    $q->orWhere('name', 'like', $prefix.'%');
+                }
+            })
+            ->orderByDesc('last_used_at')
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get(['id', 'tokenable_id', 'name', 'abilities', 'last_used_at', 'created_at']);
+
+        // ต้องมี ability admin จริง (กันชื่อพ้องจาก token ระบบอื่น)
+        $tokens = $tokens->filter(fn (PersonalAccessToken $t) => in_array('admin', (array) $t->abilities, true))->values();
+
+        $owners = User::query()
+            ->whereIn('id', $tokens->pluck('tokenable_id')->unique()->all())
+            ->get(['id', 'name', 'email'])
+            ->keyBy('id');
+
+        // เครื่องที่ลงทะเบียนรับแจ้งเตือนแล้ว (นับตาม Sanctum token ที่ลงทะเบียน)
+        $pushTokenIds = AdminPushToken::query()
+            ->whereIn('access_token_id', $tokens->pluck('id')->all())
+            ->pluck('access_token_id')
+            ->map(fn ($id) => (int) $id)
+            ->flip();
+
+        $pairNames = $this->pairDeviceNames($tokens);
+
+        $devices = $tokens->map(function (PersonalAccessToken $t) use ($viewer, $canRevokeAny, $owners, $pushTokenIds, $pairNames) {
+            [$prefix, $deviceKey, $nameInToken] = $this->parseTokenName($t->name);
+            $owner = $owners->get($t->tokenable_id);
+            $isMe = (int) $t->tokenable_id === (int) $viewer->id;
+
+            return [
+                'id' => $t->id,
+                'device_name' => $nameInToken
+                    ?? $pairNames[$t->tokenable_id.'|'.$deviceKey]
+                    ?? 'อุปกรณ์ '.$deviceKey,
+                'method' => $prefix === 'admin-pair-' ? 'qr' : 'password',
+                'admin' => [
+                    'id' => $owner?->id ?? (int) $t->tokenable_id,
+                    'name' => $owner?->name ?? 'บัญชีที่ถูกลบ',
+                ],
+                'push_enabled' => $pushTokenIds->has((int) $t->id),
+                'last_used_at' => $t->last_used_at?->toIso8601String(),
+                'paired_at' => $t->created_at?->toIso8601String(),
+                'is_me' => $isMe,
+                'can_revoke' => $isMe || $canRevokeAny,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total' => $devices->count(),
+                'admins' => $devices->pluck('admin.id')->unique()->count(),
+                'devices' => $devices,
+            ],
+        ]);
+    }
+
+    /**
+     * POST /admin/mobile-pair/devices/{tokenId}/revoke — ถอดเครื่อง (ลบ Sanctum token + FCM token ของเครื่องนั้น)
+     *
+     * แอดมินถอดได้เฉพาะเครื่องตัวเอง · super admin ถอดได้ทุกเครื่อง
+     * ถอดแล้ว แอปเครื่องนั้นได้ 401 ในคำขอถัดไป → กลับไปหน้าจับคู่
+     */
+    public function revokeDevice(Request $request, int $tokenId): JsonResponse
+    {
+        $viewer = $request->user();
+
+        $token = PersonalAccessToken::query()
+            ->where('id', $tokenId)
+            ->where('tokenable_type', (new User)->getMorphClass())
+            ->first();
+
+        if (! $token || ! $this->isDeviceTokenName($token->name)) {
+            return $this->error('ไม่พบเครื่องนี้ (อาจถูกถอดไปแล้ว)', 404);
+        }
+
+        $isMe = (int) $token->tokenable_id === (int) $viewer->id;
+        if (! $isMe && ! $this->isSuperAdmin($viewer)) {
+            return $this->error('ถอดได้เฉพาะเครื่องของตัวเอง (super admin ถอดได้ทุกเครื่อง)', 403);
+        }
+
+        DB::transaction(function () use ($token) {
+            AdminPushToken::query()->where('access_token_id', $token->id)->delete();
+            $token->delete();
+        });
+
+        Log::info('Admin web revoked admin-app device', [
+            'by_admin_id' => $viewer->id,
+            'owner_id' => $token->tokenable_id,
+            'access_token_id' => $token->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['revoked' => true, 'id' => $token->id],
+            'message' => 'ถอดเครื่องแล้ว',
+        ]);
+    }
+
+    /**
+     * แยกชื่อ token "admin-pair-<device_id 12 ตัว> (<ชื่อเครื่อง>)" → [prefix, device_key, ชื่อเครื่อง|null]
+     *
+     * @return array{0: string, 1: string, 2: string|null}
+     */
+    private function parseTokenName(string $name): array
+    {
+        $prefix = collect(self::DEVICE_TOKEN_PREFIXES)->first(fn ($p) => str_starts_with($name, $p)) ?? '';
+        $rest = substr($name, strlen($prefix));
+
+        if (preg_match('/^(\S+) \((.+)\)$/u', $rest, $m)) {
+            return [$prefix, $m[1], $m[2]];
+        }
+
+        return [$prefix, trim($rest), null];
+    }
+
+    /**
+     * token รุ่นเก่า (ชื่อไม่มีชื่อเครื่อง) → หาชื่อจากแถวจับคู่ใน mobile_auth_tokens
+     * key = "<user_id>|<device_id 12 ตัวแรก>"
+     *
+     * @return array<string, string>
+     */
+    private function pairDeviceNames(Collection $tokens): array
+    {
+        $needs = $tokens->filter(fn ($t) => $this->parseTokenName($t->name)[2] === null);
+        if ($needs->isEmpty()) {
+            return [];
+        }
+
+        return MobileAuthToken::query()
+            ->where('is_admin', true)
+            ->whereNotNull('claimed_at')
+            ->whereIn('user_id', $needs->pluck('tokenable_id')->unique()->all())
+            ->orderBy('claimed_at')
+            ->get(['user_id', 'device_id', 'device_name'])
+            ->mapWithKeys(fn ($row) => [$row->user_id.'|'.substr((string) $row->device_id, 0, 12) => (string) $row->device_name])
+            ->all();
+    }
+
+    private function isDeviceTokenName(string $name): bool
+    {
+        foreach (self::DEVICE_TOKEN_PREFIXES as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isSuperAdmin(User $user): bool
+    {
+        return $user->isSuperAdmin() || ($user->role ?? null) === 'super_admin';
     }
 
     private function generateReadablePairCode(int $length = 8): string
