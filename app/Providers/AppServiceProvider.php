@@ -126,6 +126,10 @@ class AppServiceProvider extends ServiceProvider
             'read' => 'อ่านข้อมูลพื้นฐาน',
             'profile' => 'เข้าถึงชื่อโปรไฟล์',
             'email' => 'เข้าถึงอีเมล',
+            // 🪪 (2026-10-09) TPIX TRADE ใช้ผล KYC ของ Thaiprompt แทนการให้ลูกค้ายืนยันซ้ำ
+            //   ส่งแค่ "ผ่าน/ไม่ผ่าน + วันที่" — ไม่มีเลขบัตร ชื่อ วันเกิด หรือรูป (ดู OAuthKycStatusController)
+            //   ข้อความนี้คือสิ่งที่ลูกค้าเห็นบนหน้าขออนุญาต — แก้แล้วต้องตรงกับที่ส่งจริงเสมอ
+            'kyc' => 'ดูผลการยืนยันตัวตน (ผ่านหรือยัง และวันที่ผ่าน) — ไม่รวมเลขบัตร ชื่อ วันเกิด หรือรูปถ่าย',
         ]);
         Passport::setDefaultScope(['read', 'profile', 'email']);
         Passport::tokensExpireIn(now()->addDays(15));
