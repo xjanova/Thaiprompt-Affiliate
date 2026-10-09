@@ -40,6 +40,13 @@ Route::middleware(['auth:api-oauth', 'scopes:read,profile,email'])
     ->get('/user', [\App\Http\Controllers\Api\OAuthProfileController::class, 'show'])
     ->name('api.oauth.user');
 
+// 🪪 (2026-10-09) ผล KYC สำหรับแอปพันธมิตร (TPIX TRADE) — GET /api/oauth/kyc
+//    ต้องมี scope `kyc` ที่ลูกค้ากดอนุญาตเองบนหน้า consent · ส่งแค่สถานะ ไม่มีข้อมูลบัตร
+//    (ดู OAuthKycStatusController) · TPIX ถามซ้ำเป็นระยะระหว่างรอลูกค้าทำ eKYC ในแอป
+Route::middleware(['auth:api-oauth', 'scopes:kyc', 'throttle:60,1,oauth-kyc'])
+    ->get('/oauth/kyc', [\App\Http\Controllers\Api\OAuthKycStatusController::class, 'show'])
+    ->name('api.oauth.kyc');
+
 // Webhooks (no CSRF, no auth)
 // LINE Webhook with rate limiting and signature verification
 Route::post('/webhook/line', [LineWebhookController::class, 'handle'])
