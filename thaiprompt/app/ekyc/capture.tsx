@@ -2,16 +2,21 @@
  * ถ่ายบัตรประชาชน (ขั้นที่ 2 จาก 4) — ตามแบบ IdCapture.png
  *
  * สองโหมด
- *   1. ตัวสแกนเอกสารของ Google (Android ที่มี Play services): กดปุ่มทอง → จับขอบบัตรอัตโนมัติ ถ่ายเองเมื่อนิ่ง ตัดภาพให้ตรง
+ *   1. กล้องในแอปแบบตรวจภาพ (ค่าเริ่มต้นเมื่อเครื่องตรวจใบหน้าได้): กรอบบัตร + ถ่ายอัตโนมัติเมื่อภาพพร้อมจริง
+ *      ทุกภาพตรวจในเครื่อง (cardQuality.ts): บัตรเต็มกรอบ (หาขอบบัตรจริง / เดาจากรูปหน้าบนบัตร) → แสงไม่มืด/ไม่จ้า
+ *      ไม่มีแสงสะท้อนบนรูปหน้า/ตัวหนังสือ → แถบเลขบัตร+ชื่อคมพอที่สเกล OCR ของ server → ถ่ายภาพนั้นเลย
+ *      ไม่ผ่านข้อไหนบอกผู้ใช้ทีละข้อ · กดถ่ายเองได้เสมอ (ภาพยังไม่พร้อม = ถามก่อนใช้ เพราะสิทธิ์ส่งรูปบัตรมีจำกัด) · ไฟฉาย
+ *      ไม่มีตัวตรวจใบหน้า = กดถ่ายเอง · ไม่มีตัวอ่านพิกเซล = ถ่ายเมื่อรูปหน้าบนบัตรเต็มกรอบติดกัน 2 ภาพ
+ *   2. ตัวสแกนเอกสารของ Google (Android ที่มี Play services — เลือกจากปุ่มขวา / เครื่องที่ตรวจใบหน้าไม่ได้):
+ *      กดปุ่มทอง → จับขอบบัตรอัตโนมัติ ถ่ายเองเมื่อนิ่ง ตัดภาพให้ตรง
  *      ใช้ไม่ได้ในเครื่องนี้ (ไม่มี Play services/โหลดโมดูลไม่สำเร็จ) → สลับเป็นกล้องในแอปเองพร้อมบอกผู้ใช้
- *   2. กล้องในแอป (iOS / เครื่องที่ไม่มีตัวสแกน / ผู้ใช้เลือกเอง): กรอบบัตร + ถ่ายอัตโนมัติเมื่อเห็นรูปหน้าบนบัตรติดกัน 2 ภาพ
- *      (ML Kit ตรวจใบหน้าบนเครื่อง) — ไม่มีตัวตรวจ = กดถ่ายเอง · ปุ่มถ่ายเองกดได้เสมอ · ไฟฉาย
+ * ภาพถ่ายละเอียดสูง (4:3 ราว 5 MP) ให้บัตรกว้าง ≥ 1000 px เมื่อเต็มกรอบ — server ปรับบัตรเป็น 1000 px ก่อน OCR
  * ห้ามเลือกรูปจากคลัง (กันใช้รูปบัตรของคนอื่น) · ไฟล์ภาพที่ไม่ได้ใช้ถูกลบทันที
  * ออกจากหน้า/พับแอป = ปิดกล้องและหยุดลูปถ่าย · กันแคปหน้าจอ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Pressable, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
@@ -30,7 +35,9 @@ import {
   isFaceDetectionAvailable,
   scanCardWithDocumentScanner,
 } from '@/services/ekyc/nativeVision';
-import { looksLikeCardPortrait, pickPictureSize, sampleFromMlkit } from '@/services/ekyc/liveness';
+import { pickPictureSize } from '@/services/ekyc/liveness';
+import { analyzeCardPhoto, isCardAnalyzerAvailable } from '@/services/ekyc/cardAnalyzer';
+import { isCardShotGood, pickCardPictureSize, type CardHint, type CardVerdict } from '@/services/ekyc/cardQuality';
 import { dropTempFile } from '@/services/ekyc/tempFiles';
 import { DARK_THEME, radii, spacing, typography, withAlpha, glowStyle } from '@/theme';
 
@@ -46,10 +53,33 @@ const roundedRectPath = (x: number, y: number, w: number, h: number, r: number):
 
 type Mode = 'scanner' | 'camera';
 
+/** คำแนะนำระหว่างเล็งกล้อง (ตามด่านแรกที่ยังไม่ผ่าน) */
+const HINT_TEXT: Record<CardHint, string> = {
+  NO_CARD: 'วางบัตรด้านหน้าให้อยู่ในกรอบ รูปหน้าอยู่ทางขวา',
+  TILTED: 'จัดบัตรให้ตรงกับกรอบ ไม่เอียง',
+  TOO_FAR: 'ขยับกล้องเข้าใกล้อีกนิด ให้บัตรเต็มกรอบ',
+  TOO_CLOSE: 'ถอยกล้องออกเล็กน้อย ให้เห็นบัตรครบทั้งใบ',
+  OFF_CENTER: 'เลื่อนบัตรให้อยู่กลางกรอบ',
+  TOO_DARK: 'แสงน้อยไป ย้ายไปที่สว่างขึ้น หรือเปิดไฟฉาย',
+  TOO_BRIGHT: 'แสงจ้าเกินไป หลบแดดหรือไฟที่ส่องตรงบัตร',
+  GLARE_FACE: 'มีแสงสะท้อนบนรูปหน้า เอียงบัตรหรือขยับหนีแสงเล็กน้อย',
+  GLARE: 'มีแสงสะท้อนบนตัวหนังสือ เปลี่ยนมุมบัตรเล็กน้อย',
+  BLURRY: 'ถือนิ่งๆ กำลังโฟกัสให้ตัวหนังสือคมชัด…',
+  GOOD: 'ภาพชัดแล้ว ถือนิ่งๆ กำลังถ่าย…',
+};
+
+/** เหตุผลเมื่อกดถ่ายเองแต่ภาพยังไม่พร้อม (ไม่มีในนี้ = ใช้ HINT_TEXT) */
+const MANUAL_TEXT: Partial<Record<CardHint, string>> = {
+  NO_CARD: 'ไม่พบรูปหน้าบนบัตรในภาพ',
+  BLURRY: 'ตัวหนังสือบนบัตรยังไม่คมชัด',
+};
+
+/** ภาพเบลอติดกันกี่ภาพ (ทั้งที่บัตรเต็มกรอบแล้ว) ถึงเปลี่ยนคำแนะนำ */
+const BLUR_STUCK_FRAMES = 4;
+
 export default function EkycCaptureScreen() {
   useSensitiveScreen('ekyc-capture');
   const insets = useSafeAreaInsets();
-  const { width: screenW } = useWindowDimensions();
   const mountedRef = useMountedRef();
   const { sleep } = useTimers();
   const appActive = useAppActive();
@@ -59,19 +89,29 @@ export default function EkycCaptureScreen() {
 
   const scannerAvailable = isDocumentScannerAvailable();
   const detectorAvailable = isFaceDetectionAvailable();
-  const [mode, setMode] = useState<Mode>(scannerAvailable ? 'scanner' : 'camera');
+  const analyzerAvailable = detectorAvailable && isCardAnalyzerAvailable();
+  // ตรวจภาพในเครื่องได้ = ใช้กล้องในแอป (เช็คเต็มกรอบ/แสง/ความคมก่อนถ่าย) · ตัวสแกนของ Google เลือกได้จากปุ่มขวา
+  const [mode, setMode] = useState<Mode>(detectorAvailable || !scannerAvailable ? 'camera' : 'scanner');
   const [notice, setNotice] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [torch, setTorch] = useState(false);
-  const [found, setFound] = useState(false);
+  const [verdict, setVerdict] = useState<CardVerdict | null>(null);
+  const [blurStuck, setBlurStuck] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pictureSize, setPictureSize] = useState<string | undefined>(undefined);
   const [stage, setStage] = useState({ w: 0, h: 0 });
+  /** เปลี่ยนค่า = เริ่มลูปถ่ายอัตโนมัติใหม่ (หลังกดถ่ายเองแล้วเลือกถ่ายใหม่) */
+  const [loopKey, setLoopKey] = useState(0);
 
   const cameraRef = useRef<CameraView>(null);
   const loopTokenRef = useRef(0);
   const busyRef = useRef(false);
   const doneRef = useRef(false);
+  /** กรอบบนจอ/พื้นที่กล้องล่าสุด (ลูปอ่านจาก ref — layout เปลี่ยนไม่ต้องเริ่มลูปใหม่) */
+  const frameRef = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const stageRef = useRef({ w: 0, h: 0 });
+  /** ขนาดใบหน้า/ความกว้างบัตร ที่วัดได้จากภาพที่เจอขอบบัตร — ใช้เดาบัตรในภาพที่หาขอบไม่เจอ */
+  const faceRatioRef = useRef<number | null>(null);
 
   // ไม่มีรอบ (เปิดหน้านี้ตรงๆ / แอปถูกปิดกลางทาง) → กลับไปเริ่มที่หน้าแนะนำ
   useEffect(() => {
@@ -82,7 +122,8 @@ export default function EkycCaptureScreen() {
   useFocusEffect(
     useCallback(() => {
       doneRef.current = false;
-      setFound(false);
+      setVerdict(null);
+      setBlurStuck(false);
       return () => {
         loopTokenRef.current += 1;
         setTorch(false);
@@ -129,31 +170,58 @@ export default function EkycCaptureScreen() {
     setCameraReady(true);
     try {
       const sizes = await cameraRef.current?.getAvailablePictureSizesAsync();
-      const best = pickPictureSize(sizes, 1920, 1280);
+      // ละเอียดพอให้ตัวหนังสือไทยบนบัตรคมหลัง server ปรับบัตรเป็น 1000 px · iOS ใช้ preset "Photo" (4:3 เต็มเซนเซอร์)
+      const best =
+        Platform.OS === 'ios' && sizes?.includes('Photo')
+          ? 'Photo'
+          : (pickCardPictureSize(sizes) ?? pickPictureSize(sizes, 1920, 1280));
       if (best && mountedRef.current) setPictureSize((prev) => prev ?? best);
     } catch {
       // ใช้ขนาดเริ่มต้นของกล้อง
     }
   }, [mountedRef]);
 
-  // ลูปถ่ายอัตโนมัติ: เห็นรูปหน้าบนบัตรติดกัน 2 ภาพ → ใช้ภาพล่าสุด
+  /** ตรวจภาพบัตร 1 ภาพในเครื่อง · ตรวจใบหน้าไม่ได้ = null */
+  const inspect = useCallback(async (shot: { uri: string; width: number; height: number }): Promise<CardVerdict | null> => {
+    const faces = await detectFacesInImage(shot.uri);
+    if (faces === null) return null;
+    const result = await analyzeCardPhoto(shot.uri, {
+      width: shot.width,
+      height: shot.height,
+      faces,
+      frame: frameRef.current,
+      stage: stageRef.current,
+      faceRatio: faceRatioRef.current,
+    });
+    if (result.faceRatio !== null) {
+      const prev = faceRatioRef.current;
+      faceRatioRef.current = prev === null ? result.faceRatio : prev * 0.6 + result.faceRatio * 0.4;
+    }
+    return result;
+  }, []);
+
+  // ลูปถ่ายอัตโนมัติ: ตรวจทุกภาพ → ผ่านครบ (เต็มกรอบ + แสง + คม) ใช้ภาพนั้นเลย (ภาพที่ตรวจ = ภาพที่ส่ง)
+  // ต้องเต็มกรอบติดกัน 2 ภาพ เว้นแต่ภาพนี้เจอขอบบัตรจริง · ไม่มีตัวอ่านพิกเซล = เต็มกรอบติดกัน 2 ภาพ
   const canLoop =
     mode === 'camera' && detectorAvailable && focused && appActive && cameraReady && !!permission?.granted && !!session;
   useEffect(() => {
     if (!canLoop) return undefined;
     const token = ++loopTokenRef.current;
     const alive = () => token === loopTokenRef.current && mountedRef.current && !doneRef.current;
-    let pending: string | null = null;
 
     (async () => {
-      let streak = 0;
+      let prevFit = false;
+      let blurFrames = 0;
+      // ตัวอ่านพิกเซลล้มติดกันหลายภาพ (ตำแหน่งผ่าน แต่วัดแสง/ความคมไม่ได้) = ใช้ไม่ได้ในเครื่องนี้ → ถ่ายแบบตำแหน่งอย่างเดียว
+      let pixelChecks = analyzerAvailable;
+      let unmeasuredFrames = 0;
       await sleep(700);
       while (alive()) {
         if (busyRef.current) {
           await sleep(300);
           continue;
         }
-        const shot = await capture(0.85);
+        const shot = await capture(0.9);
         if (!shot) {
           await sleep(600);
           continue;
@@ -162,40 +230,40 @@ export default function EkycCaptureScreen() {
           dropTempFile(shot.uri);
           break;
         }
-        const faces = await detectFacesInImage(shot.uri);
+        const result = await inspect(shot);
         if (!alive()) {
           dropTempFile(shot.uri);
           break;
         }
-        const ok = faces !== null && looksLikeCardPortrait(sampleFromMlkit(faces, shot.width, shot.height));
-        if (ok) {
-          streak += 1;
-          setFound(true);
-          if (streak >= 2) {
-            dropTempFile(pending);
-            pending = null;
-            resultHaptic('success');
-            goReview(shot.uri);
-            return;
-          }
-          dropTempFile(pending);
-          pending = shot.uri;
-        } else {
-          streak = 0;
-          dropTempFile(pending);
-          pending = null;
+        if (!result) {
           dropTempFile(shot.uri);
-          setFound(false);
+          await sleep(450);
+          continue;
         }
-        await sleep(ok ? 250 : 450);
+        const unmeasured = result.fit && result.light !== false && (result.light === null || result.sharp === null);
+        unmeasuredFrames = pixelChecks && unmeasured ? unmeasuredFrames + 1 : 0;
+        if (unmeasuredFrames >= 3) pixelChecks = false;
+        const ready = pixelChecks
+          ? isCardShotGood(result) && (result.source === 'edges' || prevFit)
+          : result.fit && prevFit;
+        if (ready) {
+          resultHaptic('success');
+          goReview(shot.uri);
+          return;
+        }
+        dropTempFile(shot.uri);
+        prevFit = result.fit;
+        blurFrames = result.hint === 'BLURRY' ? blurFrames + 1 : 0;
+        setVerdict(result);
+        setBlurStuck(blurFrames >= BLUR_STUCK_FRAMES);
+        await sleep(result.fit ? 120 : 300);
       }
-      dropTempFile(pending);
     })();
 
     return () => {
       loopTokenRef.current += 1;
     };
-  }, [canLoop, capture, goReview, mountedRef, sleep]);
+  }, [canLoop, capture, goReview, inspect, analyzerAvailable, loopKey, mountedRef, sleep]);
 
   const shootManual = async () => {
     if (busyRef.current || doneRef.current || !cameraReady) return;
@@ -207,6 +275,8 @@ export default function EkycCaptureScreen() {
       await sleep(400);
       shot = await capture(0.92);
     }
+    // ตรวจภาพที่กดถ่ายเองด้วย — สิทธิ์ส่งรูปบัตรต่อรอบ/ต่อวันมีจำกัด ภาพที่ยังไม่พร้อมถามก่อนใช้
+    const checked = shot && mountedRef.current && analyzerAvailable ? await inspect(shot) : null;
     busyRef.current = false;
     if (!mountedRef.current) {
       dropTempFile(shot?.uri);
@@ -216,10 +286,30 @@ export default function EkycCaptureScreen() {
     if (!shot) {
       resultHaptic('error');
       Alert.alert('ถ่ายรูปไม่สำเร็จ', 'ลองกดถ่ายอีกครั้งนะ');
+      setLoopKey((k) => k + 1);
+      return;
+    }
+    const taken = shot;
+    if (checked && checked.hint !== 'GOOD') {
+      resultHaptic('warning');
+      setVerdict(checked);
+      const retake = () => {
+        dropTempFile(taken.uri);
+        if (mountedRef.current) setLoopKey((k) => k + 1);
+      };
+      Alert.alert(
+        'ภาพบัตรยังไม่พร้อม',
+        `${MANUAL_TEXT[checked.hint] ?? HINT_TEXT[checked.hint]}\nระบบอาจอ่านข้อมูลบนบัตรผิด แนะนำให้ถ่ายใหม่`,
+        [
+          { text: 'ใช้ภาพนี้', onPress: () => goReview(taken.uri) },
+          { text: 'ถ่ายใหม่', onPress: retake },
+        ],
+        { cancelable: true, onDismiss: retake }
+      );
       return;
     }
     resultHaptic('success');
-    goReview(shot.uri);
+    goReview(taken.uri);
   };
 
   // ---------- ตัวสแกนเอกสารของ Google ----------
@@ -254,7 +344,8 @@ export default function EkycCaptureScreen() {
   const switchMode = () => {
     if (busyRef.current) return;
     setNotice(null);
-    setFound(false);
+    setVerdict(null);
+    setBlurStuck(false);
     setMode((m) => (m === 'scanner' ? 'camera' : 'scanner'));
   };
 
@@ -263,19 +354,27 @@ export default function EkycCaptureScreen() {
   const frameH = frameW / CARD_RATIO;
   const frameX = (stage.w - frameW) / 2;
   const frameY = Math.max(spacing.xl, stage.h * 0.4 - frameH / 2);
+  frameRef.current = { x: frameX, y: frameY, w: frameW, h: frameH };
+  stageRef.current = stage;
   const needPermission = mode === 'camera' && !permission?.granted;
   const showCamera = mode === 'camera' && !!permission?.granted && focused;
+  const fit = !!verdict?.fit;
 
+  const cameraStatus = (): string => {
+    if (!detectorAvailable) return 'วางบัตรให้เต็มกรอบ แล้วกดปุ่มถ่าย';
+    if (busy) return 'กำลังตรวจภาพ…';
+    if (!verdict) return HINT_TEXT.NO_CARD;
+    // ไฟฉายทำให้บัตรเคลือบสะท้อนแสง
+    if (torch && (verdict.hint === 'GLARE_FACE' || verdict.hint === 'GLARE')) {
+      return 'ปิดไฟฉาย แล้วเอียงบัตรเล็กน้อยให้แสงสะท้อนหายไป';
+    }
+    if (torch && verdict.hint === 'TOO_DARK') return 'แสงน้อยไป ย้ายไปที่สว่างขึ้น';
+    if (verdict.hint === 'BLURRY' && blurStuck) return 'ภาพยังไม่คม เช็ดเลนส์กล้อง แล้วถือโทรศัพท์นิ่งๆ ขนานกับบัตร';
+    if (!analyzerAvailable && verdict.fit) return 'พบบัตรแล้ว ถือนิ่งๆ กำลังถ่ายให้…';
+    return HINT_TEXT[verdict.hint];
+  };
   const status =
-    mode === 'scanner'
-      ? busy
-        ? 'กำลังเปิดตัวสแกนบัตร…'
-        : 'กดปุ่มทอง ระบบจะจับขอบบัตรและถ่ายให้เอง'
-      : !detectorAvailable
-        ? 'วางบัตรให้อยู่ในกรอบ แล้วกดปุ่มถ่าย'
-        : found
-          ? 'พบบัตรแล้ว ถือนิ่งๆ กำลังถ่ายให้…'
-          : 'วางบัตรด้านหน้าให้อยู่ในกรอบ';
+    mode === 'scanner' ? (busy ? 'กำลังเปิดตัวสแกนบัตร…' : 'กดปุ่มทอง ระบบจะจับขอบบัตรและถ่ายให้เอง') : cameraStatus();
   const statusSpinning = (mode === 'camera' && detectorAvailable && cameraReady) || busy;
 
   const corner = (pos: 'tl' | 'tr' | 'bl' | 'br') => {
@@ -370,7 +469,7 @@ export default function EkycCaptureScreen() {
             )}
 
             {(['tl', 'tr', 'bl', 'br'] as const).map(corner)}
-            {found &&
+            {fit &&
               [
                 dot(frameX, frameY, 'a'),
                 dot(frameX + frameW, frameY, 'b'),
@@ -385,14 +484,16 @@ export default function EkycCaptureScreen() {
                 ) : (
                   <Icon name={mode === 'scanner' ? 'scan' : 'identification-card'} size={18} color={CAM.gold} />
                 )}
-                <Text numberOfLines={1} style={[typography.bodyStrong, styles.statusText, { color: CAM.textStrong }]}>
+                <Text numberOfLines={2} style={[typography.bodyStrong, styles.statusText, { color: CAM.textStrong }]}>
                   {status}
                 </Text>
               </View>
-              {/* ชิปผูกกับสิ่งที่ตรวจได้จริงเท่านั้น: เห็นรูปหน้าบนบัตร (ML Kit) — ความชัด/แสงสะท้อน server เป็นคนตรวจ */}
+              {/* ชิปผูกกับสิ่งที่ตรวจได้จริงในเครื่องเท่านั้น (cardQuality) — server ตรวจซ้ำทุกข้อ */}
               {mode === 'camera' && detectorAvailable && (
                 <View style={styles.chips}>
-                  <CameraChip label="พบบัตรในกล้อง" on={found} />
+                  <CameraChip label="บัตรเต็มกรอบ" on={fit} />
+                  {analyzerAvailable && <CameraChip label="แสงพอดี" on={verdict?.light === true} />}
+                  {analyzerAvailable && <CameraChip label="ตัวหนังสือคมชัด" on={verdict?.sharp === true} />}
                 </View>
               )}
             </View>
@@ -415,7 +516,7 @@ export default function EkycCaptureScreen() {
         <View style={[styles.info, { backgroundColor: withAlpha(CAM.card, 0.9), borderColor: CAM.border }]}>
           <Icon name={notice ? 'warning-circle' : 'info'} size={18} color={CAM.gold} />
           <Text style={[typography.bodySm, styles.flex, { color: CAM.text }]}>
-            {notice || 'วางบัตรบนพื้นเรียบสีเข้ม ไม่ใช้นิ้วบังตัวเลข ระบบรับเฉพาะบัตรจริง ไม่รับรูปถ่ายหน้าจอ'}
+            {notice || 'วางบัตรบนพื้นเรียบสีเข้ม เลี่ยงไฟที่ส่องตรงบัตร ไม่ใช้นิ้วบังตัวเลข ระบบรับเฉพาะบัตรจริง ไม่รับรูปถ่ายหน้าจอ'}
           </Text>
         </View>
 
