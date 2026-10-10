@@ -65,6 +65,7 @@ const HINT_TEXT: Record<CardHint, string> = {
   GLARE_FACE: 'มีแสงสะท้อนบนรูปหน้า เอียงบัตรหรือขยับหนีแสงเล็กน้อย',
   GLARE: 'มีแสงสะท้อนบนตัวหนังสือ เปลี่ยนมุมบัตรเล็กน้อย',
   BLURRY: 'ถือนิ่งๆ กำลังโฟกัสให้ตัวหนังสือคมชัด…',
+  ROTATE: 'ถือโทรศัพท์ตั้งตรงเป็นแนวตั้ง แล้วค่อยเล็งบัตร',
   GOOD: 'ภาพชัดแล้ว ถือนิ่งๆ กำลังถ่าย…',
 };
 
@@ -112,6 +113,8 @@ export default function EkycCaptureScreen() {
   const stageRef = useRef({ w: 0, h: 0 });
   /** ขนาดใบหน้า/ความกว้างบัตร ที่วัดได้จากภาพที่เจอขอบบัตร — ใช้เดาบัตรในภาพที่หาขอบไม่เจอ */
   const faceRatioRef = useRef<number | null>(null);
+  /** โหมดผ่อนระยะ: เต็มกรอบแล้วเบลอติดกันหลายภาพ = กล้องโฟกัสใกล้ไม่ได้ → ให้ถอยออกได้ ขอแค่บัตรยังละเอียดพอ */
+  const relaxRef = useRef(false);
 
   // ไม่มีรอบ (เปิดหน้านี้ตรงๆ / แอปถูกปิดกลางทาง) → กลับไปเริ่มที่หน้าแนะนำ
   useEffect(() => {
@@ -122,6 +125,7 @@ export default function EkycCaptureScreen() {
   useFocusEffect(
     useCallback(() => {
       doneRef.current = false;
+      relaxRef.current = false;
       setVerdict(null);
       setBlurStuck(false);
       return () => {
@@ -144,7 +148,8 @@ export default function EkycCaptureScreen() {
   }, []);
 
   const goReview = useCallback((uri: string) => {
-    if (doneRef.current) {
+    // ปุ่มใน Alert อาจถูกกดหลังออกจากหน้านี้แล้ว — ห้ามพาไปหน้าตรวจจากหน้าอื่น
+    if (doneRef.current || !mountedRef.current) {
       dropTempFile(uri);
       return;
     }
@@ -152,17 +157,27 @@ export default function EkycCaptureScreen() {
     loopTokenRef.current += 1;
     useEkycStore.getState().setCard(uri);
     router.push('/ekyc/review' as never);
-  }, []);
+  }, [mountedRef]);
 
   // ---------- กล้องในแอป ----------
+  /** การถ่ายที่กำลังทำอยู่ (กดถ่ายเองต้องรอตัวนี้ก่อน — ถ่ายซ้อนกัน iOS โยน CameraNotReady) */
+  const inFlightRef = useRef<Promise<unknown> | null>(null);
   const capture = useCallback(async (quality: number) => {
     const cam = cameraRef.current;
     if (!cam) return null;
+    const job = (async () => {
+      try {
+        const photo = await cam.takePictureAsync({ quality, shutterSound: false });
+        return photo?.uri ? { uri: photo.uri, width: photo.width ?? 0, height: photo.height ?? 0 } : null;
+      } catch {
+        return null;
+      }
+    })();
+    inFlightRef.current = job;
     try {
-      const photo = await cam.takePictureAsync({ quality, shutterSound: false });
-      return photo?.uri ? { uri: photo.uri, width: photo.width ?? 0, height: photo.height ?? 0 } : null;
-    } catch {
-      return null;
+      return await job;
+    } finally {
+      if (inFlightRef.current === job) inFlightRef.current = null;
     }
   }, []);
 
@@ -170,10 +185,11 @@ export default function EkycCaptureScreen() {
     setCameraReady(true);
     try {
       const sizes = await cameraRef.current?.getAvailablePictureSizesAsync();
-      // ละเอียดพอให้ตัวหนังสือไทยบนบัตรคมหลัง server ปรับบัตรเป็น 1000 px · iOS ใช้ preset "Photo" (4:3 เต็มเซนเซอร์)
+      // ละเอียดพอให้ตัวหนังสือไทยบนบัตรคมหลัง server ปรับบัตรเป็น 1000 px
+      // iOS: 3840x2160 (≈8 MP) — preset "Photo" ได้ ~12 MP ไฟล์อาจเกิน 8 MB ที่ server รับ และตรวจทีละภาพช้า
       const best =
-        Platform.OS === 'ios' && sizes?.includes('Photo')
-          ? 'Photo'
+        Platform.OS === 'ios' && sizes?.includes('3840x2160')
+          ? '3840x2160'
           : (pickCardPictureSize(sizes) ?? pickPictureSize(sizes, 1920, 1280));
       if (best && mountedRef.current) setPictureSize((prev) => prev ?? best);
     } catch {
@@ -192,6 +208,7 @@ export default function EkycCaptureScreen() {
       frame: frameRef.current,
       stage: stageRef.current,
       faceRatio: faceRatioRef.current,
+      relaxFill: relaxRef.current,
     });
     if (result.faceRatio !== null) {
       const prev = faceRatioRef.current;
@@ -240,12 +257,19 @@ export default function EkycCaptureScreen() {
           await sleep(450);
           continue;
         }
-        const unmeasured = result.fit && result.light !== false && (result.light === null || result.sharp === null);
-        unmeasuredFrames = pixelChecks && unmeasured ? unmeasuredFrames + 1 : 0;
-        if (unmeasuredFrames >= 3) pixelChecks = false;
+        const measured = result.light !== null && result.sharp !== null;
+        const unmeasured = result.fit && result.light !== false && !measured;
+        if (measured) {
+          // วัดได้อีกครั้ง → กลับมาตรวจเต็มรูปแบบ
+          pixelChecks = analyzerAvailable;
+          unmeasuredFrames = 0;
+        } else if (pixelChecks && unmeasured) {
+          unmeasuredFrames += 1;
+          if (unmeasuredFrames >= 3) pixelChecks = false;
+        }
         const ready = pixelChecks
           ? isCardShotGood(result) && (result.source === 'edges' || prevFit)
-          : result.fit && prevFit;
+          : result.fit && prevFit && result.light !== false && result.sharp !== false;
         if (ready) {
           resultHaptic('success');
           goReview(shot.uri);
@@ -254,8 +278,9 @@ export default function EkycCaptureScreen() {
         dropTempFile(shot.uri);
         prevFit = result.fit;
         blurFrames = result.hint === 'BLURRY' ? blurFrames + 1 : 0;
+        if (blurFrames >= BLUR_STUCK_FRAMES) relaxRef.current = true;
         setVerdict(result);
-        setBlurStuck(blurFrames >= BLUR_STUCK_FRAMES);
+        setBlurStuck(blurFrames >= BLUR_STUCK_FRAMES || (relaxRef.current && result.hint === 'BLURRY'));
         await sleep(result.fit ? 120 : 300);
       }
     })();
@@ -270,20 +295,23 @@ export default function EkycCaptureScreen() {
     busyRef.current = true;
     setBusy(true);
     loopTokenRef.current += 1;
-    let shot = await capture(0.92);
+    // ลูปอาจกำลังถ่ายอยู่ — รอให้เสร็จก่อน (ไฟล์ของลูป ลูปลบเอง)
+    await inFlightRef.current?.catch(() => null);
+    let shot = mountedRef.current ? await capture(0.92) : null;
     if (!shot && mountedRef.current) {
       await sleep(400);
       shot = await capture(0.92);
     }
     // ตรวจภาพที่กดถ่ายเองด้วย — สิทธิ์ส่งรูปบัตรต่อรอบ/ต่อวันมีจำกัด ภาพที่ยังไม่พร้อมถามก่อนใช้
     const checked = shot && mountedRef.current && analyzerAvailable ? await inspect(shot) : null;
-    busyRef.current = false;
     if (!mountedRef.current) {
+      busyRef.current = false;
       dropTempFile(shot?.uri);
       return;
     }
     setBusy(false);
     if (!shot) {
+      busyRef.current = false;
       resultHaptic('error');
       Alert.alert('ถ่ายรูปไม่สำเร็จ', 'ลองกดถ่ายอีกครั้งนะ');
       setLoopKey((k) => k + 1);
@@ -291,9 +319,18 @@ export default function EkycCaptureScreen() {
     }
     const taken = shot;
     if (checked && checked.hint !== 'GOOD') {
+      // ถือ busy ไว้จนกว่าผู้ใช้จะเลือก — กันลูปถ่ายเองที่เริ่มใหม่ (พับแอปแล้วกลับมา) แอบถ่ายซ้อนหลัง Alert
       resultHaptic('warning');
       setVerdict(checked);
-      const retake = () => {
+      let answered = false;
+      const settle = (use: boolean) => {
+        if (answered) return;
+        answered = true;
+        busyRef.current = false;
+        if (use) {
+          goReview(taken.uri);
+          return;
+        }
         dropTempFile(taken.uri);
         if (mountedRef.current) setLoopKey((k) => k + 1);
       };
@@ -301,13 +338,14 @@ export default function EkycCaptureScreen() {
         'ภาพบัตรยังไม่พร้อม',
         `${MANUAL_TEXT[checked.hint] ?? HINT_TEXT[checked.hint]}\nระบบอาจอ่านข้อมูลบนบัตรผิด แนะนำให้ถ่ายใหม่`,
         [
-          { text: 'ใช้ภาพนี้', onPress: () => goReview(taken.uri) },
-          { text: 'ถ่ายใหม่', onPress: retake },
+          { text: 'ใช้ภาพนี้', onPress: () => settle(true) },
+          { text: 'ถ่ายใหม่', onPress: () => settle(false) },
         ],
-        { cancelable: true, onDismiss: retake }
+        { cancelable: true, onDismiss: () => settle(false) }
       );
       return;
     }
+    busyRef.current = false;
     resultHaptic('success');
     goReview(taken.uri);
   };
@@ -350,7 +388,8 @@ export default function EkycCaptureScreen() {
   };
 
   // ---------- ส่วนแสดงผล ----------
-  const frameW = Math.min(stage.w - spacing.xxl * 2, 440);
+  // กรอบราว 80% ของความกว้าง: บัตรเต็มกรอบที่ระยะ ~13–15 ซม. (ใกล้กว่านี้กล้องหลายรุ่นโฟกัสไม่ได้) ยังได้บัตร > 1,200 px
+  const frameW = Math.min(stage.w * 0.8, 400);
   const frameH = frameW / CARD_RATIO;
   const frameX = (stage.w - frameW) / 2;
   const frameY = Math.max(spacing.xl, stage.h * 0.4 - frameH / 2);
@@ -369,8 +408,10 @@ export default function EkycCaptureScreen() {
       return 'ปิดไฟฉาย แล้วเอียงบัตรเล็กน้อยให้แสงสะท้อนหายไป';
     }
     if (torch && verdict.hint === 'TOO_DARK') return 'แสงน้อยไป ย้ายไปที่สว่างขึ้น';
-    if (verdict.hint === 'BLURRY' && blurStuck) return 'ภาพยังไม่คม เช็ดเลนส์กล้อง แล้วถือโทรศัพท์นิ่งๆ ขนานกับบัตร';
-    if (!analyzerAvailable && verdict.fit) return 'พบบัตรแล้ว ถือนิ่งๆ กำลังถ่ายให้…';
+    // เบลอติดกันทั้งที่เต็มกรอบ = มักเพราะกล้องโฟกัสใกล้ไม่ได้ → ให้ถอยออก (โหมดผ่อนระยะยอมบัตรเล็กกว่ากรอบแล้ว)
+    if (verdict.hint === 'BLURRY' && blurStuck) return 'ภาพยังไม่คม ลองถอยกล้องออกช้าๆ จนตัวหนังสือคม บัตรเล็กกว่ากรอบได้';
+    const unmeasured = verdict.light === null || verdict.sharp === null;
+    if (verdict.fit && verdict.hint === 'GOOD' && (!analyzerAvailable || unmeasured)) return 'พบบัตรแล้ว ถือนิ่งๆ กำลังถ่ายให้…';
     return HINT_TEXT[verdict.hint];
   };
   const status =

@@ -83,8 +83,16 @@ export const CARD_QUALITY_CONFIG = {
   /** บัตรเอียง (มุมเอียงของรูปหน้าบนบัตร, องศา) */
   maxRoll: 9,
   /** ห่างจากกรอบมากเกินนี้ ไม่ต้องเสียเวลาอ่านพิกเซล (บอกให้ขยับก่อน) */
-  quickMinFill: 0.55,
+  quickMinFill: 0.5,
   quickMaxFill: 1.5,
+  /**
+   * โหมดผ่อนระยะ (มือถือโฟกัสใกล้ไม่ได้ — เต็มกรอบแล้วเบลอตลอด): ยอมให้บัตรเล็กกว่ากรอบได้
+   * ขอแค่บัตรกว้าง ≥ relaxedMinCardPx ในภาพจริง (พอให้ server อ่านที่ 1000 px) และไม่ต่ำกว่า relaxedMinFill
+   */
+  relaxedMinCardPx: 1050,
+  relaxedMinFill: 0.55,
+  /** ภาพความละเอียดต่ำ: บัตรต้องกว้างอย่างน้อยเท่านี้ (px) ไม่ว่ากรอบจะเท่าไร */
+  minCardPx: 950,
 
   // ---------- แสง ----------
   /** ความสว่างเฉลี่ยบนบัตร (0–255) ต่ำกว่านี้ = มืด (บัตรสีอ่อน แสงพอดีอยู่ราว 150–220) */
@@ -99,6 +107,11 @@ export const CARD_QUALITY_CONFIG = {
   /** แสงสะท้อนบนแถบตัวหนังสือ / ทั้งบัตร */
   maxTextGlare: 0.025,
   maxCardGlare: 0.05,
+  /**
+   * ดวงแสงสะท้อนก้อนใหญ่สุดบนแถบเลขบัตร+ชื่อ (วัดที่สเกล server) เทียบพื้นที่ตัวอักษร 1 ตัว
+   * ดวงเล็กที่ทับตัวเลข 3–4 ตัวบนภาพย่อดูเป็นแค่ไม่กี่พิกเซล — ต้องวัดบนภาพละเอียด
+   */
+  maxStripGlareChars: 0.6,
 
   // ---------- ความคม ----------
   /** blurEffect บนแถบตัวหนังสือ (0 = คม, 1 = เบลอ) เกินนี้ = ยังไม่คมพอให้ OCR อ่านภาษาไทย */
@@ -119,6 +132,8 @@ export type CardHint =
   | 'GLARE_FACE'
   | 'GLARE'
   | 'BLURRY'
+  /** ภาพถ่ายออกมาแนวนอน/กลับหัวต่างจากจอ (โทรศัพท์วางราบหรือหมุนอยู่) — กรอบบนจอเทียบภาพไม่ได้ */
+  | 'ROTATE'
   | 'GOOD';
 
 // =====================================================
@@ -329,25 +344,33 @@ export interface RegionStats {
   /** ความสว่างเฉลี่ย 0–255 */
   mean: number;
   p5: number;
+  p50: number;
   p95: number;
   /** สัดส่วนพิกเซลขาวจ้า (ความสว่าง ≥ 250) */
   clipped: number;
-  /** สัดส่วนแสงสะท้อน: ขาวจ้า (สีสว่างสุด ≥ 245) สีซีด (ต่างสี ≤ 45) และเพื่อนบ้าน 4 ทิศเป็นแสงสะท้อนด้วย (ไม่นับจุดเดี่ยว) */
+  /** สัดส่วนแสงสะท้อน: ขาวจ้า (สีสว่างสุด ≥ glareFloor) สีซีด (ต่างสี ≤ 45) และเพื่อนบ้าน 4 ทิศเป็นแสงสะท้อนด้วย (ไม่นับจุดเดี่ยว) */
   glare: number;
 }
 
-const isGlarePx = (d: Uint8Array, j: number): boolean => {
+/** เกณฑ์ความสว่างขั้นต่ำของ "แสงสะท้อน" = สว่างกว่าพื้นบัตรชัดเจน (พื้นบัตรสีอ่อนที่สว่างเกินไม่ใช่แสงสะท้อน) */
+export const glareFloorOf = (cardMedian: number | null | undefined): number =>
+  Math.min(252, Math.max(245, (cardMedian ?? 0) + 20));
+
+const isGlarePx = (d: Uint8Array, j: number, floor: number): boolean => {
   const r = d[j];
   const g = d[j + 1];
   const b = d[j + 2];
   const mx = r > g ? (r > b ? r : b) : g > b ? g : b;
-  if (mx < 245) return false;
+  if (mx < floor) return false;
   const mn = r < g ? (r < b ? r : b) : g < b ? g : b;
   return mx - mn <= 45;
 };
 
-/** สถิติแสงในพื้นที่ roi ของภาพ (ตัดให้อยู่ในภาพเอง) · ไม่มีพื้นที่ = null */
-export const regionStats = (img: RgbImage, roi: Rect): RegionStats | null => {
+/**
+ * สถิติแสงในพื้นที่ roi ของภาพ (ตัดให้อยู่ในภาพเอง) · ไม่มีพื้นที่ = null
+ * @param glareFloor ความสว่างขั้นต่ำของแสงสะท้อน (glareFloorOf ของพื้นบัตร)
+ */
+export const regionStats = (img: RgbImage, roi: Rect, glareFloor: number = 245): RegionStats | null => {
   const r = clampRect(roi, { w: img.width, h: img.height });
   if (!r) return null;
   const W = img.width;
@@ -366,15 +389,15 @@ export const regionStats = (img: RgbImage, roi: Rect): RegionStats | null => {
       sum += l;
       if (li >= 250) clipped += 1;
       if (
-        isGlarePx(d, j) &&
+        isGlarePx(d, j, glareFloor) &&
         x > 0 &&
         x < W - 1 &&
         y > 0 &&
         y < H - 1 &&
-        isGlarePx(d, j - 3) &&
-        isGlarePx(d, j + 3) &&
-        isGlarePx(d, j - W * 3) &&
-        isGlarePx(d, j + W * 3)
+        isGlarePx(d, j - 3, glareFloor) &&
+        isGlarePx(d, j + 3, glareFloor) &&
+        isGlarePx(d, j - W * 3, glareFloor) &&
+        isGlarePx(d, j + W * 3, glareFloor)
       ) {
         glare += 1;
       }
@@ -390,7 +413,67 @@ export const regionStats = (img: RgbImage, roi: Rect): RegionStats | null => {
     }
     return 255;
   };
-  return { mean: sum / n, p5: pct(0.05), p95: pct(0.95), clipped: clipped / n, glare: glare / n };
+  return { mean: sum / n, p5: pct(0.05), p50: pct(0.5), p95: pct(0.95), clipped: clipped / n, glare: glare / n };
+};
+
+/**
+ * ขนาด (พิกเซล) ของดวงแสงสะท้อนก้อนใหญ่สุดในภาพ — ต่อกัน 4 ทิศ · เกณฑ์ความสว่างเทียบค่ากลางของภาพนี้เอง
+ * ใช้กับแถบตัวหนังสือที่สเกล server (ดวงที่ทับตัวเลขไม่กี่ตัวก็ทำให้ OCR อ่านเลขบัตรผิด)
+ */
+export const largestGlareBlob = (img: RgbImage): number => {
+  const { width: W, height: H, data: d } = img;
+  const n = W * H;
+  if (n === 0) return 0;
+  const hist = new Uint32Array(256);
+  for (let i = 0, j = 0; i < n; i += 1, j += 3) {
+    hist[((d[j] * 299 + d[j + 1] * 587 + d[j + 2] * 114 + 500) / 1000) | 0] += 1;
+  }
+  let acc = 0;
+  let median = 255;
+  for (let i = 0; i < 256; i += 1) {
+    acc += hist[i];
+    if (acc >= n / 2) {
+      median = i;
+      break;
+    }
+  }
+  const floor = Math.min(254, Math.max(240, median + 35));
+  const mask = new Uint8Array(n);
+  for (let i = 0, j = 0; i < n; i += 1, j += 3) mask[i] = isGlarePx(d, j, floor) ? 1 : 0;
+
+  // flood fill ด้วยสแตกของตัวเอง (ไม่เรียกซ้อน) — mask 1 = ยังไม่นับ, 2 = นับแล้ว
+  const stack = new Int32Array(n);
+  let best = 0;
+  for (let start = 0; start < n; start += 1) {
+    if (mask[start] !== 1) continue;
+    let top = 0;
+    let size = 0;
+    stack[top++] = start;
+    mask[start] = 2;
+    while (top > 0) {
+      const p = stack[--top];
+      size += 1;
+      const x = p % W;
+      if (x > 0 && mask[p - 1] === 1) {
+        mask[p - 1] = 2;
+        stack[top++] = p - 1;
+      }
+      if (x < W - 1 && mask[p + 1] === 1) {
+        mask[p + 1] = 2;
+        stack[top++] = p + 1;
+      }
+      if (p >= W && mask[p - W] === 1) {
+        mask[p - W] = 2;
+        stack[top++] = p - W;
+      }
+      if (p + W < n && mask[p + W] === 1) {
+        mask[p + W] = 2;
+        stack[top++] = p + W;
+      }
+    }
+    if (size > best) best = size;
+  }
+  return best;
 };
 
 /**
@@ -486,12 +569,14 @@ export interface GeometryResult {
  * ตำแหน่ง/ระยะของบัตรเทียบกรอบ · hint null = เต็มกรอบพอดี
  * @param frame กรอบบนจอในพิกัดภาพถ่าย (frameInPhoto)
  * @param edges ขอบบัตรจริง (พิกัดภาพถ่าย) — null = ไม่เจอ/ยังไม่ได้หา
+ * @param relax โหมดผ่อนระยะ (เต็มกรอบแล้วเบลอตลอด = กล้องโฟกัสใกล้ไม่ได้) — ยอมให้บัตรเล็กลงได้ถ้ายังละเอียดพอ
  */
 export const judgeGeometry = (
   frame: Rect,
   face: CardFaceInput | null,
   edges: Rect | null,
-  cfg: CardQualityConfig = CARD_QUALITY_CONFIG
+  cfg: CardQualityConfig = CARD_QUALITY_CONFIG,
+  relax: boolean = false
 ): GeometryResult => {
   if (!face) return { hint: 'NO_CARD', card: null, source: null };
   const useEdges = !!edges && edgesAgreeWithFace(edges, face.box);
@@ -500,7 +585,11 @@ export const judgeGeometry = (
   if (face.roll !== null && Math.abs(face.roll) > cfg.maxRoll) return { hint: 'TILTED', card, source };
 
   const fill = card.w / frame.w;
-  const minFill = useEdges ? cfg.edgeMinFill : cfg.faceMinFill;
+  const normalMin = useEdges ? cfg.edgeMinFill : cfg.faceMinFill;
+  // ภาพละเอียดต่ำ: บัตรต้องกว้างพอให้ OCR อ่านได้ (ไม่เกิน 0.95 ของกรอบ — เกินนั้นยังไงก็ถ่ายไม่ได้)
+  const resolutionMin = Math.min(0.95, cfg.minCardPx / frame.w);
+  const relaxedMin = Math.max(cfg.relaxedMinFill, cfg.relaxedMinCardPx / frame.w);
+  const minFill = Math.max(resolutionMin, relax ? Math.min(normalMin, relaxedMin) : normalMin);
   const maxFill = useEdges ? cfg.edgeMaxFill : cfg.faceMaxFill;
   if (fill < minFill) return { hint: 'TOO_FAR', card, source };
   if (fill > maxFill) return { hint: 'TOO_CLOSE', card, source };
@@ -530,6 +619,9 @@ export const quickGeometryHint = (
   if (fill > cfg.quickMaxFill) return 'TOO_CLOSE';
   return null;
 };
+
+/** ภาพถ่ายหมุนต่างจากจอ (จอแนวตั้งแต่ภาพแนวนอน หรือกลับกัน) */
+export const isRotatedAgainstStage = (photo: Size, stage: Size): boolean => photo.w > photo.h !== stage.w > stage.h;
 
 export interface LightInput {
   card: RegionStats | null;
@@ -566,16 +658,20 @@ export interface CardVerdict {
   faceRatio: number | null;
 }
 
-/** รวมผลตามลำดับความสำคัญ: ตำแหน่ง → แสง → ความคม */
+/**
+ * รวมผลตามลำดับความสำคัญ: ตำแหน่ง → แสง → ความคม
+ * @param stripGlare เจอดวงแสงสะท้อนก้อนใหญ่บนแถบเลขบัตร/ชื่อ (วัดที่สเกล server)
+ */
 export const judgeCard = (
   geometry: GeometryResult,
   light: LightInput | null,
   blur: number | null,
   cfg: CardQualityConfig = CARD_QUALITY_CONFIG,
-  faceRatio: number | null = null
+  faceRatio: number | null = null,
+  stripGlare: boolean = false
 ): CardVerdict => {
   const fit = geometry.hint === null;
-  const lightHint = light ? judgeLight(light, cfg) : null;
+  const lightHint = light ? (judgeLight(light, cfg) ?? (stripGlare ? 'GLARE' : null)) : null;
   const lightOk = light ? lightHint === null : null;
   const sharp = blur === null ? null : blur <= cfg.maxBlur;
   const base = { fit, light: lightOk, sharp, card: geometry.card, source: geometry.source, blur, stats: light, faceRatio };
@@ -607,6 +703,8 @@ export interface CardShotInput {
   stage: Size;
   /** CardVerdict.faceRatio ล่าสุดที่ได้ (ไม่มี = ใช้แม่แบบ) */
   faceRatio?: number | null;
+  /** โหมดผ่อนระยะ (ดู judgeGeometry) */
+  relaxFill?: boolean;
 }
 
 /** ความกว้างภาพย่อที่ใช้หาขอบ/วัดแสง (px) — ถอดรหัส JPEG ด้วย JS บน Hermes ช้า ใช้เท่าที่จำเป็น */
@@ -632,6 +730,9 @@ export const analyzeCardShot = async (
   if (photo.w <= 0 || photo.h <= 0 || input.stage.w <= 0 || input.stage.h <= 0) {
     return judgeCard({ hint: 'NO_CARD', card: null, source: null }, null, null, cfg);
   }
+  // expo-camera หมุนภาพตามเซนเซอร์ (วางราบ = ค้างทิศเดิม) — ภาพหมุนต่างจากจอ เทียบกรอบไม่ได้
+  if (isRotatedAgainstStage(photo, input.stage)) return judgeCard({ hint: 'ROTATE', card: null, source: null }, null, null, cfg);
+  const relax = input.relaxFill === true;
   const frame = frameInPhoto(input.frame, input.stage, photo);
   const found = cardFaceOf(input.faces, photo);
   const face = found ? { ...found, ratio: input.faceRatio ?? null } : null;
@@ -639,33 +740,40 @@ export const analyzeCardShot = async (
   if (quick) {
     return judgeCard({ hint: quick, card: face ? cardFromFace(face.box, face.ratio ?? null) : null, source: face ? 'face' : null }, null, null, cfg);
   }
-  if (!crop || !face) return judgeCard(judgeGeometry(frame, face, null, cfg), null, null, cfg);
+  if (!crop || !face) return judgeCard(judgeGeometry(frame, face, null, cfg, relax), null, null, cfg);
 
   // ภาพย่อรอบกรอบ (เผื่อบน-ล่างมากกว่า เพราะกรอบแนวนอน) → หาขอบบัตรจริง + วัดแสง
   const search = clampRect(expandRect(frame, 0.12, 0.3), photo);
   const thumb = search ? await crop(search, Math.min(SEARCH_WIDTH, search.w)) : null;
-  if (!search || !thumb) return judgeCard(judgeGeometry(frame, face, null, cfg), null, null, cfg);
+  if (!search || !thumb) return judgeCard(judgeGeometry(frame, face, null, cfg, relax), null, null, cfg);
   const s = thumb.width / search.w;
   const edgesInThumb = findCardRect(toGray(thumb), mapRect(frame, search, s));
   const edges = edgesInThumb
     ? { x: edgesInThumb.x / s + search.x, y: edgesInThumb.y / s + search.y, w: edgesInThumb.w / s, h: edgesInThumb.h / s }
     : null;
-  const geometry = judgeGeometry(frame, face, edges, cfg);
+  const geometry = judgeGeometry(frame, face, edges, cfg, relax);
   const ratio = geometry.source === 'edges' && geometry.card ? face.box.w / geometry.card.w : null;
   if (geometry.hint || !geometry.card) return judgeCard(geometry, null, null, cfg, ratio);
 
+  // แสงสะท้อน = สว่างกว่าพื้นบัตรชัดเจน (พื้นบัตรสีอ่อนที่สว่างเกินไม่นับเป็นแสงสะท้อน)
+  const cardStats = regionStats(thumb, expandRect(mapRect(geometry.card, search, s), -0.04));
+  const floor = glareFloorOf(cardStats?.p50);
   const light: LightInput = {
-    card: regionStats(thumb, expandRect(mapRect(geometry.card, search, s), -0.04)),
-    face: regionStats(thumb, expandRect(mapRect(face.box, search, s), 0.05)),
-    text: regionStats(thumb, mapRect(textStripOf(geometry.card), search, s)),
+    card: cardStats,
+    face: regionStats(thumb, expandRect(mapRect(face.box, search, s), 0.05), floor),
+    text: regionStats(thumb, mapRect(textStripOf(geometry.card), search, s), floor),
   };
   if (judgeLight(light, cfg)) return judgeCard(geometry, light, null, cfg, ratio);
 
-  // ความคม: แถบตัวหนังสือที่สเกลเดียวกับ server (ย่อเท่านั้น ไม่ขยาย)
+  // ความคม + ดวงแสงสะท้อนบนเลขบัตร/ชื่อ: แถบตัวหนังสือที่สเกลเดียวกับ server (ย่อเท่านั้น ไม่ขยาย)
   const strip = clampRect(sharpStripOf(geometry.card), photo);
   const k = Math.min(1, SERVER_CARD_WIDTH / geometry.card.w);
   const stripImg = strip ? await crop(strip, Math.max(8, Math.round(strip.w * k))) : null;
-  return judgeCard(geometry, light, stripImg ? blurEffect(toGray(stripImg)) : null, cfg, ratio);
+  if (!stripImg) return judgeCard(geometry, light, null, cfg, ratio);
+  // ความสูงตัวอักษร ≈ 4.5% ของความสูงบัตร = 0.16 ของความสูงแถบ
+  const charH = stripImg.height * (0.045 / (CARD_LAYOUT.sharpStrip.y1 - CARD_LAYOUT.sharpStrip.y0));
+  const stripGlare = largestGlareBlob(stripImg) > cfg.maxStripGlareChars * charH * charH;
+  return judgeCard(geometry, light, blurEffect(toGray(stripImg)), cfg, ratio, stripGlare);
 };
 
 // =====================================================

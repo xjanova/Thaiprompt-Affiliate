@@ -145,16 +145,21 @@ describe('สัญญารอบแก้ไข §A2–§A4', () => {
   });
 
   it('ไรเดอร์: รหัส 6 หลักของตัวเอง + รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ', () => {
-    const d = normalizeRiderHandoverData({
-      handover: { required: true, status: 'waiting', code: '039217', can_waited_photo: '1', geofence_m: 150, wait_seconds: 180 },
-      buyer: { id: 5, display_name: 'นิด ส.', photo_url: 'https://evil.example/face.jpg' },
-      server_now: '2026-10-04T12:00:00+07:00',
-    });
+    // ส่งเวลาไป-กลับที่ตรงกับ server_now — ไม่ผูกกับวันที่ของเครื่องที่รันเทสต์ (เกิน MAX_CLOCK_OFFSET_MS = null)
+    const serverMs = Date.parse('2026-10-04T12:00:00+07:00');
+    const d = normalizeRiderHandoverData(
+      {
+        handover: { required: true, status: 'waiting', code: '039217', can_waited_photo: '1', geofence_m: 150, wait_seconds: 180 },
+        buyer: { id: 5, display_name: 'นิด ส.', photo_url: 'https://evil.example/face.jpg' },
+        server_now: '2026-10-04T12:00:00+07:00',
+      },
+      { sentAt: serverMs - 1_000, receivedAt: serverMs + 1_000 }
+    );
     expect(d.handover.code).toBe('039217');
     expect(d.handover.can_waited_photo).toBe(true);
     expect(d.buyer?.photo_url).toBeNull();
     expect(d.server_now).toBe('2026-10-04T12:00:00+07:00');
-    expect(typeof d.clock_offset_ms).toBe('number');
+    expect(d.clock_offset_ms).toBe(0);
     expect(normalizeRiderHandoverData({ handover: { code: '12ab56' } }).handover.code).toBeNull();
   });
 });

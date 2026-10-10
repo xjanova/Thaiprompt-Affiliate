@@ -16,13 +16,17 @@ import {
   cardFromFace,
   findCardRect,
   frameInPhoto,
+  glareFloorOf,
   isCardShotGood,
+  isRotatedAgainstStage,
   judgeCard,
   judgeGeometry,
   judgeLight,
+  largestGlareBlob,
   pickCardPictureSize,
   quickGeometryHint,
   regionStats,
+  CARD_QUALITY_CONFIG,
   CARD_RATIO,
   type CardCropFn,
   type GrayImage,
@@ -184,6 +188,8 @@ const FRAME_W = STAGE.w - 48;
 const FRAME_H = FRAME_W / CARD_RATIO;
 const FRAME = { x: 24, y: STAGE.h * 0.4 - FRAME_H / 2, w: FRAME_W, h: FRAME_H };
 const FRAME_P = frameInPhoto(FRAME, STAGE, PHOTO);
+/** ภาพจำลองย่อขนาดลง (บัตรกว้างราว 500 px) — ปิดเกณฑ์ความละเอียดขั้นต่ำ (ทดสอบแยกด้วยกรอบขนาดจริง) */
+const SCALED = { ...CARD_QUALITY_CONFIG, minCardPx: 0, relaxedMinCardPx: 0 };
 
 /** บัตรขนาด fill เท่าของกรอบ วางกลางกรอบ (เลื่อนได้) */
 const cardAt = (fill: number, dx = 0, dy = 0): Rect => {
@@ -221,7 +227,7 @@ const input = (card: Rect, faces?: unknown[]) => ({
   stage: STAGE,
 });
 
-const stats = (over: Partial<RegionStats> = {}): RegionStats => ({ mean: 190, p5: 40, p95: 230, clipped: 0, glare: 0, ...over });
+const stats = (over: Partial<RegionStats> = {}): RegionStats => ({ mean: 190, p5: 40, p50: 200, p95: 230, clipped: 0, glare: 0, ...over });
 
 // =====================================================
 // เรขาคณิต
@@ -307,11 +313,35 @@ describe('regionStats', () => {
     expect(t.glare).toBe(0);
   });
 
+  it('พื้นบัตรสีอ่อนที่สว่างเกิน (ไม่ถึงขาวจ้า) ไม่นับเป็นแสงสะท้อนเมื่อใช้เกณฑ์เทียบพื้นบัตร', () => {
+    const pale = makeRgb(100, 100, [246, 244, 247]);
+    const raw = regionStats(pale, { x: 0, y: 0, w: 100, h: 100 })!;
+    expect(raw.glare).toBeGreaterThan(0.9); // เกณฑ์ตายตัว 245 = นับผิด
+    expect(raw.p50).toBe(245);
+    expect(glareFloorOf(raw.p50)).toBe(252);
+    expect(regionStats(pale, { x: 0, y: 0, w: 100, h: 100 }, glareFloorOf(raw.p50))!.glare).toBe(0);
+    expect(glareFloorOf(180)).toBe(245);
+    expect(glareFloorOf(null)).toBe(245);
+  });
+
   it('สีสดจ้า (ไม่ใช่ขาว) ไม่ใช่แสงสะท้อน · ครอปเลยขอบภาพตัดให้เอง', () => {
     const img = makeRgb(50, 50, [255, 200, 40]);
     const s = regionStats(img, { x: -10, y: -10, w: 80, h: 80 })!;
     expect(s.glare).toBe(0);
     expect(regionStats(img, { x: 60, y: 60, w: 10, h: 10 })).toBeNull();
+  });
+});
+
+describe('largestGlareBlob', () => {
+  it('นับดวงที่ใหญ่สุด (ต่อกัน 4 ทิศ) ไม่ใช่ผลรวมจุดกระจาย · เกณฑ์เทียบค่ากลางของภาพ', () => {
+    const img = makeRgb(200, 60, [200, 190, 195]);
+    fillRect(img, { x: 20, y: 10, w: 12, h: 10 }, [255, 255, 255]);
+    fillRect(img, { x: 100, y: 10, w: 5, h: 5 }, [255, 255, 255]);
+    for (let x = 150; x < 190; x += 4) fillRect(img, { x, y: 40, w: 1, h: 1 }, [255, 255, 255]);
+    expect(largestGlareBlob(img)).toBe(120);
+    // ภาพสว่างทั้งภาพ (ค่ากลาง ≥ 220) ต้องสว่างกว่าค่ากลาง +35 → 250 ไม่ถึง 254
+    const bright = makeRgb(50, 50, [250, 250, 250]);
+    expect(largestGlareBlob(bright)).toBe(0);
   });
 });
 
@@ -362,32 +392,54 @@ describe('judgeGeometry', () => {
   };
 
   it('ไม่เห็นรูปหน้าบนบัตร = NO_CARD', () => {
-    expect(judgeGeometry(FRAME_P, null, null).hint).toBe('NO_CARD');
+    expect(judgeGeometry(FRAME_P, null, null, SCALED).hint).toBe('NO_CARD');
   });
 
   it('เดาจากรูปหน้า: ไกล / ใกล้ / ไม่อยู่กลาง / เอียง / พอดี', () => {
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.6)), null).hint).toBe('TOO_FAR');
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(1.35)), null).hint).toBe('TOO_CLOSE');
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.95, 0.2)), null).hint).toBe('OFF_CENTER');
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.95), 14), null).hint).toBe('TILTED');
-    const ok = judgeGeometry(FRAME_P, faceIn(cardAt(0.95)), null);
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.6)), null, SCALED).hint).toBe('TOO_FAR');
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(1.35)), null, SCALED).hint).toBe('TOO_CLOSE');
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.95, 0.2)), null, SCALED).hint).toBe('OFF_CENTER');
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.95), 14), null, SCALED).hint).toBe('TILTED');
+    const ok = judgeGeometry(FRAME_P, faceIn(cardAt(0.95)), null, SCALED);
     expect(ok.hint).toBeNull();
     expect(ok.source).toBe('face');
   });
 
   it('เจอขอบบัตรที่เข้ากับรูปหน้า = ใช้ขอบจริง (เกณฑ์แคบกว่า)', () => {
     const c = cardAt(0.79);
-    const r = judgeGeometry(FRAME_P, faceIn(c), c);
+    const r = judgeGeometry(FRAME_P, faceIn(c), c, SCALED);
     expect(r.source).toBe('edges');
     expect(r.hint).toBe('TOO_FAR');
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.9)), cardAt(0.9)).hint).toBeNull();
-    expect(judgeGeometry(FRAME_P, faceIn(cardAt(1.1)), cardAt(1.1)).hint).toBe('TOO_CLOSE');
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(0.9)), cardAt(0.9), SCALED).hint).toBeNull();
+    expect(judgeGeometry(FRAME_P, faceIn(cardAt(1.1)), cardAt(1.1), SCALED).hint).toBe('TOO_CLOSE');
+  });
+
+  it('โหมดผ่อนระยะ: บัตรเล็กกว่ากรอบได้ถ้ายังกว้าง ≥ 1050 px ในภาพจริง', () => {
+    // กรอบในภาพ 1700 px → ปกติต้อง ≥ 0.8 (1360 px) · ผ่อนแล้ว ≥ max(0.55, 1050/1700 = 0.62)
+    const frame = { x: 100, y: 800, w: 1700, h: 1700 / CARD_RATIO };
+    const at = (fill: number) => {
+      const w = frame.w * fill;
+      const h = w / CARD_RATIO;
+      return { x: frame.x + (frame.w - w) / 2, y: frame.y + (frame.h - h) / 2, w, h };
+    };
+    const c = at(0.66);
+    expect(judgeGeometry(frame, faceIn(c), c).hint).toBe('TOO_FAR');
+    expect(judgeGeometry(frame, faceIn(c), c, undefined, true).hint).toBeNull();
+    const tiny = at(0.58);
+    expect(judgeGeometry(frame, faceIn(tiny), tiny, undefined, true).hint).toBe('TOO_FAR');
+  });
+
+  it('ภาพละเอียดต่ำ: บัตรต้องกว้าง ≥ 950 px แม้เกณฑ์สัดส่วนผ่าน', () => {
+    const frame = { x: 50, y: 300, w: 1000, h: 1000 / CARD_RATIO };
+    const w = 900;
+    const c = { x: frame.x + 50, y: frame.y + 10, w, h: w / CARD_RATIO };
+    expect(judgeGeometry(frame, faceIn(c), c).hint).toBe('TOO_FAR');
   });
 
   it('ขอบที่ไม่เข้ากับรูปหน้า (เช่น จับขอบรูปติดบัตร/ขอบโต๊ะ) = ไม่ใช้', () => {
     const c = cardAt(0.9);
     const wrong = { x: c.x, y: c.y, w: c.w * 0.6, h: c.h }; // สัดส่วนไม่ใช่บัตร
-    expect(judgeGeometry(FRAME_P, faceIn(c), wrong).source).toBe('face');
+    expect(judgeGeometry(FRAME_P, faceIn(c), wrong, SCALED).source).toBe('face');
   });
 
   it('เช็คเร็ว: ห่างกรอบมากบอกเลย ไม่ต้องอ่านพิกเซล', () => {
@@ -440,7 +492,7 @@ describe('judgeCard / isCardShotGood', () => {
 describe('analyzeCardShot', () => {
   it('บัตรเต็มกรอบ คม แสงพอดี = GOOD จากขอบบัตรจริง + เรียนรู้สัดส่วนใบหน้า', async () => {
     const card = cardAt(0.92);
-    const v = await analyzeCardShot(input(card), cropperOf(scene(card)));
+    const v = await analyzeCardShot(input(card), cropperOf(scene(card)), SCALED);
     expect(v.hint).toBe('GOOD');
     expect(v.source).toBe('edges');
     expect(isCardShotGood(v)).toBe(true);
@@ -451,7 +503,7 @@ describe('analyzeCardShot', () => {
 
   it('ภาพเบลอ = BLURRY (ตำแหน่ง/แสงผ่าน)', async () => {
     const card = cardAt(0.92);
-    const v = await analyzeCardShot(input(card), cropperOf(boxBlur(scene(card), 3)));
+    const v = await analyzeCardShot(input(card), cropperOf(boxBlur(scene(card), 3)), SCALED);
     expect(v.fit).toBe(true);
     expect(v.light).toBe(true);
     expect(v.hint).toBe('BLURRY');
@@ -462,25 +514,42 @@ describe('analyzeCardShot', () => {
     const card = cardAt(0.92);
     const img = scene(card);
     fillEllipse(img, card.x + 0.85 * card.w, card.y + 0.66 * card.h, 0.05 * card.w, 0.06 * card.h, [255, 255, 255]);
-    const v = await analyzeCardShot(input(card), cropperOf(img));
+    const v = await analyzeCardShot(input(card), cropperOf(img), SCALED);
     expect(v.hint).toBe('GLARE_FACE');
+  });
+
+  it('ดวงแสงสะท้อนเล็กทับเลขบัตรไม่กี่ตัว (ภาพย่อมองไม่เห็น) = GLARE จากแถบละเอียด', async () => {
+    const card = cardAt(0.92);
+    const img = scene(card);
+    fillEllipse(img, card.x + 0.5 * card.w, card.y + 0.13 * card.h, 0.035 * card.w, 0.035 * card.h, [255, 255, 255]);
+    const v = await analyzeCardShot(input(card), cropperOf(img), SCALED);
+    expect(v.hint).toBe('GLARE');
+    expect(v.light).toBe(false);
+  });
+
+  it('ภาพหมุนต่างจากจอ = ROTATE (ไม่เทียบกรอบผิด)', async () => {
+    const card = cardAt(0.92);
+    const v = await analyzeCardShot({ ...input(card), width: PHOTO.h, height: PHOTO.w }, null);
+    expect(v.hint).toBe('ROTATE');
+    expect(isRotatedAgainstStage({ w: 4, h: 3 }, { w: 390, h: 520 })).toBe(true);
+    expect(isRotatedAgainstStage({ w: 3, h: 4 }, { w: 390, h: 520 })).toBe(false);
   });
 
   it('บัตรเล็กในกรอบ = TOO_FAR · ไม่มีรูปหน้า = NO_CARD (ไม่ครอปเลย)', async () => {
     const small = cardAt(0.7);
-    expect((await analyzeCardShot(input(small), cropperOf(scene(small)))).hint).toBe('TOO_FAR');
+    expect((await analyzeCardShot(input(small), cropperOf(scene(small)), SCALED)).hint).toBe('TOO_FAR');
     let crops = 0;
     const counting: CardCropFn = async () => {
       crops += 1;
       return null;
     };
-    expect((await analyzeCardShot(input(small, []), counting)).hint).toBe('NO_CARD');
+    expect((await analyzeCardShot(input(small, []), counting, SCALED)).hint).toBe('NO_CARD');
     expect(crops).toBe(0);
   });
 
   it('ไม่มีตัวครอป (build ไม่มี native) = ตัดสินจากรูปหน้าอย่างเดียว ไม่ถือว่าพร้อมถ่าย', async () => {
     const card = cardAt(0.92);
-    const v = await analyzeCardShot(input(card), null);
+    const v = await analyzeCardShot(input(card), null, SCALED);
     expect(v.fit).toBe(true);
     expect(v.light).toBeNull();
     expect(v.sharp).toBeNull();
@@ -489,7 +558,7 @@ describe('analyzeCardShot', () => {
 
   it('ขนาดภาพ/จอยังไม่รู้ = NO_CARD', async () => {
     const card = cardAt(0.92);
-    expect((await analyzeCardShot({ ...input(card), stage: { w: 0, h: 0 } }, null)).hint).toBe('NO_CARD');
+    expect((await analyzeCardShot({ ...input(card), stage: { w: 0, h: 0 } }, null, SCALED)).hint).toBe('NO_CARD');
   });
 });
 
