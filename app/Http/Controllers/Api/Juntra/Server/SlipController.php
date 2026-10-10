@@ -35,7 +35,7 @@ class SlipController extends Controller
     public function verify(Request $request, SlipOkService $slipok, SlipUsageRegistry $registry): JsonResponse
     {
         $validated = $request->validate([
-            'slip' => 'required|image|max:6144',
+            'slip' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:6144',
             'user_ref' => 'required|string|max:64',
             'expected_amount' => 'nullable|numeric',
         ]);

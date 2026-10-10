@@ -815,7 +815,7 @@ class FreshMarketApiController extends Controller
             'cashback_percentage' => 'nullable|numeric|min:0|max:'.$maxCashback,
             'tags' => 'nullable|array',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|max:5120',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ] + \App\Services\FreshMarketOptionService::groupsRules(), [
             'quantity_available.required' => 'กรุณาระบุจำนวนสินค้าที่มีขาย',
             'quantity_available.min' => 'จำนวนสินค้าต้องมีอย่างน้อย 1',
@@ -824,6 +824,7 @@ class FreshMarketApiController extends Controller
             'images.max' => 'อัปโหลดรูปสินค้าได้ไม่เกิน 5 รูป',
             'images.*.image' => 'รูปสินค้าต้องเป็นไฟล์รูปภาพ',
             'images.*.max' => 'รูปสินค้าแต่ละรูปต้องไม่เกิน 5MB',
+            'images.*.mimes' => 'รูปสินค้าต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
         ] + \App\Services\FreshMarketOptionService::validationMessages() + FreshMarketValidationText::messages(), FreshMarketValidationText::attributes());
 
         $optionGroups = $data['option_groups'] ?? null;

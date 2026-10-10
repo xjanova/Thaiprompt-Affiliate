@@ -259,8 +259,8 @@ class OfficialShopAdminController extends Controller
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'weight' => 'nullable|numeric|min:0',
             'brand' => 'nullable|string|max:100',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             // Coin purchase fields
             'price_coins' => 'nullable|numeric|min:0',
             'allow_coin_purchase' => 'nullable|boolean',
@@ -415,8 +415,8 @@ class OfficialShopAdminController extends Controller
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'weight' => 'nullable|numeric|min:0',
             'brand' => 'nullable|string|max:100',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'delete_images' => 'nullable|array',
             // Coin purchase fields
             'price_coins' => 'nullable|numeric|min:0',

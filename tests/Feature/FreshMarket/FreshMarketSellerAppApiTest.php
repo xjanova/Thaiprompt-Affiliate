@@ -306,6 +306,37 @@ class FreshMarketSellerAppApiTest extends TestCase
         $this->assertSame(0, FreshMarketListing::count());
     }
 
+    public function test_listing_images_reject_svg_and_other_non_photo_files(): void
+    {
+        [$user, $shop] = $this->makeShop();
+        $category = $this->category();
+        Sanctum::actingAs($user);
+        $svg = fn () => UploadedFile::fake()->createWithContent('evil.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>');
+
+        // ลงขาย: SVG (สคริปต์รันบนโดเมนเราได้) ต้องถูกปฏิเสธเป็นภาษาไทย และไม่มีไฟล์/สินค้าค้าง
+        $response = $this->post('/api/v1/fresh-market/listings', [
+            'title' => 'ผักบุ้ง',
+            'category_id' => $category->id,
+            'price' => '30',
+            'unit' => 'กำ',
+            'track_stock' => '0',
+            'images' => [$svg()],
+        ], ['Accept' => 'application/json'])->assertStatus(422);
+        $this->assertStringContainsString('JPG, PNG หรือ WEBP', (string) $response->json('message'));
+        $this->assertSame(0, FreshMarketListing::count());
+        $this->assertSame([], Storage::disk('public')->allFiles());
+
+        // เพิ่มรูปให้สินค้าเดิม
+        $listing = $this->makeListing($shop);
+        $this->post('/api/v1/fresh-market/listings/'.$listing->id.'/images', ['images' => [$svg()]], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+
+        // รูปจริงยังลงได้ตามปกติ (webp/png/jpg)
+        $this->post('/api/v1/fresh-market/listings/'.$listing->id.'/images', ['images' => [UploadedFile::fake()->image('ok.png')]], ['Accept' => 'application/json'])
+            ->assertOk();
+    }
+
     public function test_create_listing_over_quota_is_refused_before_storing_images(): void
     {
         FreshMarketSetting::getSettings()->update(['fee_mode' => 'subscription', 'max_listings_free' => 0]);

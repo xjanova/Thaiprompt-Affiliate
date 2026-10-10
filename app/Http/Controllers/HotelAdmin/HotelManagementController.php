@@ -71,9 +71,9 @@ class HotelManagementController extends Controller
             'facilities' => 'nullable|array',
             'facilities.*' => 'exists:hotel_facilities,id',
             'is_active' => 'boolean',
-            'main_image' => 'nullable|image|max:5120', // 5MB max
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120', // 5MB max
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|max:5120',
+            'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'video_url' => 'nullable|url|max:255',
         ]);
 

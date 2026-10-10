@@ -114,8 +114,8 @@ class ProductController extends Controller
             'pv_value' => 'nullable|numeric|min:0',
             'customer_cashback' => 'nullable|numeric|min:0',
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             // Shipping validation
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
             'shipping_fee' => 'nullable|numeric|min:0|max:'.self::MAX_SHIPPING_FEE,
@@ -288,8 +288,8 @@ class ProductController extends Controller
             'pv_value' => 'nullable|numeric|min:0',
             'customer_cashback' => 'nullable|numeric|min:0',
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             // Shipping validation
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
             'shipping_fee' => 'nullable|numeric|min:0|max:'.self::MAX_SHIPPING_FEE,

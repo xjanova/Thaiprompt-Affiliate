@@ -1204,7 +1204,7 @@ class HomeController extends Controller
             'freshness_level' => 'nullable|string|in:สด,สดมาก,ผลิตวันนี้',
             'cashback_percentage' => 'nullable|numeric|min:0|max:'.$maxCashback,
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|max:5120',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ] + \App\Services\FreshMarketOptionService::groupsRules(), [
             'quantity_available.required' => 'กรุณาระบุจำนวนสินค้าที่มีขาย',
             'quantity_available.min' => 'จำนวนสินค้าต้องมีอย่างน้อย 1',
@@ -1212,6 +1212,7 @@ class HomeController extends Controller
             'compare_at_price.gt' => 'ราคาก่อนลดต้องมากกว่าราคาขาย',
             'images.max' => 'อัปโหลดรูปสินค้าได้ไม่เกิน 5 รูป',
             'images.*.image' => 'รูปสินค้าต้องเป็นไฟล์รูปภาพ',
+            'images.*.mimes' => 'รูปสินค้าต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'images.*.max' => 'รูปสินค้าแต่ละรูปต้องไม่เกิน 5MB',
         ] + \App\Services\FreshMarketOptionService::validationMessages() + $this->thaiRuleMessages(), $this->thaiAttributes());
 
@@ -1313,7 +1314,7 @@ class HomeController extends Controller
             'option_groups_present' => 'nullable|boolean',
             // รูปสินค้า: เพิ่มรูปใหม่ / ลบรูปเดิม / เลือกรูปหลัก (รวมไม่เกิน 5 รูป)
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|max:5120',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'remove_images' => 'nullable|array|max:10',
             'remove_images.*' => 'string|max:255',
             'main_image' => 'nullable|string|max:255',
@@ -1323,6 +1324,7 @@ class HomeController extends Controller
             'images.max' => 'อัปโหลดรูปสินค้าได้ไม่เกิน 5 รูป',
             'images.*.image' => 'รูปสินค้าต้องเป็นไฟล์รูปภาพ',
             'images.*.max' => 'รูปสินค้าแต่ละรูปต้องไม่เกิน 5MB',
+            'images.*.mimes' => 'รูปสินค้าต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
         ] + \App\Services\FreshMarketOptionService::validationMessages() + $this->thaiRuleMessages(), $this->thaiAttributes());
 
         $syncGroups = $request->has('option_groups') || $request->boolean('option_groups_present');

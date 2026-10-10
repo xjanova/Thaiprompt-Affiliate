@@ -87,7 +87,7 @@ class HotelSpecialOfferController extends Controller
             'max_uses_per_user' => 'nullable|integer|min:1',
             'room_type_ids' => 'nullable|array',
             'room_type_ids.*' => 'exists:room_types,id',
-            'banner_image' => 'nullable|image|max:5120',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
         ]);
@@ -168,7 +168,7 @@ class HotelSpecialOfferController extends Controller
             'max_uses_per_user' => 'nullable|integer|min:1',
             'room_type_ids' => 'nullable|array',
             'room_type_ids.*' => 'exists:room_types,id',
-            'banner_image' => 'nullable|image|max:5120',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
         ]);

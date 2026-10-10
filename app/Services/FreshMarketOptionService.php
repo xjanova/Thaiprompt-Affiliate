@@ -297,7 +297,7 @@ class FreshMarketOptionService
             // รับเฉพาะรูปในเว็บเราเอง (/storage/... หรือ /images/...) — กันลิงก์ภายนอก
             // saveOption() ตรวจต่อว่าเป็นรูปของสินค้านี้/รูปคลังระบบเท่านั้น (ชี้ไปไฟล์ของร้านอื่นไม่ได้)
             "{$p}image_url" => ['nullable', 'string', 'max:255', 'regex:#^/(storage|images)/[A-Za-z0-9._/\-]+$#'],
-            "{$p}image" => 'nullable|image|max:5120',
+            "{$p}image" => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             "{$p}remove_image" => 'nullable|boolean',
         ];
     }
@@ -314,6 +314,7 @@ class FreshMarketOptionService
             'option_groups.*.options.*.name.required' => 'กรุณากรอกชื่อตัวเลือก',
             'option_groups.*.options.*.price_delta.min' => 'ราคาเพิ่มต้องไม่ติดลบ',
             'option_groups.*.options.*.image.image' => 'รูปตัวเลือกต้องเป็นไฟล์รูปภาพ',
+            'option_groups.*.options.*.image.mimes' => 'รูปตัวเลือกต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'option_groups.*.options.*.image.max' => 'รูปตัวเลือกต้องไม่เกิน 5MB',
             'option_groups.*.options.*.image_url.regex' => 'ลิงก์รูปตัวเลือกไม่ถูกต้อง',
             'option_groups.max' => 'ตั้งกลุ่มตัวเลือกได้ไม่เกิน '.self::MAX_GROUPS.' กลุ่ม',
@@ -321,6 +322,7 @@ class FreshMarketOptionService
             'options.min' => 'กลุ่มต้องมีตัวเลือกอย่างน้อย 1 รายการ',
             'name.required' => 'กรุณากรอกชื่อ',
             'price_delta.min' => 'ราคาเพิ่มต้องไม่ติดลบ',
+            'image.mimes' => 'รูปต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'image_url.regex' => 'ลิงก์รูปไม่ถูกต้อง',
         ];
     }

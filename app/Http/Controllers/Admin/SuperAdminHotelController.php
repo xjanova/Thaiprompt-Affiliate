@@ -157,9 +157,9 @@ class SuperAdminHotelController extends Controller
             'owner_id' => 'nullable|exists:users,id',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'main_image' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|max:5120',
+            'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'video_url' => 'nullable|url|max:255',
         ]);
 
@@ -237,9 +237,9 @@ class SuperAdminHotelController extends Controller
             'owner_id' => 'nullable|exists:users,id',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'main_image' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|max:5120',
+            'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'video_url' => 'nullable|url|max:255',
         ]);
 

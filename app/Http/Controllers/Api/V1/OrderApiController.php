@@ -232,7 +232,7 @@ class OrderApiController extends Controller
             'title' => 'nullable|string|max:200',
             'comment' => 'required|string|min:2|max:1000',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|max:2048',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:2048',
         ], [
             'rating.required' => 'กรุณาให้คะแนนสินค้า',
             'rating.min' => 'คะแนนต้องอยู่ระหว่าง 1-5',

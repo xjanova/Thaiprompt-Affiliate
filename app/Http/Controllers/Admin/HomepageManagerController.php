@@ -696,7 +696,7 @@ class HomepageManagerController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|max:10240', // 10MB max
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:10240', // 10MB max
         ]);
 
         if ($validator->fails()) {

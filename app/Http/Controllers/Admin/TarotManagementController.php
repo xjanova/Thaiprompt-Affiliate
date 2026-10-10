@@ -99,7 +99,7 @@ class TarotManagementController extends Controller
             'reversed_meaning_th' => 'nullable|string',
             'keywords_en' => 'nullable|string',
             'keywords_th' => 'nullable|string',
-            'image' => 'nullable|image|max:20480', // 20 MB (2026-05-04)
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:20480', // 20 MB (2026-05-04)
             'is_active' => 'boolean',
         ]);
 
@@ -151,7 +151,7 @@ class TarotManagementController extends Controller
             'reversed_meaning_th' => 'nullable|string',
             'keywords_en' => 'nullable|string',
             'keywords_th' => 'nullable|string',
-            'image' => 'nullable|image|max:20480', // 20 MB (2026-05-04)
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:20480', // 20 MB (2026-05-04)
             'is_active' => 'boolean',
         ]);
 
@@ -226,7 +226,7 @@ class TarotManagementController extends Controller
             $card = TarotCard::findOrFail($id);
 
             $request->validate([
-                'image' => 'required|image|max:20480', // 20 MB (2026-05-04)
+                'image' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:20480', // 20 MB (2026-05-04)
             ]);
 
             if (! $request->hasFile('image')) {
@@ -395,7 +395,7 @@ class TarotManagementController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'image' => 'required|image|max:20480', // 20 MB (2026-05-04)
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:20480', // 20 MB (2026-05-04)
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);

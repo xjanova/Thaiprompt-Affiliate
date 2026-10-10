@@ -85,7 +85,7 @@ class HotelReviewController extends Controller
             'pros' => 'nullable|string',
             'cons' => 'nullable|string',
             'guest_type' => 'nullable|string',
-            'images.*' => 'nullable|image|max:5120', // 5MB max
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120', // 5MB max
         ]);
 
         try {

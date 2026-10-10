@@ -159,7 +159,7 @@ class WithdrawalController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'transfer_slip' => ['nullable', 'file', 'image', 'max:5120'],   // 5MB
+            'transfer_slip' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],   // 5MB
             'transfer_note' => ['nullable', 'string', 'max:500'],
         ]);
 

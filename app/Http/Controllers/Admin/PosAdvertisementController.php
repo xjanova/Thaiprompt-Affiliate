@@ -59,7 +59,7 @@ class PosAdvertisementController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:image,video,html,promotion',
-            'image' => 'nullable|image|max:5120', // 5MB
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120', // 5MB
             'video' => 'nullable|mimes:mp4,webm|max:51200', // 50MB
             'html_content' => 'nullable|string',
             'promotion_code' => 'nullable|string|max:50',
@@ -128,7 +128,7 @@ class PosAdvertisementController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:image,video,html,promotion',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'video' => 'nullable|mimes:mp4,webm|max:51200',
             'html_content' => 'nullable|string',
             'promotion_code' => 'nullable|string|max:50',

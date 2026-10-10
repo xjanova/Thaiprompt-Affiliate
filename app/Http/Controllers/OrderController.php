@@ -173,7 +173,7 @@ class OrderController extends Controller
             'title' => 'nullable|string|max:200',
             'comment' => 'required|string|max:1000',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|max:2048',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:2048',
         ]);
 
         // อนุญาตให้รีวิวได้เมื่อรับสินค้าแล้ว (delivered) หรือยืนยันรับสินค้าแล้ว (completed)

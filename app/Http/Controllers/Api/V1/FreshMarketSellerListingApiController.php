@@ -117,11 +117,12 @@ class FreshMarketSellerListingApiController extends FreshMarketApiController
 
         $data = $this->validateRequest($request, [
             'images' => 'required|array|min:1|max:5',
-            'images.*' => 'image|max:5120',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'replace' => 'nullable|boolean',
         ], [
             'images.required' => 'กรุณาเลือกรูปสินค้า',
             'images.*.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'images.*.mimes' => 'รูปต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'images.*.max' => 'รูปต้องไม่เกิน 5MB',
         ]);
 
@@ -378,9 +379,10 @@ class FreshMarketSellerListingApiController extends FreshMarketApiController
             return $error;
         }
 
-        $this->validateRequest($request, ['image' => 'required|image|max:5120'], [
+        $this->validateRequest($request, ['image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120'], [
             'image.required' => 'กรุณาเลือกรูป',
             'image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'image.mimes' => 'รูปต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'image.max' => 'รูปต้องไม่เกิน 5MB',
         ]);
 
