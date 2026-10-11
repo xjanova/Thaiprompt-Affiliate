@@ -4,55 +4,94 @@ namespace App\Services;
 
 use App\Models\FortuneReading;
 use App\Support\FontFile;
+use App\Support\ThaiFontText;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Exception;
+use GdImage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * สร้างภาพ composite Celtic Cross spread (10 ใบเรียงตามแบบมาตรฐาน)
+ * สร้างภาพ composite Celtic Cross spread (10 ใบเรียงตามแบบมาตรฐาน) — ภาพที่ระลึกตอนสรุปจบบิล 99
  *
- * ใช้ GD library — รับ FortuneReading ที่มี celtic_cards 10 ใบ
+ * ใช้ GD library (prod ไม่มี Imagick · memory_limit 128M) — รับ FortuneReading ที่มี celtic_cards 10 ใบ
  * Output: ไฟล์ JPEG ที่ storage/app/public/celtic-spreads/{reading_id}.jpg
  *
  * Layout:
- *               [10]
- *               [9]
- *      [3]      [8]      ← Staff (right column, bottom-up: 7,8,9,10)
- *               [7]
- * [5] [1] [2]  [6]
- *      [4]
+ *                              [10]
+ *        [3]                   [9]
+ *   [5]  [1]  [2]  [6]         [8]     ← Staff (คอลัมน์ขวา อ่านจากล่างขึ้นบน 7,8,9,10)
+ *        [4]                   [7]
  *
- * Position 2 (ไพ่ขวาง หมุน 90°) วางถัดจาก Position 1 ทางขวา — แยกกัน ไม่ทับแล้ว
- * ไพ่กลับหัว = หมุน 180°
+ * Position 2 (ไพ่ขวาง หมุน 90°) วางถัดจาก Position 1 ทางขวา — แยกกัน ไม่ทับ (owner สั่ง 2026-06-08)
+ * ไพ่กลับหัว = หมุน 180° + ป้าย "กลับหัว" บนไพ่
+ *
+ * 🎨 (2026-10-11, owner: "ภาพเรียงไพ่ตอนสรุปจบของ 99 สร้างให้ชัดสวยกว่านี้ได้ไหม")
+ *   เดิม: ไพ่ใบละ 117×208 บนผ้าใบ 1200×1500 (ที่ว่างเยอะ ไพ่เล็กจนดูไม่ออก) · ไม่มีชื่อไพ่
+ *         · คำอธิบายตำแหน่งกองอยู่ท้ายภาพ · "หัวใจของเรื่อง" วรรณยุกต์จมหายเป็น "เรือง"
+ *   ใหม่: ไพ่ 200×356 (ต้นฉบับ 536×960 + ชาร์ปหลังย่อ) · ชื่อตำแหน่ง + ชื่อไพ่ใต้ทุกใบ · เหรียญเลขทอง
+ *         · พื้นหลังไล่แสง + วงแหวนรอบกางเขน + เงาไพ่ · วรรณยุกต์บนสระบนยกลอยเอง (GD ไม่ทำ shaping)
+ *   ⚠️ LINE ใช้ URL เดียวกันเป็น previewImageUrl (ต้อง ≤ 1MB) → saveJpeg ลดคุณภาพจนไฟล์ ≤ MAX_BYTES
+ *   ⚠️ ห้ามใส่ชื่อลูกค้าในภาพ — URL เดาได้ (celtic-spreads/{id}.jpg) ใครก็เปิดได้
  */
 class CelticSpreadImageGenerator
 {
-    // Canvas
-    protected const CANVAS_W = 1200;
+    // Canvas (2:3 — เฟซบุ๊ก/LINE เปิดภาพแนวตั้งเต็มจอได้ · ไพ่กินความกว้างภาพ ~14% ต่อใบ เดิม ~10%)
+    protected const CANVAS_W = 1440;
 
-    protected const CANVAS_H = 1500;
+    protected const CANVAS_H = 2200;
 
-    // Card size — 🃏 (2026-06-08) อัตราส่วน 9:16 ให้ตรงกับไพ่ที่ออกแบบใหม่ (เดิม 5:8 = 130×208)
-    //   drawCard scale แบบ contain อยู่แล้ว → รูป 9:16 พอดีกรอบ ไม่ครอป ไม่บีบ
-    protected const CARD_W = 117; // = 208 × 9 / 16 ≈ 117
+    // Card size — อัตราส่วน 9:16 ตรงกับไพ่ที่ออกแบบใหม่ (536×960) · drawCard สเกลแบบ contain ไม่ครอป ไม่บีบ
+    protected const CARD_W = 200;
 
-    protected const CARD_H = 208;
+    protected const CARD_H = 356;
 
-    // Position coordinates (center x, center y) — Cross + Staff
+    // ขนาดไฟล์สูงสุด — LINE previewImageUrl รับไม่เกิน 1MB (เผื่อไว้นิดหน่อย)
+    public const MAX_BYTES = 950_000;
+
+    // จุดกึ่งกลางวงแหวนรอบกางเขน (กึ่งกลางระหว่างใบ 5 กับใบ 6 · แถวกลาง)
+    protected const CROSS_CENTER = ['x' => 588, 'y' => 1162];
+
+    // Position coordinates (center x, center y) + ความกว้างสูงสุดของป้ายชื่อใต้ไพ่
+    //   แนวนอน: ขอบ 65 · ห่างกัน 30 · ระหว่างกางเขนกับคอลัมน์ขวา 64
+    //   แนวตั้ง: ไพ่ห่างกัน 456 (ไพ่ 356 + ป้ายชื่อ/ช่องว่าง 100) · กางเขนจัดกึ่งกลางเทียบคอลัมน์ขวา
     protected const POSITIONS = [
-        // Cross (left side, around center 380, 750)
-        1 => ['x' => 380, 'y' => 750, 'rotation' => 0],   // ใจกลาง
-        2 => ['x' => 560, 'y' => 750, 'rotation' => 90],  // 🃏(2026-06-08) ไพ่ขวาง (หมุน 90°) ขยับมาขวา ไม่ทับใบ 1
-        3 => ['x' => 380, 'y' => 460, 'rotation' => 0],   // เหนือ
-        4 => ['x' => 380, 'y' => 1040, 'rotation' => 0],  // ใต้
-        5 => ['x' => 180, 'y' => 750, 'rotation' => 0],   // ซ้าย (อดีต)
-        6 => ['x' => 760, 'y' => 750, 'rotation' => 0],   // ขวา (อนาคต) — ขยับขวาเปิดที่ให้ใบ 2
-        // Staff (right column, bottom-up: 7,8,9,10)
-        7 => ['x' => 920, 'y' => 1230, 'rotation' => 0],
-        8 => ['x' => 920, 'y' => 990, 'rotation' => 0],
-        9 => ['x' => 920, 'y' => 750, 'rotation' => 0],
-        10 => ['x' => 920, 'y' => 510, 'rotation' => 0],
+        // Cross — แถวกลาง 5 · 1 · 2(ขวาง) · 6 · บน 3 · ล่าง 4
+        1 => ['x' => 395, 'y' => 1162, 'rotation' => 0, 'label_w' => 224],   // ใจกลาง
+        2 => ['x' => 703, 'y' => 1162, 'rotation' => 90, 'label_w' => 380],  // ไพ่ขวาง (หมุน 90°) ข้างใบ 1
+        3 => ['x' => 395, 'y' => 706, 'rotation' => 0, 'label_w' => 340],    // เหนือ
+        4 => ['x' => 395, 'y' => 1618, 'rotation' => 0, 'label_w' => 340],   // ใต้
+        5 => ['x' => 165, 'y' => 1162, 'rotation' => 0, 'label_w' => 224],   // ซ้าย (อดีต)
+        6 => ['x' => 1011, 'y' => 1162, 'rotation' => 0, 'label_w' => 224],  // ขวา (อนาคต)
+        // Staff (คอลัมน์ขวา ล่างขึ้นบน 7,8,9,10)
+        7 => ['x' => 1275, 'y' => 1846, 'rotation' => 0, 'label_w' => 264],
+        8 => ['x' => 1275, 'y' => 1390, 'rotation' => 0, 'label_w' => 264],
+        9 => ['x' => 1275, 'y' => 934, 'rotation' => 0, 'label_w' => 264],
+        10 => ['x' => 1275, 'y' => 478, 'rotation' => 0, 'label_w' => 264],
     ];
+
+    // สีหลัก (RGB)
+    protected const GOLD = [232, 196, 116];
+
+    protected const GOLD_MUTED = [206, 170, 104];
+
+    protected const CREAM = [248, 238, 218];
+
+    protected const LAVENDER = [196, 182, 228];
+
+    /** วรรณยุกต์ไทย ่ ้ ๊ ๋ ์ */
+    protected const THAI_TONE_MARKS = ["\u{0E48}", "\u{0E49}", "\u{0E4A}", "\u{0E4B}", "\u{0E4C}"];
+
+    /** สระบน/นิคหิต ที่วรรณยุกต์ต้องลอยอยู่เหนือ ั ิ ี ึ ื ํ */
+    protected const THAI_UPPER_VOWELS = ["\u{0E31}", "\u{0E34}", "\u{0E35}", "\u{0E36}", "\u{0E37}", "\u{0E4D}"];
+
+    // ยกวรรณยุกต์ขึ้นกี่เท่าของขนาดฟอนต์ (pt) — วัดจาก NotoSansThai-Bold ให้ลอยพ้นสระบนพอดี
+    protected const TONE_LIFT = 0.30;
+
+    protected ?string $fontPath = null;
+
+    protected bool $fontResolved = false;
 
     /**
      * สร้างภาพ spread + บันทึก path ใน reading
@@ -72,26 +111,9 @@ class CelticSpreadImageGenerator
         }
 
         try {
-            // 1. สร้าง canvas พื้นหลัง gradient
-            $canvas = $this->createCanvas();
+            $canvas = $this->render($cards, $this->readingDate($reading));
 
-            // 2. วาดชื่อ + วันที่ด้านบน
-            $this->drawHeader($canvas);
-
-            // 3. วาดไพ่ทั้ง 10 ใบ
-            for ($pos = 1; $pos <= 10; $pos++) {
-                $card = $cards[$pos] ?? null;
-                if (! $card) {
-                    continue;
-                }
-
-                $this->drawCard($canvas, $card, $pos);
-            }
-
-            // 4. วาด position numbers + ชื่อตำแหน่ง
-            $this->drawLegend($canvas);
-
-            // 5. บันทึกไฟล์
+            // บันทึกไฟล์
             $relativePath = "celtic-spreads/{$reading->id}.jpg";
             $absolutePath = storage_path("app/public/{$relativePath}");
             $dir = dirname($absolutePath);
@@ -110,7 +132,7 @@ class CelticSpreadImageGenerator
                 return null;
             }
 
-            $writeOk = @imagejpeg($canvas, $absolutePath, 90);
+            $writeOk = $this->saveJpeg($canvas, $absolutePath);
             imagedestroy($canvas);
 
             if (! $writeOk || ! is_file($absolutePath) || filesize($absolutePath) < 1024) {
@@ -125,7 +147,7 @@ class CelticSpreadImageGenerator
                 return null;
             }
 
-            // 6. อัพเดต reading
+            // อัพเดต reading
             $reading->update(['celtic_summary_image_path' => $relativePath]);
 
             // 🩹 (2026-05-05) URL with cache buster (mtime) — กัน FB cache ภาพเก่า
@@ -142,7 +164,7 @@ class CelticSpreadImageGenerator
             ]);
 
             return $url;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CelticSpreadImage: ล้มเหลว', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
@@ -153,272 +175,680 @@ class CelticSpreadImageGenerator
     }
 
     /**
-     * สร้าง canvas พื้นหลัง gradient (deep purple → indigo + ดาวเล็กๆ)
+     * วาดภาพทั้งใบ (แยกจาก generate ให้พรีวิว/ทดสอบได้โดยไม่แตะ DB และไฟล์)
+     *
+     * @param  array<int,array>  $cards  ไพ่ตาม position 1-10 (['image_url','is_reversed','card_name_th',...])
+     * @param  CarbonInterface|null  $date  วันที่ดูดวง (แสดงใต้หัวภาพ) — null = ไม่แสดงวันที่
      */
-    protected function createCanvas()
+    public function render(array $cards, ?CarbonInterface $date = null): GdImage
     {
-        $canvas = imagecreatetruecolor(self::CANVAS_W, self::CANVAS_H);
+        // 1. พื้นหลังไล่แสง + ดาว + วงแหวนรอบกางเขน
+        $canvas = $this->createCanvas();
+        $this->drawStars($canvas);
+        $this->drawCrossHalo($canvas);
 
-        // Gradient bg (vertical: top dark purple → bottom darker indigo)
-        for ($y = 0; $y < self::CANVAS_H; $y++) {
-            $ratio = $y / self::CANVAS_H;
-            $r = (int) (20 + (50 * (1 - $ratio)));
-            $g = (int) (10 + (20 * (1 - $ratio)));
-            $b = (int) (45 + (60 * (1 - $ratio)));
-            $color = imagecolorallocate($canvas, $r, $g, $b);
-            imageline($canvas, 0, $y, self::CANVAS_W, $y, $color);
+        // 2. หัวภาพ
+        $this->drawHeader($canvas, $date);
+
+        // 3. ไพ่ทั้ง 10 ใบ (+ เงา · เหรียญเลข · ป้ายกลับหัว · ชื่อตำแหน่ง/ชื่อไพ่)
+        for ($pos = 1; $pos <= 10; $pos++) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+
+            $this->drawCard($canvas, $card, $pos);
         }
 
-        // โรย "ดาว" สุ่ม
-        $star = imagecolorallocatealpha($canvas, 255, 240, 200, 50);
-        for ($i = 0; $i < 80; $i++) {
-            $sx = random_int(0, self::CANVAS_W - 1);
-            $sy = random_int(0, self::CANVAS_H - 1);
-            $size = random_int(1, 3);
-            imagefilledellipse($canvas, $sx, $sy, $size, $size, $star);
-        }
+        // 4. ลายน้ำท้ายภาพ
+        $this->drawFooter($canvas);
 
         return $canvas;
     }
 
     /**
-     * วาด header: "Celtic Cross — แม่หมอจันทรา"
+     * บันทึก JPEG — ลดคุณภาพทีละขั้นจนไฟล์ ≤ MAX_BYTES (LINE preview ≤ 1MB)
      */
-    protected function drawHeader($canvas): void
+    protected function saveJpeg(GdImage $canvas, string $path): bool
     {
-        $gold = imagecolorallocate($canvas, 230, 195, 100);
-        $cream = imagecolorallocate($canvas, 240, 230, 200);
-        $fontPath = $this->findThaiFont();
+        foreach ([90, 85, 80, 74] as $quality) {
+            if (! @imagejpeg($canvas, $path, $quality)) {
+                return false;
+            }
 
-        if ($fontPath) {
-            imagettftext($canvas, 36, 0, 60, 80, $gold, $fontPath, 'Celtic Cross Tarot Reading');
-            imagettftext($canvas, 22, 0, 60, 130, $cream, $fontPath, 'แม่หมอจันทรา • ดูดวงไพ่ยิปซีเต็มสำรับ');
-        } else {
-            imagestring($canvas, 5, 60, 60, 'Celtic Cross Tarot Reading', $gold);
+            clearstatcache(true, $path);
+            if (filesize($path) <= self::MAX_BYTES) {
+                return true;
+            }
+        }
+
+        // ยังใหญ่เกิน → เก็บไฟล์คุณภาพต่ำสุดไว้ (เฟซบุ๊กรับได้ · LINE อาจไม่ขึ้นตัวอย่าง)
+        Log::warning('CelticSpreadImage: ไฟล์ใหญ่เกินขีด LINE preview', ['path' => $path, 'size' => filesize($path)]);
+
+        return true;
+    }
+
+    /**
+     * วันที่ดูดวงของบิล (เวลาไทย) — ใช้วันจ่ายเงิน ถ้าไม่มีใช้วันเปิดบิล
+     */
+    protected function readingDate(FortuneReading $reading): ?CarbonInterface
+    {
+        $raw = $reading->paid_at ?? $reading->created_at;
+        if (! $raw) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($raw)->setTimezone('Asia/Bangkok');
+        } catch (\Throwable) {
+            return null;
         }
     }
 
     /**
-     * วาดไพ่ 1 ใบที่ตำแหน่ง position
+     * แปลงวันที่เป็นรูปแบบไทย เช่น "11 ตุลาคม 2569"
+     */
+    protected function thaiDate(CarbonInterface $date): string
+    {
+        $months = [
+            1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน',
+            5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม',
+            9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม',
+        ];
+
+        return $date->day.' '.$months[$date->month].' '.($date->year + 543);
+    }
+
+    /**
+     * สร้าง canvas พื้นหลัง — ม่วงเข้มไล่ลงน้ำเงินกลางคืน + แสงเรืองหลังกางเขน + ขอบมืด (vignette)
+     *
+     * คำนวณสีทีละพิกเซลบนภาพเล็ก (÷10) แล้วขยายแบบ bilinear — เนียนและเร็ว (ไม่วนลูป 2.9 ล้านพิกเซลใน PHP)
+     */
+    protected function createCanvas(): GdImage
+    {
+        $sw = intdiv(self::CANVAS_W, 10);
+        $sh = intdiv(self::CANVAS_H, 10);
+        $small = imagecreatetruecolor($sw, $sh);
+
+        $gx = self::CROSS_CENTER['x'] / 10;
+        $gy = self::CROSS_CENTER['y'] / 10;
+
+        for ($y = 0; $y < $sh; $y++) {
+            $t = $y / ($sh - 1);
+            for ($x = 0; $x < $sw; $x++) {
+                // ไล่แนวตั้ง: ม่วงบน → น้ำเงินกลางคืนล่าง
+                $r = 40 - 28 * $t;
+                $g = 20 - 12 * $t;
+                $b = 76 - 46 * $t;
+
+                // แสงเรืองม่วงหลังกางเขน
+                $d = hypot(($x - $gx) / 62, ($y - $gy) / 62);
+                $glow = max(0.0, 1 - $d) ** 2;
+                $r += 52 * $glow;
+                $g += 26 * $glow;
+                $b += 92 * $glow;
+
+                // แสงอ่อนหลังหัวภาพ
+                $d2 = hypot(($x - $sw / 2) / 70, ($y - 14) / 26);
+                $glow2 = max(0.0, 1 - $d2) ** 2;
+                $r += 34 * $glow2;
+                $g += 20 * $glow2;
+                $b += 44 * $glow2;
+
+                // ขอบมืด
+                $v = hypot(($x - $sw / 2) / ($sw / 2), ($y - $sh / 2) / ($sh / 2));
+                $vig = 1 - 0.38 * min(1.0, $v * $v * 0.7);
+
+                imagesetpixel($small, $x, $y, imagecolorallocate(
+                    $small,
+                    (int) max(0, min(255, $r * $vig)),
+                    (int) max(0, min(255, $g * $vig)),
+                    (int) max(0, min(255, $b * $vig)),
+                ));
+            }
+        }
+
+        $canvas = imagescale($small, self::CANVAS_W, self::CANVAS_H, IMG_BILINEAR_FIXED);
+        imagedestroy($small);
+
+        if (! $canvas instanceof GdImage) {
+            // imagescale ล้ม (ไม่น่าเกิด) → พื้นสีเรียบ ภาพยังออกได้
+            $canvas = imagecreatetruecolor(self::CANVAS_W, self::CANVAS_H);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 24, 12, 48));
+        }
+
+        imagealphablending($canvas, true);
+
+        return $canvas;
+    }
+
+    /**
+     * โรยดาว — จุดเล็กหลายระดับความสว่าง + ดาวประกาย 4 แฉกไม่กี่ดวง
+     */
+    protected function drawStars(GdImage $canvas): void
+    {
+        for ($i = 0; $i < 170; $i++) {
+            $sx = random_int(0, self::CANVAS_W - 1);
+            $sy = random_int(0, self::CANVAS_H - 1);
+            $alpha = random_int(35, 105);
+            $color = imagecolorallocatealpha($canvas, 255, 244, 214, $alpha);
+            if (random_int(0, 9) < 7) {
+                imagesetpixel($canvas, $sx, $sy, $color);
+            } else {
+                imagefilledellipse($canvas, $sx, $sy, 3, 3, $color);
+            }
+        }
+
+        // ดาวประกาย — วางขอบภาพ (ไม่ไปทับไพ่/ข้อความ)
+        $sparkles = [[80, 330, 22], [1392, 236, 18], [120, 1760, 16], [1400, 2150, 20], [300, 2150, 14], [700, 360, 14], [60, 2000, 12]];
+        foreach ($sparkles as [$sx, $sy, $size]) {
+            $this->drawSparkle($canvas, $sx, $sy, $size);
+        }
+    }
+
+    /**
+     * ดาวประกาย 4 แฉก (supersample → ขอบเนียน)
+     */
+    protected function drawSparkle(GdImage $canvas, int $cx, int $cy, int $size): void
+    {
+        $box = $size * 2 + 4;
+        $this->stamp($canvas, $box, $box, $cx - intdiv($box, 2), $cy - intdiv($box, 2), function (GdImage $im, int $ss) use ($box, $size) {
+            $c = $box * $ss / 2;
+            $outer = $size * $ss;
+            $inner = $outer * 0.16;
+            imagefilledellipse($im, (int) $c, (int) $c, (int) ($outer * 0.9), (int) ($outer * 0.9), imagecolorallocatealpha($im, 255, 226, 160, 112));
+            imagefilledpolygon($im, [
+                $c, $c - $outer, $c + $inner, $c - $inner, $c + $outer, $c, $c + $inner, $c + $inner,
+                $c, $c + $outer, $c - $inner, $c + $inner, $c - $outer, $c, $c - $inner, $c - $inner,
+            ], imagecolorallocatealpha($im, 255, 240, 200, 18));
+        });
+    }
+
+    /**
+     * วงแหวนทองบางๆ รอบกางเขน + จุดประดับ 24 จุด — อยู่หลังไพ่ (เห็นเป็นช่วงๆ ระหว่างไพ่)
+     */
+    protected function drawCrossHalo(GdImage $canvas): void
+    {
+        $cx = self::CROSS_CENTER['x'];
+        $cy = self::CROSS_CENTER['y'];
+
+        $this->drawAaRing($canvas, $cx, $cy, 520, self::GOLD, 0.32);
+        $this->drawAaRing($canvas, $cx, $cy, 534, self::GOLD, 0.16);
+        $this->drawAaRing($canvas, $cx, $cy, 300, self::GOLD, 0.12);
+
+        for ($i = 0; $i < 24; $i++) {
+            $a = 2 * M_PI * $i / 24;
+            $dx = (int) round($cx + 527 * cos($a));
+            $dy = (int) round($cy + 527 * sin($a));
+            // จุดที่ตกชิดขอบไพ่จะโผล่ครึ่งดวงดูเหมือนพลาด → ข้าม (จุดใต้ไพ่ถูกไพ่ทับอยู่แล้ว)
+            if ($this->isNearCard($dx, $dy, 14)) {
+                continue;
+            }
+            $big = $i % 6 === 0;
+            $d = $big ? 9 : 5;
+            $this->stamp($canvas, $d + 2, $d + 2, $dx - intdiv($d + 2, 2), $dy - intdiv($d + 2, 2), function (GdImage $im, int $ss) use ($d, $big) {
+                $c = (int) (($d + 2) * $ss / 2);
+                imagefilledellipse($im, $c, $c, $d * $ss, $d * $ss, imagecolorallocatealpha($im, 236, 202, 128, $big ? 30 : 70));
+            });
+        }
+    }
+
+    /**
+     * จุด ($x,$y) อยู่ในกรอบไพ่ใบใดใบหนึ่ง (ขยายออก $pad px) หรือไม่
+     */
+    protected function isNearCard(int $x, int $y, int $pad): bool
+    {
+        foreach (self::POSITIONS as $p) {
+            [$w, $h] = $p['rotation'] !== 0 ? [self::CARD_H, self::CARD_W] : [self::CARD_W, self::CARD_H];
+            if (abs($x - $p['x']) <= $w / 2 + $pad && abs($y - $p['y']) <= $h / 2 + $pad) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * วงกลมเส้นบางขอบเนียน — วาดเป็นเส้นสั้นๆ ด้วย imageantialias
+     *
+     * GD วาดเส้น antialias ได้เฉพาะสีทึบ → ผสมสีทองกับพื้นหลังตรงจุดนั้นเอง ($opacity) แล้วค่อยวาด
+     */
+    protected function drawAaRing(GdImage $canvas, int $cx, int $cy, int $radius, array $rgb, float $opacity): void
+    {
+        $hasAa = function_exists('imageantialias');
+        if ($hasAa) {
+            imageantialias($canvas, true);
+        }
+
+        $steps = max(120, (int) ceil(2 * M_PI * $radius / 5));
+        $px = $cx + $radius;
+        $py = (float) $cy;
+        for ($i = 1; $i <= $steps; $i++) {
+            $a = 2 * M_PI * $i / $steps;
+            $nx = $cx + $radius * cos($a);
+            $ny = $cy + $radius * sin($a);
+            $mx = (int) round(($px + $nx) / 2);
+            $my = (int) round(($py + $ny) / 2);
+
+            if ($mx >= 0 && $my >= 0 && $mx < self::CANVAS_W && $my < self::CANVAS_H) {
+                $bg = imagecolorat($canvas, $mx, $my);
+                $color = imagecolorallocate(
+                    $canvas,
+                    (int) round((($bg >> 16) & 0xFF) * (1 - $opacity) + $rgb[0] * $opacity),
+                    (int) round((($bg >> 8) & 0xFF) * (1 - $opacity) + $rgb[1] * $opacity),
+                    (int) round(($bg & 0xFF) * (1 - $opacity) + $rgb[2] * $opacity),
+                );
+                imageline($canvas, (int) round($px), (int) round($py), (int) round($nx), (int) round($ny), $color);
+            }
+
+            $px = $nx;
+            $py = $ny;
+        }
+
+        if ($hasAa) {
+            imageantialias($canvas, false);
+        }
+    }
+
+    /**
+     * วาด header: CELTIC CROSS + หัวเรื่องไทย + แม่หมอจันทรา · วันที่ + เส้นคั่นประดับ
+     */
+    protected function drawHeader(GdImage $canvas, ?CarbonInterface $date): void
+    {
+        $font = $this->findThaiFont();
+        $cx = intdiv(self::CANVAS_W, 2);
+        $gold = $this->color($canvas, self::GOLD);
+
+        if (! $font) {
+            imagestring($canvas, 5, 60, 60, 'Celtic Cross Tarot Reading', $gold);
+
+            return;
+        }
+
+        $this->drawSpacedCentered($canvas, 17, $cx, 92, $gold, $font, 'CELTIC CROSS TAROT', 7);
+        $this->drawCenteredText($canvas, 40, $cx, 160, $this->color($canvas, self::CREAM), $font, 'ไพ่ 10 ใบของเจ้าชะตา');
+
+        $sub = 'แม่หมอจันทรา';
+        if ($date) {
+            $sub .= '  ·  ดูดวงวันที่ '.$this->thaiDate($date);
+        }
+        $this->drawCenteredText($canvas, 16, $cx, 206, $this->color($canvas, self::LAVENDER), $font, $sub);
+
+        $this->drawOrnamentDivider($canvas, $cx, 240, 260);
+    }
+
+    /**
+     * เส้นคั่นประดับ: ──── ◆ ──── (เส้นจางออกปลาย)
+     */
+    protected function drawOrnamentDivider(GdImage $canvas, int $cx, int $y, int $halfWidth): void
+    {
+        for ($i = 0; $i < $halfWidth - 14; $i++) {
+            // จางออกไปทางปลาย
+            $alpha = (int) round(40 + 87 * ($i / ($halfWidth - 14)));
+            $color = imagecolorallocatealpha($canvas, self::GOLD[0], self::GOLD[1], self::GOLD[2], min(127, $alpha));
+            imagesetpixel($canvas, $cx + 14 + $i, $y, $color);
+            imagesetpixel($canvas, $cx - 14 - $i, $y, $color);
+        }
+
+        $this->stamp($canvas, 16, 16, $cx - 8, $y - 8, function (GdImage $im, int $ss) {
+            $c = 8 * $ss;
+            $r = 7 * $ss;
+            imagefilledpolygon($im, [$c, $c - $r, $c + $r, $c, $c, $c + $r, $c - $r, $c], imagecolorallocate($im, ...self::GOLD));
+        });
+    }
+
+    /**
+     * วาดลายน้ำท้ายภาพ
+     */
+    protected function drawFooter(GdImage $canvas): void
+    {
+        $font = $this->findThaiFont();
+        if (! $font) {
+            return;
+        }
+
+        $cx = intdiv(self::CANVAS_W, 2);
+        $this->drawOrnamentDivider($canvas, $cx, self::CANVAS_H - 80, 200);
+        $this->drawCenteredText($canvas, 14, $cx, self::CANVAS_H - 38, $this->color($canvas, self::GOLD_MUTED), $font, 'thaiprompt.online  ·  แม่หมอจันทรา');
+    }
+
+    /**
+     * วาดไพ่ 1 ใบที่ตำแหน่ง position (+ เงา · กรอบ · เหรียญเลข · ป้ายกลับหัว · ป้ายชื่อใต้ไพ่)
      *
      * @param  array  $card  ['image_url', 'is_reversed', 'card_name_th', ...]
      * @param  int  $position  1-10
      */
-    protected function drawCard($canvas, array $card, int $position): void
+    protected function drawCard(GdImage $canvas, array $card, int $position): void
     {
         $coords = self::POSITIONS[$position] ?? null;
         if (! $coords) {
             return;
         }
 
-        $imageUrl = $card['image_url'] ?? null;
         $isReversed = ! empty($card['is_reversed']);
+        $face = $this->buildCardFace($card['image_url'] ?? null, $isReversed, $coords['rotation']);
 
-        // โหลด card image
-        $cardImg = $this->loadImageFromUrl($imageUrl);
-        if (! $cardImg) {
-            // fallback: ไพ่ยังไม่มีรูป (เช่น Minor Arcana 56 ใบที่ยังไม่อัปโหลด / SVG ที่ GD อ่านไม่ได้)
-            //   → วาดการ์ดหลังไพ่ + ชื่อไพ่ไทย แทนกล่องเปล่า ให้ดูตั้งใจ
-            $this->drawPlaceholderCard($canvas, $coords['x'], $coords['y'], $coords['rotation'], $position, $card);
-
-            return;
+        if ($face) {
+            $w = imagesx($face);
+            $h = imagesy($face);
+        } else {
+            // ไพ่ยังไม่มีรูป / GD อ่านไม่ได้ (เช่น SVG) → การ์ดหลังไพ่ + ชื่อไพ่ไทย ขนาดเท่าไพ่จริง
+            [$w, $h] = $coords['rotation'] !== 0 ? [self::CARD_H, self::CARD_W] : [self::CARD_W, self::CARD_H];
         }
 
-        // Resize ไพ่ — รักษาอัตราส่วน (contain) ไม่บีบ ไม่ครอป
-        //   🩹 (2026-06-02, user) เดิมยัด source เต็มใบลง 130×208 ตายตัว → ไพ่ที่ไม่ใช่ 5:8
-        //     (เช่น webp 400×600 = 2:3) ถูกบีบแนวนอน ~6% = ภาพเพี้ยน
-        //   ใหม่: สเกลตาม min(W/srcW, H/srcH) → การ์ดคงสัดส่วนจริง (เล็กลงพอดีกรอบ)
-        //     ขั้นถัดไป center ที่ (x,y) ด้วย imagesx/imagesy($resized) อยู่แล้ว → วางกึ่งกลางตำแหน่งถูกต้อง
-        $srcW = imagesx($cardImg);
-        $srcH = imagesy($cardImg);
+        $left = $coords['x'] - intdiv($w, 2);
+        $top = $coords['y'] - intdiv($h, 2);
+
+        $this->drawCardShadow($canvas, $left, $top, $w, $h);
+
+        if ($face) {
+            imagecopy($canvas, $face, $left, $top, 0, 0, $w, $h);
+            imagedestroy($face);
+        } else {
+            $this->drawPlaceholderCard($canvas, $left, $top, $w, $h, $card);
+        }
+
+        // กรอบทองบางรอบไพ่ (เว้นช่อง 3px) — ให้ไพ่ดูเหมือนวางบนผ้าปู
+        imagerectangle($canvas, $left - 4, $top - 4, $left + $w + 3, $top + $h + 3, imagecolorallocatealpha($canvas, self::GOLD[0], self::GOLD[1], self::GOLD[2], 78));
+
+        if ($isReversed) {
+            $this->drawReversedTag($canvas, $left + intdiv($w, 2), $top + $h - 14);
+        }
+
+        $this->drawPositionBadge($canvas, $left + 2, $top + 2, $position);
+        $this->drawCardLabel($canvas, $coords['x'], $top + $h, $position, $card, $coords['label_w']);
+    }
+
+    /**
+     * โหลดรูปไพ่ → ย่อแบบ contain ให้พอดี CARD_W×CARD_H + ชาร์ป + หมุน (กลับหัว 180° / ไพ่ขวาง 90°)
+     *
+     * 🩹 (2026-06-02, user) เดิมยัด source เต็มใบลงกรอบตายตัว → ไพ่ที่สัดส่วนไม่ตรงถูกบีบ = ภาพเพี้ยน
+     *   ใช้ min(W/srcW, H/srcH) → การ์ดคงสัดส่วนจริง
+     */
+    protected function buildCardFace(?string $imageUrl, bool $isReversed, int $rotation): ?GdImage
+    {
+        $src = $this->loadImageFromUrl($imageUrl);
+        if (! $src) {
+            return null;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
         $scale = min(self::CARD_W / $srcW, self::CARD_H / $srcH);
         $drawW = max(1, (int) round($srcW * $scale));
         $drawH = max(1, (int) round($srcH * $scale));
-        $resized = imagecreatetruecolor($drawW, $drawH);
-        imagecopyresampled(
-            $resized, $cardImg,
-            0, 0, 0, 0,
-            $drawW, $drawH,
-            $srcW, $srcH
-        );
-        imagedestroy($cardImg);
 
-        // กลับหัว 180°
-        if ($isReversed) {
-            $rotated = imagerotate($resized, 180, 0);
-            imagedestroy($resized);
-            $resized = $rotated;
+        $face = imagecreatetruecolor($drawW, $drawH);
+        imagecopyresampled($face, $src, 0, 0, 0, 0, $drawW, $drawH, $srcW, $srcH);
+        imagedestroy($src);
+
+        // ย่อ ~2.7 เท่า (536→200) ภาพจะนุ่มไป → ชาร์ปเบาๆ ให้ลายเส้นไพ่คม
+        imageconvolution($face, [[-1, -1, -1], [-1, 24, -1], [-1, -1, -1]], 16, 0);
+
+        $angle = ($isReversed ? 180 : 0) + $rotation;
+        if ($angle % 360 !== 0) {
+            $rotated = imagerotate($face, $angle, 0);
+            imagedestroy($face);
+            $face = $rotated ?: null;
         }
 
-        // หมุนตาม position rotation (90° สำหรับ position 2)
-        $totalRotation = $coords['rotation'];
-        if ($totalRotation !== 0) {
-            $rotated = imagerotate($resized, $totalRotation, 0);
-            imagedestroy($resized);
-            $resized = $rotated;
+        return $face;
+    }
+
+    /**
+     * เงานุ่มใต้ไพ่ — ซ้อนสี่เหลี่ยมโปร่งใสหลายชั้น (แทน blur ที่ GD ทำไม่ได้ดี)
+     */
+    protected function drawCardShadow(GdImage $canvas, int $left, int $top, int $w, int $h): void
+    {
+        for ($i = 16; $i >= 1; $i--) {
+            $color = imagecolorallocatealpha($canvas, 4, 0, 14, 119);
+            imagefilledrectangle($canvas, $left - $i, $top - $i + 7, $left + $w + $i, $top + $h + $i + 7, $color);
+        }
+    }
+
+    /**
+     * เหรียญเลขตำแหน่ง — ขอบทอง ใจกลางม่วงเข้ม เลขทอง (วางทับมุมซ้ายบนของไพ่)
+     */
+    protected function drawPositionBadge(GdImage $canvas, int $cx, int $cy, int $position): void
+    {
+        $font = $this->findThaiFont();
+        $box = 54;
+
+        $this->stamp($canvas, $box, $box, $cx - intdiv($box, 2), $cy - intdiv($box, 2), function (GdImage $im, int $ss) use ($box, $font, $position) {
+            $c = (int) ($box * $ss / 2);
+            imagefilledellipse($im, $c, $c + 2 * $ss, 50 * $ss, 50 * $ss, imagecolorallocatealpha($im, 0, 0, 0, 80)); // เงา
+            imagefilledellipse($im, $c, $c, 48 * $ss, 48 * $ss, imagecolorallocate($im, 128, 92, 36));               // ขอบทองเข้ม
+            imagefilledellipse($im, $c, $c, 44 * $ss, 44 * $ss, imagecolorallocate($im, 240, 206, 128));             // ทอง
+            imagefilledellipse($im, $c, $c, 36 * $ss, 36 * $ss, imagecolorallocate($im, 46, 22, 78));                // ใจกลาง
+
+            if ($font) {
+                $text = (string) $position;
+                $size = ($position >= 10 ? 14 : 16) * $ss;
+                $bb = imagettfbbox($size, 0, $font, $text);
+                $tw = $bb[2] - $bb[0];
+                $th = $bb[1] - $bb[7];
+                imagettftext($im, $size, 0, (int) round($c - $tw / 2 - $bb[0]), (int) round($c + $th / 2), imagecolorallocate($im, ...self::GOLD), $font, $text);
+            }
+        });
+    }
+
+    /**
+     * ป้าย "กลับหัว" สีกุหลาบเข้ม วางบนขอบล่างของไพ่ (กึ่งกลาง $cx · ขอบล่างป้ายที่ $bottom)
+     */
+    protected function drawReversedTag(GdImage $canvas, int $cx, int $bottom): void
+    {
+        $font = $this->findThaiFont();
+        if (! $font) {
+            return;
         }
 
-        // Compose ไปที่ canvas (จัดให้ตรงกลางที่ x,y)
-        $finalW = imagesx($resized);
-        $finalH = imagesy($resized);
-        $px = $coords['x'] - intdiv($finalW, 2);
-        $py = $coords['y'] - intdiv($finalH, 2);
+        $w = 100;
+        $h = 30;
+        $this->stamp($canvas, $w, $h, $cx - intdiv($w, 2), $bottom - $h, function (GdImage $im, int $ss) use ($w, $h, $font) {
+            $this->fillPill($im, 0, 0, $w * $ss, $h * $ss, imagecolorallocate($im, 236, 150, 170));
+            $this->fillPill($im, 2 * $ss, 2 * $ss, ($w - 2) * $ss, ($h - 2) * $ss, imagecolorallocate($im, 112, 22, 54));
 
-        imagecopy($canvas, $resized, $px, $py, 0, 0, $finalW, $finalH);
-        imagedestroy($resized);
+            $size = 13 * $ss;
+            $bb = imagettfbbox($size, 0, $font, 'กลับหัว');
+            $tw = $bb[2] - $bb[0];
+            imagettftext($im, $size, 0, (int) round(($w * $ss - $tw) / 2 - $bb[0]), (int) round($h * $ss / 2 + 6 * $ss), imagecolorallocate($im, 255, 222, 230), $font, 'กลับหัว');
+        }, 3);
+    }
 
-        // วาดเลข position ใต้ไพ่
-        // 🃏 (2026-06-08) ใช้ความสูงจริงหลังหมุน ($finalH) — ไพ่ขวาง (ใบ 2) เตี้ยกว่า เลขจะได้ไม่ลอยห่างจากไพ่
-        $this->drawPositionNumber($canvas, $coords['x'], $coords['y'] + intdiv($finalH, 2) + 22, $position, $isReversed);
+    /**
+     * เติมรูปทรงแคปซูล (สี่เหลี่ยมหัวมน) — สีทึบเท่านั้น (สีโปร่งใสจะซ้อนเข้มตรงรอยต่อ)
+     */
+    protected function fillPill(GdImage $im, int $x1, int $y1, int $x2, int $y2, int $color): void
+    {
+        $h = $y2 - $y1;
+        $r = intdiv($h, 2);
+        imagefilledellipse($im, $x1 + $r, $y1 + $r, $h, $h, $color);
+        imagefilledellipse($im, $x2 - $r, $y1 + $r, $h, $h, $color);
+        imagefilledrectangle($im, $x1 + $r, $y1, $x2 - $r, $y2 - 1, $color);
+    }
+
+    /**
+     * ป้ายใต้ไพ่: ชื่อตำแหน่ง (ทองหม่น) + ชื่อไพ่ไทย (ครีม ตัวใหญ่) — ย่อฟอนต์เองถ้ายาวเกินช่อง
+     */
+    protected function drawCardLabel(GdImage $canvas, int $cx, int $cardBottom, int $position, array $card, int $maxWidth): void
+    {
+        $font = $this->findThaiFont();
+        if (! $font) {
+            return;
+        }
+
+        $positionName = FortuneReading::CELTIC_POSITIONS[$position]['name'] ?? '';
+        $cardName = ThaiFontText::safe((string) ($card['card_name_th'] ?? ''), ThaiFontText::safe((string) ($card['card_name_en'] ?? ''), ''));
+
+        if ($positionName !== '') {
+            $this->drawCenteredText($canvas, 14, $cx, $cardBottom + 33, $this->color($canvas, self::GOLD_MUTED), $font, $positionName, $maxWidth, 10);
+        }
+        if ($cardName !== '') {
+            $this->drawCenteredText($canvas, 18, $cx, $cardBottom + 64, $this->color($canvas, self::CREAM), $font, $cardName, $maxWidth, 12);
+        }
     }
 
     /**
      * วาด placeholder card ถ้าโหลดรูปไพ่ไม่ได้
+     *
+     * 🎴 (2026-06-02) การ์ดหลังไพ่ลึกลับ + ขอบทอง 2 ชั้น + ชื่อไพ่ไทยกลางการ์ด — ดูตั้งใจ ไม่เหมือน error box
      */
-    protected function drawPlaceholderCard($canvas, int $x, int $y, int $rotation, int $position, array $card = []): void
+    protected function drawPlaceholderCard(GdImage $canvas, int $px, int $py, int $w, int $h, array $card = []): void
     {
-        $w = self::CARD_W;
-        $h = self::CARD_H;
-        if ($rotation !== 0) {
-            // swap w/h สำหรับ 90°
-            [$w, $h] = [$h, $w];
-        }
-
-        $px = $x - intdiv($w, 2);
-        $py = $y - intdiv($h, 2);
-
-        // 🎴 (2026-06-02) การ์ดหลังไพ่ลึกลับ + ขอบทอง 2 ชั้น — ดูตั้งใจ ไม่เหมือน error box
         $bg = imagecolorallocate($canvas, 48, 26, 78);
         $border = imagecolorallocate($canvas, 210, 175, 95);
-        imagefilledrectangle($canvas, $px, $py, $px + $w, $py + $h, $bg);
-        imagerectangle($canvas, $px, $py, $px + $w, $py + $h, $border);
-        imagerectangle($canvas, $px + 4, $py + 4, $px + $w - 4, $py + $h - 4, $border);
+        imagefilledrectangle($canvas, $px, $py, $px + $w - 1, $py + $h - 1, $bg);
+        imagerectangle($canvas, $px, $py, $px + $w - 1, $py + $h - 1, $border);
+        imagerectangle($canvas, $px + 5, $py + 5, $px + $w - 6, $py + $h - 6, $border);
 
-        $fontPath = $this->findThaiFont();
-        $cardName = trim((string) ($card['card_name_th'] ?? ''));
-        $isReversed = ! empty($card['is_reversed']);
-
-        if ($fontPath && $cardName !== '') {
-            // • ดาวบน
-            $gold = imagecolorallocate($canvas, 220, 185, 110);
-            $bbTop = imagettfbbox(15, 0, $fontPath, '•');
-            imagettftext($canvas, 15, 0, $x - intdiv($bbTop[2] - $bbTop[0], 2), $py + 32, $gold, $fontPath, '•');
-
-            // ชื่อไพ่ไทย — wrap กลางการ์ด (กล่องแนวนอน [rotation 90°] กว้างกว่า → ตัวอักษร/บรรทัดมากขึ้น)
-            $cream = imagecolorallocate($canvas, 242, 232, 208);
-            $perLine = $rotation !== 0 ? 16 : 9;
-            $lines = $this->wrapThaiText($cardName, $perLine);
-            $lineH = 26;
-            $startY = $y - intdiv((count($lines) - 1) * $lineH, 2);
-            foreach ($lines as $i => $line) {
-                $bb = imagettfbbox(13, 0, $fontPath, $line);
-                $tw = $bb[2] - $bb[0];
-                imagettftext($canvas, 13, 0, $x - intdiv($tw, 2), $startY + ($i * $lineH), $cream, $fontPath, $line);
-            }
-
-            // ตำแหน่ง + กลับหัว ด้านล่าง
-            $tag = "[{$position}]".($isReversed ? '  (กลับหัว)' : '');
-            $tagColor = $isReversed ? imagecolorallocate($canvas, 255, 150, 150) : $gold;
-            $bbTag = imagettfbbox(12, 0, $fontPath, $tag);
-            imagettftext($canvas, 12, 0, $x - intdiv($bbTag[2] - $bbTag[0], 2), $py + $h - 16, $tagColor, $fontPath, $tag);
-        } else {
-            // ไม่มีฟอนต์/ชื่อ → fallback ข้อความ bitmap
-            $white = imagecolorallocate($canvas, 235, 230, 245);
-            imagestring($canvas, 4, $px + 10, (int) ($py + ($h / 2) - 5), "POS {$position}", $white);
-        }
-    }
-
-    /**
-     * ตัดข้อความเป็นหลายบรรทัดให้พอดีการ์ด
-     *   - มีช่องว่าง (อังกฤษ เช่น "Three of Wands") → ตัดตามคำ
-     *   - ไทยล้วน (ไม่มีช่องว่าง) → ตัดตามจำนวนตัวอักษร (~$perLine)
-     *
-     * @return array<int,string> สูงสุด 4 บรรทัด
-     */
-    protected function wrapThaiText(string $text, int $perLine = 9): array
-    {
-        $text = trim($text);
-        if ($text === '') {
-            return [];
-        }
-
-        // มีช่องว่าง + ยาวเกิน → ตัดตามคำ
-        if (mb_strpos($text, ' ') !== false && mb_strlen($text) > $perLine) {
-            $words = preg_split('/\s+/u', $text) ?: [$text];
-            $lines = [];
-            $cur = '';
-            foreach ($words as $wd) {
-                $try = $cur === '' ? $wd : $cur.' '.$wd;
-                if (mb_strlen($try) > $perLine && $cur !== '') {
-                    $lines[] = $cur;
-                    $cur = $wd;
-                } else {
-                    $cur = $try;
-                }
-            }
-            if ($cur !== '') {
-                $lines[] = $cur;
-            }
-
-            return array_slice($lines, 0, 4);
-        }
-
-        // ไทยล้วน → ตัดตามจำนวนตัวอักษร
-        $chars = mb_str_split($text);
-        $lines = [];
-        for ($i = 0; $i < count($chars); $i += $perLine) {
-            $lines[] = implode('', array_slice($chars, $i, $perLine));
-        }
-
-        return array_slice($lines, 0, 4);
-    }
-
-    /**
-     * วาดเลขตำแหน่งใต้ไพ่
-     */
-    protected function drawPositionNumber($canvas, int $x, int $y, int $position, bool $isReversed): void
-    {
-        $fontPath = $this->findThaiFont();
-        $gold = imagecolorallocate($canvas, 255, 215, 90);
-        $red = imagecolorallocate($canvas, 255, 130, 130);
-
-        if ($fontPath) {
-            $text = "[{$position}]";
-            if ($isReversed) {
-                $text .= ' (กลับหัว)';
-            }
-            imagettftext($canvas, 14, 0, $x - 20, $y, $gold, $fontPath, $text);
-        }
-    }
-
-    /**
-     * วาดคำอธิบาย legend ด้านล่าง (1=หัวใจ, 2=อุปสรรค, ฯลฯ)
-     */
-    protected function drawLegend($canvas): void
-    {
-        $fontPath = $this->findThaiFont();
-        if (! $fontPath) {
+        $font = $this->findThaiFont();
+        $cardName = ThaiFontText::safe((string) ($card['card_name_th'] ?? ''), '');
+        if (! $font || $cardName === '') {
             return;
         }
 
-        $cream = imagecolorallocate($canvas, 230, 220, 195);
-        $startY = self::CANVAS_H - 200;
+        // ชื่อไพ่ไทยบรรทัดเดียวกลางการ์ด (ย่อฟอนต์ให้พอดี) — ไทยไม่มีช่องว่างระหว่างคำ ตัดบรรทัดเองจะขาดกลางคำ
+        $this->drawCenteredText($canvas, 16, $px + intdiv($w, 2), $py + intdiv($h, 2) + 8, $this->color($canvas, self::CREAM), $font, $cardName, $w - 28, 10);
+    }
 
-        $legend = [
-            '1=หัวใจของเรื่อง  •  2=อุปสรรค  •  3=เป้าหมาย  •  4=รากฐาน  •  5=อดีต',
-            '6=อนาคตอันใกล้  •  7=ตัวเจ้าชะตา  •  8=อิทธิพลภายนอก  •  9=ความหวัง&ความกลัว  •  10=ผลลัพธ์',
-            '(กลับหัว) = ไพ่วางหัวลง ความหมายเปลี่ยน',
-        ];
+    /**
+     * แยกวรรณยุกต์ที่ต้อง "ยกลอย" ออกจากข้อความ
+     *
+     * GD ไม่ทำ Thai shaping → วรรณยุกต์ที่ตามสระบน (เรื่อง ที่ ทั้ง) ถูกวาดตำแหน่งเดียวกับสระ = จมหาย
+     * คืน [ข้อความที่ถอดวรรณยุกต์เหล่านั้นออก, [[ข้อความก่อนหน้าวรรณยุกต์, วรรณยุกต์], ...]]
+     *
+     * @return array{0:string,1:array<int,array{0:string,1:string}>}
+     *
+     * @example splitLiftedMarks('เรื่อง') // ['เรือง', [['เรื', '่']]]
+     */
+    public function splitLiftedMarks(string $text): array
+    {
+        $chars = mb_str_split($text);
+        $base = '';
+        $lifted = [];
 
-        $y = $startY;
-        foreach ($legend as $i => $line) {
-            imagettftext($canvas, 14, 0, 60, $y, $cream, $fontPath, $line);
-            $y += 28;
+        foreach ($chars as $i => $ch) {
+            if (in_array($ch, self::THAI_TONE_MARKS, true)) {
+                $prev = $chars[$i - 1] ?? '';
+                $next = $chars[$i + 1] ?? '';
+                // ตามสระบน (เรื่อง) หรือตามด้วยสระอำ (น้ำ — นิคหิตของ ำ อยู่ตำแหน่งเดียวกัน)
+                if (in_array($prev, self::THAI_UPPER_VOWELS, true) || $next === "\u{0E33}") {
+                    $lifted[] = [$base, $ch];
+
+                    continue;
+                }
+            }
+
+            $base .= $ch;
         }
 
-        // watermark
-        $gold = imagecolorallocate($canvas, 220, 180, 100);
-        imagettftext($canvas, 14, 0, 60, self::CANVAS_H - 50, $gold, $fontPath, 'thaiprompt.online • แม่หมอจันทรา');
+        return [$base, $lifted];
+    }
+
+    /**
+     * วาดข้อความไทยโดยยกวรรณยุกต์บนสระบนให้ลอยพ้น (แทน imagettftext ตรงๆ)
+     */
+    protected function drawText(GdImage $img, float $size, int $x, int $y, int $color, string $font, string $text): void
+    {
+        [$base, $lifted] = $this->splitLiftedMarks($text);
+        imagettftext($img, $size, 0, $x, $y, $color, $font, $base);
+
+        $lift = (int) round($size * self::TONE_LIFT);
+        foreach ($lifted as [$prefix, $mark]) {
+            // วรรณยุกต์กว้าง 0 + ระยะซ้ายติดลบ → วางที่ปากกาหลังพยัญชนะ/สระ จะลอยเหนือตัวก่อนหน้าพอดี
+            imagettftext($img, $size, 0, $x + $this->advance($size, $font, $prefix), $y - $lift, $color, $font, $mark);
+        }
+    }
+
+    /**
+     * วาดข้อความกึ่งกลางที่ $cx — ถ้ากำหนด $maxWidth จะย่อฟอนต์ทีละ 0.5pt จนพอดี (ไม่ต่ำกว่า $minSize)
+     */
+    protected function drawCenteredText(GdImage $img, float $size, int $cx, int $y, int $color, string $font, string $text, ?int $maxWidth = null, float $minSize = 10): void
+    {
+        [$base] = $this->splitLiftedMarks($text);
+
+        if ($maxWidth) {
+            while ($size > $minSize && $this->bboxWidth($size, $font, $base) > $maxWidth) {
+                $size -= 0.5;
+            }
+        }
+
+        $bb = imagettfbbox($size, 0, $font, $base);
+        $left = min($bb[0], $bb[6]);
+        $width = max($bb[2], $bb[4]) - $left;
+
+        $this->drawText($img, $size, (int) round($cx - $width / 2 - $left), $y, $color, $font, $text);
+    }
+
+    /**
+     * วาดตัวอักษรละตินแบบเว้นระยะ (letter-spacing) กึ่งกลางที่ $cx
+     */
+    protected function drawSpacedCentered(GdImage $img, float $size, int $cx, int $y, int $color, string $font, string $text, int $spacing): void
+    {
+        $chars = mb_str_split($text);
+        $advances = array_map(fn (string $ch) => $this->advance($size, $font, $ch), $chars);
+        $total = array_sum($advances) + $spacing * (count($chars) - 1);
+
+        $x = (int) round($cx - $total / 2);
+        foreach ($chars as $i => $ch) {
+            if ($ch !== ' ') {
+                imagettftext($img, $size, 0, $x, $y, $color, $font, $ch);
+            }
+            $x += $advances[$i] + $spacing;
+        }
+    }
+
+    /**
+     * ระยะปากกาเลื่อนหลังวาด $text (advance) — วัดจาก bbox ของ "$text + I" ลบ bbox ของ "I"
+     * (bbox ของ $text อย่างเดียวไม่ใช่ advance เพราะตัวท้ายอาจเป็นวรรณยุกต์/สระบนที่กว้าง 0)
+     */
+    protected function advance(float $size, string $font, string $text): int
+    {
+        if ($text === '') {
+            return 0;
+        }
+
+        $with = imagettfbbox($size, 0, $font, $text.'I');
+        $ref = imagettfbbox($size, 0, $font, 'I');
+
+        return (int) round(max($with[2], $with[4]) - max($ref[2], $ref[4]));
+    }
+
+    protected function bboxWidth(float $size, string $font, string $text): int
+    {
+        $bb = imagettfbbox($size, 0, $font, $text);
+
+        return (int) (max($bb[2], $bb[4]) - min($bb[0], $bb[6]));
+    }
+
+    /**
+     * วาดรูปทรงเล็กๆ แบบ supersample (วาดใหญ่ ×$ss บนพื้นโปร่งใส แล้วย่อลงมาแปะ) → ขอบเนียน
+     * GD วาดวงกลม/โพลิกอนขอบหยัก และ imageantialias ใช้กับสีโปร่งใสไม่ได้
+     *
+     * @param  callable(GdImage,int):void  $draw  รับภาพขนาดใหญ่ + ตัวคูณ $ss
+     */
+    protected function stamp(GdImage $canvas, int $w, int $h, int $x, int $y, callable $draw, int $ss = 4): void
+    {
+        $big = imagecreatetruecolor($w * $ss, $h * $ss);
+        imagealphablending($big, false);
+        imagefilledrectangle($big, 0, 0, $w * $ss - 1, $h * $ss - 1, imagecolorallocatealpha($big, 0, 0, 0, 127));
+        imagealphablending($big, true);
+
+        $draw($big, $ss);
+
+        $small = imagecreatetruecolor($w, $h);
+        imagealphablending($small, false);
+        imagesavealpha($small, true);
+        imagecopyresampled($small, $big, 0, 0, 0, 0, $w, $h, $w * $ss, $h * $ss);
+        imagedestroy($big);
+
+        imagecopy($canvas, $small, $x, $y, 0, 0, $w, $h);
+        imagedestroy($small);
+    }
+
+    protected function color(GdImage $img, array $rgb): int
+    {
+        return imagecolorallocate($img, $rgb[0], $rgb[1], $rgb[2]);
     }
 
     /**
@@ -461,13 +891,20 @@ class CelticSpreadImageGenerator
             return null;
         }
 
-        return match ($info[2]) {
+        $img = match ($info[2]) {
             IMAGETYPE_JPEG => imagecreatefromjpeg($path),
             IMAGETYPE_PNG => imagecreatefrompng($path),
             IMAGETYPE_GIF => imagecreatefromgif($path),
             IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? imagecreatefromwebp($path) : null,
             default => null,
         };
+
+        // PNG/GIF แบบ palette → แปลงเป็น truecolor ก่อน (imageconvolution/imagerotate ทำงานกับ truecolor)
+        if ($img instanceof GdImage && ! imageistruecolor($img)) {
+            imagepalettetotruecolor($img);
+        }
+
+        return $img ?: null;
     }
 
     /**
@@ -494,14 +931,20 @@ class CelticSpreadImageGenerator
     }
 
     /**
-     * หา TTF font ภาษาไทย (เหมือน DailyHoroscopeAutoPostService)
+     * หา TTF font ภาษาไทย (เหมือน DailyHoroscopeAutoPostService) — จำผลไว้ (ถูกเรียกหลายสิบครั้งต่อภาพ)
      *
      * เช็คด้วย FontFile::isReal() ไม่ใช่ is_file() — (2026-09-12) resources/fonts/DejaVuSans.ttf เคยเป็นหน้า HTML
      * ไฟล์ที่มีอยู่แต่ไม่ใช่ฟอนต์ต้องถูกข้าม ไม่ใช่ถูกคืนไปให้ GD วาดข้อความว่างเปล่า
      */
     protected function findThaiFont(): ?string
     {
-        return FontFile::firstReal([
+        if ($this->fontResolved) {
+            return $this->fontPath;
+        }
+
+        $this->fontResolved = true;
+
+        return $this->fontPath = FontFile::firstReal([
             // ⭐ (2026-06-02) ฟอนต์ไทยที่ฝังมากับ repo จริง — ต้องมาก่อน!
             //   เดิม list หาแต่ Sarabun/Kanit ที่ไม่มีบน prod → คืน null → ข้อความไทยทั้งหมด
             //   (subtitle/legend/เลขตำแหน่ง) หายเงียบๆ — เห็นแต่หัวอังกฤษ bitmap
