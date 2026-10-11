@@ -300,7 +300,7 @@ class NatalChartImageTest extends TestCase
     // วาดจริงได้ทุกฐาน (รวมดาวกองราศีเดียว 7 ดวง)
     // ─────────────────────────────────────────────────────────────
 
-    public function test_real_render_produces_a_png_for_every_basis(): void
+    public function test_real_render_produces_an_image_for_every_basis(): void
     {
         if (! extension_loaded('gd')) {
             $this->markTestSkipped('ไม่มี GD');
@@ -314,15 +314,17 @@ class NatalChartImageTest extends TestCase
             'stellium' => ['1962-02-04 12:00', null, null],
         ];
 
+        // 🖼️ (2026-10-11) ผังดวงกำเนิดเปลี่ยนเป็น JPEG 1440×2160 บนเทมเพลต AI — ต้องไม่เกินขีด LINE previewImageUrl (1MB)
         $render = new ReflectionMethod(FortuneChartService::class, 'buildNatalPngChart');
         foreach ($cases as $label => [$ymd, $hour, $province]) {
             $svc = new FortuneChartService;
-            $png = $render->invoke($svc, $svc->natalChartData($ymd, 'ทดสอบ ภาษาไทย', $hour, $province));
+            $jpeg = $render->invoke($svc, $svc->natalChartData($ymd, 'ทดสอบ ภาษาไทย', $hour, $province));
 
-            $size = getimagesizefromstring($png);
-            $this->assertNotFalse($size, "{$label}: ต้องได้ PNG ที่เปิดได้");
-            $this->assertSame([1000, 1000], [$size[0], $size[1]], $label);
-            $this->assertSame('image/png', $size['mime'], $label);
+            $size = getimagesizefromstring($jpeg);
+            $this->assertNotFalse($size, "{$label}: ต้องได้รูปที่เปิดได้");
+            $this->assertSame([1440, 2160], [$size[0], $size[1]], $label);
+            $this->assertSame('image/jpeg', $size['mime'], $label);
+            $this->assertLessThanOrEqual(FortuneChartService::NATAL_MAX_BYTES, strlen($jpeg), "{$label}: ใหญ่เกินขีด LINE preview");
         }
 
         $stellium = (new FortuneChartService)->natalChartData('1962-02-04 12:00', 'ทดสอบ');

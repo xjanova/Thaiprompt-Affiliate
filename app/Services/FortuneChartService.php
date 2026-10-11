@@ -846,153 +846,145 @@ class FortuneChartService
         return $pngData;
     }
 
+    // ─── 🖼️ ผังดวงกำเนิด (buildNatalPngChart) — เรขาคณิตวัดจากเทมเพลต AI จริง (2026-10-11) ───
+    //   เปลี่ยนไฟล์เทมเพลตเมื่อไหร่ ต้องวัดค่าชุดนี้ใหม่ทั้งหมด (สแกนพิกเซลสีทองตามแนวรัศมี + ฟิตวงกลม)
+
+    /** เทมเพลตพื้นภาพ (resource_path) — กรอบทองลายไทย · วงล้อ 12 ช่อง · วงกลาง · กล่องล่าง · โลโก้จันทรา ไม่มีข้อความ */
+    protected const NATAL_TEMPLATE = 'images/fortune/natal-chart-template.jpg';
+
+    /** ไอคอนดาว (AI · เหรียญทองลายไทย 160px พื้นโปร่งใส) — resource_path + "/{key}.png" · key ตาม natalChartData */
+    protected const NATAL_ICON_DIR = 'images/fortune/planets';
+
+    protected const NATAL_W = 1440;
+
+    protected const NATAL_H = 2160;
+
+    /** ศูนย์กลางวงล้อ (ฟิตจากขอบในวงแหวนทอง) */
+    protected const NATAL_CX = 720;
+
+    protected const NATAL_CY = 985;
+
+    /** รัศมีขอบในวงแหวนทอง (ค่าต่ำสุดจาก 12 ช่อง) — ป้าย/ดาวต้องอยู่ด้านในเส้นนี้ */
+    protected const NATAL_RING_INNER = 556;
+
+    /** วงกลางกลางผัง (ไม่ตรงศูนย์วงล้อเป๊ะ เยื้อง ~5px) */
+    protected const NATAL_DISC = ['x' => 714, 'y' => 981, 'r' => 155];
+
+    /** มุมเส้นแบ่งช่องจริง (องศาจากทิศเหนือ ตามเข็ม) · ช่อง i อยู่ระหว่าง [i-1] กับ [i] — AI วาดคลาดจาก 30° ได้ ≤ 1.3° */
+    public const NATAL_DIVIDERS = [-1.3, 28.3, 59.0, 89.9, 120.3, 150.9, 181.4, 211.2, 240.7, 270.1, 299.6, 329.4, 358.7];
+
+    /** พื้นที่เขียนข้อความในกล่องล่าง (ด้านในกรอบทอง) */
+    protected const NATAL_PANEL = ['x1' => 250, 'x2' => 1190, 'y1' => 1795, 'y2' => 1970];
+
+    /** ขนาดไฟล์สูงสุด — LINE ใช้ URL เดียวกันเป็น previewImageUrl ซึ่งรับไม่เกิน 1MB */
+    public const NATAL_MAX_BYTES = 950_000;
+
     /**
-     * 🖼️ วาดรูปผังดวงกำเนิดจริง (PNG 1000×1000) จาก natalChartData()
+     * ขนาดตัวอักษร/ป้ายดาว (ขนาดเต็ม) — ภาพ 1440px ถูกย่อเหลือ ~400px บนจอมือถือ ⇒ ต้องใหญ่กว่าผังเดิมมาก
+     *   ป้ายช่อง: เลข+ชื่อภพ 36pt · ราศี 24pt
+     *   ดาว = ป้ายแคปซูล [ไอคอน 56px | ชื่อดาว 24pt] (owner: "ใช้สัญลักษณ์แทนเลขไทย เจนเป็นรูปมาตัดวาง")
+     *     เดิมวงกลม+ชื่อใต้วง กินที่สูง ~100px ⇒ ภพที่ดาวกองต้องย่อจนเล็ก — แคปซูลสูงแค่ 56px วางซ้อนได้แน่นกว่า
+     */
+    public const NATAL_SIZES = [
+        'title_pt' => 36, 'sub_pt' => 24, 'label_gap' => 4,
+        'pill_h' => 56, 'pill_gap' => 8, 'pill_pad' => 16, 'name_pt' => 24,
+    ];
+
+    /** ขนาดป้ายช่องที่ลอง — ช่องที่ดาวแน่นย่อป้ายช่องก่อน ถ้าทำให้ป้ายดาวใหญ่ขึ้นได้ (ป้ายช่อง 36pt ใหญ่เกินจำเป็นอยู่แล้ว) */
+    protected const NATAL_LABEL_SCALES = [1.0, 0.8, 0.66];
+
+    /** ขนาดป้ายดาวที่ลองไล่ลง — ใช้ขนาดใหญ่สุดที่วางครบทุกดวงโดยไม่ทับป้าย/ดาวดวงอื่น/เส้นแบ่งช่อง */
+    protected const NATAL_PLANET_SCALES = [1.0, 0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44];
+
+    /** ระยะเว้น (px): ห่างเส้นแบ่งช่อง · ห่างขอบในวงแหวน · ห่างวงกลาง · ห่างป้าย/ดาวด้วยกัน */
+    protected const NATAL_GAPS = ['divider' => 8, 'ring' => 8, 'disc' => 10, 'block' => 6];
+
+    /** @var array<string, \GdImage|false> ไอคอนดาวที่โหลดแล้ว (false = ไม่มีไฟล์) */
+    protected array $natalIcons = [];
+
+    /**
+     * 🖼️ วาดรูปผังดวงกำเนิดจริง (JPEG 1440×2160) จาก natalChartData()
+     *
+     * 🎨 (2026-10-11, owner: "ตัวหนังสืออ่านง่ายกว่านี้ ไม่ทับกัน อะไรต่ออะไรเล็กไป ทำให้สวยขึ้น
+     *    ให้ AI เจนภาพหลักก่อน ส่งผังเก่าให้ดูแล้วลบข้อมูลออก แล้วค่อยเอารายละเอียดมาใส่ทีหลัง")
+     *   พื้นภาพ = เทมเพลตตายตัว NATAL_TEMPLATE (AI ออกแบบใหม่จากผังเดิมแล้วลบข้อมูลออก + กรอบทองลายไทย ·
+     *   กล่องข้อมูลล่าง · โลโก้จันทรา) — ไม่มีข้อความ/ดาวในเทมเพลตเลย ข้อมูลทุกตัววาดด้วยโค้ดทับ
+     *   ดาวใช้ไอคอน AI (NATAL_ICON_DIR) แทนเลขไทย · ไฟล์หายถอยไปวงสี+เลขไทยแบบเดิม
+     *   เดิม 1000×1000 PNG: ป้ายภพ 11-13pt · ชื่อดาว 10.5pt · ข้อมูลเกิด 11 บรรทัดอัดอยู่กลางวง
+     *   ใหม่: ดู NATAL_SIZES · กลางวงเหลือแค่ดาวเจ้าชนะ · ข้อมูลเกิดย้ายลงกล่องล่าง
+     *   ตำแหน่งทุกชิ้นมาจาก natalLayout() — เทสต์ NatalChartLayoutTest ตรวจว่าไม่มีชิ้นไหนทับกันในผังจริง
+     *   ⚠️ เส้นแบ่งช่องในเทมเพลต AI วาดเอง ไม่ตรง 30° เป๊ะ (คลาด ≤ 1.3°) → วางป้าย/ดาวตามมุมที่วัดจริง NATAL_DIVIDERS
+     *   ⚠️ JPEG ≤ NATAL_MAX_BYTES — LINE ใช้ URL เดียวกันเป็น previewImageUrl (≤ 1MB)
      *
      * วงนอก 12 ช่อง เดินตามเข็มนาฬิกาจากบนสุด:
-     *   - ผังมีฐานนับภพ (ลัคนา/จันทร์ลัคน์) → ช่อง = ภพ 1-12 · ป้ายเลขภพ + ชื่อภพ + ราศีของภพ
-     *   - ฐาน 'none' → ช่อง = ราศี เมษ…มีน · **ไม่มีเลข/ชื่อภพเลย** และกลางวงบอกว่าไม่ทราบเวลาเกิด
-     * ดาวเขียนด้วยเลขไทยตามแบบผังดวงไทย (อาทิตย์ ๑ … เกตุ ๙ · มฤตยู ๐) + ชื่อดาวใต้วง
-     *   ⚠️ ใช้ฟอนต์ไทยตัวเดียว (เลขไทยแทนสัญลักษณ์ดาว) — ฟอนต์ไทยไม่มีอีโมจิ/✦ ⇒ ห้ามใส่ในข้อความรูปนี้
-     *      (DejaVuSans.ttf เคยเป็นหน้า HTML 404 — เปลี่ยนเป็นของจริงแล้ว 2026-09-12 แต่ไม่มีอักษรไทย ใช้กับข้อความไทยไม่ได้)
+     *   - ผังมีฐานนับภพ (ลัคนา/จันทร์ลัคน์) → ช่อง = ภพ 1-12 · เลขภพ + ชื่อภพ + ราศีของภพ
+     *   - ฐาน 'none' → ช่อง = ราศี เมษ…มีน · **ไม่มีเลข/ชื่อภพเลย** และกล่องล่างบอกว่าไม่ทราบเวลาเกิด
+     *   ⚠️ ฟอนต์ไทยไม่มีอีโมจิ/✦ ⇒ ห้ามใส่ในข้อความรูปนี้
+     *   ⚠️ ข้อความทุกตัวต้องผ่าน drawCenteredText (เทสต์ ChartPngTextCoverageTest ดักตรวจฟอนต์ที่นั่น)
      *
      * @param  array  $d  ผลจาก natalChartData()
-     * @return string PNG binary data
+     * @return string JPEG binary data
      */
     protected function buildNatalPngChart(array $d): string
     {
-        $width = 1000;
-        $height = 1000;
-        $cx = $width / 2;
-        $cy = 532;
-        $outerR = 440;
-        $innerR = 238;
-        $centerR = 228;
+        $cx = self::NATAL_CX;
+        $sz = self::NATAL_SIZES;
 
-        // ไม่มีการวางดาวลงภพ = ฐาน 'none' → วงนอกเป็นราศี
-        $houseMode = ! empty($d['planetPositions']);
-        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
-
-        $img = imagecreatetruecolor($width, $height);
-        imagealphablending($img, true);
-        imagesavealpha($img, true);
-
+        $img = $this->natalTemplateCanvas();
         $font = $this->getThaiFont();
 
-        $bgCream = $this->hexColor($img, '#FFFBF7');
-        $white = $this->hexColor($img, '#FFFFFF');
-        $purple = $this->hexColor($img, '#7C3AED');
-        $purpleDark = $this->hexColor($img, '#5B21B6');
-        $purpleLight = $this->hexColor($img, '#A78BFA');
-        $gold = $this->hexColor($img, '#B45309');
-        $goldDark = $this->hexColor($img, '#92400E');
-        $textDark = $this->hexColor($img, '#1F2937');
-        $textGray = $this->hexColor($img, '#4B5563');
-        $textMuted = $this->hexColor($img, '#9CA3AF');
-        $green = $this->hexColor($img, '#047857');
-        $red = $this->hexColor($img, '#B91C1C');
-        $shadowSoft = imagecolorallocatealpha($img, 124, 58, 237, 112);
-        $mainColor = $this->hexColor($img, $d['mainPlanetColor'] ?? '#D97706');
+        $cream = imagecolorallocate($img, 248, 238, 216);
+        $gold = imagecolorallocate($img, 240, 204, 120);
+        $goldMuted = imagecolorallocate($img, 226, 192, 126);
+        $lavender = imagecolorallocate($img, 208, 194, 255);
+        $muted = imagecolorallocate($img, 200, 190, 226);
+        $mint = imagecolorallocate($img, 150, 235, 182);
+        $rose = imagecolorallocate($img, 255, 172, 188);
 
-        // === พื้นหลัง: ครีมบน → ลาเวนเดอร์ล่าง (โทนเดียวกับรูปเดิม) ===
-        for ($y = 0; $y < $height; $y++) {
-            $ratio = $y / $height;
-            $lineColor = imagecolorallocate($img, (int) (255 - 12 * $ratio), (int) (251 - 12 * $ratio), (int) (247 + 8 * $ratio));
-            imageline($img, 0, $y, $width, $y, $lineColor);
-        }
+        // === หัวภาพ (ใต้โลโก้ในเทมเพลต) ===
+        $name = mb_substr(ThaiFontText::safe((string) $d['name'], 'เจ้าชะตา'), 0, 24);
+        $this->drawShadowText($img, $font, 19, $cx, 266, 'ผังดวงกำเนิด', $gold);
+        $this->drawShadowText($img, $font, $this->fitFontSize($font, 36, $name, 1000, 20), $cx, 318, $name, $cream);
 
-        // === พื้นสีพาสเทล 12 ช่อง ===
-        for ($i = 1; $i <= 12; $i++) {
-            $hex = ltrim(self::HOUSES[$i]['color'], '#');
-            $zone = imagecolorallocatealpha(
-                $img,
-                hexdec(substr($hex, 0, 2)),
-                hexdec(substr($hex, 2, 2)),
-                hexdec(substr($hex, 4, 2)),
-                $i % 2 === 0 ? 108 : 100
-            );
-            imagefilledarc($img, (int) $cx, (int) $cy, $outerR * 2, $outerR * 2, ($i - 1) * 30 - 90, $i * 30 - 90, $zone, IMG_ARC_PIE);
-        }
-
-        // === วงกลาง: เจาะพาสเทลออก + เงานุ่มในร่องระหว่างวง ===
-        imagefilledellipse($img, (int) $cx, (int) $cy, $innerR * 2, $innerR * 2, $bgCream);
-        for ($r = $centerR + 10; $r > $centerR; $r -= 2) {
-            $alpha = (int) (112 + 15 * (($centerR + 10 - $r) / 10));
-            imagefilledellipse($img, (int) $cx, (int) $cy, $r * 2, $r * 2, imagecolorallocatealpha($img, 124, 58, 237, $alpha));
-        }
-        imagefilledellipse($img, (int) $cx, (int) $cy, $centerR * 2, $centerR * 2, $white);
-
-        $this->drawCircle($img, $cx, $cy, $outerR, $purple, 4);
-        $this->drawCircle($img, $cx, $cy, $innerR, $purpleDark, 2);
-        $this->drawCircle($img, $cx, $cy, $centerR, $purple, 3);
-
-        imagesetthickness($img, 2);
-        for ($i = 0; $i < 12; $i++) {
-            $a = deg2rad($i * 30 - 90);
-            imageline(
-                $img,
-                (int) ($cx + $innerR * cos($a)), (int) ($cy + $innerR * sin($a)),
-                (int) ($cx + $outerR * cos($a)), (int) ($cy + $outerR * sin($a)),
-                $purpleDark
-            );
-        }
-        imagesetthickness($img, 1);
-
-        // === ป้ายช่อง + ดาว ===
-        for ($i = 1; $i <= 12; $i++) {
-            $midDeg = ($i - 1) * 30 - 90 + 15;
-            $mid = deg2rad($midDeg);
-            $at = fn (float $r): array => [$cx + $r * cos($mid), $cy + $r * sin($mid)];
-
-            // ป้ายข้อความกว้างกว่าสูง ⇒ ช่องซ้าย/ขวาต้องถอยเข้าในมากกว่าช่องบน/ล่าง
-            //   ครึ่งความยาวของป้ายตามแนวรัศมี = ครึ่งกว้าง×|cos| + ครึ่งสูง×|sin|
-            $cosA = abs(cos($mid));
-            $sinA = abs(sin($mid));
-
-            if ($houseMode) {
-                // เลขภพคร่อมเส้นวงนอก — เหลือที่ในช่องให้ดาว
-                $sectorColor = $this->hexColor($img, self::HOUSES[$i]['color']);
-                [$bx, $by] = $at($outerR);
-                imagefilledellipse($img, (int) $bx, (int) $by, 28, 28, $white);
-                imagesetthickness($img, 2);
-                imageellipse($img, (int) $bx, (int) $by, 28, 28, $sectorColor);
-                imagesetthickness($img, 1);
-                $this->drawCenteredText($img, $font, 12, $bx, $by, (string) $i, $sectorColor);
-
-                // ชื่อภพ + ราศีของภพ ซ้อนกันแนวตั้งบนจอ (ซ้อนตามรัศมี = ช่องซ้าย/ขวาทับกันเอง)
-                $half = 34 * $cosA + 20 * $sinA;
-                $labelR = $outerR - 16 - $half;
-                [$tx, $ty] = $at($labelR);
-                $this->drawCenteredText($img, $font, 13, $tx, $ty - 9, self::HOUSES[$i]['name'], $textDark);
-                $this->drawCenteredText($img, $font, 11, $tx, $ty + 10, 'ราศี'.($d['houseSigns'][$i] ?? ''), $textGray);
-
-                $keys = $d['planetPositions'][$i] ?? [];
+        // === ป้ายช่อง + ดาว (ตำแหน่งทั้งหมดจาก natalLayout) ===
+        $layout = $this->natalLayout($d, $font);
+        foreach ($layout['labels'] as $l) {
+            $titlePt = $sz['title_pt'] * $l['scale'];
+            $titleY = $l['sub'] !== '' ? $l['y'] - $l['h'] / 2 + $l['title_h'] / 2 : $l['y'];
+            if ($l['house'] !== null) {
+                // สองสีในบรรทัดเดียว: เลขภพ (ทอง) + ชื่อภพ (ครีม) — วางทีละท่อนจากซ้าย
+                $num = (string) $l['house'];
+                $gap = 12 * $l['scale'];
+                $numW = $this->textWidth($font, $titlePt, $num);
+                $titleW = $this->textWidth($font, $titlePt, $l['title']);
+                $startX = $l['x'] - ($numW + $gap + $titleW) / 2;
+                $this->drawShadowText($img, $font, $titlePt, $startX + $numW / 2, $titleY, $num, $gold);
+                $this->drawShadowText($img, $font, $titlePt, $startX + $numW + $gap + $titleW / 2, $titleY, $l['title'], $cream);
             } else {
-                $sign = (string) ($order[$i - 1] ?? '');
-                $half = 24 * $cosA + 11 * $sinA;
-                $labelR = $outerR - 8 - $half;
-                [$tx, $ty] = $at($labelR);
-                $this->drawCenteredText($img, $font, 15, $tx, $ty, $sign, $textDark);
-
-                $keys = $d['signPositions'][$sign] ?? [];
+                $this->drawShadowText($img, $font, $titlePt, $l['x'], $titleY, $l['title'], $cream);
             }
-            $zoneOuter = $labelR - $half - 8;
-
-            foreach ($this->natalPlanetSlots(count($keys), $midDeg, $innerR + 6, $zoneOuter) as $idx => $slot) {
-                $p = $d['planets'][$keys[$idx]] ?? null;
-                if ($p === null) {
-                    continue;
-                }
-                $this->drawNatalPlanetBadge(
-                    $img, $font,
-                    $cx + $slot['r'] * cos($slot['a']),
-                    $cy + $slot['r'] * sin($slot['a']),
-                    $p, $slot['scale'], $white, $shadowSoft, $textDark
-                );
+            if ($l['sub'] !== '') {
+                $this->drawShadowText($img, $font, $sz['sub_pt'] * $l['scale'], $l['x'], $l['y'] + $l['h'] / 2 - $l['sub_h'] / 2, $l['sub'], $goldMuted);
             }
         }
+        foreach ($layout['planets'] as $pl) {
+            $this->drawNatalPlanetPill($img, $font, $pl, $cream);
+        }
 
-        // === กลางวง: ข้อมูลเจ้าชะตา — เรียงเป็นบรรทัด แล้วจัดกึ่งกลางทั้งก้อน ===
+        // === วงกลาง: ดาวเจ้าชนะ (ไอคอนใหญ่) ===
+        $dx = self::NATAL_DISC['x'];
+        $dy = self::NATAL_DISC['y'];
+        $this->drawShadowText($img, $font, 20, $dx, $dy - 100, 'ดาวเจ้าชนะ', $gold);
+        $rulerKey = $d['mainPlanetKey'] ?? $this->natalPlanetKeyByName($d, (string) $d['mainPlanet']);
+        if (! $this->drawNatalIcon($img, $rulerKey, $dx, $dy - 10, 124)) {
+            $mainColor = $this->hexColor($img, $d['mainPlanetColor'] ?? '#D97706');
+            imagefilledellipse($img, $dx, $dy - 10, 116, 116, $gold);
+            imagefilledellipse($img, $dx, $dy - 10, 104, 104, $mainColor);
+            $this->drawCenteredText($img, $font, 44, $dx, $dy - 12, (string) $d['mainPlanetNumeral'], imagecolorallocate($img, 255, 255, 255));
+        }
+        $this->drawShadowText($img, $font, $this->fitFontSize($font, 28, (string) $d['mainPlanet'], 260, 16), $dx, $dy + 94, (string) $d['mainPlanet'], $cream);
+
+        // === กล่องล่าง: ข้อมูลเกิด (ซ้าย) · ฐานผัง + มิตร/ศัตรู (ขวา) ===
         $zodiacTh = explode(' ', trim((string) $d['zodiac']))[0];
         [$basisTitle, $basisNote] = match ($d['basis']) {
             'lagna' => ["ลัคนาราศี{$d['anchor']}", 'ภพนับจากลัคนา'],
@@ -1000,141 +992,522 @@ class FortuneChartService
             default => ['ไม่ทราบเวลาเกิด', 'จันทร์ย้ายราศีวันเกิด · วางดาวตามราศี ไม่มีภพ'],
         };
 
-        $lines = [
-            ['text' => 'ผังดวงกำเนิด', 'size' => 14, 'color' => $gold, 'h' => 24],
-            ['text' => mb_substr(ThaiFontText::safe((string) $d['name'], 'เจ้าชะตา'), 0, 18), 'size' => 24, 'color' => $textDark, 'h' => 38],
-            ['divider' => true, 'h' => 14],
-            ['text' => 'เกิดวัน'.$d['dayOfWeek'], 'size' => 16, 'color' => $purple, 'h' => 26],
-        ];
+        $left = [['เกิดวัน'.$d['dayOfWeek'], 30, $lavender]];
+        $left[] = [$d['birthDate'].($d['birthTime'] !== null ? " · {$d['birthTime']} น." : ' · ไม่ทราบเวลาเกิด'), 25, $cream];
         if ($d['calendarDayOfWeek'] !== null) {
             // 🔎 ข้ามย่ำรุ่ง = ต้องบอกตามตรง (ลูกค้าจำว่าตัวเองเกิดอีกวัน) — ตรงกับคำเตือนในผังข้อความ
-            $lines[] = ['text' => "(ปฏิทินคือวัน{$d['calendarDayOfWeek']} · เกิดก่อนย่ำรุ่ง 06:00)", 'size' => 11, 'color' => $textGray, 'h' => 18];
+            $left[] = ["(ปฏิทินคือวัน{$d['calendarDayOfWeek']} · เกิดก่อนย่ำรุ่ง 06:00)", 19, $muted];
         }
-        $lines[] = [
-            'text' => $d['birthDate'].($d['birthTime'] !== null ? " · {$d['birthTime']} น." : ' · ไม่ทราบเวลาเกิด'),
-            'size' => 14, 'color' => $textGray, 'h' => 22,
-        ];
         if ($d['basis'] === 'lagna') {
             // ลัคนาขึ้นกับพิกัด — ไม่รู้จังหวัดต้องบอกเหมือนผังข้อความ
-            $lines[] = ['text' => $d['place'] ?? 'ไม่ทราบจังหวัดเกิด · ใช้พิกัดกรุงเทพฯ', 'size' => 11, 'color' => $textGray, 'h' => 18];
+            $left[] = [$d['place'] ?? 'ไม่ทราบจังหวัดเกิด · ใช้พิกัดกรุงเทพฯ', 21, $muted];
         }
-        $lines[] = ['ruler' => true, 'h' => 66];
-        $lines[] = ['text' => 'ดาวเจ้าชนะ: '.$d['mainPlanet'], 'size' => 14, 'color' => $mainColor, 'h' => 22];
-        $lines[] = ['text' => 'มิตร: '.(implode(' ', $d['friends']) ?: '-'), 'size' => 12, 'color' => $green, 'h' => 20];
-        $lines[] = ['text' => 'ศัตรู: '.(implode(' ', $d['enemies']) ?: '-'), 'size' => 12, 'color' => $red, 'h' => 20];
-        $lines[] = ['text' => 'ราศีเกิด: '.$zodiacTh, 'size' => 12, 'color' => $textDark, 'h' => 22];
-        $lines[] = ['text' => $basisTitle, 'size' => 15, 'color' => $purpleDark, 'h' => 26];
-        $lines[] = ['text' => $basisNote, 'size' => 11, 'color' => $textGray, 'h' => 18];
+        $left[] = ['ราศีเกิด: '.$zodiacTh, 25, $cream];
 
-        $y = $cy - array_sum(array_column($lines, 'h')) / 2;
-        foreach ($lines as $line) {
-            $lineMid = $y + $line['h'] / 2;
-            if (! empty($line['divider'])) {
-                imagesetthickness($img, 2);
-                imageline($img, (int) ($cx - 60), (int) $lineMid, (int) ($cx + 60), (int) $lineMid, $purpleLight);
-                imagesetthickness($img, 1);
-            } elseif (! empty($line['ruler'])) {
-                imagefilledellipse($img, (int) $cx, (int) $lineMid, 58, 58, $mainColor);
-                imagesetthickness($img, 3);
-                imageellipse($img, (int) $cx, (int) $lineMid, 58, 58, $white);
-                imagesetthickness($img, 1);
-                $this->drawCenteredText($img, $font, 24, $cx, $lineMid - 1, (string) $d['mainPlanetNumeral'], $white);
-            } else {
-                $this->drawCenteredText($img, $font, $line['size'], $cx, $lineMid, $line['text'], $line['color']);
-            }
-            $y += $line['h'];
-        }
+        $right = [
+            [$basisTitle, 30, $gold],
+            [$basisNote, 20, $muted],
+            ['มิตร: '.(implode(' ', $d['friends']) ?: '-'), 25, $mint],
+            ['ศัตรู: '.(implode(' ', $d['enemies']) ?: '-'), 25, $rose],
+        ];
 
-        // === หัวเรื่อง + ท้ายรูป ===
-        $this->drawCenteredText($img, $font, 26, $cx, 40, 'หมอจันทราพยากรณ์', $goldDark);
-        $this->drawCenteredText($img, $font, 13, $cx, 72, 'โหราศาสตร์ไทย · ตำแหน่งดาวจริง 10 ดวง · ระบบนิรายนะ', $purple);
-        $this->drawCenteredText($img, $font, 11, $cx, $height - 16, 'หมอจันทราพยากรณ์ | thaiprompt.online', $textMuted);
+        $panel = self::NATAL_PANEL;
+        $colW = (int) (($panel['x2'] - $panel['x1']) / 2) - 20;
+        $this->drawNatalPanelColumn($img, $font, $panel['x1'] + ($panel['x2'] - $panel['x1']) / 4, $left, $colW);
+        $this->drawNatalPanelColumn($img, $font, $panel['x1'] + ($panel['x2'] - $panel['x1']) * 3 / 4, $right, $colW);
 
-        ob_start();
-        imagepng($img, null, 7);
-        $pngData = ob_get_clean();
+        $jpeg = $this->encodeJpegWithin($img, self::NATAL_MAX_BYTES);
         imagedestroy($img);
 
-        return $pngData;
+        return $jpeg;
     }
 
     /**
-     * ตำแหน่งวางดาว n ดวงในช่องเดียว (กว้าง 30°) — วางแถวนอกก่อน แถวไม่พอค่อยย่อขนาด
+     * ตำแหน่งป้ายช่อง 12 ช่อง + ป้ายดาวทุกดวงในวงล้อ (แยกจากการวาด ให้เทสต์ตรวจการทับกันได้โดยไม่ต้องเรนเดอร์)
      *
-     * ผังจริงมีดาวกองราศีเดียวกันได้หลายดวง (อาทิตย์-พุธ-ศุกร์ ห่างกันไม่เกิน ~48° เสมอ)
-     * ของเดิมเรียงดาวซ้อนกันตามรัศมีห่างแค่ 18px บนวง 46px ⇒ 3 ดวงขึ้นไปทับกันอ่านไม่ออก
-     *
-     * @return array<int, array{r: float, a: float, scale: float}> a = มุม (เรเดียน)
+     * @param  array  $d  ผลจาก natalChartData()
+     * @return array{
+     *   labels: array<int, array{house: ?int, title: string, sub: string, x: float, y: float, w: float, h: float, title_h: float, sub_h: float, sector: int}>,
+     *   planets: array<int, array{key: string, planet: array, x: float, y: float, w: float, h: float, scale: float, box: array, sector: int}>
+     * } (x,y) = กึ่งกลางก้อน · box = [x1,y1,x2,y2] · sector = ช่อง 1-12
      */
-    protected function natalPlanetSlots(int $count, float $midDeg, float $rMin, float $rMax): array
+    public function natalLayout(array $d, string $font): array
     {
-        if ($count <= 0) {
+        $sz = self::NATAL_SIZES;
+
+        // ไม่มีการวางดาวลงภพ = ฐาน 'none' → วงนอกเป็นราศี
+        $houseMode = ! empty($d['planetPositions']);
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+
+        $labels = [];
+        $planets = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $from = self::NATAL_DIVIDERS[$i - 1];
+            $to = self::NATAL_DIVIDERS[$i];
+            $mid = ($from + $to) / 2;
+
+            if ($houseMode) {
+                $house = $i;
+                $title = self::HOUSES[$i]['name'];
+                $sub = 'ราศี'.($d['houseSigns'][$i] ?? '');
+                $keys = $d['planetPositions'][$i] ?? [];
+            } else {
+                $house = null;
+                $title = (string) ($order[$i - 1] ?? '');
+                $sub = '';
+                $keys = $d['signPositions'][$title] ?? [];
+            }
+
+            $ps = [];
+            foreach ($keys as $key) {
+                if (isset($d['planets'][$key])) {
+                    $ps[$key] = $d['planets'][$key];
+                }
+            }
+
+            // ป้ายช่องเต็มขนาดก่อน · ดาวในช่องต้องย่อ → ลองย่อป้ายช่องแทน เลือกแบบที่ป้ายดาวใหญ่กว่า
+            $best = null;
+            foreach (self::NATAL_LABEL_SCALES as $ls) {
+                $label = $this->natalLabelBox($font, $house, $title, $sub, $from, $to, $ls) + ['sector' => $i];
+                $placed = $this->natalPlacePlanets($ps, $from, $to, $label['box'], $font);
+                $pillScale = $placed[0]['scale'] ?? 1.0;
+                if ($best === null || $pillScale > $best[2]) {
+                    $best = [$label, $placed, $pillScale];
+                }
+                if ($pillScale >= 1.0) {
+                    break;
+                }
+            }
+
+            $labels[] = $best[0];
+            foreach ($best[1] as $pl) {
+                $planets[] = $pl + ['sector' => $i];
+            }
+        }
+
+        return ['labels' => $labels, 'planets' => $planets];
+    }
+
+    /**
+     * ป้ายช่อง (เลข+ชื่อภพ / ราศี) ที่อัตราย่อ $ls — ชิดวงแหวนมากที่สุดเท่าที่มุมกรอบป้ายยังอยู่ในช่อง
+     *
+     * @return array{house: ?int, title: string, sub: string, x: float, y: float, w: float, h: float, title_h: float, sub_h: float, scale: float, box: array}
+     */
+    protected function natalLabelBox(string $font, ?int $house, string $title, string $sub, float $from, float $to, float $ls): array
+    {
+        $sz = self::NATAL_SIZES;
+        $titlePt = $sz['title_pt'] * $ls;
+        $subPt = $sz['sub_pt'] * $ls;
+
+        // ขนาดป้ายจากข้อความจริง — บรรทัดสูงตามขนาดฟอนต์ ไม่ใช่ตาม bbox (ตัวที่มีสระบน/ล่างสูงไม่เท่ากัน)
+        $titleW = $this->textWidth($font, $titlePt, ($house !== null ? $house.'  ' : '').$title);
+        $titleH = $titlePt * 1.4;
+        $subH = $sub !== '' ? $subPt * 1.4 : 0.0;
+        $w = max($titleW, $sub !== '' ? $this->textWidth($font, $subPt, $sub) : 0.0);
+        $h = $titleH + ($sub !== '' ? $sz['label_gap'] * $ls + $subH : 0.0);
+
+        // ถอยเข้าทีละ 2px จนมุมกรอบป้ายอยู่ในช่อง
+        $mid = ($from + $to) / 2;
+        $r = self::NATAL_RING_INNER - $h / 2;
+        do {
+            [$x, $y] = $this->natalPolar($r, $mid);
+            $box = [$x - $w / 2, $y - $h / 2, $x + $w / 2, $y + $h / 2];
+            $r -= 2;
+        } while ($r > self::NATAL_DISC['r'] && ! $this->natalBoxFree($box, $from, $to, [-9e9, -9e9, -9e9, -9e9], []));
+
+        return [
+            'house' => $house, 'title' => $title, 'sub' => $sub, 'x' => $x, 'y' => $y,
+            'w' => $w, 'h' => $h, 'title_h' => $titleH, 'sub_h' => $subH, 'scale' => $ls, 'box' => $box,
+        ];
+    }
+
+    /**
+     * วางป้ายดาวทุกดวงของช่องหนึ่ง (ดาวกองช่องเดียวกันได้ถึง 6-7 ดวง)
+     *
+     * วัดจากผังจริง 8,800 ผัง (ทุก 5 วัน 1950-2010 · มี/ไม่มีเวลาเกิด): ภพที่มีดาว ≥ 3 ดวงพบ ~67% ของผัง
+     * ⇒ ไล่หาที่ว่างทั้งช่องโดยเริ่มจากจุดใต้ป้ายช่อง (ใกล้สุดก่อน → ป้ายดาวเกาะกลุ่มกันเป็นระเบียบ)
+     *   ที่ใต้ป้ายเต็มค่อยขยับไปมุมข้างป้ายใกล้วงแหวน (ช่องกว้างสุดตรงนั้น) · วางไม่ครบค่อยย่อลงหนึ่งขั้น
+     *   ดวงกว้างวางก่อน (ช่องแคบรับดวงยาวไม่ได้ ดวงสั้นแทรกช่องว่างที่เหลือได้)
+     *
+     * @param  array<string, array>  $ps  key ดาว => ข้อมูลดาว
+     * @param  array{0: float, 1: float, 2: float, 3: float}  $labelBox  กรอบป้ายช่อง [x1, y1, x2, y2]
+     * @return array<int, array{key: string, planet: array, x: float, y: float, w: float, h: float, scale: float, box: array, forced?: bool}>
+     *                                                                                                                                        forced = วางไม่ลงทุกขนาดแล้ว เรียงแบบยอมเบียด (เทสต์ NatalChartLayoutTest ห้ามเจอในผังจริง)
+     */
+    protected function natalPlacePlanets(array $ps, float $fromDeg, float $toDeg, array $labelBox, string $font): array
+    {
+        if ($ps === []) {
             return [];
         }
 
-        // ช่องละ 56px ทั้งสองแนว — ก้อน "วง + ชื่อ" สูง ~54px ช่องบน/ล่างของวงเรียงแถวตามแนวตั้ง
-        $span = deg2rad(30);
-        $scales = [1.0, 0.82, 0.68, 0.56];
-        $rows = [];
-        $cell = 56.0;
-        $scale = 1.0;
-        foreach ($scales as $scale) {
-            $cell = 56.0 * $scale;
-            $rowCount = max(1, (int) floor(($rMax - $rMin) / $cell));
-            $rows = [];
-            for ($k = 0; $k < $rowCount; $k++) {
-                $r = $rMax - $cell / 2 - $k * $cell;
-                $rows[] = ['r' => $r, 'cap' => max(1, (int) floor(($r * $span - 6) / $cell))];
+        $mid = ($fromDeg + $toDeg) / 2;
+        $labelInner = hypot(($labelBox[0] + $labelBox[2]) / 2 - self::NATAL_CX, ($labelBox[1] + $labelBox[3]) / 2 - self::NATAL_CY)
+            - ($labelBox[3] - $labelBox[1]) / 2;
+        $candidates = $this->natalCandidateSpots($fromDeg, $toDeg);
+
+        foreach (self::NATAL_PLANET_SCALES as $scale) {
+            $sizes = [];
+            foreach ($ps as $key => $p) {
+                $sizes[$key] = $this->natalPillSize($font, $p, $scale);
             }
-            if (array_sum(array_column($rows, 'cap')) >= $count) {
-                break;
+            // ดวงกว้างก่อน (คงลำดับเดิมเมื่อกว้างเท่ากัน)
+            $keys = array_keys($sizes);
+            usort($keys, fn ($a, $b) => $sizes[$b]['w'] <=> $sizes[$a]['w']); // usort คงลำดับเดิมเมื่อเท่ากัน (PHP 8)
+
+            // จุดตั้งต้น = ใต้ป้ายช่องพอดี
+            [$ax, $ay] = $this->natalPolar($labelInner - self::NATAL_GAPS['block'] - $sizes[$keys[0]]['h'] / 2, $mid);
+            $dist = [];
+            foreach ($candidates as $c => [$x, $y]) {
+                $dist[$c] = ($x - $ax) ** 2 + ($y - $ay) ** 2;
             }
+            asort($dist);
+
+            $placed = [];
+            $out = [];
+            foreach ($keys as $key) {
+                $size = $sizes[$key];
+                $spot = null;
+                foreach (array_keys($dist) as $c) {
+                    [$x, $y] = $candidates[$c];
+                    $box = [$x - $size['w'] / 2, $y - $size['h'] / 2, $x + $size['w'] / 2, $y + $size['h'] / 2];
+                    if ($this->natalBoxFree($box, $fromDeg, $toDeg, $labelBox, $placed)) {
+                        $spot = [$x, $y, $box];
+                        break;
+                    }
+                }
+                if ($spot === null) {
+                    continue 2; // ขนาดนี้วางไม่ครบ → ย่อลง
+                }
+                $placed[] = $spot[2];
+                $out[] = ['key' => $key, 'planet' => $ps[$key], 'x' => $spot[0], 'y' => $spot[1], 'w' => $size['w'], 'h' => $size['h'], 'scale' => $scale, 'box' => $spot[2]];
+            }
+
+            return $out;
         }
 
-        $slots = [];
-        $left = $count;
-        $lastRow = count($rows) - 1;
-        foreach ($rows as $k => $row) {
-            // ย่อสุดแล้วยังไม่พอ → อัดส่วนที่เหลือลงแถวในสุด (เบียดกันดีกว่าดาวหายจากรูป)
-            $m = $k === $lastRow ? $left : min($left, $row['cap']);
-            for ($j = 0; $j < $m; $j++) {
-                $slots[] = [
-                    'r' => $row['r'],
-                    'a' => deg2rad($midDeg) + ($j - ($m - 1) / 2) * ($cell / $row['r']),
-                    'scale' => $scale,
-                ];
-            }
-            $left -= $m;
-            if ($left <= 0) {
-                break;
-            }
+        // เล็กสุดแล้วยังวางไม่ครบ (ไม่เจอในผังจริง) → เรียงตามแนวกลางช่องจากใต้ป้ายเข้าใน ยอมเบียด ดีกว่าดาวหายจากรูป
+        $scale = self::NATAL_PLANET_SCALES[count(self::NATAL_PLANET_SCALES) - 1];
+        $out = [];
+        $r = $labelInner - self::NATAL_GAPS['block'];
+        foreach ($ps as $key => $p) {
+            $size = $this->natalPillSize($font, $p, $scale);
+            $r -= $size['h'] / 2;
+            [$x, $y] = $this->natalPolar($r, $mid);
+            $out[] = ['key' => $key, 'planet' => $p, 'x' => $x, 'y' => $y, 'w' => $size['w'], 'h' => $size['h'], 'scale' => $scale,
+                'box' => [$x - $size['w'] / 2, $y - $size['h'] / 2, $x + $size['w'] / 2, $y + $size['h'] / 2], 'forced' => true];
+            $r -= $size['h'] / 2 + 2;
         }
 
-        return $slots;
+        return $out;
     }
 
     /**
-     * วาดดาว 1 ดวง: วงสีดาว + เลขไทยตรงกลาง + ชื่อดาวใต้วง
+     * จุดที่ลองวางป้ายดาวได้ในช่อง (ตารางเชิงขั้ว ห่างกัน ~6px ทั้งแนวรัศมีและแนวโค้ง)
      *
-     * ($x, $y) = กึ่งกลางของ "วง + ชื่อ" ทั้งก้อน — ไม่ใช่กึ่งกลางวง
-     * ⇒ ก้อนสูงเท่ากันทั้งบน/ล่างจุดวาง ช่องครึ่งล่างของวงชื่อดาวจะไม่ยื่นไปชนป้ายภพ
+     * @return array<int, array{0: float, 1: float}>
      */
-    protected function drawNatalPlanetBadge($img, string $font, float $x, float $y, array $p, float $scale, int $white, int $shadow, int $textColor): void
+    protected function natalCandidateSpots(float $fromDeg, float $toDeg): array
     {
-        $d = (int) round(30 * $scale);
-        $ring = $d + (int) round(6 * $scale);
-        $color = $this->hexColor($img, (string) $p['color']);
-        $by = $y - 8 * $scale;
+        static $cache = [];
+        $cacheKey = $fromDeg.'|'.$toDeg;
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
 
-        imagefilledellipse($img, (int) $x + 2, (int) $by + 2, $ring, $ring, $shadow);
-        imagefilledellipse($img, (int) $x, (int) $by, $ring, $ring, $white);
-        imagefilledellipse($img, (int) $x, (int) $by, $d, $d, $color);
+        $step = 6.0;
+        $spots = [];
+        for ($r = self::NATAL_RING_INNER - 20; $r > self::NATAL_DISC['r'] + 20; $r -= $step) {
+            $arc = deg2rad($toDeg - $fromDeg) * $r;
+            for ($s = $step / 2; $s < $arc; $s += $step) {
+                $spots[] = $this->natalPolar($r, $fromDeg + rad2deg($s / $r));
+            }
+        }
 
-        // "?" = ราศีของดาวดวงนี้ยังไม่แน่ (จันทร์ในวันที่จันทร์ย้ายราศี + ไม่รู้เวลาเกิด) — ตรงกับคำเตือนในผังข้อความ
-        $label = (string) $p['name'].(! empty($p['uncertain']) ? '?' : '');
+        return $cache[$cacheKey] = $spots;
+    }
 
-        $this->drawCenteredText($img, $font, 14 * $scale, $x, $by - 1, (string) $p['numeral'], $white);
-        $this->drawCenteredText($img, $font, max(8.0, 10.5 * $scale), $x, $by + $ring / 2 + 9 * $scale, $label, $textColor);
+    /**
+     * ขนาดป้ายแคปซูลดาว [ไอคอน | ชื่อ] ที่อัตราย่อ $scale
+     *
+     * @return array{w: float, h: float}
+     */
+    protected function natalPillSize(string $font, array $p, float $scale): array
+    {
+        $sz = self::NATAL_SIZES;
+        $h = $sz['pill_h'] * $scale;
+        $nameW = $this->textWidth($font, $this->natalPillFont($scale), $this->natalPlanetLabel($p));
+
+        return ['w' => $h + $sz['pill_gap'] * $scale + $nameW + $sz['pill_pad'] * $scale, 'h' => $h];
+    }
+
+    protected function natalPillFont(float $scale): float
+    {
+        return max(12.0, self::NATAL_SIZES['name_pt'] * $scale);
+    }
+
+    /**
+     * กรอบ [x1,y1,x2,y2] อยู่ในช่อง (ห่างเส้นแบ่ง · ใต้วงแหวน · นอกวงกลาง) และไม่ทับป้าย/กรอบอื่น
+     *
+     * @param  array<int, array{0: float, 1: float, 2: float, 3: float}>  $others
+     */
+    public function natalBoxFree(array $box, float $fromDeg, float $toDeg, array $labelBox, array $others): bool
+    {
+        $g = self::NATAL_GAPS;
+        $span = $toDeg - $fromDeg;
+
+        // ทับป้าย/กรอบอื่นเช็คก่อน (ถูกสุด และตกบ่อยสุด)
+        foreach (array_merge([$labelBox], $others) as $o) {
+            if ($box[0] < $o[2] + $g['block'] && $o[0] < $box[2] + $g['block'] && $box[1] < $o[3] + $g['block'] && $o[1] < $box[3] + $g['block']) {
+                return false;
+            }
+        }
+
+        foreach ([[$box[0], $box[1]], [$box[2], $box[1]], [$box[0], $box[3]], [$box[2], $box[3]]] as [$px, $py]) {
+            $dx = $px - self::NATAL_CX;
+            $dy = $py - self::NATAL_CY;
+            $dist = hypot($dx, $dy);
+            if ($dist > self::NATAL_RING_INNER - $g['ring']) {
+                return false;
+            }
+            // มุมจากทิศเหนือ ตามเข็ม เทียบกับเส้นแบ่งด้านซ้ายของช่อง (ช่อง 1/12 คร่อม 0°)
+            $rel = fmod(rad2deg(atan2($dx, -$dy)) - $fromDeg + 720.0, 360.0);
+            if ($rel > $span || $dist * sin(deg2rad($rel)) < $g['divider'] || $dist * sin(deg2rad($span - $rel)) < $g['divider']) {
+                return false;
+            }
+        }
+
+        // ระยะใกล้สุดจากจุดศูนย์วงกลางถึงกรอบ
+        $ex = max($box[0] - self::NATAL_DISC['x'], 0, self::NATAL_DISC['x'] - $box[2]);
+        $ey = max($box[1] - self::NATAL_DISC['y'], 0, self::NATAL_DISC['y'] - $box[3]);
+
+        return hypot($ex, $ey) >= self::NATAL_DISC['r'] + $g['disc'];
+    }
+
+    /**
+     * พิกัดจุดบนวงล้อ จากรัศมี + มุม (องศาจากทิศเหนือ ตามเข็ม)
+     *
+     * @return array{0: float, 1: float}
+     */
+    protected function natalPolar(float $r, float $deg): array
+    {
+        $a = deg2rad($deg);
+
+        return [self::NATAL_CX + $r * sin($a), self::NATAL_CY - $r * cos($a)];
+    }
+
+    /**
+     * ผ้าใบผังดวงกำเนิด = เทมเพลต AI (resources/images/fortune/natal-chart-template.jpg)
+     *
+     * ไฟล์หาย/เปิดไม่ได้ → วาดพื้นสำรองเรขาคณิตเดียวกัน (ม่วงเข้ม + วงทอง + เส้นแบ่ง + กล่องล่าง) ให้รูปยังออกได้
+     */
+    protected function natalTemplateCanvas(): \GdImage
+    {
+        $path = resource_path(self::NATAL_TEMPLATE);
+        $img = is_file($path) ? @imagecreatefromjpeg($path) : false;
+        if ($img instanceof \GdImage && imagesx($img) === self::NATAL_W && imagesy($img) === self::NATAL_H) {
+            imagealphablending($img, true);
+
+            return $img;
+        }
+
+        Log::warning('FortuneChart: ไม่พบเทมเพลตผังดวงกำเนิด — ใช้พื้นสำรอง', ['path' => $path]);
+
+        $img = imagecreatetruecolor(self::NATAL_W, self::NATAL_H);
+        imagealphablending($img, true);
+        imagefill($img, 0, 0, imagecolorallocate($img, 28, 14, 56));
+        $gold = imagecolorallocate($img, 214, 172, 92);
+        $this->drawCircle($img, self::NATAL_CX, self::NATAL_CY, self::NATAL_RING_INNER + 50, $gold, 6);
+        $this->drawCircle($img, self::NATAL_CX, self::NATAL_CY, self::NATAL_RING_INNER, $gold, 3);
+        $this->drawCircle($img, self::NATAL_DISC['x'], self::NATAL_DISC['y'], self::NATAL_DISC['r'], $gold, 3);
+        foreach (array_slice(self::NATAL_DIVIDERS, 0, 12) as $deg) {
+            [$x1, $y1] = $this->natalPolar(self::NATAL_DISC['r'], $deg);
+            [$x2, $y2] = $this->natalPolar(self::NATAL_RING_INNER, $deg);
+            imageline($img, (int) $x1, (int) $y1, (int) $x2, (int) $y2, $gold);
+        }
+        $p = self::NATAL_PANEL;
+        imagerectangle($img, $p['x1'] - 30, $p['y1'] - 10, $p['x2'] + 30, $p['y2'] + 10, $gold);
+
+        return $img;
+    }
+
+    /**
+     * คอลัมน์ข้อความในกล่องล่าง — เกลี่ยบรรทัดให้เต็มความสูงกล่อง · ย่อฟอนต์บรรทัดที่ยาวเกินคอลัมน์
+     *
+     * @param  array<int, array{0: string, 1: float, 2: int}>  $lines  [ข้อความ, ขนาด pt, สี]
+     */
+    protected function drawNatalPanelColumn($img, string $font, float $cx, array $lines, int $maxWidth): void
+    {
+        $panel = self::NATAL_PANEL;
+        $weights = array_map(fn (array $l): float => $l[1] * 1.6, $lines);
+        $scale = min(1.0, ($panel['y2'] - $panel['y1']) / array_sum($weights));
+
+        $y = $panel['y1'] + (($panel['y2'] - $panel['y1']) - array_sum($weights) * $scale) / 2;
+        foreach ($lines as $k => [$text, $size, $color]) {
+            $h = $weights[$k] * $scale;
+            $fitted = $this->fitFontSize($font, $size * $scale, $text, $maxWidth, 12);
+            $this->drawShadowText($img, $font, $fitted, $cx, $y + $h / 2, $text, $color);
+            $y += $h;
+        }
+    }
+
+    /**
+     * ข้อความมีเงา (เข้ม เยื้อง 2px) ให้อ่านออกบนพื้นภาพลวดลาย — ทั้งสองชั้นผ่าน drawCenteredText
+     */
+    protected function drawShadowText($img, string $font, float $size, float $x, float $y, string $text, int $color): void
+    {
+        $this->drawCenteredText($img, $font, $size, $x + 2, $y + 2, $text, imagecolorallocatealpha($img, 8, 2, 20, 30));
+        $this->drawCenteredText($img, $font, $size, $x, $y, $text, $color);
+    }
+
+    /**
+     * ความกว้างข้อความ (px) — วัดจากตัวที่วาดจริง (วรรณยุกต์ที่ยกลอยกว้าง 0)
+     */
+    protected function textWidth(string $font, float $size, string $text): float
+    {
+        if (empty($font) || ! @file_exists($font)) {
+            return 0.0;
+        }
+
+        [$base] = ThaiFontText::liftStackedToneMarks($text);
+        $bb = @imagettfbbox($size, 0, $font, $base);
+
+        return $bb === false ? 0.0 : (float) (max($bb[2], $bb[4]) - min($bb[0], $bb[6]));
+    }
+
+    /**
+     * ย่อขนาดฟอนต์ทีละ 0.5pt จนข้อความกว้างไม่เกิน $maxWidth (ไม่ต่ำกว่า $min)
+     */
+    protected function fitFontSize(string $font, float $size, string $text, float $maxWidth, float $min): float
+    {
+        while ($size > $min && $this->textWidth($font, $size, $text) > $maxWidth) {
+            $size -= 0.5;
+        }
+
+        return $size;
+    }
+
+    /**
+     * เข้ารหัส JPEG ลดคุณภาพทีละขั้นจนไม่เกิน $maxBytes (LINE previewImageUrl ≤ 1MB)
+     */
+    protected function encodeJpegWithin(\GdImage $img, int $maxBytes): string
+    {
+        $data = '';
+        foreach ([88, 84, 80, 75, 70] as $quality) {
+            ob_start();
+            imagejpeg($img, null, $quality);
+            $data = (string) ob_get_clean();
+            if (strlen($data) <= $maxBytes) {
+                break;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * ชื่อดาวในป้าย — "?" = ราศีของดาวดวงนี้ยังไม่แน่ (จันทร์ในวันที่จันทร์ย้ายราศี + ไม่รู้เวลาเกิด) ตรงกับคำเตือนในผังข้อความ
+     */
+    protected function natalPlanetLabel(array $p): string
+    {
+        return (string) $p['name'].(! empty($p['uncertain']) ? '?' : '');
+    }
+
+    /** key ดาวจากชื่อไทย (ดาวเจ้าชนะส่งมาแค่ชื่อ) */
+    protected function natalPlanetKeyByName(array $d, string $name): ?string
+    {
+        foreach ($d['planets'] ?? [] as $key => $p) {
+            if (($p['name'] ?? null) === $name) {
+                return (string) $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * วาดไอคอนดาว (AI) เส้นผ่านศูนย์กลาง $size ที่จุดกึ่งกลาง — ไม่มีไฟล์คืน false ให้ผู้เรียกวาดแบบสำรอง
+     */
+    protected function drawNatalIcon($img, ?string $key, float $cx, float $cy, int $size): bool
+    {
+        if ($key === null) {
+            return false;
+        }
+        if (! array_key_exists($key, $this->natalIcons)) {
+            $path = resource_path(self::NATAL_ICON_DIR.'/'.basename($key).'.png');
+            $this->natalIcons[$key] = is_file($path) ? (@imagecreatefrompng($path) ?: false) : false;
+        }
+        $icon = $this->natalIcons[$key];
+        if (! $icon instanceof \GdImage) {
+            return false;
+        }
+
+        // เงานุ่มใต้เหรียญ
+        imagefilledellipse($img, (int) round($cx + 2), (int) round($cy + 3), $size + 4, $size + 4, imagecolorallocatealpha($img, 0, 0, 0, 80));
+        imagecopyresampled($img, $icon, (int) round($cx - $size / 2), (int) round($cy - $size / 2), 0, 0, $size, $size, imagesx($icon), imagesy($icon));
+
+        return true;
+    }
+
+    /**
+     * ป้ายแคปซูลดาว: [ไอคอน | ชื่อดาว] พื้นม่วงเข้มโปร่ง ขอบสีประจำดาว — ($pl x,y,w,h จาก natalLayout)
+     */
+    protected function drawNatalPlanetPill($img, string $font, array $pl, int $textColor): void
+    {
+        $sz = self::NATAL_SIZES;
+        $x1 = $pl['x'] - $pl['w'] / 2;
+        $y1 = $pl['y'] - $pl['h'] / 2;
+        $h = $pl['h'];
+
+        $this->fillRoundedPill($img, $x1, $y1, $pl['w'], $h, (string) $pl['planet']['color']);
+
+        $iconD = (int) round($h - 4);
+        if (! $this->drawNatalIcon($img, $pl['key'], $x1 + $h / 2, $pl['y'], $iconD)) {
+            // ไม่มีไอคอน → วงสีประจำดาว + เลขไทย (แบบผังเดิม)
+            imagefilledellipse($img, (int) round($x1 + $h / 2), (int) round($pl['y']), $iconD, $iconD, $this->hexColor($img, (string) $pl['planet']['color']));
+            $this->drawCenteredText($img, $font, 20 * $pl['scale'], $x1 + $h / 2, $pl['y'] - 1, (string) $pl['planet']['numeral'], imagecolorallocate($img, 255, 255, 255));
+        }
+
+        $label = $this->natalPlanetLabel($pl['planet']);
+        $fontPt = $this->natalPillFont($pl['scale']);
+        $nameX = $x1 + $h + $sz['pill_gap'] * $pl['scale'] + $this->textWidth($font, $fontPt, $label) / 2;
+        $this->drawShadowText($img, $font, $fontPt, $nameX, $pl['y'], $label, $textColor);
+    }
+
+    /**
+     * แคปซูลขอบเนียน (supersample ×3): ขอบสีประจำดาว 3px + พื้นม่วงเข้มโปร่ง
+     */
+    protected function fillRoundedPill($img, float $x, float $y, float $w, float $h, string $borderHex): void
+    {
+        $ss = 3;
+        $W = (int) ceil($w) + 2;
+        $H = (int) ceil($h) + 2;
+        $big = imagecreatetruecolor($W * $ss, $H * $ss);
+        imagealphablending($big, false);
+        imagefilledrectangle($big, 0, 0, $W * $ss - 1, $H * $ss - 1, imagecolorallocatealpha($big, 0, 0, 0, 127));
+
+        $hex = ltrim($borderHex, '#');
+        $border = imagecolorallocatealpha($big, (int) hexdec(substr($hex, 0, 2)), (int) hexdec(substr($hex, 2, 2)), (int) hexdec(substr($hex, 4, 2)), 0);
+        $fill = imagecolorallocatealpha($big, 22, 10, 44, 28);
+        $pill = function (int $inset, int $color) use ($big, $W, $H, $ss): void {
+            $x1 = $ss + $inset;
+            $y1 = $ss + $inset;
+            $x2 = ($W - 1) * $ss - $inset;
+            $y2 = ($H - 1) * $ss - $inset;
+            $d = $y2 - $y1;
+            imagefilledellipse($big, $x1 + intdiv($d, 2), $y1 + intdiv($d, 2), $d, $d, $color);
+            imagefilledellipse($big, $x2 - intdiv($d, 2), $y1 + intdiv($d, 2), $d, $d, $color);
+            imagefilledrectangle($big, $x1 + intdiv($d, 2), $y1, $x2 - intdiv($d, 2), $y2, $color);
+        };
+        $pill(0, $border);
+        $pill(3 * $ss, $fill);
+
+        $small = imagecreatetruecolor($W, $H);
+        imagealphablending($small, false);
+        imagesavealpha($small, true);
+        imagecopyresampled($small, $big, 0, 0, 0, 0, $W, $H, $W * $ss, $H * $ss);
+        imagedestroy($big);
+        imagecopy($img, $small, (int) round($x) - 1, (int) round($y) - 1, 0, 0, $W, $H);
+        imagedestroy($small);
     }
 
     /**
@@ -1249,7 +1622,9 @@ class FortuneChartService
             $drawY = $y;
         }
 
-        @imagettftext($img, $size, 0, (int) $drawX, (int) $drawY, $color, $font, $text);
+        // 🔤 (2026-10-11) วาดผ่าน ThaiFontText::draw — GD ไม่ทำ Thai shaping วรรณยุกต์บนสระบนเคยจมหาย
+        //   (ชื่อลูกค้า "ชื่อ" ขึ้นเป็น "ชือ") · ตำแหน่ง/ความกว้างเท่าเดิม ต่างแค่วรรณยุกต์ลอยขึ้นมาให้เห็น
+        @ThaiFontText::draw($img, $size, (int) $drawX, (int) $drawY, $color, $font, $text);
     }
 
     /**
@@ -1486,16 +1861,19 @@ SVG;
     }
 
     /**
-     * บันทึก SVG เป็นไฟล์ภาพ SVG แล้ว return URL
+     * บันทึกรูปผัง (PNG หรือ JPEG) ลง storage แล้ว return URL
      *
-     * @param  string  $svg  SVG XML
+     * 🖼️ (2026-10-11) ผังดวงกำเนิดเปลี่ยนเป็น JPEG (พื้นภาพ AI) — นามสกุลไฟล์ดูจากไบต์จริง ไม่ฟิกซ์ .png
+     *
+     * @param  string  $pngData  ไบต์รูป (PNG จากผังแบบด่วน · JPEG จากผังดวงกำเนิด)
      * @param  string  $prefix  prefix ชื่อไฟล์
      * @return string|null URL ของภาพ
      */
     protected function saveChartAsImage(string $pngData, string $prefix): ?string
     {
         try {
-            $filename = "{$prefix}-".Str::random(8).'.png';
+            $ext = str_starts_with($pngData, "\xFF\xD8\xFF") ? '.jpg' : '.png';
+            $filename = "{$prefix}-".Str::random(8).$ext;
             $path = "fortune/charts/{$filename}";
 
             Storage::disk('public')->put($path, $pngData);

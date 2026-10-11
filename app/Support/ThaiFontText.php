@@ -41,4 +41,80 @@ final class ThaiFontText
 
         return $clean !== '' ? $clean : $fallback;
     }
+
+    /** วรรณยุกต์ไทย ่ ้ ๊ ๋ ์ */
+    private const TONE_MARKS = ["\u{0E48}", "\u{0E49}", "\u{0E4A}", "\u{0E4B}", "\u{0E4C}"];
+
+    /** สระบน/นิคหิต ที่วรรณยุกต์ต้องลอยอยู่เหนือ ั ิ ี ึ ื ํ */
+    private const UPPER_VOWELS = ["\u{0E31}", "\u{0E34}", "\u{0E35}", "\u{0E36}", "\u{0E37}", "\u{0E4D}"];
+
+    /** ยกวรรณยุกต์ขึ้นกี่เท่าของขนาดฟอนต์ (pt) — วัดจาก NotoSansThai-Bold ให้ลอยพ้นสระบนพอดี */
+    private const TONE_LIFT = 0.30;
+
+    /**
+     * แยกวรรณยุกต์ที่ต้อง "ยกลอย" ออกจากข้อความ
+     *
+     * GD ไม่ทำ Thai shaping → วรรณยุกต์ที่ตามสระบน (เรื่อง ที่ ชื่อ) ถูกวาดตำแหน่งเดียวกับสระ = จมหาย
+     * (2026-10-11 เห็นในรูปจริง: "หัวใจของเรื่อง" → "เรือง" · ชื่อลูกค้า "ชื่อ" → "ชือ")
+     *
+     * @return array{0:string,1:array<int,array{0:string,1:string}>} [ข้อความที่ถอดวรรณยุกต์เหล่านั้นออก, [[ข้อความก่อนหน้า, วรรณยุกต์], ...]]
+     *
+     * @example ThaiFontText::liftStackedToneMarks('เรื่อง') // ['เรือง', [['เรื', '่']]]
+     */
+    public static function liftStackedToneMarks(string $text): array
+    {
+        $chars = mb_str_split($text);
+        $base = '';
+        $lifted = [];
+
+        foreach ($chars as $i => $ch) {
+            if (in_array($ch, self::TONE_MARKS, true)) {
+                $prev = $chars[$i - 1] ?? '';
+                $next = $chars[$i + 1] ?? '';
+                // ตามสระบน (เรื่อง) หรือตามด้วยสระอำ (น้ำ — นิคหิตของ ำ อยู่ตำแหน่งเดียวกัน)
+                if (in_array($prev, self::UPPER_VOWELS, true) || $next === "\u{0E33}") {
+                    $lifted[] = [$base, $ch];
+
+                    continue;
+                }
+            }
+
+            $base .= $ch;
+        }
+
+        return [$base, $lifted];
+    }
+
+    /**
+     * วาดข้อความด้วย imagettftext โดยยกวรรณยุกต์บนสระบนให้ลอยพ้น — ใช้แทน imagettftext ตรงๆ
+     *
+     * ตำแหน่ง/ความกว้างข้อความเท่าเดิมทุกอย่าง (วรรณยุกต์กว้าง 0) ต่างแค่วรรณยุกต์ที่เคยจมจะลอยขึ้นมาให้เห็น
+     */
+    public static function draw(\GdImage $img, float $size, int $x, int $y, int $color, string $font, string $text): void
+    {
+        [$base, $lifted] = self::liftStackedToneMarks($text);
+        imagettftext($img, $size, 0, $x, $y, $color, $font, $base);
+
+        $lift = (int) round($size * self::TONE_LIFT);
+        foreach ($lifted as [$prefix, $mark]) {
+            // วรรณยุกต์กว้าง 0 + ระยะซ้ายติดลบ → วางที่ปากกาหลังพยัญชนะ/สระ จะลอยเหนือตัวก่อนหน้าพอดี
+            imagettftext($img, $size, 0, $x + self::advance($size, $font, $prefix), $y - $lift, $color, $font, $mark);
+        }
+    }
+
+    /**
+     * ระยะปากกาเลื่อนหลังวาด $text (advance) — วัดจาก bbox ของ "$text + I" ลบ bbox ของ "I"
+     * (bbox ของ $text อย่างเดียวไม่ใช่ advance เพราะตัวท้ายอาจเป็นวรรณยุกต์/สระบนที่กว้าง 0)
+     */
+    public static function advance(float $size, string $font, string $text): int
+    {
+        if ($text === '') {
+            return 0;
+        }
+
+        $with = imagettfbbox($size, 0, $font, $text.'I');
+        $ref = imagettfbbox($size, 0, $font, 'I');
+
+        return (int) round(max($with[2], $with[4]) - max($ref[2], $ref[4]));
+    }
 }

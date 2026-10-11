@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Log;
  *   เดิม: ไพ่ใบละ 117×208 บนผ้าใบ 1200×1500 (ที่ว่างเยอะ ไพ่เล็กจนดูไม่ออก) · ไม่มีชื่อไพ่
  *         · คำอธิบายตำแหน่งกองอยู่ท้ายภาพ · "หัวใจของเรื่อง" วรรณยุกต์จมหายเป็น "เรือง"
  *   ใหม่: ไพ่ 200×356 (ต้นฉบับ 536×960 + ชาร์ปหลังย่อ) · ชื่อตำแหน่ง + ชื่อไพ่ใต้ทุกใบ · เหรียญเลขทอง
- *         · พื้นหลังไล่แสง + วงแหวนรอบกางเขน + เงาไพ่ · วรรณยุกต์บนสระบนยกลอยเอง (GD ไม่ทำ shaping)
+ *         · พื้นหลังไล่แสง + วงแหวนรอบกางเขน + เงาไพ่ · วรรณยุกต์บนสระบนยกลอย (ThaiFontText::draw — GD ไม่ทำ shaping)
  *   ⚠️ LINE ใช้ URL เดียวกันเป็น previewImageUrl (ต้อง ≤ 1MB) → saveJpeg ลดคุณภาพจนไฟล์ ≤ MAX_BYTES
  *   ⚠️ ห้ามใส่ชื่อลูกค้าในภาพ — URL เดาได้ (celtic-spreads/{id}.jpg) ใครก็เปิดได้
  */
@@ -79,15 +79,6 @@ class CelticSpreadImageGenerator
     protected const CREAM = [248, 238, 218];
 
     protected const LAVENDER = [196, 182, 228];
-
-    /** วรรณยุกต์ไทย ่ ้ ๊ ๋ ์ */
-    protected const THAI_TONE_MARKS = ["\u{0E48}", "\u{0E49}", "\u{0E4A}", "\u{0E4B}", "\u{0E4C}"];
-
-    /** สระบน/นิคหิต ที่วรรณยุกต์ต้องลอยอยู่เหนือ ั ิ ี ึ ื ํ */
-    protected const THAI_UPPER_VOWELS = ["\u{0E31}", "\u{0E34}", "\u{0E35}", "\u{0E36}", "\u{0E37}", "\u{0E4D}"];
-
-    // ยกวรรณยุกต์ขึ้นกี่เท่าของขนาดฟอนต์ (pt) — วัดจาก NotoSansThai-Bold ให้ลอยพ้นสระบนพอดี
-    protected const TONE_LIFT = 0.30;
 
     protected ?string $fontPath = null;
 
@@ -712,60 +703,11 @@ class CelticSpreadImageGenerator
     }
 
     /**
-     * แยกวรรณยุกต์ที่ต้อง "ยกลอย" ออกจากข้อความ
-     *
-     * GD ไม่ทำ Thai shaping → วรรณยุกต์ที่ตามสระบน (เรื่อง ที่ ทั้ง) ถูกวาดตำแหน่งเดียวกับสระ = จมหาย
-     * คืน [ข้อความที่ถอดวรรณยุกต์เหล่านั้นออก, [[ข้อความก่อนหน้าวรรณยุกต์, วรรณยุกต์], ...]]
-     *
-     * @return array{0:string,1:array<int,array{0:string,1:string}>}
-     *
-     * @example splitLiftedMarks('เรื่อง') // ['เรือง', [['เรื', '่']]]
-     */
-    public function splitLiftedMarks(string $text): array
-    {
-        $chars = mb_str_split($text);
-        $base = '';
-        $lifted = [];
-
-        foreach ($chars as $i => $ch) {
-            if (in_array($ch, self::THAI_TONE_MARKS, true)) {
-                $prev = $chars[$i - 1] ?? '';
-                $next = $chars[$i + 1] ?? '';
-                // ตามสระบน (เรื่อง) หรือตามด้วยสระอำ (น้ำ — นิคหิตของ ำ อยู่ตำแหน่งเดียวกัน)
-                if (in_array($prev, self::THAI_UPPER_VOWELS, true) || $next === "\u{0E33}") {
-                    $lifted[] = [$base, $ch];
-
-                    continue;
-                }
-            }
-
-            $base .= $ch;
-        }
-
-        return [$base, $lifted];
-    }
-
-    /**
-     * วาดข้อความไทยโดยยกวรรณยุกต์บนสระบนให้ลอยพ้น (แทน imagettftext ตรงๆ)
-     */
-    protected function drawText(GdImage $img, float $size, int $x, int $y, int $color, string $font, string $text): void
-    {
-        [$base, $lifted] = $this->splitLiftedMarks($text);
-        imagettftext($img, $size, 0, $x, $y, $color, $font, $base);
-
-        $lift = (int) round($size * self::TONE_LIFT);
-        foreach ($lifted as [$prefix, $mark]) {
-            // วรรณยุกต์กว้าง 0 + ระยะซ้ายติดลบ → วางที่ปากกาหลังพยัญชนะ/สระ จะลอยเหนือตัวก่อนหน้าพอดี
-            imagettftext($img, $size, 0, $x + $this->advance($size, $font, $prefix), $y - $lift, $color, $font, $mark);
-        }
-    }
-
-    /**
      * วาดข้อความกึ่งกลางที่ $cx — ถ้ากำหนด $maxWidth จะย่อฟอนต์ทีละ 0.5pt จนพอดี (ไม่ต่ำกว่า $minSize)
      */
     protected function drawCenteredText(GdImage $img, float $size, int $cx, int $y, int $color, string $font, string $text, ?int $maxWidth = null, float $minSize = 10): void
     {
-        [$base] = $this->splitLiftedMarks($text);
+        [$base] = ThaiFontText::liftStackedToneMarks($text);
 
         if ($maxWidth) {
             while ($size > $minSize && $this->bboxWidth($size, $font, $base) > $maxWidth) {
@@ -777,7 +719,7 @@ class CelticSpreadImageGenerator
         $left = min($bb[0], $bb[6]);
         $width = max($bb[2], $bb[4]) - $left;
 
-        $this->drawText($img, $size, (int) round($cx - $width / 2 - $left), $y, $color, $font, $text);
+        ThaiFontText::draw($img, $size, (int) round($cx - $width / 2 - $left), $y, $color, $font, $text);
     }
 
     /**
@@ -786,7 +728,7 @@ class CelticSpreadImageGenerator
     protected function drawSpacedCentered(GdImage $img, float $size, int $cx, int $y, int $color, string $font, string $text, int $spacing): void
     {
         $chars = mb_str_split($text);
-        $advances = array_map(fn (string $ch) => $this->advance($size, $font, $ch), $chars);
+        $advances = array_map(fn (string $ch) => ThaiFontText::advance($size, $font, $ch), $chars);
         $total = array_sum($advances) + $spacing * (count($chars) - 1);
 
         $x = (int) round($cx - $total / 2);
@@ -796,22 +738,6 @@ class CelticSpreadImageGenerator
             }
             $x += $advances[$i] + $spacing;
         }
-    }
-
-    /**
-     * ระยะปากกาเลื่อนหลังวาด $text (advance) — วัดจาก bbox ของ "$text + I" ลบ bbox ของ "I"
-     * (bbox ของ $text อย่างเดียวไม่ใช่ advance เพราะตัวท้ายอาจเป็นวรรณยุกต์/สระบนที่กว้าง 0)
-     */
-    protected function advance(float $size, string $font, string $text): int
-    {
-        if ($text === '') {
-            return 0;
-        }
-
-        $with = imagettfbbox($size, 0, $font, $text.'I');
-        $ref = imagettfbbox($size, 0, $font, 'I');
-
-        return (int) round(max($with[2], $with[4]) - max($ref[2], $ref[4]));
     }
 
     protected function bboxWidth(float $size, string $font, string $text): int
