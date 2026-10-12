@@ -708,8 +708,9 @@ Route::prefix('academy')->name('academy.')->group(function () {
 // ============================================
 // Rider System Routes (ระบบไรเดอร์)
 // ============================================
-// 🏍️ (2026-09-25) ปุ่มงานทั้งหมดเรียก RiderJobService ผ่าน User\RiderController (session + CSRF)
-//    หน้า taladsod.rider.active-job ใช้ route ชุดนี้แทน API sanctum เดิมที่เรียกจากเว็บไม่ได้
+// 🏍️ (2026-10-13) owner ตัดสิน: ไรเดอร์รับงานผ่านแอปเท่านั้น — เว็บสมัคร/ดูสถานะ/เอกสาร/รายได้/ตั้งค่า/ปิดรับงานได้
+//    เปิดรับงาน (availability=online), /location และปุ่มงานทั้งหมด (/jobs/{job}/*) ยังมี route ไว้แต่ตอบ APP_ONLY
+//    (JSON 403 / redirect กลับพร้อม flash error) — หน้า taladsod.rider.active-job พาไปหน้ารายละเอียดงานแทน
 Route::prefix('rider')->name('rider.')->controller(\App\Http\Controllers\User\RiderController::class)->group(function () {
     // หน้า Dashboard ไรเดอร์
     Route::get('/', 'index')->name('dashboard');

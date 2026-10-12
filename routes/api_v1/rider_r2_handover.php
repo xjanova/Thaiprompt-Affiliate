@@ -8,6 +8,7 @@
  */
 
 use App\Http\Controllers\Api\V1\HandoverApiController;
+use App\Http\Middleware\EnsureRiderAppBuild;
 use Illuminate\Support\Facades\Route;
 
 // ===== ผู้ซื้อ: {source} = shop | fresh-market =====
@@ -24,6 +25,8 @@ Route::prefix('orders/{source}/{id}/handover')
     });
 
 // ===== ไรเดอร์ =====
+// (2026-10-13) ปุ่มส่งมอบของไรเดอร์ต้องมาจากแอป X-App-Build ≥ config('rider.min_app_build') — ไม่งั้น 426 APP_UPDATE_REQUIRED
+// ดูสถานะส่งมอบ (GET) ไม่โดนด่าน
 Route::prefix('rider/jobs/{id}/handover')
     ->where(['id' => '[0-9]+'])
     ->name('api.v1.rider.jobs.handover.')
@@ -31,7 +34,7 @@ Route::prefix('rider/jobs/{id}/handover')
     ->group(function () {
         Route::get('/', 'riderShow')->name('show');
         // รหัส 6 หลักมีตัวล็อก 5 ครั้ง/10 นาทีของตัวเองอยู่แล้ว — throttle นี้กันยิงถี่ทั้งระบบ
-        Route::post('/scan', 'riderScan')->middleware('throttle:30,1,api-handover-rider-scan')->name('scan');
-        Route::post('/arrival-photo', 'arrivalPhoto')->middleware('throttle:10,1,api-handover-arrival')->name('arrival-photo');
-        Route::post('/waited-photo', 'waitedPhoto')->middleware('throttle:10,1,api-handover-waited')->name('waited-photo');
+        Route::post('/scan', 'riderScan')->middleware(['throttle:30,1,api-handover-rider-scan', EnsureRiderAppBuild::class])->name('scan');
+        Route::post('/arrival-photo', 'arrivalPhoto')->middleware(['throttle:10,1,api-handover-arrival', EnsureRiderAppBuild::class])->name('arrival-photo');
+        Route::post('/waited-photo', 'waitedPhoto')->middleware(['throttle:10,1,api-handover-waited', EnsureRiderAppBuild::class])->name('waited-photo');
     });

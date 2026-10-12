@@ -432,7 +432,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/consent', 'consent')->middleware('throttle:20,1,api-rider-consent')->name('consent');
             Route::put('/profile', 'updateProfile')->middleware('throttle:20,1,api-rider-profile')->name('profile');
             // 🪪 (2026-10-04) ด่าน eKYC บังคับเฉพาะตอนเปิดรับงาน — ปิดรับงาน (offline) ต้องทำได้เสมอ
-            Route::post('/availability', 'availability')->middleware(['throttle:20,1,api-rider-availability', 'profile.photo:availability=online', 'ekyc.verified:availability=online'])->name('availability');
+            // 📲 (2026-10-13) เปิดรับงาน/รับงาน/ทำงานส่ง ต้องมาจากแอป X-App-Build ≥ config('rider.min_app_build') — ไม่งั้น 426 APP_UPDATE_REQUIRED
+            //    (owner: ไรเดอร์รับงานผ่านแอปเท่านั้น · อ่านอย่างเดียว/สมัคร/เอกสาร/ตั้งค่า/ส่งตำแหน่ง ไม่โดนด่านนี้)
+            Route::post('/availability', 'availability')->middleware(['throttle:20,1,api-rider-availability', \App\Http\Middleware\EnsureRiderAppBuild::class.':availability=online', 'profile.photo:availability=online', 'ekyc.verified:availability=online'])->name('availability');
             Route::post('/location', 'location')->middleware('throttle:40,1,api-rider-location')->name('location');
             Route::get('/earnings', 'earnings')->name('earnings');
 
@@ -440,14 +442,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/jobs/current', 'currentJob')->name('jobs.current');
             Route::get('/jobs/history', 'history')->name('jobs.history');
             Route::get('/jobs/{id}', 'showJob')->whereNumber('id')->name('jobs.show');
-            Route::post('/jobs/{id}/accept', 'accept')->whereNumber('id')->middleware('throttle:30,1,api-rider-accept')->name('jobs.accept');
-            Route::post('/jobs/{id}/reject', 'reject')->whereNumber('id')->middleware('throttle:30,1,api-rider-reject')->name('jobs.reject');
-            Route::post('/jobs/{id}/release', 'release')->whereNumber('id')->middleware('throttle:10,1,api-rider-release')->name('jobs.release');
-            Route::post('/jobs/{id}/status', 'updateStatus')->whereNumber('id')->middleware('throttle:30,1,api-rider-status')->name('jobs.status');
-            Route::post('/jobs/{id}/deliver', 'deliver')->whereNumber('id')->middleware('throttle:20,1,api-rider-deliver')->name('jobs.deliver');
-            Route::post('/jobs/{id}/fail', 'fail')->whereNumber('id')->middleware('throttle:10,1,api-rider-fail')->name('jobs.fail');
-            Route::post('/jobs/{id}/gps-lost', 'gpsLost')->whereNumber('id')->middleware('throttle:20,1,api-rider-gps-lost')->name('jobs.gps-lost');
-            Route::post('/jobs/{id}/gps-off', 'gpsOff')->whereNumber('id')->middleware('throttle:10,1,api-rider-gps-off')->name('jobs.gps-off');
+            Route::post('/jobs/{id}/accept', 'accept')->whereNumber('id')->middleware(['throttle:30,1,api-rider-accept', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.accept');
+            Route::post('/jobs/{id}/reject', 'reject')->whereNumber('id')->middleware(['throttle:30,1,api-rider-reject', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.reject');
+            Route::post('/jobs/{id}/release', 'release')->whereNumber('id')->middleware(['throttle:10,1,api-rider-release', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.release');
+            Route::post('/jobs/{id}/status', 'updateStatus')->whereNumber('id')->middleware(['throttle:30,1,api-rider-status', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.status');
+            Route::post('/jobs/{id}/deliver', 'deliver')->whereNumber('id')->middleware(['throttle:20,1,api-rider-deliver', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.deliver');
+            Route::post('/jobs/{id}/fail', 'fail')->whereNumber('id')->middleware(['throttle:10,1,api-rider-fail', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.fail');
+            Route::post('/jobs/{id}/gps-lost', 'gpsLost')->whereNumber('id')->middleware(['throttle:20,1,api-rider-gps-lost', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.gps-lost');
+            Route::post('/jobs/{id}/gps-off', 'gpsOff')->whereNumber('id')->middleware(['throttle:10,1,api-rider-gps-off', \App\Http\Middleware\EnsureRiderAppBuild::class])->name('jobs.gps-off');
         });
 
         // Web Session (สำหรับเปิดหน้าเว็บจาก Mobile App พร้อม authentication)

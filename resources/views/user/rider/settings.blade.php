@@ -214,7 +214,7 @@
                 <span class="ic"><i class="fas fa-location-crosshairs"></i></span>
                 <span class="main">
                     <span class="ttl" style="display:block;">สิทธิ์ตำแหน่ง (GPS) ในแอป</span>
-                    <span class="sub" style="display:block;">ใช้ค้นหางานใกล้คุณและให้ลูกค้าติดตามการส่ง — บนเว็บ เบราว์เซอร์จะถามสิทธิ์ตอนเปิดรับงาน</span>
+                    <span class="sub" style="display:block;">ใช้ค้นหางานใกล้คุณและให้ลูกค้าติดตามการส่ง — เปิดรับงานและส่งตำแหน่งได้ในแอป Thai Prompt APP เท่านั้น</span>
                 </span>
                 <span class="end"><span class="rd-pill">{{ !empty($rd['permissions']['gps']) ? 'อนุญาต' : 'ยังไม่อนุญาต' }}</span></span>
             </div>
