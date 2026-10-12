@@ -57,9 +57,12 @@ class RiderJobLifecycleTest extends TestCase
     {
         parent::setUp();
 
-        // ไรเดอร์รอบ 2: เปิดระบบสแกนส่งมอบไว้เหมือน prod — คำขอในชุดนี้ไม่มี X-App-Build ≥ 43 จึงยังเป็นงานแบบเดิม
-        // (ปุ่ม "ส่งสำเร็จ") ตามด่านตอนรับงาน · งานที่ต้องสแกนส่งมอบทดสอบใน tests/Feature/RiderR2
-        \App\Models\Setting::set('rider.handover_enabled', '1', 'boolean', 'rider');
+        // (2026-10-13) ชุดนี้ทดสอบปุ่ม "ส่งสำเร็จ" แบบเดิม = ทางที่เหลือเมื่อแอดมินปิดระบบสแกนส่งมอบ (rider.handover_enabled = 0)
+        // เปิดระบบไว้ = ทุกงานที่มีออเดอร์ต้นทางต้องสแกนส่งมอบ → ทดสอบใน tests/Feature/RiderR2 + RiderAppOnlyTest
+        \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+
+        // แอปจริงส่ง X-App-Build ทุกคำขอ — เส้นรับงาน/ทำงานส่งของ API บังคับ ≥ rider.min_app_build
+        $this->withHeader('X-App-Build', (string) config('rider.min_app_build'));
 
         Http::fake();
         Storage::fake('public');
@@ -376,28 +379,30 @@ class RiderJobLifecycleTest extends TestCase
     // LINE (reply เท่านั้น)
     // =====================================================
 
-    public function test_line_accept_postback_goes_through_rider_job_service(): void
+    public function test_line_accept_postback_never_accepts_and_points_to_the_app(): void
     {
-        $first = $this->makeRider(['line_user_id' => 'Uline-first']);
-        $second = $this->makeRider(['line_user_id' => 'Uline-second']);
-        $pending = $this->makeRider(['line_user_id' => 'Uline-pending', 'status' => 'pending']);
+        // (2026-10-13) owner: ไรเดอร์รับงานผ่านแอปเท่านั้น — ปุ่มรับ/ปฏิเสธงานเก่าในแชท LINE ไม่แตะงานเลย
+        $this->makeRider(['line_user_id' => 'Uline-first']);
+        $this->makeRider(['line_user_id' => 'Uline-pending', 'status' => 'pending']);
         $job = $this->dispatch->createJobForSource($this->makeSource(), 'fresh_market');
 
         $manager = new FreshMarketChannelManager;
         $accept = new \ReflectionMethod($manager, 'handleRiderAcceptJobPostback');
+        $reject = new \ReflectionMethod($manager, 'handleRiderRejectJobPostback');
 
-        $denied = $accept->invoke($manager, 'Uline-pending', ['job_id' => $job->id]);
-        $this->assertStringContainsString('ตรวจสอบ', $denied['text']);
+        foreach (['Uline-first', 'Uline-pending', 'Uline-unknown'] as $lineUserId) {
+            $reply = $accept->invoke($manager, $lineUserId, ['job_id' => $job->id]);
+            $this->assertStringContainsString('รับงานและทำงานส่งได้ผ่านแอป Thai Prompt APP เท่านั้น', $reply['text']);
+            $this->assertStringContainsString('/app/download', $reply['text']);
+        }
 
-        $ok = $accept->invoke($manager, 'Uline-first', ['job_id' => $job->id]);
-        $this->assertStringContainsString('รับงานสำเร็จ', $ok['text']);
+        $reply = $reject->invoke($manager, 'Uline-first', ['job_id' => $job->id]);
+        $this->assertStringContainsString('ผ่านแอป Thai Prompt APP เท่านั้น', $reply['text']);
 
-        $taken = $accept->invoke($manager, 'Uline-second', ['job_id' => $job->id]);
-        $this->assertStringContainsString('ถูกไรเดอร์คนอื่นรับไปแล้ว', $taken['text']);
-
-        $this->assertSame((int) $first->id, (int) $job->fresh()->rider_id);
-        $this->assertNotSame((int) $second->id, (int) $job->fresh()->rider_id);
-        $this->assertNotSame((int) $pending->id, (int) $job->fresh()->rider_id);
+        $fresh = $job->fresh();
+        $this->assertSame('pending', $fresh->status);
+        $this->assertNull($fresh->rider_id);
+        $this->assertSame([], array_values(array_filter((array) $fresh->dispatch_attempts, fn ($a) => in_array($a['status'] ?? null, ['accepted', 'rejected'], true))));
     }
 
     public function test_line_rider_signup_replies_with_web_link_and_creates_nothing(): void
@@ -458,6 +463,7 @@ class RiderJobLifecycleTest extends TestCase
     private function makeRider(array $overrides = [], float $walletBalance = 0): Rider
     {
         $user = User::factory()->create();
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = Rider::create(array_merge([
             'user_id' => $user->id,

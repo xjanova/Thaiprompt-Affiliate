@@ -147,16 +147,16 @@ class Fix2aReviewPagesTest extends TestCase
         }
     }
 
-    public function test_rider_active_job_hides_floating_buttons_over_action_bar(): void
+    public function test_rider_active_job_page_is_gone_and_redirects_to_job_detail(): void
     {
+        // (2026-10-13) หน้าทำงานบนเว็บ (แถบปุ่มล่าง + GPS) ถูกปิด — ไรเดอร์ทำงานส่งผ่านแอปเท่านั้น
         [, $job] = $this->riderOrder();
         $rider = $this->makeRider();
         app(RiderJobService::class)->accept($job, $rider);
 
-        $html = $this->assertV4($this->actingAs($rider->user)->get(route('taladsod.rider.active-job', $job)));
-
-        $this->assertStringContainsString('.tp-studio-fab, .eve-w { display: none !important; }', $html);
-        $this->assertStringContainsString('ts-bottom-bar', $html);
+        $this->actingAs($rider->user)
+            ->get(route('taladsod.rider.active-job', $job))
+            ->assertRedirect(route('user.rider.jobs.show', $job));
     }
 
     public function test_share_switches_pass_element_to_revert_on_failure(): void
@@ -222,6 +222,7 @@ class Fix2aReviewPagesTest extends TestCase
     private function makeRider(): Rider
     {
         $user = User::factory()->create(['name' => 'ไรเดอร์ทดสอบ']);
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
         $rider = new Rider;
         $rider->forceFill([
             'user_id' => $user->id,

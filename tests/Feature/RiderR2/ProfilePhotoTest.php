@@ -440,16 +440,16 @@ class ProfilePhotoTest extends TestCase
         }
     }
 
-    public function test_rider_going_offline_is_never_blocked_but_online_requires_photo(): void
+    public function test_rider_going_offline_is_never_blocked_but_old_app_cannot_go_online(): void
     {
         $rider = $this->makeRider();
         Sanctum::actingAs($rider->user);
         $headers = ['X-App-Build' => '43'];
 
-        // เปิดรับงานโดยยังไม่มีรูป → 422
+        // (2026-10-13) แอป build 43 เปิดรับงานไม่ได้แล้ว ต้องอัปเดตแอปก่อน (426) — ด่านรูปโปรไฟล์ของ build 43 จึงไม่ถึงตอนเปิดรับงาน
         $this->postJson('/api/v1/rider/availability', ['availability' => 'online', 'latitude' => 13.73, 'longitude' => 100.52], $headers)
-            ->assertStatus(422)
-            ->assertJsonPath('code', 'PROFILE_PHOTO_REQUIRED');
+            ->assertStatus(426)
+            ->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
 
         // ปิดรับงานต้องได้เสมอ (ไรเดอร์ที่ online ค้างอยู่ก่อนอัปเดตแอป)
         $rider->forceFill(['availability' => 'online'])->save();
@@ -512,6 +512,7 @@ class ProfilePhotoTest extends TestCase
     private function makeRider(): Rider
     {
         $user = User::factory()->create();
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill([

@@ -201,6 +201,7 @@ class RiderCodSettlementTest extends MoneyTestCase
     private function makeRider(float $walletBalance): Rider
     {
         $user = $this->makeUser('ไรเดอร์');
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
         Wallet::where('user_id', $user->id)->update(['balance' => $walletBalance]);
 
         $rider = new Rider;

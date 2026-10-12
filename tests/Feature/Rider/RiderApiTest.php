@@ -51,9 +51,12 @@ class RiderApiTest extends TestCase
     {
         parent::setUp();
 
-        // ไรเดอร์รอบ 2: เปิดระบบสแกนส่งมอบไว้เหมือน prod — คำขอในชุดนี้ไม่มี X-App-Build ≥ 43 จึงยังเป็นงานแบบเดิม
-        // (ปุ่ม "ส่งสำเร็จ") ตามด่านตอนรับงาน · งานที่ต้องสแกนส่งมอบทดสอบใน tests/Feature/RiderR2
-        \App\Models\Setting::set('rider.handover_enabled', '1', 'boolean', 'rider');
+        // (2026-10-13) ชุดนี้ทดสอบปุ่ม "ส่งสำเร็จ" แบบเดิม = ทางที่เหลือเมื่อแอดมินปิดระบบสแกนส่งมอบ (rider.handover_enabled = 0)
+        // เปิดระบบไว้ = ทุกงานที่มีออเดอร์ต้นทางต้องสแกนส่งมอบ → ทดสอบใน tests/Feature/RiderR2 + RiderAppOnlyTest
+        \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+
+        // แอปจริงส่ง X-App-Build ทุกคำขอ — เส้นรับงาน/ทำงานส่งบังคับ ≥ rider.min_app_build (ไม่ส่ง = 426 ทดสอบใน RiderAppOnlyTest)
+        $this->withHeader('X-App-Build', (string) config('rider.min_app_build'));
 
         Http::fake();
         Storage::fake('public');
@@ -104,7 +107,8 @@ class RiderApiTest extends TestCase
 
     public function test_register_validates_thai_id_and_age_and_is_double_tap_safe(): void
     {
-        $user = User::factory()->create();
+        // แอป build ≥ 44 ต้องยืนยันตัวตนก่อนสมัคร (middleware ekyc.verified) — ชุดนี้ทดสอบ validation ของใบสมัคร
+        $user = User::factory()->create(['kyc_status' => 'approved']);
         Sanctum::actingAs($user);
 
         // checksum ผิด
@@ -140,7 +144,7 @@ class RiderApiTest extends TestCase
         $this->assertSame(1, Rider::where('user_id', $user->id)->count());
 
         // เลขบัตรซ้ำกับไรเดอร์คนอื่น
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['kyc_status' => 'approved']));
         $this->postJson('/api/v1/rider/register', $this->registration())
             ->assertStatus(422)
             ->assertJsonValidationErrors('id_card_number');
@@ -651,6 +655,7 @@ class RiderApiTest extends TestCase
     private function makeRider(array $overrides = [], float $walletBalance = 0): Rider
     {
         $user = User::factory()->create();
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill(array_merge([

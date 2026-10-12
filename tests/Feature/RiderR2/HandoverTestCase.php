@@ -50,6 +50,9 @@ abstract class HandoverTestCase extends MoneyTestCase
         Setting::set('rider.handover_qr_ttl_seconds', '60', 'integer', 'rider');
         Setting::set('rider.handover_wait_seconds', '180', 'integer', 'rider');
         Setting::set('rider.handover_auto_release_hours', '24', 'integer', 'rider');
+
+        // (2026-10-13) ปุ่มงาน/ส่งมอบของไรเดอร์ต้องมาจากแอป X-App-Build ≥ rider.min_app_build (แอปจริงส่งทุกคำขอ)
+        $this->withHeader('X-App-Build', (string) config('rider.min_app_build'));
     }
 
     protected function tearDown(): void
@@ -89,6 +92,7 @@ abstract class HandoverTestCase extends MoneyTestCase
     protected function makeRider(?User $user = null): Rider
     {
         $user ??= $this->makeUser('สมชาย ขยันส่ง');
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill([

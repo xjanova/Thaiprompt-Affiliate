@@ -48,9 +48,12 @@ class RiderAdminWebTest extends TestCase
     {
         parent::setUp();
 
-        // ไรเดอร์รอบ 2: เปิดระบบสแกนส่งมอบไว้เหมือน prod — คำขอในชุดนี้ไม่มี X-App-Build ≥ 43 จึงยังเป็นงานแบบเดิม
-        // (ปุ่ม "ส่งสำเร็จ") ตามด่านตอนรับงาน · งานที่ต้องสแกนส่งมอบทดสอบใน tests/Feature/RiderR2
-        \App\Models\Setting::set('rider.handover_enabled', '1', 'boolean', 'rider');
+        // (2026-10-13) ชุดนี้ทดสอบปุ่ม "ส่งสำเร็จ" แบบเดิม = ทางที่เหลือเมื่อแอดมินปิดระบบสแกนส่งมอบ (rider.handover_enabled = 0)
+        // เปิดระบบไว้ = ทุกงานที่มีออเดอร์ต้นทางต้องสแกนส่งมอบ → ทดสอบใน tests/Feature/RiderR2 + RiderAppOnlyTest
+        \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+
+        // แอปจริงส่ง X-App-Build ทุกคำขอ — เส้นรับงาน/ทำงานส่งของ API บังคับ ≥ rider.min_app_build
+        $this->withHeader('X-App-Build', (string) config('rider.min_app_build'));
 
         Http::fake();
         Storage::fake('public');
@@ -315,46 +318,40 @@ class RiderAdminWebTest extends TestCase
     // เว็บไรเดอร์ (session) + หน้างานที่กำลังทำ
     // =====================================================
 
-    public function test_web_session_routes_drive_the_job_flow(): void
+    public function test_web_session_job_routes_are_app_only(): void
     {
+        // (2026-10-13) owner: ไรเดอร์รับงาน/ทำงานส่งผ่านแอปเท่านั้น — route เว็บเดิมตอบ APP_ONLY และไม่แตะงาน
         $rider = $this->makeRider();
         $job = $this->createJob();
 
         $this->actingAs($rider->user)
             ->postJson(route('user.rider.jobs.accept', $job))
-            ->assertOk()
-            ->assertJsonPath('data.job.status', 'accepted');
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'APP_ONLY');
+        $this->assertSame('pending', $job->fresh()->status);
 
-        // ไรเดอร์คนอื่นเปิดหน้างาน/กดงานนี้ไม่ได้
+        // งานที่รับผ่านแอปแล้ว → ปุ่มบนเว็บทุกปุ่มยังตอบ APP_ONLY
+        app(RiderJobService::class)->accept($job->fresh(), $rider->fresh());
+
+        foreach ([
+            route('user.rider.jobs.status', $job) => ['status' => 'picked_up'],
+            route('user.rider.jobs.deliver', $job) => [],
+            route('user.rider.jobs.fail', $job) => ['reason_code' => 'customer_unreachable'],
+            route('user.rider.jobs.release', $job) => ['reason' => 'x'],
+            route('user.rider.jobs.gps-lost', $job) => [],
+            route('user.rider.jobs.gps-off', $job) => [],
+            route('user.rider.location') => ['latitude' => self::PICKUP_LAT, 'longitude' => self::PICKUP_LNG],
+        ] as $url => $payload) {
+            $this->actingAs($rider->user)->postJson($url, $payload)->assertStatus(403)->assertJsonPath('code', 'APP_ONLY');
+        }
+        $this->assertSame('accepted', $job->fresh()->status);
+
+        // ไรเดอร์คนอื่นเปิดหน้างาน/รายละเอียดงานนี้ไม่ได้
         $other = $this->makeRider();
         $this->actingAs($other->user)->get(route('taladsod.rider.active-job', $job))->assertForbidden();
         $this->actingAs($other->user)->get(route('user.rider.jobs.show', $job))->assertForbidden();
-        $this->actingAs($other->user)
-            ->postJson(route('user.rider.jobs.status', $job), ['status' => 'picked_up'])
-            ->assertForbidden()
-            ->assertJsonPath('code', 'NOT_YOUR_JOB');
 
-        $this->actingAs($rider->user)
-            ->postJson(route('user.rider.location'), ['latitude' => self::PICKUP_LAT, 'longitude' => self::PICKUP_LNG, 'heading' => -1])
-            ->assertOk()
-            ->assertJsonPath('data.has_active_job', true);
-
-        $this->actingAs($rider->user)
-            ->postJson(route('user.rider.jobs.status', $job), ['status' => 'picked_up'])
-            ->assertOk()
-            ->assertJsonPath('data.job.status', 'picked_up');
-
-        $this->actingAs($rider->user)
-            ->post(route('user.rider.jobs.deliver', $job), [], ['Accept' => 'application/json'])
-            ->assertStatus(422)
-            ->assertJsonPath('code', 'PHOTO_REQUIRED');
-
-        $this->actingAs($rider->user)
-            ->post(route('user.rider.jobs.deliver', $job), ['photo' => UploadedFile::fake()->create('p.jpg', 80, 'image/jpeg')], ['Accept' => 'application/json'])
-            ->assertOk()
-            ->assertJsonPath('data.job.status', 'completed');
-
-        // งานจบแล้ว → หน้างานที่กำลังทำพาไปหน้ารายละเอียดแทน
+        // หน้าทำงานบนเว็บเดิม → พาไปหน้ารายละเอียดงาน (อ่านอย่างเดียว)
         $this->actingAs($rider->user)
             ->get(route('taladsod.rider.active-job', $job))
             ->assertRedirect(route('user.rider.jobs.show', $job));
@@ -466,6 +463,7 @@ class RiderAdminWebTest extends TestCase
     private function makeRider(array $overrides = [], float $walletBalance = 0): Rider
     {
         $user = User::factory()->create(['role' => 'user']);
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill(array_merge([

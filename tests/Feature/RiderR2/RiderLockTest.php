@@ -40,6 +40,9 @@ class RiderLockTest extends TestCase
     use BuildsShopFixtures;
     use RefreshDatabase;
 
+    /** (2026-10-13) เส้นรับงาน/ไม่สนใจงานของไรเดอร์ต้องมาจากแอป X-App-Build ≥ rider.min_app_build */
+    private const APP_HEADERS = ['X-App-Build' => '44'];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -87,7 +90,7 @@ class RiderLockTest extends TestCase
         Sanctum::actingAs($other->user);
         $this->getJson('/api/v1/rider/jobs/available')->assertOk()->assertJsonCount(0, 'data.jobs');
         $this->getJson("/api/v1/rider/jobs/{$job->id}")->assertForbidden();
-        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept")->assertStatus(409)->assertJsonPath('code', 'JOB_TAKEN');
+        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept", [], self::APP_HEADERS)->assertStatus(409)->assertJsonPath('code', 'JOB_TAKEN');
         $this->assertNull($job->fresh()->rider_id);
 
         // ไรเดอร์คนโปรด: เห็นงาน + รู้ว่าลูกค้าประจำเรียก + การ์ดผู้ซื้อ
@@ -120,7 +123,7 @@ class RiderLockTest extends TestCase
             ->assertJsonPath('data.jobs.0.id', $job->id)
             ->assertJsonPath('data.jobs.0.locked_by_buyer', false)
             ->assertJsonPath('data.jobs.0.buyer', null);
-        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept")->assertOk();
+        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept", [], self::APP_HEADERS)->assertOk();
         $this->assertSame($other->id, (int) $job->fresh()->rider_id);
     }
 
@@ -133,7 +136,7 @@ class RiderLockTest extends TestCase
         $job = $this->createLockedSourceJob($buyer, $favorite->id);
 
         Sanctum::actingAs($favorite->user);
-        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept")
+        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept", [], self::APP_HEADERS)
             ->assertOk()
             ->assertJsonPath('data.job.status', 'accepted')
             ->assertJsonPath('data.job.locked_by_buyer', true)
@@ -159,7 +162,7 @@ class RiderLockTest extends TestCase
         $job = $this->createLockedSourceJob($buyer, $favorite->id);
 
         Sanctum::actingAs($favorite->user);
-        $this->postJson("/api/v1/rider/jobs/{$job->id}/reject")->assertOk();
+        $this->postJson("/api/v1/rider/jobs/{$job->id}/reject", [], self::APP_HEADERS)->assertOk();
 
         $after = $job->fresh();
         $this->assertSame('broadcast', $after->dispatch_type);
@@ -167,7 +170,7 @@ class RiderLockTest extends TestCase
         $this->assertSame(1, Notification::where('user_id', $other->user_id)->where('type', 'rider_job_offer')->count());
 
         Sanctum::actingAs($other->user);
-        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept")->assertOk();
+        $this->postJson("/api/v1/rider/jobs/{$job->id}/accept", [], self::APP_HEADERS)->assertOk();
     }
 
     public function test_ten_hearts_or_unavailable_rider_does_not_lock(): void
