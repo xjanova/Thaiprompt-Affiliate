@@ -279,6 +279,8 @@ class FortuneProcessDeepReading extends Command
                             'message' => $fullMessage,
                             'reading' => $reading,
                             'chart_image_url' => $reading->reading_image_url,
+                            // 📈 (2026-10-12) รูปกราฟชีวิต — ส่งต่อจากรูปผัง (null = ไม่มีวันเกิด/วาดไม่ได้)
+                            'lifegraph_image_url' => $reading->getConversationState('lifegraph_image_url'),
                             'tarot_image_urls' => collect($reading->getCollectedTarotCards())
                                 ->pluck('image_url')->filter()->values()->all(),
                             // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย

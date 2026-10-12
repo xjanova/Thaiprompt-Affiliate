@@ -11077,6 +11077,18 @@ class FortuneConversationService
                 ]);
             }
 
+            // 📈 (2026-10-12) รูปกราฟชีวิต — อินพุตชุดเดียวกับรูปผังและพรอมต์ ($chartInputs) · ส่งต่อจากรูปผัง
+            //   เก็บ URL ใน conversation_state ให้ทางส่งแบบ Job (view_reading_deep) หยิบไปแนบ · ล้ม = ไม่มีรูป ไม่ขวางบิล
+            $lifeGraphImageUrl = null;
+            if ($birthDate) {
+                $lifeInputs = \App\Services\Fortune\ThaiAstrologyService::normalizeChartInputs((array) $chartInputs);
+                $lifeGraphImageUrl = \App\Services\Fortune\LifeGraphService::imageUrl(
+                    \App\Services\Fortune\LifeGraphService::forInputs($birthDate, $lifeInputs['hour'], $lifeInputs['province'], $name),
+                    (int) $reading->id
+                );
+                $reading->setConversationState('lifegraph_image_url', $lifeGraphImageUrl);
+            }
+
             // [Streaming] ส่ง Birth Chart ทันทีถ้ามี
             if ($streaming && $chartImageUrl) {
                 try {
@@ -11084,6 +11096,10 @@ class FortuneConversationService
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
                         usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
+                        if ($lifeGraphImageUrl) {
+                            $platformService->sendImage($userId, $lifeGraphImageUrl);
+                            usleep(500000);
+                        }
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
@@ -26835,6 +26851,12 @@ PROMPT;
         //   (กฎ "prompt ใน DB ทับ default ในโค้ด" — template ของแอดมินอาจไม่มี {thai_context})
         $auspiciousTail = '';
         $auspiciousBlock = $this->deepAuspiciousBlock($question, $birthDate, $chartInputs);
+        // 📈 (2026-10-12) กราฟชีวิต (มหาทักษา · ดาวแทรก · ทักษาจร — ตำรา GenLotto) — ข้อแรกข้อเดียว ไม่ให้พรอมต์บวม
+        //   อินพุตชุดเดียวกับผังในพรอมต์และรูปผัง (lockedOrStatedInputs) · รูปกราฟส่งแนบจาก processPaymentConfirmed
+        if ($birthDate && $questionNumber === 1) {
+            $lifeBlock = $this->deepLifeGraphBlock($birthDate, $questionsText, $birthProvince, $chartInputs, $hasName ? $rawName : '');
+            $auspiciousBlock = trim($auspiciousBlock."\n".$lifeBlock);
+        }
         if ($auspiciousBlock !== '') {
             if (str_contains($template, '{thai_context}')) {
                 $thaiContext .= "\n".$auspiciousBlock;
@@ -26890,6 +26912,26 @@ PROMPT;
             '{closing_section}' => $closingSection,
             '{life_stage_hint}' => $lifeStageHint ?? '',
         ]).$auspiciousTail;
+    }
+
+    /**
+     * 📈 (2026-10-12) บล็อกกราฟชีวิตสำหรับพรอมต์ดูดวง 39 ('' = ผูกดวงไม่ได้) — ≤ 6 บรรทัด ดู LifeGraphService::promptBlock
+     */
+    protected function deepLifeGraphBlock(string $birthDate, string $questionsText, ?string $knownProvince, ?array $lockedInputs, string $name): string
+    {
+        try {
+            $stated = $this->lockedOrStatedInputs(new \App\Services\Fortune\ThaiAstrologyService, $questionsText, $knownProvince, $lockedInputs);
+            $graph = \App\Services\Fortune\LifeGraphService::forInputs($birthDate, $stated['hour'], $stated['province'], $name);
+
+            return \App\Services\Fortune\LifeGraphService::promptBlock(
+                $graph,
+                'ใช้เล่าภาพรวมช่วงชีวิตนี้ 2-3 ประโยคในคำทำนาย ด้วยภาษาแม่หมอ ไม่ต้องอธิบายศัพท์โหร'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Deep39: กราฟชีวิตล้ม (ทำนายต่อโดยไม่มีบล็อกนี้)', ['error' => $e->getMessage()]);
+
+            return '';
+        }
     }
 
     /**

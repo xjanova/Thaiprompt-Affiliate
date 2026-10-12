@@ -494,6 +494,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             'message' => $headerMessage,
                             'reading' => $reading,
                             'chart_image_url' => $reading->reading_image_url,
+                            // 📈 (2026-10-12) รูปกราฟชีวิต — ส่งต่อจากรูปผัง (null = ไม่มีวันเกิด/วาดไม่ได้)
+                            'lifegraph_image_url' => $reading->getConversationState('lifegraph_image_url'),
                             // 🃏 ส่งรูปไพ่ยิปซีที่ลูกค้าจับได้ด้วย
                             'tarot_image_urls' => collect($reading->getCollectedTarotCards())
                                 ->pluck('image_url')->filter()->values()->all(),

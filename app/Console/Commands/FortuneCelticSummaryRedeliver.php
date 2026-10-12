@@ -286,7 +286,7 @@ class FortuneCelticSummaryRedeliver extends Command
         }
         $messages = array_slice($messages, 0, 5);
 
-        foreach (['celtic_finale_chart_url', 'celtic_finale_image_url'] as $key) {
+        foreach (['celtic_finale_chart_url', 'celtic_finale_image_url', 'celtic_finale_lifegraph_url'] as $key) {
             if (count($messages) >= 5) {
                 break;
             }
@@ -322,7 +322,7 @@ class FortuneCelticSummaryRedeliver extends Command
         }
 
         // รูปเป็นของแถม — ส่งไม่ได้ก็ไม่ถือว่าล้มเหลว (เนื้อหาถึงลูกค้าแล้ว)
-        foreach (['celtic_finale_chart_url', 'celtic_finale_image_url'] as $key) {
+        foreach (['celtic_finale_chart_url', 'celtic_finale_image_url', 'celtic_finale_lifegraph_url'] as $key) {
             $url = trim((string) $reading->getConversationState($key, ''));
             if ($url === '') {
                 continue;

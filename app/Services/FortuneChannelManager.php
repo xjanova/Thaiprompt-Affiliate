@@ -1646,6 +1646,15 @@ class FortuneChannelManager
                             // ignore image fail
                         }
                     }
+                    // 📈 (2026-10-12) รูปกราฟชีวิต — ต่อจากภาพไพ่ ก่อนข้อความบทสรุป
+                    if (! empty($result['lifegraph_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['lifegraph_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
 
                     // 🎧 (2026-06-20) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" (กดแทนพิมพ์)
                     //   FB quick reply หายหลังกด 1 ครั้ง = กันกดซ้ำในตัว + handler มี throttle 60s
@@ -2372,6 +2381,20 @@ class FortuneChannelManager
                 usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+        // 📈 (2026-10-12) รูปกราฟชีวิต (บิล 39) — ต่อจากรูปผัง · ทางส่งที่ไม่ได้ใส่ key มา (reply/ดูคำทำนายล่าสุด) อ่านจาก state ของบิล
+        $lifeGraphUrl = $skipDrawImages ? null : ($result['lifegraph_image_url'] ?? null);
+        if ($lifeGraphUrl === null && ! $skipDrawImages && $chartUrl && ($result['action'] ?? '') === 'view_reading_deep'
+            && ($result['reading'] ?? null) instanceof \App\Models\FortuneReading) {
+            $lifeGraphUrl = $result['reading']->getConversationState('lifegraph_image_url');
+        }
+        if ($lifeGraphUrl) {
+            try {
+                $fbService->sendImage($userId, $lifeGraphUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่งรูปกราฟชีวิตไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
         }
 
@@ -3773,6 +3796,13 @@ class FortuneChannelManager
                     //   💸 ยังประหยัด push: chunk ละ 5 objects, ก้อนแรกใช้ reply (ฟรี)
                     //   เคสปกติ (สรุป ≤3 กล่อง + รูป 2) = 5 objects = reply เดียวจบ (0 push)
                     $textChunks = $lineService->splitTextForFlexPublic($message, 4500);
+                    // 📈 (2026-10-12) รูปกราฟชีวิต — ชุด reply ยังมีที่ = วางต่อจากภาพไพ่ก่อนข้อความ (ฟรี ปุ่ม 🎧 อยู่ที่กล่องท้ายเหมือนเดิม)
+                    //   ไม่มีที่ = ส่งแยกหลังบทสรุป (ดูด้านล่าง) — ห้ามดันข้อความบทสรุปที่จ่ายเงินไปอยู่ชุด push
+                    $lifeGraphUrl = $result['lifegraph_image_url'] ?? null;
+                    $lifeGraphInline = $lifeGraphUrl && count($endMsgs) + 1 + count($textChunks) <= 5;
+                    if ($lifeGraphInline) {
+                        $endMsgs[] = $lineService->buildImageObject($lifeGraphUrl);
+                    }
                     // 🎧 (2026-06-25) มีบทสรุปพร้อมอ่านเสียง → แนบปุ่ม "🎧 อ่านให้ฟัง" ที่กล่องสุดท้าย
                     //   owner 2026-06-25: ปุ่มอย่างเดียว — ไม่ auto-push เสียง (กัน push quota)
                     //   กดปุ่ม → ส่ง text "อ่านให้ฟัง" → handleCelticVoiceReadRequest (throttle 60s)
@@ -3802,6 +3832,21 @@ class FortuneChannelManager
                     //   เดิมมันเหมาว่า "reading completed = สรุปถึงแล้ว" → ตอนโควต้าหมด สรุป push ไม่ออก
                     //   แต่คำตอบทุกข้อถูก stamp delivered ทิ้ง = ของหายแบบไม่มีร่องรอย (เคสจริง reading 11594)
                     $this->markCelticSummaryDelivery($result['reading'] ?? null, $sent);
+
+                    // 📈 (2026-10-12) รูปกราฟชีวิตที่ไม่มีที่ในชุด reply — แยกส่งหลังบทสรุป ไม่นับในสถานะส่งบทสรุป
+                    //   (รูปนี้ส่งไม่ออก = บทสรุปถึงแล้ว ห้ามทำให้ส่งซ้ำ) · ย้ายปุ่ม 🎧 มาติดที่รูป ไม่งั้นปุ่มหายจากแชท
+                    if ($sent && $lifeGraphUrl && ! $lifeGraphInline) {
+                        try {
+                            $img = $lineService->buildImageObject($lifeGraphUrl);
+                            if (! empty($result['voice_on_demand_ready'])) {
+                                $img['quickReply'] = $lineService->buildTextObject('-', [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])['quickReply'];
+                            }
+                            usleep(500000);
+                            $lineService->sendMessagesWithReplyFallback($userId, [$img], null);
+                        } catch (\Throwable $e) {
+                            Log::warning('LINE: ส่งรูปกราฟชีวิต (บทสรุป 99) ไม่สำเร็จ', ['error' => $e->getMessage()]);
+                        }
+                    }
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);
@@ -5360,6 +5405,11 @@ class FortuneChannelManager
                 if ($chartUrl) {
                     $trailing[] = $lineService->buildImageObject($chartUrl);
                 }
+                // 📈 (2026-10-12) รูปกราฟชีวิต — ต่อจากรูปผัง (บิลที่สร้างก่อนมีฟีเจอร์ = ไม่มีรูป)
+                $lifeGraphUrl = $result['lifegraph_image_url'] ?? $reading?->getConversationState('lifegraph_image_url');
+                if ($lifeGraphUrl) {
+                    $trailing[] = $lineService->buildImageObject($lifeGraphUrl);
+                }
                 // 🌙 (2026-07-25) กล่อง "แม่หมออยู่ตอบเพิ่ม N นาที" — เดิมมีแต่ FB (LINE ขาดหายทั้งก้อน)
                 //   ลูกค้า LINE เลยไม่รู้ว่าถามต่อได้ + ไม่ได้ปุ่ม 🎧 อ่านให้ฟัง แล้วมาโดน nudge ตามทีหลัง
                 //   ใส่เป็น object ในชุดเดิม = ได้ฟีเจอร์เพิ่มโดย **ไม่เพิ่ม push**
@@ -5390,7 +5440,14 @@ class FortuneChannelManager
                     ];
                 }
                 usleep(500_000); // 0.5s — กัน LINE 429 (ห้ามต่ำกว่า 0.5s)
-                $lineService->sendMessagesWithReplyFallback($userId, $trailing, null);
+                // 📈 (2026-10-12) ไพ่ 3 + ผัง + กราฟชีวิต + กล่องคุยต่อ = 6 ชิ้น เกิน 5/call
+                //   sendMessagesWithReplyFallback ตัดเหลือ 5 เงียบ ๆ (กล่องคุยต่อหาย) ⇒ ส่งทีละชุด 5
+                foreach (array_chunk($trailing, 5) as $ti => $batch) {
+                    if ($ti > 0) {
+                        usleep(500_000);
+                    }
+                    $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                }
             } catch (\Exception $e) {
                 // ไม่สำคัญ ข้ามได้
                 Log::warning('FortuneChannelManager: ส่ง chart+thankyou ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);

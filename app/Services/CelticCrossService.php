@@ -6603,11 +6603,26 @@ class CelticCrossService
         $finaleStoryBlock = $this->buildStoryModeDirective($reading, $allQuestionText, isFinale: true);
 
         $finaleAstroBlock = $this->buildBirthAstrologyBlockFor($reading, $allQuestionText);
+        // 📈 (2026-10-12) กราฟชีวิต (มหาทักษา · ดาวแทรก · ทักษาจร — ตำรา GenLotto) ≤ 6 บรรทัด
+        //   อินพุตชุดเดียวกับรูปผัง/รูปกราฟที่ส่งพร้อมบทสรุป (LifeGraphService::forReading) · ไม่มีวันเกิดในบิล = ''
+        $finaleLifeGraph = '';
+        if ($finaleAstroBlock !== '') {
+            try {
+                $finaleLifeGraph = \App\Services\Fortune\LifeGraphService::promptBlock(
+                    \App\Services\Fortune\LifeGraphService::forReading($reading),
+                    'ใช้ในย่อหน้าบทสรุปรวม 1-2 ประโยค และใช้ผูกช่วงเวลาของคำตอบ ไม่ต้องเพิ่มย่อหน้าใหม่'
+                );
+            } catch (\Throwable $e) {
+                // กราฟเป็นของเสริม — ล้มแล้วต้องไม่ทำบทสรุปทั้งก้อนหาย
+                \Log::warning('Celtic finale: กราฟชีวิตล้ม (บทสรุปไปต่อโดยไม่มีบล็อกนี้)', ['reading_id' => $reading->id, 'error' => $e->getMessage()]);
+            }
+        }
         $finaleAstroContext = $finaleAstroBlock !== ''
             ? "\n━━━━━━━━━━━━━━━━━\n"
                 ."🌟 ผังดวงของเจ้าชะตา (แม่หมอคำนวณเอง — ใช้ผสมกับไพ่ในบทสรุปนี้)\n"
                 ."━━━━━━━━━━━━━━━━━\n"
                 .$finaleAstroBlock."\n"
+                .($finaleLifeGraph !== '' ? $finaleLifeGraph."\n" : '')
                 ."👉 ผสมดวงกับไพ่ให้คำตอบแต่ละข้อแน่นกว่ารอบถามตอบ เช่น เชื่อมจังหวะดาว/ดาวเสวยอายุ\n"
                 ."    เข้ากับแนวโน้มที่ไพ่ตำแหน่งอนาคตชี้ → ระบุช่วงเดือนได้แม่นขึ้น\n"
                 ."    (ใช้เป็นเนื้อคำตอบ — ❌ ห้ามบรรยายองศา/ตัวเลข ❌ ห้ามอธิบายว่ามาจากไพ่ใบไหน)\n\n"

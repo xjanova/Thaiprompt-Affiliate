@@ -4410,7 +4410,7 @@ trait CelticCrossConversationTrait
      * ครอบทั้ง Celtic ปกติและคุณไสย (ใช้ endCelticSession ร่วมกัน) + ทั้ง FB/LINE
      * non-blocking ทุกกรณี — เก็บไม่ได้ห้ามทำให้บทสรุปส่งไม่ออก
      */
-    protected function stashCelticFinale(FortuneReading $reading, ?string $text, ?string $chartUrl, ?string $composeUrl): void
+    protected function stashCelticFinale(FortuneReading $reading, ?string $text, ?string $chartUrl, ?string $composeUrl, ?string $lifeGraphUrl = null): void
     {
         try {
             if (trim((string) $text) === '') {
@@ -4420,6 +4420,8 @@ trait CelticCrossConversationTrait
             $reading->setConversationState('celtic_finale_text', mb_substr((string) $text, 0, 20000));
             $reading->setConversationState('celtic_finale_chart_url', $chartUrl);
             $reading->setConversationState('celtic_finale_image_url', $composeUrl);
+            // 📈 (2026-10-12) รูปกราฟชีวิต — ตัวส่งซ้ำ (LINE flush / fortune:celtic-redeliver) แนบต่อท้ายถ้ายังมีที่
+            $reading->setConversationState('celtic_finale_lifegraph_url', $lifeGraphUrl);
             $reading->setConversationState('celtic_finale_built_at', now()->toIso8601String());
         } catch (\Throwable $e) {
             \Log::warning('Celtic: เก็บบทสรุปลง state ไม่สำเร็จ (non-blocking)', [
@@ -4719,12 +4721,18 @@ trait CelticCrossConversationTrait
         }
 
         $chartUrl = $this->buildCelticBirthChartUrl($reading);
+        // 📈 (2026-10-12) รูปกราฟชีวิต — อินพุตชุดเดียวกับรูปผังและบล็อกในพรอมต์บทสรุป (LifeGraphService::forReading)
+        //   มีเฉพาะบิลที่มีบทสรุปจริง + มีวันเกิดในบิล · ล้ม = null ไม่ขวางบทสรุป
+        $lifeGraphUrl = ! empty($grandFinale)
+            ? \App\Services\Fortune\LifeGraphService::imageUrl(\App\Services\Fortune\LifeGraphService::forReading($reading), (int) $reading->id)
+            : null;
 
         // 💾 (2026-08-26) เก็บบทสรุป Grand Finale ลง DB "ก่อน" ส่ง — ดู stashCelticFinale()
-        $this->stashCelticFinale($reading, $closingMessage, $chartUrl, $composeUrl);
+        $this->stashCelticFinale($reading, $closingMessage, $chartUrl, $composeUrl, $lifeGraphUrl);
 
         return [
             'action' => 'celtic_session_ended',
+            'lifegraph_image_url' => $lifeGraphUrl,
             'message' => $closingMessage,
             'reading' => $reading,
             'end_reason' => $reason,

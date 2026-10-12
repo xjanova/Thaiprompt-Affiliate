@@ -2972,7 +2972,7 @@ class LineFortuneWebhookController extends Controller
             }
             $messages = array_slice($messages, 0, 5);
 
-            foreach (['celtic_finale_chart_url', 'celtic_finale_image_url'] as $key) {
+            foreach (['celtic_finale_chart_url', 'celtic_finale_image_url', 'celtic_finale_lifegraph_url'] as $key) {
                 if (count($messages) >= 5) {
                     break;
                 }

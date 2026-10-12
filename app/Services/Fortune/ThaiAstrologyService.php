@@ -2165,7 +2165,6 @@ class ThaiAstrologyService
     {
         $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
         $meta = (array) config('thai_astrology_knowledge.planet_meta', []);
-        $tones = (array) config('thai_astrology_knowledge.period_tone', []);
         // wednesday-night charts start the maha-thaksa cycle on Rahu (12y) not Mercury (17y)
         $start = $this->thaksaStartIndex($dayOfWeek, $birthHour);
 
@@ -2184,11 +2183,16 @@ class ThaiAstrologyService
                 continue;
             }
             if ($ageInCycle < $cursor + $years) {
+                // 📜 (2026-10-12) โทนของช่วง = คำพยากรณ์ตามตำรา (LifeGraphTexts::PERIOD — ≥ 2 แหล่ง จาก GenLotto)
+                //   เดิม config period_tone เขียนเองไม่มีแหล่ง และขัดตำรา (อาทิตย์ "ช่วงเด่น มีอำนาจ" ทั้งที่ตำราทุกฉบับว่าร้าย)
+                $num = LifeGraphTables::planetNum((string) $planet);
+                $text = $num !== null ? (LifeGraphTexts::PERIOD[$num] ?? null) : null;
+
                 return [
                     'planet' => (string) $planet,
                     'from' => $cursor,
                     'to' => $cursor + $years,
-                    'tone' => (string) ($tones[$planet] ?? ''),
+                    'tone' => $text !== null ? 'ตำราว่าเป็นช่วง'.$text['tone'].': '.$text['text'] : '',
                 ];
             }
             $cursor += $years;
