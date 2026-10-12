@@ -137,4 +137,20 @@ class LifeGraphTest extends TestCase
         $this->assertSame([1080, 1350, 'image/jpeg'], [$info[0], $info[1], $info['mime']]);
         $this->assertLessThan(950 * 1024, strlen($jpg), 'ขนาดพอสำหรับ LINE/FB');
     }
+
+    public function test_memory_guard_parses_limits_and_raises_a_low_one(): void
+    {
+        $this->assertSame([-1, 134217728, 1073741824, 524288, 1000], [
+            LifeGraphImage::bytes('-1'), LifeGraphImage::bytes('128M'), LifeGraphImage::bytes('1G'), LifeGraphImage::bytes('512K'), LifeGraphImage::bytes('1000'),
+        ]);
+        $old = ini_get('memory_limit');
+        try {
+            // ขีดต่ำจนเหลือไม่ถึง 64MB → ขยายให้เอง (คำสั่ง cron ใช้ CLI 128M)
+            ini_set('memory_limit', (int) ceil((memory_get_usage(true) + 16 * 1048576) / 1048576).'M');
+            $this->assertTrue(LifeGraphImage::ensureMemory(64));
+            $this->assertGreaterThanOrEqual(256 * 1048576, LifeGraphImage::bytes((string) ini_get('memory_limit')));
+        } finally {
+            ini_set('memory_limit', $old);
+        }
+    }
 }

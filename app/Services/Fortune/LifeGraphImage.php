@@ -49,6 +49,13 @@ final class LifeGraphImage
     /** วาดแล้วบันทึกลง public disk — คืน URL หรือ null */
     public function save(array $g, string $key): ?string
     {
+        // วาดใช้หน่วยความจำเพิ่ม ~36MB (วัดบน prod 2026-10-12) — OOM จับด้วย try ไม่ได้และจะฆ่าบิลกลางทาง
+        //   ⇒ เหลือไม่พอ: ขยายขีด (คำสั่ง cron ใช้ CLI 128M) · ขยายไม่ได้ = ข้ามรูป คำทำนายส่งตามปกติ
+        if (! self::ensureMemory(64)) {
+            Log::warning('LifeGraphImage: หน่วยความจำไม่พอ — ข้ามรูปกราฟชีวิต', ['key' => $key, 'usage_mb' => round(memory_get_usage(true) / 1048576)]);
+
+            return null;
+        }
         try {
             $path = 'fortune/charts/lifegraph-'.preg_replace('/[^A-Za-z0-9_-]/', '', $key).'.jpg';
             Storage::disk('public')->put($path, $this->render($g));
@@ -59,6 +66,37 @@ final class LifeGraphImage
 
             return null;
         }
+    }
+
+    /** มีหน่วยความจำว่าง ≥ $needMb หรือขยายขีดจนได้ — memory_limit -1 = ไม่จำกัด */
+    public static function ensureMemory(int $needMb): bool
+    {
+        $need = $needMb * 1048576;
+        $limit = self::bytes((string) ini_get('memory_limit'));
+        if ($limit < 0 || $limit - memory_get_usage(true) >= $need) {
+            return true;
+        }
+        @ini_set('memory_limit', max(256, (int) ceil((memory_get_usage(true) + $need) / 1048576)).'M');
+        $limit = self::bytes((string) ini_get('memory_limit'));
+
+        return $limit < 0 || $limit - memory_get_usage(true) >= $need;
+    }
+
+    /** "128M" / "1G" / "-1" → ไบต์ (-1 = ไม่จำกัด) */
+    public static function bytes(string $v): int
+    {
+        $v = trim($v);
+        if ($v === '' || $v === '-1') {
+            return -1;
+        }
+        $n = (int) $v;
+
+        return match (strtoupper(substr($v, -1))) {
+            'G' => $n * 1073741824,
+            'M' => $n * 1048576,
+            'K' => $n * 1024,
+            default => $n,
+        };
     }
 
     /** @return string JPEG 1080×1350 */
