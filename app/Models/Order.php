@@ -678,13 +678,19 @@ class Order extends Model implements RiderDeliverable
                 $order->refunded_at = $order->refunded_at ?? now();
             } else {
                 $order->status = 'cancelled';
-
-                // ปิดรายการรอชำระที่ค้างอยู่ — กันเงินโอนที่เข้ามาทีหลังไปจับคู่ แล้วเปิดออเดอร์ที่ยกเลิกแล้วเป็น "จ่ายแล้ว"
-                PaymentTransaction::where('order_id', $order->id)
-                    ->where('type', 'order_payment')
-                    ->whereIn('status', ['pending', 'processing'])
-                    ->update(['status' => 'cancelled', 'notes' => 'ออเดอร์ถูกยกเลิก: '.mb_substr($reason, 0, 200)]);
             }
+
+            // 5) ปิดรายการรอชำระที่ค้างอยู่ + ปล่อยยอดจองทศนิยม — กันเงินโอนที่เข้ามาทีหลังไปจับคู่
+            //    🐛 (2026-10-13) เดิมปิดแค่ PaymentTransaction แต่ยอดจอง (UniquePaymentAmount) ยังค้าง reserved 24 ชม.
+            //       → SMS ที่โอนตาม QR เดิมจับคู่ยอดนั้นได้ ตั้ง SMS matched + ยอด used แต่ข้ามการตัดบิล (บิลถูกยกเลิก)
+            //       = เงินลูกค้าหายเงียบ ไม่มีออเดอร์ ไม่มีคืนเงิน และ SMS หลุดจากคิวแอดมิน
+            //    ยอดที่ถูกปล่อย (cancelled) ยังห้ามแจกซ้ำ 24 ชม. (UniquePaymentAmount::generate) → SMS ตามหลังชี้กลับมาที่ออเดอร์นี้ได้
+            //    ทำทั้งออเดอร์ที่ยังไม่จ่ายและที่คืนเงิน (บิลค้างของออเดอร์ที่คืนเงินแล้วก็ห้ามรับเงินเพิ่ม)
+            app(\App\Services\Payment\PaymentService::class)->cancelOtherPendingOrderPayments(
+                $order,
+                null,
+                'ออเดอร์ถูกยกเลิก: '.mb_substr($reason, 0, 200)
+            );
 
             $order->cancellation_reason = $reason;
             $order->cancelled_at = now();

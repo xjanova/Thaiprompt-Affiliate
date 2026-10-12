@@ -57,8 +57,8 @@ class PaymentReconController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('sender_or_receiver', 'like', "%{$search}%")
-                  ->orWhere('reference_number', 'like', "%{$search}%")
-                  ->orWhere('account_number', 'like', "%{$search}%");
+                    ->orWhere('reference_number', 'like', "%{$search}%")
+                    ->orWhere('account_number', 'like', "%{$search}%");
             });
         }
 
@@ -232,6 +232,8 @@ class PaymentReconController extends Controller
             'sms_timestamp' => $sms->sms_timestamp?->toIso8601String(),
             'device_id' => $sms->device_id,
             'status' => $sms->status,
+            // 🧾 (2026-10-13) เงินเข้าบิลที่ปิด/ยกเลิกไปแล้ว — โน้ตบอกแอดมินว่าเงินของออเดอร์ไหน ต้องคืน/ยืนยัน (null = ไม่มี)
+            'review_note' => $sms->closedBillReviewNote(),
             'matched_transaction_id' => $sms->matched_transaction_id,
             'created_at' => $sms->created_at?->toIso8601String(),
             'matched_bill' => $matched ? [

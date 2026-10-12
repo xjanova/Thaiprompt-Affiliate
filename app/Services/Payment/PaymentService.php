@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentService
 {
+    /** วิธีชำระแบบ QR/โอน ที่จองยอดทศนิยมให้ SMS จับคู่ (หนึ่งออเดอร์ควรมี QR ที่ยังจ่ายได้ใบเดียว) */
+    public const QR_PAYMENT_METHODS = ['promptpay', 'bank_transfer'];
+
     protected $providers = [];
 
     /**
@@ -116,6 +119,20 @@ class PaymentService
     public function createOrderPayment(Order $order, string $paymentMethod, array $options = []): PaymentTransaction
     {
         return DB::transaction(function () use ($order, $paymentMethod, $options) {
+            // 🔁 (2026-10-13) ออก QR ใหม่ให้ออเดอร์ (ลูกค้ากด "ชำระใหม่") → ปิด QR เดิมที่ยังรอจ่าย + ปล่อยยอดจอง ในธุรกรรมเดียวกัน
+            //   เดิม QR เก่ายังเปิดอยู่ (ยอดจองอยู่ 24 ชม.) → ตอนยอดเก่าหมดเวลา cleanup ยกเลิกทั้งออเดอร์
+            //   ทั้งที่ QR ใหม่ยังจ่ายได้ → ลูกค้าโอนตาม QR ใหม่ = เงินเข้าออเดอร์ที่ถูกยกเลิก ไม่มีของ ไม่มีคืนเงิน
+            //   ปิดเฉพาะ QR (พร้อมเพย์/โอน) — จ่ายวอลเลตปิด QR ให้เองตอนจ่ายสำเร็จ (completeOrderPayment)
+            //   ถ้าวอลเลตไม่ผ่าน QR เดิมยังใช้ได้ · ยอดที่ปล่อยยังห้ามแจกซ้ำ 24 ชม. → QR ใหม่ได้ยอดคนละตัวกับ QR เดิมเสมอ
+            if (in_array($paymentMethod, self::QR_PAYMENT_METHODS, true)) {
+                $this->cancelOtherPendingOrderPayments(
+                    $order,
+                    null,
+                    'ลูกค้าขอชำระใหม่ - ยกเลิกบิลเดิมอัตโนมัติ (ออก QR ใหม่)',
+                    self::QR_PAYMENT_METHODS
+                );
+            }
+
             // หา store_id จาก order items (ถ้าทุก item เป็นร้านเดียวกัน)
             $storeId = $this->resolveStoreIdForOrder($order);
 
@@ -415,15 +432,23 @@ class PaymentService
      * เรียกเมื่อออเดอร์ได้รับเงินแล้วจากรายการหนึ่ง — รายการที่เหลือห้ามรับเงินซ้ำ
      * (SMS ที่เข้ามาภายหลังจะกลายเป็นเงินไม่มีเจ้าของ ให้แอดมินคืน แทนการตัดบิลซ้ำเงียบๆ)
      *
+     * ใช้ร่วมกับ (2026-10-13): Order::cancel (ยกเลิกออเดอร์) และ createOrderPayment (ออก QR ใหม่ = ปิด QR เดิม)
+     *
      * @param  int|null  $exceptTransactionId  รายการที่จ่ายสำเร็จ (ไม่แตะ)
+     * @param  array<int, string>|null  $onlyMethods  ปิดเฉพาะวิธีชำระเหล่านี้ (null = ทุกวิธี)
      * @return int จำนวนรายการที่ยกเลิก
      */
-    public function cancelOtherPendingOrderPayments(Order $order, ?int $exceptTransactionId = null, string $reason = 'ออเดอร์ชำระด้วยช่องทางอื่นแล้ว - ยกเลิกบิลนี้อัตโนมัติ'): int
-    {
+    public function cancelOtherPendingOrderPayments(
+        Order $order,
+        ?int $exceptTransactionId = null,
+        string $reason = 'ออเดอร์ชำระด้วยช่องทางอื่นแล้ว - ยกเลิกบิลนี้อัตโนมัติ',
+        ?array $onlyMethods = null
+    ): int {
         $pending = PaymentTransaction::where('order_id', $order->id)
             ->where('type', 'order_payment')
             ->whereIn('status', ['pending', 'processing'])
             ->when($exceptTransactionId, fn ($q) => $q->where('id', '!=', $exceptTransactionId))
+            ->when($onlyMethods !== null, fn ($q) => $q->whereIn('payment_method', $onlyMethods))
             ->lockForUpdate()
             ->get();
 
@@ -433,8 +458,13 @@ class PaymentService
                 'notes' => $reason,
             ]);
 
+            // ยอดจองของบิลนี้ — บางเส้นจองด้วยประเภท 'order' (แอพ SmsChecker) จึงกรองแค่ "ไม่ใช่ยอดดูดวง/จันทรา"
+            //   (สองประเภทนั้น transaction_id ชี้ตารางอื่น ห้ามแตะ)
             UniquePaymentAmount::where('transaction_id', $other->id)
-                ->where('transaction_type', $other->type)
+                ->where(function ($q) {
+                    $q->whereNull('transaction_type')
+                        ->orWhereNotIn('transaction_type', ['fortune_reading', UniquePaymentAmount::TYPE_JUNTRAWEB_TOPUP]);
+                })
                 ->where('status', 'reserved')
                 ->get()
                 ->each(fn (UniquePaymentAmount $amount) => $amount->cancel());
