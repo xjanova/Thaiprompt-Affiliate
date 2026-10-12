@@ -230,6 +230,24 @@ class SmsPaymentNotification extends Model
                     return $this->flagPaymentForClosedBill($transaction, $uniqueAmount, $closedReason);
                 }
 
+                // 🔒 (2026-10-13) ยอดจองต้องเป็น "ของบิลนี้จริง" ก่อนตัดบิล
+                //   ทุกทางที่ระบบสร้างบิลจะเก็บ metadata.unique_amount_id และตั้งยอดบิล = ยอดจองเสมอ
+                //   เดิมไม่เช็ค → ยอดจองที่ถูกผูกกับบิลอื่น (เช่นยิง generate-amount ฐาน ฿1 ใส่บิลเติมเงิน ฿10,000)
+                //   โอน ฿1.xx แล้วบิลหลักหมื่นถูกตัดว่าจ่ายครบ → ยอดไม่ใช่ของบิล = ไม่ตัด ส่งให้แอดมินตรวจ
+                if ($transaction && ! static::uniqueAmountBelongsTo($uniqueAmount, $transaction)) {
+                    return $this->flagPaymentForClosedBill(
+                        $transaction,
+                        $uniqueAmount,
+                        'unique_amount_mismatch',
+                        sprintf(
+                            '⚠️ ยอดโอน ฿%s ไม่ตรงกับยอดของบิล %s (฿%s) — ยอดจองนี้ไม่ได้สร้างจากบิลนี้ อาจเป็นการปลอมยอด ห้ามยืนยันบิลจากรายการนี้ ตรวจสอบแล้วคืนเงินตามยอดที่โอนจริง',
+                            number_format((float) $this->amount, 2),
+                            $transaction->transaction_id,
+                            number_format((float) $transaction->amount, 2)
+                        )
+                    );
+                }
+
                 // จับคู่สำเร็จ
                 $this->status = 'matched';
                 $this->matched_transaction_id = $uniqueAmount->transaction_id;
@@ -426,6 +444,24 @@ class SmsPaymentNotification extends Model
     }
 
     /**
+     * 🔒 (2026-10-13) ยอดจองนี้ถูกสร้างจากบิลนี้จริงไหม
+     *
+     * ทุกทางที่ระบบสร้างยอดจองให้บิล (PaymentService · PaymentTransaction::booted · CheckoutController)
+     * เก็บ metadata.unique_amount_id = ยอดจอง และตั้งยอดบิล = ยอดจอง (มีทศนิยม) เสมอ
+     * → ผ่านข้อใดข้อหนึ่ง = ของบิลนี้ · ไม่ผ่านทั้งคู่ = ยอดจองถูกผูกมาจากที่อื่น ห้ามตัดบิล
+     */
+    public static function uniqueAmountBelongsTo(UniquePaymentAmount $uniqueAmount, PaymentTransaction $transaction): bool
+    {
+        $metadata = is_array($transaction->metadata) ? $transaction->metadata : [];
+
+        if ((int) ($metadata['unique_amount_id'] ?? 0) === (int) $uniqueAmount->id) {
+            return true;
+        }
+
+        return abs((float) $transaction->amount - (float) $uniqueAmount->unique_amount) < 0.005;
+    }
+
+    /**
      * ขั้นสุดท้ายของ /notify — SMS ที่ไม่มีบิลไหนรับเลย: ยอดตรงกับ "ยอดจองของบิลที่ปิดไปแล้ว" ไหม
      *
      * เคส: ยกเลิกออเดอร์/ขอ QR ใหม่ → ยอดจองถูกปล่อย (cancelled) หรือหมดเวลา (expired) → ลูกค้าโอนตาม QR เดิมทีหลัง
@@ -517,10 +553,10 @@ class SmsPaymentNotification extends Model
      *
      * @return bool false เสมอ (= ไม่ได้จับคู่) — ให้ caller return ต่อได้ทันที
      */
-    protected function flagPaymentForClosedBill(PaymentTransaction $transaction, ?UniquePaymentAmount $uniqueAmount, string $reason): bool
+    protected function flagPaymentForClosedBill(PaymentTransaction $transaction, ?UniquePaymentAmount $uniqueAmount, string $reason, ?string $note = null): bool
     {
         $order = $transaction->order_id ? Order::withTrashed()->find($transaction->order_id) : null;
-        $note = static::closedBillNote($transaction, $order);
+        $note ??= static::closedBillNote($transaction, $order);
 
         $payload = $this->rawPayloadArray();
         $alreadyFlagged = isset($payload[self::CLOSED_BILL_REVIEW_KEY]);

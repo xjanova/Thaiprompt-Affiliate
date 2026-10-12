@@ -88,7 +88,10 @@ Route::prefix('v1/sms-payment')->group(function () {
     // Web auth endpoints — 30/นาที
     // เรียกจาก checkout/admin ไม่ใช่จากแอพ
     // ═══════════════════════════════════════════════════
-    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
+    // 🔒 (2026-10-13) เดิมแค่ auth:sanctum → ผู้ใช้ทั่วไป (1) ผูกยอดจอง ฿1.xx เข้ากับบิลของใครก็ได้
+    //    แล้วโอนนิดเดียวให้ SMS ตัดบิลหลักหมื่นว่าจ่ายแล้ว (2) อ่าน SMS ธนาคารของทุกคน
+    //    ไม่มีโค้ดในระบบเรียก 2 เส้นนี้ (บิลจริงสร้างยอดจองฝั่งเซิร์ฟเวอร์) → จำกัดเฉพาะ token แอดมิน
+    Route::middleware(['auth:sanctum', 'admin.api', 'throttle:30,1'])->group(function () {
         // สร้าง unique payment amount (เรียกจาก checkout)
         Route::post('/generate-amount', [SmsPaymentController::class, 'generateAmount']);
 

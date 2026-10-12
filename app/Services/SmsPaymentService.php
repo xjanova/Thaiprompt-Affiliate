@@ -229,12 +229,13 @@ class SmsPaymentService
                 //    → ระบบไม่ match (เพราะ UPA cancelled/expired เกิน grace) → เงินค้าง
                 //    Fix: flag notification + ส่ง FCM push ให้ admin ตรวจสอบ + จ่ายคืน/สร้าง reading manual
                 if (! $fortuneReadingHandled && ! $matched && ! $specialAmountHandled && ! $closedBillReview) {
-                    // 🧾 (2026-10-13) ยอดตรงกับยอดจองของบิลอีคอมเมิร์ซที่ปิด/ยกเลิกไปแล้ว (ยอดจองถูกปล่อย/หมดเวลา)
-                    //   → บอกแอดมินว่าเงินก้อนนี้ของออเดอร์ไหน (ไม่ผูกบิล) · วางหลังด่านดูดวงทุกด่าน = ไม่แย่งเงินบิลดูดวง
-                    $closedBillReview = $notification->flagIfPaidToClosedBill();
+                    // ด่านเงินดูดวงกำพร้าทำงานก่อนเสมอ (พฤติกรรมเดิมทุกประการ — ปักธง + push แอดมิน)
+                    $orphanFortuneFlagged = $this->flagOrphanFortunePayment($notification);
 
-                    if (! $closedBillReview) {
-                        $this->flagOrphanFortunePayment($notification);
+                    // 🧾 (2026-10-13) ไม่ใช่ยอดดูดวง → ยอดตรงกับยอดจองของบิลอีคอมเมิร์ซที่ปิด/ยกเลิกไปแล้วไหม
+                    //   → บอกแอดมินว่าเงินก้อนนี้ของออเดอร์ไหน (ไม่ผูกบิล) · ยอดดูดวงไม่ถูกแย่งไปชี้ออเดอร์คนอื่น
+                    if (! $orphanFortuneFlagged) {
+                        $closedBillReview = $notification->flagIfPaidToClosedBill();
                     }
                 }
             }
@@ -527,7 +528,9 @@ class SmsPaymentService
         // 🐛 (2026-10-13) UniquePaymentAmount::generate() พลิกยอดจองที่หมดเวลาทุกแถวเป็น 'expired' ทุกครั้งที่มีบิลใหม่
         //    แต่ขั้นที่ 1 หาเฉพาะ 'reserved' → บิลพวกนี้ไม่ถูกปิด ออเดอร์ค้าง pending ตลอดกาล คูปองถูกกินฟรี
         //    → หาจากฝั่งบิลแทน: บิลพร้อมเพย์/โอนที่ยังรอจ่าย ซึ่งยอดจองหมดเวลาแล้วและไม่มียอดจองที่ยังใช้ได้เหลือ
+        //    เฉพาะบิลออเดอร์ (order_payment) — บิลเติมเงิน/ทาโรต์คงพฤติกรรมเดิม (ไม่ขยายผลเกินโจทย์ออเดอร์ค้าง)
         $strandedTransactionIds = PaymentTransaction::whereIn('status', ['pending', 'processing'])
+            ->where('type', 'order_payment')
             ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
             ->whereExists(function ($q) {
                 $this->uniqueAmountOfTransaction($q)->where('unique_payment_amounts.status', 'expired');
@@ -823,8 +826,9 @@ class SmsPaymentService
      * @param  string|null  $reasonOverride  (2026-09-02) ระบุเหตุผลเอง = **ข้ามด่านช่วงราคา**
      *                                       ด่านเดิมรับเฉพาะ [deep_price, deep_price+1) → ยอดบิลโอนขาด (เช่น ฿32.38) ตกร่อง
      *                                       แบบ "ไม่มี log ไม่มี push" เลย เพราะไม่อยู่ในช่วงราคาเต็ม
+     * @return bool true = ปักธงเงินดูดวงกำพร้าแล้ว · false = ยอดไม่อยู่ในช่วงดูดวง (ไม่ได้ทำอะไร)
      */
-    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification, ?string $reasonOverride = null): void
+    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification, ?string $reasonOverride = null): bool
     {
         $amount = (float) $notification->amount;
 
@@ -847,7 +851,7 @@ class SmsPaymentService
         // เช่น price=39 → match 39.00 ถึง 39.99 (รองรับ unique decimal suffix)
         // กัน edge: ถ้า admin ตั้งราคา 40 → match 40.00 ถึง 40.99
         if ($reasonOverride === null && ($amount < $fortunePrice || $amount >= ($fortunePrice + 1.0))) {
-            return; // ยอดไม่อยู่ในช่วง fortune — ไม่ใช่ orphan ของระบบนี้
+            return false; // ยอดไม่อยู่ในช่วง fortune — ไม่ใช่ orphan ของระบบนี้
         }
 
         // Mark notification — admin จะเห็นใน UI พร้อม flag
@@ -903,6 +907,8 @@ class SmsPaymentService
                 'error' => $fcmErr->getMessage(),
             ]);
         }
+
+        return true;
     }
 
     /**

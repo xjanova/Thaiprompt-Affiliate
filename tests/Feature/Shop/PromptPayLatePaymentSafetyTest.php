@@ -399,6 +399,53 @@ class PromptPayLatePaymentSafetyTest extends TestCase
     // ตัวช่วย
     // =====================================================
 
+    // =====================================================
+    // 🔒 (2026-10-13) ปลอมยอดจอง: ผูกยอด ฿1.xx เข้ากับบิลคนอื่น แล้วโอนนิดเดียวให้บิลถูกตัด
+    // =====================================================
+
+    public function test_generate_amount_endpoint_is_admin_only(): void
+    {
+        [$buyer, $order] = $this->pendingOrder();
+        $qr = $this->openQr($order);
+
+        Sanctum::actingAs($buyer);
+        $this->postJson('/api/v1/sms-payment/generate-amount', [
+            'base_amount' => 1,
+            'transaction_id' => $qr->id,
+            'transaction_type' => 'order',
+        ])->assertStatus(403);
+        $this->getJson('/api/v1/sms-payment/notifications')->assertStatus(403);
+
+        $this->assertSame(1, UniquePaymentAmount::where('transaction_id', $qr->id)->count(), 'ผู้ใช้ทั่วไปต้องสร้างยอดจองไม่ได้');
+    }
+
+    public function test_reserved_amount_not_created_for_the_bill_never_completes_it(): void
+    {
+        [, $order] = $this->pendingOrder();
+        $qr = $this->openQr($order);
+
+        // จำลองยอดจองปลอม ฐาน ฿1 ที่ชี้ไปบิล 200 บาท (เส้นทางเดิมของ generate-amount ก่อนปิด)
+        $fake = UniquePaymentAmount::generate(1, $qr->id, 'order', 60);
+        $this->assertNotNull($fake);
+
+        $result = $this->notify((float) $fake->unique_amount, 'forged-amount');
+
+        $this->assertFalse($result['data']['matched'], 'ยอดจองที่ไม่ได้สร้างจากบิลนี้ ห้ามตัดบิล');
+        $sms = SmsPaymentNotification::findOrFail($result['data']['notification_id']);
+        $this->assertSame('requires_admin_review', $sms->status);
+        $this->assertNull($sms->matched_transaction_id);
+        $this->assertStringContainsString('ห้ามยืนยันบิลจากรายการนี้', (string) $sms->closedBillReviewNote());
+        $this->assertNotSame('used', $fake->fresh()->status);
+
+        $this->assertSame('processing', $qr->fresh()->status, 'บิลจริงต้องยังรอชำระ');
+        $this->assertNotSame('paid', $order->fresh()->payment_status);
+
+        // ยอดจริงของบิลยังจ่ายได้ตามปกติ
+        $paid = $this->notify((float) $qr->amount, 'real-payment');
+        $this->assertTrue($paid['data']['matched']);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+    }
+
     /**
      * ผู้ซื้อ + ออเดอร์ 200 บาท (พร้อมเพย์) ที่ยังไม่จ่าย
      *
