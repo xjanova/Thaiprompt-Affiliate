@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Ekyc\EkycGate;
 use App\Services\Ekyc\EkycService;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,9 +16,13 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * บังคับเฉพาะเมื่อ:
  *   1. config('ekyc.enforce') = true
- *   2. แอปส่ง header X-App-Build ≥ config('ekyc.min_build') (44) — แอปรุ่นเก่า/เว็บ = ปล่อยผ่าน (ใช้ KYC แบบเดิม)
- *   3. (ถ้าระบุพารามิเตอร์) ค่าใน request ตรงเงื่อนไข เช่น `ekyc.verified:availability=online`
+ *   2. (ถ้าระบุพารามิเตอร์) ค่าใน request ตรงเงื่อนไข เช่น `ekyc.verified:availability=online`
  *      = บังคับเฉพาะตอนเปิดรับงาน — การปิดรับงาน (offline) ต้องทำได้เสมอ
+ *
+ * 🔒 (2026-10-13) ตัดสินฝั่งเซิร์ฟเวอร์ ไม่ขึ้นกับ header — เดิมบังคับเฉพาะ X-App-Build ≥ 44
+ *    ทำให้เว็บ/LINE/แอปเก่า/curl ที่ไม่ส่ง header สั่งซื้อได้โดยไม่ยืนยันตัวตน (เจ้าของสั่ง: บังคับทุกช่องทาง)
+ *    แอปรุ่นเก่ากว่า ekyc.min_build (ยังไม่มีหน้า eKYC) → ข้อความให้อัปเดตแอปก่อน (รูปแบบ JSON เดิม)
+ *    ด่านเดียวกันในเว็บ/LINE ใช้ App\Services\Ekyc\EkycGate
  *
  * ⚠️ alias `kyc.verified` เป็นของหน้าเว็บผู้ขาย (EnsureKycVerified — redirect ไป onboarding) ห้ามสลับกัน
  *
@@ -53,21 +58,34 @@ class EnsureEkycVerified
         return response()->json([
             'success' => false,
             'code' => self::CODE,
-            'message' => self::MESSAGE,
+            'message' => self::messageFor($request),
             'data' => ['kyc_status' => EkycService::publicStatus($user)],
         ], 422);
     }
 
     /**
-     * request นี้ต้องถูกบังคับไหม (เปิดฟีเจอร์ + แอปรุ่นที่มีหน้า eKYC)
+     * request นี้ต้องถูกบังคับไหม — ทุกช่องทาง (ไม่ดู header X-App-Build แล้ว)
      */
     public static function enforcedFor(Request $request): bool
     {
-        if (! filter_var(config('ekyc.enforce', true), FILTER_VALIDATE_BOOL)) {
-            return false;
+        return EkycGate::enforced();
+    }
+
+    /**
+     * ข้อความตอบกลับ: แอปรุ่นเก่า (ส่ง X-App-Build แต่ต่ำกว่า ekyc.min_build) ยังไม่มีหน้ายืนยันตัวตน → ให้อัปเดตแอปก่อน
+     */
+    public static function messageFor(Request $request): string
+    {
+        $build = EnsureProfilePhoto::appBuild($request);
+
+        if ($build > 0 && $build < (int) config('ekyc.min_build', 44)) {
+            // เส้นสั่งซื้อใช้ข้อความที่เจ้าของกำหนด · เส้นอื่น (สมัครไรเดอร์/เปิดรับงาน/สมัครผู้ขาย) ใช้คำกลาง
+            return $request->routeIs('*cart.checkout', '*orders.store')
+                ? EkycGate::UPDATE_APP_MESSAGE
+                : 'กรุณาอัปเดตแอปเป็นรุ่นล่าสุด แล้วยืนยันตัวตนก่อนใช้งานส่วนนี้';
         }
 
-        return EnsureProfilePhoto::appBuild($request) >= (int) config('ekyc.min_build', 44);
+        return self::MESSAGE;
     }
 
     /**

@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletDebt;
 use App\Models\WalletTransaction;
+use App\Services\Ekyc\EkycGate;
 use App\Services\Pricing\PricingEngine;
 use App\Services\Rider\HandoverService;
 use Illuminate\Database\QueryException;
@@ -134,8 +135,10 @@ class FreshMarketService
             'line_display_name' => $data['line_display_name'] ?? $user->line_display_name ?? null,
             'is_active' => true,
             'is_suspended' => false,
-            // ปิดอนุมัติอัตโนมัติ → ต้องรอแอดมินยืนยันก่อน สินค้าจึงจะแสดง
-            'is_verified' => FreshMarketListing::autoApproveSellers(),
+            // 🪪 สมัครได้ทุกช่องทาง แต่ขายได้เมื่อเปิดอนุมัติอัตโนมัติ + เจ้าของร้านยืนยันตัวตน (eKYC) แล้ว
+            //    ยังไม่ยืนยัน → is_verified = false จนกว่ายืนยันตัวตนผ่าน (FreshMarketSeller::promoteAfterOwnerKyc) หรือแอดมินยืนยันร้าน
+            //    ปิดอนุมัติอัตโนมัติ → รอแอดมินยืนยันเหมือนเดิม
+            'is_verified' => FreshMarketSeller::initialVerifiedFor($user),
         ], $this->initialSubscription());
 
         try {
@@ -746,6 +749,13 @@ class FreshMarketService
      */
     public function createOrderFromItems(User $buyer, int $sellerId, array $items, array $data): FreshMarketOrder
     {
+        // 🪪 ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อ — ด่านเดียวของทุกช่องทาง (เว็บ / ตะกร้า / API / LINE)
+        //    ทุกผู้เรียกเมธอดนี้เป็นผู้ซื้อสั่งเอง (POS/แอดมินไม่ใช้เส้นนี้) จึงไม่มีทางข้าม
+        //    ถ้าวันหนึ่งต้องให้แอดมิน/ระบบสร้างออเดอร์ผ่านเส้นนี้ → เพิ่มพารามิเตอร์แยก ห้ามรับธงจาก $data (มาจาก input ผู้ใช้)
+        if (EkycGate::buyerBlocked($buyer)) {
+            throw EkycGate::freshMarketException();
+        }
+
         $lines = $this->normalizeOrderLines($items);
 
         $deliveryType = $data['delivery_type'] ?? 'pickup';
@@ -1257,6 +1267,10 @@ class FreshMarketService
      */
     protected function stepTransition(FreshMarketOrder $order, string $action, string $role, ?User $actor): FreshMarketOrder
     {
+        if ($role === 'seller') {
+            $this->assertSellerCanOperate($order);
+        }
+
         $target = FreshMarketOrder::ACTIONS[$action]['to'];
 
         [$locked, $changed] = DB::transaction(function () use ($order, $action, $role, $actor, $target) {
@@ -1322,6 +1336,10 @@ class FreshMarketService
     {
         if (! in_array($cancelledBy, ['buyer', 'seller', 'admin', 'system'], true)) {
             throw FreshMarketException::make('FORBIDDEN', 'ไม่มีสิทธิ์ยกเลิกออเดอร์นี้', 403);
+        }
+
+        if ($cancelledBy === 'seller') {
+            $this->assertSellerCanOperate($order);
         }
 
         $role = $cancelledBy;
@@ -1500,6 +1518,13 @@ class FreshMarketService
         $role = $by;
         $action = $role === 'buyer' ? 'confirm' : 'complete';
 
+        // 🛑 ร้านถูกระงับ/ปิดใช้งาน → ห้ามปล่อยเงินให้ร้านอัตโนมัติ (ผู้ซื้อยืนยัน / ระบบปิดเอง / ปิดหลังส่งมอบไรเดอร์)
+        //    เงินยังพักอยู่ในระบบ (escrow held) แอดมินตัดสินที่หน้าออเดอร์: ปิดออเดอร์ (= จ่ายร้าน) หรือยกเลิก (= คืนเงินผู้ซื้อ)
+        //    ⚠️ ไม่ใช้คอลัมน์ settlement_deferred — คอลัมน์นั้นคือ "ออเดอร์ไรเดอร์ เงินพักจนส่งมอบ" (ไรเดอร์รอบ 2) และมีผลกับยอดที่ร้านได้
+        if ($role !== 'admin') {
+            $this->holdSettlementIfSellerSuspended($order, $role, $action, $actor);
+        }
+
         [$locked, $changed, $summary] = DB::transaction(function () use ($order, $role, $action, $actor) {
             $locked = $this->lockOrder($order);
 
@@ -1508,6 +1533,11 @@ class FreshMarketService
             }
 
             $this->assertCanTransition($locked, $action, $role);
+
+            // กันชนกับแอดมินกดระงับร้านระหว่างทาง (อ่านสถานะร้านล่าสุดในธุรกรรมเดียวกับการปล่อยเงิน)
+            if ($role !== 'admin' && ! $this->sellerCanOperate((int) $locked->seller_id)) {
+                throw $this->settlementHoldException();
+            }
 
             // COD ส่งไรเดอร์: ต้องหักเงินที่ไรเดอร์เก็บเข้าระบบเรียบร้อยก่อน จึงจะโอนให้ร้าน (ไม่จ่ายเงินที่ยังไม่มีจริง)
             if ($locked->payment_method === 'cod' && $locked->delivery_type === 'rider' && ! $this->riderCodSettled($locked)) {
@@ -2224,6 +2254,8 @@ class FreshMarketService
                 $q->where('delivered_at', '<=', $cutoff)
                     ->orWhere(fn ($q2) => $q2->whereNull('delivered_at')->where('updated_at', '<=', $cutoff));
             })
+            // ร้านถูกระงับ/ปิดใช้งาน → ไม่ปล่อยเงินอัตโนมัติ (รอแอดมินตัดสิน — ไม่กวาดซ้ำทุกรอบให้ log ท่วม)
+            ->whereHas('seller', fn ($q) => $q->where('is_active', true)->where('is_suspended', false))
             ->orderBy('id')
             ->limit($limit)
             ->pluck('id');
@@ -2354,6 +2386,105 @@ class FreshMarketService
             "ไม่สามารถ{$label}ได้ เพราะออเดอร์อยู่ในสถานะ \"{$locked->status_label}\"",
             409
         );
+    }
+
+    /**
+     * ร้านของออเดอร์ต้องยังทำรายการได้ (ไม่ถูกระงับ/ปิดใช้งาน) — ใช้กับการกระทำฝั่งร้านทุกช่องทาง (เว็บ / API / LINE)
+     *
+     * @throws FreshMarketException SELLER_SUSPENDED
+     */
+    protected function assertSellerCanOperate(FreshMarketOrder $order): void
+    {
+        $seller = FreshMarketSeller::find($order->seller_id);
+
+        if (! $seller || ! $seller->canOperate()) {
+            throw FreshMarketException::make('SELLER_SUSPENDED', FreshMarketSeller::SUSPENDED_ACTION_MESSAGE, 403);
+        }
+    }
+
+    /**
+     * ร้านมีอยู่จริงแต่ถูกระงับ/ปิดใช้งาน (ร้านที่ถูกลบไปแล้วปล่อยให้ settleCompletedOrder ตอบ SELLER_NOT_FOUND ตามเดิม)
+     */
+    protected function sellerIsSuspended(int $sellerId): bool
+    {
+        $seller = FreshMarketSeller::find($sellerId);
+
+        return $seller !== null && ! $seller->canOperate();
+    }
+
+    /**
+     * ร้านทำรายการได้ไหม (ใช้ตรวจซ้ำภายในธุรกรรมปล่อยเงิน)
+     */
+    protected function sellerCanOperate(int $sellerId): bool
+    {
+        return ! $this->sellerIsSuspended($sellerId);
+    }
+
+    /**
+     * ข้อผิดพลาดตอนพักการโอนเงินให้ร้านที่ถูกระงับ (ผู้ซื้อเห็นข้อความนี้ตอนกดยืนยันรับของ)
+     */
+    protected function settlementHoldException(): FreshMarketException
+    {
+        return FreshMarketException::make(
+            'SETTLEMENT_ON_HOLD',
+            'ร้านนี้อยู่ระหว่างการตรวจสอบของทีมงาน ระบบบันทึกว่าคุณได้รับสินค้าแล้ว เงินยังพักไว้กับระบบอย่างปลอดภัย ทีมงานจะเป็นผู้ปิดออเดอร์นี้ให้',
+            409
+        );
+    }
+
+    /**
+     * ร้านถูกระงับ → ไม่ปิดออเดอร์/ไม่โอนเงินให้ร้าน (เงินพักไว้ รอแอดมินตัดสิน) แล้วโยน SETTLEMENT_ON_HOLD
+     *
+     * ผู้ซื้อกดยืนยันรับของ → บันทึก buyer_confirmed_at + ประวัติ "settlement_held" ไว้ให้แอดมินใช้ประกอบการตัดสิน
+     * ระบบ (ปิดอัตโนมัติ/ปิดหลังส่งมอบไรเดอร์) → log อย่างเดียว · ร้านไม่ถูกระงับ / ออเดอร์ปิดไปแล้ว → ไม่ทำอะไร
+     *
+     * @throws FreshMarketException SETTLEMENT_ON_HOLD | INVALID_TRANSITION (สถานะยังยืนยันไม่ได้)
+     */
+    protected function holdSettlementIfSellerSuspended(FreshMarketOrder $order, string $role, string $action, ?User $actor): void
+    {
+        if ($order->order_status === FreshMarketOrder::STATUS_COMPLETED || ! $this->sellerIsSuspended((int) $order->seller_id)) {
+            return;
+        }
+
+        if ($role === 'buyer') {
+            $alreadyCompleted = DB::transaction(function () use ($order, $role, $action, $actor) {
+                $locked = $this->lockOrder($order);
+
+                if ($locked->order_status === FreshMarketOrder::STATUS_COMPLETED) {
+                    return true;
+                }
+
+                // สถานะยังยืนยันรับของไม่ได้ → ตอบข้อความปกติ (ไม่ใช่ข้อความพักเงิน)
+                $this->assertCanTransition($locked, $action, $role);
+
+                if ($locked->buyer_confirmed_at === null) {
+                    $locked->buyer_confirmed_at = now();
+                    $locked->appendHistory([
+                        'action' => 'settlement_held',
+                        'from' => $locked->order_status,
+                        'to' => $locked->order_status,
+                        'by' => $role,
+                        'user_id' => $actor?->id,
+                        'reason' => 'ผู้ซื้อยืนยันรับสินค้าแล้ว แต่ร้านถูกระงับ — พักการโอนเงิน รอแอดมินตัดสิน',
+                    ]);
+                    $locked->save();
+                }
+
+                return false;
+            });
+
+            if ($alreadyCompleted) {
+                return;
+            }
+        }
+
+        Log::warning('FreshMarket: ร้านถูกระงับ พักการโอนเงินของออเดอร์ รอแอดมินตัดสิน', [
+            'order_id' => $order->id,
+            'seller_id' => $order->seller_id,
+            'by' => $role,
+        ]);
+
+        throw $this->settlementHoldException();
     }
 
     /**

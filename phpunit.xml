@@ -32,5 +32,8 @@
         <!-- ไรเดอร์รอบ 2: เทสต์ห้ามยิงหา Valhalla จริง (เครื่อง dev/CI ไม่มี) — เทสต์ที่ต้องใช้เปิดเองพร้อม Http::fake -->
         <env name="VALHALLA_ENABLED" value="false"/>
         <env name="RIDER_PAY_AI_ENABLED" value="false"/>
+        <!-- 🪪 ด่าน eKYC ผู้ซื้อ/ร้านตลาดสดบังคับทุกช่องทางแล้ว (2026-10-13) — เทสต์ทั่วไปใช้ผู้ใช้ที่ยังไม่ยืนยันตัวตน
+             จึงปิดไว้เป็นค่าเริ่มต้น · เทสต์ที่ตรวจด่านนี้เปิดเองด้วย config(['ekyc.enforce' => true]) (prod ค่าเริ่มต้น = เปิด) -->
+        <env name="EKYC_ENFORCE" value="false"/>
     </php>
 </phpunit>

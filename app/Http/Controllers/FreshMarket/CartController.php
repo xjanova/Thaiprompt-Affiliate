@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\Setting;
+use App\Services\Ekyc\EkycGate;
 use App\Services\FreshMarketCartService;
 use App\Services\FreshMarketService;
 use App\Services\WalletService;
@@ -197,6 +198,11 @@ class CartController extends Controller
             return redirect()->route('taladsod.cart')->with('info', 'ยังไม่มีสินค้าของร้านนี้ในตะกร้า');
         }
 
+        // 🪪 ยังไม่ยืนยันตัวตน → แสดงแถบ "ยืนยันตัวตนในแอป" ตั้งแต่เปิดหน้า (กดสั่งซื้อจะถูกกันที่ FreshMarketService)
+        if (EkycGate::buyerBlocked($request->user())) {
+            session()->now(EkycGate::FLASH_KEY, true);
+        }
+
         $shop = FreshMarketSeller::find($seller);
         $settings = FreshMarketSetting::getSettings();
         $paymentMethods = app(FreshMarketService::class)->availablePaymentMethods();
@@ -308,11 +314,22 @@ class CartController extends Controller
         try {
             return $callback();
         } catch (FreshMarketException $e) {
+            // 🪪 ยังไม่ยืนยันตัวตน → ข้อความพร้อมลิงก์ดาวน์โหลดแอป (JSON ได้ app_download_url ให้หน้าเว็บทำปุ่มเอง)
+            $kycRequired = $e->errorCode() === EkycGate::CODE;
+            $message = $kycRequired ? EkycGate::buyerWebMessage() : $e->getMessage();
+
             if ($request->expectsJson()) {
-                return $this->json(false, $e->getMessage(), null, $e->httpStatus(), ['code' => $e->errorCode()]);
+                return $this->json(false, $message, null, $e->httpStatus(), array_filter([
+                    'code' => $e->errorCode(),
+                    'app_download_url' => $kycRequired ? EkycGate::downloadUrl() : null,
+                ]));
             }
 
-            $redirect = back()->with('error', $e->getMessage());
+            $redirect = back()->with('error', $message);
+
+            if ($kycRequired) {
+                $redirect->with(EkycGate::FLASH_KEY, true);
+            }
 
             return $withInput ? $redirect->withInput() : $redirect;
         } catch (\Throwable $e) {

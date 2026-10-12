@@ -13,6 +13,7 @@ use App\Models\FreshMarketSetting;
 use App\Models\ServiceProvider;
 use App\Models\Setting;
 use App\Services\AppBannerService;
+use App\Services\Ekyc\EkycGate;
 use App\Services\FreshMarketService;
 use App\Services\FreshMarketShopPresenceService;
 use App\Support\TaladsodWebUi;
@@ -115,7 +116,7 @@ class HomeController extends Controller
         // ผู้ขายแนะนำ — เฉพาะร้านที่มีสินค้าจริงและผู้ซื้อเห็นได้
         $topSellers = FreshMarketSeller::active()
             ->where('total_listings', '>', 0)
-            ->when(! FreshMarketListing::autoApproveSellers(), fn ($q) => $q->where('is_verified', true))
+            ->where('is_verified', true) // ร้านต้องยืนยันแล้วเสมอ (เจ้าของยืนยันตัวตน / แอดมินยืนยันร้าน)
             ->orderByDesc('rating_average')
             ->limit(6)
             ->get();
@@ -636,6 +637,11 @@ class HomeController extends Controller
                 ->route('taladsod.orders.show', $order)
                 ->with('success', 'สั่งซื้อสำเร็จ! หมายเลข: '.$order->order_number);
         } catch (FreshMarketException $e) {
+            // 🪪 ยังไม่ยืนยันตัวตน → บอกให้ไปยืนยันในแอป (ข้อความมีลิงก์ + แถบปุ่มดาวน์โหลดใน layout)
+            if ($e->errorCode() === EkycGate::CODE) {
+                return back()->withInput()->with('error', EkycGate::buyerWebMessage())->with(EkycGate::FLASH_KEY, true);
+            }
+
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             Log::error('FreshMarket web: สั่งซื้อล้มเหลว', [
@@ -789,9 +795,12 @@ class HomeController extends Controller
             return back()->withInput()->with('error', 'สมัครไม่สำเร็จ กรุณาลองใหม่');
         }
 
-        $message = $seller->is_verified
-            ? 'สมัครเป็นผู้ขายสำเร็จ! 🎉'
-            : 'สมัครเป็นผู้ขายสำเร็จ! ร้านของคุณรอแอดมินยืนยันก่อนสินค้าจะแสดงต่อผู้ซื้อ';
+        $message = match (true) {
+            (bool) $seller->is_verified => 'สมัครเป็นผู้ขายสำเร็จ! 🎉',
+            // 🪪 สมัครได้ทุกช่องทาง แต่ขายได้เมื่อเจ้าของร้านยืนยันตัวตนในแอปแล้ว
+            $seller->needsOwnerKyc() => 'สมัครเป็นผู้ขายสำเร็จ! '.EkycGate::SELLER_PENDING_KYC_MESSAGE.' ดาวน์โหลดแอปได้ที่ '.EkycGate::downloadUrl(),
+            default => 'สมัครเป็นผู้ขายสำเร็จ! ร้านของคุณรอแอดมินยืนยันก่อนสินค้าจะแสดงต่อผู้ซื้อ',
+        };
 
         return redirect()->route('taladsod.seller.dashboard')->with('success', $message);
     }
@@ -1154,6 +1163,11 @@ class HomeController extends Controller
             return redirect()->route('taladsod.register-seller')->with('info', 'กรุณาสมัครเป็นผู้ขายก่อนค่ะ');
         }
 
+        // ร้านถูกระงับ/ปิดใช้งาน → บอกเหตุผลจริง (ไม่ใช่ "ลงขายเต็มโควต้า")
+        if (! $seller->canOperate()) {
+            return redirect()->route('taladsod.seller.dashboard')->with('error', FreshMarketSeller::SUSPENDED_ACTION_MESSAGE);
+        }
+
         if (! $seller->canCreateListing()) {
             return redirect()->route('taladsod.seller.dashboard')
                 ->with('error', $this->marketService->listingLimitMessage());
@@ -1285,6 +1299,11 @@ class HomeController extends Controller
 
         if (! $seller || (int) $listing->seller_id !== (int) $seller->id) {
             abort(403);
+        }
+
+        // ร้านถูกระงับ/ปิดใช้งาน → แก้สินค้าไม่ได้ (เหมือนลงขายใหม่)
+        if (! $seller->canOperate()) {
+            return back()->withInput()->with('error', FreshMarketSeller::SUSPENDED_ACTION_MESSAGE);
         }
 
         if (! $request->filled('quantity_available') && $request->filled('quantity')) {
@@ -1486,7 +1505,7 @@ class HomeController extends Controller
             $viewer = auth()->user();
 
             $shops = FreshMarketSeller::active()
-                ->when(! FreshMarketListing::autoApproveSellers(), fn ($q) => $q->where('is_verified', true))
+                ->where('is_verified', true) // ร้านต้องยืนยันแล้วเสมอ (เจ้าของยืนยันตัวตน / แอดมินยืนยันร้าน)
                 ->where('total_listings', '>', 0)
                 ->where('is_open', true)
                 ->where(fn ($q) => $q->whereNull('closes_at')->orWhere('closes_at', '>', now()))

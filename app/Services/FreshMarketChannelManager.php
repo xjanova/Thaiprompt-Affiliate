@@ -14,6 +14,7 @@ use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Ekyc\EkycGate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -1260,6 +1261,11 @@ class FreshMarketChannelManager
             if (isset($listingIds[$index])) {
                 $listing = FreshMarketListing::find($listingIds[$index]);
                 if ($listing && $listing->isAvailableForPurchase()) {
+                    // 🪪 ยังไม่ยืนยันตัวตน → บอกตั้งแต่ตอนเลือกสินค้า
+                    if ($blocked = $this->buyerKycBlockReply($conversation)) {
+                        return $blocked;
+                    }
+
                     // เริ่ม order flow เหมือน postback
                     $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_QUANTITY, [
                         'order' => [
@@ -1573,6 +1579,11 @@ class FreshMarketChannelManager
             return ['text' => 'ขอโทษค่ะ สินค้านี้ไม่พร้อมขายแล้วค่ะ 😅'];
         }
 
+        // 🪪 ยังไม่ยืนยันตัวตน → บอกตั้งแต่ตอนเลือกสินค้า
+        if ($blocked = $this->buyerKycBlockReply($conversation)) {
+            return $blocked;
+        }
+
         // เริ่ม order flow
         $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_QUANTITY, [
             'order' => [
@@ -1758,6 +1769,11 @@ class FreshMarketChannelManager
 
         $webUrl = url('/taladsod/seller/orders');
         $header = $notice ? "{$notice}\n\n" : '';
+
+        // 🪪 สถานะร้านที่ผู้ซื้อยังมองไม่เห็น (ถูกระงับ / รอยืนยันตัวตน / รอแอดมิน) — บอกทุกครั้งที่ดูออเดอร์ร้าน
+        if ($statusMessage = $seller->sellingStatusMessage()) {
+            $header .= "⏳ {$statusMessage}".($seller->needsOwnerKyc() ? "\n📲 ยืนยันตัวตนในแอป: ".EkycGate::downloadUrl() : '')."\n\n";
+        }
 
         if ($orders->isEmpty()) {
             return [
@@ -2140,8 +2156,17 @@ class FreshMarketChannelManager
             // Reset กลับ idle
             $conversation->resetToIdle();
 
+            // 🪪 ร้านยังขายไม่ได้ (เจ้าของยังไม่ยืนยันตัวตน / รอแอดมิน) → บอกสถานะร้านพร้อมทางไปต่อ
+            $statusNote = '';
+            if ($statusMessage = $seller->fresh()?->sellingStatusMessage()) {
+                $statusNote = "\n\n⏳ {$statusMessage}";
+                if ($seller->needsOwnerKyc()) {
+                    $statusNote .= "\n📲 ดาวน์โหลดแอปแล้วกดยืนยันตัวตน: ".EkycGate::downloadUrl();
+                }
+            }
+
             return [
-                'text' => "{$progress}\n\n🎉 ลงขายสินค้าเรียบร้อยแล้วค่ะ!\n\n📦 {$ctx['title']}\n💰 ฿".number_format($ctx['price'], 0)."/{$ctx['unit']}\n\nดูรายการสินค้าของคุณได้ที่ แผงควบคุมผู้ขายค่ะ 😊",
+                'text' => "{$progress}\n\n🎉 ลงขายสินค้าเรียบร้อยแล้วค่ะ!\n\n📦 {$ctx['title']}\n💰 ฿".number_format($ctx['price'], 0)."/{$ctx['unit']}\n\nดูรายการสินค้าของคุณได้ที่ แผงควบคุมผู้ขายค่ะ 😊".$statusNote,
                 'quick_replies' => [
                     ['label' => '🏷️ ลงขายเพิ่ม', 'postback' => 'action=sell_more', 'display_text' => 'ลงขาย'],
                     ['label' => '🛒 ซื้อของ', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
@@ -2346,6 +2371,43 @@ class FreshMarketChannelManager
     }
 
     /**
+     * 🪪 ผู้ซื้อใน LINE ยังไม่ยืนยันตัวตน → คำตอบที่ส่งกลับ (null = สั่งต่อได้ / ยังไม่มีบัญชี ให้ขั้นยืนยันคำสั่งซื้อแจ้งเอง)
+     *
+     * ตรวจตั้งแต่ตอนเลือกสินค้า (ไม่ให้เสียเวลากรอกจำนวน/ที่อยู่ก่อนแล้วค่อยรู้) — ด่านจริงอยู่ที่ FreshMarketService::createOrderFromItems
+     */
+    protected function buyerKycBlockReply(FreshMarketConversation $conversation): ?array
+    {
+        if (! EkycGate::enforced()) {
+            return null;
+        }
+
+        $buyer = $conversation->user_id
+            ? User::find($conversation->user_id)
+            : User::where('line_user_id', $conversation->line_user_id)->first();
+
+        if (! $buyer || ! EkycGate::buyerBlocked($buyer)) {
+            return null;
+        }
+
+        $conversation->resetToIdle();
+
+        return $this->buyerKycRequiredReply();
+    }
+
+    /**
+     * ข้อความ "กรุณายืนยันตัวตนในแอปก่อนสั่งซื้อ" + ลิงก์ดาวน์โหลดแอป (LINE ทำลิงก์ให้กดได้เอง)
+     */
+    protected function buyerKycRequiredReply(): array
+    {
+        return [
+            'text' => EkycGate::buyerLineMessage(),
+            'quick_replies' => [
+                ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+            ],
+        ];
+    }
+
+    /**
      * สร้าง order จาก context
      */
     protected function createOrderFromContext(FreshMarketConversation $conversation): array
@@ -2431,6 +2493,11 @@ class FreshMarketChannelManager
         } catch (FreshMarketException $e) {
             // ข้อผิดพลาดที่ผู้ซื้อต้องรู้ (ของหมด / ซื้อของร้านตัวเอง / เงินไม่พอ / นอกพื้นที่ส่ง)
             $conversation->resetToIdle();
+
+            // 🪪 ยังไม่ยืนยันตัวตน → บอกให้ไปยืนยันในแอป (reply ใน event นี้เท่านั้น — ห้าม push)
+            if ($e->errorCode() === EkycGate::CODE) {
+                return $this->buyerKycRequiredReply();
+            }
 
             $hint = $e->errorCode() === 'INSUFFICIENT_BALANCE'
                 ? "\n\nเติมเงินเข้า Wallet แล้วสั่งใหม่ หรือเลือกนัดรับเองที่ร้านได้ค่ะ"

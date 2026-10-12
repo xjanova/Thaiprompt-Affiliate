@@ -13,6 +13,8 @@ use App\Models\ShippingAddress;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\Ekyc\EkycGate;
+use App\Services\Ekyc\EkycService;
 use App\Services\Payment\PaymentService;
 use App\Services\Pricing\PricingEngine;
 use App\Services\Rider\RiderSocialService;
@@ -68,6 +70,14 @@ class ShopCheckoutService
      */
     public function checkout(User $user, array $input, ?string $idempotencyKey = null, ?callable $lineSource = null): array
     {
+        // 🪪 ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อ — กันซ้ำในเซอร์วิส ไม่พึ่ง header ของแอป
+        //    (ผู้เรียก: แอป POST /cart/checkout + เว็บ CheckoutController — POS/แอดมินไม่ใช้เส้นนี้)
+        if (EkycGate::buyerBlocked($user)) {
+            throw ShopException::make(ShopException::KYC_REQUIRED, EkycGate::BUYER_MESSAGE, 422, [
+                'kyc_status' => EkycService::publicStatus($user),
+            ]);
+        }
+
         $this->source = ($input['source'] ?? null) === 'web' ? 'web' : 'mobile_app';
 
         $paymentMethod = PaymentMethod::normalize((string) ($input['payment_method'] ?? ''));
