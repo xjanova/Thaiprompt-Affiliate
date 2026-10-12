@@ -71,6 +71,44 @@ final class LifeGraphService
     }
 
     /**
+     * 📚 (2026-10-12) รูปกราฟชีวิตของบิลนี้สำหรับ "อ่านย้อนหลัง" — owner: บันทึกไว้ให้ลูกค้า · บิลเก่าที่ไม่มี = สร้างใหม่แล้วบันทึกเข้าไป
+     *   มีรูปที่บันทึกไว้ (39 = lifegraph_image_url · 99 = celtic_finale_lifegraph_url) และไฟล์ยังอยู่ → ใช้รูปเดิม
+     *   ไม่มี/ไฟล์หาย → วาดจากวันเกิดในบิล แล้วเก็บลง lifegraph_image_url · ไม่มีวันเกิด/วาดไม่ได้ = null
+     */
+    public static function ensureForReading(FortuneReading $reading): ?string
+    {
+        try {
+            foreach (['lifegraph_image_url', 'celtic_finale_lifegraph_url'] as $stateKey) {
+                $url = $reading->getConversationState($stateKey);
+                if (is_string($url) && $url !== '' && self::storedFileExists($url)) {
+                    return $url;
+                }
+            }
+            $url = self::imageUrl(self::forReading($reading), (int) $reading->id);
+            if ($url !== null) {
+                $reading->setConversationState('lifegraph_image_url', $url);
+            }
+
+            return $url;
+        } catch (\Throwable $e) {
+            Log::warning('LifeGraph: เตรียมรูปกราฟชีวิตย้อนหลังไม่สำเร็จ', ['reading_id' => $reading->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /** URL รูปบน public disk ของเรา (/storage/...) ยังมีไฟล์อยู่ไหม — URL แบบอื่นถือว่ามี */
+    private static function storedFileExists(string $url): bool
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        if (! str_starts_with($path, '/storage/')) {
+            return true;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists(rawurldecode(substr($path, strlen('/storage/'))));
+    }
+
+    /**
      * 📝 บล็อกสั้นในพรอมต์ (≤ 6 บรรทัด) — ช่วงดาวเสวย · ดาวแทรกตอนนี้/ถัดไป · ทักษาจรปีนี้ · ช่วงถัดไป + ช่วงรุ่ง/ระวังที่ยังมาไม่ถึง
      * ข้อความตำราจาก LifeGraphTexts (≥ 2 แหล่ง) · คู่ที่ตำราขัดกัน = บอกว่าไม่ทาย ไม่แต่งแทน
      *

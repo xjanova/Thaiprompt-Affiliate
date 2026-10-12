@@ -1642,10 +1642,13 @@ class FortuneChannelManager
                 //   🛡️ U1 fix (2026-05-14): propagate $extra ทุก sendImage/sendMessage
                 //      กัน silent fail ถ้า flow นี้ถูกเรียกนอก 24h window (scheduled/admin retry)
                 'celtic_review_log' => (function () use ($fbService, $userId, $message, $result, $extra) {
-                    // 🖼️ ส่งภาพไพ่ก่อน (ที่ระลึก)
-                    if (! empty($result['celtic_summary_image_url'])) {
+                    // 🖼️ ส่งภาพไพ่ก่อน (ที่ระลึก) + 📈 กราฟชีวิต (2026-10-12)
+                    foreach (['celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
+                        if (empty($result[$imgKey])) {
+                            continue;
+                        }
                         try {
-                            $fbService->sendImage($userId, $result['celtic_summary_image_url'], null, $extra);
+                            $fbService->sendImage($userId, $result[$imgKey], null, $extra);
                             usleep(500000);
                         } catch (\Throwable $e) {
                             // ignore image fail
@@ -3974,8 +3977,11 @@ class FortuneChannelManager
                         : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨';
 
                     $objs = [];
-                    if (! empty($result['celtic_summary_image_url'])) {
-                        $objs[] = $lineService->buildImageObject($result['celtic_summary_image_url']);
+                    // ภาพไพ่ + 📈 กราฟชีวิต (2026-10-12) — ส่งเป็นชุดละ 5 ด้านล่าง ไม่โดนตัดทิ้ง
+                    foreach (['celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
+                        if (! empty($result[$imgKey])) {
+                            $objs[] = $lineService->buildImageObject($result[$imgKey]);
+                        }
                     }
                     $objs[] = $lineService->buildTextObject($message);
                     foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {

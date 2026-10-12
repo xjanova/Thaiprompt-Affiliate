@@ -4130,6 +4130,8 @@ class FortuneConversationService
             'reading' => $reading,
             'celtic_conversation_overflow' => $overflowMessages,
             'celtic_summary_image_url' => $compositeUrl,
+            // 📚 (2026-10-12) อ่านย้อนหลังต้องมีกราฟชีวิต — บิลเก่าที่ยังไม่มีจะวาดใหม่แล้วบันทึกเข้าบิล
+            'lifegraph_image_url' => \App\Services\Fortune\LifeGraphService::ensureForReading($reading),
             'celtic_can_ask_more' => $isOngoing,
         ];
     }
@@ -4376,6 +4378,8 @@ class FortuneConversationService
                 'chart_image_url' => $latestReading->reading_image_url,
                 'tarot_image_urls' => collect($latestReading->getCollectedTarotCards())
                     ->pluck('image_url')->filter()->values()->all(),
+                // 📚 (2026-10-12) อ่านย้อนหลังต้องมีกราฟชีวิต — บิลเก่าที่ยังไม่มีจะวาดใหม่แล้วบันทึกเข้าบิล
+                'lifegraph_image_url' => \App\Services\Fortune\LifeGraphService::ensureForReading($latestReading),
             ];
         }
 
