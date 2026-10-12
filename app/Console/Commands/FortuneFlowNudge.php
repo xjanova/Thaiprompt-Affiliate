@@ -306,7 +306,12 @@ class FortuneFlowNudge extends Command
             }
 
             try {
-                $ok = $service->sendQuickReplies($userId, $message, $buttons);
+                // 🎴 (2026-10-12, owner) ขั้นเลือกแพคเกจ = การ์ดภาพแพคเกจ 3 ใบ แทนกล่องปุ่มตัวหนังสือ
+                //   ("กล่องนี้ยกเลิกไป ใช้การ์ดภาพสามใบนี้แทน") · ประกอบ/ส่งการ์ดไม่ได้ → กล่องเดิม (ลูกค้าไม่ค้าง)
+                $ok = $step === 'tier_choice' && $this->sendTierCards($service, $platform, $settings, $userId);
+                if (! $ok) {
+                    $ok = $service->sendQuickReplies($userId, $message, $buttons);
+                }
                 if ($ok) {
                     // 🔒 (2026-09-14) ส่งข้อความกินเวลา — อ่านแถวสดอีกรอบก่อนเขียนธง
                     //   setConversationState เขียน state ทั้งก้อนจากสำเนาในมือ ถ้าแถวกลายเป็นบิลไปแล้ว
@@ -429,6 +434,51 @@ class FortuneFlowNudge extends Command
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🎴 (2026-10-12) การ์ดภาพแพคเกจชุดเดียวกับเมนูจริง (FortunePackageCardBuilder) — FB/Telegram = generic template · LINE = Flex
+     *   ตัวเลือกต้องตรงกับ buildBox() + FortunePackageOffer::arm ใน processReading (39 · vip 99 · คุณไสย)
+     *   ปุ่มบนการ์ดใช้ payload TIER_* ตัวเดียวกับเมนูจริง → กดช้าหลัง reading ปิดก็ยังเข้าเลนเลือกแพคเกจ
+     *   false = การ์ดใช้ไม่ได้ (ราคาไม่ตรงรูป/รูปหาย/ส่งล้ม) → caller ส่งกล่องปุ่มเดิมแทน
+     */
+    private function sendTierCards(object $service, string $platform, FortuneTellingSetting $settings, string $userId): bool
+    {
+        try {
+            $deepEnabled = $settings->isDeepReadingEnabled();
+            $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+            $maxQ = (int) ($settings->celtic_cross_max_questions ?? 0);
+            $ctx = [
+                'deep_enabled' => $deepEnabled,
+                'celtic_enabled' => $celticEnabled,
+                'black_magic_enabled' => $celticEnabled && (bool) ($settings->enable_celtic_black_magic_mode ?? true),
+                'celtic_only_intro' => ! $deepEnabled && $celticEnabled,
+                'deep_price' => number_format((float) ($settings->deep_reading_price ?? 39), 0),
+                'celtic_price' => number_format((float) app(CelticCrossService::class)->getPrice(), 0),
+                'deep_window' => (int) ($settings->deep_reading_qa_window_minutes ?? 7),
+                'qa_window' => (int) ($settings->celtic_cross_qa_window_minutes ?? 15),
+                'q_limit_text' => $maxQ > 0 ? "{$maxQ} คำถาม" : 'ไม่จำกัด',
+            ];
+            $builder = app(\App\Services\Fortune\FortunePackageCardBuilder::class);
+
+            if ($platform === 'line' && $service instanceof \App\Services\LineFortuneService) {
+                $flex = $builder->lineFlex($ctx);
+
+                return $flex !== null && $service->sendMessagesWithReplyFallback($userId, [
+                    $service->buildFlexObject($flex, '💎 เลือกแพคเกจดูดวงกับแม่หมอจันทรา', [['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไว้คราวหน้า']]),
+                ], null);
+            }
+
+            if ($service instanceof \App\Contracts\FortuneMessengerSender) {
+                $template = $builder->facebookTemplate($ctx);
+
+                return $template !== null && $service->sendButtonTemplate($userId, $template);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FortuneFlowNudge: การ์ดแพคเกจล้มเหลว — ใช้กล่องปุ่มเดิม', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+
+        return false;
     }
 
     /**

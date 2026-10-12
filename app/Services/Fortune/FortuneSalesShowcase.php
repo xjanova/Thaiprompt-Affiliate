@@ -3,16 +3,18 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
  * 🖼️ (2026-10-12) ชุดตัวอย่าง "สิ่งที่จะได้รับ" ตอนปิดการขาย — owner สั่ง
  *   ภาพกราฟชีวิต · ภาพไพ่ 10 ใบ · ภาพดวงดาว + "ที่นี่ไม่ได้ยกเมฆ ทำนายตามศาสตร์ ใช้ไพ่ทาโรต์เป็นตัวยืน"
  *
- * - ส่งตอนขึ้นการ์ดเลือกแพคเกจ (tier_choice) และตอนลูกค้าถามราคา (pricing_menu) เท่านั้น
+ * - ส่งตอนขึ้นการ์ดเลือกแพคเกจ (tier_choice) · ตอนลูกค้าถามราคา (pricing_menu) · ตอนกำลังจะยกเลิกบิล (cancel_dialog_ask)
+ *   · ตอนทวงบิลที่เปิดแล้วไม่โอน (SendBillReminderJob) — จังหวะไหนมาก่อนได้จังหวะนั้น
  * - ลูกค้าเก่า = เคยดูดวงจ่ายสำเร็จ ≥ 1 บิล (is_paid) → ไม่ส่ง
- * - คนเดิมได้ไม่เกิน 1 ครั้ง / 7 วัน — เมนูขึ้นใหม่ทุกครั้งที่พิมพ์ "ดูดวง"
+ * - คนเดิมได้ครั้งเดียวตลอดไป (owner: "ต้องยังไม่เคยส่งมาก่อน") — จดในตาราง fortune_sales_showcase_sends
+ *   ⚠️ ห้ามย้ายกลับไป cache: deploy.sh รัน cache:clear ทุกรอบ ธงหาย = ลูกค้าได้ซ้ำหลัง deploy
  * - ภาพเป็นไฟล์ตายตัวใน public/images/fortune/showcase วาดจากเครื่องวาดตัวจริง ข้อมูลสมมติ "ภาพตัวอย่าง"
  *   (ลบไฟล์ออก = ไม่ส่งภาพนั้น · ไม่มีภาพเหลือเลย = ไม่ส่งชุดนี้)
  */
@@ -20,22 +22,31 @@ final class FortuneSalesShowcase
 {
     private const DIR = 'images/fortune/showcase';
 
-    private const COOLDOWN_DAYS = 7;
+    private const TABLE = 'fortune_sales_showcase_sends';
 
-    /** ส่งชุดตัวอย่างให้คนนี้ตอนนี้ได้ไหม — true = จองสิทธิ์แล้ว ต้องส่งเลย */
-    public static function claim(?string $userId): bool
+    /**
+     * ส่งชุดตัวอย่างให้คนนี้ตอนนี้ได้ไหม — true = จองสิทธิ์แล้ว ต้องส่งเลย
+     *
+     * @param  string  $trigger  menu | cancel (จดไว้ดูว่าได้จากจังหวะไหน)
+     */
+    public static function claim(?string $userId, string $trigger = 'menu'): bool
     {
         if ($userId === null || $userId === '') {
             return false;
         }
 
         try {
-            // เช็กลูกค้าเก่าก่อนจองสิทธิ์ — คนที่จ่ายแล้วไม่กินสิทธิ์ 7 วัน
+            // เช็กลูกค้าเก่าก่อนจองสิทธิ์ — คนที่จ่ายแล้วไม่ต้องจด
             if (self::hasPaidBefore($userId)) {
                 return false;
             }
 
-            return Cache::add('fortune:sales_showcase:'.$userId, 1, now()->addDays(self::COOLDOWN_DAYS));
+            // unique(platform_user_id) → แถวแรกเท่านั้นที่ insert ได้ = ส่งครั้งเดียวจริง แม้สองโปรเซสชนกัน
+            return DB::table(self::TABLE)->insertOrIgnore([
+                'platform_user_id' => mb_substr($userId, 0, 191),
+                'trigger' => $trigger,
+                'created_at' => now(),
+            ]) === 1;
         } catch (\Throwable $e) {
             Log::warning('FortuneSalesShowcase: เช็กสิทธิ์ไม่สำเร็จ — ข้ามชุดตัวอย่าง', ['user_id' => $userId, 'error' => $e->getMessage()]);
 

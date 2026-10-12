@@ -87,10 +87,12 @@ class FortuneSalesShowcaseTest extends TestCase
 
     // ── 1. ใครได้ ──────────────────────────────────────────────────
 
-    public function test_ลูกค้าใหม่ได้ครั้งเดียวต่อเจ็ดวัน_ลูกค้าเก่าไม่ได้(): void
+    public function test_ลูกค้าใหม่ได้ครั้งเดียวตลอดไป_ลูกค้าเก่าไม่ได้(): void
     {
         $this->assertTrue(FortuneSalesShowcase::claim('psid-new'));
-        $this->assertFalse(FortuneSalesShowcase::claim('psid-new'), 'เมนูขึ้นซ้ำภายใน 7 วัน ห้ามส่งซ้ำ');
+        $this->assertFalse(FortuneSalesShowcase::claim('psid-new'), 'เคยได้แล้ว ห้ามส่งซ้ำ');
+        Cache::flush(); // deploy.sh รัน cache:clear ทุกรอบ — ธงต้องไม่หายไปกับ cache
+        $this->assertFalse(FortuneSalesShowcase::claim('psid-new', 'cancel'), 'หลัง deploy ก็ห้ามส่งซ้ำ · จังหวะยกเลิกก็นับรวม');
 
         $this->paidReading('psid-old', true);
         $this->assertFalse(FortuneSalesShowcase::claim('psid-old'), 'เคยจ่ายสำเร็จ 1 บิล = ลูกค้าเก่า');
@@ -149,6 +151,93 @@ class FortuneSalesShowcaseTest extends TestCase
         $sender->sent = [];
         $this->assertTrue($manager->fb($sender, 'psid-fb-old', $this->tierResult()));
         $this->assertSame(['text', 'template'], array_column($sender->sent, 0), 'ลูกค้าเก่าได้แค่การ์ดตามเดิม');
+    }
+
+    // ── 5. กำลังจะยกเลิกบิล ──────────────────────────────────────
+
+    public function test_กำลังจะยกเลิก_คำถามก่อนแล้วชุดตัวอย่าง_เฉพาะคนที่ยังไม่เคยได้(): void
+    {
+        $sender = $this->recordingSender();
+        $manager = new class($this->settings()) extends FortuneChannelManager
+        {
+            public function fb(FortuneMessengerSender $s, string $uid, array $r): bool
+            {
+                return $this->sendFacebookResponse($s, $uid, $r);
+            }
+        };
+        $ask = ['action' => 'cancel_dialog_ask', 'message' => '🙏 ก่อนยกเลิก แม่หมอขอถามได้ไหมคะ'];
+
+        $this->assertTrue($manager->fb($sender, 'psid-cancel', $ask));
+        $this->assertSame(['text', 'image', 'image', 'image', 'text'], array_column($sender->sent, 0));
+        $this->assertStringContainsString('ก่อนยกเลิก', $sender->sent[0][1]);
+        $this->assertStringContainsString('ไม่ได้ยกเมฆ', $sender->sent[4][1]);
+
+        $sender->sent = [];
+        $this->assertTrue($manager->fb($sender, 'psid-cancel', $ask));
+        $this->assertSame(['text'], array_column($sender->sent, 0), 'เคยได้แล้ว = คำถามอย่างเดียว');
+
+        // เคยได้จากการ์ดเมนูแล้ว → ตอนยกเลิกไม่ได้ซ้ำ
+        $sender->sent = [];
+        $manager->fb($sender, 'psid-menu-first', $this->tierResult());
+        $sender->sent = [];
+        $manager->fb($sender, 'psid-menu-first', $ask);
+        $this->assertSame(['text'], array_column($sender->sent, 0));
+
+        $this->paidReading('psid-cancel-old', true);
+        $sender->sent = [];
+        $manager->fb($sender, 'psid-cancel-old', $ask);
+        $this->assertSame(['text'], array_column($sender->sent, 0), 'ลูกค้าเก่าไม่ได้');
+    }
+
+    // ── 6. เปิดบิลแล้วไม่โอน (ตัวทวงบิล) + กล่องกระตุ้นเลือกแพคเกจ = การ์ดภาพ ──
+
+    public function test_ทวงบิล_แนบชุดตัวอย่างครั้งเดียว_line_รวมเป็นpushเดียว(): void
+    {
+        $job = new \App\Jobs\SendBillReminderJob(1);
+        $showcaseFor = (new \ReflectionMethod($job, 'showcaseFor'));
+        $showcaseFor->setAccessible(true);
+
+        $first = $showcaseFor->invoke($job, 'U-bill');
+        $celticOn = (bool) (FortuneTellingSetting::getSettings()->enable_celtic_cross ?? false);
+        $this->assertCount($celticOn ? 3 : 2, $first['urls'], 'ภาพไพ่ 10 ใบเฉพาะตอนเปิดแพคเกจ Celtic');
+        $this->assertStringContainsString('ไม่ได้ยกเมฆ', $first['text']);
+        $this->assertNull($showcaseFor->invoke($job, 'U-bill'), 'ทวงรอบถัดไป/บิลถัดไป ไม่ส่งซ้ำ');
+        $this->paidReading('U-bill-old', true);
+        $this->assertNull($showcaseFor->invoke($job, 'U-bill-old'), 'ลูกค้าเก่าไม่ได้');
+
+        $captured = [];
+        $line = Mockery::mock(LineFortuneService::class)->makePartial();
+        $line->shouldReceive('buildImageObject')->andReturnUsing(fn ($u) => ['type' => 'image', 'url' => $u]);
+        $line->shouldReceive('buildTextObject')->andReturnUsing(fn ($t) => ['type' => 'text', 'text' => $t]);
+        $line->shouldReceive('sendMessage')->never();
+        $line->shouldReceive('sendMessagesWithReplyFallback')->once()->andReturnUsing(function ($uid, $msgs, $token) use (&$captured) {
+            $captured = [$msgs, $token];
+
+            return true;
+        });
+        $this->app->instance(LineFortuneService::class, $line);
+
+        $send = new \ReflectionMethod($job, 'sendMessage');
+        $send->setAccessible(true);
+        $send->invoke($job, 'line', 'U-bill', '🌙 บิลยังรอโอนอยู่นะคะ', $first);
+
+        $this->assertSame(['text', ...array_fill(0, count($first['urls']), 'image'), 'text'], array_column($captured[0], 'type'));
+        $this->assertLessThanOrEqual(5, count($captured[0]));
+        $this->assertNull($captured[1], 'ทวงบิล = push ไม่มี reply token');
+        $this->assertSame('🌙 บิลยังรอโอนอยู่นะคะ', $captured[0][0]['text']);
+    }
+
+    public function test_กล่องกระตุ้นเลือกแพคเกจ_ส่งการ์ดภาพแทนกล่องปุ่ม(): void
+    {
+        $settings = $this->settings();
+        $settings->forceFill(['deep_reading_price' => 39, 'celtic_cross_price' => 99, 'enable_celtic_black_magic_mode' => true]);
+        $nudge = new \App\Console\Commands\FortuneFlowNudge;
+        $cards = new \ReflectionMethod($nudge, 'sendTierCards');
+        $cards->setAccessible(true);
+
+        $sender = $this->recordingSender();
+        $this->assertTrue($cards->invoke($nudge, $sender, 'facebook', $settings, 'psid-nudge'));
+        $this->assertSame(['template'], array_column($sender->sent, 0), 'FB: การ์ดภาพชุดเดียว ไม่มีกล่องปุ่มตัวหนังสือ');
     }
 
     // ── 4. LINE ──────────────────────────────────────────────────
