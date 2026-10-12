@@ -86,6 +86,26 @@ class FortuneLifeGraphHistoryTest extends TestCase
         $this->assertNull(LifeGraphService::ensureForReading($this->reading(['birth_date' => null])));
     }
 
+    public function test_อ่านย้อนหลัง99_ผังดวงไฟล์หายวาดใหม่แล้วบันทึก_มีแล้วใช้รูปเดิม(): void
+    {
+        $r = $this->reading(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'reading_image_url' => '/storage/fortune/charts/birth-chart-gone.jpg']);
+        $svc = new class(FortuneTellingSetting::getSettings()) extends FortuneConversationService
+        {
+            public function chart(FortuneReading $r): ?string
+            {
+                return $this->celticReviewChartUrl($r);
+            }
+        };
+
+        $url = $svc->chart($r);
+        $this->assertNotNull($url);
+        $this->assertStringNotContainsString('birth-chart-gone', $url, 'ไฟล์หายต้องวาดใหม่');
+        $this->assertSame($url, $r->fresh()->reading_image_url, 'ต้องบันทึกเข้าบิล');
+        $this->assertSame($url, $svc->chart($r->fresh()), 'มีรูปแล้วต้องใช้รูปเดิม');
+
+        $this->assertNull($svc->chart($this->reading(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS, 'birth_date' => null])));
+    }
+
     public function test_อ่านย้อนหลัง39แนบกราฟชีวิต(): void
     {
         $this->reading();

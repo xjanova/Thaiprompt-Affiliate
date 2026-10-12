@@ -1642,8 +1642,8 @@ class FortuneChannelManager
                 //   🛡️ U1 fix (2026-05-14): propagate $extra ทุก sendImage/sendMessage
                 //      กัน silent fail ถ้า flow นี้ถูกเรียกนอก 24h window (scheduled/admin retry)
                 'celtic_review_log' => (function () use ($fbService, $userId, $message, $result, $extra) {
-                    // 🖼️ ส่งภาพไพ่ก่อน (ที่ระลึก) + 📈 กราฟชีวิต (2026-10-12)
-                    foreach (['celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
+                    // 🖼️ ส่งภาพก่อน (ที่ระลึก) — ลำดับเดียวกับบทสรุป: ผังดวง → ภาพไพ่ → กราฟชีวิต (2026-10-12)
+                    foreach (['chart_image_url', 'celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
                         if (empty($result[$imgKey])) {
                             continue;
                         }
@@ -3977,8 +3977,8 @@ class FortuneChannelManager
                         : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨';
 
                     $objs = [];
-                    // ภาพไพ่ + 📈 กราฟชีวิต (2026-10-12) — ส่งเป็นชุดละ 5 ด้านล่าง ไม่โดนตัดทิ้ง
-                    foreach (['celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
+                    // ผังดวง → ภาพไพ่ → 📈 กราฟชีวิต (2026-10-12 ลำดับเดียวกับบทสรุป) — ส่งเป็นชุดละ 5 ด้านล่าง ไม่โดนตัดทิ้ง
+                    foreach (['chart_image_url', 'celtic_summary_image_url', 'lifegraph_image_url'] as $imgKey) {
                         if (! empty($result[$imgKey])) {
                             $objs[] = $lineService->buildImageObject($result[$imgKey]);
                         }

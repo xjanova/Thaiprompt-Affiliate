@@ -4130,10 +4130,32 @@ class FortuneConversationService
             'reading' => $reading,
             'celtic_conversation_overflow' => $overflowMessages,
             'celtic_summary_image_url' => $compositeUrl,
-            // 📚 (2026-10-12) อ่านย้อนหลังต้องมีกราฟชีวิต — บิลเก่าที่ยังไม่มีจะวาดใหม่แล้วบันทึกเข้าบิล
-            'lifegraph_image_url' => \App\Services\Fortune\LifeGraphService::ensureForReading($reading),
+            // 📚 (2026-10-12, owner) อ่านย้อนหลัง 99 ต้องมีผังดวง + กราฟชีวิต — บิลเก่า/ไฟล์หาย วาดใหม่แล้วบันทึกเข้าบิล
+            //   ⚠️ เฉพาะรอบที่จบแล้ว: ระหว่างคุยเวลาเกิดอาจยังไม่มา — วาดก่อน = บทสรุปหยิบผังไม่มีลัคนาไปใช้ซ้ำ
+            'chart_image_url' => $isOngoing ? null : $this->celticReviewChartUrl($reading),
+            'lifegraph_image_url' => $isOngoing ? null : \App\Services\Fortune\LifeGraphService::ensureForReading($reading),
             'celtic_can_ask_more' => $isOngoing,
         ];
+    }
+
+    /**
+     * 🗺️ (2026-10-12) ผังดวงของบิล 99 สำหรับอ่านย้อนหลัง — รูปที่บันทึกไว้ (reading_image_url) ถ้าไฟล์ยังอยู่
+     *   ไฟล์หาย = ล้างแล้ววาดใหม่ · บิลเก่าไม่มีรูป = buildCelticBirthChartUrl() วาดแล้วบันทึกให้ · ไม่มีวันเกิด = null
+     */
+    protected function celticReviewChartUrl(FortuneReading $reading): ?string
+    {
+        try {
+            $saved = (string) ($reading->reading_image_url ?? '');
+            if ($saved !== '' && ! \App\Services\Fortune\LifeGraphService::storedFileExists($saved)) {
+                $reading->update(['reading_image_url' => null]);
+            }
+
+            return $this->buildCelticBirthChartUrl($reading);
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic review: เตรียมผังดวงย้อนหลังไม่สำเร็จ', ['reading_id' => $reading->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**
