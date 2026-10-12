@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
@@ -85,6 +86,7 @@ class SmsPaymentService
             $specialAmountHandled = false;
             $matchedModel = null; // เก็บ model ที่ match ได้เพื่อส่งกลับให้แอพแสดงบิล
             $matchedModelType = null;
+            $closedBillReview = false; // 🧾 ยอดตรงกับบิลอีคอมเมิร์ซที่ปิด/ยกเลิกไปแล้ว → ปักธงให้แอดมินแล้ว
 
             // 🗑️ (2026-08-29, owner "มันมาก่อกวนอีกแล้ว โอน 1 สตางค์") เศษสตางค์ = ก่อกวน ไม่ใช่การจ่ายเงิน
             //
@@ -167,13 +169,18 @@ class SmsPaymentService
                         $matchedModel = PaymentTransaction::find($notification->matched_transaction_id);
                         $matchedModelType = 'payment_transaction';
                     }
+
+                    // 🧾 (2026-10-13) ยอดจองของบิลอีคอมเมิร์ซตรงเป๊ะ แต่บิล/ออเดอร์ถูกปิดไปแล้ว
+                    //   attemptMatch ปักธงให้แอดมินคืนเงินแล้ว (เดิมเคสนี้ตอบ matched=true ด่านด้านล่างจึงไม่เคยเห็นเงินก้อนนี้)
+                    //   → ข้ามด่านกู้ของดูดวงด้านล่าง ห้ามหยิบเงินก้อนนี้ไปตัดบิลอื่นหรือปักธงซ้ำ
+                    $closedBillReview = ! $matched && $notification->isClosedBillReview();
                 }
 
                 // 🎯 ขั้นที่ 2.5 (2026-09-02, บิล FTU-260902-E0187) บิล "โอนขาด" — ลูกค้าโอนตาม
                 //    "เลขที่บอทพูด" ไม่ใช่เลขที่ QR จอง → ยอดไม่ตรง UPA → ตกร่องเงียบ
                 //    วางไว้ "หลัง" ทั้ง fortune-UPA และ ecommerce match — เป็นด่านกู้ ไม่ใช่ด่านหลัก
                 //    (ห้ามวางก่อน ไม่งั้นยอดของอีคอมเมิร์ซอาจโดนบิลดูดวงดูดไปก่อน)
-                if (! $fortuneReadingHandled && ! $matched) {
+                if (! $fortuneReadingHandled && ! $matched && ! $closedBillReview) {
                     $partialOwner = $this->findPartialTopupOwner($notification);
 
                     if ($partialOwner !== null) {
@@ -206,7 +213,7 @@ class SmsPaymentService
                     }
                 }
 
-                if (! $fortuneReadingHandled && ! $matched) {
+                if (! $fortuneReadingHandled && ! $matched && ! $closedBillReview) {
                     // ขั้นที่ 3: ตรวจจับยอดพิเศษ (เช่น 29.99 = ดูดวง)
                     // สร้าง FortuneReading อัตโนมัติเป็น "บิลลอย" ถ้า match ไม่ได้กับ unique amount
                     $specialAmountHandled = $this->handleSpecialAmount($notification);
@@ -221,8 +228,14 @@ class SmsPaymentService
                 //    เคสที่เกิด: บิลถูกยกเลิกไปแล้ว (auto/user) → ลูกค้ามาจ่ายข้ามวัน → SMS เข้า
                 //    → ระบบไม่ match (เพราะ UPA cancelled/expired เกิน grace) → เงินค้าง
                 //    Fix: flag notification + ส่ง FCM push ให้ admin ตรวจสอบ + จ่ายคืน/สร้าง reading manual
-                if (! $fortuneReadingHandled && ! $matched && ! $specialAmountHandled) {
-                    $this->flagOrphanFortunePayment($notification);
+                if (! $fortuneReadingHandled && ! $matched && ! $specialAmountHandled && ! $closedBillReview) {
+                    // 🧾 (2026-10-13) ยอดตรงกับยอดจองของบิลอีคอมเมิร์ซที่ปิด/ยกเลิกไปแล้ว (ยอดจองถูกปล่อย/หมดเวลา)
+                    //   → บอกแอดมินว่าเงินก้อนนี้ของออเดอร์ไหน (ไม่ผูกบิล) · วางหลังด่านดูดวงทุกด่าน = ไม่แย่งเงินบิลดูดวง
+                    $closedBillReview = $notification->flagIfPaidToClosedBill();
+
+                    if (! $closedBillReview) {
+                        $this->flagOrphanFortunePayment($notification);
+                    }
                 }
             }
 
@@ -490,7 +503,6 @@ class SmsPaymentService
                 $q->whereNull('transaction_type')
                     ->orWhere('transaction_type', '!=', 'fortune_reading');
             })
-            ->with('transaction.order')
             ->get();
 
         foreach ($expiredUniqueAmounts as $uniqueAmount) {
@@ -500,50 +512,39 @@ class SmsPaymentService
             //    ตอนนี้ใช้ค่าที่มีใน enum (transaction = cancelled, order.payment_status = failed)
             //    และครอบทีละแถว → แถวที่มีปัญหาไม่ลากแถวอื่น/ขั้นอื่นพังตาม
             try {
-                DB::transaction(function () use ($uniqueAmount, &$stats) {
-                    $transaction = $uniqueAmount->transaction;
-
-                    // ยกเลิก PaymentTransaction ถ้ายังเป็น pending/processing
-                    if ($transaction && in_array($transaction->status, ['pending', 'processing'], true)) {
-                        $transaction->update([
-                            'status' => 'cancelled',
-                            'notes' => 'หมดเวลาชำระเงิน (30 นาที) - ยกเลิกโดยระบบอัตโนมัติ',
-                        ]);
-                        $stats['cancelled_transactions']++;
-
-                        Log::info('SMS Payment: ยกเลิก PaymentTransaction หมดเวลา', [
-                            'transaction_id' => $transaction->id,
-                            'amount' => $uniqueAmount->unique_amount,
-                        ]);
-
-                        // ยกเลิก Order ถ้ายังเป็น pending และยังไม่ได้ชำระ (lock กันชนกับการยืนยันสลิปพร้อมกัน)
-                        $order = $transaction->order_id
-                            ? \App\Models\Order::whereKey($transaction->order_id)->lockForUpdate()->first()
-                            : null;
-
-                        if ($order && $order->status === 'pending' && $order->payment_status === 'pending') {
-                            $order->update([
-                                'status' => 'cancelled',
-                                'payment_status' => 'failed',
-                                'cancelled_at' => now(),
-                                'cancellation_reason' => 'หมดเวลาชำระเงิน (30 นาที) - ระบบยกเลิกอัตโนมัติ',
-                            ]);
-                            $stats['cancelled_orders']++;
-
-                            Log::info('SMS Payment: ยกเลิก Order หมดเวลา', [
-                                'order_id' => $order->id,
-                                'order_number' => $order->order_number,
-                            ]);
-                        }
-                    }
-
-                    // อัปเดต unique amount เป็น expired (enum ของ unique_payment_amounts มีค่านี้)
-                    $uniqueAmount->update(['status' => 'expired']);
-                    $stats['expired_amounts']++;
-                });
+                $this->expireUnpaidTransaction($uniqueAmount->transaction_id, $uniqueAmount->id, $stats);
             } catch (\Throwable $e) {
                 Log::error('SMS Payment cleanup: expire unique amount failed', [
                     'unique_amount_id' => $uniqueAmount->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // ========================================
+        // ขั้นที่ 1.2: บิลรอชำระที่ยอดจองถูก generate() พลิกเป็น 'expired' ไปก่อน cleanup จะเห็น
+        // ========================================
+        // 🐛 (2026-10-13) UniquePaymentAmount::generate() พลิกยอดจองที่หมดเวลาทุกแถวเป็น 'expired' ทุกครั้งที่มีบิลใหม่
+        //    แต่ขั้นที่ 1 หาเฉพาะ 'reserved' → บิลพวกนี้ไม่ถูกปิด ออเดอร์ค้าง pending ตลอดกาล คูปองถูกกินฟรี
+        //    → หาจากฝั่งบิลแทน: บิลพร้อมเพย์/โอนที่ยังรอจ่าย ซึ่งยอดจองหมดเวลาแล้วและไม่มียอดจองที่ยังใช้ได้เหลือ
+        $strandedTransactionIds = PaymentTransaction::whereIn('status', ['pending', 'processing'])
+            ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+            ->whereExists(function ($q) {
+                $this->uniqueAmountOfTransaction($q)->where('unique_payment_amounts.status', 'expired');
+            })
+            ->whereNotExists(function ($q) {
+                $this->uniqueAmountOfTransaction($q)->whereIn('unique_payment_amounts.status', ['reserved', 'used']);
+            })
+            ->orderBy('id')
+            ->limit(500)
+            ->pluck('id');
+
+        foreach ($strandedTransactionIds as $transactionId) {
+            try {
+                $this->expireUnpaidTransaction((int) $transactionId, null, $stats);
+            } catch (\Throwable $e) {
+                Log::error('SMS Payment cleanup: expire stranded transaction failed', [
+                    'transaction_id' => $transactionId,
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -631,6 +632,134 @@ class SmsPaymentService
         Log::info('SMS Payment: ทำความสะอาดข้อมูลสำเร็จ', $stats);
 
         return $stats;
+    }
+
+    /**
+     * 🧹 (2026-10-13) ปิดบิลรอชำระที่หมดเวลา 1 ใบ (+ ยอดจองของบิล) แล้วยกเลิกออเดอร์ผ่านทางยกเลิกปกติ
+     *
+     * เดิม update ตาราง orders ตรงๆ:
+     *   - ไม่คืนสิทธิ์คูปอง / สต็อก ไม่ยกเลิกงานไรเดอร์ ไม่บันทึกประวัติออเดอร์
+     *   - ยกเลิกทั้งออเดอร์ทันทีที่ยอดจองใบ "เก่า" หมดเวลา แม้ลูกค้าเพิ่งกดขอ QR ใหม่ที่ยังจ่ายได้
+     *     → ลูกค้าโอนตาม QR ใหม่ = เงินเข้าออเดอร์ที่ถูกยกเลิก (completeOrderPayment แค่ log) ไม่มีของ ไม่มีใครคืนเงิน
+     * ตอนนี้:
+     *   - ยกเลิกออเดอร์เฉพาะที่ยัง pending + ยังไม่จ่าย และไม่มีบิลอื่นที่ยังจ่ายได้ (orderHasLivePayment)
+     *   - ยกเลิกผ่าน Order::cancel (คืนคูปอง/สต็อก + ปิดบิลที่เหลือ + ปล่อยยอดจอง) · payment_status = failed เหมือนเดิม
+     *
+     * ทำซ้ำได้ทุก 5 นาที: บิลที่ปิดแล้ว / ออเดอร์ที่ยกเลิกแล้ว / ยอดจองที่ไม่ใช่ reserved = ข้าม
+     * ลำดับล็อกเดียวกับ Order::cancel (ออเดอร์ → บิล → ยอดจอง)
+     *
+     * @param  int|null  $transactionId  PaymentTransaction ที่หมดเวลา (null = ยอดจองที่ไม่มีบิล)
+     * @param  int|null  $uniqueAmountId  ยอดจองที่หมดเวลา (ขั้นที่ 1) — ตั้งเป็น expired ถ้ายัง reserved
+     */
+    protected function expireUnpaidTransaction(?int $transactionId, ?int $uniqueAmountId, array &$stats): void
+    {
+        DB::transaction(function () use ($transactionId, $uniqueAmountId, &$stats) {
+            $orderId = $transactionId ? PaymentTransaction::whereKey($transactionId)->value('order_id') : null;
+            $order = $orderId ? Order::whereKey($orderId)->lockForUpdate()->first() : null;
+            $transaction = $transactionId ? PaymentTransaction::whereKey($transactionId)->lockForUpdate()->first() : null;
+
+            // ยอดจองหมดเวลา → expired (enum ของ unique_payment_amounts มีค่านี้) · ก่อนยกเลิกออเดอร์ = Order::cancel ไม่ต้องปล่อยซ้ำ
+            if ($uniqueAmountId !== null) {
+                $stats['expired_amounts'] += UniquePaymentAmount::whereKey($uniqueAmountId)
+                    ->where('status', 'reserved')
+                    ->update(['status' => 'expired']);
+            }
+
+            if (! $transaction || ! in_array($transaction->status, ['pending', 'processing'], true)) {
+                return;
+            }
+
+            $transaction->update([
+                'status' => 'cancelled',
+                'notes' => 'หมดเวลาชำระเงิน (30 นาที) - ยกเลิกโดยระบบอัตโนมัติ',
+            ]);
+            $stats['cancelled_transactions']++;
+
+            Log::info('SMS Payment: ยกเลิก PaymentTransaction หมดเวลา', [
+                'transaction_id' => $transaction->id,
+                'amount' => $transaction->amount,
+            ]);
+
+            // ไม่มีออเดอร์ / จ่ายแล้ว / ยกเลิกแล้ว / ร้านรับไปทำแล้ว → ไม่แตะออเดอร์
+            if (! $order || $order->status !== 'pending' || $order->payment_status !== 'pending') {
+                return;
+            }
+
+            // ลูกค้ากดชำระใหม่ (QR ใหม่ยังไม่หมดเวลา) → ห้ามยกเลิกออเดอร์ ไม่งั้นเงินที่โอนตาม QR ใหม่จะเข้าออเดอร์ที่ยกเลิก
+            if ($this->orderHasLivePayment($order)) {
+                Log::info('SMS Payment: บิลเก่าหมดเวลาแต่ออเดอร์ยังมีบิลที่จ่ายได้ — ไม่ยกเลิกออเดอร์', [
+                    'order_id' => $order->id,
+                    'expired_transaction_id' => $transaction->id,
+                ]);
+
+                return;
+            }
+
+            // บิลค้างเก่าเกิน 48 ชม. (ตกค้างก่อนแก้ ขั้นที่ 1.2 เพิ่งมาเก็บ) → ยกเลิกเงียบ ไม่ส่งแจ้งเตือน "ออเดอร์ถูกยกเลิก"
+            //   ทีละหลายร้อยใบหลัง deploy · บิลที่หมดเวลาตามปกติ (~24 ชม.) ยังแจ้งผู้ซื้อเหมือนเดิม
+            $cancel = fn () => $order->cancel('หมดเวลาชำระเงิน (30 นาที) - ระบบยกเลิกอัตโนมัติ', null, 'system');
+            if ($transaction->created_at !== null && $transaction->created_at->lt(now()->subHours(48))) {
+                NotificationService::muteUsersDuring([(int) $order->user_id], $cancel);
+            } else {
+                $cancel();
+            }
+
+            // คงความหมายเดิมของงานนี้: ออเดอร์ที่หมดเวลาจ่าย = payment_status failed (ระดับ query ไม่ยิง event แจ้งเตือนซ้ำ)
+            Order::whereKey($order->id)
+                ->where('status', 'cancelled')
+                ->where('payment_status', 'pending')
+                ->update(['payment_status' => 'failed']);
+            $stats['cancelled_orders']++;
+
+            Log::info('SMS Payment: ยกเลิก Order หมดเวลา', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
+        });
+    }
+
+    /**
+     * ออเดอร์ยังมีบิลรอชำระที่ "ยังจ่ายได้" อยู่ไหม
+     *
+     *   - บิลพร้อมเพย์/โอน: ยอดจองยัง reserved และยังไม่หมดเวลา (SMS ยังจับคู่ตัดบิลได้)
+     *   - บิลที่ไม่มียอดจอง (ช่องทางอื่น / ระบบ SMS ปิด): ดูเวลาหมดอายุของบิลเอง
+     */
+    private function orderHasLivePayment(Order $order): bool
+    {
+        return PaymentTransaction::where('order_id', $order->id)
+            ->where('type', 'order_payment')
+            ->whereIn('status', ['pending', 'processing'])
+            ->where(function ($q) {
+                $q->whereExists(function ($u) {
+                    $this->uniqueAmountOfTransaction($u)
+                        ->where('unique_payment_amounts.status', 'reserved')
+                        ->where('unique_payment_amounts.expires_at', '>', now());
+                })->orWhere(function ($q2) {
+                    $q2->whereNotExists(function ($u) {
+                        $this->uniqueAmountOfTransaction($u);
+                    })->where(function ($q3) {
+                        $q3->whereNull('expired_at')->orWhere('expired_at', '>', now());
+                    });
+                });
+            })
+            ->exists();
+    }
+
+    /**
+     * sub-query: ยอดจองของ PaymentTransaction แถวนอก (ไม่รวมยอดดูดวง/จันทรา ที่ transaction_id ชี้ตารางอื่น)
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return \Illuminate\Database\Query\Builder
+     */
+    private function uniqueAmountOfTransaction($query)
+    {
+        return $query->select(DB::raw(1))
+            ->from('unique_payment_amounts')
+            ->whereColumn('unique_payment_amounts.transaction_id', 'payment_transactions.id')
+            ->where(function ($t) {
+                $t->whereNull('unique_payment_amounts.transaction_type')
+                    ->orWhereNotIn('unique_payment_amounts.transaction_type', ['fortune_reading', UniquePaymentAmount::TYPE_JUNTRAWEB_TOPUP]);
+            });
     }
 
     /**
