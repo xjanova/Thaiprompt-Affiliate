@@ -257,6 +257,13 @@ class PayoutService
         }
 
         return DB::transaction(function () use ($payoutRequest, $approvedBy, $note) {
+            // 🔒 (2026-10-13) lock + ตรวจสถานะซ้ำ — กดอนุมัติซ้ำ/อนุมัติชนกับปฏิเสธ ต้องจ่ายครั้งเดียว
+            $locked = PayoutRequest::whereKey($payoutRequest->id)->lockForUpdate()->first();
+            if (! $locked || $locked->status !== PayoutRequest::STATUS_PENDING) {
+                throw new \Exception('สามารถอนุมัติได้เฉพาะ request ที่รอดำเนินการ');
+            }
+            $payoutRequest->setRawAttributes($locked->getAttributes(), true);
+
             $payoutRequest->update([
                 'status' => PayoutRequest::STATUS_APPROVED,
                 'approved_by' => $approvedBy,
@@ -286,6 +293,13 @@ class PayoutService
         }
 
         return DB::transaction(function () use ($payoutRequest, $rejectedBy, $reason) {
+            // 🔒 (2026-10-13) lock + ตรวจสถานะซ้ำ — ห้ามปฏิเสธ (คืนรายได้/คืนหนี้) ทับ request ที่เพิ่งถูกอนุมัติจ่าย
+            $locked = PayoutRequest::whereKey($payoutRequest->id)->lockForUpdate()->first();
+            if (! $locked || ! in_array($locked->status, [PayoutRequest::STATUS_PENDING, PayoutRequest::STATUS_SCHEDULED])) {
+                throw new \Exception('ไม่สามารถปฏิเสธ request นี้ได้');
+            }
+            $payoutRequest->setRawAttributes($locked->getAttributes(), true);
+
             // คืนสถานะ earnings
             EarningsLedger::where('payout_request_id', $payoutRequest->id)
                 ->update([
