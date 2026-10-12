@@ -650,6 +650,55 @@ class FortuneChannelManager
      * ⚠️ ไม่แตะ SMS Payment / UniquePaymentAmount / confirmPayment()
      * เปลี่ยนแค่วิธี display ข้อมูล (จาก text → Button Template)
      */
+    /**
+     * 🖼️ (2026-10-12) ชุดตัวอย่างตอนปิดการขาย (FB/Telegram) — ภาพทีละรูป แล้วข้อความยืนยัน
+     *   ต้องส่ง "ก่อน" ข้อความนำ + การ์ดแพคเกจ (ของที่ตามหลังการ์ด/quick reply ดันปุ่มหาย)
+     *   ล้ม = ข้ามเงียบ ๆ ไม่ขวางการ์ด · ใครได้/ไม่ได้ ดู FortuneSalesShowcase::claim()
+     */
+    private function sendSalesShowcaseFacebook(FortuneMessengerSender $fbService, string $userId, array $extra, bool $deepEnabled, bool $celticEnabled, mixed $deepPrice, mixed $celticPrice): void
+    {
+        $urls = \App\Services\Fortune\FortuneSalesShowcase::imageUrls($celticEnabled);
+        if ($urls === [] || ! \App\Services\Fortune\FortuneSalesShowcase::claim($userId)) {
+            return;
+        }
+
+        try {
+            foreach ($urls as $url) {
+                $fbService->sendImage($userId, $url, null, $extra);
+                usleep(500000);
+            }
+            $fbService->sendMessage($userId, \App\Services\Fortune\FortuneSalesShowcase::text($deepEnabled, $celticEnabled, $deepPrice, $celticPrice), $extra);
+        } catch (\Throwable $e) {
+            Log::warning('FB sales showcase: ส่งชุดตัวอย่างไม่สำเร็จ', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🖼️ (2026-10-12) ชุดตัวอย่างตอนปิดการขาย (LINE) — คืน [ภาพ, ข้อความ] ให้รวมเข้า reply เดียวกับการ์ด
+     *   ⚠️ reply ได้ 5 กล่อง (sendMessagesWithReplyFallback ตัดเกินทิ้งเงียบ ๆ) → ภาพ ≤ 3 + ข้อความ 1 + การ์ด 1
+     *      ข้อความชุดตัวอย่างต้องรวมกับข้อความนำในกล่องเดียว และการ์ดต้องอยู่ท้ายสุด (quick reply ติดกล่องสุดท้าย)
+     *
+     * @return array{0: list<array>, 1: string}
+     */
+    private function lineSalesShowcase(LineFortuneService $lineService, string $userId, bool $deepEnabled, bool $celticEnabled, mixed $deepPrice, mixed $celticPrice): array
+    {
+        $urls = \App\Services\Fortune\FortuneSalesShowcase::imageUrls($celticEnabled);
+        if ($urls === [] || ! \App\Services\Fortune\FortuneSalesShowcase::claim($userId)) {
+            return [[], ''];
+        }
+
+        try {
+            return [
+                array_map(fn (string $u) => $lineService->buildImageObject($u), array_slice($urls, 0, 3)),
+                \App\Services\Fortune\FortuneSalesShowcase::text($deepEnabled, $celticEnabled, $deepPrice, $celticPrice),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('LINE sales showcase: ประกอบชุดตัวอย่างไม่สำเร็จ', ['user_id' => $userId, 'error' => $e->getMessage()]);
+
+            return [[], ''];
+        }
+    }
+
     protected function sendFacebookResponse(FortuneMessengerSender $fbService, string $userId, array $result, array $extra = []): bool
     {
         $action = $result['action'] ?? 'unknown';
@@ -913,6 +962,11 @@ class FortuneChannelManager
                                 'q_limit_text' => $tierMeta['q_limit_text'] ?? 'ไม่จำกัด',
                             ]);
 
+                            // 🖼️ (2026-10-12) ลูกค้าใหม่: ภาพตัวอย่างของที่จะได้ ก่อนข้อความนำ + การ์ด
+                            if ($template !== null) {
+                                $this->sendSalesShowcaseFacebook($fbService, $userId, $extra, $deepEnabled && ! $celticOnlyIntro, $celticEnabled, $result['deep_price'] ?? null, $result['celtic_price'] ?? null);
+                            }
+
                             // 🚪 ข้อความนำต้องส่งก่อนการ์ด — generic template ไม่มีที่ให้ใส่ข้อความ
                             //    และเป็นที่เดียวที่บอกทางออก "ไว้คราวหน้า" ให้ลูกค้าที่ไม่อยากดู
                             if ($template !== null && $fbService->sendMessage($userId, $cardBuilder->intro($celticOnlyIntro), $extra)) {
@@ -1105,6 +1159,11 @@ class FortuneChannelManager
                                 'qa_window' => $pricing['qa_window'] ?? 15,
                                 'q_limit_text' => $pricing['q_limit_text'] ?? 'ไม่จำกัด',
                             ]);
+
+                            // 🖼️ (2026-10-12) ลูกค้าใหม่: ภาพตัวอย่างของที่จะได้ ก่อนข้อความนำ + การ์ด
+                            if ($template !== null) {
+                                $this->sendSalesShowcaseFacebook($fbService, $userId, $extra, $deepEnabled, $celticEnabled, $pricing['deep_price'] ?? null, $pricing['celtic_price'] ?? null);
+                            }
 
                             // 🚪 ข้อความนำต้องมาก่อนการ์ด — generic template ไม่มีที่ให้ใส่ข้อความ
                             //    ประกอบ template ให้เสร็จก่อนค่อยส่ง intro จะได้ไม่ส่ง intro ทิ้งเปล่า
@@ -3121,11 +3180,17 @@ class FortuneChannelManager
                                 ? [['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไว้คราวหน้า']]
                                 : [['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']];
                             $welcome = trim((string) ($tierMeta['welcome_line'] ?? ''));
-                            $flexMsgs = [];
-                            if ($welcome !== '') {
-                                $flexMsgs[] = $lineService->buildTextObject(
-                                    $welcome."\n\nเลือกแพคเกจที่ถูกใจ กดปุ่มในกล่องได้เลยค่ะ 👇\nยังไม่แน่ใจ พิมพ์ถามแม่หมอก่อนได้ ไม่คิดค่าใช้จ่ายค่ะ"
-                                );
+                            // 🖼️ (2026-10-12) ลูกค้าใหม่: ภาพตัวอย่าง (≤3) + ข้อความรวมกล่องเดียวกับคำต้อนรับ → รวม ≤ 5 กล่อง
+                            [$showImgs, $showText] = $offerFree
+                                ? [[], '']
+                                : $this->lineSalesShowcase($lineService, $userId, $deepEnabled && ! $celticOnlyIntro, $celticEnabled, $result['deep_price'] ?? null, $result['celtic_price'] ?? null);
+                            $lead = array_filter([
+                                $showText,
+                                $welcome !== '' ? $welcome."\n\nเลือกแพคเกจที่ถูกใจ กดปุ่มในกล่องได้เลยค่ะ 👇\nยังไม่แน่ใจ พิมพ์ถามแม่หมอก่อนได้ ไม่คิดค่าใช้จ่ายค่ะ" : '',
+                            ]);
+                            $flexMsgs = $showImgs;
+                            if ($lead !== []) {
+                                $flexMsgs[] = $lineService->buildTextObject(implode("\n\n", $lead));
                             }
                             $flexMsgs[] = $lineService->buildFlexObject($tierFlex, '💎 เลือกแพคเกจดูดวงกับแม่หมอจันทรา', $declineQr);
 
@@ -3228,8 +3293,12 @@ class FortuneChannelManager
                             ]);
 
                             if ($flex !== null) {
+                                // 🖼️ (2026-10-12) ลูกค้าใหม่: ภาพตัวอย่าง (≤3) + ข้อความรวมกล่องเดียวกับข้อความนำ → รวม ≤ 5 กล่อง
+                                [$showImgs, $showText] = $this->lineSalesShowcase($lineService, $userId, $deepEnabled, $celticEnabled, $pricing['deep_price'] ?? null, $pricing['celtic_price'] ?? null);
+                                $intro = $cardBuilder->intro($celticOnlyIntro);
                                 $cardSent = (bool) $lineService->sendMessagesWithReplyFallback($userId, [
-                                    $lineService->buildTextObject($cardBuilder->intro($celticOnlyIntro)),
+                                    ...$showImgs,
+                                    $lineService->buildTextObject($showText !== '' ? $showText."\n\n".$intro : $intro),
                                     $lineService->buildFlexObject(
                                         $flex,
                                         '💎 อัตราค่าครูของแม่หมอจันทรา',
