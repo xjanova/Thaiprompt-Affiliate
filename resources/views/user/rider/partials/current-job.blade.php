@@ -1,6 +1,7 @@
 {{--
-    การ์ด "งานที่กำลังทำ" (แดชบอร์ด + แท็บงานปัจจุบัน)
+    การ์ด "งานที่กำลังทำ" (แดชบอร์ด + แท็บงานปัจจุบัน) — อ่านอย่างเดียว
     ตัวแปร: $jobData (JobDetail จาก RiderJob::toApiDetail ของไรเดอร์เจ้าของงาน)
+    (2026-10-13) อัปเดตสถานะ/ส่งมอบ/ส่ง GPS ทำในแอป Thai Prompt APP เท่านั้น — เว็บมีแค่ลิงก์รายละเอียด + นำทาง
 --}}
 @php
     $ui = \App\Support\RiderWebUi::class;
@@ -56,15 +57,17 @@
     @if(!empty($jobData['is_cod']))
         <div class="rd-alert rd-tone-warn">
             <i class="fas fa-money-bill-wave"></i>
-            <div>งานนี้<b>เก็บเงินปลายทาง ฿{{ $ui::money($jobData['cod_amount'] ?? 0) }}</b> — รับเงินสดจากลูกค้าก่อนกดส่งสำเร็จ</div>
+            <div>งานนี้<b>เก็บเงินปลายทาง ฿{{ $ui::money($jobData['cod_amount'] ?? 0) }}</b> — รับเงินสดจากลูกค้าก่อนส่งมอบของในแอป</div>
         </div>
     @endif
 
+    <div class="rd-alert rd-tone-info">
+        <i class="fas fa-mobile-screen-button"></i>
+        <div>อัปเดตสถานะ ส่งมอบของ และส่งตำแหน่ง GPS ของงานนี้ในแอป Thai Prompt APP</div>
+    </div>
+
     <div class="rd-row">
-        <a href="{{ route('taladsod.rider.active-job', $cjId) }}" class="rd-btn3d rd-tone-gold" style="flex:1 1 220px;">
-            <i class="fas fa-map-location-dot"></i> ไปหน้าทำงาน (แผนที่ + GPS)
-        </a>
-        <a href="{{ route('user.rider.jobs.show', $cjId) }}" class="tp-btn"><i class="fas fa-list-check"></i> อัปเดตสถานะ</a>
+        <a href="{{ route('user.rider.jobs.show', $cjId) }}" class="tp-btn"><i class="fas fa-circle-info"></i> ดูรายละเอียดงาน</a>
         @if($cjNavTarget)
             <a href="{{ $cjNavTarget }}" target="_blank" rel="noopener noreferrer" class="tp-btn">
                 <i class="fas fa-diamond-turn-right"></i> {{ $cjBeforePickup ? 'นำทางไปร้าน' : 'นำทางไปลูกค้า' }}

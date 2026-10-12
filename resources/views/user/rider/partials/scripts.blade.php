@@ -4,9 +4,8 @@
       ข้อความผิดพลาดเป็นภาษาไทยเสมอ (ไม่โชว์ข้อความดิบจากเซิร์ฟเวอร์ถ้าไม่ใช่รูปแบบของระบบ)
     - upload(): อัปโหลดไฟล์พร้อมแถบความคืบหน้า (XMLHttpRequest) คืนผลลัพธ์รูปแบบเดียวกับ post()
     - geo(): ขอพิกัดจากเบราว์เซอร์ (ไม่ได้ = null ไม่ throw)
-    - rdLocator(): ปุ่ม "อัปเดตตำแหน่ง" สำหรับหน้าที่ไม่มีแดชบอร์ด
     - shrink(): ย่อรูปก่อนอัปโหลด (jpg/png/webp ใหญ่กว่า 1.5MB) ประหยัดเน็ตมือถือ
-    - rdJobBoard(): รายการงานรอรับ (รับงาน / ไม่สนใจ) ใช้ทั้งแดชบอร์ดและหน้างาน
+    (2026-10-13) ลบ rdLocator (ส่งตำแหน่งจากเบราว์เซอร์) + rdJobBoard (รับงาน/ไม่สนใจ) แล้ว — ทำในแอป Thai Prompt APP เท่านั้น
 --}}
 <script>
 (function () {
@@ -140,75 +139,5 @@
     }
 
     window.rdApi = { post: post, upload: upload, geo: geo, shrink: shrink, toast: toast, money: money, statusText: statusText };
-
-    /**
-     * ปุ่ม "อัปเดตตำแหน่ง" (หน้าที่ไม่มีแดชบอร์ด) — ส่งพิกัดแล้วโหลดหน้าใหม่เพื่อค้นหางาน
-     */
-    window.rdLocator = function (url) {
-        return {
-            locating: false,
-            async refresh() {
-                if (this.locating) { return; }
-                this.locating = true;
-                var pos = await geo(12000);
-                if (!pos) {
-                    this.locating = false;
-                    toast('อ่านตำแหน่งไม่ได้ กรุณาอนุญาตให้เว็บเข้าถึงตำแหน่งในเบราว์เซอร์', 'error');
-                    return;
-                }
-                var res = await post(url, { latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy });
-                this.locating = false;
-                if (res.ok) {
-                    toast('อัปเดตตำแหน่งแล้ว กำลังค้นหางานใกล้คุณ...', 'success');
-                    setTimeout(function () { window.location.reload(); }, 700);
-                } else {
-                    toast(res.message, 'error');
-                }
-            }
-        };
-    };
-
-    /**
-     * รายการงานรอรับ — cfg: { canAccept, blockCode, blockMessage, activeJobUrl (มี __ID__), jobsUrl }
-     */
-    window.rdJobBoard = function (cfg) {
-        return {
-            busyId: null,
-            hidden: [],
-            canAccept: !!cfg.canAccept,
-            blockCode: cfg.blockCode || null,
-            blockMessage: cfg.blockMessage || '',
-            isHidden(id) { return this.hidden.indexOf(id) !== -1; },
-            async accept(job) {
-                if (this.busyId) { return; }
-                if (!this.canAccept) {
-                    toast(this.blockMessage || 'ตอนนี้ยังรับงานไม่ได้', 'warning');
-                    if (this.blockCode === 'CONSENT_REQUIRED') { this.$dispatch('rd-need-consent'); }
-                    return;
-                }
-                this.busyId = job.id;
-                var pos = await geo(8000);
-                var res = await post(job.acceptUrl, pos ? { latitude: pos.latitude, longitude: pos.longitude } : {});
-                if (res.ok) {
-                    toast(res.message || 'รับงานสำเร็จ!', 'success');
-                    var id = (res.data && res.data.job && res.data.job.id) ? res.data.job.id : job.id;
-                    window.location.href = String(cfg.activeJobUrl || '').replace('__ID__', String(id));
-                    return;
-                }
-                this.busyId = null;
-                toast(res.message, res.code === 'JOB_TAKEN' ? 'warning' : 'error');
-                if (res.code === 'JOB_TAKEN' || res.code === 'JOB_NOT_FOUND' || res.status === 404) { this.hidden.push(job.id); }
-                if (res.data && res.data.block_code === 'CONSENT_REQUIRED') { this.$dispatch('rd-need-consent'); }
-            },
-            async skip(job) {
-                if (this.busyId) { return; }
-                this.busyId = job.id;
-                var res = await post(job.rejectUrl, {});
-                this.busyId = null;
-                if (res.ok) { this.hidden.push(job.id); toast('ซ่อนงานนี้แล้ว', 'info'); }
-                else { toast(res.message, 'error'); }
-            }
-        };
-    };
 })();
 </script>

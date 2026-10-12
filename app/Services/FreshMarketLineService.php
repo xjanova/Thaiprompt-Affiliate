@@ -787,7 +787,10 @@ class FreshMarketLineService
     // ===== Rider Dispatch Flex Messages =====
 
     /**
-     * สร้าง Flex Message เสนองานให้ไรเดอร์ (มีปุ่มรับ/ปฏิเสธ)
+     * สร้าง Flex Message แจ้งงานให้ไรเดอร์ (ปุ่มเดียว: เปิดแอปเพื่อรับงาน)
+     *
+     * (2026-10-13) owner ตัดสิน: ไรเดอร์รับงานผ่านแอปเท่านั้น — การ์ดนี้ห้ามมีปุ่มรับ/ปฏิเสธใน LINE อีก
+     * (ตอนนี้ไม่มีโค้ดส่งการ์ดนี้ · ถ้าจะส่งต้องเป็น reply เท่านั้น ห้าม push — โควต้า OA 300 ครั้ง/เดือน)
      *
      * @param array $job ข้อมูลงาน: job_id, job_number, title, pickup_address, delivery_address,
      *                   distance_km, total_fee, rider_earnings, dispatch_type
@@ -926,18 +929,10 @@ class FreshMarketLineService
                         'style' => 'primary',
                         'color' => $primaryColor,
                         'action' => [
-                            'type' => 'postback',
-                            'label' => '✅ รับงาน',
-                            'data' => 'action=rider_accept_job&job_id=' . ($job['job_id'] ?? 0),
-                        ],
-                    ],
-                    [
-                        'type' => 'button',
-                        'style' => 'secondary',
-                        'action' => [
-                            'type' => 'postback',
-                            'label' => '❌ ปฏิเสธ',
-                            'data' => 'action=rider_reject_job&job_id=' . ($job['job_id'] ?? 0),
+                            // รับงานในแอปเท่านั้น → ปุ่มเปิดหน้าดาวน์โหลด/เปิดแอป (ไม่มี postback รับงาน)
+                            'type' => 'uri',
+                            'label' => '📲 รับงานในแอป',
+                            'uri' => url((string) config('rider.app_download_path', '/app/download')),
                         ],
                     ],
                 ],

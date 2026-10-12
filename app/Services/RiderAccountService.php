@@ -591,7 +591,8 @@ class RiderAccountService
             }
 
             if ($reason = $rider->onlineBlockReason()) {
-                throw RiderJobException::notEligible($reason['message'], $reason['code']);
+                // ยังไม่ยืนยันตัวตน → 422 KYC_REQUIRED (รูปแบบเดียวกับ middleware) · นอกนั้น 403 NOT_ELIGIBLE
+                throw RiderJobException::fromBlockReason($reason, $rider);
             }
         }
 

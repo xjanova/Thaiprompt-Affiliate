@@ -24,13 +24,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * หน้าเว็บไรเดอร์ /user/rider/* (session auth — ผู้ใช้ที่ล็อกอินเว็บ)
  *
- * - สมัคร (กติกาเดียวกับแอป: RiderRegistrationRequest), อัปโหลดเอกสาร (private disk เท่านั้น)
- * - แดชบอร์ด, รายการงาน (รอรับ/กำลังทำ/ประวัติ), รายละเอียดงาน, รายได้, ตั้งค่า
- * - ปุ่มงานทั้งหมด (รับ/คืน/อัปเดตสถานะ/ส่งสำเร็จ/ส่งไม่สำเร็จ) เรียก RiderJobService ผ่าน trait RiderJobActions
- *   → หน้า taladsod.rider.active-job ใช้ route ชุดนี้แทน API sanctum เดิมที่เรียกไม่ได้จากเว็บ
+ * (2026-10-13) owner ตัดสิน: "ไรเดอร์รับงานผ่านแอปเท่านั้น ในเว็บรับไม่ได้ แต่สมัครและใช้โปรไฟล์ได้"
+ * - ทำได้บนเว็บ: สมัคร (กติกาเดียวกับแอป: RiderRegistrationRequest — ไม่ต้อง eKYC), ดูสถานะ, อัปโหลด/เปิดเอกสาร
+ *   (private disk เท่านั้น), แดชบอร์ด, รายการงาน + รายละเอียดงาน (อ่านอย่างเดียว), รายได้, ตั้งค่า + ความยินยอม, ปิดรับงาน
+ * - ทำไม่ได้บนเว็บ: เปิดรับงาน, รับ/ไม่สนใจ/คืนงาน, อัปเดตสถานะ, ส่งสำเร็จ, ส่งไม่สำเร็จ, แจ้ง GPS, ส่งตำแหน่งจากเบราว์เซอร์
+ *   → ตอบ APP_ONLY (RiderJobException::appOnly) ให้ไปใช้แอป Thai Prompt APP (/app/download)
+ *   route เดิมยังอยู่ (หน้าเว็บที่เปิดค้าง/บุ๊กมาร์กได้คำตอบที่อ่านรู้เรื่อง ไม่ใช่ 404)
  *
  * ทุก action ที่เปลี่ยนข้อมูลตอบได้ 2 แบบ:
- *   - AJAX (Accept: application/json) → {success, code?, message, data}
+ *   - AJAX (Accept: application/json) → {success, code?, message, data} (APP_ONLY = 403)
  *   - ฟอร์มปกติ → redirect กลับพร้อม flash success / error
  */
 class RiderController extends Controller
@@ -271,7 +273,9 @@ class RiderController extends Controller
     // =====================================================
 
     /**
-     * เปิด/ปิดรับงาน (user.rider.availability) — availability=online|offline, latitude?, longitude?
+     * ปิดรับงาน (user.rider.availability) — availability=offline
+     *
+     * (2026-10-13) เปิดรับงาน (online) ทำได้ในแอปเท่านั้น → APP_ONLY · ปิดรับงานทำได้เสมอ (ไรเดอร์ลืมปิดในแอป)
      */
     public function setAvailability(Request $request): JsonResponse|RedirectResponse
     {
@@ -280,18 +284,16 @@ class RiderController extends Controller
 
             $data = $this->validateRiderInput($request, [
                 'availability' => ['required', Rule::in(['online', 'offline'])],
-                'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-                'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             ]);
 
             if ($data['availability'] === 'online') {
-                $this->recordLocationFromRequest($request, $rider);
+                throw RiderJobException::appOnly();
             }
 
-            $rider = $this->accounts->setAvailability($rider, $data['availability']);
+            $rider = $this->accounts->setAvailability($rider, 'offline');
 
             return [
-                $data['availability'] === 'online' ? 'เปิดรับงานแล้ว' : 'ปิดรับงานแล้ว',
+                'ปิดรับงานแล้ว',
                 [
                     'availability' => (string) $rider->availability,
                     'availability_text' => $rider->availability_text,
@@ -324,24 +326,13 @@ class RiderController extends Controller
     }
 
     /**
-     * ส่งตำแหน่งจากเบราว์เซอร์ (user.rider.location) — ใช้ในหน้างานที่กำลังทำ
+     * ส่งตำแหน่งจากเบราว์เซอร์ (user.rider.location)
+     *
+     * (2026-10-13) ตำแหน่งระหว่างรับงาน/ส่งงานส่งจากแอปเท่านั้น → APP_ONLY
      */
     public function updateLocation(Request $request): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'location', function () use ($request) {
-            $rider = $this->riderOrFail();
-            $result = $this->doRecordLocation($request, $rider);
-
-            return [
-                'อัปเดตตำแหน่งสำเร็จ',
-                [
-                    'has_active_job' => (bool) $result['has_active_job'],
-                    'job_id' => $result['job_id'] !== null ? (int) $result['job_id'] : null,
-                    'is_tracking' => (bool) $result['is_tracking'],
-                    'gps_resumed' => (bool) $result['gps_resumed'],
-                ],
-            ];
-        });
+        return $this->appOnly($request, 'location');
     }
 
     // =====================================================
@@ -401,7 +392,9 @@ class RiderController extends Controller
     }
 
     /**
-     * รายละเอียดงาน (user.rider.jobs.show) — เห็นได้เฉพาะงานของตัวเอง หรืองานที่ยังเปิดรับและเสนอให้ตัวเองได้
+     * รายละเอียดงาน (user.rider.jobs.show) — อ่านอย่างเดียว · เห็นได้เฉพาะงานของตัวเอง หรืองานที่ยังเปิดรับและเสนอให้ตัวเองได้
+     *
+     * (2026-10-13) ไม่มีปุ่มทำงานบนเว็บแล้ว — แบนเนอร์พาไปทำงานในแอป
      */
     public function showJob(RiderJob $job)
     {
@@ -418,116 +411,76 @@ class RiderController extends Controller
             'job' => $job,
             'jobData' => $job->toApiDetail($rider),
             'isMine' => $isMine,
-            'allowedActions' => $job->allowedActionsFor($rider),
-            'failureReasons' => array_intersect_key(RiderJob::FAILURE_REASONS, array_flip(RiderJob::RIDER_FAILURE_REASONS)),
             'codAmount' => round((float) $job->cod_amount, 2),
-            'endpoints' => $this->jobEndpoints($job),
-            'activeJobPageUrl' => ($isMine && $job->isTrackable()) ? route('taladsod.rider.active-job', $job) : null,
             'pageTitle' => 'งาน #'.$job->job_number,
         ]);
     }
 
+    // ===== ปุ่มงาน — ทำได้ในแอปเท่านั้น (2026-10-13) =====
+    // route เดิมยังอยู่ ตอบ APP_ONLY (JSON 403 / redirect กลับพร้อม flash error) — ไม่แตะงานเลย
+
     /**
-     * รับงาน (user.rider.jobs.accept)
+     * รับงาน (user.rider.jobs.accept) → APP_ONLY
      */
     public function acceptJob(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'accept', function () use ($request, $job) {
-            $rider = $this->riderOrFail();
-            $accepted = $this->doAccept($request, $job, $rider);
-
-            return ['รับงานสำเร็จ! กรุณาเดินทางไปรับของที่ร้าน', ['job' => $accepted->toApiDetail($rider)], route('taladsod.rider.active-job', $accepted)];
-        });
+        return $this->appOnly($request, 'accept');
     }
 
     /**
-     * ไม่สนใจงาน (user.rider.jobs.reject)
+     * ไม่สนใจงาน (user.rider.jobs.reject) → APP_ONLY
      */
     public function rejectJob(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'reject', function () use ($job) {
-            $this->doReject($job, $this->riderOrFail());
-
-            return ['ซ่อนงานนี้แล้ว', ['job_id' => (int) $job->id], route('user.rider.jobs')];
-        });
+        return $this->appOnly($request, 'reject');
     }
 
     /**
-     * คืนงาน (user.rider.jobs.release) — reason?
+     * คืนงาน (user.rider.jobs.release) → APP_ONLY
      */
     public function releaseJob(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'release', function () use ($request, $job) {
-            $released = $this->doRelease($request, $job, $this->riderOrFail());
-
-            return ['คืนงานแล้ว ระบบจะหาไรเดอร์คนอื่นให้', ['job_id' => (int) $released->id, 'status' => (string) $released->status], route('user.rider.jobs')];
-        });
+        return $this->appOnly($request, 'release');
     }
 
     /**
-     * อัปเดตสถานะระหว่างทาง (user.rider.jobs.status) — status=picking_up|picked_up|delivering, photo?
+     * อัปเดตสถานะระหว่างทาง (user.rider.jobs.status) → APP_ONLY
      */
     public function updateJobStatus(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'update_status', function () use ($request, $job) {
-            $rider = $this->riderOrFail();
-            [$updated, $message] = $this->doUpdateStatus($request, $job, $rider);
-
-            return [$message, ['job' => $updated->toApiDetail($rider)]];
-        });
+        return $this->appOnly($request, 'update_status');
     }
 
     /**
-     * ส่งของสำเร็จ (user.rider.jobs.deliver) — photo, latitude?, longitude?, cod_collected?, note?
+     * ส่งของสำเร็จ (user.rider.jobs.deliver) → APP_ONLY
      */
     public function deliverJob(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'deliver', function () use ($request, $job) {
-            $rider = $this->riderOrFail();
-            [$done, $message] = $this->doDeliver($request, $job, $rider);
-
-            return [$message, [
-                'job' => $done->toApiDetail($rider),
-                'wallet_balance' => $rider->fresh()->walletBalance(),
-            ], route('user.rider.jobs.show', $done)];
-        });
+        return $this->appOnly($request, 'deliver');
     }
 
     /**
-     * ส่งไม่สำเร็จ (user.rider.jobs.fail) — reason_code, note?, photo?
+     * ส่งไม่สำเร็จ (user.rider.jobs.fail) → APP_ONLY
      */
     public function failJob(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'fail', function () use ($request, $job) {
-            $rider = $this->riderOrFail();
-            [$failed, $message] = $this->doFail($request, $job, $rider);
-
-            return [$message, ['job' => $failed->toApiDetail($rider)], route('user.rider.jobs.show', $failed)];
-        });
+        return $this->appOnly($request, 'fail');
     }
 
     /**
-     * แจ้ง GPS หาย (user.rider.jobs.gps-lost)
+     * แจ้ง GPS หาย (user.rider.jobs.gps-lost) → APP_ONLY
      */
     public function reportGpsLost(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'gps_lost', function () use ($job) {
-            $result = $this->doGpsLost($job, $this->riderOrFail());
-
-            return [$result['message'], $result];
-        });
+        return $this->appOnly($request, 'gps_lost');
     }
 
     /**
-     * ยืนยันปิด GPS (user.rider.jobs.gps-off)
+     * ยืนยันปิด GPS (user.rider.jobs.gps-off) → APP_ONLY
      */
     public function confirmGpsOff(Request $request, RiderJob $job): JsonResponse|RedirectResponse
     {
-        return $this->handle($request, 'gps_off', function () use ($job) {
-            $result = $this->doGpsOff($job, $this->riderOrFail());
-
-            return [$result['message'], $result];
-        });
+        return $this->appOnly($request, 'gps_off');
     }
 
     // =====================================================
@@ -712,24 +665,15 @@ class RiderController extends Controller
     }
 
     /**
-     * URL ของปุ่มงานทั้งหมด (ให้หน้าเว็บเรียกด้วย fetch + CSRF)
+     * ตอบ "ทำได้ในแอปเท่านั้น" (APP_ONLY) — AJAX = JSON 403 / ฟอร์มปกติ = redirect กลับพร้อม flash error
      *
-     * @return array<string, string>
+     * ไม่ตรวจว่าเป็นไรเดอร์ก่อน: ผลเหมือนกันทุกคน และไม่แตะข้อมูลงานเลย
      */
-    private function jobEndpoints(RiderJob $job): array
+    private function appOnly(Request $request, string $action): JsonResponse|RedirectResponse
     {
-        return [
-            'accept' => route('user.rider.jobs.accept', $job),
-            'reject' => route('user.rider.jobs.reject', $job),
-            'release' => route('user.rider.jobs.release', $job),
-            'status' => route('user.rider.jobs.status', $job),
-            'deliver' => route('user.rider.jobs.deliver', $job),
-            'fail' => route('user.rider.jobs.fail', $job),
-            'gps_lost' => route('user.rider.jobs.gps-lost', $job),
-            'gps_off' => route('user.rider.jobs.gps-off', $job),
-            'location' => route('user.rider.location'),
-            'show' => route('user.rider.jobs.show', $job),
-        ];
+        return $this->handle($request, $action, function () {
+            throw RiderJobException::appOnly();
+        });
     }
 
     /**

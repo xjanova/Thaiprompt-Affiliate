@@ -154,14 +154,20 @@ class RiderWebPagesTest extends TestCase
         $this->actingAs($user)->get(route('user.rider.register'))->assertRedirect(route('user.rider.dashboard'));
         $this->actingAs($user)->get(route('user.rider.status'))->assertRedirect(route('user.rider.dashboard'));
 
+        // (2026-10-13) รับงานในแอปเท่านั้น — เว็บเห็นงาน (อ่านอย่างเดียว) + แบนเนอร์ดาวน์โหลดแอป ไม่มีปุ่มรับงาน/สวิตช์เปิดรับงาน
         $this->actingAs($user)->get(route('user.rider.dashboard'))
             ->assertOk()
             ->assertSee('tp-root', false)
             ->assertSee('rd-scope', false)
             ->assertSee('รายได้วันนี้')
             ->assertSee((string) $job->job_number)
-            ->assertSee('รับงานนี้')
-            // URL ปุ่มรับงานอยู่ใน config ของ Alpine (Js::from → เครื่องหมาย / ถูก escape) จึงตรวจลิงก์รายละเอียดแทน
+            ->assertSee('รับงานและทำงานส่งได้ผ่านแอป Thai Prompt APP เท่านั้น')
+            ->assertSee(url('/app/download'), false)
+            ->assertSee('ดาวน์โหลดแอป')
+            ->assertDontSee('รับงานนี้')
+            ->assertDontSee('/jobs/'.$job->id.'/accept', false)
+            ->assertSee('แตะเพื่อปิดรับงาน') // online อยู่ → ปิดรับงานบนเว็บได้
+            ->assertDontSee('แตะเพื่อเปิดรับงาน')
             ->assertSee(route('user.rider.jobs.show', $job), false)
             ->assertDontSee('ยินยอมให้ลูกค้าเห็นตำแหน่งของคุณระหว่างส่งงาน');
 
@@ -178,12 +184,21 @@ class RiderWebPagesTest extends TestCase
         $this->actingAs($user)->get(route('user.rider.settings'))
             ->assertOk()->assertSee('name="preferred_job_types[]"', false)->assertSee('ยินยอมแล้ว');
 
-        // งานที่ยังเปิดรับ → เห็นปุ่มรับงาน แต่ไม่เห็นชื่อ/เบอร์ลูกค้า
+        // งานที่ยังเปิดรับ → อ่านรายละเอียดได้ (ไม่เห็นชื่อ/เบอร์ลูกค้า) แต่ไม่มีปุ่มรับงาน — ให้รับในแอป
         $this->actingAs($user)->get(route('user.rider.jobs.show', $job))
             ->assertOk()
-            ->assertSee('รับงานนี้')
-            ->assertSee(route('user.rider.jobs.accept', $job), false)
+            ->assertSee('ดาวน์โหลดแอป')
+            ->assertSee('กดรับงานจากรายการงานใกล้คุณ')
+            ->assertDontSee('รับงานนี้')
+            ->assertDontSee(route('user.rider.jobs.accept', $job), false)
             ->assertDontSee('0822222222');
+
+        // ปิดรับงานบนเว็บได้ · เปิดรับงานบนเว็บไม่ได้ (APP_ONLY)
+        $this->actingAs($user)->postJson(route('user.rider.availability'), ['availability' => 'offline'])
+            ->assertOk()->assertJsonPath('data.availability', 'offline');
+        $this->actingAs($user)->postJson(route('user.rider.availability'), ['availability' => 'online'])
+            ->assertStatus(403)->assertJsonPath('code', 'APP_ONLY');
+        $this->assertSame('offline', $rider->fresh()->availability);
     }
 
     public function test_approved_rider_without_consent_sees_consent_card(): void
@@ -198,6 +213,9 @@ class RiderWebPagesTest extends TestCase
 
     public function test_job_detail_follows_the_job_through_delivery(): void
     {
+        // ชุดนี้ดูหน้าเว็บตามสถานะงาน — ปิดระบบสแกนส่งมอบ เพื่อปิดงานด้วยปุ่มส่งของแบบเดิม (ทางที่เหลือเมื่อแอดมินปิดระบบ)
+        Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+
         $rider = $this->makeRider();
         $job = $this->createJob();
         $user = $rider->user;
@@ -205,16 +223,19 @@ class RiderWebPagesTest extends TestCase
 
         $service->accept($job, $rider->fresh());
 
+        // งานที่กำลังส่ง: เห็นข้อมูลลูกค้า แต่ไม่มีปุ่มทำงาน/หน้าทำงานบนเว็บ — อัปเดตสถานะในแอป
         $this->actingAs($user)->get(route('user.rider.jobs.show', $job))
             ->assertOk()
-            ->assertSee('เริ่มเดินทางไปรับของ')
-            ->assertSee('ยืนยันรับของแล้ว')
-            ->assertSee(route('taladsod.rider.active-job', $job), false)
             ->assertSee('0822222222')
-            ->assertDontSee('ยืนยันส่งสำเร็จ');
+            ->assertSee('ดาวน์โหลดแอป')
+            ->assertDontSee('เริ่มเดินทางไปรับของ')
+            ->assertDontSee('ยืนยันรับของแล้ว')
+            ->assertDontSee('ยืนยันส่งสำเร็จ')
+            ->assertDontSee(route('taladsod.rider.active-job', $job), false);
 
         $this->actingAs($user)->get(route('user.rider.dashboard'))
-            ->assertOk()->assertSee('งานที่กำลังทำ')->assertSee(route('taladsod.rider.active-job', $job), false);
+            ->assertOk()->assertSee('งานที่กำลังทำ')->assertSee('อัปเดตสถานะงานในแอป')
+            ->assertDontSee(route('taladsod.rider.active-job', $job), false);
         $this->actingAs($user)->get(route('user.rider.jobs', ['tab' => 'current']))
             ->assertOk()->assertSee((string) $job->job_number);
 
@@ -222,9 +243,8 @@ class RiderWebPagesTest extends TestCase
 
         $this->actingAs($user)->get(route('user.rider.jobs.show', $job))
             ->assertOk()
-            ->assertSee('ยืนยันส่งสำเร็จ')
-            ->assertSee('name="reason_code"', false)
-            ->assertDontSee('เริ่มเดินทางไปรับของ');
+            ->assertDontSee('ยืนยันส่งสำเร็จ')
+            ->assertDontSee('name="reason_code"', false);
 
         $service->deliver($job->fresh(), $rider->fresh(), UploadedFile::fake()->create('d.jpg', 80, 'image/jpeg'), null, null, false);
 
@@ -346,6 +366,7 @@ class RiderWebPagesTest extends TestCase
     private function makeRider(array $overrides = [], float $walletBalance = 0): Rider
     {
         $user = User::factory()->create(['role' => 'user']);
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill(array_merge([

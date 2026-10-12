@@ -3,8 +3,8 @@
     Controller: User\RiderController@index
     ตัวแปร: rider, riderData (ชุดเดียวกับ API /rider/status), stats, activeJob, activeJobData, todayEarnings,
             weekEarnings, availableJobs, availableReason, canAcceptJobs, blockReason, recentJobs, pageTitle
-    ปุ่ม: POST user.rider.availability {availability, latitude?, longitude?} · POST user.rider.consent {location_consent}
-          POST user.rider.location (ส่งตำแหน่งทุก 60 วิ ระหว่างเปิดรับงาน) · รับงาน POST user.rider.jobs.accept/{job}
+    (2026-10-13) รับงาน/เปิดรับงาน/ส่งตำแหน่ง ทำได้ในแอปเท่านั้น — หน้านี้อ่านอย่างเดียว + แบนเนอร์ดาวน์โหลดแอป
+    ปุ่มที่เหลือ: POST user.rider.availability {availability: offline} (ปิดรับงานได้เสมอ) · POST user.rider.consent {location_consent}
 --}}
 @extends('layouts.user-v4')
 
@@ -28,14 +28,9 @@
     $dashCfg = [
         'availability' => $availability,
         'consent' => $hasConsent,
-        'hasActiveJob' => $activeJobData !== null,
-        'canGoOnline' => (bool) ($rd['can_go_online'] ?? false),
-        'onlineBlock' => $onlineBlock['message'] ?? null,
-        'locationFresh' => (bool) ($rd['last_location']['is_fresh'] ?? false),
         'urls' => [
             'availability' => route('user.rider.availability'),
             'consent' => route('user.rider.consent'),
-            'location' => route('user.rider.location'),
         ],
     ];
 
@@ -61,10 +56,12 @@
 
 @section('content')
 <div class="rd-scope" x-data="rdDashboard({{ \Illuminate\Support\Js::from($dashCfg) }})"
-     x-on:rd-refresh-location.window="refreshLocation(true)"
      x-on:rd-need-consent.window="focusConsent()">
 
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'dashboard'])
+
+    {{-- ── รับงานได้ในแอปเท่านั้น (2026-10-13) ─────────────────── --}}
+    @include('user.rider.partials.app-only-banner')
 
     {{-- ── หัวการ์ด: โปรไฟล์ + สวิตช์รับงาน ───────────────────── --}}
     <section class="tp-card rd-hero">
@@ -88,22 +85,31 @@
                     @endif
                 </div>
             </div>
-            <button type="button" class="rd-switch" x-on:click="toggle()"
-                    :disabled="busy || availability === 'busy'"
-                    :aria-pressed="availability === 'online' ? 'true' : 'false'"
-                    aria-label="เปิดหรือปิดรับงาน">
-                <span class="knob {{ $availability === 'online' ? 'rd-tone-ok' : ($availability === 'busy' ? 'rd-tone-info' : 'rd-tone-muted') }}"
-                      :class="availability === 'online' ? 'rd-tone-ok' : (availability === 'busy' ? 'rd-tone-info' : 'rd-tone-muted')">
-                    <i class="fas" :class="busy ? 'fa-circle-notch rd-spin' : (availability === 'busy' ? 'fa-person-biking' : 'fa-power-off')"></i>
-                </span>
-                <span style="text-align:left;">
-                    <span style="display:block;" x-text="availability === 'online' ? 'พร้อมรับงาน' : (availability === 'busy' ? 'กำลังส่งงาน' : 'ปิดรับงาน')">{{ $availabilityLabel }}</span>
-                    <span class="rd-small rd-muted" style="display:block; font-weight:600;"
-                          x-text="availability === 'online' ? 'แตะเพื่อปิดรับงาน' : (availability === 'busy' ? 'ส่งงานให้เสร็จก่อน' : 'แตะเพื่อเปิดรับงาน')">
-                        {{ $availability === 'online' ? 'แตะเพื่อปิดรับงาน' : ($availability === 'busy' ? 'ส่งงานให้เสร็จก่อน' : 'แตะเพื่อเปิดรับงาน') }}
+            {{-- สถานะรับงาน: บนเว็บปิดรับงานได้อย่างเดียว (เปิดรับงานในแอป) --}}
+            @if($availability === 'online')
+                <button type="button" class="rd-switch" x-on:click="goOffline()" :disabled="busy"
+                        aria-pressed="true" aria-label="ปิดรับงาน">
+                    <span class="knob rd-tone-ok">
+                        <i class="fas" :class="busy ? 'fa-circle-notch rd-spin' : 'fa-power-off'"></i>
                     </span>
-                </span>
-            </button>
+                    <span style="text-align:left;">
+                        <span style="display:block;">{{ $availabilityLabel }}</span>
+                        <span class="rd-small rd-muted" style="display:block; font-weight:600;">แตะเพื่อปิดรับงาน</span>
+                    </span>
+                </button>
+            @else
+                <div class="rd-switch" role="status" aria-label="สถานะรับงาน: {{ $availabilityLabel }}">
+                    <span class="knob {{ $availability === 'busy' ? 'rd-tone-info' : 'rd-tone-muted' }}">
+                        <i class="fas {{ $availability === 'busy' ? 'fa-person-biking' : 'fa-mobile-screen-button' }}"></i>
+                    </span>
+                    <span style="text-align:left;">
+                        <span style="display:block;">{{ $availabilityLabel }}</span>
+                        <span class="rd-small rd-muted" style="display:block; font-weight:600;">
+                            {{ $availability === 'busy' ? 'อัปเดตสถานะงานในแอป' : 'เปิดรับงานในแอป' }}
+                        </span>
+                    </span>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -122,6 +128,9 @@
             <i class="fas fa-circle-exclamation"></i>
             <div>
                 <b>ยังเปิดรับงานไม่ได้:</b> {{ $onlineBlock['message'] }}
+                @if(($onlineBlock['code'] ?? '') === 'KYC_REQUIRED')
+                    <div style="margin-top:6px;" class="rd-small">ยืนยันตัวตนด้วยบัตรประชาชน + ใบหน้าได้ในแอป Thai Prompt APP</div>
+                @endif
                 @if(($onlineBlock['code'] ?? '') === 'DOCUMENTS_REVIEW_PENDING' || !empty($rd['documents_missing']))
                     <div style="margin-top:6px;"><a href="{{ route('user.rider.documents') }}" class="rd-link"><i class="fas fa-folder-open"></i> ตรวจสอบเอกสาร</a></div>
                 @endif
@@ -236,7 +245,7 @@
             <div class="rd-empty" style="padding:18px;">
                 <div class="ic"><i class="fas fa-flag-checkered"></i></div>
                 <div style="font-weight:700;">ยังไม่มีงาน — งานแรกของคุณกำลังจะมา!</div>
-                <div class="rd-muted rd-small" style="margin-top:4px;">เปิดรับงานไว้ แล้วรับงานที่อยู่ใกล้คุณได้เลย</div>
+                <div class="rd-muted rd-small" style="margin-top:4px;">เปิดรับงานในแอป Thai Prompt APP แล้วรับงานที่อยู่ใกล้คุณได้เลย</div>
             </div>
         @else
             <div class="rd-list">
@@ -258,73 +267,19 @@
             consent: !!cfg.consent,
             consentChecked: false,
             busy: false,
-            locating: false,
-            heartbeat: null,
-            init() {
-                if (this.availability === 'online') {
-                    // เปิดรับงานอยู่ → ส่งตำแหน่งทันทีถ้าตำแหน่งเก่า แล้วส่งทุก 60 วินาทีระหว่างเปิดหน้านี้ (กันระบบปิดรับงานอัตโนมัติ)
-                    if (!cfg.locationFresh) { this.refreshLocation(false); }
-                    this.heartbeat = setInterval(() => { if (!document.hidden) { this.refreshLocation(false); } }, 60000);
-                    document.addEventListener('visibilitychange', () => {
-                        if (!document.hidden && this.availability === 'online') { this.refreshLocation(false); }
-                    });
-                }
-            },
-            destroy() {
-                if (this.heartbeat) { clearInterval(this.heartbeat); this.heartbeat = null; }
-            },
-            async refreshLocation(manual) {
-                if (this.locating) { return; }
-                this.locating = true;
-                const pos = await window.rdApi.geo(12000);
-                if (!pos) {
-                    this.locating = false;
-                    if (manual) { window.rdApi.toast('อ่านตำแหน่งไม่ได้ กรุณาอนุญาตให้เว็บเข้าถึงตำแหน่งในเบราว์เซอร์', 'error'); }
-                    return;
-                }
-                const res = await window.rdApi.post(cfg.urls.location, {
-                    latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy,
-                    speed: pos.speed, heading: pos.heading
-                });
-                this.locating = false;
-                if (!manual) { return; }
-                if (res.ok) {
-                    window.rdApi.toast('อัปเดตตำแหน่งแล้ว กำลังค้นหางานใกล้คุณ...', 'success');
-                    setTimeout(() => window.location.reload(), 700);
-                } else {
-                    window.rdApi.toast(res.message, 'error');
-                }
-            },
-            async toggle() {
-                if (this.busy) { return; }
-                if (this.availability === 'busy') {
-                    window.rdApi.toast('คุณมีงานที่กำลังทำอยู่ ส่งงานให้เสร็จก่อนนะ', 'info');
-                    return;
-                }
-                const goOnline = this.availability !== 'online';
-                if (goOnline && !cfg.canGoOnline && cfg.onlineBlock) {
-                    window.rdApi.toast(cfg.onlineBlock, 'warning');
-                    return;
-                }
+            // ปิดรับงาน (ทำได้บนเว็บ) — เปิดรับงาน/ส่งตำแหน่งทำในแอปเท่านั้น
+            async goOffline() {
+                if (this.busy || this.availability !== 'online') { return; }
                 this.busy = true;
-                const payload = { availability: goOnline ? 'online' : 'offline' };
-                if (goOnline) {
-                    const pos = await window.rdApi.geo(12000);
-                    if (pos) { payload.latitude = pos.latitude; payload.longitude = pos.longitude; }
-                }
-                const res = await window.rdApi.post(cfg.urls.availability, payload);
+                const res = await window.rdApi.post(cfg.urls.availability, { availability: 'offline' });
                 if (res.ok) {
-                    this.availability = (res.data && res.data.availability) ? res.data.availability : payload.availability;
-                    window.rdApi.toast(res.message || (goOnline ? 'เปิดรับงานแล้ว' : 'ปิดรับงานแล้ว'), 'success');
+                    this.availability = (res.data && res.data.availability) ? res.data.availability : 'offline';
+                    window.rdApi.toast(res.message || 'ปิดรับงานแล้ว', 'success');
                     setTimeout(() => window.location.reload(), 600);
                     return;
                 }
                 this.busy = false;
-                if (res.code === 'GPS_REQUIRED') {
-                    window.rdApi.toast('กรุณาอนุญาตให้เว็บเข้าถึงตำแหน่ง (แตะไอคอนแม่กุญแจข้างช่องที่อยู่เว็บ) แล้วลองอีกครั้ง', 'error');
-                } else {
-                    window.rdApi.toast(res.message, 'error');
-                }
+                window.rdApi.toast(res.message, 'error');
             },
             focusConsent() {
                 if (this.$refs.consentCard) { this.$refs.consentCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); }

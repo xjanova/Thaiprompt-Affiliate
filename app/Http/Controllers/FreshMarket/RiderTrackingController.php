@@ -158,7 +158,8 @@ class RiderTrackingController extends Controller
     /**
      * หน้างานที่กำลังทำของไรเดอร์บนเว็บ (taladsod.rider.active-job) — ต้อง login + เป็นเจ้าของงาน
      *
-     * ปุ่มทั้งหมดเรียก route session user.rider.* (ไม่สร้าง Sanctum token ใส่หน้าเว็บอีกต่อไป)
+     * (2026-10-13) owner ตัดสิน: ไรเดอร์ทำงานส่งได้ผ่านแอปเท่านั้น — หน้าทำงานบนเว็บ (แผนที่ + ส่ง GPS + ปุ่มส่งของ)
+     * ปิดแล้ว ⇒ พาไปหน้ารายละเอียดงาน (อ่านอย่างเดียว + แบนเนอร์ดาวน์โหลดแอป) · ลิงก์เก่าที่บุ๊กมาร์กไว้ยังเปิดได้ไม่ 404
      */
     public function riderActiveJob(RiderJob $job)
     {
@@ -169,37 +170,11 @@ class RiderTrackingController extends Controller
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงงานนี้');
         }
 
-        // งานจบแล้ว → ไปหน้ารายละเอียดงานแทน (ไม่ติดตาม GPS ต่อ)
-        if (! $job->isTrackable()) {
-            return redirect()->route('user.rider.jobs.show', $job)
-                ->with('info', 'งานนี้'.$job->status_text.'แล้ว');
-        }
-
-        $gps = new RiderGpsTrackingService;
-        $settings = $gps->settings;
-
-        return view('taladsod.rider-active-job', [
-            'job' => $job,
-            'rider' => $rider,
-            'orderNumber' => $this->orderNumber($job),
-            'customerLocation' => $gps->getCustomerLocation($job),
-            'pickupLocation' => $gps->getPickupLocation($job),
-            'googleMapsApiKey' => config('services.google_maps.api_key', ''),
-            'gpsUpdateInterval' => max(10, (int) ($settings->gps_update_interval_seconds ?? 30)) * 1000,
-            'gpsLostTimeout' => max(30, (int) ($settings->gps_lost_timeout_seconds ?? 120)) * 1000,
-            'maxWarnings' => (int) ($settings->gps_warning_max ?? 3),
-            'codAmount' => round((float) $job->cod_amount, 2),
-            'endpoints' => [
-                'location' => route('user.rider.location'),
-                'status' => route('user.rider.jobs.status', $job),
-                'deliver' => route('user.rider.jobs.deliver', $job),
-                'fail' => route('user.rider.jobs.fail', $job),
-                'gps_lost' => route('user.rider.jobs.gps-lost', $job),
-                'gps_off' => route('user.rider.jobs.gps-off', $job),
-                'job_detail' => route('user.rider.jobs.show', $job),
-                'jobs' => route('user.rider.jobs'),
-            ],
-        ]);
+        // งานจบแล้ว → บอกสถานะ · งานยังวิ่ง → บอกให้ทำต่อในแอป
+        return redirect()->route('user.rider.jobs.show', $job)
+            ->with('info', $job->isTrackable()
+                ? 'อัปเดตสถานะและส่งงานนี้ได้ในแอป Thai Prompt APP เท่านั้น'
+                : 'งานนี้'.$job->status_text.'แล้ว');
     }
 
     /**

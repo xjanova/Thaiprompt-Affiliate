@@ -25,11 +25,12 @@ use Tests\Feature\Shop\Concerns\BuildsShopFixtures;
 use Tests\TestCase;
 
 /**
- * ไรเดอร์รอบ 2 — รอบแก้หลังรีวิว (FIXES.md §A1): ตัดสิน "ต้องสแกนส่งมอบ" ตอนไรเดอร์กดรับงาน
+ * ไรเดอร์รอบ 2: ตัดสิน "ต้องสแกนส่งมอบ" ตอนไรเดอร์กดรับงาน
  *
- * ต้องครบ: เปิด rider.handover_enabled + ผู้ซื้อสั่งจากแอป build ≥ 43 + ไรเดอร์กดรับจากแอป build ≥ 43
- * ตารางทดสอบ: ผู้ซื้อ (เว็บ/LINE = NULL · แอปเก่า 42 · แอปใหม่ 43) × ไรเดอร์ (เว็บ · LINE · แอปเก่า · ไม่ส่ง header · แอปใหม่)
- * + เก็บ client_app_build ตอนสั่งผ่านแอป (ร้านค้า/ตลาดสด) · รับงานใหม่หลังคืนงาน/แอดมินมอบหมาย = คิดใหม่
+ * (2026-10-13) owner ตัดสิน: ไรเดอร์รับงานผ่านแอปเท่านั้น → เลิกดู build แอปของผู้ซื้อ/ไรเดอร์
+ * ต้องสแกนส่งมอบเสมอเมื่อ: เปิด rider.handover_enabled + งานมีออเดอร์ต้นทาง
+ * (เว็บ/LINE รับงานไม่ได้แล้ว · API ไม่ส่ง X-App-Build ≥ rider.min_app_build = 426 — ดู RiderAppOnlyTest)
+ * + ยังเก็บ client_app_build ตอนสั่งผ่านแอป (ร้านค้า/ตลาดสด) ไว้ดูย้อนหลัง
  */
 class HandoverGatingTest extends TestCase
 {
@@ -107,104 +108,84 @@ class HandoverGatingTest extends TestCase
     }
 
     // =====================================================
-    // ตอนรับงาน: ตาราง ผู้ซื้อ × ไรเดอร์
+    // ตอนรับงาน: ไม่ดู build แอปของผู้ซื้อแล้ว (2026-10-13)
     // =====================================================
 
-    public function test_new_app_buyer_and_new_app_rider_get_handover(): void
+    public function test_app_rider_gets_handover_for_every_buyer_build(): void
     {
-        $job = $this->pendingShopJob(43);
-        $rider = $this->makeRider();
+        // ผู้ซื้อสั่งจากเว็บ/LINE (NULL) · แอปเก่า (42) · แอปใหม่ (43/44) → ต้องสแกนส่งมอบเหมือนกันหมด
+        foreach ([null, 42, 43, 44] as $buyerBuild) {
+            $job = $this->pendingShopJob($buyerBuild);
 
-        $this->apiAccept($rider, $job, '43')->assertOk()
-            ->assertJsonPath('data.job.handover.required', true)
-            ->assertJsonPath('data.job.handover.status', 'waiting');
+            $this->apiAccept($this->makeRider(), $job, '44')->assertOk()
+                ->assertJsonPath('data.job.handover.required', true)
+                ->assertJsonPath('data.job.handover.status', 'waiting');
 
-        $this->assertTrue((bool) $job->fresh()->handover_required);
+            $job->refresh();
+            $this->assertTrue((bool) $job->handover_required, 'buyer build '.var_export($buyerBuild, true));
+            $this->assertContains('release', $job->allowedActionsFor($job->rider));
+        }
     }
 
-    public function test_rider_side_without_supported_app_stays_legacy(): void
+    public function test_rider_without_current_app_cannot_accept_at_all(): void
     {
-        // แอปไรเดอร์รุ่นเก่า (42) / ไม่ส่ง header / ค่าแปลก
-        foreach (['42', null, '43abc'] as $build) {
+        // แอปไรเดอร์รุ่นเก่า / ไม่ส่ง header / ค่าแปลก → 426 (เดิมรับได้เป็นงานแบบเดิม = ช่องส่งของไม่ต้องสแกน)
+        foreach (['43', null, '44abc'] as $build) {
             $job = $this->pendingShopJob(43);
-            $this->apiAccept($this->makeRider(), $job, $build)->assertOk()->assertJsonPath('data.job.handover', null);
-            $this->assertFalse((bool) $job->fresh()->handover_required, 'rider build '.var_export($build, true));
+            $this->apiAccept($this->makeRider(), $job, $build)->assertStatus(426)->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
+            $this->assertSame('pending', $job->fresh()->status, 'rider build '.var_export($build, true));
         }
 
         // หน้าเว็บ /user/rider (แม้แนบ header มา ก็ไม่ใช่แอป)
         $job = $this->pendingShopJob(43);
-        $rider = $this->makeRider();
-        $this->actingAs($rider->user)
-            ->postJson(route('user.rider.jobs.accept', $job), [], ['X-App-Build' => '43'])
-            ->assertOk();
-        $this->assertSame('accepted', $job->fresh()->status);
-        $this->assertFalse((bool) $job->fresh()->handover_required, 'web');
-
-        // LINE postback (FreshMarketChannelManager เรียก accept โดยไม่มี build)
-        $job = $this->pendingShopJob(43);
-        app(RiderJobService::class)->accept($job, $this->makeRider());
-        $this->assertSame('accepted', $job->fresh()->status);
-        $this->assertFalse((bool) $job->fresh()->handover_required, 'line');
-    }
-
-    public function test_buyer_side_without_supported_app_stays_legacy(): void
-    {
-        // ผู้ซื้อสั่งจากหน้าเว็บ/LINE (NULL) หรือแอปเก่า (42) → ไรเดอร์แอปใหม่ก็ยังเป็นงานแบบเดิม
-        foreach ([null, 42] as $buyerBuild) {
-            $job = $this->pendingShopJob($buyerBuild);
-            $this->apiAccept($this->makeRider(), $job, '43')->assertOk()->assertJsonPath('data.job.handover', null);
-
-            $job->refresh();
-            $this->assertFalse((bool) $job->handover_required, 'buyer build '.var_export($buyerBuild, true));
-            $this->assertContains('release', $job->allowedActionsFor($job->rider));
-        }
+        $this->actingAs($this->makeRider()->user)
+            ->postJson(route('user.rider.jobs.accept', $job), [], ['X-App-Build' => '44'])
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'APP_ONLY');
+        $this->assertSame('pending', $job->fresh()->status);
     }
 
     public function test_setting_off_keeps_legacy_even_for_new_apps(): void
     {
         Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
 
-        $job = $this->pendingShopJob(43);
-        $this->apiAccept($this->makeRider(), $job, '43')->assertOk();
+        $job = $this->pendingShopJob(44);
+        $this->apiAccept($this->makeRider(), $job, '44')->assertOk()->assertJsonPath('data.job.handover', null);
 
         $this->assertFalse((bool) $job->fresh()->handover_required);
     }
 
-    public function test_fresh_market_source_follows_the_same_gate(): void
+    public function test_fresh_market_source_follows_the_same_rule(): void
     {
         $buyer = User::factory()->create();
         $order = $this->makeFreshMarketOrder($buyer);
-        FreshMarketOrder::whereKey($order->id)->update(['order_status' => 'ready', 'client_app_build' => 43]);
+        FreshMarketOrder::whereKey($order->id)->update(['order_status' => 'ready', 'client_app_build' => null]);
         $job = $this->pendingJobFor($order->fresh(), $buyer);
 
-        $this->apiAccept($this->makeRider(), $job, '43')->assertOk()->assertJsonPath('data.job.handover.required', true);
+        $this->apiAccept($this->makeRider(), $job, '44')->assertOk()->assertJsonPath('data.job.handover.required', true);
         $this->assertTrue((bool) $job->fresh()->handover_required);
     }
 
-    public function test_gate_is_recomputed_on_every_accept(): void
+    public function test_handover_stays_required_after_release_and_admin_reassign(): void
     {
-        $job = $this->pendingShopJob(43);
+        $job = $this->pendingShopJob(null);
         $appRider = $this->makeRider();
 
-        // แอปใหม่รับ → ต้องสแกน → คืนงาน → ไรเดอร์หน้าเว็บรับต่อ → แบบเดิม
-        $this->apiAccept($appRider, $job, '43')->assertOk();
+        // รับ → ต้องสแกน → คืนงาน → ไรเดอร์คนใหม่รับต่อ → ยังต้องสแกน
+        $this->apiAccept($appRider, $job, '44')->assertOk();
         $this->assertTrue((bool) $job->fresh()->handover_required);
 
         Sanctum::actingAs($appRider->user);
-        $this->postJson('/api/v1/rider/jobs/'.$job->id.'/release', ['reason' => 'รถเสีย'])->assertOk();
+        $this->postJson('/api/v1/rider/jobs/'.$job->id.'/release', ['reason' => 'รถเสีย'], ['X-App-Build' => '44'])->assertOk();
         $this->assertSame('pending', $job->fresh()->status);
 
-        $webRider = $this->makeRider(['full_name' => 'ไรเดอร์ เว็บ']);
-        $this->actingAs($webRider->user)->postJson(route('user.rider.jobs.accept', $job))->assertOk();
-        $this->assertFalse((bool) $job->fresh()->handover_required);
+        $this->apiAccept($this->makeRider(['full_name' => 'ไรเดอร์ คนที่สอง']), $job, '44')->assertOk();
+        $this->assertTrue((bool) $job->fresh()->handover_required);
 
-        // แอดมินมอบหมายก่อนรับของ → ไม่รู้ว่าไรเดอร์ใช้อะไร → แบบเดิม (ส่งได้ทุกช่องทาง)
-        $job2 = $this->pendingShopJob(43);
-        $this->apiAccept($this->makeRider(), $job2, '43')->assertOk();
-        $this->assertTrue((bool) $job2->fresh()->handover_required);
+        // แอดมินมอบหมายก่อนรับของ → ไรเดอร์คนใหม่ทำงานผ่านแอปเท่านั้นอยู่แล้ว → ยังต้องสแกน (เดิมถูกปลดเป็นแบบเดิม)
         $admin = User::factory()->create(['role' => 'admin']);
-        app(RiderJobService::class)->adminReassign($job2->fresh(), $this->makeRider(['full_name' => 'ไรเดอร์ ใหม่']), $admin);
-        $this->assertFalse((bool) $job2->fresh()->handover_required);
+        app(RiderJobService::class)->adminReassign($job->fresh(), $this->makeRider(['full_name' => 'ไรเดอร์ ใหม่']), $admin);
+        $this->assertTrue((bool) $job->fresh()->handover_required);
     }
 
     public function test_client_app_build_helper_normalizes_values(): void
@@ -261,7 +242,7 @@ class HandoverGatingTest extends TestCase
             'dispatch_type' => 'broadcast',
         ])->save();
 
-        $this->assertFalse((bool) $job->fresh()->handover_required, 'สร้างงานใหม่ = แบบเดิมเสมอ');
+        $this->assertFalse((bool) $job->fresh()->handover_required, 'สร้างงานใหม่ = ยังไม่ตัดสิน (ตัดสินตอนรับงาน)');
 
         return $job->fresh();
     }

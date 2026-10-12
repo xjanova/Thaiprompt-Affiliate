@@ -1,11 +1,9 @@
 {{--
-    รายละเอียดงานไรเดอร์ (user.rider.jobs.show) — แสดงปุ่มเฉพาะที่ทำได้ตอนนี้ (allowedActions)
+    รายละเอียดงานไรเดอร์ (user.rider.jobs.show) — อ่านอย่างเดียว
     Controller: User\RiderController@showJob (403 ถ้าไม่ใช่งานของตัวเอง/ไม่ได้เสนอให้)
-    ตัวแปร: rider, job, jobData (JobDetail), isMine, allowedActions, failureReasons, codAmount,
-            endpoints{accept,reject,release,status,deliver,fail,gps_lost,gps_off,location,show}, activeJobPageUrl, pageTitle
-    ฟอร์ม (ทำงานได้ทั้ง AJAX และโพสต์ปกติ):
-      accept {latitude?, longitude?} · reject · release {reason?} · status {status, photo?}
-      deliver multipart {photo*, latitude?, longitude?, cod_collected=1 (เมื่อมี COD), note?} · fail {reason_code*, note?, photo?}
+    ตัวแปร: rider, job, jobData (JobDetail), isMine, codAmount, pageTitle
+    (2026-10-13) owner ตัดสิน: รับงาน/คืนงาน/อัปเดตสถานะ/ส่งมอบ/ส่งไม่สำเร็จ ทำในแอป Thai Prompt APP เท่านั้น
+    → ไม่มีฟอร์มทำงานบนเว็บแล้ว (route เดิมตอบ APP_ONLY) — งานที่ยังเปิด/กำลังส่ง แสดงแบนเนอร์ดาวน์โหลดแอป
 --}}
 @extends('layouts.user-v4')
 
@@ -25,7 +23,6 @@
     $customerLive = $jobData['customer_live_location'] ?? null;
     $isOpen = $job->isOpen();
     $isActive = in_array($status, \App\Models\RiderJob::ACTIVE_STATUSES, true);
-    $acceptBlock = (! $isMine && in_array('accept', $allowedActions, true)) ? $rider->acceptBlockReason() : null;
     $steps = $ui::progressSteps($status, $timeline);
 
     $completedAt = $ui::carbon($jobData['completed_at'] ?? null);
@@ -46,34 +43,28 @@
         ['ยกเลิก', $timeline['cancelled_at'] ?? null, 'fa-ban'],
         ['ส่งไม่สำเร็จ', $timeline['failed_at'] ?? null, 'fa-triangle-exclamation'],
     ], fn ($r) => !empty($r[1]));
-
-    $detailCfg = [
-        'activeJobUrl' => route('taladsod.rider.active-job', ['job' => '__ID__']),
-        'jobsUrl' => route('user.rider.jobs'),
-        'earnings' => (float) ($jobData['rider_earnings'] ?? 0),
-    ];
 @endphp
 
 @section('content')
-<div class="rd-scope" x-data="rdJobDetail({{ \Illuminate\Support\Js::from($detailCfg) }})">
+<div class="rd-scope">
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'jobs'])
 
     <a href="{{ route('user.rider.jobs', ['tab' => $isActive ? 'current' : ($isOpen ? 'available' : 'history')]) }}" class="rd-link rd-small" style="align-self:flex-start;">
         <i class="fas fa-arrow-left"></i> กลับไปหน้างาน
     </a>
 
-    {{-- ── ฉลองส่งสำเร็จ (หลังส่งภายใน 30 นาที / หลังกดส่งสำเร็จผ่าน AJAX) ── --}}
-    <template x-if="done">
-        <section class="tp-card rd-celebrate">
-            <div class="burst" aria-hidden="true"></div>
-            <div style="font-size:40px;">🎉</div>
-            <div class="rd-h2" style="justify-content:center; margin-top:6px;">ส่งสำเร็จ! เก่งมาก</div>
-            <div class="big" style="margin-top:10px;" x-text="'+฿' + window.rdApi.money(done.earnings)"></div>
-            <div class="rd-muted rd-small" style="margin-top:8px;">กำลังอัปเดตข้อมูลงาน...</div>
-        </section>
-    </template>
+    {{-- ── รับงาน/ทำงานส่งได้ในแอปเท่านั้น (งานที่ยังเปิดรับ หรือกำลังส่ง) ── --}}
+    @if($isOpen || ($isMine && $isActive))
+        @include('user.rider.partials.app-only-banner', [
+            'appOnlyNote' => $isOpen
+                ? 'งานนี้ยังรอไรเดอร์ — เปิดแอปแล้วกดรับงานจากรายการงานใกล้คุณ'
+                : 'อัปเดตสถานะ ส่งมอบของ (สแกน QR / ถ่ายรูป) และส่งตำแหน่ง GPS ของงานนี้ในแอป',
+        ])
+    @endif
+
+    {{-- ── ฉลองส่งสำเร็จ (หลังส่งภายใน 30 นาที) ── --}}
     @if($celebrate)
-        <section class="tp-card rd-celebrate" x-show="!done">
+        <section class="tp-card rd-celebrate">
             <div class="burst" aria-hidden="true"></div>
             <div style="font-size:40px;">🎉</div>
             <div class="rd-h2" style="justify-content:center; margin-top:6px;">ส่งสำเร็จ! ขอบคุณที่ส่งของอย่างตั้งใจ</div>
@@ -86,8 +77,8 @@
                 @endif
             </div>
             <div class="rd-row" style="justify-content:center; margin-top:16px;">
-                <a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="rd-btn3d rd-tone-ok"><i class="fas fa-bolt"></i> รับงานถัดไป</a>
-                <a href="{{ route('user.rider.earnings', ['period' => 'today']) }}" class="tp-btn"><i class="fas fa-coins"></i> ดูรายได้วันนี้</a>
+                <a href="{{ route('user.rider.earnings', ['period' => 'today']) }}" class="rd-btn3d rd-tone-ok"><i class="fas fa-coins"></i> ดูรายได้วันนี้</a>
+                <a href="{{ route('user.rider.jobs', ['tab' => 'history']) }}" class="tp-btn"><i class="fas fa-clock-rotate-left"></i> ประวัติงาน</a>
             </div>
         </section>
     @endif
@@ -117,12 +108,6 @@
         </div>
     </section>
 
-    @if($activeJobPageUrl)
-        <a href="{{ $activeJobPageUrl }}" class="rd-btn3d rd-tone-gold lg block">
-            <i class="fas fa-map-location-dot"></i> เปิดหน้าทำงาน (แผนที่ + ส่งตำแหน่ง GPS)
-        </a>
-    @endif
-
     @if($isMine || !$isOpen)
         <section class="tp-card">
             <div class="rd-steps" aria-label="ความคืบหน้างาน">
@@ -133,163 +118,6 @@
                     </div>
                 @endforeach
             </div>
-        </section>
-    @endif
-
-    {{-- ── ปุ่มทำงาน (เฉพาะที่ทำได้ตอนนี้) ───────────────────────── --}}
-    @if(count($allowedActions) > 0)
-        <section class="tp-card rd-stack" style="box-shadow:var(--card-shadow), 0 0 0 2px color-mix(in srgb, var(--accent1) 40%, transparent);">
-            <h2 class="rd-h2"><i class="fas fa-hand-point-right" style="color:var(--accent1);"></i> ขั้นตอนถัดไป</h2>
-
-            {{-- รับงาน --}}
-            @if(in_array('accept', $allowedActions, true))
-                @if($acceptBlock)
-                    <div class="rd-alert rd-tone-warn">
-                        <i class="fas fa-circle-exclamation"></i>
-                        <div>
-                            <b>ยังรับงานไม่ได้:</b> {{ $acceptBlock['message'] }}
-                            @if(($acceptBlock['code'] ?? '') === 'CONSENT_REQUIRED' || ($acceptBlock['code'] ?? '') === 'OFFLINE')
-                                <div style="margin-top:6px;"><a href="{{ route('user.rider.dashboard') }}" class="rd-link">ไปที่แดชบอร์ดเพื่อ{{ ($acceptBlock['code'] ?? '') === 'OFFLINE' ? 'เปิดรับงาน' : 'ให้ความยินยอม' }} <i class="fas fa-arrow-right"></i></a></div>
-                            @endif
-                        </div>
-                    </div>
-                @endif
-                <form method="POST" action="{{ $endpoints['accept'] }}" x-on:submit.prevent="submit($event, 'accept', { geo: true })">
-                    @csrf
-                    <button type="submit" class="rd-btn3d rd-tone-ok lg block" :disabled="busy !== null || {{ $acceptBlock ? 'true' : 'false' }}" @if($acceptBlock) disabled @endif>
-                        <i class="fas" :class="busy === 'accept' ? 'fa-circle-notch rd-spin' : 'fa-hand-pointer'"></i>
-                        รับงานนี้ · ได้ ฿{{ $ui::money($jobData['rider_earnings'] ?? 0) }}
-                    </button>
-                </form>
-                <form method="POST" action="{{ $endpoints['reject'] }}" x-on:submit.prevent="submit($event, 'reject', {})">
-                    @csrf
-                    <button type="submit" class="tp-btn" style="width:100%;" :disabled="busy !== null"><i class="fas fa-eye-slash"></i> ไม่สนใจงานนี้</button>
-                </form>
-            @endif
-
-            {{-- เดินทางไปรับของ --}}
-            @if(in_array('picking_up', $allowedActions, true))
-                <form method="POST" action="{{ $endpoints['status'] }}" x-on:submit.prevent="submit($event, 'picking_up', {})">
-                    @csrf
-                    <input type="hidden" name="status" value="picking_up">
-                    <button type="submit" class="rd-btn3d rd-tone-info block" :disabled="busy !== null">
-                        <i class="fas" :class="busy === 'picking_up' ? 'fa-circle-notch rd-spin' : 'fa-motorcycle'"></i> เริ่มเดินทางไปรับของ
-                    </button>
-                </form>
-            @endif
-
-            {{-- รับของแล้ว (แนบรูปได้) --}}
-            @if(in_array('picked_up', $allowedActions, true))
-                <form method="POST" action="{{ $endpoints['status'] }}" enctype="multipart/form-data" class="rd-stack"
-                      x-on:submit.prevent="submit($event, 'picked_up', {})">
-                    @csrf
-                    <input type="hidden" name="status" value="picked_up">
-                    <div class="rd-field">
-                        <label for="pickup-photo">รูปสินค้าตอนรับของ (ไม่บังคับ แต่แนะนำ)</label>
-                        <input id="pickup-photo" type="file" name="photo" accept="image/*" capture="environment" class="tp-input" x-on:change="preview($event, 'pickupPreview')">
-                        <template x-if="pickupPreview"><img :src="pickupPreview" alt="ตัวอย่างรูปรับของ" class="rd-thumb"></template>
-                    </div>
-                    <button type="submit" class="rd-btn3d rd-tone-gold block" :disabled="busy !== null">
-                        <i class="fas" :class="busy === 'picked_up' ? 'fa-circle-notch rd-spin' : 'fa-box'"></i> ยืนยันรับของแล้ว
-                    </button>
-                </form>
-            @endif
-
-            {{-- เริ่มนำส่ง --}}
-            @if(in_array('delivering', $allowedActions, true))
-                <form method="POST" action="{{ $endpoints['status'] }}" x-on:submit.prevent="submit($event, 'delivering', {})">
-                    @csrf
-                    <input type="hidden" name="status" value="delivering">
-                    <button type="submit" class="rd-btn3d rd-tone-info block" :disabled="busy !== null">
-                        <i class="fas" :class="busy === 'delivering' ? 'fa-circle-notch rd-spin' : 'fa-truck-fast'"></i> เริ่มนำส่งให้ลูกค้า
-                    </button>
-                </form>
-            @endif
-
-            {{-- ส่งสำเร็จ (รูปบังคับ + ยืนยันเก็บเงินปลายทาง) --}}
-            @if(in_array('deliver', $allowedActions, true))
-                <form method="POST" action="{{ $endpoints['deliver'] }}" enctype="multipart/form-data" class="rd-stack"
-                      x-on:submit.prevent="submit($event, 'deliver', { geo: true })"
-                      style="padding:16px; border-radius:18px; box-shadow:var(--inset-sm);">
-                    @csrf
-                    <div class="rd-h2" style="font-size:15px;"><i class="fas fa-house-circle-check" style="color:var(--rd-ok);"></i> ส่งของถึงมือลูกค้า</div>
-                    <div class="rd-field">
-                        <label for="deliver-photo">รูปยืนยันการส่ง <span class="req">*</span></label>
-                        <input id="deliver-photo" type="file" name="photo" accept="image/*" capture="environment" required class="tp-input" x-on:change="preview($event, 'deliverPreview')">
-                        <span class="rd-hint">ถ่ายให้เห็นสินค้ากับหน้าบ้าน/ผู้รับ (ไม่เกิน 10MB)</span>
-                        <template x-if="deliverPreview"><img :src="deliverPreview" alt="ตัวอย่างรูปยืนยันการส่ง" class="rd-thumb"></template>
-                    </div>
-                    @if($codAmount > 0)
-                        <label class="rd-alert rd-tone-warn" style="cursor:pointer;">
-                            <input type="checkbox" name="cod_collected" value="1" required style="width:22px; height:22px; accent-color:var(--accent1); flex:none; margin-top:1px;">
-                            <span>
-                                <b>ฉันเก็บเงินสด ฿{{ $ui::money($codAmount) }} จากลูกค้าแล้ว</b><br>
-                                <span class="rd-small">เงินนี้รวมค่าส่งของคุณแล้ว — ระบบจะหักส่วนที่เป็นของร้าน/ระบบ ฿{{ $ui::money(max(0, $codAmount - (float) ($jobData['rider_earnings'] ?? 0))) }} จากกระเป๋าของคุณอัตโนมัติ</span>
-                            </span>
-                        </label>
-                    @endif
-                    <div class="rd-field">
-                        <label for="deliver-note">หมายเหตุ (ไม่บังคับ)</label>
-                        <input id="deliver-note" type="text" name="note" maxlength="500" class="tp-input" placeholder="เช่น ฝากไว้กับ รปภ.">
-                    </div>
-                    <button type="submit" class="rd-btn3d rd-tone-ok lg block" :disabled="busy !== null">
-                        <i class="fas" :class="busy === 'deliver' ? 'fa-circle-notch rd-spin' : 'fa-circle-check'"></i> ยืนยันส่งสำเร็จ · รับ ฿{{ $ui::money($jobData['rider_earnings'] ?? 0) }}
-                    </button>
-                </form>
-            @endif
-
-            {{-- ส่งไม่สำเร็จ --}}
-            @if(in_array('fail', $allowedActions, true))
-                <details class="rd-details tp-card" style="padding:4px 16px;">
-                    <summary><i class="fas fa-triangle-exclamation" style="color:var(--rd-bad);"></i> ส่งไม่สำเร็จ? <i class="fas fa-chevron-down chev"></i></summary>
-                    <form method="POST" action="{{ $endpoints['fail'] }}" enctype="multipart/form-data" class="rd-stack" style="padding-bottom:14px;"
-                          x-on:submit.prevent="submit($event, 'fail', { confirm: 'ยืนยันว่าส่งของไม่สำเร็จ? ทีมงานจะติดต่อเพื่อจัดการคืนสินค้า' })">
-                        @csrf
-                        <div class="rd-field">
-                            <span class="rd-label">เหตุผล <span class="req">*</span></span>
-                            <div class="rd-grid" style="--rd-min:170px; gap:8px;">
-                                @foreach($failureReasons as $code => $label)
-                                    <label class="rd-choice">
-                                        <input type="radio" name="reason_code" value="{{ $code }}" required x-model="failReason">
-                                        <span class="box" style="min-height:48px; padding:8px 12px;"><span style="font-size:13px; font-weight:700;">{{ $label }}</span></span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-                        <div class="rd-field">
-                            <label for="fail-note">รายละเอียด <span class="req" x-show="failReason === 'other'">*</span></label>
-                            <textarea id="fail-note" name="note" maxlength="1000" class="tp-input" :required="failReason === 'other'" placeholder="เล่าสั้น ๆ ว่าเกิดอะไรขึ้น"></textarea>
-                        </div>
-                        <div class="rd-field">
-                            <label for="fail-photo">รูปประกอบ (ไม่บังคับ)</label>
-                            <input id="fail-photo" type="file" name="photo" accept="image/*" capture="environment" class="tp-input" x-on:change="preview($event, 'failPreview')">
-                            <template x-if="failPreview"><img :src="failPreview" alt="ตัวอย่างรูปประกอบ" class="rd-thumb"></template>
-                        </div>
-                        <button type="submit" class="rd-btn3d rd-tone-bad block" :disabled="busy !== null">
-                            <i class="fas" :class="busy === 'fail' ? 'fa-circle-notch rd-spin' : 'fa-flag'"></i> บันทึกว่าส่งไม่สำเร็จ
-                        </button>
-                    </form>
-                </details>
-            @endif
-
-            {{-- คืนงาน (ก่อนรับของ) --}}
-            @if(in_array('release', $allowedActions, true))
-                <details class="rd-details tp-card" style="padding:4px 16px;">
-                    <summary><i class="fas fa-rotate-left" style="color:var(--ink2);"></i> คืนงานนี้ (ก่อนรับของเท่านั้น) <i class="fas fa-chevron-down chev"></i></summary>
-                    <form method="POST" action="{{ $endpoints['release'] }}" class="rd-stack" style="padding-bottom:14px;"
-                          x-on:submit.prevent="submit($event, 'release', { confirm: 'ยืนยันคืนงานนี้? ระบบจะส่งงานให้ไรเดอร์คนอื่น' })">
-                        @csrf
-                        <div class="rd-hint">คืนงานบ่อยอาจทำให้ได้รับงานน้อยลง ใช้เมื่อจำเป็นเท่านั้น</div>
-                        <div class="rd-field">
-                            <label for="release-reason">เหตุผล (ไม่บังคับ)</label>
-                            <input id="release-reason" type="text" name="reason" maxlength="255" class="tp-input" placeholder="เช่น รถเสีย / ร้านปิด">
-                        </div>
-                        <button type="submit" class="tp-btn rd-btn-ghost rd-tone-bad" style="width:100%;" :disabled="busy !== null">
-                            <i class="fas" :class="busy === 'release' ? 'fa-circle-notch rd-spin' : 'fa-rotate-left'"></i> คืนงาน
-                        </button>
-                    </form>
-                </details>
-            @endif
         </section>
     @endif
 
@@ -457,74 +285,3 @@
     @endif
 </div>
 @endsection
-
-@push('scripts')
-    @include('user.rider.partials.scripts')
-    <script>
-    window.rdJobDetail = function (cfg) {
-        return {
-            busy: null,
-            done: null,
-            failReason: '',
-            pickupPreview: null,
-            deliverPreview: null,
-            failPreview: null,
-            preview(event, key) {
-                const file = event.target.files && event.target.files[0];
-                if (this[key]) { URL.revokeObjectURL(this[key]); this[key] = null; }
-                if (!file) { return; }
-                if (file.size > 10 * 1024 * 1024) {
-                    window.rdApi.toast('รูปต้องมีขนาดไม่เกิน 10MB กรุณาถ่ายใหม่หรือเลือกรูปที่เล็กลง', 'error');
-                    event.target.value = '';
-                    return;
-                }
-                if (/^image\//.test(file.type)) { this[key] = URL.createObjectURL(file); }
-            },
-            async submit(event, action, opts) {
-                const form = event.target;
-                if (this.busy) { return; }
-                if (typeof form.reportValidity === 'function' && !form.reportValidity()) { return; }
-                if (opts.confirm && !window.confirm(opts.confirm)) { return; }
-                this.busy = action;
-
-                const data = new FormData(form);
-                const photo = data.get('photo');
-                if (photo instanceof File) {
-                    if (photo.size > 0) { data.set('photo', await window.rdApi.shrink(photo)); } else { data.delete('photo'); }
-                }
-                if (opts.geo) {
-                    const pos = await window.rdApi.geo(8000);
-                    if (pos) { data.set('latitude', pos.latitude); data.set('longitude', pos.longitude); }
-                }
-
-                const res = await window.rdApi.post(form.action, data);
-                if (!res.ok) {
-                    this.busy = null;
-                    window.rdApi.toast(res.message, res.code === 'JOB_TAKEN' ? 'warning' : 'error');
-                    if (res.code === 'JOB_TAKEN') { setTimeout(() => { window.location.href = cfg.jobsUrl; }, 1500); }
-                    return;
-                }
-
-                window.rdApi.toast(res.message || 'บันทึกแล้ว', 'success');
-                if (action === 'accept') {
-                    const id = (res.data && res.data.job && res.data.job.id) ? res.data.job.id : '';
-                    window.location.href = id ? String(cfg.activeJobUrl).replace('__ID__', String(id)) : window.location.href;
-                    return;
-                }
-                if (action === 'release' || action === 'reject') {
-                    window.location.href = cfg.jobsUrl;
-                    return;
-                }
-                if (action === 'deliver') {
-                    const job = res.data && res.data.job ? res.data.job : null;
-                    this.done = { earnings: job && job.rider_earnings !== undefined ? job.rider_earnings : cfg.earnings };
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    setTimeout(() => window.location.reload(), 2600);
-                    return;
-                }
-                setTimeout(() => window.location.reload(), 500);
-            }
-        };
-    };
-    </script>
-@endpush

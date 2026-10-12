@@ -42,13 +42,13 @@ class RiderJobService
     /**
      * ไรเดอร์กดรับงาน
      *
-     * ไรเดอร์รอบ 2: ตัดสินตอนนี้ว่างานต้อง "สแกนส่งมอบ" หรือไม่ (RiderJob::handoverRequiredOnAccept)
+     * ไรเดอร์รอบ 2: ตัดสินตอนนี้ว่างานต้อง "สแกนส่งมอบ" หรือไม่ (RiderJob::handoverRequiredOnAccept — ไม่ขึ้นกับ build แอปแล้ว)
+     * (2026-10-13) ไรเดอร์รับงานได้ผ่านแอปเท่านั้น — หน้าเว็บ/LINE ถูกปิดที่ช่องทางของตัวเอง, API บังคับ X-App-Build ≥ rider.min_app_build
+     * ด่าน eKYC อยู่ใน Rider::onlineBlockReason → ยังไม่ยืนยันตัวตน = 422 KYC_REQUIRED ทุกช่องทาง
      *
-     * @param  int|null  $riderAppBuild  build ของแอปไรเดอร์ (header X-App-Build) — หน้าเว็บ/LINE/แอปเก่า = null → ส่งของแบบเดิม
-     *
-     * @throws RiderJobException JOB_TAKEN|NOT_ELIGIBLE|HAS_ACTIVE_JOB|INSUFFICIENT_COD_CREDIT|SELF_ORDER
+     * @throws RiderJobException JOB_TAKEN|NOT_ELIGIBLE|KYC_REQUIRED|HAS_ACTIVE_JOB|INSUFFICIENT_COD_CREDIT|SELF_ORDER
      */
-    public function accept(RiderJob $job, Rider $rider, ?int $riderAppBuild = null): RiderJob
+    public function accept(RiderJob $job, Rider $rider): RiderJob
     {
         $rider->refresh();
         $job->refresh();
@@ -80,12 +80,12 @@ class RiderJobService
 
         $this->assertWithinPickupRadius($job, $rider);
 
-        $accepted = DB::transaction(function () use ($job, $rider, $riderAppBuild) {
+        $accepted = DB::transaction(function () use ($job, $rider) {
             /** @var Rider $lockedRider */
             $lockedRider = Rider::whereKey($rider->id)->lockForUpdate()->firstOrFail();
 
             if ($reason = $lockedRider->onlineBlockReason()) {
-                throw RiderJobException::notEligible($reason['message'], $reason['code']);
+                throw RiderJobException::fromBlockReason($reason, $lockedRider);
             }
 
             // อ่านแบบล็อก (เห็นข้อมูลล่าสุดที่ commit แล้ว) → กดรับ 2 งานพร้อมกันจะผ่านได้งานเดียว
@@ -135,8 +135,9 @@ class RiderJobService
             $query->where(fn ($q) => $q->whereNull('preferred_until')->orWhere('preferred_until', '<=', now())->orWhere('preferred_rider_id', $lockedRider->id));
 
             $updated = $query->update([
-                // ไรเดอร์รอบ 2: สแกนส่งมอบเฉพาะเมื่อผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่มีหน้าส่งมอบ (ไม่งั้นใช้ปุ่มส่งของแบบเดิม)
-                'handover_required' => $job->handoverRequiredOnAccept($riderAppBuild),
+                // ไรเดอร์รอบ 2: งานที่มีออเดอร์ต้นทาง + เปิด rider.handover_enabled = ต้องสแกนส่งมอบเสมอ
+                // (ผู้ซื้อที่ไม่มีแอปใช้ทางสำรองรูป 2 รอบ + ปลดเงินอัตโนมัติ)
+                'handover_required' => $job->handoverRequiredOnAccept(),
                 'rider_id' => $lockedRider->id,
                 'status' => 'accepted',
                 'accepted_at' => now(),
@@ -327,6 +328,11 @@ class RiderJobService
 
                 if ((int) $locked->rider_id !== (int) $rider->id) {
                     throw RiderJobException::notYourJob();
+                }
+
+                // ตรวจซ้ำหลังล็อกแถวงาน — ปุ่มส่งของแบบเดิมต้องไม่ปิดงานที่ต้องสแกนส่งมอบได้ไม่ว่าทางไหน
+                if ($locked->handover_required) {
+                    throw RiderJobException::handoverRequired();
                 }
 
                 $from = (string) $locked->status;
@@ -690,7 +696,11 @@ class RiderJobService
         }
 
         if ($reason = $newRider->onlineBlockReason()) {
-            throw RiderJobException::notEligible($reason['message'], $reason['code']);
+            // ข้อความสำหรับแอดมิน (ไม่ใช่ข้อความชวนไรเดอร์ยืนยันตัวตน)
+            throw RiderJobException::notEligible(
+                $reason['code'] === RiderJobException::KYC_REQUIRED ? 'ไรเดอร์คนนี้ยังไม่ได้ยืนยันตัวตน (eKYC) จึงมอบหมายงานไม่ได้' : $reason['message'],
+                $reason['code']
+            );
         }
 
         if (in_array((int) $newRider->user_id, $job->partyUserIds(), true)) {
@@ -733,9 +743,12 @@ class RiderJobService
 
             // เปลี่ยนไรเดอร์ = ลูกค้ายังไม่ได้ยินยอมแชร์ตำแหน่งกับไรเดอร์คนใหม่ → หยุดแชร์ (ลูกค้าต้องเปิดใหม่เอง เหมือนตอนไรเดอร์คืนงาน)
             $locked->fill(array_merge([
-                // ไรเดอร์รอบ 2: แอดมินมอบหมาย = ไม่รู้ว่าไรเดอร์คนใหม่ใช้แอปรุ่นไหน → ก่อนรับของใช้ขั้นตอนเดิม (ส่งได้ทุกช่องทาง)
-                // หลังรับของแล้วคงค่าเดิม (ผู้ซื้ออาจเปิดหน้าส่งมอบอยู่)
-                'handover_required' => in_array($from, ['pending', 'accepted', 'picking_up'], true) ? false : (bool) $locked->handover_required,
+                // (2026-10-13) แอดมินมอบหมายต้องไม่ปลดการสแกนส่งมอบ (เดิมตั้ง false ก่อนรับของ = ช่องให้ส่งของแบบเดิมได้)
+                // ไรเดอร์คนใหม่ทำงานได้ผ่านแอปเท่านั้นอยู่แล้ว → งานที่รับไปแล้วคงค่าเดิม
+                // งานที่ยังรอไรเดอร์ (pending → accepted ตรงนี้) ยังไม่เคยตัดสิน → ตัดสินแบบเดียวกับตอนไรเดอร์กดรับเอง
+                'handover_required' => $from === 'pending'
+                    ? ((bool) $locked->handover_required || $locked->handoverRequiredOnAccept())
+                    : (bool) $locked->handover_required,
                 'rider_id' => $lockedRider->id,
                 'status' => $from === 'pending' ? 'accepted' : $from,
                 'accepted_at' => $from === 'pending' ? now() : ($locked->accepted_at ?? now()),
@@ -1096,7 +1109,7 @@ class RiderJobService
             throw RiderJobException::hasActiveJob($rider->activeJob()?->id);
         }
 
-        throw RiderJobException::notEligible($reason['message'], $reason['code']);
+        throw RiderJobException::fromBlockReason($reason, $rider);
     }
 
     /**

@@ -3,6 +3,7 @@
     Controller: User\RiderController@jobs (?tab=available|current|history&status=completed|cancelled|failed)
     ตัวแปร: rider, tab, statusFilter, availableJobs, availableReason, currentJob, currentJobData, history (paginator),
             historyItems (JobSummary[]), canAcceptJobs, blockReason, pageTitle
+    (2026-10-13) อ่านอย่างเดียว — รับงาน/ทำงานส่งในแอป Thai Prompt APP เท่านั้น
 --}}
 @extends('layouts.user-v4')
 
@@ -27,15 +28,18 @@
 @endphp
 
 @section('content')
-<div class="rd-scope" x-data="rdLocator({{ \Illuminate\Support\Js::from(route('user.rider.location')) }})" x-on:rd-refresh-location.window="refresh()">
+<div class="rd-scope" x-data="{}">
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'jobs'])
+
+    {{-- ── รับงานได้ในแอปเท่านั้น (2026-10-13) ─────────────────── --}}
+    @include('user.rider.partials.app-only-banner', ['appOnlyNote' => 'หน้านี้ดูงานใกล้คุณ งานที่กำลังส่ง และประวัติงานได้ — กดรับงานและอัปเดตสถานะงานในแอป'])
 
     <section class="tp-card rd-hero">
         <div class="rd-hero-in">
             <span class="tp-tile" style="width:52px; height:52px; border-radius:17px; font-size:22px;"><i class="fas fa-route"></i></span>
             <div style="flex:1 1 220px; min-width:0;">
                 <h1 class="rd-h1">งานไรเดอร์</h1>
-                <div class="rd-muted rd-small">รับงานใกล้คุณ ติดตามงานที่กำลังส่ง และดูประวัติงานทั้งหมด</div>
+                <div class="rd-muted rd-small">ดูงานใกล้คุณ ติดตามงานที่กำลังส่ง และดูประวัติงานทั้งหมด</div>
             </div>
             <span class="rd-pill {{ $rider->availability === 'online' ? 'rd-tone-ok' : ($rider->availability === 'busy' ? 'rd-tone-info' : 'rd-tone-muted') }}">
                 <span class="rd-dot {{ $rider->availability === 'online' ? 'live' : '' }}"></span> {{ $rider->availability_text }}
@@ -60,7 +64,7 @@
         @if($rider->status === 'approved' && $rider->availability !== 'online' && !$currentJobData)
             <div class="rd-alert rd-tone-info">
                 <i class="fas fa-circle-info"></i>
-                <div>เปิดรับงานได้ที่<a href="{{ route('user.rider.dashboard') }}" class="rd-link"> แดชบอร์ด</a> แล้วงานใกล้คุณจะแสดงที่นี่</div>
+                <div>เปิดรับงานในแอป Thai Prompt APP แล้วงานใกล้คุณจะแสดงที่นี่</div>
             </div>
         @endif
         @include('user.rider.partials.available-jobs')
@@ -73,7 +77,7 @@
             <div class="tp-card rd-empty">
                 <div class="ic"><i class="fas fa-motorcycle"></i></div>
                 <div style="font-weight:800; font-size:16px;">ยังไม่มีงานที่กำลังทำ</div>
-                <p class="rd-muted" style="font-size:13px; margin:6px auto 14px; max-width:380px;">ไปที่แท็บงานรอรับเพื่อเลือกงานใกล้คุณ</p>
+                <p class="rd-muted" style="font-size:13px; margin:6px auto 14px; max-width:380px;">รับงานใกล้คุณได้ในแอป Thai Prompt APP</p>
                 <a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="rd-btn3d rd-tone-gold sm"><i class="fas fa-bolt"></i> ดูงานรอรับ</a>
             </div>
         @endif

@@ -576,6 +576,7 @@ class FreshMarketMobileVendorTest extends TestCase
     private function makeRider(): Rider
     {
         $user = User::factory()->create();
+        $user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนเปิดรับงาน/รับงาน (2026-10-13)
 
         $rider = new Rider;
         $rider->forceFill([
