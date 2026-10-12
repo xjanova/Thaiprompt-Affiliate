@@ -1452,6 +1452,24 @@ class User extends Authenticatable
             }
         });
 
+        // 🪪 ยืนยันตัวตนผ่าน (kyc_status → approved) → ร้านตลาดสดของผู้ใช้เริ่มขายได้ (ถ้าเปิดอนุมัติร้านอัตโนมัติ)
+        //    ครอบทุกทางที่อนุมัติ: AI eKYC อนุมัติเอง, แอดมินอนุมัติ eKYC (เว็บ/แอปแอดมิน), อนุมัติ KYC แบบเดิม
+        //    รันในธุรกรรมเดียวกับการอนุมัติ (ถ้าการอนุมัติถูกย้อน ร้านก็ย้อนตาม) · ห้ามทำให้การอนุมัติล้ม
+        static::updated(function ($user) {
+            if (! $user->wasChanged('kyc_status') || $user->kyc_status !== 'approved') {
+                return;
+            }
+
+            try {
+                FreshMarketSeller::promoteAfterOwnerKyc($user);
+            } catch (\Throwable $e) {
+                \Log::warning('FreshMarket: เปิดขายร้านหลังยืนยันตัวตนไม่สำเร็จ', [
+                    'user_id' => $user->id,
+                    'error' => class_basename($e),
+                ]);
+            }
+        });
+
         // ลบข้อมูล KYC และรูปภาพเมื่อผู้ใช้ถูกลบ (Privacy Protection)
         static::deleting(function ($user) {
             // ลบ KYC verifications ทั้งหมดของ user

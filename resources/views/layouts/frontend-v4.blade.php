@@ -193,6 +193,8 @@
     @if(session('error'))<div x-data x-init="$dispatch('notify',{type:'error',message:@js(session('error'))})"></div>@endif
     @if(session('info'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('info'))})"></div>@endif
     @if(session('warning'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('warning'))})"></div>@endif
+    {{-- 🪪 ผู้ซื้อยังไม่ยืนยันตัวตน → แถบปุ่มดาวน์โหลดแอปไปยืนยัน (EkycGate::FLASH_KEY) --}}
+    <x-ekyc-required-banner />
 
     @stack('scripts')
 </body>

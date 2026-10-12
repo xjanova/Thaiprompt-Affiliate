@@ -469,7 +469,23 @@ class FreshMarketSellerListingApiController extends FreshMarketApiController
             return [$seller, null, $this->error('LISTING_NOT_FOUND', 'ไม่พบสินค้า หรือคุณไม่มีสิทธิ์แก้ไข', 404)];
         }
 
+        if ($error = $this->suspendedWriteError($request, $seller)) {
+            return [$seller, null, $error];
+        }
+
         return [$seller, $listing, null];
+    }
+
+    /**
+     * ร้านถูกระงับ/ปิดใช้งาน → คำสั่งที่แก้ข้อมูล (POST/PUT/PATCH/DELETE) ทำไม่ได้ · ดูข้อมูล (GET) ได้ตามเดิม
+     */
+    protected function suspendedWriteError(Request $request, FreshMarketSeller $seller): ?JsonResponse
+    {
+        if ($request->isMethodSafe() || $seller->canOperate()) {
+            return null;
+        }
+
+        return $this->error('SELLER_SUSPENDED', FreshMarketSeller::SUSPENDED_ACTION_MESSAGE, 403);
     }
 
     /**
@@ -490,6 +506,10 @@ class FreshMarketSellerListingApiController extends FreshMarketApiController
 
         if (! $group || ! $listing) {
             return [null, null, $this->error('OPTION_GROUP_NOT_FOUND', 'ไม่พบกลุ่มตัวเลือก หรือคุณไม่มีสิทธิ์แก้ไข', 404)];
+        }
+
+        if ($error = $this->suspendedWriteError($request, $seller)) {
+            return [null, null, $error];
         }
 
         return [$group, $listing, null];
@@ -513,6 +533,10 @@ class FreshMarketSellerListingApiController extends FreshMarketApiController
 
         if (! $option || ! $option->group || ! $listing) {
             return [null, null, null, $this->error('OPTION_NOT_FOUND', 'ไม่พบตัวเลือก หรือคุณไม่มีสิทธิ์แก้ไข', 404)];
+        }
+
+        if ($error = $this->suspendedWriteError($request, $seller)) {
+            return [null, null, null, $error];
         }
 
         return [$option, $option->group, $listing, null];

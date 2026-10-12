@@ -690,9 +690,14 @@ class FreshMarketApiController extends Controller
         return $this->handle(function () use ($request, $data) {
             $seller = $this->marketService->registerSeller($request->user(), $data);
 
-            return $this->ok($this->sellerProfileData($seller), $seller->is_verified
-                ? 'สมัครเป็นผู้ขายสำเร็จ'
-                : 'สมัครเป็นผู้ขายสำเร็จ รอแอดมินยืนยันร้านก่อนสินค้าจะแสดง', 201);
+            // 🪪 สมัครได้เลย (ไม่ต้องยืนยันตัวตนก่อน) แต่ร้านขายได้เมื่อยืนยันตัวตนแล้ว — แอปดู kyc_required / status_message
+            $message = match (true) {
+                (bool) $seller->is_verified => 'สมัครเป็นผู้ขายสำเร็จ',
+                $seller->needsOwnerKyc() => 'สมัครเป็นผู้ขายสำเร็จ '.\App\Services\Ekyc\EkycGate::SELLER_PENDING_KYC_MESSAGE,
+                default => 'สมัครเป็นผู้ขายสำเร็จ รอแอดมินยืนยันร้านก่อนสินค้าจะแสดง',
+            };
+
+            return $this->ok($this->sellerProfileData($seller), $message, 201);
         });
     }
 
@@ -889,6 +894,11 @@ class FreshMarketApiController extends Controller
 
         if (! $listing) {
             return $this->error('LISTING_NOT_FOUND', 'ไม่พบสินค้า หรือคุณไม่มีสิทธิ์แก้ไข', 404);
+        }
+
+        // ร้านถูกระงับ/ปิดใช้งาน → แก้สินค้าไม่ได้ (กฎเดียวกับ storeListing) — ตอบก่อนรับไฟล์/ตัวเลือก
+        if (! $seller->canOperate()) {
+            return $this->error('SELLER_SUSPENDED', FreshMarketSeller::SUSPENDED_ACTION_MESSAGE, 403);
         }
 
         $maxCashback = $this->marketService->maxCashbackPercent($seller);
@@ -1139,6 +1149,12 @@ class FreshMarketApiController extends Controller
             'status_label' => $seller->status_label,
             'is_verified' => (bool) $seller->is_verified,
             'is_visible_to_buyers' => $seller->isVisibleToBuyers(),
+            // 🪪 (2026-10-13) ร้านขายได้เมื่อเจ้าของร้านยืนยันตัวตนแล้ว — true = แอปพาไปหน้ายืนยันตัวตน
+            'kyc_required' => $seller->needsOwnerKyc(),
+            // ข้อความสถานะร้านภาษาไทยเมื่อผู้ซื้อยังมองไม่เห็นร้าน (null = ขายได้ตามปกติ)
+            'status_message' => $seller->sellingStatusMessage(),
+            // ร้านจัดการออเดอร์/สินค้าได้ไหม (ถูกระงับ/ปิดใช้งาน = false)
+            'can_operate' => $seller->canOperate(),
             'subscription_type' => $seller->subscription_type,
             'subscription_expires_at' => $seller->subscription_expires_at?->toIso8601String(),
             'has_paid_subscription' => $seller->hasPaidSubscription(),

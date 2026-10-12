@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\VideoCoin;
 use App\Services\CashbackService;
+use App\Services\Ekyc\EkycGate;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -321,6 +322,20 @@ class OfficialShopController extends Controller
         }
 
         $user = auth()->user();
+
+        // 🪪 (2026-10-13) ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อทุกช่องทาง — ร้านของระบบก็สร้างออเดอร์เหมือนกัน
+        if (EkycGate::buyerBlocked($user)) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => EkycGate::CODE,
+                    'message' => EkycGate::buyerWebMessage(),
+                    'app_download_url' => EkycGate::downloadUrl(),
+                ], 422);
+            }
+
+            return back()->with('error', EkycGate::buyerWebMessage())->with(EkycGate::FLASH_KEY, true);
+        }
 
         // ดึงข้อมูลสินค้า
         $product = Product::whereNull('seller_id')

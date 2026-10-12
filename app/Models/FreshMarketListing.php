@@ -223,24 +223,21 @@ class FreshMarketListing extends Model
      *
      * - สินค้าเปิดขาย (active + is_available)
      * - ร้านเปิดอยู่ ไม่ถูกระงับ
-     * - ถ้าปิดอนุมัติร้านอัตโนมัติ (Setting fresh_market.auto_approve_sellers = false)
-     *   ต้องเป็นร้านที่แอดมินยืนยันแล้วเท่านั้น
+     * - ร้านได้รับการยืนยันแล้วเสมอ (is_verified) — เจ้าของร้านยืนยันตัวตน (eKYC) ตอนเปิดอนุมัติอัตโนมัติ
+     *   หรือแอดมินกดยืนยันร้านเอง (2026-10-13: เลิกปล่อยร้านที่ยังไม่ยืนยันเมื่อเปิดอนุมัติอัตโนมัติ)
      */
     public function scopeVisibleToBuyers($query)
     {
-        $requireVerified = ! static::autoApproveSellers();
-
-        return $query->active()->whereHas('seller', function ($seller) use ($requireVerified) {
-            $seller->where('is_active', true)->where('is_suspended', false);
-
-            if ($requireVerified) {
-                $seller->where('is_verified', true);
-            }
+        return $query->active()->whereHas('seller', function ($seller) {
+            $seller->where('is_active', true)
+                ->where('is_suspended', false)
+                ->where('is_verified', true);
         });
     }
 
     /**
-     * อนุมัติร้านอัตโนมัติหรือไม่ (ค่าเริ่มต้น: เปิด)
+     * อนุมัติร้านอัตโนมัติหรือไม่ (ค่าเริ่มต้น: เปิด) — เปิด = ร้านขายได้ทันทีที่เจ้าของร้านยืนยันตัวตน (eKYC)
+     * ปิด = รอแอดมินกดยืนยันร้านทุกร้าน
      */
     public static function autoApproveSellers(): bool
     {
@@ -472,17 +469,13 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * ร้านของสินค้านี้เปิดให้ผู้ซื้อเห็นอยู่หรือไม่ (เปิด, ไม่ถูกระงับ, ยืนยันแล้วถ้าบังคับ)
+     * ร้านของสินค้านี้เปิดให้ผู้ซื้อเห็นอยู่หรือไม่ (เปิด, ไม่ถูกระงับ, ยืนยันแล้ว — กฎเดียวกับ FreshMarketSeller::isVisibleToBuyers)
      */
     public function sellerIsVisible(): bool
     {
         $seller = $this->seller;
 
-        if (! $seller || ! $seller->is_active || $seller->is_suspended) {
-            return false;
-        }
-
-        return static::autoApproveSellers() || (bool) $seller->is_verified;
+        return $seller !== null && $seller->isVisibleToBuyers();
     }
 
     /**
