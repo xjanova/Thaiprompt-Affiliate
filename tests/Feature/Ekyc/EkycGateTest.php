@@ -100,16 +100,16 @@ class EkycGateTest extends TestCase
             ->assertJsonPath('data.availability', 'offline');
         $this->assertSame('offline', $rider->fresh()->availability);
 
-        // แอปรุ่นเก่า/ไม่ส่ง header ก็เปิดรับงานไม่ได้ (2026-10-13) — แอปเก่าได้ข้อความให้อัปเดตแอป
+        // แอปรุ่นเก่า/ไม่ส่ง header ก็เปิดรับงานไม่ได้ (2026-10-13) — ไรเดอร์รับงานผ่านแอปรุ่นใหม่เท่านั้น
+        //   ด่าน rider.min_app_build (EnsureRiderAppBuild) ตอบก่อนด่าน eKYC → 426 ให้อัปเดตแอป
         $this->postJson('/api/v1/rider/availability', [
             'availability' => 'online', 'latitude' => 13.73, 'longitude' => 100.52,
         ], ['X-App-Build' => '43'])
-            ->assertStatus(422)
-            ->assertJsonPath('code', 'KYC_REQUIRED')
-            ->assertJsonPath('message', 'กรุณาอัปเดตแอปเป็นรุ่นล่าสุด แล้วยืนยันตัวตนก่อนใช้งานส่วนนี้');
+            ->assertStatus(426)
+            ->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
         $this->postJson('/api/v1/rider/availability', [
             'availability' => 'online', 'latitude' => 13.73, 'longitude' => 100.52,
-        ])->assertJsonPath('code', 'KYC_REQUIRED');
+        ])->assertStatus(426)->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
 
         // ยืนยันตัวตนแล้ว → เปิดรับงานด้วยแอปรุ่นใหม่ได้
         $rider->user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save();

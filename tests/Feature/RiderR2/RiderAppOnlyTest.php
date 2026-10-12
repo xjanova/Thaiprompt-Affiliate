@@ -195,6 +195,8 @@ class RiderAppOnlyTest extends HandoverTestCase
 
     public function test_api_accept_by_rider_without_ekyc_returns_kyc_required(): void
     {
+        // phpunit.xml ปิด eKYC เป็นค่าเริ่มของเทสต์ (EKYC_ENFORCE=false) — เคสนี้ทดสอบด่าน จึงเปิดเอง
+        config(['ekyc.enforce' => true]);
         [$order] = $this->makeDeferredShopOrder();
         $job = $this->makePendingJob($order);
         $rider = $this->makeOnlineRider();
@@ -339,6 +341,7 @@ class RiderAppOnlyTest extends HandoverTestCase
 
     public function test_admin_reassign_keeps_handover_required(): void
     {
+        config(['ekyc.enforce' => true]); // ส่วนท้ายทดสอบด่าน eKYC ของการมอบหมายงาน
         $admin = User::factory()->create(['role' => 'admin']);
         $service = app(RiderJobService::class);
 
