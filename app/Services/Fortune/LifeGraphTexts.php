@@ -120,7 +120,7 @@ final class LifeGraphTexts
         // พุธเสวย
         '4-4' => ['tone' => 'ดี', 'text' => 'เงินทองและของมีค่าเพิ่มพูน ร่ำรวยขึ้น', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '4-7' => ['tone' => 'ร้าย', 'text' => 'ระวังพลัดพรากหรือสูญเสียของรัก', 'src' => ['phromchat', 'horasatthai', 'thasung']],
-        '4-5' => ['tone' => 'ผสม', 'text' => 'ได้ลาภจากผู้ใหญ่ แต่ไม่ควรเดินทางไกล ระวังภัยและโจร', 'src' => ['phromchat', 'horasatthai', 'thasung']],
+        '4-5' => ['tone' => 'ผสม', 'text' => 'ได้ลาภจากผู้ใหญ่ แต่ไม่ควรเดินทางไกล ระวังภัยและโจร', 'src' => ['phromchat', 'thasung']],
         '4-8' => ['tone' => 'ร้าย', 'text' => 'มีศัตรูผู้มีกำลัง ระวังอัคคีภัยและเจ็บไข้', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '4-6' => ['tone' => 'ดี', 'text' => 'มีลาภมาก', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '4-1' => ['tone' => 'ร้าย', 'text' => 'ระวังต้องโทษ มีอุปสรรค เสียทรัพย์', 'src' => ['phromchat', 'horasatthai', 'thasung']],
@@ -128,7 +128,7 @@ final class LifeGraphTexts
         '4-3' => ['tone' => 'ร้าย', 'text' => 'มีคดีความ ร้อนใจเรื่องบ้านและคนในบ้าน ระวังศัตรูและโจร', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         // เสาร์เสวย
         '7-7' => ['tone' => 'ร้าย', 'text' => 'มีภัย เสียทรัพย์ ระวังโรคทางท้อง', 'src' => ['phromchat', 'horasatthai', 'thasung']],
-        '7-5' => ['tone' => 'ผสม', 'text' => 'ได้ลาภจากผู้ใหญ่หรือครูอาจารย์ แต่เดินทางไกลแล้วจะเสีย', 'src' => ['phromchat', 'horasatthai', 'thasung']],
+        '7-5' => ['tone' => 'ผสม', 'text' => 'ได้ลาภจากผู้ใหญ่หรือครูอาจารย์ แต่เดินทางไกลแล้วจะเสีย', 'src' => ['phromchat', 'thasung']],
         '7-8' => null, // ขัดกัน: พรหมชาติ/วัดท่าซุงว่าเสียก่อนแล้วได้ลาภ · horasatthai ว่าร้ายล้วน
         '7-6' => ['tone' => 'ผสม', 'text' => 'ช่วงแรกเสียของ มีเรื่องเพราะผู้หญิง ภายหลังมิตรให้ลาภ', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '7-1' => ['tone' => 'ร้าย', 'text' => 'เสียทรัพย์ ร้อนใจ มีเรื่องในครอบครัว', 'src' => ['phromchat', 'horasatthai', 'thasung']],
@@ -139,7 +139,7 @@ final class LifeGraphTexts
         '5-5' => ['tone' => 'ดี', 'text' => 'ผู้ใหญ่ให้ลาภ ได้ยศและชื่อเสียง', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '5-8' => ['tone' => 'ผสม', 'text' => 'ได้แล้วเสีย เสียทรัพย์ ร้อนใจเรื่องคนรัก', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '5-6' => ['tone' => 'ดี', 'text' => 'มีลาภมาก สุขสบาย', 'src' => ['phromchat', 'horasatthai', 'thasung']],
-        '5-1' => ['tone' => 'ผสม', 'text' => 'ได้ลาภ แต่ระวังปวดศีรษะหรือเจ็บที่ใบหน้า', 'src' => ['phromchat', 'horasatthai', 'thasung']],
+        '5-1' => ['tone' => 'ผสม', 'text' => 'ได้ลาภ แต่ระวังปวดศีรษะหรือเจ็บที่ใบหน้า', 'src' => ['phromchat', 'thasung']],
         '5-2' => null, // ขัดกัน: พรหมชาติ/horasatthai ว่าระวังผู้หญิง สูญทรัพย์ · วัดท่าซุงว่าได้ลาภ
         '5-3' => ['tone' => 'ร้าย', 'text' => 'ระวังคดีความ เสียทรัพย์', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '5-4' => ['tone' => 'ดี', 'text' => 'มีลาภ ได้ที่ดินไร่นา มีชื่อเสียง', 'src' => ['phromchat', 'horasatthai', 'thasung']],
@@ -148,7 +148,7 @@ final class LifeGraphTexts
         '8-8' => ['tone' => 'ร้าย', 'text' => 'เจ็บป่วย ระวังโรคทางท้อง และการสูญเสียในครอบครัว', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '8-6' => ['tone' => 'ดี', 'text' => 'มีลาภเข้า', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '8-1' => null, // ขัดกัน: ลำดับได้-เสียกลับกันระหว่างพรหมชาติ/horasatthai กับวัดท่าซุง
-        '8-2' => ['tone' => 'ร้าย', 'text' => 'ผู้ใหญ่ไม่พอใจ ถูกใส่ความ ระวังแพ้คดี', 'src' => ['phromchat', 'horasatthai', 'thasung']],
+        '8-2' => ['tone' => 'ร้าย', 'text' => 'ผู้ใหญ่ไม่พอใจ ถูกใส่ความ ระวังแพ้คดี', 'src' => ['phromchat', 'thasung']],
         '8-3' => ['tone' => 'ร้าย', 'text' => 'มีภัย ระวังเลือดตกยางออก เสียทรัพย์', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '8-4' => ['tone' => 'ผสม', 'text' => 'ได้ลาภก่อน แล้วเสียทรัพย์ภายหลัง', 'src' => ['phromchat', 'horasatthai', 'thasung']],
         '8-7' => ['tone' => 'ดี', 'text' => 'ได้ลาภ โดยเฉพาะจากมิตรสหาย', 'src' => ['phromchat', 'horasatthai', 'thasung']],

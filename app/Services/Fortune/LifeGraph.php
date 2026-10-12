@@ -25,7 +25,7 @@ namespace App\Services\Fortune;
 final class LifeGraph
 {
     /** เปลี่ยนตำรา/น้ำหนัก ⇒ เพิ่มเลข (หน้าเว็บแสดงไว้ เทียบผลข้ามรุ่นได้) */
-    public const VERSION = 2;
+    public const VERSION = 3;
 
     /** 1 ปีในตำรามหาทักษา = 12 เดือน × 30 วัน × 60 นาฑี */
     public const NATHI_PER_YEAR = 21600;
@@ -51,6 +51,7 @@ final class LifeGraph
      *   main_* = ดาวเสวยอายุ (เต็มปี): main_nature = ตำราว่าช่วงดาวนั้นดี/ร้าย (LifeGraphTexts::PERIOD)
      *     · main_dignity / main_house_bad = ดาวเสวยในดวงเดิม (LifeGraphTexts::NATAL_RULE — sanook · bloggang)
      *   sub_* / pair / combo = ดาวแทรก คูณสัดส่วนเวลาที่แทรกในปีนั้น · combo = ตำราว่าคู่เสวย-แทรกดี/ร้าย (ผสม/ขัดกัน = 0)
+     *     · pair (ดาวคู่ทั่วไป) ใช้เฉพาะคู่ที่ไม่มีคำทายเสวย-แทรก (SUB = null) — มีคำทายแล้วตำราเฉพาะคู่ชนะ (v3)
      *   jon = ทักษาจรปีอายุ: ดาวเสวยเป็นศรีจร (+) / กาลีจร (−) — ภูมิเดิมของดาวเสวยได้ผลตาม LifeGraphTexts::JON
      *   tone = ผลรวมคะแนนของดาวเสวย (ไม่รวมดาวแทรก) ≥ good → ช่วงดี · ≤ bad → ช่วงร้าย
      */
@@ -302,7 +303,9 @@ final class LifeGraph
                     if ($t !== null && isset($w['combo'][$t['tone']])) {
                         $comps[] = ['key' => 'combo', 'planet' => $sp['planet'], 'delta' => $w['combo'][$t['tone']] * $share, 'reason' => 'ตำรา'.LifeGraphTables::planetTh($main).'เสวย '.LifeGraphTables::planetTh($sp['planet']).'แทรก: '.$t['text'].$tag];
                     }
-                    $kind = $sp['planet'] === $main ? null : self::pairKind($main, $sp['planet']);
+                    // คู่ดาว (ตำราดาวคู่ทั่วไป) ใช้เฉพาะคู่ที่ตำราเสวย-แทรกไม่มีคำทาย — ตำราเฉพาะคู่ชนะ
+                    //   (v2 ให้ทั้งสองชั้น: คู่สมพล +6 กลบตำรา "ร้าย" −5 ⇒ 5 คู่ร้ายได้คะแนนบวก — ตรวจพบ 2026-10-12)
+                    $kind = $sp['planet'] === $main || $t !== null ? null : self::pairKind($main, $sp['planet']);
                     if ($kind !== null) {
                         $comps[] = ['key' => 'pair', 'planet' => $sp['planet'], 'delta' => $w['pair'][$kind] * $share, 'reason' => 'ดาวเสวย'.LifeGraphTables::planetTh($main).'กับดาวแทรก'.LifeGraphTables::planetTh($sp['planet']).'เป็น'.$kind.$tag];
                     }
