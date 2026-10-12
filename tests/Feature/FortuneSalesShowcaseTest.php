@@ -153,9 +153,9 @@ class FortuneSalesShowcaseTest extends TestCase
         $this->assertSame(['text', 'template'], array_column($sender->sent, 0), 'ลูกค้าเก่าได้แค่การ์ดตามเดิม');
     }
 
-    // ── 5. กำลังจะยกเลิกบิล ──────────────────────────────────────
+    // ── 5. กำลังจะยกเลิก: ชุดตัวอย่าง "แทน" คำถามว่ายกเลิกเพราะอะไร ──
 
-    public function test_กำลังจะยกเลิก_คำถามก่อนแล้วชุดตัวอย่าง_เฉพาะคนที่ยังไม่เคยได้(): void
+    public function test_กำลังจะยกเลิก_ส่งชุดตัวอย่างแทนคำถาม_เคยได้แล้วถามตามเดิม(): void
     {
         $sender = $this->recordingSender();
         $manager = new class($this->settings()) extends FortuneChannelManager
@@ -165,19 +165,19 @@ class FortuneSalesShowcaseTest extends TestCase
                 return $this->sendFacebookResponse($s, $uid, $r);
             }
         };
-        $ask = ['action' => 'cancel_dialog_ask', 'message' => '🙏 ก่อนยกเลิก แม่หมอขอถามได้ไหมคะ'];
+        $ask = ['action' => 'cancel_dialog_ask', 'message' => '🙏 ก่อนยกเลิก แม่หมอขอถามได้ไหมคะ เกิดอะไรขึ้น?'];
 
         $this->assertTrue($manager->fb($sender, 'psid-cancel', $ask));
-        $this->assertSame(['text', 'image', 'image', 'image', 'text'], array_column($sender->sent, 0));
-        $this->assertStringContainsString('ก่อนยกเลิก', $sender->sent[0][1]);
-        $this->assertStringContainsString('ไม่ได้ยกเมฆ', $sender->sent[4][1]);
+        $this->assertSame(['image', 'image', 'image', 'text'], array_column($sender->sent, 0), 'ไม่มีคำถามว่ายกเลิกทำไม');
+        $this->assertStringContainsString('ไม่ควรพลาด', $sender->sent[3][1]);
+        $this->assertStringContainsString('ไม่ได้ยกเมฆ', $sender->sent[3][1]);
+        $this->assertStringContainsString('ยืนยันยกเลิก', $sender->sent[3][1], 'ยังต้องบอกทางยืนยันยกเลิก');
 
         $sender->sent = [];
         $this->assertTrue($manager->fb($sender, 'psid-cancel', $ask));
-        $this->assertSame(['text'], array_column($sender->sent, 0), 'เคยได้แล้ว = คำถามอย่างเดียว');
+        $this->assertSame([['text', $ask['message']]], $sender->sent, 'เคยได้แล้ว = คำถามเดิม');
 
         // เคยได้จากการ์ดเมนูแล้ว → ตอนยกเลิกไม่ได้ซ้ำ
-        $sender->sent = [];
         $manager->fb($sender, 'psid-menu-first', $this->tierResult());
         $sender->sent = [];
         $manager->fb($sender, 'psid-menu-first', $ask);
@@ -189,21 +189,16 @@ class FortuneSalesShowcaseTest extends TestCase
         $this->assertSame(['text'], array_column($sender->sent, 0), 'ลูกค้าเก่าไม่ได้');
     }
 
-    // ── 6. เปิดบิลแล้วไม่โอน (ตัวทวงบิล) + กล่องกระตุ้นเลือกแพคเกจ = การ์ดภาพ ──
+    // ── 6. เปิดบิลแล้วไม่โอน · ลูกค้านิ่งนาน (prepare + send ตัวกลาง) ──
 
-    public function test_ทวงบิล_แนบชุดตัวอย่างครั้งเดียว_line_รวมเป็นpushเดียว(): void
+    public function test_ทวงบิล_ข้อความทวงแล้วชุดตัวอย่าง_line_รวมเป็นpushเดียว(): void
     {
-        $job = new \App\Jobs\SendBillReminderJob(1);
-        $showcaseFor = (new \ReflectionMethod($job, 'showcaseFor'));
-        $showcaseFor->setAccessible(true);
-
-        $first = $showcaseFor->invoke($job, 'U-bill');
-        $celticOn = (bool) (FortuneTellingSetting::getSettings()->enable_celtic_cross ?? false);
-        $this->assertCount($celticOn ? 3 : 2, $first['urls'], 'ภาพไพ่ 10 ใบเฉพาะตอนเปิดแพคเกจ Celtic');
-        $this->assertStringContainsString('ไม่ได้ยกเมฆ', $first['text']);
-        $this->assertNull($showcaseFor->invoke($job, 'U-bill'), 'ทวงรอบถัดไป/บิลถัดไป ไม่ส่งซ้ำ');
+        $settings = $this->settings();
+        $first = FortuneSalesShowcase::prepare('U-bill', 'bill', $settings);
+        $this->assertCount(3, $first['urls']);
+        $this->assertNull(FortuneSalesShowcase::prepare('U-bill', 'idle', $settings), 'จังหวะถัดไปไม่ส่งซ้ำ');
         $this->paidReading('U-bill-old', true);
-        $this->assertNull($showcaseFor->invoke($job, 'U-bill-old'), 'ลูกค้าเก่าไม่ได้');
+        $this->assertNull(FortuneSalesShowcase::prepare('U-bill-old', 'bill', $settings), 'ลูกค้าเก่าไม่ได้');
 
         $captured = [];
         $line = Mockery::mock(LineFortuneService::class)->makePartial();
@@ -217,27 +212,24 @@ class FortuneSalesShowcaseTest extends TestCase
         });
         $this->app->instance(LineFortuneService::class, $line);
 
+        $job = new \App\Jobs\SendBillReminderJob(1);
         $send = new \ReflectionMethod($job, 'sendMessage');
         $send->setAccessible(true);
         $send->invoke($job, 'line', 'U-bill', '🌙 บิลยังรอโอนอยู่นะคะ', $first);
 
-        $this->assertSame(['text', ...array_fill(0, count($first['urls']), 'image'), 'text'], array_column($captured[0], 'type'));
-        $this->assertLessThanOrEqual(5, count($captured[0]));
+        $this->assertSame(['text', 'image', 'image', 'image', 'text'], array_column($captured[0], 'type'));
         $this->assertNull($captured[1], 'ทวงบิล = push ไม่มี reply token');
         $this->assertSame('🌙 บิลยังรอโอนอยู่นะคะ', $captured[0][0]['text']);
     }
 
-    public function test_กล่องกระตุ้นเลือกแพคเกจ_ส่งการ์ดภาพแทนกล่องปุ่ม(): void
+    public function test_ส่งชุดตัวอย่างบน_facebook_ภาพก่อนข้อความ_ต่อท้ายได้(): void
     {
-        $settings = $this->settings();
-        $settings->forceFill(['deep_reading_price' => 39, 'celtic_cross_price' => 99, 'enable_celtic_black_magic_mode' => true]);
-        $nudge = new \App\Console\Commands\FortuneFlowNudge;
-        $cards = new \ReflectionMethod($nudge, 'sendTierCards');
-        $cards->setAccessible(true);
-
+        $show = FortuneSalesShowcase::prepare('psid-idle', 'idle', $this->settings());
         $sender = $this->recordingSender();
-        $this->assertTrue($cards->invoke($nudge, $sender, 'facebook', $settings, 'psid-nudge'));
-        $this->assertSame(['template'], array_column($sender->sent, 0), 'FB: การ์ดภาพชุดเดียว ไม่มีกล่องปุ่มตัวหนังสือ');
+        $this->assertTrue(FortuneSalesShowcase::send($sender, 'psid-idle', $show, 'ก่อนภาพ', 'ท้ายกล่อง'));
+        $this->assertSame(['text', 'image', 'image', 'image', 'text'], array_column($sender->sent, 0));
+        $this->assertSame('ก่อนภาพ', $sender->sent[0][1]);
+        $this->assertStringEndsWith('ท้ายกล่อง', $sender->sent[4][1]);
     }
 
     // ── 4. LINE ──────────────────────────────────────────────────

@@ -140,7 +140,7 @@ class SendBillReminderJob implements ShouldQueue
 
         // 🖼️ (2026-10-12, owner) เปิดบิลแล้วไม่โอน → แนบชุดตัวอย่าง (ภาพกราฟชีวิต · ไพ่ 10 ใบ · ผังดวง + "ไม่ได้ยกเมฆ")
         //   เฉพาะคนที่ยังไม่เคยได้ และไม่เคยจ่าย — ตัวกันซ้ำอยู่ใน FortuneSalesShowcase::claim (ตาราง ไม่ใช่ cache)
-        $showcase = $this->showcaseFor($userId);
+        $showcase = \App\Services\Fortune\FortuneSalesShowcase::prepare((string) $userId, 'bill', FortuneTellingSetting::getSettings());
 
         try {
             $this->sendMessage($platform, $userId, $message, $showcase);
@@ -467,33 +467,7 @@ EOT;
             ."ถ้าไม่สะดวกจะดูแล้ว → พิมพ์ 'ยกเลิก' ได้เลย ไม่เป็นไรนะคะ 🙏";
     }
 
-    /**
-     * ชุดตัวอย่างสำหรับแนบไปกับการทวงบิล — null = คนนี้ไม่ได้ (เคยได้แล้ว/ลูกค้าเก่า/ไม่มีภาพ)
-     *
-     * @return array{urls: list<string>, text: string}|null
-     */
-    private function showcaseFor(string $userId): ?array
-    {
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $celtic = (bool) ($settings->enable_celtic_cross ?? false);
-            $urls = \App\Services\Fortune\FortuneSalesShowcase::imageUrls($celtic);
-            if ($urls === [] || ! \App\Services\Fortune\FortuneSalesShowcase::claim($userId, 'bill')) {
-                return null;
-            }
-
-            return [
-                'urls' => $urls,
-                'text' => \App\Services\Fortune\FortuneSalesShowcase::text($settings->isDeepReadingEnabled(), $celtic, $settings->deep_reading_price ?? null, $settings->celtic_cross_price ?? null),
-            ];
-        } catch (\Throwable $e) {
-            Log::warning('SendBillReminderJob: เตรียมชุดตัวอย่างไม่สำเร็จ — ทวงบิลตามปกติ', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    /** @param  array{urls: list<string>, text: string}|null  $showcase  ชุดตัวอย่างต่อท้ายข้อความทวง (ภาพก่อน ข้อความ "👆 ตัวอย่าง…" ทีหลัง) */
+    /** @param  array{urls: list<string>, text: string}|null  $showcase  ชุดตัวอย่าง (FortuneSalesShowcase::prepare) ต่อท้ายข้อความทวง */
     private function sendMessage(string $platform, string $userId, string $message, ?array $showcase = null): void
     {
         // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB (ข้อความ + เสียงกระตุ้น) — เดิมตกไป "platform ไม่รู้จัก"
@@ -516,15 +490,7 @@ EOT;
             }
 
             if ($showcase !== null) {
-                try {
-                    foreach ($showcase['urls'] as $url) {
-                        usleep(500000);
-                        $fbService->sendImage($userId, $url);
-                    }
-                    $fbService->sendMessage($userId, $showcase['text']);
-                } catch (\Throwable $e) {
-                    Log::warning('SendBillReminderJob: ส่งชุดตัวอย่างไม่สำเร็จ', ['error' => $e->getMessage()]);
-                }
+                \App\Services\Fortune\FortuneSalesShowcase::send($fbService, $userId, $showcase);
             }
         } elseif ($platform === 'line') {
             $lineService = app(\App\Services\LineFortuneService::class);
@@ -532,11 +498,7 @@ EOT;
                 $lineService->sendMessage($userId, $message);
             } else {
                 // push ครั้งเดียว ≤ 5 กล่อง: ข้อความทวง + ภาพ ≤ 3 + ข้อความชุดตัวอย่าง (ไม่เพิ่มจำนวน push)
-                $lineService->sendMessagesWithReplyFallback($userId, [
-                    $lineService->buildTextObject($message),
-                    ...array_map(fn (string $u) => $lineService->buildImageObject($u), array_slice($showcase['urls'], 0, 3)),
-                    $lineService->buildTextObject($showcase['text']),
-                ], null);
+                \App\Services\Fortune\FortuneSalesShowcase::send($lineService, $userId, $showcase, $message);
             }
         } else {
             Log::warning('SendBillReminderJob: platform ไม่รู้จัก', ['platform' => $platform]);

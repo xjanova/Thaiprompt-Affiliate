@@ -22,7 +22,7 @@ return new class extends Migration
         Schema::create('fortune_sales_showcase_sends', function (Blueprint $table) {
             $table->id();
             $table->string('platform_user_id', 191)->unique()->comment('PSID / LINE userId ที่ได้ชุดตัวอย่างแล้ว');
-            $table->string('trigger', 32)->comment('menu = การ์ดเลือกแพคเกจ/ถามราคา · cancel = กำลังจะยกเลิกบิล · bill = ทวงบิลที่ไม่โอน');
+            $table->string('trigger', 32)->comment('menu = การ์ดเลือกแพคเกจ/ถามราคา · idle = ลูกค้านิ่งนาน · bill = เปิดบิลไม่โอน · cancel = กำลังจะยกเลิก');
             $table->timestamp('created_at')->nullable();
         });
     }

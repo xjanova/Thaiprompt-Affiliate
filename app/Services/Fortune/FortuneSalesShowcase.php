@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Log;
  * 🖼️ (2026-10-12) ชุดตัวอย่าง "สิ่งที่จะได้รับ" ตอนปิดการขาย — owner สั่ง
  *   ภาพกราฟชีวิต · ภาพไพ่ 10 ใบ · ภาพดวงดาว + "ที่นี่ไม่ได้ยกเมฆ ทำนายตามศาสตร์ ใช้ไพ่ทาโรต์เป็นตัวยืน"
  *
- * - ส่งตอนขึ้นการ์ดเลือกแพคเกจ (tier_choice) · ตอนลูกค้าถามราคา (pricing_menu) · ตอนกำลังจะยกเลิกบิล (cancel_dialog_ask)
- *   · ตอนทวงบิลที่เปิดแล้วไม่โอน (SendBillReminderJob) — จังหวะไหนมาก่อนได้จังหวะนั้น
+ * - ส่งตอนขึ้นการ์ดเลือกแพคเกจ (tier_choice) · ตอนลูกค้าถามราคา (pricing_menu)
+ *   · ลูกค้านิ่งนาน (FortuneFlowNudge — แทนกล่อง "เลือกได้เลยนะคะ" ที่ยกเลิกไปแล้ว)
+ *   · เปิดบิลแล้วไม่โอน (SendBillReminderJob) · กำลังจะยกเลิก (cancel_dialog_ask — แทนคำถาม "ยกเลิกเพราะอะไร")
+ *   จังหวะไหนมาก่อนได้จังหวะนั้น (owner 2026-10-12)
  * - ลูกค้าเก่า = เคยดูดวงจ่ายสำเร็จ ≥ 1 บิล (is_paid) → ไม่ส่ง
  * - คนเดิมได้ครั้งเดียวตลอดไป (owner: "ต้องยังไม่เคยส่งมาก่อน") — จดในตาราง fortune_sales_showcase_sends
  *   ⚠️ ห้ามย้ายกลับไป cache: deploy.sh รัน cache:clear ทุกรอบ ธงหาย = ลูกค้าได้ซ้ำหลัง deploy
@@ -90,7 +92,7 @@ final class FortuneSalesShowcase
     /** ข้อความตามหลังภาพ — บอกตรงว่าแพคเกจไหนได้อะไร (ไพ่ 10 ใบมีเฉพาะ Celtic) */
     public static function text(bool $deepEnabled, bool $celticEnabled, mixed $deepPrice = null, mixed $celticPrice = null): string
     {
-        $lines = ['👆 ตัวอย่างภาพที่จะได้รับจริงหลังดูดวงค่ะ (ภาพนี้ใช้ข้อมูลสมมติ)', '📈 กราฟชีวิต 0–100 ปี ตามตำรามหาทักษา'];
+        $lines = ['👆 นี่คือสิ่งที่จะได้รับจริงหลังดูดวง ไม่ควรพลาดเลยค่ะ (ภาพตัวอย่างใช้ข้อมูลสมมติ)', '📈 กราฟชีวิต 0–100 ปี ตามตำรามหาทักษา'];
         if ($celticEnabled) {
             $lines[] = $deepEnabled
                 ? '🃏 ภาพไพ่ทาโรต์ 10 ใบ (แพคเกจ '.self::price($celticPrice, '99').' บาท · แพคเกจ '.self::price($deepPrice, '39').' บาท ได้ไพ่ 1 ใบ)'
@@ -101,6 +103,70 @@ final class FortuneSalesShowcase
 
         return implode("\n", $lines)."\n\n"
             .'ที่นี่ไม่ได้ยกเมฆนะคะ แม่หมอทำนายตามศาสตร์การดูดวง และใช้ไพ่ทาโรต์เป็นตัวยืน ถ้าคิดว่าเหมือนที่อื่น ไม่ใช่แบบนั้นแน่นอนค่ะ 🙏';
+    }
+
+    /**
+     * จองสิทธิ์ + เตรียมชุดตัวอย่างจากการตั้งค่า (แพคเกจที่เปิด · ราคา) — null = คนนี้ไม่ได้ (เคยได้แล้ว/ลูกค้าเก่า/ไม่มีภาพ)
+     *
+     * @param  string  $trigger  idle (เงียบที่เมนู/กล่องกติกา) · bill (เปิดบิลไม่โอน) · cancel (กำลังจะยกเลิก)
+     * @return array{urls: list<string>, text: string}|null
+     */
+    public static function prepare(string $userId, string $trigger, \App\Models\FortuneTellingSetting $settings): ?array
+    {
+        try {
+            $celtic = (bool) ($settings->enable_celtic_cross ?? false);
+            $urls = self::imageUrls($celtic);
+            if ($urls === [] || ! self::claim($userId, $trigger)) {
+                return null;
+            }
+
+            return [
+                'urls' => $urls,
+                'text' => self::text($settings->isDeepReadingEnabled(), $celtic, $settings->deep_reading_price ?? null, $settings->celtic_cross_price ?? null),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('FortuneSalesShowcase: เตรียมชุดตัวอย่างไม่สำเร็จ', ['user_id' => $userId, 'trigger' => $trigger, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ส่งชุดที่ prepare() ได้มา — ภาพก่อน แล้วข้อความ "👆 …" (+ $after ต่อท้ายกล่องเดียวกัน)
+     *   $before = ข้อความที่ต้องออกก่อนภาพ (เช่นข้อความทวงบิล) · LINE รวมเป็น reply/push ครั้งเดียว ≤ 5 กล่อง
+     *
+     * @param  array{urls: list<string>, text: string}  $show
+     * @param  array  $options  FB/Telegram: $extra ของ ChannelManager (เพจต้นทาง ฯลฯ) — ต้องส่งต่อ ไม่งั้นออกผิดเพจ
+     */
+    public static function send(object $service, string $userId, array $show, ?string $before = null, ?string $after = null, ?string $replyToken = null, array $options = []): bool
+    {
+        $text = $after !== null && $after !== '' ? $show['text']."\n\n".$after : $show['text'];
+        try {
+            if ($service instanceof \App\Services\LineFortuneService) {
+                $msgs = $before !== null && $before !== '' ? [$service->buildTextObject($before)] : [];
+                foreach (array_slice($show['urls'], 0, 3) as $u) {
+                    $msgs[] = $service->buildImageObject($u);
+                }
+                $msgs[] = $service->buildTextObject($text);
+
+                return $service->sendMessagesWithReplyFallback($userId, $msgs, $replyToken);
+            }
+            if ($service instanceof \App\Contracts\FortuneMessengerSender) {
+                if ($before !== null && $before !== '') {
+                    $service->sendMessage($userId, $before, $options);
+                }
+                foreach ($show['urls'] as $u) {
+                    $service->sendImage($userId, $u, null, $options);
+                    usleep(500000);
+                }
+
+                return $service->sendMessage($userId, $text, $options);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FortuneSalesShowcase: ส่งชุดตัวอย่างไม่สำเร็จ', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+
+        return false;
     }
 
     private static function price(mixed $p, string $fallback): string

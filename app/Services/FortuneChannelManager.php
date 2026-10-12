@@ -52,6 +52,9 @@ class FortuneChannelManager
      */
     public const PLATFORM_TELEGRAM = 'telegram';
 
+    /** 🖼️ (2026-10-12) ท้ายชุดตัวอย่างตอนลูกค้ากำลังจะยกเลิก — ยังต้องบอกทางยืนยันยกเลิก (คำสั่งเดียวกับข้อความถามเดิม) */
+    private const SHOWCASE_CANCEL_TAIL = 'บิลเดิมยังโอนได้ตามปกตินะคะ ถ้ายังต้องการยกเลิก พิมพ์ "ยืนยันยกเลิก" ได้เลยค่ะ 🙏';
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
@@ -821,14 +824,14 @@ class FortuneChannelManager
                 //   AI ฟัง + decide ตีความเจตนาจริง
                 //   มี escape hatch: "ยืนยันยกเลิก" (พิมพ์เอง)
                 'cancel_dialog_continue' => $fbService->sendMessage($userId, $message, $extra),
-                // 🖼️ (2026-10-12, owner) กำลังจะยกเลิกบิล → คำถามก่อนยกเลิก แล้วชุดตัวอย่าง (เฉพาะคนที่ยังไม่เคยได้)
+                // 🖼️ (2026-10-12, owner) กำลังจะยกเลิกบิล → ส่งชุดตัวอย่าง "แทน" คำถามว่ายกเลิกเพราะอะไร
+                //   (เฉพาะคนที่ยังไม่เคยได้ · เคยได้แล้ว = คำถามเดิม) · ทางยืนยันยกเลิกยังบอกไว้ท้ายกล่อง
                 'cancel_dialog_ask' => (function () use ($fbService, $userId, $message, $extra) {
-                    $ok = $fbService->sendMessage($userId, $message, $extra);
-                    if ($ok) {
-                        $this->sendSalesShowcaseFacebook($fbService, $userId, $extra, $this->settings->isDeepReadingEnabled(), (bool) ($this->settings->enable_celtic_cross ?? false), $this->settings->deep_reading_price ?? null, $this->settings->celtic_cross_price ?? null, 'cancel');
-                    }
+                    $show = \App\Services\Fortune\FortuneSalesShowcase::prepare($userId, 'cancel', $this->settings);
 
-                    return $ok;
+                    return $show !== null
+                        ? \App\Services\Fortune\FortuneSalesShowcase::send($fbService, $userId, $show, null, self::SHOWCASE_CANCEL_TAIL, null, $extra)
+                        : $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
                 // 🛑 (2026-05-15 v2) ยกเลิก + กลับเข้า normal chat
@@ -2950,18 +2953,14 @@ class FortuneChannelManager
 
                 // 🛑 (2026-05-15 v2) AI-driven cancel dialogue — text only, no Quick Reply
                 'cancel_dialog_continue' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
-                // 🖼️ (2026-10-12, owner) กำลังจะยกเลิกบิล → คำถาม + ชุดตัวอย่าง (เฉพาะคนที่ยังไม่เคยได้) ใน reply เดียว ≤ 5 กล่อง
+                // 🖼️ (2026-10-12, owner) กำลังจะยกเลิกบิล → ชุดตัวอย่าง "แทน" คำถามว่ายกเลิกเพราะอะไร (reply เดียว ≤ 4 กล่อง)
+                //   เฉพาะคนที่ยังไม่เคยได้ · เคยได้แล้ว = คำถามเดิม
                 'cancel_dialog_ask' => (function () use ($lineService, $userId, $message, $replyToken) {
-                    [$showImgs, $showText] = $this->lineSalesShowcase($lineService, $userId, $this->settings->isDeepReadingEnabled(), (bool) ($this->settings->enable_celtic_cross ?? false), $this->settings->deep_reading_price ?? null, $this->settings->celtic_cross_price ?? null, 'cancel');
-                    if ($showImgs === []) {
-                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
-                    }
+                    $show = \App\Services\Fortune\FortuneSalesShowcase::prepare($userId, 'cancel', $this->settings);
 
-                    return $lineService->sendMessagesWithReplyFallback($userId, [
-                        $lineService->buildTextObject($message),
-                        ...$showImgs,
-                        $lineService->buildTextObject($showText),
-                    ], $replyToken);
+                    return $show !== null
+                        ? \App\Services\Fortune\FortuneSalesShowcase::send($lineService, $userId, $show, null, self::SHOWCASE_CANCEL_TAIL, $replyToken)
+                        : $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                 })(),
 
                 // 🛑 (2026-05-15 v2) ยกเลิก + กลับเข้า normal chat
