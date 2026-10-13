@@ -37,6 +37,8 @@
 
 @if($tpx)
     @once
+        {{-- สีโหมดมืดตามธีมของหน้า (.dark / data-theme) ไม่ใช่ตามเครื่อง — หน้าธีม V4 ตั้งโหมดเองด้วย JS
+             ใช้ prefers-color-scheme แล้วเครื่องโหมดมืด + หน้าโหมดสว่าง = ตัวทองอ่อนบนพื้นครีม อ่านไม่ออก --}}
         <style>
             .tpx-price{--tpx-gold:#b7791f;--tpx-ink:#7c4a03;--tpx-bg:rgba(245,190,60,.14);--tpx-line:rgba(183,121,31,.32);--tpx-muted:#6b7280;display:inline-flex;align-items:center;gap:.35em;font-weight:700;line-height:1.2;color:var(--tpx-ink);background:var(--tpx-bg);border:1px solid var(--tpx-line);border-radius:999px;padding:.18em .6em .18em .4em;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%}
             .tpx-price svg{width:1.05em;height:1.05em;flex:none}
@@ -44,7 +46,6 @@
             .tpx-price.tpx-lg{font-size:14px;padding:.3em .8em .3em .5em}
             .tpx-meta{display:block;margin-top:4px;font-size:11.5px;color:var(--tpx-muted);line-height:1.45}
             .tpx-meta b{font-weight:700;color:inherit}
-            @media (prefers-color-scheme: dark){:root:not(.light) .tpx-price{--tpx-ink:#fcd77f;--tpx-bg:rgba(250,204,21,.12);--tpx-line:rgba(250,204,21,.3)}:root:not(.light) .tpx-meta{--tpx-muted:#9ca3af}}
             .dark .tpx-price,[data-theme="dark"] .tpx-price{--tpx-ink:#fcd77f;--tpx-bg:rgba(250,204,21,.12);--tpx-line:rgba(250,204,21,.3)}
             .dark .tpx-meta,[data-theme="dark"] .tpx-meta{--tpx-muted:#9ca3af}
         </style>
