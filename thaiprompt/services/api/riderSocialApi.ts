@@ -72,7 +72,7 @@ const validCoord = (lat: number, lng: number): boolean =>
   Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
 
 const normalizeNearby = (raw: any): NearbyRider | null => {
-  const card = normalizePersonCard(raw);
+  const card = normalizePersonCard(raw, 'rider');
   if (!card) return null;
   const lat = Number(raw?.approx_latitude);
   const lng = Number(raw?.approx_longitude);
@@ -89,7 +89,7 @@ const normalizeNearby = (raw: any): NearbyRider | null => {
 };
 
 const normalizeFavorite = (raw: any): FavoriteRider | null => {
-  const card = normalizePersonCard(raw);
+  const card = normalizePersonCard(raw, 'rider');
   if (!card) return null;
   return { ...card, online: bool(raw?.online), last_order_at: str(raw?.last_order_at) };
 };
@@ -132,7 +132,7 @@ export const getFavoriteRiders = async (): Promise<ApiResult<FavoriteRidersResul
 /** GET /riders/{id} */
 export const getRiderProfile = async (riderId: number): Promise<ApiResult<RiderProfile>> =>
   mapResult(await apiGet<any>(`/riders/${riderId}`), (raw) => {
-    const card = normalizePersonCard(raw?.rider);
+    const card = normalizePersonCard(raw?.rider, 'rider');
     return {
       ...(card || {
         id: riderId,

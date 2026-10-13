@@ -145,6 +145,8 @@ export interface StoreDetail {
   cod_available: boolean;
   /** เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทอง) — คนละเรื่องกับ is_verified ของร้าน */
   owner_verified?: boolean;
+  /** ตรา "ผ่านการอบรม" ของร้าน (ห้องเรียน · role seller) ค่าดิบ — แปลงด้วย parseTrainingBadge ก่อนแสดง */
+  training_badge?: unknown;
 }
 
 /** รายการสินค้า — data = ShopProduct[], meta.pagination */
@@ -536,6 +538,8 @@ export interface ShopOrderRider {
     vehicle_plate: string | null;
     phone: string | null;
     verified?: boolean;
+    /** ตรา "ผ่านการอบรม" ของไรเดอร์ (ห้องเรียน) ค่าดิบ — server รุ่นเก่าไม่ส่ง */
+    training_badge?: unknown;
   } | null;
   /** หน้าติดตามสด /taladsod/track/{token} — มีเฉพาะระหว่างงานยังไม่จบ */
   tracking_url?: string | null;

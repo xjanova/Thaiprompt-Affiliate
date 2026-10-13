@@ -47,6 +47,9 @@ import { HeroCard, IconTile, MerchantModeSwitch } from '@/components/merchant';
 import { checkIsFreshMarketSeller } from '@/services/api/taladsodSellerApi';
 import { getSellerApplication, type SellerApplicationStatus } from '@/services/api/sellerStoreApi';
 import { DARK_THEME, useTheme, radii, spacing, typography } from '@/theme';
+import { TrainingSeal } from '@/components/badges/TrustSeals';
+import { parseTrainingBadges } from '@/components/badges/trainingBadge';
+import { TrainingInviteCard } from '@/components/classroom/ClassroomKit';
 
 const POLL_MS = 30000;
 
@@ -124,6 +127,8 @@ export default function MerchantScreen() {
   /** สถานะคำขอเปิดร้าน (เช็คเมื่อยังไม่มีร้าน/ร้านไม่เปิด — แยก "รออนุมัติ/ไม่ผ่าน" ออกจาก "ถูกระงับ") */
   const [application, setApplication] = useState<SellerApplicationStatus | null>(null);
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const rawTrainingBadges = useAuthStore((s) => s.user?.training_badges);
+  const sellerTraining = parseTrainingBadges(rawTrainingBadges)?.seller ?? null;
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
 
@@ -357,6 +362,10 @@ export default function MerchantScreen() {
                   </Text>
                   <View style={styles.pills}>
                     {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
+                    {/* ตรา "ผ่านการอบรม" ของเจ้าของร้าน (โปรไฟล์ /me → training_badges.seller) */}
+                    {!!sellerTraining && (
+                      <TrainingSeal size={22} needsRefresh={sellerTraining.needs_refresh} label={sellerTraining.label} compact />
+                    )}
                     {store && (
                       <Pill
                         label={store.rider_delivery ? 'ส่งด้วยไรเดอร์ได้' : 'ส่งพัสดุ'}
@@ -458,6 +467,9 @@ export default function MerchantScreen() {
               onPress={() => openOrders('all')}
               style={styles.sectionHeader}
             />
+
+            {/* ชวนอบรมร้านค้า (ห้องเรียน · ไม่บังคับ — ผ่านแล้ว/ยังไม่มีหลักสูตร = ซ่อนเอง) */}
+            <TrainingInviteCard role="seller" style={styles.sectionHeader} />
 
             {/* จัดการร้านในแอป */}
             <SectionHeader title="จัดการร้าน" subtitle="สินค้า สต็อก และข้อมูลร้าน" style={styles.sectionHeader} />

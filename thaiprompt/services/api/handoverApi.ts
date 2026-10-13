@@ -20,6 +20,7 @@ import { isTrustedAvatarUrl } from '@/utils/linking';
 import { clockOffsetFrom, rememberClockOffset } from '@/utils/serverClock';
 import { apiGet, apiPost, num, type ApiResult } from './client';
 import { fmImageUri } from './taladsodApi';
+import { parseTrainingBadge, type TrainingBadge, type TrainingRole } from '@/components/badges/trainingBadge';
 
 // =====================================================
 // ชนิดข้อมูลร่วม (ใช้ทั้งฝั่งผู้ซื้อและไรเดอร์)
@@ -57,6 +58,8 @@ export interface PersonCard {
   can_lock: boolean;
   /** ยืนยันตัวตนแล้ว (ป้ายทอง) — server ส่งมาเท่านั้น ไม่มี = false */
   verified: boolean;
+  /** ตรา "ผ่านการอบรม" (ห้องเรียน) — server รุ่นเก่าไม่ส่ง/ยังไม่ผ่าน = null */
+  training_badge?: TrainingBadge | null;
 }
 
 export interface SettlementLine {
@@ -174,7 +177,10 @@ export const personPhotoUri = (value: unknown): string | null => {
   return uri.startsWith(`${APP_INFO.WEBSITE}/`) || isTrustedAvatarUrl(uri) ? uri : null;
 };
 
-export const normalizePersonCard = (raw: any): PersonCard | null => {
+/**
+ * @param role บทบาทของการ์ดนี้ (ไรเดอร์/ผู้ซื้อ) — ใช้เป็นบทบาทของตราอบรมเมื่อ server ไม่ส่ง role มา
+ */
+export const normalizePersonCard = (raw: any, role?: TrainingRole): PersonCard | null => {
   if (!raw || typeof raw !== 'object') return null;
   const id = num(raw.id);
   if (!(id > 0)) return null;
@@ -189,6 +195,7 @@ export const normalizePersonCard = (raw: any): PersonCard | null => {
     hearts_from_me: nullableNum(raw.hearts_from_me),
     can_lock: bool(raw.can_lock),
     verified: bool(raw.verified),
+    training_badge: parseTrainingBadge(raw.training_badge, role),
   };
 };
 
@@ -267,7 +274,7 @@ export const normalizeBuyerHandoverData = (
   timing?: { sentAt: number; receivedAt: number }
 ): BuyerHandoverData => ({
   handover: normalizeHandoverBuyer(raw?.handover),
-  rider: normalizePersonCard(raw?.rider),
+  rider: normalizePersonCard(raw?.rider, 'rider'),
   job:
     raw?.job && typeof raw.job === 'object'
       ? {
@@ -285,7 +292,7 @@ export const normalizeRiderHandoverData = (
   timing?: { sentAt: number; receivedAt: number }
 ): RiderHandoverData => ({
   handover: normalizeHandoverRider(raw?.handover),
-  buyer: normalizePersonCard(raw?.buyer),
+  buyer: normalizePersonCard(raw?.buyer, 'buyer'),
   ...clockOf(raw, timing),
 });
 

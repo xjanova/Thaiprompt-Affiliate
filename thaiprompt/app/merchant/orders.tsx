@@ -22,6 +22,7 @@ import { Card3D, Chip, EmptyState, Icon, Pill, PriceText, Screen, formatBaht } f
 import { ORDER_STATUS_TONE, formatThaiDateTime, toNumber } from '@/components/shop';
 import { IconTile } from '@/components/merchant';
 import { useTheme, radii, spacing, typography } from '@/theme';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
 
 const FILTERS: Array<{ key: SellerOrderFilter; label: string; countKey?: string }> = [
   { key: 'to_confirm', label: 'รอยืนยัน', countKey: 'to_confirm' },
@@ -77,9 +78,12 @@ const OrderRow: React.FC<{ order: SellerOrderListItem; openChat?: boolean }> = (
           </Text>
           <View style={styles.metaLine}>
             <Icon name="user" size={14} color={colors.textMuted} />
-            <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+            <Text numberOfLines={1} style={[typography.caption, styles.shrinkText, { color: colors.textMuted }]}>
               {order.customer_name} · {toNumber(order.items_count)} ชิ้น
             </Text>
+            {/* ตรา "ผ่านการอบรม" ของลูกค้า (server รุ่นเก่าไม่ส่ง = ไม่แสดง) */}
+            <TrainingBadgeSeal value={order.customer_training_badge} role="buyer" size={14} compact />
+            <View style={styles.flex} />
           </View>
           {order.is_multi_seller && (
             <View style={styles.metaLine}>
@@ -305,6 +309,9 @@ export default function MerchantOrdersScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  shrinkText: {
+    flexShrink: 1,
   },
   loader: {
     marginTop: spacing.xxxl,

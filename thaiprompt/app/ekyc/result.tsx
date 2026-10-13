@@ -318,7 +318,7 @@ export default function EkycResultScreen() {
         <View style={[styles.goldBox, { backgroundColor: colors.goldSoft, borderColor: isDark ? colors.goldDeep : colors.gold }]}>
           <VerifiedBadge size={30} />
           <View style={styles.flex}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ป้ายทองข้างชื่อคุณ</Text>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ตรายืนยันตัวตนข้างชื่อคุณ</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
               คนอื่นจะเห็นว่าบัญชีนี้ยืนยันตัวตนแล้ว ส่วนรูปโปรไฟล์ยังเป็นรูปที่คุณเลือกเอง
             </Text>

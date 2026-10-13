@@ -224,6 +224,11 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   EKYC_PROCESSING: 'ระบบยังตรวจคำขอก่อนหน้าอยู่ รอสักครู่นะ',
   EKYC_SESSION_DONE: 'รอบนี้ตรวจเสร็จแล้ว กำลังเปิดผลให้',
   EKYC_PENDING_REVIEW: 'เจ้าหน้าที่กำลังตรวจข้อมูลยืนยันตัวตนของคุณอยู่',
+
+  // ห้องเรียน (อบรมรับป้าย "ผ่านการอบรม")
+  QUIZ_LOCKED: 'ดูวิดีโอให้ครบทุกบทก่อน แล้วค่อยทำแบบทดสอบนะ',
+  QUIZ_COOLDOWN: 'เพิ่งทำแบบทดสอบไป รอสักครู่แล้วลองใหม่ได้นะ',
+  ATTEMPT_EXPIRED: 'หมดเวลาทำแบบทดสอบรอบนี้แล้ว เริ่มรอบใหม่ได้เลย',
 };
 
 const STATUS_CODE: Record<number, string> = {

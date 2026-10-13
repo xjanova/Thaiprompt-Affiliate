@@ -31,6 +31,7 @@ import {
 } from '@/components/ui';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { VerifiedBadge } from '@/components/people/VerifiedBadge';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
 import { useBuyerLocation, useFocusedInterval, useMountedRef, getCachedBuyerCoords } from '@/components/taladsod';
 import { useAuthStore } from '@/stores/authStore';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
@@ -184,6 +185,7 @@ export default function NearbyRidersScreen() {
       hearts_from_me: rider.hearts_from_me,
       can_lock: rider.can_lock,
       verified: rider.verified,
+      training_badge: rider.training_badge ?? null,
     });
     resultHaptic('success');
     if (fromCheckout) {
@@ -266,6 +268,7 @@ export default function NearbyRidersScreen() {
                   {f.display_name}
                 </Text>
                 {f.verified && <VerifiedBadge size={16} />}
+                <TrainingBadgeSeal value={f.training_badge} role="rider" size={16} compact />
                 <Pill label={isChosen ? 'เลือกแล้ว' : 'ล็อกได้'} tone="gold" icon="lock" />
               </View>
               <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
@@ -312,6 +315,7 @@ export default function NearbyRidersScreen() {
                 {f.display_name}
               </Text>
               {f.verified && <VerifiedBadge size={16} />}
+              <TrainingBadgeSeal value={f.training_badge} role="rider" size={16} compact />
               <View style={styles.flex} />
               {!!distance && <Text style={[typography.caption, { color: colors.textMuted }]}>{distance}</Text>}
             </View>
@@ -357,6 +361,7 @@ export default function NearbyRidersScreen() {
               {r.display_name}
             </Text>
             {r.verified && <VerifiedBadge size={15} />}
+            <TrainingBadgeSeal value={r.training_badge} role="rider" size={15} compact />
           </View>
           <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
             {[kmText(r.distance_km), isNew ? 'ไรเดอร์ใหม่' : vehicle, r.status === 'busy' ? 'กำลังส่งงาน' : null].filter(Boolean).join(' · ')}
