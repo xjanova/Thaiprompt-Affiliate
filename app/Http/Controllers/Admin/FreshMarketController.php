@@ -15,6 +15,7 @@ use App\Models\WalletDebt;
 use App\Models\WalletTransaction;
 use App\Services\FreshMarketOrderNotifier;
 use App\Services\FreshMarketService;
+use App\Services\Marketplace\MarketTimeouts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +41,9 @@ class FreshMarketController extends Controller
         'line_basic_id' => ['string', '', 'string|max:50'],
         'default_line_stock' => ['integer', 10, 'integer|min:1|max:10000'],
         'max_seller_gp_debt' => ['float', 500, 'numeric|min:0|max:100000'],
+        // ⏱️ ร้านรับออเดอร์แล้วไม่กด "พร้อม": ผู้ซื้อยกเลิก+คืนเงินเต็มได้หลังกี่นาที · ระบบยกเลิก+คืนเงิน+แจ้งแอดมินหลังกี่นาที (2026-10-13)
+        'prep_buyer_cancel_minutes' => ['integer', MarketTimeouts::PREP_BUYER_CANCEL_DEFAULT, 'integer|min:5|max:720'],
+        'prep_auto_cancel_minutes' => ['integer', MarketTimeouts::PREP_AUTO_CANCEL_DEFAULT, 'integer|min:10|max:1440'],
     ];
 
     // ===== Dashboard =====
@@ -161,6 +165,18 @@ class FreshMarketController extends Controller
             'welcome_message' => 'nullable|string',
             'market' => 'nullable|array',
         ], $marketRules));
+
+        // ระบบยกเลิกเองต้องช้ากว่าเวลาที่ผู้ซื้อเริ่มยกเลิกได้ (ช่องที่ไม่ได้ส่งมา = ใช้ค่าปัจจุบัน)
+        $prepBuyer = (int) ($validated['market']['prep_buyer_cancel_minutes']
+            ?? Setting::get('fresh_market.prep_buyer_cancel_minutes', MarketTimeouts::PREP_BUYER_CANCEL_DEFAULT));
+        $prepAuto = (int) ($validated['market']['prep_auto_cancel_minutes']
+            ?? Setting::get('fresh_market.prep_auto_cancel_minutes', MarketTimeouts::PREP_AUTO_CANCEL_DEFAULT));
+
+        if ($prepAuto <= $prepBuyer) {
+            return back()->withInput()->withErrors([
+                'market.prep_auto_cancel_minutes' => 'เวลาที่ระบบยกเลิกออเดอร์ที่ร้านเตรียมช้าต้องมากกว่าเวลาที่ผู้ซื้อเริ่มยกเลิกเองได้',
+            ]);
+        }
 
         // credentials แยกบันทึก (guarded) — เว้นว่าง = ใช้ค่าเดิม
         $secret = $validated['line_channel_secret'] ?? null;

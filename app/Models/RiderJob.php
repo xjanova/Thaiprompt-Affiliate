@@ -191,6 +191,8 @@ class RiderJob extends Model
         'dispatch_radius_km',
         'dispatch_round',
         'last_dispatched_at',
+        'search_started_at',  // กติกาตัดเวลา 2026-10-13
+        'gps_lost_alerted_at',  // กติกาตัดเวลา 2026-10-13
     ];
 
     /**
@@ -244,6 +246,8 @@ class RiderJob extends Model
         'candidate_riders' => 'array',
         'offer_expires_at' => 'datetime',
         'offer_sent_at' => 'datetime',
+        'search_started_at' => 'datetime',
+        'gps_lost_alerted_at' => 'datetime',
     ];
 
     /**
@@ -287,6 +291,11 @@ class RiderJob extends Model
             // ตามค่าตั้ง rider.handover_enabled ณ ตอนนั้น — ผู้สร้างระบุค่าเองได้ (เทสต์/ย้ายข้อมูล)
             if (! array_key_exists('handover_required', $job->getAttributes())) {
                 $job->handover_required = false;
+            }
+
+            // กติกาตัดเวลา (2026-10-13): งานที่เกิดมาเป็น "รอไรเดอร์" เริ่มจับเวลาหาไรเดอร์ตั้งแต่ตอนสร้าง
+            if (($job->status ?? 'pending') === 'pending' && empty($job->search_started_at)) {
+                $job->search_started_at = now();
             }
         });
     }
@@ -423,6 +432,39 @@ class RiderJob extends Model
     public function isOpen(): bool
     {
         return $this->status === 'pending' && $this->rider_id === null;
+    }
+
+    /**
+     * เวลาเริ่ม "รอบหาไรเดอร์ปัจจุบัน" (กติกาตัดเวลา 2026-10-13)
+     *
+     * = search_started_at (ตั้งตอนสร้างงาน และทุกครั้งที่งานกลับเข้าคิว — RiderJobService::transition ไป pending)
+     * งานเก่าก่อนมีคอลัมน์: เวลาคืนงานล่าสุดใน dispatch_attempts หรือ created_at
+     * (เดิมนับจาก created_at อย่างเดียว → งานที่ถูกคืนหลังสร้างนานแล้วโดนส่งแอดมิน/ยกเลิกทันทีที่กลับเข้าคิว)
+     */
+    public function searchStartedAt(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->search_started_at !== null) {
+            return $this->search_started_at;
+        }
+
+        $latestRelease = null;
+        foreach ($this->dispatch_attempts ?? [] as $attempt) {
+            if (($attempt['status'] ?? null) !== 'released' || empty($attempt['at'])) {
+                continue;
+            }
+
+            try {
+                $at = \Illuminate\Support\Carbon::parse($attempt['at']);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($latestRelease === null || $at->gt($latestRelease)) {
+                $latestRelease = $at;
+            }
+        }
+
+        return $latestRelease ?? $this->created_at;
     }
 
     /**
@@ -778,6 +820,8 @@ class RiderJob extends Model
         $this->update([
             'gps_active' => true,
             'gps_lost_at' => null,
+            // จบเหตุการณ์ GPS หาย → ครั้งหน้าหายอีก แจ้งแอดมิน/ผู้ซื้อได้ใหม่ (กติกาตัดเวลา 2026-10-13)
+            'gps_lost_alerted_at' => null,
         ]);
     }
 

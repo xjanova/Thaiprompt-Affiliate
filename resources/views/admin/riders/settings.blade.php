@@ -29,6 +29,9 @@
             'fields' => ['allow_cod', 'handover_enabled', 'handover_geofence_m', 'handover_qr_ttl_seconds', 'handover_wait_seconds', 'handover_auto_release_hours', 'handover_buyer_confirmed_release_minutes']],
         'social' => ['title' => 'ไรเดอร์ใกล้ฉันและล็อกเรียกไรเดอร์', 'icon' => 'fa-heart', 'hint' => 'ผู้ซื้อเห็นไรเดอร์ใกล้ ๆ แบบเบลอตำแหน่ง และล็อกเรียกไรเดอร์คนโปรดได้เมื่อให้หัวใจครบ',
             'fields' => ['lock_min_hearts', 'lock_offer_seconds', 'nearby_radius_km', 'nearby_fuzz_m']],
+        // ===== กติกาตัดเวลา (2026-10-13) =====
+        'timeouts' => ['title' => 'ตัดเวลา: หาไรเดอร์ไม่ได้ / GPS หาย', 'icon' => 'fa-stopwatch', 'hint' => 'นับจากรอบหาไรเดอร์ปัจจุบัน (เริ่มใหม่ทุกครั้งที่งานกลับเข้าคิว) — ยกเลิกแล้วคืนเงินผู้ซื้อเต็มจำนวน ร้านไม่ได้เงิน',
+            'fields' => ['no_rider_buyer_cancel_minutes', 'no_rider_auto_cancel_minutes', 'gps_lost_release_minutes']],
     ];
     $grouped = collect($groups)->flatMap(fn ($g) => $g['fields'])->all();
     $others = array_values(array_diff(array_keys($spec), $grouped));
@@ -51,6 +54,8 @@
         'night_start_hour' => 'เริ่ม = สิ้นสุด หมายถึงไม่มีช่วงกลางคืน',
         'handover_enabled' => 'งานที่สร้างก่อนเปิดยังใช้ปุ่มส่งของแบบเดิมได้',
         'lock_min_hearts' => 'ผู้ซื้อคนนั้นต้องให้หัวใจไรเดอร์คนนั้นครบจำนวนนี้ (ค่าเริ่มต้น 11 = มากกว่า 10)',
+        'no_rider_auto_cancel_minutes' => 'ระบบยกเลิกออเดอร์ คืนเงินผู้ซื้อ แล้วแจ้งผู้ซื้อ ร้าน และแอดมิน',
+        'gps_lost_release_minutes' => 'ก่อนรับของ: คืนงานให้ไรเดอร์คนอื่น (นับเป็นการยกเลิกงาน) · หลังรับของ: แจ้งแอดมินและผู้ซื้อครั้งเดียว',
     ];
     $initial = [];
     foreach ($spec as $field => $item) {

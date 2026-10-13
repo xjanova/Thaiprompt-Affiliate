@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\Marketplace\RiderAbandonedJob;
 use App\Exceptions\RiderJobException;
 use App\Models\DeliveryHandover;
 use App\Models\Rider;
@@ -174,8 +175,12 @@ class RiderJobService
 
     /**
      * ไรเดอร์คืนงาน (ก่อนรับของเท่านั้น) → งานกลับเป็น pending แล้วกระจายใหม่
+     *
+     * นับเป็นการยกเลิกงานของไรเดอร์ (riders.cancelled_jobs) + ยิง RiderAbandonedJob หลัง commit
+     *
+     * @param  string  $abandonReason  RiderAbandonedJob::REASON_* (released = ไรเดอร์กดเอง · gps_lost = ระบบคืนให้เพราะ GPS หาย)
      */
-    public function release(RiderJob $job, Rider $rider, string $reason): RiderJob
+    public function release(RiderJob $job, Rider $rider, string $reason, string $abandonReason = RiderAbandonedJob::REASON_RELEASED): RiderJob
     {
         $reason = trim($reason) !== '' ? mb_substr(trim($reason), 0, 255) : 'ไรเดอร์คืนงาน';
 
@@ -216,11 +221,77 @@ class RiderJobService
             return $fresh;
         }
 
-        Log::info('RiderJob: released', ['job_id' => $fresh->id, 'rider_id' => $rider->id, 'reason' => $reason]);
+        Log::info('RiderJob: released', ['job_id' => $fresh->id, 'rider_id' => $rider->id, 'reason' => $reason, 'by' => $abandonReason]);
 
-        $this->afterBackToQueue($fresh, 'released');
+        $this->afterBackToQueue($fresh, $abandonReason === RiderAbandonedJob::REASON_GPS_LOST ? 'gps_released' : 'released');
+
+        // ระบบคะแนนไรเดอร์ (รอบหน้า) ฟัง event นี้ — ห้ามให้ listener ทำการคืนงานล้ม
+        try {
+            RiderAbandonedJob::dispatch((int) $fresh->id, (int) $rider->id, $abandonReason);
+        } catch (\Throwable $e) {
+            Log::warning('RiderJob: RiderAbandonedJob listener failed', ['job_id' => $fresh->id, 'error' => $e->getMessage()]);
+        }
 
         return $fresh->fresh();
+    }
+
+    /**
+     * กติกาตัดเวลา (2026-10-13): ไรเดอร์รับงานแล้ว GPS หายเกิน rider.gps_lost_release_minutes ก่อนรับของ
+     * → ระบบคืนงานเข้าคิวแทนไรเดอร์ (ทางเดียวกับไรเดอร์กดคืนงาน: นับ cancelled_jobs · ไม่เสนองานนี้ให้คนเดิมอีก)
+     * แจ้งไรเดอร์ + ผู้ซื้อ + ร้าน (in-app/Expo push — ห้าม LINE push)
+     *
+     * ตรวจซ้ำหลังล็อก: ไรเดอร์รับของไปแล้ว/งานจบ/ไม่ใช่ไรเดอร์คนเดิม → ไม่ทำอะไร (คืน null)
+     */
+    public function releaseForGpsLoss(RiderJob $job, int $minutes): ?RiderJob
+    {
+        $job->refresh();
+        $rider = $job->rider_id ? Rider::find($job->rider_id) : null;
+
+        if (! $rider || ! in_array($job->status, ['accepted', 'picking_up'], true)) {
+            return null;
+        }
+
+        // ตรวจซ้ำด้วยข้อมูลล่าสุด: ตำแหน่งเพิ่งเข้ามา / เพิ่งรับงาน → GPS ไม่ได้หายครบเวลา
+        $cutoff = now()->subMinutes($minutes);
+        foreach ([$rider->last_location_update, $job->accepted_at] as $signal) {
+            if ($signal !== null && $signal->gt($cutoff)) {
+                return null;
+            }
+        }
+
+        $releasesBefore = (int) $job->release_count;
+
+        try {
+            $fresh = $this->release(
+                $job,
+                $rider,
+                "GPS ขาดการเชื่อมต่อเกิน {$minutes} นาทีก่อนรับของ ระบบคืนงานอัตโนมัติ",
+                RiderAbandonedJob::REASON_GPS_LOST
+            );
+        } catch (RiderJobException $e) {
+            // ไรเดอร์เพิ่งกดรับของ/งานถูกยกเลิกพอดี → ไม่ต้องคืนงาน
+            Log::info('RiderJob: GPS release skipped', ['job_id' => $job->id, 'code' => $e->errorCode]);
+
+            return null;
+        }
+
+        // คำขออื่นคืนงานไปก่อนแล้ว (ไม่ได้เปลี่ยนจริงรอบนี้) → ไม่แจ้งซ้ำ
+        if ($fresh->status !== 'pending' || $fresh->rider_id !== null || (int) $fresh->release_count <= $releasesBefore) {
+            return null;
+        }
+
+        // GPS ยังไม่กลับ → ปิดรับงานไว้ก่อน (ไม่ให้ระบบเสนองานอื่นให้ไรเดอร์ที่ติดต่อไม่ได้) ไรเดอร์เปิดรับงานใหม่เองในแอป
+        Rider::whereKey($rider->id)->where('availability', 'online')->update(['availability' => 'offline']);
+
+        $this->notifier->notifyRider(
+            $rider,
+            $fresh,
+            'งานถูกคืนอัตโนมัติ',
+            "ระบบไม่ได้รับตำแหน่งของคุณเกิน {$minutes} นาที งาน #{$fresh->job_number} จึงถูกส่งต่อให้ไรเดอร์คนอื่น และนับเป็นการยกเลิกงาน เปิด GPS แล้วกดเปิดรับงานใหม่ในแอปได้เลย",
+            'gps_released'
+        );
+
+        return $fresh;
     }
 
     // =====================================================
@@ -585,6 +656,18 @@ class RiderJobService
                 if ($by === 'rider' && $locked->rider_id) {
                     Rider::whereKey($locked->rider_id)->increment('cancelled_jobs');
                 }
+
+                // กติกาตัดเวลา (2026-10-13): งานถูกยกเลิกก่อนรับของ → ปิดแถวส่งมอบที่ค้างอยู่ (เช่น ไรเดอร์คนก่อนรับงานแล้วคืน
+                // หรือผู้ซื้อเปิดหน้าส่งมอบไว้) ไม่ให้ผู้ซื้อเห็น QR ของงานที่ตายแล้ว · ยังไม่มีเงินเคลื่อน (ไรเดอร์ยังไม่ได้รับของ)
+                DeliveryHandover::where('rider_job_id', $locked->id)
+                    ->whereNotIn('status', DeliveryHandover::FINAL_STATUSES)
+                    ->update([
+                        'status' => DeliveryHandover::STATUS_REFUNDED,
+                        'resolution' => 'cancelled',
+                        'resolution_note' => mb_substr('ระบบปิดเรื่อง: งานถูกยกเลิกก่อนรับของ — '.$reason, 0, 1000),
+                        'resolved_at' => now(),
+                        'updated_at' => now(),
+                    ]);
             },
             null,
             $notifySource,
@@ -913,6 +996,18 @@ class RiderJobService
             }
 
             $locked->status = $to;
+
+            // กติกาตัดเวลา (2026-10-13): งานกลับเข้าคิว (ไรเดอร์คืนงาน / GPS หาย / ถูกระงับ) = เริ่มรอบหาไรเดอร์ใหม่
+            // → จับเวลาใหม่ (ส่งแอดมิน / ผู้ซื้อยกเลิกได้ / ระบบยกเลิก) และกระจายงานแบบปกติอีกครั้ง
+            //   (คืนงานบ่อยเกิน rider.max_release_count → afterBackToQueue ตั้ง manual_needed + แจ้งแอดมินเอง)
+            if ($to === 'pending') {
+                $locked->search_started_at = now();
+
+                if ($locked->dispatch_type === 'manual_needed') {
+                    $locked->dispatch_type = $this->config->dispatchMode();
+                }
+            }
+
             if ($mutate) {
                 $mutate($locked, $from);
             }

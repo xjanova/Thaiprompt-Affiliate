@@ -108,7 +108,7 @@ class ShopOrderNotifier
     /**
      * แจ้งผู้ขายทุกคนในออเดอร์ (ครั้งเดียวต่อเหตุการณ์)
      *
-     * @param  string  $kind  new | paid | cancelled_by_buyer
+     * @param  string  $kind  new | paid | cancelled_by_buyer | cancelled_no_rider
      */
     public function notifySellers(Order $order, string $kind): void
     {
@@ -128,6 +128,11 @@ class ShopOrderNotifier
                 'cancelled_by_buyer' => [
                     'ลูกค้ายกเลิกคำสั่งซื้อ',
                     "คำสั่งซื้อ #{$order->order_number} ถูกลูกค้ายกเลิกแล้ว กรุณาหยุดเตรียม/จัดส่งสินค้า",
+                ],
+                // กติกาตัดเวลา (2026-10-13): หาไรเดอร์ไม่ได้ครบเวลา ระบบยกเลิก + คืนเงินผู้ซื้อ (ร้านไม่ได้เงิน)
+                'cancelled_no_rider' => [
+                    'ยกเลิกคำสั่งซื้อ: ไม่มีไรเดอร์รับงาน',
+                    "คำสั่งซื้อ #{$order->order_number} ถูกระบบยกเลิกเพราะหาไรเดอร์ไม่ได้ตามเวลาที่กำหนด คืนเงินลูกค้าแล้ว กรุณาหยุดเตรียม/จัดส่งสินค้า",
                 ],
                 default => [
                     'มีคำสั่งซื้อใหม่',
@@ -158,7 +163,7 @@ class ShopOrderNotifier
                     );
 
                     // อีเมลแจ้งร้าน (เข้าคิว) เฉพาะออเดอร์ใหม่
-                    if ($kind !== 'cancelled_by_buyer' && $this->hasDeliverableEmail($seller)) {
+                    if (in_array($kind, ['new', 'paid'], true) && $this->hasDeliverableEmail($seller)) {
                         $seller->notify(new NewOrderNotification($order, 'seller'));
                     }
                 } catch (\Throwable $e) {

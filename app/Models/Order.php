@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Contracts\RiderDeliverable;
+use App\Events\Marketplace\NoRiderOrderCancelled;
 use App\Exceptions\ShopException;
+use App\Services\Marketplace\MarketTimeouts;
 use App\Services\Shop\CouponService;
 use App\Services\Shop\ShopOrderNotifier;
 use App\Support\Shop\PaymentMethod;
@@ -604,8 +606,10 @@ class Order extends Model implements RiderDeliverable
     {
         $reason = $reason !== null && trim($reason) !== '' ? trim($reason) : 'ยกเลิกโดยลูกค้า';
         $notifySellers = false;
+        // กติกาตัดเวลา (2026-10-13): ผู้ซื้อยกเลิกหลังหาไรเดอร์ไม่ได้เกินเวลา → ยิง NoRiderOrderCancelled หลัง commit
+        $noRiderCancel = null;
 
-        $result = DB::transaction(function () use ($reason, $adminId, $cancelledBy, &$notifySellers) {
+        $result = DB::transaction(function () use ($reason, $adminId, $cancelledBy, &$notifySellers, &$noRiderCancel) {
             /** @var Order|null $order */
             $order = static::whereKey($this->getKey())->lockForUpdate()->first();
 
@@ -638,6 +642,18 @@ class Order extends Model implements RiderDeliverable
             $notifySellers = $cancelledBy === 'buyer'
                 && ($wasPaid || $order->isCod())
                 && in_array($order->status, ['pending', 'paid', 'processing'], true);
+
+            // จดไว้ก่อนงานไรเดอร์ถูกยกเลิกด้านล่าง (งานที่ยังหาคนรับไม่ได้เกินเวลาที่ผู้ซื้อยกเลิกได้)
+            if ($cancelledBy === 'buyer' && $order->isRiderDelivery()) {
+                $openJob = RiderJob::forSource($order)->open()->latest('id')->first();
+
+                if ($openJob && app(MarketTimeouts::class)->noRiderBuyerCancelDue($openJob)) {
+                    $noRiderCancel = [
+                        'job_id' => (int) $openJob->id,
+                        'minutes' => MarketTimeouts::minutesSince($openJob->searchStartedAt()),
+                    ];
+                }
+            }
 
             // 1) ยกเลิกงานไรเดอร์ที่ยังไม่จบ (รับของแล้ว → failed + แจ้งคืนของที่ร้าน)
             try {
@@ -726,7 +742,68 @@ class Order extends Model implements RiderDeliverable
             }
         }
 
+        if ($noRiderCancel !== null && ! $result['already']) {
+            try {
+                NoRiderOrderCancelled::dispatch($noRiderCancel['job_id'], $this->getMorphClass(), (int) $this->id, $noRiderCancel['minutes'], NoRiderOrderCancelled::BY_BUYER);
+            } catch (\Throwable $e) {
+                Log::warning('Order cancel: NoRiderOrderCancelled listener failed', ['order_id' => $this->id, 'error' => $e->getMessage()]);
+            }
+        }
+
         return $result;
+    }
+
+    /**
+     * กติกาตัดเวลา (2026-10-13): ข้อความใต้ปุ่มยกเลิกของผู้ซื้อ (แอปอ่าน buyer_cancel_note)
+     * — มีเฉพาะออเดอร์ส่งด้วยไรเดอร์ที่ยังหาไรเดอร์ไม่ได้เกิน rider.no_rider_buyer_cancel_minutes
+     *
+     * @param  bool|null  $canCancel  ผลของ canBeCancelled() ที่ผู้เรียกคำนวณไว้แล้ว (null = คำนวณเอง)
+     */
+    public function buyerCancelNote(?bool $canCancel = null): ?string
+    {
+        if (! $this->exists || ! $this->isRiderDelivery() || ! ($canCancel ?? $this->canBeCancelled())) {
+            return null;
+        }
+
+        $timeouts = app(MarketTimeouts::class);
+        $job = RiderJob::forSource($this)->open()->latest('id')->first();
+
+        return $timeouts->noRiderBuyerCancelDue($job)
+            ? $timeouts->buyerCancelNote(MarketTimeouts::KIND_NO_RIDER, $this->isPaid())
+            : null;
+    }
+
+    /**
+     * hook เสริมของ RiderDispatchService::autoCancelNoRider — หาไรเดอร์ไม่ได้ครบเวลา
+     * → ยกเลิกด้วยทางปกติ (คืนเงินเต็มจำนวน · เรียกรายได้ร้านคืน · คืนสต็อก/คูปอง · ปิดงานไรเดอร์) + แจ้งร้าน
+     *   (ผู้ซื้อได้แจ้งเตือนคืนเงิน/ยกเลิกจาก Order::updated เอง)
+     *
+     * @return bool true = ยกเลิกสำเร็จในคำขอนี้ (ยกเลิกไปก่อนแล้ว/สถานะยกเลิกไม่ได้แล้ว = false)
+     *
+     * @throws ShopException REFUND_FAILED | HANDOVER_PENDING
+     */
+    public function riderCancelForNoRider(RiderJob $job, string $reason): bool
+    {
+        $fresh = $this->fresh();
+
+        if (! $fresh || ! $fresh->canBeCancelled()) {
+            return false;
+        }
+
+        $result = $fresh->cancel($reason, null, 'system');
+        $this->setRawAttributes($fresh->getAttributes(), true);
+
+        if ($result['already'] || ! $result['cancelled']) {
+            return false;
+        }
+
+        try {
+            app(ShopOrderNotifier::class)->notifySellers($fresh, 'cancelled_no_rider');
+        } catch (\Throwable $e) {
+            Log::warning('Order: notify sellers (no rider) failed', ['order_id' => $this->id, 'error' => $e->getMessage()]);
+        }
+
+        return true;
     }
 
     /**

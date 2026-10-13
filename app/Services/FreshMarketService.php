@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\Marketplace\NoRiderOrderCancelled;
+use App\Events\Marketplace\ShopMissedPrepDeadline;
 use App\Exceptions\FreshMarketException;
 use App\Models\FreshMarketBuyerPreference;
 use App\Models\FreshMarketCartItem;
@@ -22,6 +24,7 @@ use App\Models\Wallet;
 use App\Models\WalletDebt;
 use App\Models\WalletTransaction;
 use App\Services\Ekyc\EkycGate;
+use App\Services\Marketplace\MarketTimeouts;
 use App\Services\Pricing\PricingEngine;
 use App\Services\Rider\HandoverService;
 use Illuminate\Database\QueryException;
@@ -1344,6 +1347,7 @@ class FreshMarketService
 
         $role = $cancelledBy;
         $reason = mb_substr(trim($reason), 0, 500);
+        $reasonGiven = $reason !== '';
 
         if ($reason === '') {
             $reason = match ($role) {
@@ -1354,7 +1358,10 @@ class FreshMarketService
             };
         }
 
-        [$locked, $changed, $refunded] = DB::transaction(function () use ($order, $reason, $role, $actor) {
+        // กติกาตัดเวลา (2026-10-13): ผู้ซื้อยกเลิกเพราะร้านเตรียมช้า/หาไรเดอร์ไม่ได้ → เก็บไว้ยิง event หลัง commit
+        $timeoutCancel = null;
+
+        [$locked, $changed, $refunded] = DB::transaction(function () use ($order, &$reason, $reasonGiven, $role, $actor, &$timeoutCancel) {
             $locked = $this->lockOrder($order);
 
             if ($locked->order_status === FreshMarketOrder::STATUS_CANCELLED) {
@@ -1365,6 +1372,24 @@ class FreshMarketService
             // → ยกเลิกทางปกติไม่ได้ ให้แอดมินตัดสินที่หน้างานไรเดอร์ · ล็อกแถวงานไว้ (กันร้องเรียน/วางของแทรกกลางการยกเลิก)
             if ($locked->delivery_type === 'rider' && ($hold = app(HandoverService::class)->cancelHoldMessage($locked, true))) {
                 throw FreshMarketException::make('HANDOVER_PENDING', $hold, 409);
+            }
+
+            // ยกเลิกนอกตารางปกติของ role นี้ = ได้สิทธิ์จากกติกาตัดเวลา (ตรวจหลังล็อกแถวออเดอร์ + งานไรเดอร์แล้ว)
+            if ($role === 'buyer' && ! in_array($locked->order_status, FreshMarketOrder::ACTIONS['cancel']['from']['buyer'], true)) {
+                $kind = $locked->timeoutCancelKind('buyer');
+
+                if ($kind !== null) {
+                    $job = $kind === MarketTimeouts::KIND_NO_RIDER ? $locked->openRiderJob() : null;
+                    $timeoutCancel = [
+                        'kind' => $kind,
+                        'job_id' => $job?->id,
+                        'minutes' => MarketTimeouts::minutesSince($job ? $job->searchStartedAt() : MarketTimeouts::prepStartedAt($locked)),
+                    ];
+
+                    if (! $reasonGiven) {
+                        $reason = app(MarketTimeouts::class)->buyerCancelReason($kind);
+                    }
+                }
             }
 
             $this->assertCanTransition($locked, 'cancel', $role);
@@ -1421,10 +1446,35 @@ class FreshMarketService
                 'by' => $role,
                 'actor_id' => $actor?->id,
                 'refunded' => $refunded,
+                'timeout' => $timeoutCancel['kind'] ?? null,
             ]);
+
+            if ($timeoutCancel !== null) {
+                $this->dispatchTimeoutEvent(fn () => $timeoutCancel['kind'] === MarketTimeouts::KIND_PREP
+                    ? ShopMissedPrepDeadline::dispatch((int) $locked->id, (int) $locked->seller_id, (int) $timeoutCancel['minutes'], ShopMissedPrepDeadline::BY_BUYER)
+                    : NoRiderOrderCancelled::dispatch(
+                        (int) ($timeoutCancel['job_id'] ?? 0),
+                        $locked->getMorphClass(),
+                        (int) $locked->id,
+                        (int) $timeoutCancel['minutes'],
+                        NoRiderOrderCancelled::BY_BUYER
+                    ));
+            }
         }
 
         return $locked;
+    }
+
+    /**
+     * ยิง event ของกติกาตัดเวลา (listener พังต้องไม่ทำให้การยกเลิก/คืนเงินที่ commit แล้วดูเหมือนล้ม)
+     */
+    protected function dispatchTimeoutEvent(callable $dispatch): void
+    {
+        try {
+            $dispatch();
+        } catch (\Throwable $e) {
+            Log::warning('FreshMarket: timeout event listener failed', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -2233,6 +2283,69 @@ class FreshMarketService
                 Log::info('FreshMarket: ข้ามการยกเลิกอัตโนมัติ', ['order_id' => $id, 'code' => $e->errorCode()]);
             } catch (\Throwable $e) {
                 Log::error('FreshMarket: ยกเลิกออเดอร์หมดเวลาล้มเหลว', ['order_id' => $id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * กติกาตัดเวลา (2026-10-13): ร้านรับออเดอร์แล้วไม่กด "พร้อม" ครบ fresh_market.prep_auto_cancel_minutes (90 นาที)
+     * → ระบบยกเลิก + คืนเงินผู้ซื้อเต็มจำนวน (รวมค่าส่ง) + คืนสต็อก + ยกเลิกงานไรเดอร์ที่ยังไม่รับของ
+     *   + แจ้งผู้ซื้อ/ร้าน (statusChanged) + แจ้งแอดมิน + ยิง ShopMissedPrepDeadline (auto)
+     *
+     * idempotent: ออเดอร์ที่ยกเลิกแล้วไม่ถูกเลือกซ้ำ · ร้านกด "พร้อม" พอดี → cancelOrder ตอบ INVALID_TRANSITION แล้วข้าม
+     *
+     * @return int จำนวนออเดอร์ที่ยกเลิก
+     */
+    public function expireOverduePreparation(int $limit = 100): int
+    {
+        $minutes = app(MarketTimeouts::class)->prepAutoCancelMinutes();
+        $cutoff = now()->subMinutes($minutes);
+
+        $ids = FreshMarketOrder::whereIn('order_status', [FreshMarketOrder::STATUS_ACCEPTED, FreshMarketOrder::STATUS_PREPARING])
+            ->where(function ($q) use ($cutoff) {
+                $q->where('accepted_at', '<=', $cutoff)
+                    ->orWhere(fn ($q2) => $q2->whereNull('accepted_at')->where('created_at', '<=', $cutoff));
+            })
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id');
+
+        $count = 0;
+        $reason = "ร้านรับออเดอร์แล้วแต่เตรียมสินค้าไม่เสร็จภายใน {$minutes} นาที ระบบยกเลิกและคืนเงินเต็มจำนวนอัตโนมัติ";
+
+        foreach ($ids as $id) {
+            $order = FreshMarketOrder::find($id);
+
+            if (! $order) {
+                continue;
+            }
+
+            $elapsed = MarketTimeouts::minutesSince(MarketTimeouts::prepStartedAt($order));
+
+            try {
+                $result = $this->cancelOrder($order, $reason, 'system');
+
+                // ยกเลิกในรอบนี้จริง (ไม่ใช่ถูกยกเลิกไปก่อนแล้วด้วยเหตุอื่น)
+                if ($result->order_status !== FreshMarketOrder::STATUS_CANCELLED
+                    || $result->cancelled_by !== 'system' || $result->cancel_reason !== $reason) {
+                    continue;
+                }
+
+                $count++;
+                $this->notifier->prepTimeoutCancelled($result, $elapsed);
+                $this->dispatchTimeoutEvent(fn () => ShopMissedPrepDeadline::dispatch(
+                    (int) $result->id,
+                    (int) $result->seller_id,
+                    $elapsed,
+                    ShopMissedPrepDeadline::BY_AUTO
+                ));
+            } catch (FreshMarketException $e) {
+                // สถานะเปลี่ยนไปแล้ว (ร้านเพิ่งกดพร้อม) / เงินพักรอตัดสิน → ข้าม
+                Log::info('FreshMarket: ข้ามการยกเลิกออเดอร์ที่ร้านเตรียมช้า', ['order_id' => $id, 'code' => $e->errorCode()]);
+            } catch (\Throwable $e) {
+                Log::error('FreshMarket: ยกเลิกออเดอร์ที่ร้านเตรียมช้าล้มเหลว', ['order_id' => $id, 'error' => $e->getMessage()]);
             }
         }
 

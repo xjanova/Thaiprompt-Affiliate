@@ -331,6 +331,7 @@ class ShopPresenter
     public static function order(Order $order): array
     {
         $order->loadMissing(['items', 'store']);
+        $canCancel = $order->canBeCancelled();
 
         return [
             'id' => (int) $order->id,
@@ -356,7 +357,10 @@ class ShopPresenter
             'shipping_provider' => $order->shipping_provider,
             'tracking_url' => $order->tracking_url,
             'rider' => self::riderSummary($order),
-            'can_cancel' => $order->canBeCancelled(),
+            'can_cancel' => $canCancel,
+            // กติกาตัดเวลา (2026-10-13): ชื่อเดียวกับออเดอร์ตลาดสด — แอปแสดงปุ่ม + เหตุผล (หาไรเดอร์ไม่ได้เกินเวลา)
+            'buyer_can_cancel' => $canCancel,
+            'buyer_cancel_note' => $order->buyerCancelNote($canCancel),
             'can_pay' => $order->canRetryPayment() && ! $order->isCod(),
             'can_confirm_received' => $order->status === 'delivered',
             'cancellation_reason' => $order->cancellation_reason,

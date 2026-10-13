@@ -567,7 +567,8 @@ class FreshMarketApiController extends Controller
 
     /**
      * POST /api/v1/fresh-market/orders/{id}/cancel  body: reason?
-     * ผู้ซื้อยกเลิกได้เฉพาะตอนร้านยังไม่รับ (เงินที่จ่ายผ่าน wallet คืนเข้า wallet)
+     * ผู้ซื้อยกเลิกได้ตอนร้านยังไม่รับ หรือเกินเวลา (ร้านเตรียมช้า / หาไรเดอร์ไม่ได้ — ดู buyer_can_cancel, buyer_cancel_note)
+     * เงินที่จ่ายผ่าน wallet คืนเข้า wallet เต็มจำนวน (รวมค่าส่ง)
      */
     public function cancelOrder(Request $request, int $id): JsonResponse
     {

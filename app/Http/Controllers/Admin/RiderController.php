@@ -79,6 +79,10 @@ class RiderController extends Controller
         'lock_offer_seconds' => ['key' => 'rider.lock_offer_seconds', 'type' => 'integer', 'min' => 10, 'max' => 600, 'label' => 'ไรเดอร์ที่ถูกล็อกได้สิทธิ์รับก่อน', 'unit' => 'วินาที'],
         'nearby_radius_km' => ['key' => 'rider.nearby_radius_km', 'type' => 'float', 'min' => 0.5, 'max' => 20, 'label' => 'รัศมีแสดงไรเดอร์ใกล้ผู้ซื้อ', 'unit' => 'กม.'],
         'nearby_fuzz_m' => ['key' => 'rider.nearby_fuzz_m', 'type' => 'integer', 'min' => 0, 'max' => 2000, 'label' => 'เบลอตำแหน่งไรเดอร์บนแผนที่', 'unit' => 'เมตร'],
+        // ===== กติกาตัดเวลา (2026-10-13) =====
+        'no_rider_buyer_cancel_minutes' => ['key' => 'rider.no_rider_buyer_cancel_minutes', 'type' => 'integer', 'min' => 5, 'max' => 720, 'label' => 'หาไรเดอร์ไม่ได้ ผู้ซื้อยกเลิกรับเงินคืนเต็มได้หลัง', 'unit' => 'นาที'],
+        'no_rider_auto_cancel_minutes' => ['key' => 'rider.no_rider_auto_cancel_minutes', 'type' => 'integer', 'min' => 10, 'max' => 1440, 'label' => 'หาไรเดอร์ไม่ได้ ระบบยกเลิกและคืนเงินอัตโนมัติหลัง', 'unit' => 'นาที'],
+        'gps_lost_release_minutes' => ['key' => 'rider.gps_lost_release_minutes', 'type' => 'integer', 'min' => 3, 'max' => 120, 'label' => 'GPS ไรเดอร์หายเกินเวลานี้ (ก่อนรับของ = คืนงาน / หลังรับของ = แจ้งเตือน)', 'unit' => 'นาที'],
     ];
 
     public function __construct(
@@ -809,6 +813,11 @@ class RiderController extends Controller
 
             if ((float) $value('min_fee') > 0 && (float) $value('base_fee') > (float) $value('min_fee') * 10) {
                 $v->errors()->add('settings.base_fee', 'ค่าส่งเริ่มต้นสูงผิดปกติเมื่อเทียบกับค่าส่งขั้นต่ำ กรุณาตรวจสอบ');
+            }
+
+            // ระบบยกเลิกเองต้องช้ากว่าเวลาที่ผู้ซื้อเริ่มยกเลิกได้ (ไม่งั้นผู้ซื้อไม่มีโอกาสตัดสินใจเอง)
+            if ((int) $value('no_rider_auto_cancel_minutes') <= (int) $value('no_rider_buyer_cancel_minutes')) {
+                $v->errors()->add('settings.no_rider_auto_cancel_minutes', 'เวลาที่ระบบยกเลิกอัตโนมัติต้องมากกว่าเวลาที่ผู้ซื้อเริ่มยกเลิกเองได้');
             }
         });
 

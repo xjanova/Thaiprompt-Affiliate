@@ -6,6 +6,7 @@ use App\Models\FreshMarketSetting;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\RiderLocation;
+use App\Services\Marketplace\MarketTimeouts;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -21,7 +22,8 @@ use Illuminate\Support\Str;
  * - ลูกค้าเลือกแชร์ตำแหน่งตัวเองให้ไรเดอร์ได้ (ต้องยินยอมเอง) หยุดอัตโนมัติเมื่อจบงาน
  *
  * ❗ ไม่ใช้ LINE push (โควต้า 300/เดือน) — แจ้งผ่าน in-app + Expo push เท่านั้น
- *    เรื่อง GPS หาย/กลับมา ไม่แจ้งลูกค้า (แสดงบนหน้าติดตามแทน) แจ้งแค่ไรเดอร์/แอดมิน
+ *    GPS หายช่วงสั้น ไม่แจ้งลูกค้า (แสดงบนหน้าติดตามแทน) แจ้งแค่ไรเดอร์
+ *    (2026-10-13) GPS หายเกิน rider.gps_lost_release_minutes: ก่อนรับของ = คืนงาน · หลังรับของ = แจ้งแอดมิน + ผู้ซื้อครั้งเดียว
  */
 class RiderGpsTrackingService
 {
@@ -196,7 +198,8 @@ class RiderGpsTrackingService
         RiderLocation::recordLocation($rider->id, $data, $job->id);
 
         $resumed = false;
-        if (! $job->gps_active) {
+        // GPS กลับมา: หยุดชั่วคราวอยู่ หรือเคยแจ้งแอดมิน/ผู้ซื้อเรื่อง GPS หายไปแล้ว (จบเหตุการณ์ → ครั้งหน้าแจ้งใหม่ได้)
+        if (! $job->gps_active || $job->gps_lost_alerted_at !== null) {
             $this->handleGpsResume($job);
             $resumed = true;
         }
@@ -250,6 +253,136 @@ class RiderGpsTrackingService
         }
 
         return $count;
+    }
+
+    /**
+     * กติกาตัดเวลา (2026-10-13): GPS ไรเดอร์หายเกิน rider.gps_lost_release_minutes (rider:gps-watch ทุกนาที)
+     *
+     * ไม่ขึ้นกับ gps_active (detectGpsLoss ตั้ง false หลังเตือนครั้งแรกแล้วไม่เคยดูงานนั้นอีก)
+     * เวลาสัญญาณล่าสุด = ค่ามากสุดของ ตำแหน่งล่าสุดของไรเดอร์ / เวลารับงาน / เวลารับของ (แอปยังทำงานอยู่ตอนกดปุ่มเหล่านั้น)
+     *
+     * - ก่อนรับของ (accepted / picking_up) → คืนงานเข้าคิว (RiderJobService::releaseForGpsLoss — นับ cancelled_jobs, แจ้งไรเดอร์/ผู้ซื้อ/ร้าน)
+     * - หลังรับของ (picked_up / delivering) → แจ้งแอดมิน + ผู้ซื้อครั้งเดียวต่อเหตุการณ์ (gps_lost_alerted_at) ไม่ทำอะไรกับงานเอง
+     *
+     * @return array{released: int, alerted: int}
+     */
+    public function enforceGpsLossRules(int $limit = 200): array
+    {
+        $stats = ['released' => 0, 'alerted' => 0];
+        $minutes = app(MarketTimeouts::class)->gpsLostReleaseMinutes();
+        $cutoff = now()->subMinutes($minutes);
+
+        $jobs = RiderJob::query()
+            ->whereIn('status', RiderJob::ACTIVE_STATUSES)
+            ->whereNotNull('rider_id')
+            ->where(fn ($q) => $q->whereNull('accepted_at')->orWhere('accepted_at', '<=', $cutoff))
+            ->where(fn ($q) => $q->whereNull('picked_up_at')->orWhere('picked_up_at', '<=', $cutoff))
+            // หลังรับของที่แจ้งไปแล้วในเหตุการณ์นี้ → ไม่ต้องโหลดมาอีก
+            ->where(fn ($q) => $q->whereIn('status', ['accepted', 'picking_up'])->orWhereNull('gps_lost_alerted_at'))
+            ->whereHas('rider', function ($q) use ($cutoff) {
+                $q->where(fn ($q2) => $q2->whereNull('last_location_update')->orWhere('last_location_update', '<=', $cutoff));
+            })
+            ->with('rider')
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+
+        foreach ($jobs as $job) {
+            try {
+                $lastSignal = $this->lastSignalAt($job);
+                if ($lastSignal !== null && $lastSignal->gt($cutoff)) {
+                    continue;
+                }
+
+                if (in_array($job->status, ['accepted', 'picking_up'], true)) {
+                    if (app(RiderJobService::class)->releaseForGpsLoss($job, $minutes)) {
+                        $stats['released']++;
+                    }
+                } elseif ($this->alertGpsLostAfterPickup($job, $minutes)) {
+                    $stats['alerted']++;
+                }
+            } catch (\Throwable $e) {
+                Log::error('RiderGPS: enforce gps-loss rule failed', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * เวลาที่ได้สัญญาณจากไรเดอร์ล่าสุดของงานนี้
+     */
+    protected function lastSignalAt(RiderJob $job): ?\Illuminate\Support\Carbon
+    {
+        $candidates = array_filter([
+            $job->rider?->last_location_update,
+            $job->accepted_at,
+            $job->picked_up_at,
+        ]);
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        return collect($candidates)->sortByDesc(fn ($at) => $at->getTimestamp())->first();
+    }
+
+    /**
+     * หลังรับของ GPS หายเกินกำหนด → แจ้งแอดมิน + ผู้ซื้อ (ครั้งเดียวต่อเหตุการณ์ — ล้างเมื่อ GPS กลับมา)
+     */
+    protected function alertGpsLostAfterPickup(RiderJob $job, int $minutes): bool
+    {
+        $updated = RiderJob::whereKey($job->id)
+            ->whereIn('status', ['picked_up', 'delivering'])
+            ->whereNull('gps_lost_alerted_at')
+            ->update(['gps_lost_alerted_at' => now()]);
+
+        if ($updated === 0) {
+            return false;
+        }
+
+        $job->refresh();
+        $job->loadMissing('rider');
+        $riderName = $job->rider?->full_name ?? '-';
+        $riderPhone = $job->rider?->phone ?? '-';
+
+        Log::warning('RiderGPS: GPS lost after pickup — admins and buyer alerted', ['job_id' => $job->id, 'rider_id' => $job->rider_id, 'minutes' => $minutes]);
+
+        $this->notifier->notifyAdmins(
+            'GPS ไรเดอร์หายระหว่างนำส่ง',
+            "งาน #{$job->job_number} ไรเดอร์ {$riderName} ({$riderPhone}) รับของแล้วแต่ระบบไม่ได้รับตำแหน่งเกิน {$minutes} นาที กรุณาติดต่อไรเดอร์",
+            ['job_id' => (int) $job->id, 'rider_id' => $job->rider_id ? (int) $job->rider_id : null, 'event' => 'gps_lost_after_pickup']
+        );
+
+        $buyerId = null;
+        try {
+            $buyerId = $job->deliverableSource()?->riderCustomerUserId();
+        } catch (\Throwable) {
+            // ออเดอร์ต้นทางโหลดไม่ได้ → ใช้ผู้ซื้อของงาน
+        }
+        $buyerId ??= $job->customer_id ? (int) $job->customer_id : null;
+
+        if ($buyerId) {
+            $this->notifier->notifyUser(
+                $buyerId,
+                'delivery_update',
+                'ไรเดอร์ขาดการติดต่อชั่วคราว',
+                "ระบบไม่ได้รับตำแหน่งไรเดอร์ของงาน #{$job->job_number} เกิน {$minutes} นาที ทีมงานกำลังติดต่อไรเดอร์ให้",
+                [
+                    'type' => 'delivery_update',
+                    'event' => 'gps_lost',
+                    'role' => 'buyer',
+                    'screen' => 'order',
+                    'job_id' => (int) $job->id,
+                    'source' => RiderNotificationService::sourceKey($job),
+                    'order_id' => $job->source_id ? (int) $job->source_id : null,
+                ],
+                null,
+                'high'
+            );
+        }
+
+        return true;
     }
 
     /**
