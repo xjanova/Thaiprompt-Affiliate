@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
  *
  * 1. งาน pending ที่ไม่มีคนรับ → ขยายรัศมีแล้วแจ้งไรเดอร์เพิ่ม (สูงสุด rider.max_dispatch_rounds รอบ)
  * 2. รอเกิน rider.pending_timeout_minutes → dispatch_type = manual_needed + แจ้งแอดมิน/ผู้ซื้อ/ผู้ขาย
+ *    แล้วยังเสนอไรเดอร์ที่เพิ่งออนไลน์ต่อ (ไม่แจ้งแอดมินซ้ำ) · ครบ rider.no_rider_auto_cancel_minutes → ยกเลิกออเดอร์ + คืนเงิน
+ *    (นับจากรอบหาไรเดอร์ปัจจุบัน — เริ่มใหม่เมื่องานกลับเข้าคิว)
  * 3. cascade ที่ offer หมดเวลา (กรณีคิวไม่ได้รัน) → เสนอคนถัดไป
  * 4. งาน completed ที่ยังเคลียร์เงินไม่ครบ (วอลเลตล็อก/ยอด COD ไม่พอ) → ลองใหม่
  *
@@ -40,10 +42,12 @@ class RiderSweepPendingCommand extends Command
         }
 
         $this->info(sprintf(
-            'rebroadcast=%d escalated=%d cascade_moved=%d settle_attempts=%d',
+            'rebroadcast=%d escalated=%d cascade_moved=%d reoffered=%d auto_cancelled=%d settle_attempts=%d',
             $stats['rebroadcast'],
             $stats['escalated'],
             $stats['cascade_moved'],
+            $stats['reoffered'] ?? 0,
+            $stats['auto_cancelled'] ?? 0,
             $settled
         ));
 

@@ -265,6 +265,8 @@ export interface FmSellerOrder {
   rider_job: {
     id: number;
     status: string;
+    /** ป้ายสถานะภาษาไทยจาก server (server รุ่นเก่าไม่ส่ง) */
+    status_label?: string | null;
     rider_name: string | null;
     rider_phone: string | null;
     tracking_url: string | null;

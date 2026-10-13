@@ -804,6 +804,10 @@ export interface FmOrder {
   buyer_review: string | null;
   can_review: boolean;
   allowed_actions: string[];
+  /** ร้านเตรียมของช้าเกิน 45 นาที / หาไรเดอร์ไม่ได้เกิน 30 นาที → ผู้ซื้อยกเลิกเองได้ (server เก่าไม่ส่ง = false) */
+  buyer_can_cancel: boolean;
+  /** ข้อความไทยอธิบายเหตุผลที่ยกเลิกได้ */
+  buyer_cancel_note: string | null;
   items_count: number;
   items_summary: string | null;
   items: FmOrderItem[];
@@ -894,6 +898,8 @@ export const normalizeFmOrder = (raw: any): FmOrder => {
     buyer_review: str(raw?.buyer_review),
     can_review: raw?.can_review === true,
     allowed_actions: Array.isArray(raw?.allowed_actions) ? raw.allowed_actions.filter((a: unknown) => typeof a === 'string') : [],
+    buyer_can_cancel: raw?.buyer_can_cancel === true,
+    buyer_cancel_note: str(raw?.buyer_cancel_note),
     items_count: num(raw?.items_count, items.reduce((sum: number, i: FmOrderItem) => sum + i.quantity, 0)),
     items_summary: str(raw?.items_summary),
     items,

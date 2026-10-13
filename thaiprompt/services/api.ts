@@ -13,7 +13,7 @@ import {
   APP_CONFIG,
   ERROR_MESSAGES,
 } from '@/constants';
-import { APP_FEATURE_BUILD } from '@/config/appConfig';
+import { APP_REQUEST_BUILD } from '@/config/appConfig';
 import { useSyncStore } from '@/stores/syncStore';
 import type { SocialProvider } from '@/utils/webAuth';
 import type {
@@ -36,8 +36,8 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    // ชุดฟีเจอร์ของแอป (ค่าคงที่ในโค้ด) — ติดไปกับทุก request ตั้งแต่ request แรก (ไรเดอร์รอบ 2 §A9)
-    'X-App-Build': String(APP_FEATURE_BUILD),
+    // เลข build จริงของเครื่อง (ไม่ต่ำกว่าชุดฟีเจอร์ของโค้ด) — ติดไปกับทุก request ตั้งแต่ request แรก (ไรเดอร์รอบ 2 §A9)
+    'X-App-Build': String(APP_REQUEST_BUILD),
   },
 });
 

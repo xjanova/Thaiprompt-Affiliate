@@ -188,18 +188,26 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = async () => {
-    if (!product || !requireLogin()) return;
-    const result = await addToCart(product.id, quantity);
-    if (!mountedRef.current) return;
-    if (!result.success) {
-      showAddError('ใส่ตะกร้าไม่สำเร็จ', result);
-      return;
+    // กันกดซ้ำ: server "บวกจำนวนเพิ่ม" ทุกครั้งที่ใส่ตะกร้า (ShopCartService) — แตะรัว/แตะพร้อม "ซื้อเลย" = ของเกิน
+    if (!product || !requireLogin() || buyingRef.current) return;
+    buyingRef.current = true;
+    const name = product.name;
+    const qty = quantity;
+    try {
+      const result = await addToCart(product.id, qty);
+      if (!mountedRef.current) return;
+      if (!result.success) {
+        showAddError('ใส่ตะกร้าไม่สำเร็จ', result);
+        return;
+      }
+      resultHaptic('success');
+      Alert.alert('ใส่ตะกร้าแล้ว', `${name} × ${qty}`, [
+        { text: 'ช้อปต่อ', style: 'cancel' },
+        { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
+      ]);
+    } finally {
+      buyingRef.current = false;
     }
-    resultHaptic('success');
-    Alert.alert('ใส่ตะกร้าแล้ว', `${product.name} × ${quantity}`, [
-      { text: 'ช้อปต่อ', style: 'cancel' },
-      { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
-    ]);
   };
 
   /** ไปชำระเงิน — ถ้าตะกร้ามีสินค้าอื่นอยู่ด้วย ถามก่อนว่าจะสั่งรวมหรือไปจัดการตะกร้า (ไม่ลบของผู้ใช้เอง) */

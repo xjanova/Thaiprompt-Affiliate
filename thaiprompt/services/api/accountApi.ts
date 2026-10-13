@@ -91,6 +91,12 @@ export const removePushTokenFromServer = (body: { token?: string | null; device_
     ...(body.device_id ? { device_id: body.device_id } : {}),
   });
 
+/**
+ * POST /mobile/push-test — ให้เซิร์ฟเวอร์ยิงแจ้งเตือนทดสอบจริงไปทุกเครื่องของบัญชีนี้ (2026-10-13)
+ * NO_PUSH_TOKEN = เครื่องยังไม่ได้ผูก token · PUSH_FAILED = ส่งไม่ถึง
+ */
+export const sendTestPush = (): Promise<ApiResult<{ sent: number }>> => apiPost<{ sent: number }>('/mobile/push-test', {});
+
 // =====================================================
 // ถอนเงิน + บัญชีรับเงิน + PIN (E2-money)
 // ลำดับหน้าจอ: info → (has_pin=false: ตั้ง PIN) → (ไม่มีบัญชี: เพิ่มบัญชี) → preview → withdraw

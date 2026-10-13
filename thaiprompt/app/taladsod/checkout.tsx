@@ -120,6 +120,8 @@ export default function TaladsodCheckoutScreen() {
 
   const [config, setConfig] = useState<FmConfig | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  /** โหลดตะกร้าไม่สำเร็จ (ยังไม่มีตะกร้าในเครื่อง) → แสดงข้อความ + ปุ่มลองใหม่ แทนวงหมุนไม่รู้จบ */
+  const [cartError, setCartError] = useState<string | null>(null);
   const [shop, setShop] = useState<FmShopDetail | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [deliveryType, setDeliveryType] = useState<FmDeliveryType>('rider');
@@ -161,10 +163,25 @@ export default function TaladsodCheckoutScreen() {
     }
   }, [mountedRef]);
 
+  const loadCart = useCallback(async () => {
+    setCartError(null);
+    const res = await useTaladsodCartStore
+      .getState()
+      .refresh()
+      .catch(() => null);
+    if (!mountedRef.current) return;
+    if (!res || !res.success) setCartError(res?.message || 'โหลดตะกร้าไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่นะ');
+  }, [mountedRef]);
+
+  /** ลองใหม่จากหน้าข้อผิดพลาด: โหลดตะกร้า + ตั้งค่าที่ยังขาด */
+  const retryInitial = useCallback(async () => {
+    await Promise.all([loadCart(), config ? Promise.resolve() : loadConfig()]);
+  }, [loadCart, loadConfig, config]);
+
   useEffect(() => {
     if (!isAuthenticated || !sellerId) return;
     loadConfig();
-    useTaladsodCartStore.getState().refresh().catch(() => {});
+    loadCart();
     getShop(sellerId).then((res) => {
       if (mountedRef.current && res.success) setShop(res.data);
     });
@@ -178,7 +195,7 @@ export default function TaladsodCheckoutScreen() {
         baselineOrderIdRef.current = res.data.orders.reduce((max, o) => Math.max(max, o.id), 0);
       }
     });
-  }, [isAuthenticated, sellerId, loadConfig, mountedRef]);
+  }, [isAuthenticated, sellerId, loadConfig, loadCart, mountedRef]);
 
   const pinnedAddresses = useMemo(
     () => addresses.filter((a) => a.has_location && Number.isFinite(Number(a.latitude)) && Number.isFinite(Number(a.longitude))),
@@ -543,6 +560,23 @@ export default function TaladsodCheckoutScreen() {
           onAction={() => router.replace('/taladsod/cart' as never)}
           secondaryActionLabel="ดูออเดอร์ของฉัน"
           onSecondaryAction={() => router.replace('/taladsod/orders' as never)}
+        />
+      </Screen>
+    );
+  }
+
+  // โหลดตะกร้าไม่สำเร็จและยังไม่มีข้อมูลร้านนี้ในเครื่อง → บอกผู้ใช้ + ลองใหม่ (เดิมหมุนค้างไม่รู้จบ)
+  if (!shopCart && cartError) {
+    return (
+      <Screen title="ยืนยันคำสั่งซื้อ" scroll={false}>
+        <EmptyState
+          variant="error"
+          title="โหลดตะกร้าไม่สำเร็จ"
+          message={cartError}
+          actionLabel="ลองใหม่"
+          onAction={retryInitial}
+          secondaryActionLabel="ไปที่ตะกร้า"
+          onSecondaryAction={() => router.replace('/taladsod/cart' as never)}
         />
       </Screen>
     );

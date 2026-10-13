@@ -571,7 +571,8 @@ class FreshMarketApiController extends Controller
 
     /**
      * POST /api/v1/fresh-market/orders/{id}/cancel  body: reason?
-     * ผู้ซื้อยกเลิกได้เฉพาะตอนร้านยังไม่รับ (เงินที่จ่ายผ่าน wallet คืนเข้า wallet)
+     * ผู้ซื้อยกเลิกได้ตอนร้านยังไม่รับ หรือเกินเวลา (ร้านเตรียมช้า / หาไรเดอร์ไม่ได้ — ดู buyer_can_cancel, buyer_cancel_note)
+     * เงินที่จ่ายผ่าน wallet คืนเข้า wallet เต็มจำนวน (รวมค่าส่ง)
      */
     public function cancelOrder(Request $request, int $id): JsonResponse
     {
@@ -933,6 +934,20 @@ class FreshMarketApiController extends Controller
 
             if ((float) $data['compare_at_price'] <= $effectivePrice) {
                 return $this->error('VALIDATION_ERROR', 'ราคาก่อนลดต้องมากกว่าราคาขาย', 422);
+            }
+        }
+
+        // แก้ราคาขายอย่างเดียว (เช่น "แก้ราคา" ด่วนในแอป) แต่สินค้ามีราคาก่อนลดเดิมที่ไม่สูงกว่าราคาใหม่
+        // → ปฏิเสธพร้อมบอกเหตุผล (ไม่ล้างราคาก่อนลดให้เงียบๆ และไม่ปล่อยให้ราคาขีดฆ่าต่ำกว่าราคาขาย)
+        if (array_key_exists('price', $data) && ! array_key_exists('compare_at_price', $data)) {
+            $storedCompare = $listing->compare_at_price !== null ? (float) $listing->compare_at_price : 0.0;
+
+            if ($storedCompare > 0 && $storedCompare <= (float) $data['price']) {
+                return $this->error(
+                    'COMPARE_PRICE_CONFLICT',
+                    'ราคาขายต้องต่ำกว่าราคาก่อนลด '.number_format($storedCompare, 2).' บาท — ถ้าจะขึ้นราคา ให้แก้หรือลบราคาก่อนลดในหน้าแก้สินค้าก่อน',
+                    422
+                );
             }
         }
 

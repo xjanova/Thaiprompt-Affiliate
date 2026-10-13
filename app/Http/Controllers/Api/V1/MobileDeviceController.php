@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MobileBanner;
 use App\Models\MobileDevice;
 use App\Models\PushNotificationDelivery;
+use App\Services\ExpoPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -218,6 +219,51 @@ class MobileDeviceController extends Controller
                 'deviceLinked' => true,
                 'deviceId' => $device->device_id,
             ],
+        ]);
+    }
+
+    /**
+     * 🔔 (2026-10-13) ส่ง push ทดสอบจริงจากเซิร์ฟเวอร์ไปทุกเครื่องของผู้ใช้ (ปุ่ม "ทดสอบ" ในหน้าตั้งค่าแจ้งเตือน)
+     *
+     * ไม่มีเครื่องที่ลงทะเบียน token → 422 NO_PUSH_TOKEN (แอปลองลงทะเบียนใหม่แล้วยิงซ้ำ)
+     * ส่งไม่ถึงสักเครื่อง → 502 PUSH_FAILED (ไม่ส่งรายละเอียด error ของ Expo/FCM ออกไป)
+     */
+    public function sendTestPush(Request $request, ExpoPushService $push): JsonResponse
+    {
+        $userId = (int) $request->user()->id;
+
+        $hasDevice = MobileDevice::where('user_id', $userId)
+            ->where('is_active', true)
+            ->whereNotNull('push_token')
+            ->exists();
+
+        if (! $hasDevice) {
+            return response()->json([
+                'success' => false,
+                'code' => 'NO_PUSH_TOKEN',
+                'message' => 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับแจ้งเตือน ลองปิดแล้วเปิดแอปใหม่ หรืออัปเดตแอปเป็นรุ่นล่าสุด',
+            ], 422);
+        }
+
+        $result = $push->sendToUser(
+            $userId,
+            'ทดสอบการแจ้งเตือน',
+            'ถ้าเห็นข้อความนี้ แปลว่าแจ้งเตือนจากระบบมาถึงเครื่องคุณแล้ว',
+            ['type' => 'test', 'channel' => 'default']
+        );
+
+        if (($result['success'] ?? 0) < 1) {
+            return response()->json([
+                'success' => false,
+                'code' => 'PUSH_FAILED',
+                'message' => 'ส่งแจ้งเตือนไม่สำเร็จ กรุณาลองใหม่ภายหลัง',
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งแจ้งเตือนทดสอบแล้ว',
+            'data' => ['sent' => (int) $result['success']],
         ]);
     }
 

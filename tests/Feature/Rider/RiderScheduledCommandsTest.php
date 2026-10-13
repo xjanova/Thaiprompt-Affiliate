@@ -105,7 +105,8 @@ class RiderScheduledCommandsTest extends TestCase
         $this->assertContains((int) $far->id, array_map('intval', $job->candidate_riders ?? []));
 
         // รอนานเกิน rider.pending_timeout_minutes → ส่งต่อแอดมิน (ครั้งเดียว)
-        RiderJob::whereKey($job->id)->update(['created_at' => now()->subMinutes(30)]);
+        // (2026-10-13) นับจากรอบหาไรเดอร์ปัจจุบัน (search_started_at) ไม่ใช่ created_at
+        RiderJob::whereKey($job->id)->update(['created_at' => now()->subMinutes(30), 'search_started_at' => now()->subMinutes(30)]);
         $this->artisan('rider:sweep-pending')->assertSuccessful();
         $this->artisan('rider:sweep-pending')->assertSuccessful();
 

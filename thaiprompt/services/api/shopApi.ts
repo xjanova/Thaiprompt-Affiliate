@@ -453,9 +453,9 @@ export interface AddressInput {
   /** 5 หลัก */
   postal_code: string;
   country?: string;
-  /** ต้องส่งคู่กับ longitude */
-  latitude?: number;
-  longitude?: number;
+  /** ต้องส่งคู่กับ longitude · ตอนแก้ไขส่ง null ทั้งคู่ = ลบหมุดเดิม (ไม่ส่งคีย์ = คงหมุดเดิม) */
+  latitude?: number | null;
+  longitude?: number | null;
   notes?: string | null;
   is_default?: boolean;
 }
@@ -578,6 +578,10 @@ export interface ShopOrder {
   tracking_url: string | null;
   rider: ShopOrderRider | null;
   can_cancel: boolean;
+  /** ร้านเตรียมของช้าเกิน 45 นาที / หาไรเดอร์ไม่ได้เกิน 30 นาที → ผู้ซื้อยกเลิกเองได้ (server เก่าไม่ส่ง) */
+  buyer_can_cancel?: boolean;
+  /** ข้อความไทยอธิบายเหตุผลที่ยกเลิกได้ */
+  buyer_cancel_note?: string | null;
   can_pay: boolean;
   can_confirm_received: boolean;
   cancellation_reason: string | null;
