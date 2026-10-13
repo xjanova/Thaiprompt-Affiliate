@@ -880,7 +880,6 @@
                     <li><a href="#payroll">Payroll System</a></li>
                 </ul>
             </li>
-            <li><a href="#academy">🎓 Academy & Learning</a></li>
             <li><a href="#software-sales">💻 Software Sales System</a></li>
             <li><a href="#ticket-system">🎫 Support Ticket System</a></li>
             <li><a href="#pos-system">🏪 POS System</a></li>
@@ -4415,74 +4414,6 @@ Step 9: Payment Settlement
                 <li>• รับใบสมัครออนไลน์</li>
                 <li>• จัดการสถานะผู้สมัคร</li>
                 <li>• นัดหมายสัมภาษณ์</li>
-            </ul>
-        </section>
-
-        <!-- Academy & Learning Section -->
-        <section id="academy" class="wiki-section">
-            <h2>🎓 Academy & Learning Center - ศูนย์การเรียนรู้ออนไลน์</h2>
-
-            <p>
-                แพลตฟอร์มการเรียนรู้ออนไลน์แบบครบวงจร สำหรับ <strong>อบรมสมาชิก MLM</strong> และ
-                <strong>สร้างหลักสูตรขาย</strong> เพื่อสร้างรายได้เพิ่ม
-            </p>
-
-            <h3>📚 Course Management</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-                <div class="feature-card">
-                    <div class="feature-icon">🎬</div>
-                    <h4>สร้างหลักสูตร</h4>
-                    <ul class="text-sm mt-2 space-y-1">
-                        <li>✓ อัปโหลดวิดีโอบทเรียน</li>
-                        <li>✓ เอกสารประกอบการสอน (PDF, PPT)</li>
-                        <li>✓ แบบทดสอบ (Quiz)</li>
-                        <li>✓ กำหนดราคาและโปรโมชั่น</li>
-                    </ul>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">👨‍🏫</div>
-                    <h4>Instructor Dashboard</h4>
-                    <ul class="text-sm mt-2 space-y-1">
-                        <li>✓ จัดการหลักสูตรและเนื้อหา</li>
-                        <li>✓ ติดตามยอดขาย</li>
-                        <li>✓ ดูรายงานนักเรียน</li>
-                        <li>✓ ตอบคำถามนักเรียน</li>
-                    </ul>
-                </div>
-            </div>
-
-            <h3>🎯 Learning Features</h3>
-            <div class="info-box">
-                <h4>สำหรับนักเรียน</h4>
-                <ul class="mt-2 space-y-1">
-                    <li>• <strong>Video Streaming:</strong> ดูวิดีโอคุณภาพ HD</li>
-                    <li>• <strong>Progress Tracking:</strong> ติดตามความก้าวหน้า</li>
-                    <li>• <strong>Quiz & Exam:</strong> ทำแบบทดสอบ</li>
-                    <li>• <strong>Certificate:</strong> ใบประกาศนียบัตรอิเล็กทรอนิกส์</li>
-                    <li>• <strong>Discussion Forum:</strong> ถามตอบกับเพื่อนและครู</li>
-                </ul>
-            </div>
-
-            <h3>💰 สร้างรายได้จากการสอน</h3>
-            <div class="info-box success">
-                <h4>💡 ตัวอย่าง: ขายหลักสูตรออนไลน์</h4>
-                <p><strong>สมมติ:</strong> คุณสร้างหลักสูตร "MLM Marketing 101"</p>
-                <ul class="mt-2">
-                    <li>• ราคาหลักสูตร: <strong>฿1,990</strong></li>
-                    <li>• มีคนซื้อ 100 คน = <strong>฿199,000</strong></li>
-                    <li>• Platform รับ 20% = ฿39,800</li>
-                    <li>• คุณได้: <strong>฿159,200</strong></li>
-                </ul>
-                <p class="text-sm mt-2 font-bold">พร้อม Passive Income ตราบที่หลักสูตรยังขายได้!</p>
-            </div>
-
-            <h3>🏆 Gamification</h3>
-            <p>เพิ่มความสนุกในการเรียนรู้ด้วยระบบรางวัลและแต้ม</p>
-            <ul class="mt-2 space-y-1">
-                <li>• <strong>Points & Badges:</strong> รับแต้มและเหรียญเมื่อจบบทเรียน</li>
-                <li>• <strong>Leaderboard:</strong> แข่งขันกับเพื่อน</li>
-                <li>• <strong>Achievements:</strong> ปลดล็อคความสำเร็จ</li>
-                <li>• <strong>Rewards:</strong> แลกของรางวัล</li>
             </ul>
         </section>
 

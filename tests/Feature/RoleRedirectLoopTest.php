@@ -43,7 +43,7 @@ class RoleRedirectLoopTest extends TestCase
         'seller',       // 1 บัญชี
         'admin',        // 2 บัญชี
         'super_admin',  // 1 บัญชี
-        'instructor',   // ยังไม่มีบัญชีจริง แต่มีเมนูใน config/menus.php
+        'instructor',   // ยังไม่มีบัญชีจริง (role ยังอยู่ใน MEMBER_ROLES — เมนูผู้สอนของ Academy เดิมลบแล้ว)
         'partner',      // role สมมติ — ไม่มีในระบบ ใช้ทดสอบ fallback หน้าแรกสาธารณะ
     ];
 

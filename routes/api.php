@@ -515,12 +515,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/products', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'premiumStoreProducts']);
         });
 
-        // Academy (Mobile App) - ระบบการเรียนรู้
-        Route::prefix('mobile/academy')->group(function () {
-            Route::get('/courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourses']);
-            Route::get('/courses/{courseId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourseDetail']);
-            Route::get('/my-courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getMyCourses']);
-        });
+        // 🗑️ (2026-10-13) mobile/academy/* (ข้อมูลหลักสูตรปลอม) ลบไปพร้อม Academy เดิมแล้ว
 
         // Watch & Earn (Mobile App) - ดูคลิปได้เงิน
         Route::prefix('mobile/watch-earn')->group(function () {
