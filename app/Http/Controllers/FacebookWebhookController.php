@@ -7,6 +7,7 @@ use App\Jobs\ProcessFortuneTelling;
 use App\Models\FortuneCommentEngagement;
 use App\Models\FortunePostReaction;
 use App\Models\FortuneReading;
+use App\Models\FortuneStoryEvent;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
 use App\Services\CelticCrossService;
@@ -509,7 +510,14 @@ class FacebookWebhookController extends Controller
             }
 
             // ประมวลผล postback events (ปุ่ม Get Started, Quick Replies, etc.)
-            if (isset($messaging['postback'])) {
+            // ลิงก์สตอรี่ของคนใหม่มากับ Get Started — ให้ referral ต้อนรับครั้งเดียว
+            $storyStart = str_starts_with((string) ($messaging['postback']['referral']['ref'] ?? ''), 'STORY_')
+                && in_array($messaging['postback']['payload'] ?? '', ['GET_STARTED', 'get_started'], true);
+            if ($storyStart) {
+                if (! $this->processStoryReferral($messaging, $messaging['postback']['referral']['ref'])) {
+                    $this->processPostback($messaging);
+                }
+            } elseif (isset($messaging['postback'])) {
                 $this->processPostback($messaging);
             }
 
@@ -526,7 +534,7 @@ class FacebookWebhookController extends Controller
             $referralRef = $messaging['referral']['ref']
                 ?? $messaging['postback']['referral']['ref']
                 ?? null;
-            if ($referralRef) {
+            if ($referralRef && ! $storyStart) {
                 $this->processMessengerReferral($messaging, $referralRef);
             }
         }
@@ -549,6 +557,12 @@ class FacebookWebhookController extends Controller
                 'sender_id' => $senderId,
                 'ref' => $ref,
             ]);
+
+            if (str_starts_with($ref, 'STORY_')) {
+                $this->processStoryReferral($messaging, $ref);
+
+                return;
+            }
 
             $claimService = app(FortuneMonthlyClaimService::class);
             $monthKey = $claimService->parseRefForCurrentMonth($ref);
@@ -608,6 +622,146 @@ class FacebookWebhookController extends Controller
                 'ref' => $ref,
             ]);
         }
+    }
+
+    /** เก็บสตอรี่และป้องกันการนับ webhook ซ้ำ โดยไม่เก็บข้อความของลูกค้า */
+    protected function trackStoryEvent(array $messaging, string $type, array $story): ?FortuneStoryEvent
+    {
+        try {
+            $senderId = (string) ($messaging['sender']['id'] ?? '');
+            $pageId = (string) ($messaging['recipient']['id'] ?? $this->settings->facebook_page_id ?? '');
+            $timestamp = $messaging['timestamp'] ?? null;
+            $inboundAt = is_numeric($timestamp) && $timestamp > 0
+                ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp, config('app.timezone'))
+                : null;
+            $identity = $messaging['message']['mid'] ?? $messaging['postback']['mid']
+                ?? json_encode([$timestamp, $story]);
+            $event = FortuneStoryEvent::firstOrCreate(
+                ['event_key' => hash('sha256', json_encode([$pageId, $senderId, $type, $identity]))],
+                [
+                    'fortune_page_id' => FortunePageContext::currentId(),
+                    'facebook_page_id' => $pageId ?: null,
+                    'facebook_user_id' => $senderId,
+                    'source' => 'story',
+                    'event_type' => $type,
+                    'story_id' => isset($story['id']) ? mb_substr((string) $story['id'], 0, 191) : null,
+                    'story_url' => isset($story['url']) ? (string) $story['url'] : null,
+                    'story_slug' => $story['slug'] ?? null,
+                    'inbound_at' => $inboundAt,
+                ],
+            );
+            Log::info('Facebook: บันทึกที่มาจากสตอรี่', [
+                'sender_id' => $senderId,
+                'story_id' => $event->story_id,
+                'story_url' => $event->story_url,
+                'story_slug' => $event->story_slug,
+                'event_type' => $type,
+                'new' => $event->wasRecentlyCreated,
+            ]);
+
+            return $event;
+        } catch (\Throwable $e) {
+            // โค้ดอาจขึ้นก่อน migration — ห้ามทำให้ flow ดูดวงเดิมหยุด
+            Log::warning('Facebook: บันทึกสตอรี่ไม่สำเร็จ', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /** ตัวเลข/วันเกิดต้องเข้าตัวอ่านวันเกิดเดิม แม้ข้อความสั้น */
+    protected function isShortStoryReply(string $text): bool
+    {
+        if (preg_match('/\p{N}/u', $text)) {
+            return false;
+        }
+
+        $letters = preg_replace('/[^\p{L}\p{M}]/u', '', $text);
+
+        return mb_strlen($letters ?? $text) <= 3;
+    }
+
+    /** ตอบเฉพาะ event ใหม่ภายใน 24 ชม. และไม่แทรกบิล/คำทำนายที่รอส่ง */
+    protected function welcomeStoryVisitor(string $senderId, FortuneStoryEvent $event): bool
+    {
+        if ($this->hasPendingStoryReading($senderId)) {
+            return false;
+        }
+
+        // webhook ซ้ำถูกจัดการแล้ว แต่ event เก่า/ไม่มีเวลาต้องคืนทางข้อความเดิม
+        if (! $event->wasRecentlyCreated) {
+            return true;
+        }
+        if (! $event->inbound_at || $event->inbound_at->lte(now()->subHours(24))
+            || $event->inbound_at->gt(now()->addMinutes(5))) {
+            return false;
+        }
+
+        if (! $this->facebookService->sendMessage($senderId,
+            'ขอบคุณที่แวะมาจากสตอรี่นะคะ ✨ อยากให้แม่หมอดูเรื่องไหน บอกวัน เดือน ปีเกิดมาได้เลยค่ะ 🔮',
+            ['messaging_type' => 'RESPONSE'])) {
+            return false;
+        }
+        $event->update(['welcomed_at' => now()]);
+
+        return true;
+    }
+
+    /** บิล/คำทำนายที่ยังไม่ส่งต้องมาก่อนข้อความต้อนรับทั้งสองแบบ */
+    protected function hasPendingStoryReading(string $senderId): bool
+    {
+        return FortuneReading::where('facebook_user_id', $senderId)
+            ->where('platform', 'facebook')
+            ->forCurrentFortunePage()
+            ->where(function ($query) {
+                $query->whereNotIn('conversation_status', [FortuneReading::STATUS_COMPLETED, 'cancelled', 'expired', 'celtic_qa_window_expired'])
+                    ->orWhere(function ($paid) {
+                        $paid->where('is_paid', true)
+                            ->whereNotNull('deep_response')->where('deep_response', '!=', '')
+                            ->where(function ($state) {
+                                $state->whereNull('conversation_state')
+                                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.reading_sent_directly') IS NULL")
+                                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(conversation_state, '$.reading_sent_directly')) != 'true'");
+                            });
+                    });
+            })->exists();
+    }
+
+    /** true = ตอบแล้ว/ซ้ำ/ต้องเงียบ, false = คืน Get Started ให้ flow เดิม */
+    protected function processStoryReferral(array $messaging, string $ref): bool
+    {
+        $senderId = (string) ($messaging['sender']['id'] ?? '');
+        if ($senderId === '') {
+            return true;
+        }
+        $slug = substr($ref, strlen('STORY_'));
+        $event = $slug !== '' && mb_strlen($slug) <= 191
+            ? $this->trackStoryEvent($messaging, 'referral', ['slug' => $slug]) : null;
+
+        // ข้อความ/ปุ่มอื่นใน event เดียวกันมี flow ตอบอยู่แล้ว — เก็บที่มาอย่างเดียว
+        if (isset($messaging['message']) || (isset($messaging['postback'])
+            && ! in_array($messaging['postback']['payload'] ?? '', ['GET_STARTED', 'get_started'], true))) {
+            return true;
+        }
+
+        // referral เป็นการกระทำของลูกค้าเอง — ปั๊มหน้าต่างตามเวลา event จริงเท่านั้น
+        if ($event?->inbound_at && $event->inbound_at->gt(now()->subHours(24))
+            && $event->inbound_at->lte(now()->addMinutes(5))) {
+            Cache::put('fb_last_inbound:'.$senderId, true, $event->inbound_at->copy()->addHours(24));
+        }
+        if (\App\Services\Fortune\TakeoverIngress::intercept('facebook', $senderId, [
+            'kind' => 'postback', 'payload' => $ref,
+        ]) || $this->isAdminActive($senderId) || $this->banService->getActiveBan('facebook', $senderId)) {
+            return true;
+        }
+        // fallback ห้ามแทรกบิลหรือเปิดหน้าต่าง 24 ชม. ใหม่จาก webhook เก่า
+        $timestamp = $messaging['timestamp'] ?? null;
+        if ($this->hasPendingStoryReading($senderId) || ! is_numeric($timestamp)
+            || $timestamp <= now()->subHours(24)->getTimestampMs()
+            || $timestamp > now()->addMinutes(5)->getTimestampMs()) {
+            return true;
+        }
+
+        return $event ? $this->welcomeStoryVisitor($senderId, $event) : false;
     }
 
     /**
@@ -2822,6 +2976,10 @@ class FacebookWebhookController extends Controller
             }
         }
 
+        // บันทึกที่มาสตอรี่ก่อนด่านที่อาจ return แต่ยังไม่ตอบหรือเปลี่ยนบิล
+        $story = $messaging['message']['reply_to']['story'] ?? null;
+        $storyEvent = is_array($story) ? $this->trackStoryEvent($messaging, 'reply', $story) : null;
+
         // 📩 (2026-08-09) คำสั่งแอดมินเรื่องคอมเมนต์แปะลิงก์ — ตอบผ่าน Messenger (ฟรี)
         //    🛡️ แคบมากโดยตั้งใจ ห้ามกระทบลูกค้าแม้แต่นิดเดียว:
         //       - รหัสผูก = ต้องตรงกับรหัสสุ่มที่เพิ่งออกจากหน้าแอดมิน (อายุ 10 นาที ใช้ครั้งเดียว)
@@ -3039,6 +3197,13 @@ class FacebookWebhookController extends Controller
                 'sender_id' => $senderId,
             ]);
 
+            return;
+        }
+
+        // คนตอบสตอรี่ด้วยอีโมจิ/คำสั้น ๆ → ชวนบอกวันเกิด หลังด่านบิล/แบน/สแปม
+        // ข้อความที่มีตัวเลขหรือมีเนื้อหาปกติยังเข้า flow เดิมทุกประการ
+        if ($storyEvent && empty($attachments) && $this->isShortStoryReply($messageText)
+            && $this->welcomeStoryVisitor($senderId, $storyEvent)) {
             return;
         }
 
