@@ -513,7 +513,11 @@ class FacebookWebhookController extends Controller
             // ลิงก์สตอรี่ของคนใหม่มากับ Get Started — ให้ referral ต้อนรับครั้งเดียว
             $storyStart = str_starts_with((string) ($messaging['postback']['referral']['ref'] ?? ''), 'STORY_')
                 && in_array($messaging['postback']['payload'] ?? '', ['GET_STARTED', 'get_started'], true);
-            if (isset($messaging['postback']) && ! $storyStart) {
+            if ($storyStart) {
+                if (! $this->processStoryReferral($messaging, $messaging['postback']['referral']['ref'])) {
+                    $this->processPostback($messaging);
+                }
+            } elseif (isset($messaging['postback'])) {
                 $this->processPostback($messaging);
             }
 
@@ -530,7 +534,7 @@ class FacebookWebhookController extends Controller
             $referralRef = $messaging['referral']['ref']
                 ?? $messaging['postback']['referral']['ref']
                 ?? null;
-            if ($referralRef) {
+            if ($referralRef && ! $storyStart) {
                 $this->processMessengerReferral($messaging, $referralRef);
             }
         }
@@ -679,7 +683,33 @@ class FacebookWebhookController extends Controller
     /** ตอบเฉพาะ event ใหม่ภายใน 24 ชม. และไม่แทรกบิล/คำทำนายที่รอส่ง */
     protected function welcomeStoryVisitor(string $senderId, FortuneStoryEvent $event): bool
     {
-        $hasReading = FortuneReading::where('facebook_user_id', $senderId)
+        if ($this->hasPendingStoryReading($senderId)) {
+            return false;
+        }
+
+        // webhook ซ้ำถูกจัดการแล้ว แต่ event เก่า/ไม่มีเวลาต้องคืนทางข้อความเดิม
+        if (! $event->wasRecentlyCreated) {
+            return true;
+        }
+        if (! $event->inbound_at || $event->inbound_at->lte(now()->subHours(24))
+            || $event->inbound_at->gt(now()->addMinutes(5))) {
+            return false;
+        }
+
+        if (! $this->facebookService->sendMessage($senderId,
+            'ขอบคุณที่แวะมาจากสตอรี่นะคะ ✨ อยากให้แม่หมอดูเรื่องไหน บอกวัน เดือน ปีเกิดมาได้เลยค่ะ 🔮',
+            ['messaging_type' => 'RESPONSE'])) {
+            return false;
+        }
+        $event->update(['welcomed_at' => now()]);
+
+        return true;
+    }
+
+    /** บิล/คำทำนายที่ยังไม่ส่งต้องมาก่อนข้อความต้อนรับทั้งสองแบบ */
+    protected function hasPendingStoryReading(string $senderId): bool
+    {
+        return FortuneReading::where('facebook_user_id', $senderId)
             ->where('platform', 'facebook')
             ->forCurrentFortunePage()
             ->where(function ($query) {
@@ -690,60 +720,48 @@ class FacebookWebhookController extends Controller
                             ->where(function ($state) {
                                 $state->whereNull('conversation_state')
                                     ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.reading_sent_directly') IS NULL")
-                                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.reading_sent_directly') != true");
+                                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(conversation_state, '$.reading_sent_directly')) != 'true'");
                             });
                     });
             })->exists();
-        if ($hasReading) {
-            return false;
-        }
-
-        // ข้อความซ้ำ/เก่าหรือไม่มีเวลา: เก็บ analytics ได้ แต่ห้ามยิงข้อความใหม่
-        if (! $event->wasRecentlyCreated || ! $event->inbound_at
-            || $event->inbound_at->lte(now()->subHours(24))
-            || $event->inbound_at->gt(now()->addMinutes(5))) {
-            return true;
-        }
-
-        if ($this->facebookService->sendMessage($senderId,
-            'ขอบคุณที่แวะมาจากสตอรี่นะคะ ✨ อยากให้แม่หมอดูเรื่องไหน บอกวัน เดือน ปีเกิดมาได้เลยค่ะ 🔮',
-            ['messaging_type' => 'RESPONSE'])) {
-            $event->update(['welcomed_at' => now()]);
-        }
-
-        return true;
     }
 
-    /** รับลิงก์ STORY_ ทั้งคนใหม่และคนเก่า โดยไม่เปลี่ยนแคมเปญรายเดือน */
-    protected function processStoryReferral(array $messaging, string $ref): void
+    /** true = ตอบแล้ว/ซ้ำ/ต้องเงียบ, false = คืน Get Started ให้ flow เดิม */
+    protected function processStoryReferral(array $messaging, string $ref): bool
     {
         $senderId = (string) ($messaging['sender']['id'] ?? '');
+        if ($senderId === '') {
+            return true;
+        }
         $slug = substr($ref, strlen('STORY_'));
-        if ($slug === '' || mb_strlen($slug) > 191) {
-            return;
-        }
-        $event = $this->trackStoryEvent($messaging, 'referral', ['slug' => $slug]);
-        if (! $event) {
-            return;
-        }
+        $event = $slug !== '' && mb_strlen($slug) <= 191
+            ? $this->trackStoryEvent($messaging, 'referral', ['slug' => $slug]) : null;
 
         // ข้อความ/ปุ่มอื่นใน event เดียวกันมี flow ตอบอยู่แล้ว — เก็บที่มาอย่างเดียว
         if (isset($messaging['message']) || (isset($messaging['postback'])
             && ! in_array($messaging['postback']['payload'] ?? '', ['GET_STARTED', 'get_started'], true))) {
-            return;
+            return true;
         }
 
         // referral เป็นการกระทำของลูกค้าเอง — ปั๊มหน้าต่างตามเวลา event จริงเท่านั้น
-        if ($event->inbound_at && $event->inbound_at->gt(now()->subHours(24))
+        if ($event?->inbound_at && $event->inbound_at->gt(now()->subHours(24))
             && $event->inbound_at->lte(now()->addMinutes(5))) {
             Cache::put('fb_last_inbound:'.$senderId, true, $event->inbound_at->copy()->addHours(24));
         }
         if (\App\Services\Fortune\TakeoverIngress::intercept('facebook', $senderId, [
             'kind' => 'postback', 'payload' => $ref,
         ]) || $this->isAdminActive($senderId) || $this->banService->getActiveBan('facebook', $senderId)) {
-            return;
+            return true;
         }
-        $this->welcomeStoryVisitor($senderId, $event);
+        // fallback ห้ามแทรกบิลหรือเปิดหน้าต่าง 24 ชม. ใหม่จาก webhook เก่า
+        $timestamp = $messaging['timestamp'] ?? null;
+        if ($this->hasPendingStoryReading($senderId) || ! is_numeric($timestamp)
+            || $timestamp <= now()->subHours(24)->getTimestampMs()
+            || $timestamp > now()->addMinutes(5)->getTimestampMs()) {
+            return true;
+        }
+
+        return $event ? $this->welcomeStoryVisitor($senderId, $event) : false;
     }
 
     /**

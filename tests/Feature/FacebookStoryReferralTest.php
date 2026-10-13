@@ -162,6 +162,83 @@ class FacebookStoryReferralTest extends TestCase
         $this->assertCount(2, $this->welcomes());
     }
 
+    public function test_empty_slug_and_failed_tracking_fall_back_to_get_started(): void
+    {
+        $this->dispatch($this->event(['postback' => ['mid' => 'pb.empty', 'payload' => 'GET_STARTED',
+            'referral' => ['ref' => 'STORY_']]]));
+        $this->controller->failTracking = true;
+        $this->dispatch($this->event(['postback' => ['mid' => 'pb.track-fail', 'payload' => 'get_started',
+            'referral' => ['ref' => 'STORY_no-db']]]));
+        $this->assertSame(2, $this->controller->getStartedCount);
+        $this->assertCount(0, $this->welcomes());
+        $this->assertDatabaseCount('fortune_story_events', 0);
+    }
+
+    public function test_failed_welcome_falls_back_for_postback_and_message(): void
+    {
+        // แทน factory เพื่อไม่ให้ wildcard สำเร็จจาก setUp จับ request ก่อน fake นี้
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['error' => ['message' => 'Send failed', 'code' => 100]], 400)]);
+        $this->dispatch($this->event(['postback' => ['mid' => 'pb.send-fail', 'payload' => 'GET_STARTED',
+            'referral' => ['ref' => 'STORY_send-fail']]]));
+        $this->dispatch($this->reply('Hi'));
+        $this->assertSame(1, $this->controller->getStartedCount);
+        $this->assertSame([[self::PSID, 'Hi']], $this->controller->conversations);
+        $this->assertSame(0, FortuneStoryEvent::whereNotNull('welcomed_at')->count());
+    }
+
+    public function test_stale_missing_and_future_story_messages_use_existing_flow(): void
+    {
+        foreach (['stale', 'missing', 'future'] as $kind) {
+            $event = $this->reply('Hi');
+            $event['message']['mid'] = 'm.'.$kind;
+            if ($kind === 'missing') {
+                unset($event['timestamp']);
+            } else {
+                $event['timestamp'] = ($kind === 'stale' ? now()->subHours(25) : now()->addMinutes(10))->getTimestampMs();
+            }
+            $this->dispatch($event);
+        }
+        $this->assertCount(0, $this->welcomes());
+        $this->assertSame(array_fill(0, 3, [self::PSID, 'Hi']), $this->controller->conversations);
+    }
+
+    public function test_story_postback_fallback_preserves_ban_takeover_and_time_guards(): void
+    {
+        $this->controller->failTracking = true;
+        $event = $this->event(['postback' => ['payload' => 'GET_STARTED', 'referral' => ['ref' => 'STORY_guard']]]);
+        $event['timestamp'] = now()->subHours(25)->getTimestampMs();
+        $this->dispatch($event);
+        unset($event['timestamp']);
+        $this->dispatch($event);
+        $event['timestamp'] = now()->addMinutes(10)->getTimestampMs();
+        $this->dispatch($event);
+        $event['timestamp'] = now()->getTimestampMs();
+        app(\App\Services\FortuneBanService::class)->ban('facebook', self::PSID, 60, 'ทดสอบ');
+        $this->dispatch($event);
+        $this->assertSame(0, $this->controller->getStartedCount);
+        $this->assertCount(0, $this->welcomes());
+    }
+
+    public function test_failed_tracking_does_not_bypass_takeover(): void
+    {
+        $reading = $this->reading(FortuneReading::STATUS_PENDING_PAYMENT);
+        $reading->forceFill(['admin_takeover_until' => now()->addHour(), 'admin_takeover_reason' => 'manual'])->save();
+        $this->controller->failTracking = true;
+        $this->dispatch($this->event(['postback' => ['payload' => 'GET_STARTED', 'referral' => ['ref' => 'STORY_']]]));
+        $this->assertSame(0, $this->controller->getStartedCount);
+        $this->assertCount(0, $this->welcomes());
+    }
+
+    public function test_delivered_paid_prediction_does_not_block_story_welcome(): void
+    {
+        $reading = $this->reading(FortuneReading::STATUS_COMPLETED, true);
+        $reading->update(['deep_response' => 'ส่งแล้ว', 'conversation_state' => ['reading_sent_directly' => true]]);
+        $this->dispatch($this->reply('Hi'));
+        $this->assertCount(1, $this->welcomes());
+    }
+
     public function test_stale_or_missing_timestamp_never_sends_story_welcome(): void
     {
         $event = $this->reply('❤️');
@@ -198,6 +275,7 @@ class FacebookStoryReferralTest extends TestCase
         $this->assertSame([[self::PSID, '❤️']], $this->controller->conversations);
         $this->assertDatabaseCount('fortune_readings', 1);
         $this->assertDatabaseCount('fortune_story_events', 2);
+        $this->assertSame(0, $this->controller->getStartedCount);
     }
 
     public function test_paid_reading_awaiting_birthdate_is_preserved(): void
@@ -280,6 +358,13 @@ class FacebookStoryTestController extends FacebookWebhookController
     public array $conversations = [];
 
     public int $getStartedCount = 0;
+
+    public bool $failTracking = false;
+
+    protected function trackStoryEvent(array $messaging, string $type, array $story): ?FortuneStoryEvent
+    {
+        return $this->failTracking ? null : parent::trackStoryEvent($messaging, $type, $story);
+    }
 
     public function dispatchEntry(array $entry): void
     {
