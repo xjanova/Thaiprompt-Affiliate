@@ -21,8 +21,8 @@ import { resolveBuildNumber, resolveRequestBuild, resolveVersionName } from './a
  * ค่าสำรองเมื่ออ่านจาก native ไม่ได้ (เว็บ / เทสต์) — ตรงกับ app.json ตอนออก build ล่าสุด
  * build จริงบนเครื่องอ่านจาก expo-application เสมอ (ไม่ต้องแก้เลขนี้ทุกครั้งที่ออกเวอร์ชัน)
  */
-const FALLBACK_VERSION = '3.389.0';
-const FALLBACK_BUILD = 46;
+const FALLBACK_VERSION = '3.390.0';
+const FALLBACK_BUILD = 47;
 
 export const APP_INFO = {
   NAME: 'Thai Prompt APP',
