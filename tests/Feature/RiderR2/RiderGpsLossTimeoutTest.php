@@ -94,7 +94,12 @@ class RiderGpsLossTimeoutTest extends HandoverTestCase
         [$order, $buyer] = $this->makeDeferredShopOrder();
         $rider = $this->makeRider();
         $job = $this->makeHandoverJob($order, $rider, 'delivering');
-        Rider::whereKey($rider->id)->update(['last_location_update' => now()->subMinutes(11)]);
+        // พิกัดล่าสุดอยู่กลางทาง (ห่างจุดส่ง ~1.1 กม.) — ถ้าอยู่หน้าจุดส่งถือว่ากำลังรอผู้ซื้อ ไม่แจ้ง
+        Rider::whereKey($rider->id)->update([
+            'last_latitude' => self::FAR['latitude'],
+            'last_longitude' => self::FAR['longitude'],
+            'last_location_update' => now()->subMinutes(11),
+        ]);
 
         $this->artisan('rider:gps-watch')->assertSuccessful();
         $this->artisan('rider:gps-watch')->assertSuccessful();
@@ -107,8 +112,8 @@ class RiderGpsLossTimeoutTest extends HandoverTestCase
         $this->assertSame(1, Notification::where('user_id', $buyer->id)->where('type', 'delivery_update')->where('data->event', 'gps_lost')->count());
         $this->assertSame(0, (int) $rider->fresh()->cancelled_jobs);
 
-        // GPS กลับมา → จบเหตุการณ์
-        (new RiderGpsTrackingService)->recordRiderLocation($rider->fresh(), self::NEAR);
+        // GPS กลับมา (ยังอยู่กลางทาง) → จบเหตุการณ์
+        (new RiderGpsTrackingService)->recordRiderLocation($rider->fresh(), self::FAR);
         $this->assertNull($job->fresh()->gps_lost_alerted_at);
         $this->assertTrue($job->fresh()->gps_active);
 
@@ -120,5 +125,38 @@ class RiderGpsLossTimeoutTest extends HandoverTestCase
         $this->assertSame(2, $this->notificationCount($admin, 'rider_admin', 'GPS ไรเดอร์หายระหว่างนำส่ง'));
         $this->assertSame(2, Notification::where('user_id', $buyer->id)->where('type', 'delivery_update')->where('data->event', 'gps_lost')->count());
         $this->assertSame('delivering', $job->fresh()->status);
+    }
+
+    /**
+     * 🛑 (2026-10-13) ยืนรออาหารหน้าร้าน / รอผู้ซื้อหน้าบ้าน (ล็อกจอ แอปไม่ส่งพิกัดเพราะไม่ขยับ) ≠ GPS หาย
+     */
+    public function test_rider_waiting_at_the_shop_or_the_door_is_not_treated_as_lost(): void
+    {
+        $admin = $this->makeAdmin();
+
+        // ก่อนรับของ: พิกัดล่าสุดห่างร้าน ~30 ม. เงียบไป 15 นาที → ไม่ปลดงาน
+        [$order] = $this->makeDeferredShopOrder();
+        $rider = $this->onlineRider();
+        $job = $this->makeOpenShopJob($order, ['rider_id' => $rider->id, 'status' => 'picking_up', 'accepted_at' => now()]);
+        (new RiderGpsTrackingService)->recordRiderLocation($rider->fresh(), ['latitude' => 13.72935, 'longitude' => 100.52115]);
+
+        $this->travel(15)->minutes();
+        $this->artisan('rider:gps-watch')->assertSuccessful();
+
+        $this->assertSame('picking_up', $job->fresh()->status);
+        $this->assertSame((int) $rider->id, (int) $job->fresh()->rider_id);
+        $this->assertSame(0, (int) $rider->fresh()->cancelled_jobs);
+
+        // หลังรับของ: พิกัดล่าสุดหน้าจุดส่ง (~7 ม.) เงียบไป 11 นาที → ไม่แจ้ง "ไรเดอร์หาย"
+        [$order2, $buyer2] = $this->makeDeferredShopOrder();
+        $rider2 = $this->makeRider();
+        $job2 = $this->makeHandoverJob($order2, $rider2, 'delivering');
+        Rider::whereKey($rider2->id)->update(['last_location_update' => now()->subMinutes(11)]);
+
+        $this->artisan('rider:gps-watch')->assertSuccessful();
+
+        $this->assertNull($job2->fresh()->gps_lost_alerted_at);
+        $this->assertSame(0, $this->notificationCount($admin, 'rider_admin', 'GPS ไรเดอร์หายระหว่างนำส่ง'));
+        $this->assertSame(0, Notification::where('user_id', $buyer2->id)->where('data->event', 'gps_lost')->count());
     }
 }

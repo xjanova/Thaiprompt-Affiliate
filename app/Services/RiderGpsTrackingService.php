@@ -294,6 +294,13 @@ class RiderGpsTrackingService
                     continue;
                 }
 
+                // 🛑 (2026-10-13) พิกัดล่าสุดอยู่ใกล้จุดที่ต้องรอ (ร้านก่อนรับของ / จุดส่งหลังรับของ) = กำลังรอ ไม่ใช่หาย
+                //    แอปรุ่นเก่าส่งพิกัดเฉพาะตอนขยับ 25 ม. → ยืนรออาหารหรือรอผู้ซื้อลงมาเกิน 10 นาที (ล็อกจอ)
+                //    จะดูเหมือน GPS หาย แล้วโดนปลดงาน + นับยกเลิก + ปิดรับงาน ทั้งที่ยืนอยู่หน้าร้าน
+                if ($this->lastSeenNearWaitPoint($job)) {
+                    continue;
+                }
+
                 if (in_array($job->status, ['accepted', 'picking_up'], true)) {
                     if (app(RiderJobService::class)->releaseForGpsLoss($job, $minutes)) {
                         $stats['released']++;
@@ -307,6 +314,37 @@ class RiderGpsTrackingService
         }
 
         return $stats;
+    }
+
+    /** รัศมีที่ถือว่าไรเดอร์ "รออยู่ที่จุดนัด" (เมตร) */
+    public const WAIT_POINT_RADIUS_M = 300;
+
+    /**
+     * พิกัดล่าสุดของไรเดอร์อยู่ใกล้จุดที่งานนี้ต้องรอไหม
+     * ก่อนรับของ (accepted / picking_up) = จุดรับของ · หลังรับของ = จุดส่ง · ไม่มีพิกัด = false
+     */
+    protected function lastSeenNearWaitPoint(RiderJob $job): bool
+    {
+        $rider = $job->rider;
+        if (! $rider || $rider->last_latitude === null || $rider->last_longitude === null) {
+            return false;
+        }
+
+        $beforePickup = in_array($job->status, ['accepted', 'picking_up'], true);
+        $lat = $beforePickup ? $job->pickup_latitude : $job->delivery_latitude;
+        $lng = $beforePickup ? $job->pickup_longitude : $job->delivery_longitude;
+        if ($lat === null || $lng === null) {
+            return false;
+        }
+
+        $meters = DeliveryFeeCalculator::haversineKm(
+            (float) $rider->last_latitude,
+            (float) $rider->last_longitude,
+            (float) $lat,
+            (float) $lng
+        ) * 1000;
+
+        return $meters <= self::WAIT_POINT_RADIUS_M;
     }
 
     /**

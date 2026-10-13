@@ -784,18 +784,30 @@ class Order extends Model implements RiderDeliverable
      */
     public function riderCancelForNoRider(RiderJob $job, string $reason): bool
     {
-        $fresh = $this->fresh();
+        // 🔒 (2026-10-13) ล็อกงานก่อน แล้วตรวจซ้ำว่ายังไม่มีไรเดอร์รับ — กันชนกับไรเดอร์ที่เพิ่งกดรับในเสี้ยววินาทีเดียวกัน
+        //    (เดิมตรวจ canBeCancelled นอกล็อก → ไรเดอร์รับงานแล้วแต่ออเดอร์ถูกยกเลิกทับ)
+        //    ลำดับล็อก งาน → ออเดอร์ เหมือนตอนไรเดอร์กดรับงาน
+        $fresh = DB::transaction(function () use ($job, $reason) {
+            $lockedJob = RiderJob::whereKey($job->id)->lockForUpdate()->first();
+            if (! $lockedJob || $lockedJob->status !== 'pending' || $lockedJob->rider_id !== null) {
+                return null;
+            }
 
-        if (! $fresh || ! $fresh->canBeCancelled()) {
+            $fresh = $this->fresh();
+            if (! $fresh || ! $fresh->canBeCancelled()) {
+                return null;
+            }
+
+            $result = $fresh->cancel($reason, null, 'system');
+
+            return ($result['already'] || ! $result['cancelled']) ? null : $fresh;
+        });
+
+        if (! $fresh) {
             return false;
         }
 
-        $result = $fresh->cancel($reason, null, 'system');
         $this->setRawAttributes($fresh->getAttributes(), true);
-
-        if ($result['already'] || ! $result['cancelled']) {
-            return false;
-        }
 
         try {
             app(ShopOrderNotifier::class)->notifySellers($fresh, 'cancelled_no_rider');

@@ -378,7 +378,10 @@ const startBackgroundTask = async (): Promise<boolean> => {
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy: Location.Accuracy.High,
       timeInterval: 15_000,
-      distanceInterval: 25,
+      // 🛰️ (2026-10-13) Android ส่งพิกัดทุก 15 วิแม้ยืนนิ่ง — เดิม 25 ม. = ยืนรออาหาร/รอผู้ซื้อ (ล็อกจอ)
+      //    ไม่มีพิกัดเข้าเลย เซิร์ฟเวอร์ (rider:gps-watch) จะนึกว่า GPS หายแล้วปลดงานใน 10 นาที
+      //    iOS ไม่สนใจ timeInterval จึงคงระยะไว้ (ไม่งั้นส่งถี่จนเปลืองแบต)
+      distanceInterval: Platform.OS === 'android' ? 0 : 25,
       deferredUpdatesInterval: 15_000,
       pausesUpdatesAutomatically: false,
       activityType: Location.ActivityType.AutomotiveNavigation,

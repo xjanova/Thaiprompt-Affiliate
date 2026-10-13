@@ -141,7 +141,7 @@ export default function TaladsodOrderScreen() {
   // ---------- การกระทำ ----------
   const openSheet = (kind: SheetKind) => {
     // ยกเลิกเพราะออเดอร์ล่าช้า → เลือกเหตุผล "รอนานเกินไป" ไว้ให้ก่อน (เปลี่ยนได้)
-    setCancelReason(kind === 'cancel' && order?.buyer_can_cancel ? LATE_CANCEL_REASON : null);
+    setCancelReason(kind === 'cancel' && buyerCancelView(false, order).late ? LATE_CANCEL_REASON : null);
     setCancelOther('');
     setRating(5);
     setRiderRating(5);

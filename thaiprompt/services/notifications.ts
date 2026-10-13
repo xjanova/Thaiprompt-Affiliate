@@ -247,7 +247,8 @@ const sendTokenToServer = async (token: string): Promise<boolean> => {
  */
 let tokenRefreshSubscription: { remove: () => void } | null = null;
 const ensureTokenRefreshListener = (): void => {
-  if (tokenRefreshSubscription) return;
+  // Android เท่านั้น — iOS ยิง event นี้เป็น APNs token ดิบ (ไม่ใช่ Expo token) ห้ามส่งไปแทน token ที่ลงทะเบียนไว้
+  if (tokenRefreshSubscription || Platform.OS !== 'android') return;
   try {
     tokenRefreshSubscription = Notifications.addPushTokenListener((next) => {
       const value = typeof next?.data === 'string' ? next.data : null;
