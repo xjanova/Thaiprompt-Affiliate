@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
         // Register WalletService as singleton
         $this->app->singleton(\App\Services\WalletService::class);
 
+        // 🔔 (2026-10-13) FCM client ตัวเดียวต่อ process — เก็บ access token ของ Google ไว้ใช้ซ้ำจนใกล้หมดอายุ
+        //    (เดิมสร้างใหม่ทุกข้อความ = แลก token ใหม่ทุก push · ส่งหลายเครื่องในงานเดียวช้าเกินจำเป็น)
+        $this->app->singleton(\App\Services\Fcm\FcmHttpV1Client::class);
+
         // Register InvestmentService as singleton
         $this->app->singleton(\App\Services\InvestmentService::class);
 

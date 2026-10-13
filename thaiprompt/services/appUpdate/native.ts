@@ -18,7 +18,7 @@ import { Linking, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
-import { APP_FEATURE_BUILD } from '@/config/appConfig';
+import { APP_REQUEST_BUILD } from '@/config/appConfig';
 import { UPDATE_DIR_NAME } from './core';
 
 /** ผลดาวน์โหลด (null = ถูกหยุด/ยกเลิก) */
@@ -155,7 +155,7 @@ export const nativeAppUpdate: AppUpdateNative = {
       uri,
       {
         // identity = ไม่ให้ตัวเชื่อมต่อขอแบบบีบอัด (ไบต์ที่นับได้ต้องตรงกับขนาดไฟล์จริง)
-        headers: { 'Accept-Encoding': 'identity', 'X-App-Build': String(APP_FEATURE_BUILD) },
+        headers: { 'Accept-Encoding': 'identity', 'X-App-Build': String(APP_REQUEST_BUILD) },
       },
       (progress) => onProgress(progress.totalBytesWritten, progress.totalBytesExpectedToWrite),
       resumeOffset && resumeOffset > 0 ? String(Math.floor(resumeOffset)) : undefined

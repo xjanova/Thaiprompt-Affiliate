@@ -253,7 +253,13 @@ export default function AddressEditScreen() {
       province: form.province.trim(),
       postal_code: form.postal_code.trim(),
       notes: optional(form.notes),
-      ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
+      // หมุด: มี = ส่งพิกัด · แก้ไขแล้วกด "เอาหมุดออก" = ส่ง null ทั้งคู่ให้ server ลบหมุดเดิม
+      // (ไม่ส่งคีย์ = server ไม่แตะพิกัด → หมุดเก่าค้าง ไรเดอร์ไปส่งผิดที่) · สร้างใหม่ไม่มีหมุด = ไม่ส่ง
+      ...(coords
+        ? { latitude: coords.latitude, longitude: coords.longitude }
+        : editId !== null
+          ? { latitude: null, longitude: null }
+          : {}),
       ...(isDefault && !wasDefault ? { is_default: true } : editId === null ? { is_default: isDefault } : {}),
     };
 

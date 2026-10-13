@@ -4,14 +4,19 @@ namespace App\Services;
 
 use App\Models\MobileDevice;
 use App\Models\MobilePushNotification;
+use App\Services\Fcm\FcmHttpV1Client;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ExpoPushService - ส่ง Push Notification ผ่าน Expo Push API
+ * ExpoPushService - ส่ง Push Notification ไปแอป Thai Prompt APP
  *
- * Expo Push Token format: ExponentPushToken[xxxxx]
- * ใช้ API endpoint: https://exp.host/--/api/v2/push/send
+ * token 2 แบบใน mobile_devices.push_token:
+ *   1. Expo Push Token (ExponentPushToken[xxxxx]) → Expo Push API https://exp.host/--/api/v2/push/send
+ *   2. 🔔 (2026-10-13) FCM device token ของ Android (แอป 3.390+ ส่ง token ตรงจาก Firebase)
+ *      → ส่งตรงผ่าน FCM HTTP v1 ด้วย service account ของเราเอง (Firebase project plptdb)
+ *      ไม่ต้องฝากคีย์ FCM ไว้กับ Expo · ข้อความเป็น data-only รูปแบบเดียวกับที่ Expo ส่ง
+ *      (title / message / body=JSON ของ data / channelId) → expo-notifications ในแอปแสดงและพาไปหน้าเดิมได้ทุกอย่าง
  *
  * @see https://docs.expo.dev/push-notifications/sending-notifications/
  */
@@ -55,12 +60,21 @@ class ExpoPushService
             return $results;
         }
 
+        $channelId = self::androidChannelFor($data);
+
         // สร้าง messages สำหรับแต่ละ token
         $messages = [];
-        foreach ($pushTokens as $token) {
+        $fcmTokens = [];
+        foreach (array_unique($pushTokens) as $token) {
+            if (self::isFcmDeviceToken($token)) {
+                $fcmTokens[] = $token;
+
+                continue;
+            }
+
             if (! $this->isValidExpoPushToken($token)) {
                 $results['failed']++;
-                $results['errors'][] = "Invalid token: {$token}";
+                $results['errors'][] = 'Invalid token: '.substr($token, 0, 12).'…';
 
                 continue;
             }
@@ -72,8 +86,12 @@ class ExpoPushService
                 'data' => $data,
                 'sound' => 'default',
                 'priority' => 'high',
-                'channelId' => $data['channel'] ?? 'default',
+                'channelId' => $channelId,
             ];
+        }
+
+        if ($fcmTokens !== []) {
+            $this->sendViaFcm($fcmTokens, $title, $body, $data, $channelId, $results);
         }
 
         if (empty($messages)) {
@@ -264,6 +282,87 @@ class ExpoPushService
             ->toArray();
 
         return $this->send($tokens, $title, $body, $data);
+    }
+
+    /** ช่องแจ้งเตือน Android ที่แอปสร้างไว้ (services/notifications.ts → setupAndroidChannels) */
+    private const ANDROID_CHANNELS = ['default', 'important', 'orders', 'messages', 'promotions'];
+
+    /**
+     * ช่องแจ้งเตือน Android ของข้อความนี้
+     *
+     * ระบุ data.channel มาเอง (ต้องเป็นช่องที่แอปมี) → ใช้ตามนั้น
+     * งานไรเดอร์ (push_channel = rider) → orders (สำคัญสูง มีเสียง เด้งบนจอ) — ไรเดอร์ต้องรู้ทันทีว่ามีงานเข้า
+     * อื่นๆ → default
+     */
+    public static function androidChannelFor(array $data): string
+    {
+        $channel = $data['channel'] ?? null;
+        if (is_string($channel) && in_array($channel, self::ANDROID_CHANNELS, true)) {
+            return $channel;
+        }
+
+        return ($data['push_channel'] ?? null) === 'rider' ? 'orders' : 'default';
+    }
+
+    /**
+     * 🔔 (2026-10-13) เป็น FCM device token (Android) ไหม — ยาว ไม่มีวงเล็บแบบ Expo มีแค่ตัวอักษร/ตัวเลข/:-_
+     */
+    public static function isFcmDeviceToken(string $token): bool
+    {
+        return strlen($token) >= 100
+            && strlen($token) <= 500
+            && preg_match('/^[A-Za-z0-9_:\-]+$/', $token) === 1;
+    }
+
+    /**
+     * 🔔 (2026-10-13) ส่งตรงผ่าน FCM HTTP v1 (Firebase project plptdb · service account ฝั่งเซิร์ฟเวอร์)
+     *
+     * เป็นข้อความ data-only รูปแบบเดียวกับ Expo Push (title / message / body / channelId / sound)
+     * → expo-notifications ในแอปสร้างแจ้งเตือนเอง แม้แอปปิดอยู่ (priority high) และกดแล้วได้ data เดิมครบ
+     * token ที่ FCM บอกว่าใช้ไม่ได้แล้ว (ถอนแอป/ล้างข้อมูล) → ล้างออกจาก mobile_devices ไม่ยิงซ้ำ
+     *
+     * @param  list<string>  $tokens
+     * @param  array{success: int, failed: int, errors: array<int, string>}  $results
+     */
+    private function sendViaFcm(array $tokens, string $title, string $body, array $data, string $channelId, array &$results): void
+    {
+        $client = app(FcmHttpV1Client::class);
+
+        if (! $client->isConfigured()) {
+            $results['failed'] += count($tokens);
+            $results['errors'][] = 'FCM not configured';
+            Log::error('ExpoPushService: FCM ยังไม่ได้ตั้งค่า (ไฟล์ service account) — ส่งแจ้งเตือนเครื่อง Android ไม่ได้', [
+                'tokens' => count($tokens),
+            ]);
+
+            return;
+        }
+
+        $payload = [
+            'title' => $title,
+            'message' => $body,
+            'body' => json_encode($data === [] ? new \stdClass : $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'channelId' => $channelId,
+            'sound' => 'default',
+        ];
+
+        foreach ($tokens as $token) {
+            $result = $client->send($token, $payload);
+
+            if ($result->ok) {
+                $results['success']++;
+
+                continue;
+            }
+
+            $results['failed']++;
+            $results['errors'][] = 'FCM: '.($result->error ?? 'HTTP '.$result->status);
+
+            if ($result->invalidToken) {
+                MobileDevice::where('push_token', $token)->update(['push_token' => null]);
+                Log::info('ExpoPushService: ล้าง FCM token ที่ใช้ไม่ได้แล้ว', ['error' => $result->error]);
+            }
+        }
     }
 
     /**

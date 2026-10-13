@@ -7,6 +7,7 @@ use App\Models\SoftwareProduct;
 use App\Models\SoftwareQuotation;
 use App\Models\User;
 use App\Notifications\NewQuotationNotification;
+use App\Services\Ekyc\EkycGate;
 use App\Services\QuotationCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -155,6 +156,11 @@ class QuotationController extends Controller
             return redirect()
                 ->route('orders.show', $quotation->order_id)
                 ->with('info', 'ใบเสนอราคานี้ถูกแปลงเป็นคำสั่งซื้อแล้ว');
+        }
+
+        // 🪪 ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อ — ด่านเดียวกับ ShopCheckoutService::checkout (2026-10-13)
+        if (EkycGate::buyerBlocked(Auth::user())) {
+            return back()->with('error', EkycGate::buyerWebMessage())->with(EkycGate::FLASH_KEY, true);
         }
 
         // Create order

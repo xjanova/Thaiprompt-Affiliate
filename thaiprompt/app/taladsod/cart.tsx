@@ -55,6 +55,7 @@ import {
   type OptionSelection,
 } from '@/components/taladsod';
 import { IconTile, Notice, floatBarShadow } from '@/components/taladsod/BuyerParts';
+import { cartFeeView } from '@/components/taladsod/cartFee';
 import {
   fmImageUri,
   getFmCartQuote,
@@ -420,9 +421,10 @@ export default function TaladsodCartScreen() {
   const soloShop = shops.length === 1 ? shops[0] : null;
   // ที่ว่างท้ายเนื้อหา: แถบลอย (แถวสรุป + ปุ่มใหญ่ + ขอบ) หรือ safe area ปกติ
   const bottomSpace = soloShop ? 124 + Math.max(insets.bottom, spacing.md) : insets.bottom;
-  // ค่าส่งโดยประมาณของร้านในแถบลอย (มีเมื่อคำนวณได้แล้วเท่านั้น)
+  // ค่าส่งโดยประมาณของร้านในแถบลอย (มีเมื่อคำนวณได้แล้วเท่านั้น) — ค่าที่ผู้ซื้อจ่ายจริง (ตรงกับหน้าชำระเงิน)
   const soloQuote = soloShop ? quotes[soloShop.seller_id] : undefined;
-  const soloFee = soloShop?.can_checkout && soloQuote?.state === 'ready' && soloQuote.quote.available ? soloQuote.quote.total_fee : null;
+  const soloFee =
+    soloShop?.can_checkout && soloQuote?.state === 'ready' && soloQuote.quote.available ? cartFeeView(soloQuote.quote).buyerFee : null;
 
   const checkoutButton = (shop: FmCartShop, style?: StyleProp<ViewStyle>) => (
     <Button3D
@@ -492,6 +494,7 @@ export default function TaladsodCartScreen() {
 
             {shops.map((shop) => {
               const q = quotes[shop.seller_id];
+              const feeView = q?.state === 'ready' && q.quote.available ? cartFeeView(q.quote) : null;
               const name = shop.seller?.shop_name || 'ร้านตลาดสด';
               const reason = !shop.seller?.is_available
                 ? 'ร้านนี้ปิดรับออเดอร์ชั่วคราว'
@@ -571,13 +574,25 @@ export default function TaladsodCartScreen() {
                           {q.state === 'loading' ? (
                             <ActivityIndicator size="small" color={colors.gold} />
                           ) : q.state === 'ready' && q.quote.available ? (
-                            <PriceText amount={q.quote.total_fee} size="sm" tone="strong" />
+                            // ค่าส่งที่ผู้ซื้อจ่ายจริง (buyer_fee) — ตรงกับหน้าชำระเงินและยอดที่ server เก็บ
+                            feeView?.free ? (
+                              <Text style={[typography.caption, styles.freeText, { color: colors.success }]}>ส่งฟรี</Text>
+                            ) : (
+                              <PriceText amount={feeView?.buyerFee ?? 0} size="sm" tone="strong" />
+                            )
                           ) : (
                             <Text style={[typography.caption, { color: colors.warning }]}>
                               {q.state === 'ready' ? q.quote.message || 'ส่งไม่ถึง' : 'คำนวณไม่ได้'}
                             </Text>
                           )}
                         </View>
+                      )}
+                      {shop.can_checkout && !!feeView && feeView.shopPays > 0 && (
+                        <Text style={[typography.micro, { color: colors.success }]}>
+                          {feeView.free
+                            ? `ร้านออกค่าส่ง ${formatBaht(feeView.shopPays)} ให้คุณ`
+                            : `ร้านช่วยออกค่าส่ง ${formatBaht(feeView.shopPays)} แล้ว`}
+                        </Text>
                       )}
                       {shop.can_checkout && q?.state === 'ready' && !q.quote.available && (
                         <Text style={[typography.micro, { color: colors.textMuted }]}>นัดรับที่ร้านได้ เลือกตอนชำระเงินนะ</Text>
@@ -625,7 +640,8 @@ export default function TaladsodCartScreen() {
                 {soloShop.seller?.shop_name || 'ร้านตลาดสด'}
               </Text>
               <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
-                {soloShop.items_count} ชิ้น{soloFee !== null ? ` · ค่าส่งประมาณ ${formatBaht(soloFee)}` : ''}
+                {soloShop.items_count} ชิ้น
+                {soloFee !== null ? (soloFee > 0 ? ` · ค่าส่งประมาณ ${formatBaht(soloFee)}` : ' · ส่งฟรี (ร้านออกให้)') : ''}
               </Text>
             </View>
           </View>
@@ -857,6 +873,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
     minHeight: 26,
+  },
+  freeText: {
+    fontWeight: '700',
   },
   checkoutBtn: {
     marginTop: spacing.lg,

@@ -19,6 +19,7 @@ import {
   FM_STATUS_LABEL,
   FM_STATUS_TONE,
   fmActionLook,
+  fmRiderStatusText,
   sortFmActions,
   timeAgoTh,
 } from './fmHelpers';
@@ -31,18 +32,6 @@ export interface FmOrderCardProps {
   /** เวลาปัจจุบัน (ให้หน้าจอส่งมาเพื่อไม่ให้ทุกการ์ดตั้งนาฬิกาเอง) */
   now?: number;
 }
-
-const RIDER_STATUS_TEXT: Record<string, string> = {
-  pending: 'กำลังหาไรเดอร์',
-  accepted: 'ไรเดอร์รับงานแล้ว',
-  picking_up: 'ไรเดอร์กำลังมารับของ',
-  picked_up: 'ไรเดอร์รับของแล้ว',
-  delivering: 'ไรเดอร์กำลังไปส่ง',
-  delivered: 'ไรเดอร์ส่งถึงแล้ว',
-  completed: 'ส่งสำเร็จ',
-  failed: 'ส่งไม่สำเร็จ',
-  cancelled: 'งานไรเดอร์ถูกยกเลิก',
-};
 
 /** แถวข้อมูลเล็ก: ไอคอนเส้น + ข้อความ (+ ปุ่มด้านขวา) · lines = 0 → ไม่จำกัดบรรทัด */
 const MetaRow: React.FC<{ icon: IconName; color: string; children: React.ReactNode; right?: React.ReactNode; lines?: number }> = ({
@@ -222,7 +211,7 @@ export const FmOrderCard: React.FC<FmOrderCardProps> = ({ order, onAction, highl
                   ) : null
                 }
               >
-                {RIDER_STATUS_TEXT[order.rider_job.status] || order.rider_job.status}
+                {fmRiderStatusText(order.rider_job.status, order.rider_job.status_label)}
                 {order.rider_job.rider_name ? ` · ${order.rider_job.rider_name}` : ''}
               </MetaRow>
             )}

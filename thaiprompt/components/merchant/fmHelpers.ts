@@ -115,6 +115,56 @@ export const FM_CANCEL_REASONS = [
 ];
 
 // =====================================================
+// สถานะงานไรเดอร์ (มุมมองร้าน)
+// =====================================================
+
+/**
+ * ข้อความไทยของสถานะงานไรเดอร์ที่ server ส่งมาใน order.rider_job.status
+ * ครบทุกสถานะของ RiderJob (TRANSITIONS) + สถานะส่งมอบของ DeliveryHandover (เผื่อ server ส่งมาแทน)
+ */
+export const FM_RIDER_STATUS_TEXT: Record<string, string> = {
+  // ---------- RiderJob ----------
+  pending: 'กำลังหาไรเดอร์',
+  accepted: 'ไรเดอร์รับงานแล้ว',
+  picking_up: 'ไรเดอร์กำลังมารับของ',
+  picked_up: 'ไรเดอร์รับของแล้ว',
+  delivering: 'ไรเดอร์กำลังไปส่ง',
+  arrived: 'ไรเดอร์ถึงจุดส่งแล้ว',
+  awaiting_release: 'ไรเดอร์วางของที่จุดส่งแล้ว รอยืนยันรับของ',
+  delivered: 'ไรเดอร์ส่งถึงแล้ว',
+  completed: 'ส่งสำเร็จ',
+  failed: 'ส่งไม่สำเร็จ',
+  cancelled: 'งานไรเดอร์ถูกยกเลิก',
+  // ---------- DeliveryHandover ----------
+  waiting: 'รอสแกนส่งมอบกับลูกค้า',
+  rider_confirmed: 'ไรเดอร์ยืนยันส่งมอบแล้ว',
+  buyer_confirmed: 'ลูกค้ายืนยันรับของแล้ว',
+  fallback_waiting: 'ไรเดอร์รอลูกค้าที่จุดส่ง',
+  fallback_pending_release: 'ไรเดอร์วางของที่จุดส่งแล้ว รอยืนยันรับของ',
+  disputed: 'ลูกค้าแจ้งปัญหา ทีมงานกำลังตรวจสอบ',
+  released: 'ส่งมอบสำเร็จ',
+  refunded: 'คืนเงินให้ลูกค้าแล้ว',
+};
+
+/** ข้อความสำรองเมื่อเป็นสถานะใหม่ที่แอปยังไม่รู้จัก (ห้ามโชว์ค่าดิบภาษาอังกฤษ) */
+export const FM_RIDER_STATUS_FALLBACK = 'ไรเดอร์กำลังดำเนินการ';
+
+/**
+ * ข้อความสถานะไรเดอร์สำหรับร้าน: แอปรู้จัก → ข้อความของแอป · ไม่รู้จัก → ป้ายไทยจาก server (status_label) · ไม่มี → ข้อความสำรอง
+ *
+ * @example fmRiderStatusText('awaiting_release') // 'ไรเดอร์วางของที่จุดส่งแล้ว รอยืนยันรับของ'
+ * @example fmRiderStatusText('new_state', 'สถานะใหม่') // 'สถานะใหม่'
+ */
+export const fmRiderStatusText = (status: string | null | undefined, serverLabel?: string | null): string => {
+  const key = typeof status === 'string' ? status.trim() : '';
+  if (key && Object.prototype.hasOwnProperty.call(FM_RIDER_STATUS_TEXT, key)) return FM_RIDER_STATUS_TEXT[key];
+  const label = typeof serverLabel === 'string' ? serverLabel.trim() : '';
+  // ป้ายจาก server ใช้ได้เฉพาะที่เป็นภาษาไทย (กันค่าดิบภาษาอังกฤษหลุดขึ้นจอ)
+  if (label && /[฀-๿]/.test(label)) return label;
+  return FM_RIDER_STATUS_FALLBACK;
+};
+
+// =====================================================
 // สถานะสินค้า
 // =====================================================
 

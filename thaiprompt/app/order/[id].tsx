@@ -43,6 +43,7 @@ import {
   type ShopOrderTracking,
 } from '@/services/api/shopApi';
 import { isTrustedWebUrl } from '@/utils/linking';
+import { LATE_CANCEL_REASON, buyerCancelView } from '@/utils/buyerCancel';
 import {
   Button3D,
   Card3D,
@@ -216,6 +217,7 @@ export default function OrderDetailScreen() {
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);
   const payBusyRef = useRef(false);
+  const cancelBusyRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -401,14 +403,17 @@ export default function OrderDetailScreen() {
   };
 
   const submitCancel = async () => {
-    if (!order || cancelBusy) return;
+    // กันกดซ้ำ (state อาจยังไม่อัปเดตทันในเฟรมเดียวกัน)
+    if (!order || cancelBusy || cancelBusyRef.current) return;
     const reason = cancelReason === 'other' ? cancelOther.trim() : cancelReason;
     if (!reason) {
       Alert.alert('เลือกเหตุผลก่อนนะ', 'บอกเหตุผลสั้นๆ ให้ร้านทราบหน่อย');
       return;
     }
+    cancelBusyRef.current = true;
     setCancelBusy(true);
     const res = await cancelMyOrder(order.id, reason.slice(0, 500));
+    cancelBusyRef.current = false;
     if (!mountedRef.current) return;
     setCancelBusy(false);
     if (res.success) {
@@ -513,6 +518,13 @@ export default function OrderDetailScreen() {
 
   const isRider = order.delivery_method === 'rider';
   const rider = order.rider;
+  // ยกเลิกได้ตามปกติ (can_cancel) หรือเพราะออเดอร์ล่าช้า (buyer_can_cancel + หมายเหตุจาก server)
+  const cancelView = buyerCancelView(order.can_cancel, order);
+  const openCancel = () => {
+    setCancelReason(cancelView.late ? LATE_CANCEL_REASON : null);
+    setCancelOther('');
+    setCancelOpen(true);
+  };
   const codWaiting =
     order.payment_method === 'cod' && order.payment_status !== 'paid' && ['delivered', 'completed'].includes(order.status);
   const history = tracking?.history ?? [];
@@ -798,19 +810,29 @@ export default function OrderDetailScreen() {
       {order.can_confirm_received && (
         <Button3D title="ได้รับสินค้าแล้ว" icon="check-circle" variant="primary" size="lg" fullWidth onPress={confirmReceived} style={styles.gapTop} />
       )}
-      {order.can_cancel && (
-        <Button3D
-          title="ยกเลิกคำสั่งซื้อ"
-          variant="ghost"
-          size="md"
-          fullWidth
-          onPress={() => {
-            setCancelReason(null);
-            setCancelOther('');
-            setCancelOpen(true);
-          }}
+      {cancelView.late ? (
+        // ออเดอร์ล่าช้า (ร้านเตรียมของนาน / หาไรเดอร์ไม่ได้) → บอกเหตุผล + ปุ่มยกเลิกเด่นขึ้น
+        <NoticeBanner
+          tone="warning"
+          icon="hourglass"
+          text={cancelView.note}
+          actionBelow
+          action={
+            <Button3D
+              title="ยกเลิกคำสั่งซื้อ"
+              icon="x-circle"
+              variant="secondary"
+              size="sm"
+              disabled={cancelBusy}
+              onPress={openCancel}
+            />
+          }
           style={styles.gapTop}
         />
+      ) : (
+        cancelView.show && (
+          <Button3D title="ยกเลิกคำสั่งซื้อ" variant="ghost" size="md" fullWidth onPress={openCancel} style={styles.gapTop} />
+        )
       )}
       <Button3D
         title="ต้องการความช่วยเหลือ"
@@ -826,11 +848,14 @@ export default function OrderDetailScreen() {
         visible={cancelOpen}
         icon="x-circle"
         title="ยกเลิกคำสั่งซื้อ"
-        description={
+        description={[
+          cancelView.late ? cancelView.note : null,
           order.payment_status === 'paid'
             ? 'ยกเลิกแล้วระบบจะคืนเงินเข้ากระเป๋าเงินของคุณ'
-            : 'คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน ยกเลิกได้เลย'
-        }
+            : 'คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน ยกเลิกได้เลย',
+        ]
+          .filter(Boolean)
+          .join('\n')}
         submitLabel="ยืนยันยกเลิก"
         submitVariant="danger"
         submitDisabled={!cancelReason || (cancelReason === 'other' && cancelOther.trim().length < 2)}

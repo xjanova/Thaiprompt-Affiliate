@@ -256,6 +256,7 @@ class AddressApiController extends Controller
             }
         }
 
+        // พิกัด: ไม่ส่งคีย์ = คงหมุดเดิม · ส่ง null (แอปกด "เอาหมุดออก") = ลบหมุด (has() นับคีย์ที่ค่าเป็น null ด้วย)
         if ($creating || $request->has('latitude') || $request->has('longitude')) {
             $lat = $request->input('latitude');
             $lng = $request->input('longitude');

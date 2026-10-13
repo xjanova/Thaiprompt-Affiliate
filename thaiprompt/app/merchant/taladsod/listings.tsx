@@ -42,6 +42,7 @@ import {
   Pill,
   PriceText,
   Screen,
+  formatBaht,
   resultHaptic,
   tapHaptic,
 } from '@/components/ui';
@@ -188,6 +189,12 @@ export default function TaladsodListingsScreen() {
     }
     if (price === priceTarget.price) {
       setPriceTarget(null);
+      return;
+    }
+    // มีราคาก่อนลด (ราคาขีดฆ่า) อยู่ → ราคาขายใหม่ต้องต่ำกว่า (server ตรวจซ้ำอีกชั้น)
+    const compare = priceTarget.compare_at_price;
+    if (compare !== null && compare > 0 && price >= compare) {
+      setPriceError(`ราคาขายต้องต่ำกว่าราคาก่อนลด ${formatBaht(compare)} — ถ้าจะขึ้นราคา ให้แก้หรือลบราคาก่อนลดในหน้าแก้สินค้าก่อน`);
       return;
     }
     setPriceBusy(true);
@@ -417,7 +424,16 @@ export default function TaladsodListingsScreen() {
           keyboardType="decimal-pad"
           placeholder="เช่น 50"
           error={priceError}
-          hint={priceTarget && priceTarget.option_groups.length > 0 ? 'ราคาตัวเลือก (+฿) คิดเพิ่มจากราคานี้' : undefined}
+          hint={
+            [
+              priceTarget && priceTarget.compare_at_price !== null && priceTarget.compare_at_price > 0
+                ? `ราคาก่อนลด ${formatBaht(priceTarget.compare_at_price)} — ราคาขายต้องต่ำกว่านี้`
+                : null,
+              priceTarget && priceTarget.option_groups.length > 0 ? 'ราคาตัวเลือก (+฿) คิดเพิ่มจากราคานี้' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || undefined
+          }
           autoFocus
         />
       </FormSheet>

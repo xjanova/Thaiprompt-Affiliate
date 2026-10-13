@@ -642,6 +642,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         //    → ใช้ตัวเดียวกับ DELETE /push/token (ถอดทั้ง mobile_devices + user_notification_tokens)
         Route::delete('mobile/push-token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken'])
             ->name('api.v1.mobile.push-token.remove');
+        // 🔔 (2026-10-13) ปุ่ม "ทดสอบ" ในหน้าตั้งค่าแจ้งเตือน — ยิง push จริงจากเซิร์ฟเวอร์ไปทุกเครื่องของผู้ใช้
+        //    (เดิมแอปยิงแจ้งเตือนในเครื่องเอง → ดูเหมือนใช้ได้ทั้งที่เซิร์ฟเวอร์ส่งไม่ถึง)
+        Route::post('mobile/push-test', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'sendTestPush'])
+            ->middleware('throttle:3,1,api-push-test')
+            ->name('api.v1.mobile.push-test');
 
         // Push Notification Delivery Tracking (สำหรับ retry mechanism)
         Route::prefix('mobile/push')->group(function () {

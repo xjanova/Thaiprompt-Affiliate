@@ -119,12 +119,13 @@ class FreshMarketOrderNotifier
                 }
 
                 if ($byRole !== 'seller') {
-                    $who = match ($byRole) {
-                        'buyer' => 'ลูกค้ายกเลิกออเดอร์',
-                        'system' => 'ออเดอร์หมดเวลารอร้านยืนยัน ระบบยกเลิกให้อัตโนมัติ',
-                        default => 'แอดมินยกเลิกออเดอร์',
+                    // ระบบยกเลิกได้หลายเหตุ (ร้านไม่รับ / ร้านเตรียมช้า / ไม่มีไรเดอร์) → บอกเหตุผลจริงที่บันทึกไว้
+                    $sellerMsg = match ($byRole) {
+                        'buyer' => 'ลูกค้ายกเลิกออเดอร์'.$reason,
+                        'system' => 'ระบบยกเลิกออเดอร์อัตโนมัติ'.($order->cancel_reason ? ": {$order->cancel_reason}" : ''),
+                        default => 'แอดมินยกเลิกออเดอร์'.$reason,
                     };
-                    $this->toSeller($order, $sellerUser, "ออเดอร์ #{$num} ถูกยกเลิก", $who.$reason);
+                    $this->toSeller($order, $sellerUser, "ออเดอร์ #{$num} ถูกยกเลิก", $sellerMsg);
                 }
                 break;
         }
@@ -183,6 +184,24 @@ class FreshMarketOrderNotifier
 
         $this->toSeller($order, $order->seller?->user, "เรียกไรเดอร์ #{$num} ไม่สำเร็จ", $reason.' ทีมงานได้รับแจ้งแล้ว');
         $this->toAdmins($order, "ตลาดสด: เรียกไรเดอร์ #{$num} ไม่สำเร็จ", $reason);
+    }
+
+    /**
+     * กติกาตัดเวลา (2026-10-13): ระบบยกเลิกออเดอร์ที่ร้านรับแล้วไม่กด "พร้อม" เกินเวลา → แจ้งแอดมิน
+     * (ผู้ซื้อ/ร้านได้แจ้งเตือนการยกเลิกจาก statusChanged แล้ว)
+     */
+    public function prepTimeoutCancelled(FreshMarketOrder $order, int $minutes): void
+    {
+        $order->loadMissing(['seller']);
+        $shop = $order->seller?->shop_name ?? 'ร้านค้า';
+        $refund = (float) ($order->refunded_amount ?? 0);
+
+        $this->toAdmins(
+            $order,
+            "ตลาดสด: ยกเลิกออเดอร์ #{$order->order_number} อัตโนมัติ (ร้านเตรียมช้า)",
+            "{$shop} รับออเดอร์แล้วไม่กดพร้อมภายใน {$minutes} นาที ระบบยกเลิกและคืนเงินผู้ซื้อ"
+                .($refund > 0 ? ' ฿'.number_format($refund, 2) : '').' แล้ว'
+        );
     }
 
     /**
