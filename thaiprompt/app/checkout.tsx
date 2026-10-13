@@ -216,7 +216,9 @@ export default function CheckoutScreen() {
   // 🪙 ราคา TPIX สด — คิดยอดเหรียญโดยประมาณ + เช็คว่าเปิดรับชำระด้วย TPIX ไหม
   const { spot: tpixSpot, paymentsEnabled: tpixPaymentsEnabled } = useTpixSpot(isAuthenticated);
   /** เสนอตัวเลือก TPIX เมื่อ server เปิดรับ (รายการวิธีจ่าย หรือ /tpix/price บอก) */
-  const tpixAvailable = tpixMethodEnabled === true || (tpixMethodEnabled !== false && tpixPaymentsEnabled === true);
+  // ตะกร้าที่มีสินค้า Lazada จ่ายด้วย TPIX ไม่ได้ (server ส่ง summary.tpix_payable = false)
+  const tpixAvailable = (tpixMethodEnabled === true || (tpixMethodEnabled !== false && tpixPaymentsEnabled === true))
+    && quote?.summary.tpix_payable !== false;
 
   // ---------- ผลการสั่ง ----------
   const [step, setStep] = useState<Step>('form');
@@ -1461,7 +1463,9 @@ export default function CheckoutScreen() {
             <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
           </View>
           {/* 🪙 ยอดเหรียญ TPIX โดยประมาณ (ราคาสดจาก DEX) */}
-          <TpixTotal thb={summary.grand_total} lines={tpixLines} showRate size="sm" align="right" style={styles.gapTopSm} />
+          {summary.tpix_payable !== false && (
+            <TpixTotal thb={summary.grand_total} lines={tpixLines} showRate size="sm" align="right" style={styles.gapTopSm} />
+          )}
         </Card3D>
 
         {delivery === 'rider' && payment !== 'cod' && <EscrowNotice style={styles.block} />}

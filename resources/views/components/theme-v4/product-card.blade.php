@@ -130,7 +130,7 @@
                     <span class="sf-compare">฿{{ number_format($pcCompare, 0) }}</span>
                 @endif
             </div>
-            @unless($pcAffiliate)
+            @unless($pcAffiliate || ($pcModel && \App\Services\TpixPay\TpixPriceService::isExternalProduct($product)))
                 <x-tpix-price :thb="$pcPrice" :tpix="$pcTpixFixed" style="margin-top:5px;" />
             @endunless
             @if($pcRating > 0 || $pcSales > 0 || $pcPoints > 0)

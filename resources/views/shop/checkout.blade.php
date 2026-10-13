@@ -20,7 +20,9 @@
     $coMethods = collect($paymentMethods ?? []);
     $coCardEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'credit_card' && ($m['enabled'] ?? false));
     // 🪙 เหรียญ TPIX — เปิดรับ + รู้ราคาจริง (ราคา ณ ตอนเปิดหน้า ใช้แสดงยอดประมาณ · ยอดจริงออกหลังยืนยันคำสั่งซื้อ)
-    $coTpixEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'tpix' && ($m['enabled'] ?? false));
+    $coTpixEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'tpix' && ($m['enabled'] ?? false))
+        // สินค้า Lazada จ่ายด้วย TPIX ไม่ได้ → ตะกร้าที่มีสินค้า Lazada ไม่เสนอตัวเลือกนี้
+        && ! collect($cartItems)->contains(fn ($ci) => \App\Services\TpixPay\TpixPriceService::isExternalProduct($ci->product ?? null));
     $coTpixSpot = $coTpixEnabled ? app(\App\Services\TpixPay\TpixPriceService::class)->spot() : null;
     $coBankEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'bank_transfer' && ($m['enabled'] ?? false));
 

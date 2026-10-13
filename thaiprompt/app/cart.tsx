@@ -453,7 +453,7 @@ export default function CartScreen() {
           <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดรวมโดยประมาณ</Text>
           <PriceText amount={summary.grand_total} size="lg" tone="gold" />
           {/* 🪙 ยอดเหรียญ TPIX โดยประมาณ (ราคาสดจาก DEX · ยอดจริงออกตอนสั่งซื้อ) */}
-          <TpixTotal thb={summary.grand_total} lines={tpixLines} size="xs" />
+          {summary.tpix_payable !== false && <TpixTotal thb={summary.grand_total} lines={tpixLines} size="xs" />}
         </View>
         <Button3D
           title={unavailableItems.length > 0 ? 'จัดการตะกร้าก่อน' : 'ไปชำระเงิน'}

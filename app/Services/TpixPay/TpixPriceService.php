@@ -239,7 +239,42 @@ class TpixPriceService
             return $this->apiFields($thb);
         }
 
+        if (self::isExternalProduct($product)) {
+            return ['price_tpix' => null, 'tpix' => null];
+        }
+
         return $this->apiFields($thb ?? $product->price, self::fixedPriceFor($product));
+    }
+
+    /**
+     * สินค้าจาก Lazada (ลิงก์ affiliate หรือดึงเข้ามาขายในร้าน) — ไม่แสดงราคา TPIX และจ่ายด้วย TPIX ไม่ได้
+     *
+     * เจ้าของสั่ง (2026-10-13): "บน Thaiprompt สินค้า Lazada ไม่ต้องแสดงราคา TPIX"
+     * ร้านต้องใช้เงินบาทซื้อของจาก Lazada มาส่ง จึงรับเหรียญแทนเงินบาทไม่ได้
+     *
+     * ตัวบ่งชี้ (มีอย่างใดอย่างหนึ่ง): is_affiliate · external_platform ไม่ว่าง · sku ขึ้นต้น LZD- (LazadaImportService)
+     * · attributes.source.platform = lazada
+     */
+    public static function isExternalProduct(?Product $product): bool
+    {
+        if (! $product) {
+            return false;
+        }
+
+        if ($product->is_affiliate || filled($product->external_platform)) {
+            return true;
+        }
+
+        if (str_starts_with(strtoupper((string) $product->sku), 'LZD-')) {
+            return true;
+        }
+
+        $attributes = $product->getAttribute('attributes');
+        if (is_string($attributes)) {
+            $attributes = json_decode($attributes, true);
+        }
+
+        return is_array($attributes) && strtolower((string) ($attributes['source']['platform'] ?? '')) === 'lazada';
     }
 
     /**

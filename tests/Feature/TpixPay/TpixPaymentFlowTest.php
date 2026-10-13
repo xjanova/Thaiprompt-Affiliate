@@ -388,6 +388,28 @@ class TpixPaymentFlowTest extends TestCase
         $this->assertEquals(1000.0, $settings->maxPerPaymentThb());
     }
 
+    public function test_orders_with_lazada_products_cannot_be_paid_with_tpix(): void
+    {
+        [$seller, $store] = $this->makeSellerWithStore();
+        $product = $this->makeProduct($seller, $store, ['price' => 500, 'stock_quantity' => 5, 'sku' => 'LZD-5329571666']);
+        $buyer = $this->makeBuyer();
+        $address = $this->makeAddress($buyer);
+        Sanctum::actingAs($buyer);
+
+        $this->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1])->assertOk();
+        $this->postJson('/api/v1/cart/checkout', ['address_id' => $address->id, 'payment_method' => 'tpix'])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false);
+        $this->assertSame(0, Order::where('user_id', $buyer->id)->count());
+
+        // เส้นจ่ายใหม่ของออเดอร์เดิมก็ไม่ออกยอด
+        $order = $this->makeOrder($buyer, [['product' => $product, 'qty' => 1]], ['payment_method' => 'tpix']);
+        $service = app(PaymentService::class);
+        $result = $service->processPayment($service->createOrderPayment($order, 'tpix'), []);
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('Lazada', $result['message']);
+    }
+
     public function test_abandoned_tpix_order_is_cancelled_after_the_grace_window(): void
     {
         [$order] = $this->pendingTpixOrder(1000);

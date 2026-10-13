@@ -641,7 +641,11 @@ class ShopCartService
         $threshold = (float) ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD;
         $grandTotal = round(max(0.0, $subtotal + $shippingTotal - $discountTotal), 2);
         // 🪙 ยอดรวมเป็นเหรียญ TPIX โดยประมาณ (แปลงจากยอดบาท) — ยอดเหรียญจริงออกตอนเลือกจ่ายด้วย TPIX
-        $grandTotalTpix = app(TpixPriceService::class)->apiFields($grandTotal);
+        // ตะกร้าที่มีสินค้า Lazada จ่ายด้วย TPIX ไม่ได้ → ไม่แสดงยอดรวม TPIX
+        $hasExternal = $lines->contains(fn ($item) => TpixPriceService::isExternalProduct($item->product ?? null));
+        $grandTotalTpix = $hasExternal
+            ? ['price_tpix' => null, 'tpix' => null]
+            : app(TpixPriceService::class)->apiFields($grandTotal);
 
         return [
             'items' => $itemsOut,
@@ -670,6 +674,8 @@ class ShopCartService
                 'grand_total' => $grandTotal,
                 'grand_total_tpix' => $grandTotalTpix['price_tpix'],
                 'tpix' => $grandTotalTpix['tpix'],
+                // false = ตะกร้านี้จ่ายด้วย TPIX ไม่ได้ (มีสินค้า Lazada) — แอปซ่อนตัวเลือก/ยอด TPIX
+                'tpix_payable' => ! $hasExternal,
                 'free_shipping_threshold' => $threshold,
                 'amount_to_free_shipping' => round(max(0.0, $threshold - $subtotal), 2),
                 'rider_available' => $groups !== [] && collect($groups)->every(fn ($g) => ! $g['has_physical'] || $g['rider']['available']),
@@ -689,7 +695,7 @@ class ShopCartService
      */
     private function lineTpix(?Product $product, float $unitPrice, int $quantity): array
     {
-        if (! $product || $product->is_affiliate) {
+        if (! $product || TpixPriceService::isExternalProduct($product)) {
             return ['line_total_tpix' => null, 'tpix' => null];
         }
 
