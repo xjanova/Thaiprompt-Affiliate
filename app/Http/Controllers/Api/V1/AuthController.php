@@ -157,6 +157,8 @@ class AuthController extends Controller
 
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (AI eKYC / แอดมินอนุมัติ)
                 'verified' => $user->isKycVerified(),
+                // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท {seller, rider, buyer} (ยังไม่ผ่าน = null)
+                'training_badges' => \App\Services\Classroom\TrainingBadge::allFor($user),
             ]),
         ]);
     }

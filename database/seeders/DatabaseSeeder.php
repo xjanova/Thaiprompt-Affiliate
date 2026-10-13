@@ -207,6 +207,9 @@ class DatabaseSeeder extends Seeder
             AppConfigSeeder::class,                 // ⚙️ remote config ของแอป Flutter (กัน fallback cache-only)
             FeatureFlagSeeder::class,               // 🚩 feature flags — ทุกตัว default OFF
             FortuneCommentReplySeeder::class,       // 💬 คลังคำตอบคอมเมนต์ 100 ชุด (invite/blessing/thanks/emoji)
+
+            // 24. 🎓 ห้องเรียน (2026-10-13) — คอร์สผู้ขาย/ไรเดอร์/ผู้ซื้อ + คลังข้อสอบ (idempotent ไม่ทับที่แอดมินแก้)
+            ClassroomSeeder::class,
         ]);
 
         $this->command->info('');

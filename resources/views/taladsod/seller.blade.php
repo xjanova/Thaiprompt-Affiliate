@@ -76,6 +76,8 @@
                             @if($seller->is_verified)
                                 <i class="fas fa-circle-check" style="font-size:.6em; vertical-align:middle;" title="ร้านยืนยันแล้ว" aria-label="ร้านยืนยันแล้ว"></i>
                             @endif
+                            {{-- 🎓 เจ้าของร้านผ่านการอบรมผู้ขาย (ห้องเรียน) — ยังไม่ผ่าน = ไม่แสดง --}}
+                            <x-training-badge :user="(int) $seller->user_id" role="seller" :size="22" />
                         </h1>
                         <div class="ts-row" style="gap:6px; margin-top:8px;">
                             <span class="ts-pill solid" :class="open ? 'ts-tone-ok' : 'ts-tone-muted'">

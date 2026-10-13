@@ -1199,6 +1199,8 @@ class RiderJob extends Model
                 'has_profile_image' => ! empty($rider->profile_image),
                 // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
                 'verified' => \App\Services\Ekyc\EkycService::badge($rider->user),
+                // 🎓 ป้าย "ผ่านการอบรมไรเดอร์" (ยังไม่ผ่าน = null)
+                'training_badge' => \App\Services\Classroom\TrainingBadge::for((int) $rider->user_id, 'rider'),
             ] : null,
             'tracking_url' => $viewer === null ? $this->tracking_url : null,
         ]);

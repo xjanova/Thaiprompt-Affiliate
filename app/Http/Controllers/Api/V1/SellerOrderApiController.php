@@ -664,6 +664,8 @@ class SellerOrderApiController extends Controller
             ],
             'customer' => [
                 'name' => $order->user?->name ?? 'ลูกค้า',
+                // 🎓 (2026-10-13) ผู้ซื้อผ่านการอบรมผู้ซื้อ (ยังไม่ผ่าน = null)
+                'training_badge' => $order->user_id ? \App\Services\Classroom\TrainingBadge::for((int) $order->user_id, 'buyer') : null,
             ],
             'shipping' => $shipping,
             'items' => $items->map(fn (OrderItem $item) => ShopPresenter::orderItem($item) + [

@@ -623,6 +623,8 @@ class FreshMarketShopPresenceService
             'location_poll_seconds' => $presence['live_location_sharing'] ? 30 : 120,
             // 🪪 (2026-10-04) เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทองในแอป)
             'owner_verified' => \App\Services\Ekyc\EkycService::badge($seller->user),
+            // 🎓 (2026-10-13) เจ้าของร้านผ่านการอบรมผู้ขาย (ตรากลมกรมท่าขอบทอง ข้างป้ายยืนยันตัวตน) — ยังไม่ผ่าน = null
+            'training_badge' => \App\Services\Classroom\TrainingBadge::for((int) $seller->user_id, 'seller'),
         ]);
     }
 
