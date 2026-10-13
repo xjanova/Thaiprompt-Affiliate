@@ -750,6 +750,9 @@ class TpixPaymentService
         // 1) ราคาย้อนหลัง (ค่าเฉลี่ยกันปั่นราคา) — บันทึกเองไม่เกินนาทีละครั้ง
         $stats['snapshot'] = $this->prices->computeSpot() !== null;
 
+        // ประวัติราคาใช้แค่ 30 นาที (ค่าเฉลี่ย) / 24 ชม. (อัตราแลกเปลี่ยนสำรอง) — เก็บ 7 วันพอ (บันทึกทุกนาที = ~10k แถว/สัปดาห์)
+        \App\Models\TpixPriceSnapshot::where('created_at', '<', now()->subDays(7))->limit(5000)->delete();
+
         $grace = (int) config('tpix_pay.late_grace_minutes', 120);
 
         // 2) ใบที่หมดเวลา: แสดงสถานะหมดเวลา (ยังสแกนหาเงินที่โอนก่อนหมดเวลาต่อจนพ้นช่วงกันยอด)
