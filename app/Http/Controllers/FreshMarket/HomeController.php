@@ -655,7 +655,7 @@ class HomeController extends Controller
     }
 
     /**
-     * ผู้ซื้อยกเลิกออเดอร์ (ได้เฉพาะตอนร้านยังไม่รับ)
+     * ผู้ซื้อยกเลิกออเดอร์ (ร้านยังไม่รับ หรือเกินเวลา: ร้านเตรียมช้า / หาไรเดอร์ไม่ได้ — กติกาใน FreshMarketOrder::canTransition)
      */
     public function cancelOrder(Request $request, FreshMarketOrder $order): RedirectResponse
     {

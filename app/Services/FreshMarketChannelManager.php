@@ -371,6 +371,7 @@ class FreshMarketChannelManager
             'cancel_order' => $this->handleCancelOrderPostback($lineUserId, $params, $conversation),
             'edit_order' => $this->handleEditOrderPostback($conversation),
             'track_order' => $this->handleTrackOrderPostback($lineUserId, $params, $conversation),
+            'buyer_cancel_order' => $this->handleBuyerCancelOrderPostback($params, $conversation),
             'sell_more' => $this->handleSellMorePostback($conversation),
             'seller_orders' => $this->buildSellerOrdersReply($conversation),
             'seller_order' => $this->handleSellerOrderPostback($params, $conversation),
@@ -1686,13 +1687,27 @@ class FreshMarketChannelManager
                     'delivery_failed' => '⚠️ จัดส่งไม่สำเร็จ ทีมงานกำลังติดต่อกลับ',
                 ];
                 $statusText = $statusLabels[$order->order_status] ?? "📋 สถานะ: {$order->order_status}";
+                $text = "📦 ออเดอร์ #{$order->order_number}\n\n{$statusText}\n\n🕐 อัพเดทล่าสุด: {$order->updated_at->diffForHumans()}";
+                $quickReplies = [
+                    ['label' => '🔄 เช็คอีกครั้ง', 'postback' => "action=track_order&order_id={$orderId}", 'display_text' => 'สถานะ'],
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ];
+
+                // กติกาตัดเวลา (2026-10-13): ผู้ซื้อเจ้าของออเดอร์ยกเลิกได้ (ร้านยังไม่รับ / ร้านเตรียมช้า / หาไรเดอร์ไม่ได้เกินเวลา)
+                $buyer = $this->lineBuyerFor($conversation);
+                if ($buyer && (int) $order->buyer_id === (int) $buyer->id && $order->canBeCancelled('buyer')) {
+                    $note = $order->buyerCancelNote(true);
+                    $text .= $note ? "\n\n⏱️ {$note}" : '';
+                    array_unshift($quickReplies, [
+                        'label' => '❌ ยกเลิกออเดอร์',
+                        'postback' => "action=buyer_cancel_order&order_id={$order->id}",
+                        'display_text' => 'ยกเลิกออเดอร์',
+                    ]);
+                }
 
                 return [
-                    'text' => "📦 ออเดอร์ #{$order->order_number}\n\n{$statusText}\n\n🕐 อัพเดทล่าสุด: {$order->updated_at->diffForHumans()}",
-                    'quick_replies' => [
-                        ['label' => '🔄 เช็คอีกครั้ง', 'postback' => "action=track_order&order_id={$orderId}", 'display_text' => 'สถานะ'],
-                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
-                    ],
+                    'text' => $text,
+                    'quick_replies' => $quickReplies,
                 ];
             }
         }
@@ -1710,6 +1725,73 @@ class FreshMarketChannelManager
                 ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
             ],
         ];
+    }
+
+    /**
+     * Postback: ผู้ซื้อยกเลิกออเดอร์ที่มีอยู่แล้ว (ตอบ reply เท่านั้น — ห้าม push)
+     *
+     * กติกาเดียวกับแอป/เว็บ (FreshMarketService::cancelOrder role buyer): ร้านยังไม่รับ หรือเกินเวลา
+     * (ร้านเตรียมช้า / หาไรเดอร์ไม่ได้) → ยกเลิก + คืนเงินเต็มจำนวนเข้า Wallet
+     * กดครั้งแรกถามยืนยัน (confirm=1 จึงยกเลิกจริง) · ยกเลิกได้เฉพาะเจ้าของออเดอร์
+     */
+    protected function handleBuyerCancelOrderPostback(array $params, FreshMarketConversation $conversation): array
+    {
+        $orderId = (int) ($params['order_id'] ?? 0);
+        $buyer = $this->lineBuyerFor($conversation);
+        $order = $orderId > 0 ? FreshMarketOrder::find($orderId) : null;
+
+        if (! $buyer || ! $order || (int) $order->buyer_id !== (int) $buyer->id) {
+            return ['text' => '⚠️ ไม่พบออเดอร์นี้ในบัญชีของคุณค่ะ'];
+        }
+
+        // กดครั้งแรก = ถามยืนยันก่อน (ยกเลิกแล้วย้อนไม่ได้)
+        if (($params['confirm'] ?? '') !== '1') {
+            if (! $order->canBeCancelled('buyer')) {
+                return ['text' => '⚠️ ออเดอร์ #'.$order->order_number.' ยกเลิกไม่ได้ในตอนนี้ค่ะ ('.$order->status_label.')'];
+            }
+
+            $refundText = $order->payment_status === 'paid'
+                ? "\n💰 ระบบจะคืนเงิน ฿".number_format($order->grand_total, 2).' เข้า Wallet ทันที'
+                : '';
+
+            return [
+                'text' => "❓ ยืนยันยกเลิกออเดอร์ #{$order->order_number} ไหมคะ?{$refundText}\n\nยกเลิกแล้วย้อนกลับไม่ได้นะคะ",
+                'quick_replies' => [
+                    ['label' => '✅ ยืนยันยกเลิก', 'postback' => "action=buyer_cancel_order&order_id={$order->id}&confirm=1", 'display_text' => 'ยืนยันยกเลิก'],
+                    ['label' => '↩️ ไม่ยกเลิก', 'postback' => "action=track_order&order_id={$order->id}", 'display_text' => 'ไม่ยกเลิก'],
+                ],
+            ];
+        }
+
+        try {
+            $cancelled = $this->marketService->cancelOrder($order, '', 'buyer', $buyer);
+            $refund = (float) ($cancelled->refunded_amount ?? 0);
+            $text = "✅ ยกเลิกออเดอร์ #{$cancelled->order_number} เรียบร้อยค่ะ"
+                .($refund > 0 ? "\n💰 คืนเงิน ฿".number_format($refund, 2).' เข้า Wallet แล้ว' : '');
+        } catch (FreshMarketException $e) {
+            $text = '⚠️ '.$e->getMessage();
+        } catch (\Throwable $e) {
+            Log::error('FreshMarket LINE: ผู้ซื้อยกเลิกออเดอร์ล้มเหลว', ['order_id' => $orderId, 'error' => $e->getMessage()]);
+            $text = '⚠️ ยกเลิกไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ';
+        }
+
+        return [
+            'text' => $text,
+            'quick_replies' => [
+                ['label' => '🔄 เช็คสถานะ', 'postback' => "action=track_order&order_id={$orderId}", 'display_text' => 'สถานะ'],
+                ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+            ],
+        ];
+    }
+
+    /**
+     * บัญชีผู้ซื้อของบทสนทนา LINE นี้ (ผูกไว้แล้ว หรือหาจาก line_user_id)
+     */
+    protected function lineBuyerFor(FreshMarketConversation $conversation): ?User
+    {
+        return $conversation->user_id
+            ? User::find($conversation->user_id)
+            : User::where('line_user_id', $conversation->line_user_id)->first();
     }
 
     /**

@@ -263,6 +263,10 @@
                             <button type="button" class="ts-btn3d ts-tone-ok block lg" x-on:click="dialog = 'confirm'"><i class="fas fa-circle-check" aria-hidden="true"></i> ได้รับสินค้าแล้ว</button>
                         @endif
                         @if(in_array('cancel', $allowedActions, true))
+                            {{-- กติกาตัดเวลา (2026-10-13): ร้านเตรียมช้า / หาไรเดอร์ไม่ได้เกินเวลา → บอกเหตุผลที่ยกเลิกได้ --}}
+                            @if($cancelNote = $order->buyerCancelNote(true))
+                                <p style="margin:0; font-size:13px; color:var(--ink2);"><i class="fas fa-stopwatch" aria-hidden="true"></i> {{ $cancelNote }}</p>
+                            @endif
                             <button type="button" class="tp-btn ts-btn-ghost ts-tone-bad" x-on:click="dialog = 'cancel'"><i class="fas fa-xmark" aria-hidden="true"></i> ยกเลิกออเดอร์</button>
                         @endif
                     </div>

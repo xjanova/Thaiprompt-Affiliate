@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\RiderDeliverable;
+use App\Services\Marketplace\MarketTimeouts;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -64,6 +65,9 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     use SoftDeletes;
 
     protected $table = 'fresh_market_orders';
+
+    /** ตัวอ่านค่าตั้งตัดเวลาที่จำไว้ (ไม่ใช่คอลัมน์) */
+    protected ?MarketTimeouts $timeoutPolicy = null;
 
     // ===== สถานะออเดอร์ =====
     public const STATUS_PENDING = 'pending';
@@ -165,6 +169,7 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             'ready_only_for' => ['pickup'],
             'label' => 'ปิดออเดอร์',
         ],
+        // ผู้ซื้อ/ระบบยกเลิกจาก accepted/preparing/ready ได้เพิ่มเมื่อเกินเวลา (ร้านเตรียมช้า / หาไรเดอร์ไม่ได้) — ดู timeoutCancelKind()
         'cancel' => [
             'to' => self::STATUS_CANCELLED,
             'from' => [
@@ -445,7 +450,9 @@ class FreshMarketOrder extends Model implements RiderDeliverable
 
         $allowedFrom = $rule['from'][$role] ?? [];
 
-        if (! in_array($this->order_status, $allowedFrom, true)) {
+        // กติกาตัดเวลา (2026-10-13): ผู้ซื้อ/ระบบยกเลิกนอกตารางได้เมื่อร้านเตรียมช้าหรือหาไรเดอร์ไม่ได้เกินเวลา
+        if (! in_array($this->order_status, $allowedFrom, true)
+            && ! ($action === 'cancel' && $this->timeoutCancelKind($role) !== null)) {
             return false;
         }
 
@@ -486,6 +493,105 @@ class FreshMarketOrder extends Model implements RiderDeliverable
         }
 
         return app(\App\Services\Rider\HandoverService::class)->cancelHoldMessage($this);
+    }
+
+    // ===== กติกาตัดเวลา (2026-10-13) =====
+
+    /**
+     * ยกเลิกได้นอกตาราง ACTIONS เพราะเกินเวลาหรือไม่ → ประเภทเหตุผล (null = ไม่เข้าเงื่อนไข)
+     *
+     * - buyer : ร้านรับแล้วไม่พร้อมครบ 45 นาที (prep) · งานไรเดอร์หาคนรับไม่ได้ครบ 30 นาที (no_rider)
+     * - system: ครบ 90 นาที (prep) · ครบ 60 นาที (no_rider) — ตัวกวาดใช้
+     * ออเดอร์ที่ยังไม่บันทึก/ไม่มีเวลาให้เทียบ → null โดยไม่แตะฐานข้อมูล
+     *
+     * @return string|null MarketTimeouts::KIND_PREP | MarketTimeouts::KIND_NO_RIDER
+     */
+    public function timeoutCancelKind(string $role): ?string
+    {
+        if (! $this->exists || ! in_array($role, ['buyer', 'system'], true)) {
+            return null;
+        }
+
+        $timeouts = $this->timeouts();
+        $auto = $role === 'system';
+
+        if ($auto ? $timeouts->prepAutoCancelDue($this) : $timeouts->prepBuyerCancelDue($this)) {
+            return MarketTimeouts::KIND_PREP;
+        }
+
+        $waitingRider = $this->delivery_type === 'rider' && in_array($this->order_status, [
+            self::STATUS_ACCEPTED, self::STATUS_PREPARING, self::STATUS_READY,
+        ], true);
+
+        if ($waitingRider) {
+            $job = $this->openRiderJob();
+
+            if ($auto ? $timeouts->noRiderAutoCancelDue($job) : $timeouts->noRiderBuyerCancelDue($job)) {
+                return MarketTimeouts::KIND_NO_RIDER;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * งานไรเดอร์ล่าสุดของออเดอร์ที่ยังรอคนรับอยู่ (null = ไม่มี / มีไรเดอร์แล้ว / จบแล้ว)
+     */
+    public function openRiderJob(): ?RiderJob
+    {
+        if (! $this->rider_job_id) {
+            return null;
+        }
+
+        $job = $this->riderJob;
+
+        return $job && $job->isOpen() ? $job : null;
+    }
+
+    /**
+     * ข้อความใต้ปุ่มยกเลิกของผู้ซื้อ (แอปอ่าน buyer_cancel_note) — มีเฉพาะตอนยกเลิกได้เพราะเกินเวลา
+     *
+     * @param  bool|null  $canCancel  ผลของ canBeCancelled('buyer') ที่ผู้เรียกคำนวณไว้แล้ว (null = คำนวณเอง)
+     */
+    public function buyerCancelNote(?bool $canCancel = null): ?string
+    {
+        if (in_array($this->order_status, self::ACTIONS['cancel']['from']['buyer'], true)) {
+            return null;
+        }
+
+        if (! ($canCancel ?? $this->canBeCancelled('buyer'))) {
+            return null;
+        }
+
+        return $this->timeouts()->buyerCancelNote($this->timeoutCancelKind('buyer'), $this->payment_status === 'paid');
+    }
+
+    /**
+     * hook เสริมของ RiderDispatchService::autoCancelNoRider — หาไรเดอร์ไม่ได้ครบเวลา → ระบบยกเลิกออเดอร์ + คืนเงินเต็มจำนวน
+     *
+     * @return bool true = ยกเลิกสำเร็จในคำขอนี้ (ยกเลิกไปก่อนแล้ว = false)
+     *
+     * @throws \App\Exceptions\FreshMarketException สถานะเปลี่ยนไปแล้ว (เช่น ไรเดอร์เพิ่งรับงาน)
+     */
+    public function riderCancelForNoRider(RiderJob $job, string $reason): bool
+    {
+        if ($this->fresh()?->order_status === self::STATUS_CANCELLED) {
+            return false;
+        }
+
+        $result = app(\App\Services\FreshMarketService::class)->cancelOrder($this, $reason, 'system');
+
+        return $result->order_status === self::STATUS_CANCELLED
+            && $result->cancelled_by === 'system'
+            && $result->cancel_reason === mb_substr(trim($reason), 0, 500);
+    }
+
+    /**
+     * ตัวอ่านค่าตั้งตัดเวลา (จำค่าไว้ต่อ instance — ไม่อ่านซ้ำทุกครั้งที่ตรวจปุ่ม)
+     */
+    protected function timeouts(): MarketTimeouts
+    {
+        return $this->timeoutPolicy ??= app(MarketTimeouts::class);
     }
 
     /**
@@ -648,6 +754,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
         $job = $this->riderJob;
         $contactVisible = ! in_array($this->order_status, [self::STATUS_PENDING, self::STATUS_CANCELLED], true);
         $lineItems = $this->lineItems();
+        // กติกาตัดเวลา (2026-10-13): แอปแสดงปุ่มยกเลิก + เหตุผล (ร้านเตรียมช้า / หาไรเดอร์ไม่ได้) จากสองช่องนี้
+        $buyerCanCancel = $this->canBeCancelled('buyer');
 
         $data = [
             'id' => (int) $this->id,
@@ -677,6 +785,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             'can_review' => $viewerRole === 'buyer' && $this->canBeReviewed(),
             'allowed_actions' => in_array($viewerRole, ['buyer', 'seller', 'admin'], true)
                 ? $this->allowedActions($viewerRole) : [],
+            'buyer_can_cancel' => $buyerCanCancel,
+            'buyer_cancel_note' => $buyerCanCancel ? $this->buyerCancelNote(true) : null,
             // ยอดสินค้ารวม (= total_amount) + รายการทั้งหมด — แอปใหม่ใช้ items แทน listing/quantity/unit_price
             'subtotal' => (float) $this->total_amount,
             'items_count' => (int) $lineItems->sum('quantity'),

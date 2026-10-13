@@ -2,7 +2,7 @@
  | ตั้งค่าระบบตลาดสด (admin.fresh-market.settings) — ธีม V4
  | ตัวแปรจาก Admin\FreshMarketController@settings: $settings (FreshMarketSetting), $lineSecretMasked, $lineTokenMasked,
  |   $marketSettings [pending_expiry_minutes, auto_complete_hours, auto_approve_sellers, rider_dispatch_on_accept, referral_fee_amount,
- |                    line_basic_id, default_line_stock, max_seller_gp_debt]
+ |                    line_basic_id, default_line_stock, max_seller_gp_debt, prep_buyer_cancel_minutes, prep_auto_cancel_minutes]
  | ฟอร์มเดียว PUT settings.update — ชื่อฟิลด์ทั้งหมดตรงกับ validate ใน updateSettings()
  | 🔐 line_channel_secret / line_channel_access_token ห้ามใส่ค่าจริงใน value (เว้นว่าง = ใช้ค่าเดิม) — แสดงแค่ค่าแบบปิดบัง
  | checkbox ทุกตัวใช้ hidden 0 + checkbox 1 · ค่าตลาดส่งเป็น market[<key>]
@@ -40,6 +40,8 @@
     $marketFields = [
         ['pending_expiry_minutes', 'ยกเลิกออเดอร์ที่ร้านไม่รับอัตโนมัติหลัง', 'นาที', 'number', 5, 1440, 1],
         ['auto_complete_hours', 'ปิดออเดอร์ที่ส่งถึงแล้วอัตโนมัติหลัง', 'ชั่วโมง', 'number', 1, 720, 1],
+        ['prep_buyer_cancel_minutes', 'ร้านรับแล้วยังไม่พร้อม: ผู้ซื้อยกเลิกรับเงินคืนเต็มได้หลัง', 'นาที', 'number', 5, 720, 1],
+        ['prep_auto_cancel_minutes', 'ร้านรับแล้วยังไม่พร้อม: ระบบยกเลิกคืนเงินและแจ้งแอดมินหลัง', 'นาที', 'number', 10, 1440, 1],
         ['referral_fee_amount', 'ค่าแนะนำร้านใหม่ต่อร้าน', 'บาท', 'number', 0, 1000, 0.01],
         ['max_seller_gp_debt', 'ค่า GP ค้างสูงสุดก่อนงดรับ COD', 'บาท', 'number', 0, 100000, 0.01],
         ['default_line_stock', 'จำนวนสต็อกเริ่มต้นเมื่อลงขายผ่าน LINE', 'ชิ้น', 'number', 1, 10000, 1],

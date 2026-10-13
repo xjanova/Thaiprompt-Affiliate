@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Contracts\RiderDeliverable;
+use App\Events\Marketplace\NoRiderOrderCancelled;
 use App\Exceptions\RiderJobException;
 use App\Jobs\CascadeRiderDispatchJob;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\Marketplace\MarketTimeouts;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -159,6 +161,7 @@ class RiderDispatchService
                 'dispatch_type' => $this->config->dispatchMode(),
                 'dispatch_radius_km' => $this->config->floatSetting('rider.offer_radius_km'),
                 'dispatch_round' => 0,
+                'search_started_at' => now(), // กติกาตัดเวลา: เริ่มจับเวลาหาไรเดอร์
                 'tracking_token' => Str::random(48),
                 'tracking_expires_at' => now()->addHours(max(1, $this->config->intSetting('rider.tracking_expiry_hours'))),
                 'gps_active' => true,
@@ -536,38 +539,59 @@ class RiderDispatchService
      * - งาน cascade ที่ offer หมดเวลา → เสนอคนถัดไป
      * - ยังไม่มีคนรับ → ทุก rider.rebroadcast_interval_minutes ขยายรัศมี ×1.5 (ไม่เกิน rider.max_offer_radius_km)
      *   ได้ไม่เกิน rider.max_dispatch_rounds รอบ
-     * - รอเกิน rider.pending_timeout_minutes → dispatch_type = manual_needed + แจ้งแอดมิน/ผู้ซื้อ/ผู้ขาย
+     * - รอเกิน rider.pending_timeout_minutes → dispatch_type = manual_needed + แจ้งแอดมิน/ผู้ซื้อ/ผู้ขาย (ครั้งเดียวต่อรอบหา)
+     * - (2026-10-13) งาน manual_needed ยังเสนอให้ไรเดอร์ที่เพิ่งออนไลน์ทุก rebroadcast_interval (รัศมีสูงสุด แจ้งเฉพาะคนใหม่ ไม่แจ้งแอดมินซ้ำ)
+     * - (2026-10-13) หาไรเดอร์ไม่ได้ครบ rider.no_rider_auto_cancel_minutes → ยกเลิกออเดอร์ต้นทาง + คืนเงิน (autoCancelNoRider)
+     *   ทุกเวลานับจากรอบหาไรเดอร์ปัจจุบัน (RiderJob::searchStartedAt) ไม่ใช่ created_at
      *
-     * @return array{rebroadcast: int, escalated: int, cascade_moved: int}
+     * @return array{rebroadcast: int, escalated: int, cascade_moved: int, reoffered: int, auto_cancelled: int}
      */
     public function sweepPending(int $limit = 100): array
     {
-        $stats = ['rebroadcast' => 0, 'escalated' => 0, 'cascade_moved' => 0];
+        $stats = ['rebroadcast' => 0, 'escalated' => 0, 'cascade_moved' => 0, 'reoffered' => 0, 'auto_cancelled' => 0];
 
         $interval = max(1, $this->config->intSetting('rider.rebroadcast_interval_minutes'));
         $maxRounds = max(1, $this->config->intSetting('rider.max_dispatch_rounds'));
         $timeout = max(1, $this->config->intSetting('rider.pending_timeout_minutes'));
         $baseRadius = max(0.5, $this->config->floatSetting('rider.offer_radius_km'));
         $maxRadius = max($baseRadius, $this->config->floatSetting('rider.max_offer_radius_km'));
+        $timeouts = app(MarketTimeouts::class);
 
+        // รวม manual_needed ด้วย — ยังต้องเสนอไรเดอร์ที่เพิ่งออนไลน์ และยังต้องนับเวลายกเลิกอัตโนมัติ
         $jobs = RiderJob::query()
             ->open()
-            ->where(function ($q) {
-                $q->whereNull('dispatch_type')->orWhere('dispatch_type', '!=', 'manual_needed');
-            })
             ->orderBy('id')
             ->limit($limit)
             ->get();
 
         foreach ($jobs as $job) {
             try {
+                // หาไรเดอร์ไม่ได้นานเกินกำหนด → ยกเลิกออเดอร์ต้นทาง + คืนเงิน (ก่อนกติกาอื่นทั้งหมด)
+                // ยกเลิกไม่ได้ (ไม่มีออเดอร์ต้นทาง/คืนเงินล้ม) → ทำตามกติกาปกติต่อ งานยังเสนอไรเดอร์ได้ แล้วลองใหม่รอบหน้า
+                if ($timeouts->noRiderAutoCancelDue($job) && $this->autoCancelNoRider($job)) {
+                    $stats['auto_cancelled']++;
+
+                    continue;
+                }
+
                 if ($job->dispatch_type === 'locked') { // ไรเดอร์รอบ 2 (social): ยังอยู่ในสิทธิ์ล็อก → ข้าม · หมดเวลา → กระจายปกติ
                     $this->sweepBuyerLock($job);
 
                     continue;
                 }
 
-                if ($job->created_at && $job->created_at->lte(now()->subMinutes($timeout))) {
+                // ส่งแอดมินแล้ว: ไม่แจ้งแอดมินซ้ำ แต่ยังแจ้งไรเดอร์ที่เพิ่งออนไลน์ในรัศมีสูงสุด (broadcast ข้ามคนที่เคยแจ้งแล้วเอง)
+                if ($job->dispatch_type === 'manual_needed') {
+                    $due = $job->last_dispatched_at === null || $job->last_dispatched_at->lte(now()->subMinutes($interval));
+                    if ($due && $this->broadcast($job, $maxRadius) > 0) {
+                        $stats['reoffered']++;
+                    }
+
+                    continue;
+                }
+
+                $searchStartedAt = $job->searchStartedAt();
+                if ($searchStartedAt && $searchStartedAt->lte(now()->subMinutes($timeout))) {
                     if ($this->escalateNoRider($job)) {
                         $stats['escalated']++;
                     }
@@ -646,6 +670,81 @@ class RiderDispatchService
     }
 
     /**
+     * กติกาตัดเวลา (2026-10-13): หาไรเดอร์ไม่ได้ครบ rider.no_rider_auto_cancel_minutes (นับจากรอบหาปัจจุบัน)
+     * → ยกเลิกออเดอร์ต้นทางผ่านทางยกเลิกปกติของออเดอร์นั้น (คืนเงินผู้ซื้อเต็มจำนวน · ร้านไม่ได้เงิน · ปิดงาน+แถวส่งมอบ)
+     *   + แจ้งแอดมิน (ผู้ซื้อ/ร้านได้แจ้งเตือนจากทางยกเลิกของออเดอร์เอง) + ยิง NoRiderOrderCancelled
+     *
+     * ใช้ hook เสริมของออเดอร์ riderCancelForNoRider(RiderJob, string $reason): bool (FreshMarketOrder, Order)
+     * งานที่ไม่มีออเดอร์ต้นทาง/ไม่มี hook (เช่น แอดมินสร้างเอง) → ไม่แตะ ให้แอดมินตัดสิน
+     * idempotent: ออเดอร์ยกเลิกไปแล้ว/ไรเดอร์เพิ่งรับงาน → false
+     */
+    public function autoCancelNoRider(RiderJob $job): bool
+    {
+        $job->refresh();
+        $timeouts = app(MarketTimeouts::class);
+
+        if (! $timeouts->noRiderAutoCancelDue($job)) {
+            return false;
+        }
+
+        $source = $job->deliverableSource();
+        if (! $source || ! method_exists($source, 'riderCancelForNoRider')) {
+            return false;
+        }
+
+        $minutes = MarketTimeouts::minutesSince($job->searchStartedAt());
+        $reason = MarketTimeouts::REASON_NO_RIDER.'ภายใน '.$timeouts->noRiderAutoCancelMinutes().' นาที ระบบยกเลิกและคืนเงินเต็มจำนวนอัตโนมัติ';
+
+        try {
+            $cancelled = (bool) $source->riderCancelForNoRider($job, $reason);
+        } catch (\Throwable $e) {
+            Log::warning('RiderDispatch: no-rider auto cancel failed (will retry next sweep)', [
+                'job_id' => $job->id,
+                'source' => $job->source_type.'#'.$job->source_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        if (! $cancelled) {
+            return false;
+        }
+
+        // ทางยกเลิกของออเดอร์ปิดงานให้แล้ว — กันไว้กรณีปิดไม่สำเร็จ (งานไม่ควรค้างในคิวของออเดอร์ที่ยกเลิกแล้ว)
+        $job->refresh();
+        if ($job->isOpen()) {
+            try {
+                app(RiderJobService::class)->cancel($job, 'system', $reason, false);
+            } catch (RiderJobException $e) {
+                Log::warning('RiderDispatch: cannot close job after no-rider cancel', ['job_id' => $job->id, 'code' => $e->errorCode]);
+            }
+        }
+
+        $orderRef = (string) (data_get($source, 'order_number') ?: '#'.$job->source_id);
+
+        Log::warning('RiderDispatch: no rider — source order auto-cancelled and refunded', [
+            'job_id' => $job->id,
+            'source' => $job->source_type.'#'.$job->source_id,
+            'minutes' => $minutes,
+        ]);
+
+        $this->notifier->notifyAdmins(
+            'ยกเลิกออเดอร์อัตโนมัติ: ไม่มีไรเดอร์รับงาน',
+            "ออเดอร์ {$orderRef} (งาน #{$job->job_number}) หาไรเดอร์ไม่ได้ {$minutes} นาที ระบบยกเลิกและคืนเงินผู้ซื้อเต็มจำนวนแล้ว ร้านไม่ได้รับเงิน",
+            ['job_id' => (int) $job->id, 'event' => 'no_rider_auto_cancelled']
+        );
+
+        try {
+            NoRiderOrderCancelled::dispatch((int) $job->id, $job->source_type, $job->source_id ? (int) $job->source_id : null, $minutes, NoRiderOrderCancelled::BY_AUTO);
+        } catch (\Throwable $e) {
+            Log::warning('RiderDispatch: NoRiderOrderCancelled listener failed', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+        }
+
+        return true;
+    }
+
+    /**
      * ไรเดอร์ที่เข้าเงื่อนไขรับงานนี้ เรียงจากใกล้จุดรับของที่สุด
      *
      * @return \Illuminate\Support\Collection<int, Rider>
@@ -676,7 +775,7 @@ class RiderDispatchService
             ->whereBetween('last_longitude', [$lng - $lngDelta, $lng + $lngDelta])
             ->when($excludeRiderIds !== [], fn ($q) => $q->whereNotIn('id', $excludeRiderIds))
             ->when($partyUserIds !== [], fn ($q) => $q->whereNotIn('user_id', $partyUserIds))
-            ->whereHas('user', fn ($q) => $q->whereNull('blocked_at'))
+            ->whereHas('user', $this->dispatchableUser())
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))
                     ->from('rider_jobs as active_jobs')
@@ -934,7 +1033,7 @@ class RiderDispatchService
         $rider = Rider::query()
             ->availableForDelivery($this->config)
             ->whereKey($riderId)
-            ->whereHas('user', fn ($q) => $q->whereNull('blocked_at'))
+            ->whereHas('user', $this->dispatchableUser())
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))
                     ->from('rider_jobs as active_jobs')
@@ -985,6 +1084,24 @@ class RiderDispatchService
             : $source->getAttribute('preferred_rider_id');
 
         return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+    }
+
+    /**
+     * เงื่อนไขบัญชีผู้ใช้ของไรเดอร์ที่เสนองานได้ (whereHas เดียว): ไม่ถูกบล็อก
+     * + (2026-10-13) ยืนยันตัวตน eKYC แล้วเมื่อเปิด config('ekyc.enforce') — ไรเดอร์ที่ยังไม่ผ่านกดรับงานไม่ได้อยู่แล้ว
+     *   (Rider::onlineBlockReason) จึงไม่ต้องแจ้ง/ล็อกเรียกให้เสียโอกาสไรเดอร์คนอื่น
+     */
+    private function dispatchableUser(): \Closure
+    {
+        $kycRequired = filter_var(config('ekyc.enforce', true), FILTER_VALIDATE_BOOL);
+
+        return function ($q) use ($kycRequired) {
+            $q->whereNull('blocked_at');
+
+            if ($kycRequired) {
+                $q->where('kyc_status', 'approved');
+            }
+        };
     }
 
     /**
