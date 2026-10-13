@@ -8,6 +8,7 @@ use App\Models\FreshMarketListingOptionGroup;
 use App\Models\FreshMarketOrder;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
+use App\Models\RiderJob;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
@@ -400,6 +401,78 @@ class FreshMarketSellerAppApiTest extends TestCase
         // ล้างราคาก่อนลด (null) ได้
         $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['compare_at_price' => null])->assertOk();
         $this->assertNull($listing->fresh()->compare_at_price);
+    }
+
+    public function test_quick_price_edit_cannot_reach_stored_compare_price(): void
+    {
+        [$user, $shop] = $this->makeShop();
+        $listing = $this->makeListing($shop, ['price' => 50, 'compare_at_price' => 70]);
+        Sanctum::actingAs($user);
+
+        // แก้ราคาด่วนในแอป (ส่ง price อย่างเดียว) ≥ ราคาก่อนลดเดิม → ปฏิเสธพร้อมข้อความไทย ไม่บันทึก
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 70])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'COMPARE_PRICE_CONFLICT')
+            ->assertJsonPath('message', 'ราคาขายต้องต่ำกว่าราคาก่อนลด 70.00 บาท — ถ้าจะขึ้นราคา ให้แก้หรือลบราคาก่อนลดในหน้าแก้สินค้าก่อน');
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 90])->assertStatus(422);
+
+        $fresh = $listing->fresh();
+        $this->assertEqualsWithDelta(50.0, (float) $fresh->price, 0.001);
+        $this->assertEqualsWithDelta(70.0, (float) $fresh->compare_at_price, 0.001);
+
+        // ต่ำกว่าราคาก่อนลด = ผ่าน
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 65])->assertOk();
+        $this->assertEqualsWithDelta(65.0, (float) $listing->fresh()->price, 0.001);
+
+        // ขึ้นราคาพร้อมล้าง/ขยับราคาก่อนลดในคำขอเดียวกัน = ผ่าน (ตามกติกาเดิม)
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 90, 'compare_at_price' => 120])->assertOk();
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 150, 'compare_at_price' => null])->assertOk();
+        $this->assertNull($listing->fresh()->compare_at_price);
+
+        // ไม่มีราคาก่อนลด → แก้ราคาอย่างเดียวได้ตามปกติ
+        $this->putJson("/api/v1/fresh-market/listings/{$listing->id}", ['price' => 200])->assertOk();
+        $this->assertEqualsWithDelta(200.0, (float) $listing->fresh()->price, 0.001);
+    }
+
+    public function test_seller_order_rider_job_carries_thai_status_label(): void
+    {
+        [$user, $shop] = $this->makeShop();
+        $buyer = $this->makeUser();
+        $order = $this->order($shop, $buyer, [
+            'delivery_type' => 'rider',
+            'delivery_fee' => 40,
+            'order_status' => 'delivering',
+        ]);
+
+        $job = new RiderJob;
+        $job->forceFill([
+            'job_type' => 'fresh_market',
+            'source_type' => $order->getMorphClass(),
+            'source_id' => $order->id,
+            'title' => 'ส่งออเดอร์ตลาดสด',
+            'pickup_address' => 'ตลาดทดสอบ',
+            'pickup_latitude' => 13.75,
+            'pickup_longitude' => 100.5,
+            'delivery_address' => 'บ้านลูกค้า',
+            'delivery_latitude' => 13.76,
+            'delivery_longitude' => 100.51,
+            'base_fee' => 30,
+            'distance_fee' => 10,
+            'total_fee' => 40,
+            'rider_earnings' => 32,
+            'platform_fee' => 8,
+            'cod_amount' => 0,
+            'status' => RiderJob::STATUS_AWAITING_RELEASE,
+        ])->save();
+        $order->forceFill(['rider_job_id' => $job->id])->saveQuietly();
+
+        Sanctum::actingAs($user);
+
+        // แอปรุ่นเก่าที่ไม่รู้จัก awaiting_release ใช้ป้ายไทยนี้แทนค่าดิบภาษาอังกฤษ
+        $this->getJson("/api/v1/fresh-market/seller/orders/{$order->id}")
+            ->assertOk()
+            ->assertJsonPath('data.rider_job.status', 'awaiting_release')
+            ->assertJsonPath('data.rider_job.status_label', 'วางของแล้ว รอปลดเงิน');
     }
 
     public function test_seller_cannot_touch_another_sellers_listing(): void

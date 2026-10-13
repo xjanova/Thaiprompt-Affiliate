@@ -5,7 +5,44 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { fmActionLook, isFmOrderFilter, resolveClosingTime, sortFmActions, timeAgoTh, toHHMM } from '../fmHelpers';
+import {
+  FM_RIDER_STATUS_FALLBACK,
+  FM_RIDER_STATUS_TEXT,
+  fmActionLook,
+  fmRiderStatusText,
+  isFmOrderFilter,
+  resolveClosingTime,
+  sortFmActions,
+  timeAgoTh,
+  toHHMM,
+} from '../fmHelpers';
+
+describe('fmRiderStatusText', () => {
+  // สถานะทั้งหมดที่ server ส่งได้ (RiderJob::TRANSITIONS + DeliveryHandover::STATUS_*)
+  const RIDER_JOB = ['pending', 'accepted', 'picking_up', 'picked_up', 'delivering', 'awaiting_release', 'delivered', 'completed', 'cancelled', 'failed'];
+  const HANDOVER = ['waiting', 'rider_confirmed', 'buyer_confirmed', 'completed', 'fallback_waiting', 'fallback_pending_release', 'disputed', 'released', 'refunded'];
+
+  it('ทุกสถานะที่ server ส่งได้มีข้อความไทย (ไม่โชว์ค่าดิบ)', () => {
+    [...RIDER_JOB, ...HANDOVER].forEach((status) => {
+      const text = fmRiderStatusText(status);
+      expect(FM_RIDER_STATUS_TEXT[status]).toBeDefined();
+      expect(text).toMatch(/[฀-๿]/);
+      expect(text).not.toContain(status);
+    });
+  });
+
+  it('awaiting_release = วางของแล้ว รอยืนยัน', () => {
+    expect(fmRiderStatusText('awaiting_release')).toContain('วางของ');
+  });
+
+  it('สถานะใหม่ที่แอปไม่รู้จัก → ใช้ป้ายไทยจาก server · ไม่มี/ไม่ใช่ไทย → ข้อความสำรอง', () => {
+    expect(fmRiderStatusText('brand_new_state', 'สถานะใหม่จากระบบ')).toBe('สถานะใหม่จากระบบ');
+    expect(fmRiderStatusText('brand_new_state', 'Brand new')).toBe(FM_RIDER_STATUS_FALLBACK);
+    expect(fmRiderStatusText('brand_new_state')).toBe(FM_RIDER_STATUS_FALLBACK);
+    expect(fmRiderStatusText(null)).toBe(FM_RIDER_STATUS_FALLBACK);
+    expect(fmRiderStatusText('toString')).toBe(FM_RIDER_STATUS_FALLBACK);
+  });
+});
 
 describe('sortFmActions', () => {
   it('เรียงปุ่มหลักก่อน ยกเลิกท้ายสุด และทิ้ง action ที่แอปไม่รู้จัก', () => {

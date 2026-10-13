@@ -714,6 +714,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             'rider_job' => $job ? [
                 'id' => (int) $job->id,
                 'status' => $job->status,
+                // ป้ายภาษาไทยคู่กับค่าดิบ — แอปที่ไม่รู้จักสถานะใหม่ (เช่น awaiting_release) แสดงอันนี้แทนค่าอังกฤษ
+                'status_label' => $job->status_text,
                 'rider_name' => $job->rider?->full_name,
                 'rider_phone' => in_array($job->status, ['accepted', 'picking_up', 'picked_up', 'delivering'], true)
                     ? $job->rider?->phone : null,
