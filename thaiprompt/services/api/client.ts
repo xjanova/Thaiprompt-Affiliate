@@ -11,19 +11,18 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import { apiClient, clearAuthToken } from '@/services/api';
 import { APP_CONFIG } from '@/constants';
-import { APP_FEATURE_BUILD } from '@/config/appConfig';
+import { APP_REQUEST_BUILD } from '@/config/appConfig';
 
 export { apiClient };
 
 // =====================================================
-// X-App-Build — ชุดฟีเจอร์ของแอป (ค่าคงที่ในโค้ด APP_FEATURE_BUILD = 44)
-// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (ส่งมอบด้วย QR ≥ 43 · ยืนยันตัวตนด้วย AI eKYC ≥ 44)
+// X-App-Build — เลข build จริงของเครื่อง (ไม่ต่ำกว่าชุดฟีเจอร์ APP_FEATURE_BUILD = 44) ดู APP_REQUEST_BUILD
+// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (ส่งมอบด้วย QR ≥ 43 · ไรเดอร์/ยืนยันตัวตนด้วย AI eKYC ≥ 44)
 // header ตั้งไว้ตอนสร้าง apiClient ใน services/api.ts แล้ว (ติดทุก request ตั้งแต่ request แรก)
-// ห้ามใช้ nativeBuildVersion — EAS appVersionSource: remote อาจออก versionCode ไม่ตรงกับโค้ด
 // =====================================================
 
-/** เลขชุดฟีเจอร์ที่ส่งใน X-App-Build (คงชื่อเดิมไว้ให้โค้ดที่ import อยู่) */
-export const APP_BUILD_NUMBER: number = APP_FEATURE_BUILD;
+/** เลขที่ส่งใน X-App-Build (คงชื่อเดิมไว้ให้โค้ดที่ import อยู่) */
+export const APP_BUILD_NUMBER: number = APP_REQUEST_BUILD;
 
 // =====================================================
 // ชนิดข้อมูลผลลัพธ์
