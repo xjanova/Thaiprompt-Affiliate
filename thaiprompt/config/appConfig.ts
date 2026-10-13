@@ -10,14 +10,26 @@
  *   - ห้ามขายสินค้าดิจิทัล (เช่น ดูดวงแบบเสียเงิน) ผ่านกระเป๋าเงิน/ช่องทางอื่นที่ไม่ใช่ Play Billing
  */
 
+import * as Application from 'expo-application';
+import { resolveBuildNumber, resolveRequestBuild, resolveVersionName } from './appBuild';
+
 // =====================================================
 // App Info
 // =====================================================
 
+/**
+ * ค่าสำรองเมื่ออ่านจาก native ไม่ได้ (เว็บ / เทสต์) — ตรงกับ app.json ตอนออก build ล่าสุด
+ * build จริงบนเครื่องอ่านจาก expo-application เสมอ (ไม่ต้องแก้เลขนี้ทุกครั้งที่ออกเวอร์ชัน)
+ */
+const FALLBACK_VERSION = '3.389.0';
+const FALLBACK_BUILD = 46;
+
 export const APP_INFO = {
   NAME: 'Thai Prompt APP',
-  VERSION: '3.388.0',
-  BUILD_NUMBER: 45,
+  /** ชื่อเวอร์ชันที่ติดตั้งอยู่จริง (nativeApplicationVersion) */
+  VERSION: resolveVersionName(Application.nativeApplicationVersion, FALLBACK_VERSION),
+  /** versionCode ที่ติดตั้งอยู่จริง (nativeBuildVersion) */
+  BUILD_NUMBER: resolveBuildNumber(Application.nativeBuildVersion, FALLBACK_BUILD),
   BUILD_DATE: '2026-10-05',
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
@@ -31,14 +43,19 @@ export const APP_INFO = {
 };
 
 /**
- * เลขชุดฟีเจอร์ของโค้ดแอปนี้ — ส่งเป็น header X-App-Build ทุก request
- * server ใช้ตัดสินว่าแอปรองรับฟีเจอร์ใหม่หรือยัง (≥ 43 = ส่งมอบด้วย QR · ≥ 44 = ด่านยืนยันตัวตน AI eKYC: KYC_REQUIRED)
+ * เลขชุดฟีเจอร์ขั้นต่ำที่โค้ดแอปนี้รองรับ — "พื้น" ของ header X-App-Build
+ * server ใช้ตัดสินว่าแอปรองรับฟีเจอร์ใหม่หรือยัง (≥ 43 = ส่งมอบด้วย QR · ≥ 44 = ไรเดอร์ + ด่านยืนยันตัวตน AI eKYC)
  *
- * คำเตือน: ตั้งในโค้ดเท่านั้น ห้ามอ่านจาก native versionCode (expo-application nativeBuildVersion)
- *    เพราะ EAS appVersionSource: remote อาจออกเลข versionCode ไม่ตรงกับชุดฟีเจอร์ในโค้ด
- *    เพิ่มเลขนี้เฉพาะเมื่อโค้ดรองรับสัญญาฟีเจอร์ชุดใหม่ของ server แล้วจริง
+ * เพิ่มเลขนี้เฉพาะเมื่อโค้ดรองรับสัญญาฟีเจอร์ชุดใหม่ของ server แล้วจริง
  */
 export const APP_FEATURE_BUILD = 44;
+
+/**
+ * เลขที่ส่งใน header X-App-Build ทุก request (2026-10-13)
+ * = versionCode จริงของเครื่อง (APP_INFO.BUILD_NUMBER) แต่ไม่ต่ำกว่า APP_FEATURE_BUILD
+ *   → server เห็นเลข build จริง (ตัวอัปเดตในแอป / บันทึก client_app_build) และ build ทดสอบที่เลขต่ำผิดปกติยังไม่ตกด่านไรเดอร์/eKYC
+ */
+export const APP_REQUEST_BUILD = resolveRequestBuild(APP_INFO.BUILD_NUMBER, APP_FEATURE_BUILD);
 
 // =====================================================
 // Feature Flags (Local)

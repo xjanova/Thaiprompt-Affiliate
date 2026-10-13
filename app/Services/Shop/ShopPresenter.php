@@ -166,10 +166,22 @@ class ShopPresenter
             'follower_count' => (int) ($store->followers_count ?? 0),
             'joinedAt' => $store->created_at?->format('Y-m-d'),
             'rider_delivery' => $store->canUseRiderDelivery(),
-            'cod_available' => $store->canUseRiderDelivery(),
+            // เก็บเงินปลายทาง = ส่งด้วยไรเดอร์ได้ + แอดมินเปิด rider.allow_cod + วงเงิน COD > 0
+            // (กติกาเดียวกับ ShopCartService::codFor — ไม่โฆษณา COD บนหน้าร้านแล้วไม่มีให้เลือกตอนชำระเงิน)
+            'cod_available' => $store->canUseRiderDelivery() && self::riderCodEnabled(),
             // 🪪 (2026-10-04) เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทองข้างชื่อร้านในแอป) — คนละเรื่องกับ is_verified ของร้าน
             'owner_verified' => \App\Services\Ekyc\EkycService::badge($store->user),
         ];
+    }
+
+    /**
+     * ระบบเปิดเก็บเงินปลายทางกับงานไรเดอร์อยู่ไหม (rider.allow_cod + วงเงิน COD > 0)
+     */
+    private static function riderCodEnabled(): bool
+    {
+        $fees = app(\App\Services\DeliveryFeeCalculator::class);
+
+        return $fees->boolSetting('rider.allow_cod') && $fees->maxCodAmount() > 0;
     }
 
     /**

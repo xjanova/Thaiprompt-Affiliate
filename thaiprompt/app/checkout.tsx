@@ -79,6 +79,7 @@ import type { CartRiderQuote } from '@/services/api/shopApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { guardKycRequired } from '@/services/ekyc/kycGate';
+import { canConfirmWithQuote, quoteFreshness, quoteParamsKey } from '@/utils/checkoutQuote';
 import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
@@ -190,6 +191,8 @@ export default function CheckoutScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const [quote, setQuote] = useState<Cart | null>(null);
+  /** กุญแจชุดตัวเลือก (ที่อยู่ · วิธีส่ง · คูปอง) ที่ได้ยอดบนจอมา — ไม่ตรงกับตัวเลือกปัจจุบัน = ยอดเก่า */
+  const [quoteKey, setQuoteKey] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -266,6 +269,7 @@ export default function CheckoutScreen() {
   const fetchQuote = useCallback(async () => {
     if (!isAuthenticated) return;
     const requestId = ++quoteReqRef.current;
+    const key = quoteParamsKey({ addressId: selectedAddressId, delivery, coupon: appliedCoupon });
     setQuoteLoading(true);
     const res = await getCart({
       ...(selectedAddressId ? { address_id: selectedAddressId } : {}),
@@ -277,10 +281,12 @@ export default function CheckoutScreen() {
     if (res.success) {
       const cart = normalizeCart(res.data);
       setQuote(cart);
+      setQuoteKey(key);
       setQuoteError(null);
       useCartStore.getState().replace(cart);
     } else {
-      setQuoteError(res.message);
+      // ยอดบนจอยังเป็นของรอบก่อน → ปุ่มสั่งซื้อถูกล็อกจนคำนวณใหม่สำเร็จ (ห้ามยืนยันด้วยยอดเก่า)
+      setQuoteError(res.message || 'คำนวณยอดไม่สำเร็จ ลองใหม่อีกครั้งนะ');
     }
   }, [isAuthenticated, selectedAddressId, delivery, appliedCoupon]);
 
@@ -421,6 +427,8 @@ export default function CheckoutScreen() {
       const cart = normalizeCart(res.data);
       quoteReqRef.current += 1; // ทิ้งผลคำนวณเก่าที่ยังค้าง
       setQuote(cart);
+      setQuoteKey(quoteParamsKey({ addressId: selectedAddressId, delivery, coupon: code }));
+      setQuoteError(null);
       setQuoteLoading(false);
       setAppliedCoupon(code);
       setCouponInput('');
@@ -443,6 +451,19 @@ export default function CheckoutScreen() {
   const grandTotal = quote?.summary.grand_total ?? 0;
   const availableItems = (quote?.items ?? []).filter((i) => i.is_available);
   const walletShort = payment === 'wallet' && walletBalance !== null && walletBalance < grandTotal;
+
+  /** ยอดบนจอสดไหม (ตรงกับที่อยู่/วิธีส่ง/คูปองที่เลือกอยู่ + ขอล่าสุดสำเร็จ) — ไม่สด = ห้ามยืนยันสั่งซื้อ */
+  const quoteState = quoteFreshness({
+    hasQuote: !!quote,
+    loading: quoteLoading,
+    error: quoteError,
+    quoteKey,
+    currentKey: quoteParamsKey({ addressId: selectedAddressId, delivery, coupon: appliedCoupon }),
+  });
+  const quoteUsable = canConfirmWithQuote(quoteState);
+  /** ค่าล่าสุดสำหรับเช็คซ้ำตอนกดยืนยันในกล่องถาม (กล่องเปิดค้างแล้วยอดเปลี่ยน = ไม่สั่ง) */
+  const quoteGuardRef = useRef({ usable: false, total: 0 });
+  quoteGuardRef.current = { usable: quoteUsable, total: grandTotal };
 
   /** ชุดข้อมูลที่กดสั่ง — เปลี่ยน = คีย์ใหม่ (ไม่เปลี่ยน = ใช้คีย์เดิมตอนลองใหม่ กันสั่งซ้ำ) */
   const lockRiderId = delivery === 'rider' && preferredRiderId ? preferredRiderId : null;
@@ -597,6 +618,11 @@ export default function CheckoutScreen() {
 
   const confirmAndSubmit = () => {
     if (!quote || quoteLoading) return;
+    if (!quoteUsable) {
+      // ยอดบนจอเป็นของตัวเลือกชุดเก่า/คำนวณไม่สำเร็จ → คำนวณใหม่ก่อน ไม่ยืนยันด้วยยอดเก่า
+      if (quoteState === 'failed') fetchQuote();
+      return;
+    }
     if (availableItems.length === 0) {
       Alert.alert('ตะกร้าว่าง', 'ยังไม่มีสินค้าที่สั่งได้');
       return;
@@ -627,9 +653,21 @@ export default function CheckoutScreen() {
       payment === 'wallet' ? 'ระบบจะตัดเงินจากกระเป๋าทันที' : '',
     ].filter(Boolean);
 
+    const confirmedTotal = grandTotal;
     Alert.alert('ยืนยันสั่งซื้อ?', lines.join('\n'), [
       { text: 'ยังก่อน', style: 'cancel' },
-      { text: payment === 'wallet' ? 'ยืนยันจ่ายเงิน' : 'ยืนยันสั่งซื้อ', onPress: () => submit() },
+      {
+        text: payment === 'wallet' ? 'ยืนยันจ่ายเงิน' : 'ยืนยันสั่งซื้อ',
+        onPress: () => {
+          // ระหว่างกล่องเปิดอยู่ ยอดเปลี่ยน/กลายเป็นยอดเก่า → ไม่สั่ง ให้ดูยอดล่าสุดก่อน
+          const latest = quoteGuardRef.current;
+          if (!latest.usable || latest.total !== confirmedTotal) {
+            Alert.alert('ยอดมีการเปลี่ยนแปลง', 'ตรวจยอดชำระล่าสุดแล้วกดยืนยันสั่งซื้ออีกครั้งนะ');
+            return;
+          }
+          submit();
+        },
+      },
     ]);
   };
 
@@ -984,7 +1022,9 @@ export default function CheckoutScreen() {
   }
 
   const summary = quote.summary;
-  const submitDisabled = quoteLoading || submitting || availableItems.length === 0;
+  /** ขอยอดล่าสุดไม่สำเร็จ → ปุ่มล่างกลายเป็น "คำนวณยอดใหม่" (ยอดบนจออาจไม่ตรงกับที่ server จะคิด) */
+  const quoteFailed = quoteState === 'failed';
+  const submitDisabled = !quoteFailed && (!quoteUsable || submitting || availableItems.length === 0);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -994,6 +1034,18 @@ export default function CheckoutScreen() {
         contentStyle={{ paddingBottom: 130 + Math.max(insets.bottom, spacing.md) }}
       >
         {!!notice && <NoticeBanner tone="info" text={notice} onClose={() => setNotice(null)} style={styles.block} />}
+        {quoteFailed && (
+          <NoticeBanner
+            tone="danger"
+            icon="warning"
+            text={`คำนวณยอดล่าสุดไม่สำเร็จ ยอดที่เห็นอาจยังไม่ตรงกับตัวเลือกที่เลือก · ${quoteError}`}
+            actionBelow
+            action={
+              <Button3D title="คำนวณยอดใหม่" icon="arrows-clockwise" size="sm" variant="secondary" onPress={fetchQuote} />
+            }
+            style={styles.block}
+          />
+        )}
 
         {/* ---------- 1 ที่อยู่ ---------- */}
         <SectionHeader
@@ -1305,23 +1357,29 @@ export default function CheckoutScreen() {
       {/* ---------- แถบยืนยัน ---------- */}
       <StickyBar style={styles.bottomBar}>
         <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            {quoteLoading ? 'กำลังคำนวณยอด...' : `จ่ายด้วย${PAYMENT_LABEL[payment]}`}
+          <Text style={[typography.caption, { color: quoteFailed ? colors.danger : colors.textMuted }]}>
+            {quoteLoading || quoteState === 'stale'
+              ? 'กำลังคำนวณยอด...'
+              : quoteFailed
+                ? 'ยอดยังไม่อัปเดต'
+                : `จ่ายด้วย${PAYMENT_LABEL[payment]}`}
           </Text>
-          {quoteLoading ? (
+          {quoteLoading || quoteState === 'stale' ? (
             <ActivityIndicator color={colors.gold} style={styles.totalLoader} />
+          ) : quoteFailed ? (
+            <Text style={[typography.bodyStrong, { color: colors.danger }]}>คำนวณใหม่ก่อนสั่ง</Text>
           ) : (
             <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
           )}
         </View>
         <Button3D
-          title="ยืนยันสั่งซื้อ"
-          icon="check-circle"
+          title={quoteFailed ? 'คำนวณยอดใหม่' : 'ยืนยันสั่งซื้อ'}
+          icon={quoteFailed ? 'arrows-clockwise' : 'check-circle'}
           size="lg"
           loading={submitting}
           loadingText="กำลังสั่งซื้อ..."
           disabled={submitDisabled}
-          onPress={confirmAndSubmit}
+          onPress={quoteFailed ? fetchQuote : confirmAndSubmit}
           style={styles.submit}
         />
       </StickyBar>

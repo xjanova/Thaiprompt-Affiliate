@@ -932,6 +932,20 @@ class FreshMarketApiController extends Controller
             }
         }
 
+        // แก้ราคาขายอย่างเดียว (เช่น "แก้ราคา" ด่วนในแอป) แต่สินค้ามีราคาก่อนลดเดิมที่ไม่สูงกว่าราคาใหม่
+        // → ปฏิเสธพร้อมบอกเหตุผล (ไม่ล้างราคาก่อนลดให้เงียบๆ และไม่ปล่อยให้ราคาขีดฆ่าต่ำกว่าราคาขาย)
+        if (array_key_exists('price', $data) && ! array_key_exists('compare_at_price', $data)) {
+            $storedCompare = $listing->compare_at_price !== null ? (float) $listing->compare_at_price : 0.0;
+
+            if ($storedCompare > 0 && $storedCompare <= (float) $data['price']) {
+                return $this->error(
+                    'COMPARE_PRICE_CONFLICT',
+                    'ราคาขายต้องต่ำกว่าราคาก่อนลด '.number_format($storedCompare, 2).' บาท — ถ้าจะขึ้นราคา ให้แก้หรือลบราคาก่อนลดในหน้าแก้สินค้าก่อน',
+                    422
+                );
+            }
+        }
+
         // ส่ง option_groups มา = แทนที่ตัวเลือกทั้งชุด (ไม่ส่ง = ไม่แตะ, [] = ลบทั้งหมด)
         $hasGroups = $request->has('option_groups');
         $optionGroups = $data['option_groups'] ?? [];

@@ -87,6 +87,50 @@ class AddressApiTest extends TestCase
             ->assertJsonPath('message', 'รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก');
     }
 
+    public function test_remove_pin_with_explicit_null_but_keep_pin_when_not_sent(): void
+    {
+        $user = $this->makeBuyer();
+        Sanctum::actingAs($user);
+
+        $id = $this->postJson('/api/v1/addresses', [
+            'recipient_name' => 'สมชาย ใจดี',
+            'phone_number' => '0812345678',
+            'address_line_1' => '10/1 ซอยสุขุมวิท 11',
+            'province' => 'กรุงเทพมหานคร',
+            'postal_code' => '10110',
+            'latitude' => 13.7441,
+            'longitude' => 100.5559,
+        ])->assertCreated()->json('data.id');
+
+        // ไม่ส่งพิกัด (แก้ช่องอื่น) = หมุดเดิมอยู่ครบ
+        $this->putJson("/api/v1/addresses/{$id}", ['recipient_name' => 'สมชาย ใจงาม'])
+            ->assertOk()
+            ->assertJsonPath('data.has_location', true)
+            ->assertJsonPath('data.latitude', 13.7441);
+
+        // แอปกด "เอาหมุดออก" → ส่ง null ทั้งคู่ = ลบหมุดจริง (ไรเดอร์ต้องไม่ไปส่งที่หมุดเก่า)
+        $this->putJson("/api/v1/addresses/{$id}", [
+            'recipient_name' => 'สมชาย ใจงาม',
+            'latitude' => null,
+            'longitude' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.has_location', false)
+            ->assertJsonPath('data.latitude', null)
+            ->assertJsonPath('data.longitude', null);
+
+        $fresh = ShippingAddress::find($id);
+        $this->assertNull($fresh->latitude);
+        $this->assertNull($fresh->longitude);
+        $this->assertSame('สมชาย ใจงาม', $fresh->recipient_name);
+
+        // ส่งพิกัดข้างเดียว = ไม่ผ่าน (ข้อความไทย) และไม่แตะข้อมูล
+        $this->putJson("/api/v1/addresses/{$id}", ['latitude' => 13.75, 'longitude' => null])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'กรุณาปักหมุดตำแหน่งให้ครบ');
+        $this->assertNull(ShippingAddress::find($id)->latitude);
+    }
+
     public function test_cannot_touch_another_users_address(): void
     {
         $owner = $this->makeBuyer();
