@@ -9,11 +9,13 @@ use Illuminate\Http\Request;
 /**
  * เลข build ของแอปที่ใช้ทำรายการ (header X-App-Build) — ไรเดอร์รอบ 2, รอบแก้หลังรีวิว
  *
- * ใช้ตัดสินว่างานไรเดอร์ต้อง "สแกนส่งมอบ" (handover_required) หรือใช้ปุ่มส่งของแบบเดิม:
- *   ต้องเป็นแอปรุ่นที่มีหน้าส่งมอบ (build ≥ HANDOVER_MIN_BUILD) ทั้งตอนผู้ซื้อสั่ง และตอนไรเดอร์กดรับงาน
- *   หน้าเว็บ / LINE / แอปรุ่นเก่า (ไม่ส่ง header) = null → ใช้ขั้นตอนเดิมเหมือนก่อนรอบ 2
+ * - บันทึก build ที่ผู้ซื้อใช้สั่งลงออเดอร์ (client_app_build) ไว้ดูย้อนหลัง
+ * - อ่าน build ของคำขอให้ด่าน API ไรเดอร์ (App\Http\Middleware\EnsureRiderAppBuild — รับงานต้องใช้แอปรุ่นล่าสุด)
  *
- * @example ClientAppBuild::fromRequest($request)  // 43 | null
+ * (2026-10-13) เลิกใช้ตัดสิน "ต้องสแกนส่งมอบ" แล้ว — งานที่มีออเดอร์ต้นทางต้องสแกนส่งมอบเสมอเมื่อเปิด rider.handover_enabled
+ * (ดู RiderJob::handoverRequiredOnAccept) เพราะไรเดอร์รับงานได้ผ่านแอปเท่านั้น
+ *
+ * @example ClientAppBuild::fromRequest($request)  // 44 | null
  * @example ClientAppBuild::stamp($order, $input['client_app_build'] ?? null)
  */
 final class ClientAppBuild

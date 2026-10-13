@@ -40,19 +40,19 @@ class SlipVerifyController extends Controller
         }
 
         $request->validate([
-            'slip' => 'required|image|max:6144',
+            'slip' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:6144',
         ]);
 
-        $user     = $request->user();
+        $user = $request->user();
         $platform = 'juntra';
-        $userId   = (string) ($user->id ?? '');
+        $userId = (string) ($user->id ?? '');
 
         // flood guard ใช้ตัวเดียวกับบอท — กันคนยิงสลิปปลอมรัวจนโควตาหมด
         if (! $slipok->canSpendForUser($platform, $userId)) {
             $slipok->registerOverflowStrike($platform, $userId);
 
             return response()->json([
-                'message'     => 'ตรวจสลิปบ่อยเกินไป กรุณารอสักครู่',
+                'message' => 'ตรวจสลิปบ่อยเกินไป กรุณารอสักครู่',
                 'reason_code' => 'flood_guard',
             ], 429);
         }

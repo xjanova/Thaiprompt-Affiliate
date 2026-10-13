@@ -11,6 +11,7 @@ use App\Models\UniquePaymentAmount;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\CashbackService;
+use App\Services\Ekyc\EkycGate;
 use App\Services\Payment\OrderStripeService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PromptPayProvider;
@@ -45,6 +46,11 @@ class CheckoutController extends Controller
      */
     public function index()
     {
+        // 🪪 ยังไม่ยืนยันตัวตน → แสดงแถบ "ยืนยันตัวตนในแอป" ตั้งแต่เปิดหน้า (กดสั่งซื้อจะถูกกันที่ process)
+        if (EkycGate::buyerBlocked(auth()->user())) {
+            session()->now(EkycGate::FLASH_KEY, true);
+        }
+
         $cartItems = ShoppingCart::with(['product.category', 'product.seller'])
             ->where('user_id', auth()->id())
             ->get();
@@ -325,6 +331,15 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
+        // 🪪 (2026-10-13) ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อทุกช่องทาง — ครอบทั้งเส้นแอป (กระเป๋า/พร้อมเพย์/COD)
+        //    และเส้นเดิม (บัตรเครดิต/โอนธนาคาร) · ShopCheckoutService กันซ้ำอีกชั้น
+        if (EkycGate::buyerBlocked($request->user())) {
+            return redirect()->route('checkout.index')
+                ->withInput($request->except(['idempotency_key']))
+                ->with('error', EkycGate::buyerWebMessage())
+                ->with(EkycGate::FLASH_KEY, true);
+        }
+
         // 🛵 (2026-09-26) กระเป๋าเงิน / พร้อมเพย์ / เก็บเงินปลายทาง → เส้นทางเดียวกับแอป (ไรเดอร์ + คูปอง + แยกออเดอร์ตามร้าน)
         //    บัตรเครดิต / โอนธนาคาร ยังใช้เส้นทางเดิมด้านล่าง (ส่งพัสดุเท่านั้น ไม่มีคูปอง)
         $normalizedMethod = PaymentMethod::normalize((string) $request->input('payment_method', ''));

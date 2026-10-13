@@ -483,6 +483,8 @@
     @if (session('warning'))
         <div x-data x-init="$dispatch('notify', { type: 'warning', message: '{{ session('warning') }}' })"></div>
     @endif
+    {{-- 🪪 ผู้ซื้อยังไม่ยืนยันตัวตน → แถบปุ่มดาวน์โหลดแอปไปยืนยัน (EkycGate::FLASH_KEY) --}}
+    <x-ekyc-required-banner />
 
     @stack('scripts')
 

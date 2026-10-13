@@ -159,4 +159,61 @@ class WithdrawalFlowTest extends TestCase
         $this->assertSame('rejected', $request->fresh()->status);
         $this->assertEquals(500.0, (float) $wallet->fresh()->balance, 'ปฏิเสธแล้วเงินต้องคืนเต็มจำนวน');
     }
+
+    /**
+     * 🔒 (2026-10-13) ผู้ใช้ยกเลิก (ได้เงินคืนแล้ว) ระหว่างที่แอดมินเปิดหน้าอนุมัติค้างไว้
+     * → แอดมินกดอนุมัติด้วยโมเดลเก่า (ยังเห็น pending) ต้องถูกปฏิเสธ ไม่ใช่ทับเป็น approved
+     *    (เดิมทับได้ → แอดมินโอนจริงอีกรอบ ผู้ใช้ได้เงิน 2 ทาง)
+     */
+    public function test_approve_with_stale_model_after_user_cancel_is_refused(): void
+    {
+        $user = $this->makeUser();
+        [$wallet, $method] = $this->fundWallet($user, 500);
+        $admin = User::create([
+            'name' => 'แอดมิน',
+            'email' => 'admin-test@example.com',
+            'password' => bcrypt(str()->random(20)),
+        ]);
+
+        $svc = app(WithdrawalService::class);
+        $request = $svc->createWithdrawalRequest($user, 200, $method->id);
+        $adminView = WithdrawalRequest::findOrFail($request->id); // แอดมินโหลดไว้ตอนยัง pending
+
+        $svc->cancelWithdrawal(WithdrawalRequest::findOrFail($request->id), $user);
+        $this->assertEquals(500.0, (float) $wallet->fresh()->balance);
+
+        try {
+            $svc->approveWithdrawal($adminView, $admin);
+            $this->fail('อนุมัติคำขอที่ยกเลิกแล้วต้องไม่ผ่าน');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('ไม่สามารถอนุมัติได้', $e->getMessage());
+        }
+
+        $this->assertSame('cancelled', $request->fresh()->status, 'สถานะยกเลิกต้องไม่ถูกทับเป็น approved');
+    }
+
+    /**
+     * 🔒 (2026-10-13) แอดมินปฏิเสธไปแล้ว → ยืนยันโอนด้วยโมเดลเก่า (ยังเห็น approved) ต้องไม่ผ่าน
+     */
+    public function test_complete_with_stale_model_after_reject_is_refused(): void
+    {
+        $user = $this->makeUser();
+        [, $method] = $this->fundWallet($user, 500);
+        $admin = User::create([
+            'name' => 'แอดมิน',
+            'email' => 'admin-test@example.com',
+            'password' => bcrypt(str()->random(20)),
+        ]);
+
+        $svc = app(WithdrawalService::class);
+        $request = $svc->createWithdrawalRequest($user, 200, $method->id);
+        $svc->approveWithdrawal(WithdrawalRequest::findOrFail($request->id), $admin);
+        $staleApproved = WithdrawalRequest::findOrFail($request->id);
+
+        // ปิดคำขอด้วยสถานะอื่นระหว่างทาง (จำลองแอดมินอีกคน)
+        WithdrawalRequest::whereKey($request->id)->update(['status' => 'rejected']);
+
+        $this->expectException(\Exception::class);
+        $svc->completeWithdrawal($staleApproved, $admin, null, 'โอนแล้ว');
+    }
 }

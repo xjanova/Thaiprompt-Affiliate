@@ -428,13 +428,30 @@ class FreshMarketController extends Controller
 
     /**
      * ระงับผู้ขาย (สินค้าจะถูกซ่อนจากผู้ซื้อทันที)
+     *
+     * ระงับแล้ว: ร้านจัดการออเดอร์/สินค้าไม่ได้ · ผู้ซื้อสั่งใหม่ไม่ได้ · ระบบไม่โอนเงินให้ร้านอัตโนมัติ
+     * ออเดอร์ที่ค้างอยู่ "ไม่ยกเลิกอัตโนมัติ" — แอดมินตัดสินเองที่หน้าออเดอร์ (ปิดออเดอร์ = จ่ายร้าน / ยกเลิก = คืนเงินผู้ซื้อ)
+     * (ออเดอร์ที่ร้านยังไม่กดรับจะหมดเวลาแล้วระบบยกเลิก+คืนเงินผู้ซื้อตามรอบปกติ)
      */
     public function suspendSeller(Request $request, FreshMarketSeller $seller)
     {
         $reason = trim((string) $request->input('reason', ''));
 
         $seller->update(['is_suspended' => true, 'is_active' => false]);
-        $this->auditSeller($seller, 'fresh_market_seller_suspended', ['reason' => $reason]);
+
+        $openOrders = FreshMarketOrder::where('seller_id', $seller->id)
+            ->whereNotIn('order_status', FreshMarketOrder::TERMINAL_STATUSES)
+            ->count();
+
+        $this->auditSeller($seller, 'fresh_market_seller_suspended', ['reason' => $reason, 'open_orders' => $openOrders]);
+
+        if ($openOrders > 0) {
+            Log::warning('FreshMarket: ระงับร้านที่ยังมีออเดอร์ค้าง — รอแอดมินจัดการ', [
+                'seller_id' => $seller->id,
+                'open_orders' => $openOrders,
+                'admin_id' => auth()->id(),
+            ]);
+        }
 
         app(FreshMarketOrderNotifier::class)->sellerAccountEvent(
             $seller,
@@ -442,7 +459,11 @@ class FreshMarketController extends Controller
             $reason !== '' ? 'เหตุผล: '.$reason : 'กรุณาติดต่อแอดมินเพื่อสอบถามรายละเอียด'
         );
 
-        return redirect()->back()->with('success', 'ระงับผู้ขายสำเร็จ');
+        $message = $openOrders > 0
+            ? "ระงับผู้ขายสำเร็จ — ร้านนี้มีออเดอร์ที่ยังไม่ปิด {$openOrders} รายการ ระบบจะไม่โอนเงินให้ร้านอัตโนมัติ กรุณาตัดสินที่หน้าออเดอร์ (ปิดออเดอร์ = จ่ายร้าน / ยกเลิก = คืนเงินผู้ซื้อ)"
+            : 'ระงับผู้ขายสำเร็จ';
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**

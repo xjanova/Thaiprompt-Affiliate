@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Exceptions\RiderJobException;
+use App\Http\Middleware\EnsureEkycVerified;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\RiderNotificationService;
 use Illuminate\Database\Eloquent\Model;
@@ -504,11 +505,35 @@ class Rider extends Model
             return ['code' => 'DOCUMENTS_REVIEW_PENDING', 'message' => 'เอกสารหรือยานพาหนะที่เปลี่ยนใหม่รอทีมงานตรวจสอบ ระหว่างนี้ยังรับงานไม่ได้'];
         }
 
+        // (2026-10-13) ด่าน eKYC ฝั่งเซิร์ฟเวอร์ — ไม่ขึ้นกับ header แอป ครอบทุกช่องทาง (API/เว็บ/LINE/แอดมินมอบหมาย)
+        // middleware ekyc.verified บังคับเฉพาะแอป build ≥ 44 → แอปเก่า/ไม่ส่ง header เคยเปิดรับงานได้โดยไม่ยืนยันตัวตน
+        if ($this->kycRequiredToWork()) {
+            return ['code' => RiderJobException::KYC_REQUIRED, 'message' => EnsureEkycVerified::MESSAGE];
+        }
+
         if (app(DeliveryFeeCalculator::class)->boolSetting('rider.require_deposit') && ! $this->hasDeposit()) {
             return ['code' => 'DEPOSIT_REQUIRED', 'message' => 'กรุณาวางเงินประกันไรเดอร์ก่อนเริ่มรับงาน'];
         }
 
         return null;
+    }
+
+    /**
+     * ต้องยืนยันตัวตน (eKYC) ก่อนเปิดรับงาน/รับงานหรือไม่
+     *
+     * บังคับเมื่อ config('ekyc.enforce') = true และเจ้าของบัญชียังไม่ผ่าน User::isKycVerified()
+     * ไม่มีบัญชีผู้ใช้ผูกอยู่ = ถือว่ายังไม่ยืนยัน (ปลอดภัยไว้ก่อน — งานไรเดอร์เกี่ยวกับเงินและของของคนอื่น)
+     * การสมัครไรเดอร์ผ่านหน้าเว็บไม่ผ่านเมธอดนี้ → สมัครได้โดยยังไม่ต้องยืนยันตัวตน
+     */
+    public function kycRequiredToWork(): bool
+    {
+        if (! filter_var(config('ekyc.enforce', true), FILTER_VALIDATE_BOOL)) {
+            return false;
+        }
+
+        $user = $this->user;
+
+        return ! $user || ! $user->isKycVerified();
     }
 
     /**
@@ -568,7 +593,7 @@ class Rider extends Model
         }
 
         if ($availability === 'online' && ($reason = $this->onlineBlockReason())) {
-            throw RiderJobException::notEligible($reason['message'], $reason['code']);
+            throw RiderJobException::fromBlockReason($reason, $this);
         }
 
         $this->forceFill(['availability' => $availability])->save();

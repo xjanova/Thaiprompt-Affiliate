@@ -28,6 +28,15 @@
         <div>
             <h1 class="ts-h1">ตั้งค่าร้าน</h1>
             <p class="ts-muted" style="margin:6px 0 0; font-size:13.5px;">สถานะร้าน: <b>{{ $seller->status_label }}</b> · รหัสแนะนำร้าน {{ $seller->referral_code }}</p>
+            {{-- 🪪 ร้านยังขายไม่ได้ (รอยืนยันตัวตนในแอป / รอแอดมิน / ถูกระงับ) — ข้อความเดียวกับแดชบอร์ด แอป และ LINE --}}
+            @if($statusMessage = $seller->sellingStatusMessage())
+                <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                    {{ $statusMessage }}
+                    @if($seller->needsOwnerKyc())
+                        · <a href="{{ \App\Services\Ekyc\EkycGate::downloadUrl() }}" class="font-semibold underline">ดาวน์โหลดแอปเพื่อยืนยันตัวตน</a>
+                    @endif
+                </p>
+            @endif
         </div>
         <a href="{{ route('taladsod.seller', $seller->id) }}" class="tp-btn" target="_blank" rel="noopener"><i class="fas fa-store" aria-hidden="true"></i> ดูหน้าร้าน</a>
     </div>

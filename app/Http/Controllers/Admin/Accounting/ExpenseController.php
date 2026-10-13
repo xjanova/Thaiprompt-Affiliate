@@ -109,7 +109,7 @@ class ExpenseController extends Controller
             'due_date' => 'nullable|date|after_or_equal:document_date',
             'reference_number' => 'nullable|string|max:255',
             'note' => 'nullable|string',
-            'receipt_image' => 'nullable|image|max:5120',
+            'receipt_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'nullable|exists:accounting_products,id',
             'items.*.chart_account_id' => 'nullable|exists:accounting_chart_of_accounts,id',
@@ -237,7 +237,7 @@ class ExpenseController extends Controller
             'due_date' => 'nullable|date|after_or_equal:document_date',
             'reference_number' => 'nullable|string|max:255',
             'note' => 'nullable|string',
-            'receipt_image' => 'nullable|image|max:5120',
+            'receipt_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'status' => 'required|in:draft,pending,paid,partial,cancelled',
             'items' => 'required|array|min:1',
         ]);

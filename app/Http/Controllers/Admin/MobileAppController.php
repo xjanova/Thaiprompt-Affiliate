@@ -437,7 +437,7 @@ class MobileAppController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
-            'image' => ['required_without:cropped_image', 'nullable', 'image', 'max:5120'],
+            'image' => ['required_without:cropped_image', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'cropped_image' => ['nullable', 'string'],
             'link_url' => ['nullable', 'string', 'max:500'],
             'link_type' => ['nullable', 'in:internal,external,product,category'],
@@ -497,7 +497,7 @@ class MobileAppController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'cropped_image' => ['nullable', 'string'],
             'link_url' => ['nullable', 'string', 'max:500'],
             'link_type' => ['nullable', 'in:internal,external,product,category'],

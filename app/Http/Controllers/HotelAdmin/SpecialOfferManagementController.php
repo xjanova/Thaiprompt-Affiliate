@@ -81,7 +81,7 @@ class SpecialOfferManagementController extends Controller
             'room_type_ids.*' => 'exists:room_types,id',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'banner_image' => 'nullable|image|max:5120',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         // Generate code if not provided
@@ -167,7 +167,7 @@ class SpecialOfferManagementController extends Controller
             'room_type_ids.*' => 'exists:room_types,id',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'banner_image' => 'nullable|image|max:5120',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         // Convert code to uppercase

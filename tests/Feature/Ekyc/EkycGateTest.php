@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Ekyc;
 
-use App\Http\Middleware\EnsureEkycVerified;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +13,8 @@ use Tests\Feature\Ekyc\Concerns\BuildsEkycFixtures;
 use Tests\TestCase;
 
 /**
- * 🪪 ด่าน `ekyc.verified` — บังคับเฉพาะแอป X-App-Build ≥ 44 · ปิดรับงานไรเดอร์ไม่ถูกบล็อกเลย (ต้องใช้ MySQL)
+ * 🪪 ด่าน `ekyc.verified` — บังคับทุกช่องทาง (2026-10-13: เลิกดู X-App-Build — เว็บ/สคริปต์/แอปเก่าเคยหลุดด่าน)
+ * แอปรุ่นเก่ากว่า min_build ได้ข้อความให้อัปเดตแอป · ปิดรับงานไรเดอร์ไม่ถูกบล็อกเลย (ต้องใช้ MySQL)
  */
 #[Group('ekyc')]
 class EkycGateTest extends TestCase
@@ -40,25 +40,29 @@ class EkycGateTest extends TestCase
         $this->configureEkyc();
     }
 
-    public function test_gate_applies_only_to_new_app_builds(): void
+    public function test_gate_applies_to_every_client(): void
     {
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
         foreach (self::GATED_ROUTES as $route) {
-            // แอปรุ่นเก่า / ไม่ส่ง header / ค่าแปลก / เว็บ → แบบเดิม
-            foreach ([[], ['X-App-Build' => '43'], ['X-App-Build' => '44abc']] as $headers) {
-                $this->assertNotSame(EnsureEkycVerified::CODE, $this->postJson($route, [], $headers)->json('code'), "{$route} ต้องไม่บล็อกแอปรุ่นเก่า");
+            // ไม่ส่ง header / ค่าแปลก (เว็บ/สคริปต์) / แอปรุ่นใหม่ → บล็อกด้วยข้อความปกติ
+            foreach ([[], ['X-App-Build' => '44abc'], ['X-App-Build' => '44'], ['X-App-Build' => '57']] as $headers) {
+                $this->postJson($route, [], $headers)
+                    ->assertStatus(422)
+                    ->assertJsonPath('success', false)
+                    ->assertJsonPath('code', 'KYC_REQUIRED')
+                    ->assertJsonPath('message', 'กรุณายืนยันตัวตนก่อนใช้งานส่วนนี้ ใช้เวลาประมาณ 1 นาที')
+                    ->assertJsonPath('data.kyc_status', 'none');
             }
 
-            $this->postJson($route, [], ['X-App-Build' => '44'])
+            // แอปรุ่นเก่า (ยังไม่มีหน้า eKYC) → บล็อกเหมือนกัน แต่บอกให้อัปเดตแอปก่อน
+            $this->postJson($route, [], ['X-App-Build' => '43'])
                 ->assertStatus(422)
-                ->assertJsonPath('success', false)
                 ->assertJsonPath('code', 'KYC_REQUIRED')
-                ->assertJsonPath('message', 'กรุณายืนยันตัวตนก่อนใช้งานส่วนนี้ ใช้เวลาประมาณ 1 นาที')
-                ->assertJsonPath('data.kyc_status', 'none');
-
-            $this->postJson($route, [], ['X-App-Build' => '57'])->assertJsonPath('code', 'KYC_REQUIRED');
+                ->assertJsonPath('message', in_array($route, ['/api/v1/cart/checkout', '/api/v1/fresh-market/orders'], true)
+                    ? 'กรุณาอัปเดตแอปเป็นรุ่นล่าสุด แล้วยืนยันตัวตนก่อนสั่งซื้อ'
+                    : 'กรุณาอัปเดตแอปเป็นรุ่นล่าสุด แล้วยืนยันตัวตนก่อนใช้งานส่วนนี้');
         }
 
         // รอตรวจอยู่ → ยังบล็อก แต่บอกสถานะ pending
@@ -96,10 +100,16 @@ class EkycGateTest extends TestCase
             ->assertJsonPath('data.availability', 'offline');
         $this->assertSame('offline', $rider->fresh()->availability);
 
-        // แอปรุ่นเก่าเปิดรับงานได้ตามเดิม
-        $this->assertNotSame('KYC_REQUIRED', $this->postJson('/api/v1/rider/availability', [
+        // แอปรุ่นเก่า/ไม่ส่ง header ก็เปิดรับงานไม่ได้ (2026-10-13) — ไรเดอร์รับงานผ่านแอปรุ่นใหม่เท่านั้น
+        //   ด่าน rider.min_app_build (EnsureRiderAppBuild) ตอบก่อนด่าน eKYC → 426 ให้อัปเดตแอป
+        $this->postJson('/api/v1/rider/availability', [
             'availability' => 'online', 'latitude' => 13.73, 'longitude' => 100.52,
-        ], ['X-App-Build' => '43'])->json('code'));
+        ], ['X-App-Build' => '43'])
+            ->assertStatus(426)
+            ->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
+        $this->postJson('/api/v1/rider/availability', [
+            'availability' => 'online', 'latitude' => 13.73, 'longitude' => 100.52,
+        ])->assertStatus(426)->assertJsonPath('code', 'APP_UPDATE_REQUIRED');
 
         // ยืนยันตัวตนแล้ว → เปิดรับงานด้วยแอปรุ่นใหม่ได้
         $rider->user->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save();
@@ -117,13 +127,18 @@ class EkycGateTest extends TestCase
             ['POST', 'api/v1/cart/checkout', 'ekyc.verified'],
             ['POST', 'api/v1/fresh-market/orders', 'ekyc.verified'],
             ['POST', 'api/v1/seller/application', 'ekyc.verified'],
-            ['POST', 'api/v1/fresh-market/seller/register', 'ekyc.verified'],
             ['POST', 'api/v1/rider/register', 'ekyc.verified'],
             ['POST', 'api/v1/rider/availability', 'ekyc.verified:availability=online'],
         ] as [$method, $uri, $middleware]) {
             $route = $routes->match(\Illuminate\Http\Request::create('/'.$uri, $method));
             $this->assertContains($middleware, $route->gatherMiddleware(), "{$method} {$uri}");
         }
+
+        // 🪪 (2026-10-13) สมัครร้านตลาดสดได้โดยไม่ต้องยืนยันตัวตนก่อน — ร้านขายได้เมื่อยืนยันแล้ว (FreshMarketSeller)
+        $this->assertNotContains(
+            'ekyc.verified',
+            $routes->match(\Illuminate\Http\Request::create('/api/v1/fresh-market/seller/register', 'POST'))->gatherMiddleware()
+        );
 
         // เส้น eKYC เองอยู่ใต้ auth:sanctum + throttle แยกตัวนับ
         foreach ([

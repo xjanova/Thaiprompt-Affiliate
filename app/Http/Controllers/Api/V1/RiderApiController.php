@@ -11,7 +11,6 @@ use App\Models\RiderJob;
 use App\Services\RiderAccountService;
 use App\Services\RiderDispatchService;
 use App\Services\RiderEarningService;
-use App\Support\Rider\ClientAppBuild;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -445,8 +444,9 @@ class RiderApiController extends Controller
     {
         return $this->guard('accept', function () use ($request, $id) {
             $rider = $this->riderOrFail($request);
-            // ไรเดอร์รอบ 2: build แอป (X-App-Build) ใช้ตัดสินว่างานนี้ต้องสแกนส่งมอบหรือไม่
-            $job = $this->doAccept($request, $this->findJob($id), $rider, ClientAppBuild::fromRequest($request));
+            // (2026-10-13) แอปรุ่นเก่า/ไม่ส่ง X-App-Build ถูกตัดที่ middleware EnsureRiderAppBuild (426) ก่อนถึงตรงนี้
+            // ต้องสแกนส่งมอบหรือไม่ + ด่าน eKYC ตัดสินใน RiderJobService::accept
+            $job = $this->doAccept($request, $this->findJob($id), $rider);
 
             return $this->ok(['job' => $job->toApiDetail($rider)], 'รับงานสำเร็จ! กรุณาเดินทางไปรับของที่ร้าน');
         }, ['job_id' => $id]);

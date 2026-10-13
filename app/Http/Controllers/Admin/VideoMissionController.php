@@ -148,7 +148,7 @@ class VideoMissionController extends Controller
             'title_th' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'description_th' => 'nullable|string',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
             'icon' => 'nullable|string|max:10',
 
             'video_url' => 'required|url',
@@ -300,7 +300,7 @@ class VideoMissionController extends Controller
             'title_th' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'description_th' => 'nullable|string',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
             'icon' => 'nullable|string|max:10',
 
             'video_url' => 'required|url',

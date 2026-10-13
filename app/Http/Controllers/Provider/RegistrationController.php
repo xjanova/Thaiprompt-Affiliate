@@ -76,8 +76,8 @@ class RegistrationController extends Controller
             'description' => 'nullable|string|max:1000',
             'phone' => 'required|string|max:20',
             'id_card_number' => 'required|string|size:13',
-            'id_card_photo' => 'required|image|max:5120', // 5MB max
-            'profile_photo' => 'nullable|image|max:2048', // 2MB max
+            'id_card_photo' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:5120', // 5MB max
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048', // 2MB max
             'categories' => 'required|array|min:1',
             'categories.*' => 'exists:service_categories,id',
             'service_areas' => 'required|array|min:1',
@@ -226,7 +226,7 @@ class RegistrationController extends Controller
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'phone' => 'required|string|max:20',
-            'profile_photo' => 'nullable|image|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
             'categories' => 'required|array|min:1',
             'categories.*' => 'exists:service_categories,id',
             'service_areas' => 'required|array|min:1',

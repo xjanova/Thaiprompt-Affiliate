@@ -2,6 +2,10 @@
 
 namespace App\Exceptions;
 
+use App\Http\Middleware\EnsureEkycVerified;
+use App\Models\Rider;
+use App\Models\User;
+use App\Services\Ekyc\EkycService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +59,15 @@ class RiderJobException extends RuntimeException
 
     /** ไรเดอร์รอบ 2: งานนี้ต้องสแกนส่งมอบ (ปุ่มส่งของแบบเดิมใช้ไม่ได้) */
     public const HANDOVER_REQUIRED = 'HANDOVER_REQUIRED';
+
+    /** (2026-10-13) รับงาน/ทำงานส่งได้ผ่านแอปเท่านั้น — หน้าเว็บ/LINE ทำไม่ได้ */
+    public const APP_ONLY = 'APP_ONLY';
+
+    /** (2026-10-13) ยังไม่ยืนยันตัวตน (eKYC) — รูปแบบเดียวกับด่าน middleware ekyc.verified */
+    public const KYC_REQUIRED = 'KYC_REQUIRED';
+
+    /** ข้อความ "ใช้แอปเท่านั้น" ชุดเดียวทุกช่องทาง (เว็บ / LINE) */
+    public const APP_ONLY_MESSAGE = 'รับงานและทำงานส่งได้ผ่านแอป Thai Prompt APP เท่านั้น';
 
     /**
      * @param  string  $errorCode  รหัสข้อผิดพลาด (ค่าคงที่ในคลาสนี้)
@@ -204,6 +217,50 @@ class RiderJobException extends RuntimeException
             'งานนี้ต้องส่งมอบด้วยการสแกน QR กับผู้รับ กรุณาอัปเดตแอปไรเดอร์เป็นเวอร์ชันล่าสุดแล้วกด "ส่งมอบของ"',
             409
         );
+    }
+
+    /**
+     * รับงาน/ทำงานส่ง/เปิดรับงานจากหน้าเว็บ → 403 APP_ONLY (owner ตัดสิน 2026-10-13: ไรเดอร์รับงานผ่านแอปเท่านั้น)
+     */
+    public static function appOnly(): self
+    {
+        return new self(
+            self::APP_ONLY,
+            self::APP_ONLY_MESSAGE,
+            403,
+            ['download_url' => url((string) config('rider.app_download_path', '/app/download'))]
+        );
+    }
+
+    /**
+     * ยังไม่ยืนยันตัวตน → 422 KYC_REQUIRED (ข้อความ + data.kyc_status เหมือนด่าน ekyc.verified ทุกตัวอักษร)
+     *
+     * @param  User|null  $user  เจ้าของบัญชีไรเดอร์ (ไม่มี = สถานะ none)
+     */
+    public static function kycRequired(?User $user): self
+    {
+        return new self(
+            self::KYC_REQUIRED,
+            EnsureEkycVerified::MESSAGE,
+            422,
+            ['kyc_status' => $user ? EkycService::publicStatus($user) : 'none']
+        );
+    }
+
+    /**
+     * แปลงเหตุผลจาก Rider::onlineBlockReason()/acceptBlockReason() เป็น exception ที่ตรงรหัส
+     *
+     * KYC_REQUIRED → kycRequired() (422 รูปแบบเดียวกับ middleware) · นอกนั้น → notEligible() (403 + block_code)
+     *
+     * @param  array{code: string, message: string}  $reason
+     */
+    public static function fromBlockReason(array $reason, ?Rider $rider = null): self
+    {
+        if (($reason['code'] ?? null) === self::KYC_REQUIRED) {
+            return self::kycRequired($rider?->user);
+        }
+
+        return self::notEligible((string) $reason['message'], (string) $reason['code']);
     }
 
     // =====================================================

@@ -1,19 +1,14 @@
 {{--
-    การ์ดงานรอรับ 1 งาน (ต้องอยู่ใน x-data="rdJobBoard(...)")
+    การ์ดงานรอรับ 1 งาน (อ่านอย่างเดียว — รับงานในแอป Thai Prompt APP เท่านั้น ตั้งแต่ 2026-10-13)
     ตัวแปร: $job (JobSummary จาก RiderJob::toApiSummary — ก่อนรับงาน จุดส่งเป็นพื้นที่หยาบ ไม่มีชื่อ/เบอร์)
 --}}
 @php
     $ui = \App\Support\RiderWebUi::class;
     $jobId = (int) $job['id'];
-    $jobJs = [
-        'id' => $jobId,
-        'acceptUrl' => route('user.rider.jobs.accept', $jobId),
-        'rejectUrl' => route('user.rider.jobs.reject', $jobId),
-    ];
     $pickup = $job['pickup'] ?? [];
     $dropoff = $job['dropoff'] ?? [];
 @endphp
-<article class="tp-card rd-job" x-show="!isHidden({{ $jobId }})" x-transition.opacity>
+<article class="tp-card rd-job">
     <div class="rd-row" style="justify-content:space-between; align-items:flex-start;">
         <div class="rd-row" style="gap:12px; flex:1 1 200px; min-width:0; flex-wrap:nowrap;">
             <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:18px;"><i class="fas {{ $ui::jobIcon($job['job_type'] ?? null) }}"></i></span>
@@ -62,17 +57,8 @@
         <div class="rd-small rd-muted"><i class="fas fa-box-open"></i> {{ \Illuminate\Support\Str::limit($job['items_summary'], 140) }}</div>
     @endif
 
-    <div class="rd-row">
-        <button type="button" class="rd-btn3d rd-tone-ok" style="flex:1 1 200px;"
-                :class="{ 'is-disabled': !canAccept }"
-                :disabled="busyId !== null"
-                x-on:click="accept({{ \Illuminate\Support\Js::from($jobJs) }})">
-            <i class="fas" :class="busyId === {{ $jobId }} ? 'fa-circle-notch rd-spin' : 'fa-hand-pointer'"></i>
-            <span x-text="busyId === {{ $jobId }} ? 'กำลังรับงาน...' : 'รับงานนี้'">รับงานนี้</span>
-        </button>
+    <div class="rd-row" style="justify-content:space-between;">
+        <span class="rd-small rd-muted"><i class="fas fa-mobile-screen-button"></i> รับงานได้ในแอป Thai Prompt APP</span>
         <a href="{{ route('user.rider.jobs.show', $jobId) }}" class="tp-btn"><i class="fas fa-circle-info"></i> รายละเอียด</a>
-        <button type="button" class="tp-btn" :disabled="busyId !== null" x-on:click="skip({{ \Illuminate\Support\Js::from($jobJs) }})">
-            <i class="fas fa-eye-slash"></i> ไม่สนใจ
-        </button>
     </div>
 </article>

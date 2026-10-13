@@ -109,6 +109,9 @@ class FreshMarketSeller extends Model
     /** ข้อความตอนร้านปิด (เว็บ/แอปใช้ข้อความเดียวกัน) */
     public const CLOSED_MESSAGE = 'ปิดอยู่ — ติดตามร้านเพื่อรับแจ้งเตือนเมื่อเปิด';
 
+    /** ร้านถูกระงับ/ปิดใช้งาน ทำรายการออเดอร์/สินค้าไม่ได้ (เว็บ/แอป/LINE ใช้ข้อความเดียวกัน) */
+    public const SUSPENDED_ACTION_MESSAGE = 'ร้านของคุณถูกระงับหรือปิดใช้งานอยู่ ไม่สามารถจัดการออเดอร์หรือสินค้าได้ กรุณาติดต่อทีมงาน';
+
     /** ร้านเคลื่อนที่ที่เปิดส่งตำแหน่งสด แต่ตำแหน่งเงียบเกินกี่นาที = ถือว่าปิด (คำสั่งกวาดจะปิดร้านให้) */
     public const LIVE_LOCATION_STALE_MINUTES = 30;
 
@@ -333,6 +336,10 @@ class FreshMarketSeller extends Model
 
     /**
      * ผู้ซื้อมองเห็นร้านนี้หรือไม่
+     *
+     * 🪪 (2026-10-13) ต้อง is_verified เสมอ — ร้านได้ is_verified เมื่อเจ้าของร้านยืนยันตัวตน (eKYC) แล้ว
+     * ตอนเปิดอนุมัติอัตโนมัติ หรือแอดมินกดยืนยันร้านเอง (ดู initialVerifiedFor / promoteAfterOwnerKyc)
+     * เดิม "อนุมัติอัตโนมัติ || is_verified" = ร้านของคนที่ยังไม่ยืนยันตัวตนขายได้ทันที
      */
     public function isVisibleToBuyers(): bool
     {
@@ -340,7 +347,106 @@ class FreshMarketSeller extends Model
             return false;
         }
 
-        return FreshMarketListing::autoApproveSellers() || (bool) $this->is_verified;
+        return (bool) $this->is_verified;
+    }
+
+    /**
+     * ร้านจัดการออเดอร์/สินค้าได้ไหม (ไม่ถูกระงับ + เปิดใช้งาน)
+     *
+     * ร้านถูกระงับ/ปิดใช้งาน → รับ/เตรียม/ส่งมอบ/ยกเลิกออเดอร์ และลง/แก้สินค้าไม่ได้
+     * ออเดอร์ที่ค้างอยู่ให้แอดมินจัดการ (ปิดออเดอร์ = จ่ายร้าน / ยกเลิก = คืนเงินผู้ซื้อ)
+     */
+    public function canOperate(): bool
+    {
+        return (bool) $this->is_active && ! $this->is_suspended;
+    }
+
+    /**
+     * ร้านยังขายไม่ได้เพราะเจ้าของร้านยังไม่ยืนยันตัวตน (AI eKYC ในแอป)
+     */
+    public function needsOwnerKyc(): bool
+    {
+        if ($this->is_verified || ! \App\Services\Ekyc\EkycGate::enforced()) {
+            return false;
+        }
+
+        $owner = $this->user;
+
+        return ! $owner || ! $owner->isKycVerified();
+    }
+
+    /**
+     * ข้อความสถานะร้านสำหรับเจ้าของร้าน (เว็บ / แอป / LINE) เมื่อผู้ซื้อยังมองไม่เห็นร้าน — null = ขายได้ตามปกติ
+     */
+    public function sellingStatusMessage(): ?string
+    {
+        if ($this->is_suspended) {
+            return 'ร้านถูกระงับชั่วคราว — ลูกค้ามองไม่เห็นร้าน กรุณาติดต่อทีมงาน';
+        }
+
+        if (! $this->is_active) {
+            return 'ร้านปิดใช้งานอยู่ — ลูกค้ามองไม่เห็นร้าน กรุณาติดต่อทีมงาน';
+        }
+
+        if ($this->is_verified) {
+            return null;
+        }
+
+        if ($this->needsOwnerKyc()) {
+            return \App\Services\Ekyc\EkycGate::SELLER_PENDING_KYC_MESSAGE.' — ลงสินค้าเตรียมไว้ได้เลย ลูกค้าจะเห็นร้านทันทีที่ยืนยันเสร็จ';
+        }
+
+        return 'ร้านรอแอดมินยืนยัน — ลงเมนูเตรียมไว้ได้เลย ลูกค้าจะเห็นร้านเมื่อยืนยันแล้ว';
+    }
+
+    /**
+     * ค่า is_verified ตอนสมัครร้าน (ทุกช่องทาง): เปิดอนุมัติอัตโนมัติ + เจ้าของร้านยืนยันตัวตนแล้ว
+     * (ปิดสวิตช์ ekyc.enforce = กลับไปแบบเดิม — อนุมัติอัตโนมัติอย่างเดียว)
+     */
+    public static function initialVerifiedFor(User $owner): bool
+    {
+        if (! FreshMarketListing::autoApproveSellers()) {
+            return false;
+        }
+
+        return ! \App\Services\Ekyc\EkycGate::enforced() || $owner->isKycVerified();
+    }
+
+    /**
+     * เจ้าของร้านยืนยันตัวตนผ่านแล้ว → ร้านเริ่มขายได้ (เฉพาะตอนเปิดอนุมัติอัตโนมัติ — ปิดอยู่ = รอแอดมินกดยืนยันร้านเหมือนเดิม)
+     *
+     * เรียกจาก User::boot (kyc_status เปลี่ยนเป็น approved — ครอบทั้ง AI อนุมัติเอง, แอดมินอนุมัติ eKYC และ KYC แบบเดิม)
+     * ร้านที่ถูกระงับ/ปิดใช้งานได้ is_verified แต่ยังขายไม่ได้จนกว่าแอดมินเปิดใช้งาน
+     *
+     * @return int จำนวนร้านที่เปลี่ยน
+     */
+    public static function promoteAfterOwnerKyc(User $owner): int
+    {
+        if (! FreshMarketListing::autoApproveSellers()) {
+            return 0;
+        }
+
+        $sellers = self::where('user_id', $owner->id)->where('is_verified', false)->get();
+
+        foreach ($sellers as $seller) {
+            $seller->update(['is_verified' => true]);
+
+            \Illuminate\Support\Facades\Log::info('FreshMarket: เจ้าของร้านยืนยันตัวตนแล้ว ร้านเริ่มขายได้', [
+                'seller_id' => $seller->id,
+                'user_id' => $owner->id,
+            ]);
+
+            if ($seller->canOperate()) {
+                // แจ้งเตือนในแอป (ไม่ใช่ LINE push) — ส่งหลัง commit
+                app(\App\Services\FreshMarketOrderNotifier::class)->sellerAccountEvent(
+                    $seller,
+                    'ร้านของคุณเริ่มขายได้แล้ว',
+                    'ยืนยันตัวตนเรียบร้อย ลูกค้าเห็นร้าน '.$seller->shop_name.' และสั่งซื้อได้แล้ว'
+                );
+            }
+        }
+
+        return $sellers->count();
     }
 
     /**

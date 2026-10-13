@@ -219,6 +219,8 @@ class PaymentApiController extends Controller
                 }
 
                 // สร้าง payment transaction ใหม่
+                // 🔁 (2026-10-13) QR ใหม่ → createOrderPayment ปิด QR เดิมของออเดอร์ + ปล่อยยอดจองให้ในธุรกรรมเดียวกัน
+                //    (ไม่งั้นยอดเก่าหมดเวลาแล้ว cleanup ยกเลิกออเดอร์ทั้งที่ QR ใหม่ยังจ่ายได้)
                 $transaction = $this->paymentService->createOrderPayment(
                     $order,
                     $providerKey,

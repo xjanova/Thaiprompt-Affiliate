@@ -650,7 +650,7 @@ class FreshMarketShopPresenceService
         $candidates = FreshMarketSeller::query()
             ->where('is_active', true)
             ->where('is_suspended', false)
-            ->when(! \App\Models\FreshMarketListing::autoApproveSellers(), fn ($q) => $q->where('is_verified', true))
+            ->where('is_verified', true) // ร้านต้องยืนยันแล้วเสมอ (เจ้าของยืนยันตัวตน / แอดมินยืนยันร้าน)
             ->where('is_open', true)
             ->where(fn ($q) => $q->whereNull('closes_at')->orWhere('closes_at', '>', $now))
             ->where(function ($q) use ($lat, $lng, $dLat, $dLng) {

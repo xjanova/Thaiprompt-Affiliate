@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Contracts\RiderDeliverable;
 use App\Services\DeliveryFeeCalculator;
-use App\Support\Rider\ClientAppBuild;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -283,9 +282,9 @@ class RiderJob extends Model
                 $job->job_number = self::generateJobNumber();
             }
 
-            // ไรเดอร์รอบ 2 (รอบแก้หลังรีวิว): งานใหม่เริ่มเป็นแบบเดิม (ไม่ต้องสแกน) เสมอ
-            // การ "ต้องสแกนส่งมอบ" ตัดสินตอนไรเดอร์กดรับงาน (RiderJobService::accept → handoverRequiredOnAccept)
-            // เพราะต้องรู้ว่าทั้งผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่มีหน้าส่งมอบ — ผู้สร้างระบุค่าเองได้ (เทสต์/ย้ายข้อมูล)
+            // ไรเดอร์รอบ 2: งานใหม่ยังไม่ตัดสินเรื่องสแกนส่งมอบ (false ไว้ก่อน)
+            // การ "ต้องสแกนส่งมอบ" ตัดสินตอนไรเดอร์กดรับงาน/แอดมินมอบหมาย (handoverRequiredOnAccept)
+            // ตามค่าตั้ง rider.handover_enabled ณ ตอนนั้น — ผู้สร้างระบุค่าเองได้ (เทสต์/ย้ายข้อมูล)
             if (! array_key_exists('handover_required', $job->getAttributes())) {
                 $job->handover_required = false;
             }
@@ -295,7 +294,6 @@ class RiderJob extends Model
     /**
      * เปิดระบบสแกนส่งมอบอยู่หรือไม่ (rider.handover_enabled · อ่านค่าตั้งไม่ได้ = ใช้ค่าเริ่มต้นของระบบ)
      *
-     * เป็นแค่เงื่อนไขข้อแรก — งานจะต้องสแกนจริงต่อเมื่อผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่รองรับด้วย
      * (ดู handoverRequiredOnAccept)
      */
     public static function handoverEnabledForNewJobs(): bool
@@ -308,25 +306,19 @@ class RiderJob extends Model
     }
 
     /**
-     * ตอนไรเดอร์กดรับงาน: งานนี้ต้องสแกนส่งมอบหรือไม่ (ไรเดอร์รอบ 2 — FIXES §A1)
+     * ตอนไรเดอร์กดรับงาน/แอดมินมอบหมายงานที่ยังรอไรเดอร์: งานนี้ต้องสแกนส่งมอบหรือไม่
      *
-     * ต้องครบทุกข้อ:
+     * (2026-10-13) ต้องสแกนส่งมอบเสมอเมื่อ:
      *   1. เปิด rider.handover_enabled
-     *   2. ออเดอร์ต้นทางสั่งจากแอป build ≥ 43 (orders/fresh_market_orders.client_app_build)
-     *   3. ไรเดอร์กดรับจากแอป build ≥ 43 (header X-App-Build ของคำขอรับงาน)
-     * หน้าเว็บ /user/rider · LINE postback · แอปรุ่นเก่า = false → ใช้ปุ่มส่งของแบบเดิมเหมือนก่อนรอบ 2
+     *   2. งานมีออเดอร์ต้นทางที่ส่งของได้ (deliverableSource)
      *
-     * @param  int|null  $riderAppBuild  build ของแอปไรเดอร์ที่กดรับ (null = ไม่ได้มาจากแอป)
+     * เลิกดู build แอปของผู้ซื้อ/ไรเดอร์แล้ว — เดิมรับจากหน้าเว็บ/LINE/แอปเก่า/ไม่ส่ง header = ปุ่มส่งของแบบเดิม
+     * (รูปอะไรก็ได้ ไม่เช็คพิกัด ไรเดอร์ได้เงินทันที ผู้ซื้อร้องเรียนไม่ได้) ⇒ ตอนนี้ไรเดอร์รับงานได้ผ่านแอปเท่านั้น
+     * ผู้ซื้อที่สั่งจากเว็บ/LINE (ไม่มีแอป) ยังส่งมอบได้ด้วยทางสำรองรูป 2 รอบ + ปลดเงินอัตโนมัติ (HandoverService::releaseDue)
      */
-    public function handoverRequiredOnAccept(?int $riderAppBuild): bool
+    public function handoverRequiredOnAccept(): bool
     {
-        if (! ClientAppBuild::supportsHandover($riderAppBuild)) {
-            return false;
-        }
-
-        $source = $this->deliverableSource();
-        if (! $source instanceof Model
-            || ! ClientAppBuild::supportsHandover($source->getAttribute('client_app_build'))) {
+        if (! $this->deliverableSource() instanceof Model) {
             return false;
         }
 

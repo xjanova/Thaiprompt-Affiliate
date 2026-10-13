@@ -293,17 +293,23 @@ class TaladsodWebV4PagesTest extends TestCase
             ->assertSee('แชร์ตำแหน่งของฉันให้ไรเดอร์');
     }
 
-    public function test_rider_active_job_page_renders_v4_with_openstreetmap(): void
+    public function test_rider_active_job_page_now_points_to_read_only_job_detail(): void
     {
+        // (2026-10-13) owner: ไรเดอร์ทำงานส่งผ่านแอปเท่านั้น — หน้าทำงานบนเว็บ (แผนที่ + GPS + ปุ่มส่งของ) ปิดแล้ว
         [, $job, $rider] = $this->riderOrderAcceptedByRider();
 
-        $html = $this->assertV4Page(
-            $this->actingAs($rider->user)->get(route('taladsod.rider.active-job', $job)),
-            ['#'.$job->job_number, 'จุดรับของ', 'จุดส่งของ', 'รถเข็นลุงหนวด']
-        )->getContent();
+        $this->actingAs($rider->user)
+            ->get(route('taladsod.rider.active-job', $job))
+            ->assertRedirect(route('user.rider.jobs.show', $job))
+            ->assertSessionHas('info', 'อัปเดตสถานะและส่งงานนี้ได้ในแอป Thai Prompt APP เท่านั้น');
 
-        $this->assertStringContainsString('leaflet', (string) $html);
-        $this->assertStringNotContainsString('maps.googleapis.com/maps/api/js', (string) $html);
+        $this->actingAs($rider->user)->get(route('user.rider.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('#'.$job->job_number, false)
+            ->assertSee('จุดรับของ')
+            ->assertSee('จุดส่งของ')
+            ->assertSee('รับงานและทำงานส่งได้ผ่านแอป Thai Prompt APP เท่านั้น')
+            ->assertDontSee('leaflet', false);
     }
 
     // =====================================================
@@ -474,6 +480,7 @@ class TaladsodWebV4PagesTest extends TestCase
         $job = app(RiderDispatchService::class)->createJobForSource($order->fresh(), 'fresh_market')->fresh();
 
         $riderUser = User::factory()->create(['name' => 'ไรเดอร์ทดสอบ']);
+        $riderUser->forceFill(['kyc_status' => 'approved', 'kyc_verified_at' => now()])->save(); // ไรเดอร์ต้องผ่าน eKYC ก่อนรับงาน (2026-10-13)
         $rider = new Rider;
         $rider->forceFill([
             'user_id' => $riderUser->id,

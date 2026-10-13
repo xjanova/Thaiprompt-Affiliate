@@ -79,9 +79,9 @@ class RoomManagementController extends Controller
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
-            'main_image' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|max:5120',
+            'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         // Handle main image upload
@@ -148,9 +148,9 @@ class RoomManagementController extends Controller
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
-            'main_image' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|max:5120',
+            'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         // Handle main image upload

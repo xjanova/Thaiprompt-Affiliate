@@ -288,8 +288,8 @@ class ECommerceController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'track_inventory' => 'boolean',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
             'shipping_fee' => 'nullable|numeric|min:0',
             'shipping_weight_kg' => 'nullable|numeric|min:0',
@@ -444,8 +444,8 @@ class ECommerceController extends Controller
             'brand' => 'nullable|string|max:100',
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|string|max:100',
-            'main_image' => 'nullable|image|max:5120',
-            'images.*' => 'nullable|image|max:5120',
+            'main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
             'shipping_fee' => 'nullable|numeric|min:0',
             'shipping_weight_kg' => 'nullable|numeric|min:0',
@@ -1066,7 +1066,7 @@ class ECommerceController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
             'sort_order' => 'nullable|integer',
-            'category_image' => 'nullable|image|max:5120',
+            'category_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         DB::beginTransaction();
@@ -1115,7 +1115,7 @@ class ECommerceController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
             'sort_order' => 'nullable|integer',
-            'category_image' => 'nullable|image|max:5120',
+            'category_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         DB::beginTransaction();

@@ -62,9 +62,15 @@
     </div>
 
     @if(! $visible)
+        {{-- สถานะร้าน: ถูกระงับ / รอเจ้าของร้านยืนยันตัวตนในแอป (eKYC) / รอแอดมินยืนยัน — ข้อความเดียวกับแอปและ LINE --}}
         <div class="sf-note sf-note-warn" role="status">
             <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-            {{ $seller->is_suspended ? 'ร้านถูกระงับชั่วคราว — ลูกค้ามองไม่เห็นร้าน กรุณาติดต่อทีมงาน' : 'ร้านรอแอดมินยืนยัน — ลงเมนูเตรียมไว้ได้เลย ลูกค้าจะเห็นร้านเมื่อยืนยันแล้ว' }}
+            {{ $seller->sellingStatusMessage() }}
+            @if($seller->needsOwnerKyc())
+                <a href="{{ \App\Services\Ekyc\EkycGate::downloadUrl() }}" class="tp-btn ml-2">
+                    <i class="fas fa-id-card" aria-hidden="true"></i> ยืนยันตัวตนในแอป Thai Prompt APP
+                </a>
+            @endif
         </div>
     @endif
 

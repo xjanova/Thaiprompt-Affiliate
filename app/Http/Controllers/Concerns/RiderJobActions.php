@@ -17,6 +17,9 @@ use Illuminate\Validation\Rule;
 /**
  * ขั้นตอนงานไรเดอร์ที่ใช้ร่วมกันระหว่าง API แอป (RiderApiController) และหน้าเว็บ (User\RiderController)
  *
+ * (2026-10-13) owner ตัดสิน: รับงาน/ทำงานส่งได้ผ่านแอปเท่านั้น — หน้าเว็บใช้แค่ตัวช่วยอ่าน (canViewJob, rejectedByRider,
+ * validateRiderInput) ส่วน doAccept/doReject/doRelease/doUpdateStatus/doDeliver/doFail/doGps* เรียกจาก API แอปเท่านั้น
+ *
  * ทุกการเปลี่ยนสถานะเรียก RiderJobService เท่านั้น — ที่นี่ทำแค่:
  *   - ตรวจข้อมูลเข้า (ข้อความภาษาไทย)
  *   - ตรวจว่างานเป็นของไรเดอร์คนนี้ (กัน IDOR) ก่อนแตะอะไร
@@ -266,7 +269,7 @@ trait RiderJobActions
         // ไรเดอร์ที่ถูกระงับแต่ยังถือของอยู่ ต้องส่งตำแหน่งต่อได้ (แอดมินต้องตามของ)
         if ($rider->status !== 'approved' && ! $rider->hasActiveJob()) {
             $reason = $rider->onlineBlockReason() ?? ['code' => 'NOT_APPROVED', 'message' => 'บัญชีไรเดอร์ยังไม่พร้อมใช้งาน'];
-            throw RiderJobException::notEligible($reason['message'], $reason['code']);
+            throw RiderJobException::fromBlockReason($reason, $rider);
         }
 
         // battery_level จาก iOS อาจเป็น -1 (ไม่ทราบ) หรือทศนิยม 0-1 → แปลงเป็น % หรือทิ้ง
@@ -279,15 +282,15 @@ trait RiderJobActions
     }
 
     /**
-     * ไรเดอร์กดรับงาน
+     * ไรเดอร์กดรับงาน (เรียกจาก API แอปเท่านั้น — เส้นนี้ผ่าน middleware EnsureRiderAppBuild แล้ว)
      *
-     * @param  int|null  $riderAppBuild  ไรเดอร์รอบ 2: build แอปไรเดอร์ (เฉพาะ API แอป) — หน้าเว็บส่ง null = ส่งของแบบเดิม
+     * ต้องสแกนส่งมอบหรือไม่ตัดสินใน RiderJobService::accept (ไม่ขึ้นกับ build แอปแล้ว)
      */
-    protected function doAccept(Request $request, RiderJob $job, Rider $rider, ?int $riderAppBuild = null): RiderJob
+    protected function doAccept(Request $request, RiderJob $job, Rider $rider): RiderJob
     {
         $this->recordLocationFromRequest($request, $rider);
 
-        return app(RiderJobService::class)->accept($job, $rider, $riderAppBuild);
+        return app(RiderJobService::class)->accept($job, $rider);
     }
 
     /**

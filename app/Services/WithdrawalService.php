@@ -181,6 +181,14 @@ class WithdrawalService
         }
 
         DB::transaction(function () use ($request, $admin) {
+            // 🔒 (2026-10-13) lock + ตรวจสถานะซ้ำ — เดิมอนุมัติทับคำขอที่ผู้ใช้เพิ่งยกเลิก (คืนเงินแล้ว)
+            //    หรือแอดมินอีกคนเพิ่งปฏิเสธได้ → ผู้ใช้ได้ทั้งเงินคืนและเงินโอนจริง
+            $locked = WithdrawalRequest::whereKey($request->id)->lockForUpdate()->first();
+            if (! $locked || (! $locked->isPending() && ! $locked->isProcessing())) {
+                throw new Exception('คำขอถอนเงินนี้ไม่สามารถอนุมัติได้');
+            }
+            $request->setRawAttributes($locked->getAttributes(), true);
+
             $request->update([
                 'status' => 'approved',
                 'approved_by' => $admin?->id,
@@ -262,6 +270,14 @@ class WithdrawalService
         }
 
         DB::transaction(function () use ($request, $admin, $transferSlipFile, $transferNote) {
+            // 🔒 (2026-10-13) lock + ตรวจสถานะซ้ำ — กดยืนยันโอนซ้ำ/พร้อมกัน ต้องปิดรายการครั้งเดียว
+            //    และห้ามปิดคำขอที่ถูกปฏิเสธ/ยกเลิก (คืนเงินแล้ว) ระหว่างทาง
+            $locked = WithdrawalRequest::whereKey($request->id)->lockForUpdate()->first();
+            if (! $locked || ! $locked->isApproved()) {
+                throw new Exception('คำขอถอนเงินนี้ยังไม่ได้รับการอนุมัติ หรือถูกดำเนินการไปแล้ว');
+            }
+            $request->setRawAttributes($locked->getAttributes(), true);
+
             // Upload transfer slip and convert to WebP
             $slipPath = null;
             if ($transferSlipFile) {

@@ -30,6 +30,7 @@ class FreshMarketValidationText
             'exists' => 'กรุณาเลือก:attributeที่มีอยู่ในระบบ',
             'in' => ':attributeไม่ถูกต้อง',
             'image' => ':attributeต้องเป็นไฟล์รูปภาพ',
+            'mimes' => ':attributeต้องเป็นไฟล์ JPG, PNG หรือ WEBP เท่านั้น',
             'regex' => 'รูปแบบ:attributeไม่ถูกต้อง',
             'between' => [
                 'numeric' => ':attributeไม่ถูกต้อง',

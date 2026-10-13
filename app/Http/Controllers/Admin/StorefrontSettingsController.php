@@ -86,7 +86,7 @@ class StorefrontSettingsController extends Controller
             'badge' => 'nullable|string|max:50',
             'highlight_text' => 'nullable|string|max:50',
             'highlight_label' => 'nullable|string|max:50',
-            'image' => 'nullable|image|max:5120', // 5MB
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120', // 5MB
             'gradient' => 'nullable|string|max:200',
             'cta_text' => 'nullable|string|max:50',
             'cta_url' => 'nullable|url|max:500',
@@ -151,7 +151,7 @@ class StorefrontSettingsController extends Controller
             'badge' => 'nullable|string|max:50',
             'highlight_text' => 'nullable|string|max:50',
             'highlight_label' => 'nullable|string|max:50',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'gradient' => 'nullable|string|max:200',
             'cta_text' => 'nullable|string|max:50',
             'cta_url' => 'nullable|url|max:500',
