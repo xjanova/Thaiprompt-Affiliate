@@ -100,6 +100,9 @@
                                 <span class="tp-pill" style="background:color-mix(in srgb, #d9534f 18%, transparent); color:#d9534f; font-size:11px; font-weight:700;">-{{ $product->discount_percentage }}%</span>
                             @endif
                         </div>
+                        @unless($product->is_affiliate)
+                            <x-tpix-price :product="$product" :thb="$product->price" style="align-self:flex-start; margin:-8px 0 14px;" />
+                        @endunless
                         @if($product->commission_rate > 0)
                             <div class="tp-card" style="padding:12px 14px; box-shadow:var(--inset-sm); margin-bottom:14px; background:color-mix(in srgb, #5aa07e 8%, transparent);">
                                 <div style="font-size:11.5px; color:#5aa07e; margin-bottom:2px;">คอมมิชชั่นที่คุณจะได้รับ:</div>

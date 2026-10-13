@@ -38,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         // Register StakingService as singleton
         $this->app->singleton(\App\Services\StakingService::class);
 
+        // 🪙 (2026-10-13) ชำระด้วย TPIX — ตั้งค่า/ราคาจำในโปรเซสแบบมีอายุ (หน้ารายการสินค้าเรียกหลายสิบครั้ง)
+        $this->app->singleton(\App\Services\TpixPay\TpixPaySettings::class);
+        $this->app->singleton(\App\Services\TpixPay\TpixPriceService::class);
+
         // 🌙 (2026-06-07) Bind FortuneTellingSetting → live DB row (getSettings)
         //   ปัญหา: service ที่ constructor เป็น `?FortuneTellingSetting $settings = null`
         //   เมื่อ resolve ผ่าน app(Service::class) โดยไม่ส่ง settings → Laravel container

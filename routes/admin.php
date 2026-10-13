@@ -2311,6 +2311,14 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
     Route::get('/check-connection', [TPIXController::class, 'checkConnection'])->name('check-connection');
 });
 
+// 🪙 (2026-10-13) รับชำระด้วยเหรียญ TPIX (เชน 4289) — ตั้งค่า + รายการชำระ + ตรวจซ้ำบนเชน
+Route::prefix('tpix-pay')->name('tpix-pay.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'index'])->name('index');
+    Route::post('/settings', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'update'])->name('update');
+    Route::post('/{id}/recheck', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'recheck'])->whereNumber('id')->middleware('throttle:30,1,admin-tpix-recheck')->name('recheck');
+    Route::post('/{id}/approve', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'approve'])->whereNumber('id')->middleware('throttle:30,1,admin-tpix-approve')->name('approve');
+});
+
 // TPIX Token Management
 Route::prefix('tokens')->name('tokens.')->group(function () {
     // Token List & Overview

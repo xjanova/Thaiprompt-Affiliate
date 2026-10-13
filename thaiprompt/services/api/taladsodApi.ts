@@ -24,6 +24,7 @@ import {
   type ApiResult,
   type Pagination,
 } from './client';
+import { normalizeTpixTag, type TpixPriceTag } from './tpixApi';
 
 const BASE = '/fresh-market';
 
@@ -96,6 +97,18 @@ const nullableNum = (value: unknown): number | null =>
   value === null || value === undefined || value === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 const bool = (value: unknown): boolean => value === true || value === 1 || value === '1';
 
+/**
+ * 🪙 ราคา TPIX ต่อชิ้นของเมนู (price_tpix + tpix) — คีย์เพิ่มเติมจาก server รุ่นใหม่
+ * server ไม่ส่ง = ไม่ใส่คีย์ (undefined) · ส่ง null = server สั่งซ่อน
+ */
+const tpixFields = (raw: any): { tpix?: TpixPriceTag | null; price_tpix?: string | null } => {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: { tpix?: TpixPriceTag | null; price_tpix?: string | null } = {};
+  if ('tpix' in raw) out.tpix = normalizeTpixTag(raw.tpix);
+  if ('price_tpix' in raw) out.price_tpix = str(raw.price_tpix);
+  return out;
+};
+
 /** พิกัดที่ใช้ได้จริง (ไม่ใช่ null / 0,0 / นอกช่วง) */
 export const isUsableCoord = (lat: unknown, lng: unknown): boolean => {
   const a = Number(lat);
@@ -152,7 +165,13 @@ export interface FmShopCard {
   presence: FmPresence;
 }
 
-export interface FmTopItem {
+/** 🪙 ราคา TPIX ต่อชิ้น (เพิ่มเติม — server เก่าไม่ส่ง · null = ซ่อน) */
+export interface FmTpixPriced {
+  price_tpix?: string | null;
+  tpix?: TpixPriceTag | null;
+}
+
+export interface FmTopItem extends FmTpixPriced {
   id: number;
   slug: string | null;
   title: string;
@@ -168,7 +187,7 @@ export interface FmNearbyShop extends FmShopCard {
   top_items: FmTopItem[];
 }
 
-export interface FmShopListing {
+export interface FmShopListing extends FmTpixPriced {
   id: number;
   slug: string | null;
   title: string;
@@ -289,6 +308,7 @@ const normalizeShopListing = (raw: any): FmShopListing => ({
   max_order_quantity: Math.max(1, num(raw?.max_order_quantity, 99)),
   has_options: bool(raw?.has_options),
   can_order: raw?.can_order !== false,
+  ...tpixFields(raw),
 });
 
 // =====================================================
@@ -314,7 +334,7 @@ export interface FmListingSeller {
   location_label: string | null;
 }
 
-export interface FmListingSummary {
+export interface FmListingSummary extends FmTpixPriced {
   id: number;
   slug: string | null;
   title: string;
@@ -386,7 +406,7 @@ export interface FmListingDetail extends Omit<FmListingSummary, 'seller'> {
   seller: FmListingDetailSeller | null;
 }
 
-export interface FmRelatedListing {
+export interface FmRelatedListing extends FmTpixPriced {
   id: number;
   slug: string | null;
   title: string;
@@ -436,6 +456,7 @@ export const normalizeListingSummary = (raw: any): FmListingSummary => ({
     raw?.category && typeof raw.category === 'object'
       ? { id: num(raw.category.id), name: str(raw.category.name) || '', icon: str(raw.category.icon) }
       : null,
+  ...tpixFields(raw),
 });
 
 const normalizeOptionGroup = (raw: any): FmOptionGroup => {
@@ -515,7 +536,7 @@ export interface FmSelectedOption {
   price_delta: number;
 }
 
-export interface FmCartLine {
+export interface FmCartLine extends FmTpixPriced {
   id: number;
   seller_id: number;
   listing_id: number;
@@ -610,6 +631,7 @@ const normalizeCartLine = (raw: any): FmCartLine => ({
     raw?.issue && typeof raw.issue === 'object'
       ? { code: str(raw.issue.code) || 'INVALID_ITEM', message: str(raw.issue.message) || 'รายการนี้สั่งไม่ได้ตอนนี้' }
       : null,
+  ...tpixFields(raw),
 });
 
 const normalizeCartShop = (raw: any): FmCartShop => {
@@ -1168,6 +1190,7 @@ export const getListing = async (
         unit: str(r?.unit),
         main_image_url: str(r?.main_image_url),
         shop_name: str(r?.shop_name),
+        ...tpixFields(r),
       })),
     };
   });
@@ -1202,6 +1225,7 @@ export const getNearbyShops = async (
             price: num(t?.price),
             unit: str(t?.unit),
             image_url: str(t?.image_url),
+            ...tpixFields(t),
           })),
         }))
         .filter((s: FmNearbyShop) => s.id > 0),

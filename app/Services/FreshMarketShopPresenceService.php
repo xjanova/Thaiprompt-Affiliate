@@ -722,6 +722,8 @@ class FreshMarketShopPresenceService
                     'price' => round((float) $l->price, 2),
                     'unit' => $l->unit,
                     'image_url' => $l->primary_image,
+                    // 🪙 ราคาเป็นเหรียญ TPIX (price_tpix, tpix) — คีย์เพิ่ม แอปรุ่นเก่าไม่อ่านก็ไม่พัง
+                    ...app(\App\Services\TpixPay\TpixPriceService::class)->apiFields((float) $l->price),
                 ])->values()->all(),
                 'url' => $this->safeRoute('taladsod.seller', $seller->id),
             ]);

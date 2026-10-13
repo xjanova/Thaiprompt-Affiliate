@@ -150,6 +150,9 @@
                                     <span style="font-size:11.5px; color:var(--ink2); text-decoration:line-through;">฿{{ number_format($product->compare_at_price, 0) }}</span>
                                 @endif
                             </div>
+                            @unless($product->is_affiliate)
+                                <x-tpix-price :product="$product" :thb="$product->price" style="align-self:flex-start;" />
+                            @endunless
                         </div>
                     </a>
                 @endforeach

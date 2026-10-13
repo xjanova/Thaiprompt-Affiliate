@@ -447,6 +447,7 @@
                                     <p class="text-xl font-black text-purple-400">
                                         ฿{{ number_format($service->base_price, 0) }}
                                     </p>
+                                    <x-tpix-price :thb="$service->base_price" class="mt-1" />
                                 </div>
                                 <div class="text-right">
                                     <div class="flex items-center gap-1 text-yellow-400">
@@ -519,6 +520,7 @@
                                 <p class="text-2xl font-black text-purple-400">
                                     ฿{{ number_format($service->base_price, 0) }}
                                 </p>
+                                <x-tpix-price :thb="$service->base_price" class="mt-1" />
                                 <div class="flex items-center gap-1 text-yellow-400 justify-end mt-1">
                                     <i class="fas fa-star text-sm"></i>
                                     <span class="font-semibold text-white">{{ number_format($service->average_rating ?? 0, 1) }}</span>

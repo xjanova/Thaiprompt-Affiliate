@@ -103,6 +103,16 @@ class ShopCheckoutService
             throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, 'ชำระด้วยพร้อมเพย์ยังไม่พร้อมใช้งาน กรุณาเลือกวิธีอื่น', 422);
         }
 
+        // 🪙 (2026-10-13) เหรียญ TPIX: ต้องเปิดรับ + รู้ราคาจริงก่อนสร้างออเดอร์ (ไม่งั้นได้ออเดอร์ที่ออกยอดเหรียญไม่ได้)
+        if ($paymentMethod === PaymentMethod::TPIX) {
+            if (! app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled()) {
+                throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, 'ยังไม่เปิดรับชำระด้วยเหรียญ TPIX กรุณาเลือกวิธีอื่น', 422);
+            }
+            if (app(\App\Services\TpixPay\TpixPriceService::class)->spot() === null) {
+                throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, 'ยังดึงราคา TPIX จริงไม่ได้ในขณะนี้ กรุณาลองใหม่อีกครั้งหรือเลือกวิธีอื่น', 422);
+            }
+        }
+
         $lock = Cache::lock('shop:checkout:user:'.$user->id, 30);
         if (! $lock->get()) {
             throw ShopException::make(ShopException::CHECKOUT_IN_PROGRESS, 'กำลังดำเนินการสั่งซื้ออยู่ กรุณารอสักครู่', 409);
@@ -115,6 +125,10 @@ class ShopCheckoutService
             if ($paymentMethod === PaymentMethod::PROMPTPAY) {
                 foreach ($orders as $order) {
                     $payments[] = $this->startPromptPay($order);
+                }
+            } elseif ($paymentMethod === PaymentMethod::TPIX) {
+                foreach ($orders as $order) {
+                    $payments[] = $this->startTpix($order);
                 }
             }
 
@@ -248,6 +262,19 @@ class ShopCheckoutService
             $grandTotal += $total;
         }
         $grandTotal = round($grandTotal, 2);
+
+        // 🪙 TPIX: เพดานต่อรายการ/ต่อวัน ตรวจก่อนสร้างออเดอร์ (ออเดอร์แยกตามร้าน = ใบเสนอยอดละร้าน)
+        if ($paymentMethod === PaymentMethod::TPIX) {
+            $tpix = app(\App\Services\TpixPay\TpixPaymentService::class);
+            try {
+                foreach ($plans as $plan) {
+                    $tpix->assertWithinLimits(0, (float) $plan['total']);
+                }
+                $tpix->assertWithinLimits((int) $user->id, $grandTotal);
+            } catch (\App\Services\TpixPay\TpixPayException $e) {
+                throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, $e->getMessage(), 422);
+            }
+        }
 
         // 7) วอลเลต: ล็อกแล้วตรวจยอดก่อนสร้างอะไร
         $wallet = null;
@@ -585,6 +612,47 @@ class ShopCheckoutService
                 'order_id' => (int) $order->id,
                 'status' => 'error',
                 'message' => 'สร้าง QR พร้อมเพย์ไม่สำเร็จ กรุณากดชำระเงินอีกครั้งจากหน้าคำสั่งซื้อ',
+            ];
+        }
+    }
+
+    /**
+     * 🪙 ออกใบเสนอยอดเหรียญ TPIX ของออเดอร์ (หลัง commit) — ล้มเหลวไม่ทำให้ checkout ล้ม กดชำระใหม่ได้จากหน้าคำสั่งซื้อ
+     *
+     * @return array<string, mixed>
+     */
+    private function startTpix(Order $order): array
+    {
+        try {
+            $paymentService = app(PaymentService::class);
+            $transaction = $paymentService->createOrderPayment($order, PaymentMethod::TPIX, [
+                'metadata' => ['source' => $this->source, 'checkout_group' => $order->checkout_group],
+            ]);
+            $result = $paymentService->processPayment($transaction, []);
+
+            if (! ($result['success'] ?? false)) {
+                $message = (string) ($result['message'] ?? '');
+                Log::warning('Shop checkout: tpix quote failed', ['order_id' => $order->id, 'message' => $message]);
+
+                return [
+                    'order_id' => (int) $order->id,
+                    'payment_method' => PaymentMethod::TPIX,
+                    'status' => 'error',
+                    'message' => str_contains($message, 'TPIX')
+                        ? $message
+                        : 'ออกยอดชำระด้วย TPIX ไม่สำเร็จ กรุณากดชำระเงินอีกครั้งจากหน้าคำสั่งซื้อ',
+                ];
+            }
+
+            return ShopPresenter::payment($result['transaction'], $result['data'] ?? []);
+        } catch (\Throwable $e) {
+            Log::error('Shop checkout: tpix exception', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+
+            return [
+                'order_id' => (int) $order->id,
+                'payment_method' => PaymentMethod::TPIX,
+                'status' => 'error',
+                'message' => 'ออกยอดชำระด้วย TPIX ไม่สำเร็จ กรุณากดชำระเงินอีกครั้งจากหน้าคำสั่งซื้อ',
             ];
         }
     }

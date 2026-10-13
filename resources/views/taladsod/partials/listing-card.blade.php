@@ -54,6 +54,7 @@
                     <span class="sf-compare">฿{{ \App\Support\TaladsodWebUi::money($listing->compare_at_price) }}</span>
                 @endif
             </div>
+            <x-tpix-price :thb="$listing->price" style="margin-top:5px;" />
             <div class="sf-meta">
                 @if($lcSeller && ! $lcHideShop)
                     <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;"><i class="fas fa-store" aria-hidden="true"></i> {{ $lcSeller->shop_name }}</span>

@@ -109,6 +109,7 @@
                             <h4 class="text-primary mb-0">฿{{ number_format($bot->rental_price_per_month) }}</h4>
                             <span class="text-muted ms-2">/เดือน</span>
                         </div>
+                        <x-tpix-price :thb="$bot->rental_price_per_month" class="mt-1" />
                         @endif
                         @if($bot->rental_price_per_message)
                         <div class="text-muted small">

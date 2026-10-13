@@ -91,7 +91,25 @@ class ShopPresenter
             'can_add_to_cart' => ! $product->is_affiliate && $inStock,
             'seller_id' => (int) $product->seller_id,
             'store' => $store instanceof VendorStore ? self::storeBrief($store) : null,
+            // 🪙 ราคาเป็นเหรียญ TPIX (price_tpix, tpix) — คีย์เพิ่มต่อท้าย แอปรุ่นเก่าไม่อ่านก็ไม่พัง
+            ...self::productTpix($product, $price),
         ];
+    }
+
+    /**
+     * ฟิลด์ราคา TPIX ของสินค้า (ราคาคงที่ใช้เฉพาะ Official Shop — TpixPriceService กรองให้)
+     *
+     * สินค้า affiliate ซื้อและจ่ายที่แพลตฟอร์มนอก → ไม่มีราคา TPIX (null) เหมือนหน้าเว็บ
+     *
+     * @return array{price_tpix: string|null, tpix: array<string, mixed>|null}
+     */
+    public static function productTpix(Product $product, float|int|string|null $price = null): array
+    {
+        if ($product->is_affiliate) {
+            return ['price_tpix' => null, 'tpix' => null];
+        }
+
+        return app(\App\Services\TpixPay\TpixPriceService::class)->apiFieldsForProduct($product, $price);
     }
 
     /**
@@ -451,6 +469,14 @@ class ShopPresenter
 
         if (isset($gatewayResponse['deep_link'])) {
             $response['deep_link'] = $gatewayResponse['deep_link'];
+        }
+
+        // 🪙 (2026-10-13) เหรียญ TPIX — ยอดเหรียญตรงตัว กระเป๋ารับเงิน QR และลิงก์หน้าจ่าย (แอปเปิด pay_url ได้เลย)
+        if ($transaction->payment_method === 'tpix') {
+            $response['tpix'] = \App\Services\TpixPay\TpixPaymentPresenter::forTransaction($transaction, $paymentData);
+            if (! empty($response['tpix']['pay_url'])) {
+                $response['redirect_url'] = $response['tpix']['pay_url'];
+            }
         }
 
         if ($transaction->payment_method === 'bank_transfer' && isset($gatewayResponse['bank_name'])) {

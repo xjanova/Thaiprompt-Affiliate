@@ -125,6 +125,17 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
     });
 
+    // 🪙 (2026-10-13) เหรียญ TPIX — ราคาจริงจากพูล DEX + สถานะ/ส่งเลขธุรกรรมของใบเสนอยอด (public: ใช้รหัสอ้างอิงสุ่ม 24 ตัว)
+    //    เริ่มจ่ายผ่านเส้นเดิม: /cart/checkout · /payment/order · /wallet/topup ด้วย payment_method=tpix
+    Route::prefix('tpix')->group(function () {
+        Route::get('/price', [\App\Http\Controllers\Api\V1\TpixPayApiController::class, 'price'])
+            ->middleware('throttle:60,1,api-tpix-price')->name('api.v1.tpix.price');
+        Route::get('/payments/{reference}', [\App\Http\Controllers\Api\V1\TpixPayApiController::class, 'show'])
+            ->middleware('throttle:40,1,api-tpix-status')->name('api.v1.tpix.payments.show');
+        Route::post('/payments/{reference}/submit', [\App\Http\Controllers\Api\V1\TpixPayApiController::class, 'submit'])
+            ->middleware('throttle:12,1,api-tpix-submit')->name('api.v1.tpix.payments.submit');
+    });
+
     // 📲 เช็คอัปเดตแอป (APK จากเซิร์ฟเวอร์เรา) — public: แอปเช็คได้ตั้งแต่ยังไม่ล็อกอิน
     Route::get('/app/update', [\App\Http\Controllers\Api\V1\AppUpdateController::class, 'check'])
         ->middleware('throttle:30,1,api-app-update')

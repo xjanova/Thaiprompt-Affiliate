@@ -167,6 +167,7 @@
                 <div class="text-center mb-6">
                     <span class="text-4xl font-bold">฿{{ number_format($element->settings['price'] ?? 0) }}</span>
                     <span class="text-gray-500">/{{ $element->settings['period'] ?? 'เดือน' }}</span>
+                    <div class="mt-2"><x-tpix-price :thb="is_numeric($element->settings['price'] ?? null) ? $element->settings['price'] : null" /></div>
                 </div>
                 <ul class="space-y-3 mb-8">
                     @foreach(($element->settings['features'] ?? []) as $feature)

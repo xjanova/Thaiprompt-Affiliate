@@ -412,6 +412,7 @@
                                         ฿{{ number_format($hotel->lowest_price) }}
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">ต่อคืน</p>
+                                    <x-tpix-price :thb="$hotel->lowest_price" class="mt-1" />
                                 </div>
                                 <span class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 text-sm font-medium group-hover:bg-cyan-500 group-hover:text-white transition-colors">
                                     ดูรายละเอียด

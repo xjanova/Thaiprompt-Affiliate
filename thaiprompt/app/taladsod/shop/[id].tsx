@@ -28,6 +28,7 @@ import {
   PriceText,
   Screen,
   SectionHeader,
+  TpixPrice,
   resultHaptic,
   tapHaptic,
   usePressGuard,
@@ -99,6 +100,9 @@ const MenuRow: React.FC<{ item: FmShopListing; shopOpen: boolean; last: boolean 
           {hasDiscount && <PriceText amount={item.compare_at_price} size="xs" tone="muted" strike bold={false} />}
           {item.has_options && <Text style={[typography.caption, { color: colors.textFaint }]}>เริ่มต้น</Text>}
         </View>
+        {/* 🪙 ราคาเหรียญ TPIX (ไม่มีข้อมูล = ไม่แสดง) */}
+        <TpixPrice tpix={item.tpix} size="xs" />
+
         {soldOut && <Pill label="หมดชั่วคราว" tone="danger" style={styles.menuPill} />}
       </View>
       <View style={styles.menuPhotoWrap}>

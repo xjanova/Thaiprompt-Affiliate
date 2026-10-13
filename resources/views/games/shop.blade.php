@@ -125,6 +125,7 @@
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white">
                                         ฿{{ number_format($skin->price, 2) }}
                                     </p>
+                                    <x-tpix-price :thb="$skin->price" class="mt-1" />
                                 @else
                                     <p class="text-2xl font-bold text-green-600 dark:text-green-400">
                                         FREE

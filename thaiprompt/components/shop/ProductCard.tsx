@@ -2,7 +2,7 @@
  * ProductCard — การ์ดสินค้าแบบตาราง 2 คอลัมน์ (ธีมรอยัล น้ำเงินกรมท่า-ทอง)
  *
  * การ์ดขาว มุม 20 · รูปจัตุรัสเต็มหัวการ์ด · ป้ายส่วนลดแดงมุมซ้ายบน · ป้าย "ไรเดอร์ส่ง" แบบกระจกบนรูป
- * ใต้รูป: ชื่อ 2 บรรทัด · ดาว/ยอดขาย · ราคา + ปุ่ม "+" น้ำเงินกรมท่า (แตะทั้งการ์ด = เปิดหน้าสินค้า)
+ * ใต้รูป: ชื่อ 2 บรรทัด · ดาว/ยอดขาย · ราคา (+ ราคาเหรียญ TPIX เมื่อ server ส่งมา) + ปุ่ม "+" น้ำเงินกรมท่า (แตะทั้งการ์ด = เปิดหน้าสินค้า)
  *
  * แสดงเฉพาะข้อมูลจริงจาก API: รูป ชื่อ ราคา ราคาก่อนลด รีวิว ยอดขาย ส่งด้วยไรเดอร์ได้
  * ไม่มี PV / คอมมิชชั่น (นโยบาย Google Play)
@@ -15,7 +15,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { ShopProduct } from '@/services/api/shopApi';
-import { Card3D, Icon, Pill, PriceText } from '@/components/ui';
+import { Card3D, Icon, Pill, PriceText, TpixPrice } from '@/components/ui';
 import { useTheme, palette, spacing, typography } from '@/theme';
 
 export interface ProductCardProps {
@@ -109,6 +109,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, width, onPres
           <View style={styles.priceCol}>
             <PriceText amount={price} size="md" tone="strong" />
             {hasDiscount && <PriceText amount={original} size="xs" tone="muted" strike bold={false} />}
+            {/* 🪙 ราคาเหรียญ TPIX (ไม่มีข้อมูล = ไม่แสดง) */}
+            <TpixPrice tpix={product.tpix} size="xs" style={styles.tpix} />
           </View>
           {!soldOut && (
             <LinearGradient
@@ -210,6 +212,9 @@ const styles = StyleSheet.create({
   },
   priceCol: {
     flex: 1,
+  },
+  tpix: {
+    marginTop: 2,
   },
   addButton: {
     width: 34,

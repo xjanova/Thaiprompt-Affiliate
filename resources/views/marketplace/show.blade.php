@@ -184,6 +184,7 @@
                                         ฿{{ number_format($bot->rental_price_per_month, 2) }}
                                     </div>
                                     <div class="text-muted">ต่อเดือน</div>
+                                    <div class="mt-2"><x-tpix-price :thb="$bot->rental_price_per_month" size="lg" /></div>
                                 </div>
 
                                 <ul class="list-unstyled mb-3">
@@ -230,6 +231,7 @@
                                         ฿{{ number_format($bot->rental_price_per_message, 2) }}
                                     </div>
                                     <div class="text-muted">ต่อข้อความ</div>
+                                    <div class="mt-2"><x-tpix-price :thb="$bot->rental_price_per_message" size="lg" /></div>
                                 </div>
 
                                 <ul class="list-unstyled mb-3">

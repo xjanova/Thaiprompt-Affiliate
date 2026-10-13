@@ -101,6 +101,22 @@
                     <input type="number" name="low_stock_threshold" min="0" value="{{ old('low_stock_threshold', $p?->low_stock_threshold ?? 5) }}" class="tp-input tp-num">
                 </div>
             </div>
+
+            {{-- 🪙 ราคา TPIX คงที่ — มีเฉพาะฟอร์ม Official Shop (ห้ามเพิ่มในฟอร์มผู้ขายทั่วไป) --}}
+            @php
+                $pTpix = $p?->price_tpix !== null && $p?->price_tpix !== '' ? rtrim(rtrim((string) $p->price_tpix, '0'), '.') : null;
+            @endphp
+            <div style="margin-top:14px;">
+                <label for="price_tpix" style="{{ $lbl }}">ราคา TPIX คงที่ (ไม่บังคับ)</label>
+                <input type="number" id="price_tpix" name="price_tpix" step="any" min="0" inputmode="decimal" value="{{ old('price_tpix', $pTpix) }}" placeholder="ว่าง = ตามราคาตลาด" class="tp-input tp-num">
+                <div style="{{ $hint }}">ว่าง = คิดจากราคาบาทตามราคาตลาดจริง · ใช้ได้เฉพาะสินค้า Official Shop</div>
+                @if($p?->price)
+                    <div style="{{ $hint }} display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
+                        <span>ราคาบาทที่บันทึกไว้ แปลงตามตลาดตอนนี้:</span>
+                        <x-tpix-price :thb="$p->price" />
+                    </div>
+                @endif
+            </div>
         </div>
 
         <div class="tp-card">

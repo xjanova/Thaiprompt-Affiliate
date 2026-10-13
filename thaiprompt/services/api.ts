@@ -3087,6 +3087,8 @@ export interface PaymentTransaction {
   client_secret?: string;
   // Expiry
   expired_at?: string;
+  // 🪙 เหรียญ TPIX — ใบเสนอยอดดิบจาก server (ใช้ normalizeTpixPayment จาก services/api/tpixApi ก่อนใช้)
+  tpix?: unknown;
 }
 
 /**

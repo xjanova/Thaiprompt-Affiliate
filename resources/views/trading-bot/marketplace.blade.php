@@ -55,6 +55,7 @@
                 <div class="mb-4">
                     <span class="text-4xl font-bold text-gray-900 dark:text-white">฿{{ number_format($package->price, 0) }}</span>
                     <span class="text-gray-600 dark:text-gray-400">/{{ $package->billing_cycle === 'monthly' ? 'เดือน' : 'ปี' }}</span>
+                    <div class="mt-2"><x-tpix-price :thb="$package->price" size="lg" /></div>
                 </div>
                 <p class="text-gray-600 dark:text-gray-300 mb-6">{{ $package->description }}</p>
 
@@ -135,6 +136,9 @@
                     <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">ฟรี</span>
                     @endif
                 </div>
+                @if($strategy->is_for_sale)
+                    <x-tpix-price :thb="$strategy->price" class="mb-3" />
+                @endif
 
                 <p class="text-gray-600 dark:text-gray-300 text-sm mb-3">{{ Str::limit($strategy->description, 100) }}</p>
 

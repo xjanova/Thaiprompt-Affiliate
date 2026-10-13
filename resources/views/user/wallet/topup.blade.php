@@ -32,6 +32,20 @@
         </div>
     </div>
 
+    {{-- 🪙 เติมด้วยเหรียญ TPIX (แสดงเมื่อแอดมินเปิดรับ) --}}
+    @if(app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled())
+        <a href="{{ route('tpix-pay.topup') }}" class="tp-card" style="display:flex; align-items:center; gap:14px; padding:16px 20px; text-decoration:none; color:inherit;">
+            <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; display:grid; place-items:center;">
+                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f5b72e"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#a86b05" stroke-width="1.4"/><path d="M8.6 8.4h6.8v1.9h-2.4V16h-2V10.3H8.6z" fill="#7c4a03"/></svg>
+            </span>
+            <span style="flex:1; min-width:0;">
+                <strong style="display:block;">เติมด้วยเหรียญ TPIX</strong>
+                <span style="display:block; font-size:12.5px; color:var(--ink2);">โอน TPIX บนเชน TPIX ได้เงินบาทตามราคาตลาดจริง (TPIX DEX)</span>
+            </span>
+            <i class="fas fa-chevron-right" style="color:var(--ink2);"></i>
+        </a>
+    @endif
+
     {{-- ── ฟอร์มเลือกจำนวนเงินที่ต้องการเติม ─────────────────── --}}
     <div class="tp-card" style="padding:20px;">
         <div class="tp-section-h" style="margin-bottom:16px;">💰 เลือกจำนวนเงินที่ต้องการเติม</div>

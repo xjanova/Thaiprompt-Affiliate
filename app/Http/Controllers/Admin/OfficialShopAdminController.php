@@ -23,6 +23,21 @@ use Illuminate\Support\Str;
  */
 class OfficialShopAdminController extends Controller
 {
+    /**
+     * 🪙 ราคา TPIX คงที่ (ว่าง = คิดจากราคาบาทตามราคาตลาดจริง) — ทศนิยมไม่เกิน 8 ตำแหน่ง (คอลัมน์ decimal 30,8)
+     *
+     * ❗ มีเฉพาะฟอร์ม Official Shop — ห้ามเพิ่มในฟอร์มผู้ขายทั่วไป (ผู้ขายตั้งราคาเหรียญต่ำแล้วซื้อเอง
+     *    ได้เงินบาทเต็มจากแพลตฟอร์ม) · TpixPriceService::fixedPriceFor กรองซ้ำอีกชั้น
+     */
+    private const PRICE_TPIX_RULES = 'nullable|numeric|min:0|max:1000000000000|decimal:0,8';
+
+    private const PRICE_TPIX_MESSAGES = [
+        'price_tpix.numeric' => 'ราคา TPIX ต้องเป็นตัวเลข',
+        'price_tpix.min' => 'ราคา TPIX ต้องไม่ติดลบ',
+        'price_tpix.max' => 'ราคา TPIX สูงเกินไป',
+        'price_tpix.decimal' => 'ราคา TPIX มีทศนิยมได้ไม่เกิน 8 ตำแหน่ง',
+    ];
+
     protected ImageUploadService $imageUploadService;
 
     /**
@@ -86,6 +101,28 @@ class OfficialShopAdminController extends Controller
         ]);
 
         return 'เกิดข้อผิดพลาด ระบบยังไม่ได้บันทึกการเปลี่ยนแปลง กรุณาลองใหม่อีกครั้ง';
+    }
+
+    /**
+     * จัดค่าราคา TPIX คงที่ก่อนบันทึก: ว่าง/0 = null (คิดจากราคาตลาด)
+     * ฐานข้อมูลยังไม่มีคอลัมน์ (migration ยังไม่รัน) → ตัดทิ้ง ไม่ให้การบันทึกสินค้าทั้งชิ้นพัง
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function normalizePriceTpix(array &$validated): void
+    {
+        if (! array_key_exists('price_tpix', $validated)) {
+            return;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('products', 'price_tpix')) {
+            unset($validated['price_tpix']);
+
+            return;
+        }
+
+        $value = $validated['price_tpix'];
+        $validated['price_tpix'] = is_numeric($value) && (float) $value > 0 ? $value : null;
     }
 
     /**
@@ -264,7 +301,10 @@ class OfficialShopAdminController extends Controller
             // Coin purchase fields
             'price_coins' => 'nullable|numeric|min:0',
             'allow_coin_purchase' => 'nullable|boolean',
-        ]);
+            // 🪙 ราคา TPIX คงที่ (ไม่บังคับ) — เฉพาะสินค้า Official Shop เท่านั้น
+            'price_tpix' => self::PRICE_TPIX_RULES,
+        ], self::PRICE_TPIX_MESSAGES);
+        $this->normalizePriceTpix($validated);
 
         DB::beginTransaction();
 
@@ -421,7 +461,10 @@ class OfficialShopAdminController extends Controller
             // Coin purchase fields
             'price_coins' => 'nullable|numeric|min:0',
             'allow_coin_purchase' => 'nullable|boolean',
-        ]);
+            // 🪙 ราคา TPIX คงที่ (ไม่บังคับ) — เฉพาะสินค้า Official Shop เท่านั้น
+            'price_tpix' => self::PRICE_TPIX_RULES,
+        ], self::PRICE_TPIX_MESSAGES);
+        $this->normalizePriceTpix($validated);
 
         DB::beginTransaction();
 

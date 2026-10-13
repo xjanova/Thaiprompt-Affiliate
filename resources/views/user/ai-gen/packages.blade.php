@@ -83,6 +83,9 @@
                             <span class="price" x-text="billingPeriod === 'yearly' ? {{ $package->price_yearly ?? $package->price * 10 }} : {{ $package->price }}"></span>
                             <span class="period" x-text="billingPeriod === 'yearly' ? '/ปี' : '/เดือน'"></span>
                         </div>
+                        {{-- 🪙 ราคาเป็นเหรียญ TPIX ตามรอบบิลที่เลือก (เรนเดอร์ทั้งสองค่าจากเซิร์ฟเวอร์ สลับด้วย x-show) --}}
+                        <div class="mt-2" x-show="billingPeriod !== 'yearly'"><x-tpix-price :thb="$package->price" /></div>
+                        <div class="mt-2" x-show="billingPeriod === 'yearly'" x-cloak><x-tpix-price :thb="$package->price_yearly ?? $package->price * 10" /></div>
                         <template x-if="billingPeriod === 'yearly'">
                             <div class="price-note">
                                 <span class="line-through text-gray-500 dark:text-gray-400">฿{{ $package->price * 12 }}</span>

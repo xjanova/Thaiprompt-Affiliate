@@ -5,6 +5,7 @@
  * - ปุ่มจำนวนเงินด่วน: 100, 300, 500, 1000, 2000, 5000, 10000
  * - กรอกจำนวนเงินเอง (100-100,000 บาท) ตัวเลขใหญ่
  * - เลือกวิธีชำระเงิน (PLAY-18: ในแอปเหลือ PromptPay/QR เท่านั้น)
+ *   + 🪙 เหรียญ TPIX เมื่อ server เปิดรับ (GET /tpix/price) → หน้า /tpix-pay/{reference}?from=topup
  * - ชำระเงินผ่าน API โดยตรง (ไม่ต้องเปิดเว็บ)
  * - แสดง QR Code (การ์ดขาวกรอบน้ำเงิน-ทอง) / ข้อมูลโอนเงิน ภายในแอพ
  * - แถบขั้นตอน: จำนวนเงิน → วิธีชำระ → ชำระเงิน → เสร็จสิ้น · ปุ่มหลักลอยท้ายจอ
@@ -61,6 +62,9 @@ import {
   type TileTone,
 } from '@/components/wallet/WalletKit';
 import { useTheme, LIGHT_THEME, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
+import { isThaiText } from '@/services/api/client';
+import { estimateTpixTotal, formatTpix, normalizeTpixPayment, rememberTpixPayment } from '@/services/api/tpixApi';
+import { useTpixSpot } from '@/stores/tpixPriceStore';
 
 // จำนวนเงินด่วน
 const QUICK_AMOUNTS = [100, 300, 500, 1000, 2000, 5000, 10000];
@@ -227,6 +231,9 @@ export default function WalletTopupScreen() {
   // Polling interval ref
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // 🪙 เติมเงินด้วยเหรียญ TPIX (แสดงเมื่อ server เปิดรับ) — ยอดเหรียญจริงออกให้ในหน้าจ่าย TPIX
+  const { spot: tpixSpot, paymentsEnabled: tpixEnabled } = useTpixSpot(isAuthenticated);
+
   // โหลดข้อมูล wallet
   const loadWallet = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -363,6 +370,35 @@ export default function WalletTopupScreen() {
     }
   };
 
+  /**
+   * 🪙 เติมเงินด้วยเหรียญ TPIX — POST /wallet/topup {payment_method:'tpix'} → เปิดหน้าจ่าย TPIX
+   * (สถานะ/QR/ส่งเลขธุรกรรมอยู่ในหน้านั้น · สำเร็จแล้วเงินเข้ากระเป๋าอัตโนมัติ)
+   */
+  const handleTpixTopup = async (method: PaymentMethod) => {
+    // กันกดซ้ำ: MethodCard ใช้ usePressGuard + การ์ดถูกปิดระหว่าง isSubmitting
+    if (isSubmitting) return;
+    setSelectedMethod(method);
+    setIsSubmitting(true);
+    try {
+      const response = await initializeWalletTopup(getAmount(), 'tpix');
+      const tpix = response.success ? normalizeTpixPayment(response.transaction?.tpix) : null;
+      if (tpix) {
+        rememberTpixPayment(tpix);
+        router.push(`/tpix-pay/${tpix.reference}?from=topup` as never);
+      } else {
+        Alert.alert(
+          'เติมเงินด้วย TPIX ไม่สำเร็จ',
+          isThaiText(response.message) ? response.message : 'ระบบยังออกยอดเหรียญให้ไม่ได้ตอนนี้ ลองใหม่อีกครั้ง หรือเลือกวิธีอื่นนะ'
+        );
+      }
+    } catch {
+      Alert.alert('เติมเงินด้วย TPIX ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่นะ');
+    } finally {
+      setIsSubmitting(false);
+      setSelectedMethod(null);
+    }
+  };
+
   // เริ่ม polling เช็คสถานะ
   const startStatusPolling = (transactionId: string) => {
     console.log('🔄 Starting status polling for:', transactionId);
@@ -472,6 +508,19 @@ export default function WalletTopupScreen() {
 
   const amount = getAmount();
   const isValidAmount = amount >= MIN_AMOUNT && amount <= MAX_AMOUNT;
+
+  // 🪙 การ์ดวิธีเติมด้วยเหรียญ TPIX (ไอคอนเหรียญจาก category 'other')
+  const tpixEstimate = estimateTpixTotal(amount, tpixSpot?.price_thb ?? null);
+  const tpixMethod: PaymentMethod = {
+    id: 'tpix',
+    name: 'เหรียญ TPIX',
+    description:
+      tpixEstimate !== null && tpixSpot
+        ? `≈ ${formatTpix(tpixEstimate)} TPIX · 1 TPIX = ${tpixSpot.price_thb_display} · โอนจากกระเป๋าคริปโตบนเครือข่าย TPIX Chain`
+        : 'โอนจากกระเป๋าคริปโตบนเครือข่าย TPIX Chain ระบบยืนยันบนเชนให้อัตโนมัติ',
+    category: 'other',
+    enabled: true,
+  };
 
   // Render Step 1: เลือกจำนวนเงิน
   const renderAmountStep = () => (
@@ -630,6 +679,20 @@ export default function WalletTopupScreen() {
               />
             );
           })}
+        </View>
+      )}
+
+      {/* 🪙 เหรียญ TPIX — แสดงเมื่อ server เปิดรับ · ยอดเหรียญโดยประมาณจากราคาจริงบน DEX */}
+      {!loadingMethods && tpixEnabled === true && (
+        <View style={[styles.methodList, styles.tpixMethod]}>
+          <MethodCard
+            method={tpixMethod}
+            selected={selectedMethod?.id === 'tpix'}
+            busy={isSubmitting && selectedMethod?.id === 'tpix'}
+            dimmed={isSubmitting && selectedMethod?.id !== 'tpix'}
+            disabled={isSubmitting}
+            onPress={() => handleTpixTopup(tpixMethod)}
+          />
         </View>
       )}
     </>
@@ -1006,6 +1069,9 @@ const styles = StyleSheet.create({
   },
   methodList: {
     gap: spacing.md,
+  },
+  tpixMethod: {
+    marginTop: spacing.md,
   },
   methodCard: {
     flexDirection: 'row',

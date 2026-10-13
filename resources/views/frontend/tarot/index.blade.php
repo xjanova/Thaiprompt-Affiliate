@@ -171,6 +171,8 @@
                                         </svg>
                                         {{ number_format($category->price, 0) }} บาท
                                     </span>
+                                    {{-- 🪙 ราคา TPIX — หน้านี้พื้นมืดเสมอ จึงบังคับสีโหมดมืด --}}
+                                    <span class="mt-2" data-theme="dark"><x-tpix-price :thb="$category->price" /></span>
                                     @if($category->is_free_first)
                                         <span class="mt-2 text-sm text-emerald-400 font-medium flex items-center gap-1">
                                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

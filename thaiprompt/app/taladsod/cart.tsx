@@ -37,10 +37,13 @@ import {
   Icon,
   PriceText,
   Screen,
+  TpixPrice,
+  TpixTotal,
   formatBaht,
   resultHaptic,
 } from '@/components/ui';
 import { Field, FormSheet, QuantityStepper } from '@/components/shop';
+import { useTpixSpot } from '@/stores/tpixPriceStore';
 import {
   OptionPicker,
   ShopAvatar,
@@ -142,6 +145,8 @@ const LineRow: React.FC<{
             <Text style={[typography.micro, { color: colors.textFaint }]}>{formatBaht(line.unit_price)} × {quantity}</Text>
           )}
         </View>
+        {/* 🪙 ราคาเหรียญ TPIX ของรายการนี้ (server ไม่ส่งป้าย → ใช้ราคาสด) */}
+        <TpixPrice tpix={line.tpix} thb={line.unit_price * quantity} quantity={quantity} spotFallback size="xs" />
         <View style={styles.lineActions}>
           <Pressable
             onPress={onEdit}
@@ -177,6 +182,8 @@ export default function TaladsodCartScreen() {
   const mountedRef = useMountedRef();
   const location = useBuyerLocation();
   const insets = useSafeAreaInsets();
+  // 🪙 ราคา TPIX สด (ใช้กับรายการที่ server ยังไม่ส่งป้ายราคาเหรียญ + ยอดค่าอาหารโดยประมาณ)
+  useTpixSpot(isAuthenticated);
 
   const [refreshing, setRefreshing] = useState(false);
   const [pendingQty, setPendingQty] = useState<Record<number, number>>({});
@@ -556,7 +563,15 @@ export default function TaladsodCartScreen() {
                       <View style={styles.sumRow}>
                         <Icon name="bowl-food" size={15} color={colors.textMuted} />
                         <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>ค่าอาหาร</Text>
-                        <PriceText amount={shop.subtotal} size="sm" tone="strong" />
+                        <View style={styles.sumValue}>
+                          <PriceText amount={shop.subtotal} size="sm" tone="strong" />
+                          <TpixTotal
+                            thb={shop.subtotal}
+                            lines={shop.items.map((l) => ({ tpix: l.tpix, quantity: l.quantity, thb: l.line_total }))}
+                            size="xs"
+                            align="right"
+                          />
+                        </View>
                       </View>
                       {shop.can_checkout && q && (
                         <View style={styles.sumRow}>
@@ -873,6 +888,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
     minHeight: 26,
+  },
+  sumValue: {
+    flexShrink: 1,
+    alignItems: 'flex-end',
   },
   freeText: {
     fontWeight: '700',

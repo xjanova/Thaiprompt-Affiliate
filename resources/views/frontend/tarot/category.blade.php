@@ -83,6 +83,8 @@
                                 </svg>
                                 {{ number_format($category->price, 0) }} บาท
                             </div>
+                            {{-- 🪙 ราคา TPIX — หน้านี้พื้นมืดเสมอ จึงบังคับสีโหมดมืด --}}
+                            <div class="mb-2" data-theme="dark"><x-tpix-price :thb="$category->price" /></div>
                             @if($category->is_free_first)
                                 @php
                                     $userId = Auth::id();

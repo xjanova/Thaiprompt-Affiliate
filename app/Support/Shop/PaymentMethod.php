@@ -25,7 +25,10 @@ final class PaymentMethod
 
     public const COINS = 'coins';
 
-    /** ค่าที่คอลัมน์ orders.payment_method รับได้ (ตรงกับ migration 2026_09_25_170000) */
+    /** 🪙 เหรียญ TPIX บนเชน 4289 (2026-10-13) */
+    public const TPIX = 'tpix';
+
+    /** ค่าที่คอลัมน์ orders.payment_method รับได้ (ตรงกับ migration 2026_09_25_170000 + 2026_10_13_120000) */
     public const ORDER_VALUES = [
         self::PROMPTPAY,
         self::BANK_TRANSFER,
@@ -34,10 +37,11 @@ final class PaymentMethod
         self::WALLET,
         self::PAYSOLUTIONS,
         self::COINS,
+        self::TPIX,
     ];
 
-    /** วิธีชำระที่แอปมือถือเลือกได้ตอน checkout */
-    public const APP_CHECKOUT_VALUES = [self::WALLET, self::PROMPTPAY, self::COD];
+    /** วิธีชำระที่แอปมือถือ (และเว็บเส้นเดียวกัน) เลือกได้ตอน checkout */
+    public const APP_CHECKOUT_VALUES = [self::WALLET, self::PROMPTPAY, self::COD, self::TPIX];
 
     /** ชื่อเรียกอื่นที่เคยใช้ → ค่ามาตรฐาน */
     private const ALIASES = [
@@ -50,6 +54,8 @@ final class PaymentMethod
         'credit' => self::CREDIT_CARD,
         'qr' => self::PROMPTPAY,
         'prompt_pay' => self::PROMPTPAY,
+        'tpix_coin' => self::TPIX,
+        'crypto' => self::TPIX,
     ];
 
     /**
@@ -112,6 +118,7 @@ final class PaymentMethod
             self::COD => 'เก็บเงินปลายทาง',
             self::PAYSOLUTIONS => 'PaySolutions',
             self::COINS => 'เหรียญ',
+            self::TPIX => 'เหรียญ TPIX',
             default => 'ไม่ระบุ',
         };
     }

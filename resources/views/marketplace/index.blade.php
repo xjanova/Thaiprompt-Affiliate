@@ -176,6 +176,7 @@
                                         <div>
                                             <span class="text-2xl font-black text-purple-700">฿{{ number_format($bot->rental_price_per_month, 0) }}</span>
                                             <span class="text-sm text-purple-600">/เดือน</span>
+                                            <div class="text-right mt-1"><x-tpix-price :thb="$bot->rental_price_per_month" /></div>
                                         </div>
                                     </div>
                                 @endif
@@ -185,6 +186,7 @@
                                         <div>
                                             <span class="text-2xl font-black text-green-700">฿{{ number_format($bot->rental_price_per_message, 2) }}</span>
                                             <span class="text-sm text-green-600">/ข้อความ</span>
+                                            <div class="text-right mt-1"><x-tpix-price :thb="$bot->rental_price_per_message" /></div>
                                         </div>
                                     </div>
                                 @endif

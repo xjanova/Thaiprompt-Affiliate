@@ -43,6 +43,7 @@ import {
   PriceText,
   Screen,
   SectionHeader,
+  TpixPrice,
   formatBaht,
   resultHaptic,
   tapHaptic,
@@ -438,6 +439,8 @@ export default function TaladsodListingScreen() {
                 <PriceText amount={listing.price} size="lg" tone="strong" suffix={groups.length > 0 ? 'เริ่มต้น' : listing.unit ? `/${listing.unit}` : undefined} />
                 {hasDiscount && <PriceText amount={listing.compare_at_price} size="sm" tone="muted" strike bold={false} />}
               </View>
+              {/* 🪙 ราคาเหรียญ TPIX ตามราคาจริงจาก DEX (ไม่มีข้อมูล = ไม่แสดง) */}
+              <TpixPrice tpix={listing.tpix} variant="detailed" style={styles.gapTopSm} />
               {!!description && (
                 <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.textMuted }]}>{description}</Text>
               )}
@@ -534,7 +537,11 @@ export default function TaladsodListingScreen() {
                 />
                 <View style={[styles.totalRow, { borderTopColor: colors.divider }]}>
                   <Text style={[typography.bodyStrong, { color: colors.text }]}>รวม</Text>
-                  <PriceText amount={total} size="lg" tone="strong" />
+                  <View style={styles.totalCol}>
+                    <PriceText amount={total} size="lg" tone="strong" />
+                    {/* 🪙 รวมตัวเลือก × จำนวน แปลงด้วยราคาเดียวกับป้าย */}
+                    <TpixPrice tpix={listing.tpix} thb={total} quantity={quantity} size="xs" align="right" />
+                  </View>
                 </View>
               </Card3D>
             )}
@@ -567,6 +574,7 @@ export default function TaladsodListingScreen() {
                             {r.title}
                           </Text>
                           <PriceText amount={r.price} size="sm" tone="strong" />
+                          <TpixPrice tpix={r.tpix} size="xs" />
                         </View>
                       </Card3D>
                     );
@@ -719,6 +727,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
+  },
+  totalCol: {
+    flexShrink: 1,
+    alignItems: 'flex-end',
   },
   bleed: {
     marginHorizontal: -spacing.screen,
