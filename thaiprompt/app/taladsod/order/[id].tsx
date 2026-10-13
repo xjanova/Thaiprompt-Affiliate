@@ -57,6 +57,7 @@ import {
 } from '@/services/api/taladsodApi';
 import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
+import { LATE_CANCEL_REASON, buyerCancelView } from '@/utils/buyerCancel';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const ORDER_POLL_MS = 15000;
@@ -93,6 +94,8 @@ export default function TaladsodOrderScreen() {
   const [review, setReview] = useState('');
 
   const loadingRef = useRef(false);
+  /** กันกดยืนยันซ้ำในแผ่นล่าง (state อาจยังไม่อัปเดตทันในเฟรมเดียวกัน) */
+  const sheetBusyRef = useRef(false);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh' | 'silent') => {
@@ -137,7 +140,8 @@ export default function TaladsodOrderScreen() {
 
   // ---------- การกระทำ ----------
   const openSheet = (kind: SheetKind) => {
-    setCancelReason(null);
+    // ยกเลิกเพราะออเดอร์ล่าช้า → เลือกเหตุผล "รอนานเกินไป" ไว้ให้ก่อน (เปลี่ยนได้)
+    setCancelReason(kind === 'cancel' && order?.buyer_can_cancel ? LATE_CANCEL_REASON : null);
     setCancelOther('');
     setRating(5);
     setRiderRating(5);
@@ -150,15 +154,17 @@ export default function TaladsodOrderScreen() {
   };
 
   const submitCancel = async () => {
-    if (!order || sheetBusy) return;
+    if (!order || sheetBusy || sheetBusyRef.current) return;
     const reason = cancelReason === 'other' ? cancelOther.trim() : cancelReason;
     if (!reason) {
       resultHaptic('warning');
       Alert.alert('บอกเหตุผลสั้นๆ ก่อนนะ', 'ร้านจะได้รู้ว่าทำไมยกเลิก');
       return;
     }
+    sheetBusyRef.current = true;
     setSheetBusy(true);
     const res = await cancelFmOrder(order.id, reason);
+    sheetBusyRef.current = false;
     if (!mountedRef.current) return;
     setSheetBusy(false);
     if (res.success) {
@@ -171,6 +177,8 @@ export default function TaladsodOrderScreen() {
           ? 'เงินที่จ่ายไปคืนเข้ากระเป๋าเงินเรียบร้อย'
           : res.message || 'ยกเลิกเรียบร้อย'
       );
+      // ดึงสถานะล่าสุดอีกรอบ (งานไรเดอร์/การคืนเงินอาจอัปเดตตามหลัง)
+      load('silent');
     } else {
       resultHaptic('error');
       setSheet(null);
@@ -258,7 +266,9 @@ export default function TaladsodOrderScreen() {
     }
 
     const isRider = order.delivery_type === 'rider';
-    const canCancel = order.allowed_actions.includes('cancel');
+    // ยกเลิกได้ตามปกติ (allowed_actions มี cancel) หรือเพราะออเดอร์ล่าช้า (buyer_can_cancel + หมายเหตุจาก server)
+    const cancelView = buyerCancelView(order.allowed_actions.includes('cancel'), order);
+    const canCancel = cancelView.show;
     const canConfirm = order.allowed_actions.includes('confirm');
     const showTracker = isRider && (RIDER_STAGE.includes(order.order_status) || !!order.rider_job);
     const trackerEnabled = isRider && !terminal;
@@ -463,8 +473,27 @@ export default function TaladsodOrderScreen() {
               <Text style={[typography.caption, { color: colors.textMuted }]}>แล้ว ขอบคุณนะ</Text>
             </View>
           )}
-          {canCancel && (
-            <Button3D title="ยกเลิกออเดอร์" variant="ghost" size="md" fullWidth onPress={() => openSheet('cancel')} />
+          {cancelView.late ? (
+            // ร้านเตรียมของนาน / หาไรเดอร์ไม่ได้ → บอกเหตุผล + ปุ่มยกเลิกเด่นขึ้น
+            <Notice
+              tone="warning"
+              icon="hourglass"
+              action={
+                <Button3D
+                  title="ยกเลิกออเดอร์"
+                  icon="x-circle"
+                  size="sm"
+                  variant="secondary"
+                  disabled={sheetBusy}
+                  onPress={() => openSheet('cancel')}
+                  style={[styles.gapTopSm, styles.selfStart]}
+                />
+              }
+            >
+              {cancelView.note}
+            </Notice>
+          ) : (
+            canCancel && <Button3D title="ยกเลิกออเดอร์" variant="ghost" size="md" fullWidth onPress={() => openSheet('cancel')} />
           )}
           {terminal && (
             <Button3D
@@ -483,9 +512,18 @@ export default function TaladsodOrderScreen() {
           visible={sheet === 'cancel'}
           title="ยกเลิกออเดอร์นี้?"
           description={
-            order.payment_method === 'wallet'
-              ? 'ร้านยังไม่รับออเดอร์ ยกเลิกแล้วเงินคืนเข้ากระเป๋าเงินทันที'
-              : 'ร้านยังไม่รับออเดอร์ ยกเลิกได้เลยไม่มีค่าใช้จ่าย'
+            cancelView.late
+              ? [
+                  cancelView.note,
+                  order.payment_method === 'wallet' && order.payment_status === 'paid'
+                    ? 'ยกเลิกแล้วเงินที่จ่ายไปคืนเข้ากระเป๋าเงิน'
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join('\n')
+              : order.payment_method === 'wallet'
+                ? 'ร้านยังไม่รับออเดอร์ ยกเลิกแล้วเงินคืนเข้ากระเป๋าเงินทันที'
+                : 'ร้านยังไม่รับออเดอร์ ยกเลิกได้เลยไม่มีค่าใช้จ่าย'
           }
           submitLabel="ยืนยันยกเลิก"
           submitVariant="danger"
@@ -582,6 +620,9 @@ const styles = StyleSheet.create({
   },
   gapTopSm: {
     marginTop: spacing.sm,
+  },
+  selfStart: {
+    alignSelf: 'flex-start',
   },
   heroNote: {
     flexDirection: 'row',
