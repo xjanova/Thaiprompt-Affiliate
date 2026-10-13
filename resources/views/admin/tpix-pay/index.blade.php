@@ -71,6 +71,12 @@
         </div>
     </div>
 
+    @if($stats['review_count'] > 0)
+        <div class="tp-card" style="border-left:4px solid #c05621;">
+            <strong>มี {{ $stats['review_count'] }} รายการรอแอดมินอนุมัติ</strong> — เหรียญเข้ามาแล้วแต่ติดเพดานต่อวัน (โอนช้า/โอนซ้ำ) ตรวจแล้วกด "อนุมัติเติมเข้ากระเป๋า" ในตารางด้านล่าง
+        </div>
+    @endif
+
     @if($spot && (float) $spot['reserve_usdt'] < 1000)
         <div class="tp-card" style="border-left:4px solid #c05621;font-size:.88rem;line-height:1.6;">
             <strong>⚠️ ความเสี่ยงสภาพคล่อง:</strong> พูล TPIX DEX มีเงินฝั่ง USDT เพียง {{ $tpxFmt($spot['reserve_usdt'], 2) }} USDT —
@@ -115,6 +121,16 @@
                 <label for="tpx-max2" style="display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var(--ink);">เพดานต่อผู้ใช้ต่อ 24 ชม. (บาท)</label>
                 <input id="tpx-max2" name="max_per_user_day_thb" type="number" min="0" step="0.01" class="tp-input tp-num" style="width:100%;" value="{{ old('max_per_user_day_thb', $settings['max_per_user_day_thb']) }}">
                 <div class="tp-muted" style="font-size:.78rem;margin-top:4px;">0 = ไม่จำกัด</div>
+            </div>
+            <div>
+                <label for="tpx-pool" style="display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var(--ink);">เพดานตามสภาพคล่อง (เท่าของพูล)</label>
+                <input id="tpx-pool" name="max_pool_ratio" type="number" min="0" step="0.1" class="tp-input tp-num" style="width:100%;" value="{{ old('max_pool_ratio', $settings['max_pool_ratio']) }}">
+                <div class="tp-muted" style="font-size:.78rem;margin-top:4px;">
+                    ยอดต่อรายการ ≤ ค่านี้ × มูลค่า USDT ในพูล · 0 = ไม่จำกัด
+                    @if($spot && $settings['max_pool_ratio'] > 0)
+                        · ตอนนี้สูงสุด ฿{{ number_format((float) $spot['reserve_usdt'] * (float) $spot['usd_thb'] * $settings['max_pool_ratio'], 2) }}
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -185,6 +201,13 @@
                                 @if($p->paid_at)<div>จ่าย {{ $p->paid_at->format('d/m H:i') }}</div>@endif
                             </td>
                             <td style="padding:8px;min-width:200px;">
+                                @if($p->status === 'late' && ! empty($p->meta['needs_review']))
+                                    <form method="POST" action="{{ route('admin.tpix-pay.approve', $p->id) }}" style="margin-bottom:6px;"
+                                          onsubmit="return confirm('ยืนยันเติมมูลค่า TPIX ที่ได้รับ (ตามราคาปัจจุบัน) เข้ากระเป๋าผู้ใช้?');">
+                                        @csrf
+                                        <button type="submit" class="tp-btn tp-btn-sm tp-btn-primary">อนุมัติเติมเข้ากระเป๋า</button>
+                                    </form>
+                                @endif
                                 @if(! $p->isSettled())
                                     <form method="POST" action="{{ route('admin.tpix-pay.recheck', $p->id) }}" style="display:flex;gap:6px;flex-wrap:wrap;">
                                         @csrf

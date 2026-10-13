@@ -60,7 +60,10 @@ class TpixPaymentFlowTest extends TestCase
             'confirmations' => 3,
             'max_per_payment_thb' => 20000,
             'max_per_user_day_thb' => 50000,
+            'max_pool_ratio' => 5,
         ]);
+
+        $this->seedPriceHistory();
     }
 
     // =====================================================
@@ -89,6 +92,8 @@ class TpixPaymentFlowTest extends TestCase
     public function test_quote_is_refused_without_fx_rate_and_without_hardcoded_fallback(): void
     {
         $this->chain['fx_ok'] = false;
+        // ไม่มีอัตราที่เคยเก็บไว้ด้วย → ต้องไม่เดาอัตราเอง
+        \App\Models\TpixPriceSnapshot::query()->delete();
         Cache::flush();
 
         [$seller, $store] = $this->makeSellerWithStore();
@@ -228,7 +233,10 @@ class TpixPaymentFlowTest extends TestCase
     {
         [$order, $payment] = $this->pendingTpixOrder(1000);
         $hash = $this->sendTx(self::RECEIVE, $payment->amount_wei, confirmations: 5);
-        $this->chain['explorer'][] = ['hash' => $hash, 'value' => $payment->amount_wei, 'status' => 'ok', 'result' => 'success', 'timestamp' => now()->toIso8601String()];
+        // ธุรกรรม 0 TPIX ขยะจำนวนมากเข้ากระเป๋าเดียวกัน ต้องไม่ทำให้เงินจริงหลุด
+        for ($i = 0; $i < 200; $i++) {
+            $this->sendTx(self::RECEIVE, '0', confirmations: 3);
+        }
 
         $stats = app(TpixPaymentService::class)->scan();
 
@@ -255,6 +263,7 @@ class TpixPaymentFlowTest extends TestCase
     {
         [$order, $payment] = $this->pendingTpixOrder(1000);
         $this->travel(40)->minutes();
+        $this->seedPriceHistory();
         $hash = $this->sendTx(self::RECEIVE, $payment->amount_wei, confirmations: 5);
 
         $result = app(TpixPaymentService::class)->submitTx($payment->fresh(), $hash);
@@ -359,6 +368,7 @@ class TpixPaymentFlowTest extends TestCase
             'confirmations' => 3,
             'max_per_payment_thb' => 1000,
             'max_per_user_day_thb' => 5000,
+            'max_pool_ratio' => 5,
         ])->assertSessionHas('error');
 
         $this->actingAs($admin)->post('/admin/tpix-pay/settings', [
@@ -368,6 +378,7 @@ class TpixPaymentFlowTest extends TestCase
             'confirmations' => 5,
             'max_per_payment_thb' => 1000,
             'max_per_user_day_thb' => 5000,
+            'max_pool_ratio' => 3,
         ])->assertSessionHas('success');
 
         $settings = app(TpixPaySettings::class);
@@ -386,6 +397,109 @@ class TpixPaymentFlowTest extends TestCase
 
         $this->assertSame(1, $stats['cancelled_orders']);
         $this->assertSame('cancelled', $order->fresh()->status);
+    }
+
+    public function test_transaction_still_in_the_mempool_is_not_bound_to_the_payment(): void
+    {
+        [$order, $payment] = $this->pendingTpixOrder(1000);
+        $hash = $this->sendTx(self::RECEIVE, $payment->amount_wei, confirmations: 5, mined: false);
+
+        $result = app(TpixPaymentService::class)->submitTx($payment, $hash);
+
+        $this->assertSame('pending', $result['status']);
+        $payment->refresh();
+        $this->assertNull($payment->tx_hash, 'ยังไม่เข้าบล็อก ห้ามผูก (อาจถูกเร่ง/ยกเลิก/หลุด)');
+        $this->assertContains($hash, $payment->meta['submitted_hashes'] ?? []);
+
+        // เข้าบล็อกแล้ว → ตัวสแกนตรวจเลขที่จำไว้แล้วตัดบิล
+        $this->mine($hash, confirmations: 5);
+        app(TpixPaymentService::class)->scan();
+
+        $this->assertSame('paid', $payment->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+    }
+
+    public function test_fixed_tpix_price_below_market_value_is_raised_to_the_market_value(): void
+    {
+        $official = $this->officialSeller();
+        $product = $this->makeProduct($official, null, ['price' => 1000, 'stock_quantity' => 5]);
+        $product->forceFill(['price_tpix' => '1'])->save();
+
+        $order = $this->makeOrder($this->makeBuyer(), [['product' => $product->fresh(), 'qty' => 1]], ['payment_method' => 'tpix']);
+        $service = app(PaymentService::class);
+        $this->assertTrue($service->processPayment($service->createOrderPayment($order, 'tpix'), [])['success']);
+
+        $payment = TpixPayment::where('payable_id', $order->id)->firstOrFail();
+        // 1 TPIX ต่ำกว่ามูลค่าตลาดของ ฿1,000 (307.69 TPIX) → คิดตามตลาด กันซื้อถูกแล้วยกเลิกรับคืนเป็นบาท
+        $this->assertSame(1, bccomp((string) $payment->amount_tpix, '307.6924', 8));
+    }
+
+    public function test_fixed_tpix_price_above_market_value_is_honoured_for_official_products(): void
+    {
+        $official = $this->officialSeller();
+        $product = $this->makeProduct($official, null, ['price' => 1000, 'stock_quantity' => 5]);
+        $product->forceFill(['price_tpix' => '400'])->save();
+
+        $order = $this->makeOrder($this->makeBuyer(), [['product' => $product->fresh(), 'qty' => 1]], ['payment_method' => 'tpix']);
+        $service = app(PaymentService::class);
+        $this->assertTrue($service->processPayment($service->createOrderPayment($order, 'tpix'), [])['success']);
+
+        $payment = TpixPayment::where('payable_id', $order->id)->firstOrFail();
+        $this->assertSame(1, bccomp((string) $payment->amount_tpix, '400', 8));
+        $this->assertSame(-1, bccomp((string) $payment->amount_tpix, '400.0001', 8));
+    }
+
+    public function test_quote_is_refused_when_larger_than_the_pool_can_back(): void
+    {
+        app(TpixPaySettings::class)->save(['max_pool_ratio' => 1]); // พูล 19.99 USDT × 32.5 = ฿649.67
+
+        [$seller, $store] = $this->makeSellerWithStore();
+        $product = $this->makeProduct($seller, $store, ['price' => 1000, 'stock_quantity' => 5]);
+        $order = $this->makeOrder($this->makeBuyer(), [['product' => $product, 'qty' => 1]], ['payment_method' => 'tpix']);
+
+        $service = app(PaymentService::class);
+        $result = $service->processPayment($service->createOrderPayment($order, 'tpix'), []);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('สภาพคล่อง', $result['message']);
+    }
+
+    public function test_quote_is_refused_without_price_history(): void
+    {
+        \App\Models\TpixPriceSnapshot::query()->delete();
+        Cache::flush();
+
+        [$seller, $store] = $this->makeSellerWithStore();
+        $product = $this->makeProduct($seller, $store, ['price' => 500, 'stock_quantity' => 5]);
+        $order = $this->makeOrder($this->makeBuyer(), [['product' => $product, 'qty' => 1]], ['payment_method' => 'tpix']);
+
+        $service = app(PaymentService::class);
+        $result = $service->processPayment($service->createOrderPayment($order, 'tpix'), []);
+
+        $this->assertFalse($result['success'], 'ไม่มีค่าเฉลี่ยราคา = ไม่คิดเงินจากราคาจุดเดียว');
+    }
+
+    public function test_duplicate_transfer_over_the_daily_cap_waits_for_admin_approval(): void
+    {
+        app(TpixPaySettings::class)->save(['max_per_user_day_thb' => 1000]);
+        [$order, $payment] = $this->pendingTpixOrder(1000);
+        $first = $this->sendTx(self::RECEIVE, $payment->amount_wei, confirmations: 5);
+        $this->assertSame('paid', app(TpixPaymentService::class)->submitTx($payment, $first)['status']);
+
+        // โอนยอดเดิมซ้ำ → เกินเพดาน 1,000/วัน → ไม่เติมอัตโนมัติ
+        $this->sendTx(self::RECEIVE, $payment->amount_wei, confirmations: 5);
+        app(TpixPaymentService::class)->scan();
+
+        $held = TpixPayment::where('payable_type', 'tpix_duplicate')->firstOrFail();
+        $this->assertSame('late', $held->status);
+        $this->assertTrue((bool) $held->meta['needs_review']);
+        $this->assertLessThan(0.01, (float) Wallet::where('user_id', $order->user_id)->value('balance'));
+
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)->post('/admin/tpix-pay/'.$held->id.'/approve')->assertSessionHas('success');
+
+        $this->assertSame('credited_wallet', $held->fresh()->status);
+        $this->assertEqualsWithDelta(1000.0, (float) Wallet::where('user_id', $order->user_id)->value('balance'), 0.01);
     }
 
     // =====================================================
@@ -410,22 +524,61 @@ class TpixPaymentFlowTest extends TestCase
         return [$order, $payment, $product];
     }
 
-    private function sendTx(string $to, string $valueWei, int $confirmations, string $status = '0x1', ?int $timestamp = null): string
+    private function sendTx(string $to, string $valueWei, int $confirmations, string $status = '0x1', ?int $timestamp = null, bool $mined = true): string
     {
         $hash = '0x'.bin2hex(random_bytes(32));
-        $block = $this->chain['latest'] - $confirmations + 1;
-        $this->chain['blocks'][$block] = $timestamp ?? now()->getTimestamp();
         $this->chain['txs'][$hash] = [
             'hash' => $hash,
             'from' => '0x9999999999999999999999999999999999999999',
             'to' => $to,
             'value' => TpixAmount::decToHex($valueWei),
-            'blockNumber' => '0x'.dechex($block),
+            'blockNumber' => null,
             'chainId' => '0x10c1',
             'status' => $status,
         ];
 
+        if ($mined) {
+            $this->mine($hash, $confirmations, $timestamp);
+        }
+
         return $hash;
+    }
+
+    private function mine(string $hash, int $confirmations, ?int $timestamp = null): void
+    {
+        $block = $this->chain['latest'] - $confirmations + 1;
+        $this->chain['blocks'][$block] = $timestamp ?? ($this->chain['blocks'][$block] ?? now()->getTimestamp());
+        $this->chain['txs'][$hash]['blockNumber'] = '0x'.dechex($block);
+    }
+
+    /**
+     * ผู้ขาย Official Shop — getOfficialSellerId() จำ id ไว้ใน static ข้ามเทสต์ (แถวถูก rollback แล้ว)
+     * → สร้างผู้ใช้ด้วย id นั้นถ้ายังไม่มี (แบบเดียวกับ StorefrontV4PagesTest)
+     */
+    private function officialSeller(): \App\Models\User
+    {
+        $officialId = \App\Models\Product::getOfficialSellerId();
+
+        return \App\Models\User::find($officialId) ?? \App\Models\User::factory()->create([
+            'id' => $officialId,
+            'email' => 'official-shop-'.$officialId.'@thaiprompt.test',
+        ]);
+    }
+
+    /** ประวัติราคา 3 จุดในช่วงค่าเฉลี่ย (ระบบไม่ออกใบถ้าไม่มีค่าเฉลี่ย) */
+    private function seedPriceHistory(): void
+    {
+        foreach ([3, 2, 1] as $minutesAgo) {
+            \App\Models\TpixPriceSnapshot::create([
+                'price_usd' => '0.1',
+                'usd_thb' => '32.5',
+                'price_thb' => '3.25',
+                'reserve_tpix' => '199.9',
+                'reserve_usdt' => '19.99',
+                'source' => 'dex',
+                'created_at' => now()->subMinutes($minutesAgo),
+            ]);
+        }
     }
 
     private function fakeNetwork(): void
@@ -445,26 +598,50 @@ class TpixPaymentFlowTest extends TestCase
 
             if (str_contains($url, 'rpc')) {
                 $body = $request->data();
-                $method = $body['method'] ?? '';
-                $params = $body['params'] ?? [];
 
-                $result = match ($method) {
-                    'eth_chainId' => '0x10c1',
-                    'eth_blockNumber' => '0x'.dechex($this->chain['latest']),
-                    'eth_call' => $this->ethCall($params[0]['data'] ?? ''),
-                    'eth_getTransactionByHash' => isset($this->chain['txs'][$params[0]]) ? array_diff_key($this->chain['txs'][$params[0]], ['status' => 1]) : null,
-                    'eth_getTransactionReceipt' => isset($this->chain['txs'][$params[0]])
-                        ? ['status' => $this->chain['txs'][$params[0]]['status'], 'blockNumber' => $this->chain['txs'][$params[0]]['blockNumber']]
-                        : null,
-                    'eth_getBlockByNumber' => ['timestamp' => '0x'.dechex($this->chain['blocks'][hexdec($params[0])] ?? now()->getTimestamp())],
-                    default => null,
-                };
+                if (array_is_list($body)) { // JSON-RPC batch (ตัวสแกนบล็อก)
+                    return Http::response(array_map(
+                        fn ($call) => ['jsonrpc' => '2.0', 'id' => $call['id'], 'result' => $this->rpcResult($call['method'], $call['params'])],
+                        $body
+                    ));
+                }
 
-                return Http::response(['jsonrpc' => '2.0', 'id' => 1, 'result' => $result]);
+                return Http::response(['jsonrpc' => '2.0', 'id' => 1, 'result' => $this->rpcResult($body['method'] ?? '', $body['params'] ?? [])]);
             }
 
             return Http::response([], 404);
         });
+    }
+
+    private function rpcResult(string $method, array $params): mixed
+    {
+        $tx = isset($params[0]) && is_string($params[0]) ? ($this->chain['txs'][$params[0]] ?? null) : null;
+
+        return match ($method) {
+            'eth_chainId' => '0x10c1',
+            'eth_blockNumber' => '0x'.dechex($this->chain['latest']),
+            'eth_call' => $this->ethCall($params[0]['data'] ?? ''),
+            'eth_getTransactionByHash' => $tx ? array_diff_key($tx, ['status' => 1]) : null,
+            'eth_getTransactionReceipt' => $tx && $tx['blockNumber'] ? ['status' => $tx['status'], 'blockNumber' => $tx['blockNumber']] : null,
+            'eth_getBlockByNumber' => $this->block(hexdec($params[0]), (bool) ($params[1] ?? false)),
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function block(int $number, bool $full): array
+    {
+        $block = ['number' => '0x'.dechex($number), 'timestamp' => '0x'.dechex($this->chain['blocks'][$number] ?? now()->getTimestamp())];
+        if ($full) {
+            $block['transactions'] = array_values(array_map(
+                fn ($tx) => array_diff_key($tx, ['status' => 1]),
+                array_filter($this->chain['txs'], fn ($tx) => $tx['blockNumber'] !== null && hexdec($tx['blockNumber']) === $number)
+            ));
+        }
+
+        return $block;
     }
 
     private function ethCall(string $data): string

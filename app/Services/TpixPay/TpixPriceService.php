@@ -53,61 +53,81 @@ class TpixPriceService
             return $this->requestSpot;
         }
 
-        $ttl = max(10, (int) config('tpix_pay.display_cache_seconds', 60));
         $cached = Cache::get(self::SPOT_CACHE_KEY);
 
-        if (! is_array($cached)) {
+        // แคชว่าง → ให้คำขอเดียวยิงเชน (กันทุกหน้ายิงพร้อมกันตอนแคชหมด/RPC ล่ม) · ที่เหลือซ่อนราคาไปก่อน
+        // ปกติตัวสแกน tpix:pay-scan อัปเดตแคชทุกนาที หน้าเว็บจึงแทบไม่ต้องยิงเอง
+        if (! is_array($cached) && Cache::add(self::SPOT_CACHE_KEY.':lock', 1, 20)) {
             $fresh = $this->computeSpot();
-            // ไม่รู้ราคา → จำผลว่า "ไม่รู้" แค่ 15 วิ (ไม่ยิง RPC ทุกครั้งที่เรนเดอร์ แต่ฟื้นเร็ว)
             $cached = $fresh ?? ['unavailable' => true];
-            Cache::put(self::SPOT_CACHE_KEY, $cached, $fresh ? $ttl : 15);
+            // ไม่รู้ราคา → จำผลว่า "ไม่รู้" 30 วิ (ไม่ยิง RPC ซ้ำทุกคำขอ แต่ฟื้นเร็ว)
+            Cache::put(self::SPOT_CACHE_KEY, $cached, $fresh ? $this->displayTtl() : 30);
+            Cache::forget(self::SPOT_CACHE_KEY.':lock');
         }
 
-        $this->requestSpot = isset($cached['unavailable']) ? null : $cached;
+        $this->requestSpot = is_array($cached) && ! isset($cached['unavailable']) ? $cached : null;
         $this->requestSpotAt = time();
 
         return $this->requestSpot;
     }
 
+    /** อายุแคชราคาแสดงผล — ยาวกว่ารอบตัวสแกน (1 นาที) เพื่อให้แคชอุ่นตลอด */
+    private function displayTtl(): int
+    {
+        return max(70, (int) config('tpix_pay.display_cache_seconds', 120));
+    }
+
     /**
-     * ราคาสำหรับออกใบเสนอยอด (คิดเงินจริง) — อ่านพูลสด ไม่ใช้แคชแสดงผล
+     * ราคาสำหรับออกใบเสนอยอด (คิดเงินจริง)
      *
-     * @return array{rate_thb: string, spot_thb: string, twap_thb: string|null, basis: string, price_usd: string, usd_thb: string, at: int}|null
+     * ราคา USD ที่ใช้ = ค่าที่ต่ำกว่าระหว่าง "ราคาพูลตอนนี้" กับ "ค่าเฉลี่ยราคาพูล twap_minutes นาที" แล้วคูณอัตรา USD/THB
+     * - คิดค่าเฉลี่ยฝั่ง USD (ไม่ขึ้นกับ API อัตราแลกเปลี่ยน — API ล่มแล้วค่าเฉลี่ยไม่หาย)
+     * - ไม่มีค่าเฉลี่ย (ประวัติไม่ถึง twap_min_snapshots = ตัวสแกนไม่ทำงาน) → ไม่ออกใบ ไม่ยอมคิดเงินจากราคาจุดเดียว
+     * - ราคาพูลที่อ่านไม่เกิน 30 วิ ใช้ซ้ำได้ (ลดการยิงเชนระหว่างถือล็อกฐานข้อมูล)
+     *
+     * @return array{rate_thb: string, spot_thb: string, twap_thb: string|null, basis: string, price_usd: string, usd_thb: string, reserve_usdt: string, at: int}|null
      */
     public function quoteRate(): ?array
     {
-        $spot = $this->computeSpot();
+        $cached = Cache::get(self::SPOT_CACHE_KEY);
+        $spot = is_array($cached) && ! isset($cached['unavailable']) && (time() - (int) ($cached['at'] ?? 0)) <= 30
+            ? $cached
+            : $this->computeSpot();
         if ($spot === null) {
             return null;
         }
 
-        // อัปเดตแคชแสดงผลด้วยค่าสดไปเลย
-        Cache::put(self::SPOT_CACHE_KEY, $spot, max(10, (int) config('tpix_pay.display_cache_seconds', 60)));
+        Cache::put(self::SPOT_CACHE_KEY, $spot, $this->displayTtl());
         $this->requestSpot = $spot;
         $this->requestSpotAt = time();
 
-        $twap = $this->twapThb();
-        $rate = $spot['price_thb'];
+        $twapUsd = $this->twapUsd();
+        if ($twapUsd === null) {
+            Log::warning('TpixPriceService: not enough price history for a TWAP — refusing to quote');
+
+            return null;
+        }
+
+        $usd = $spot['price_usd'];
         $basis = 'spot';
-        if ($twap !== null && bccomp($twap, $rate, 12) < 0) {
-            $rate = $twap;
+        if (bccomp($twapUsd, $usd, 12) < 0) {
+            $usd = $twapUsd;
             $basis = 'twap';
         }
 
+        $rate = bcmul($usd, $spot['usd_thb'], 12);
         if (bccomp($rate, '0', 12) <= 0) {
             return null;
         }
 
-        // ราคา USD ที่สอดคล้องกับอัตราที่ใช้ (กรณีใช้ค่าเฉลี่ย)
-        $priceUsd = $basis === 'spot' ? $spot['price_usd'] : bcdiv($rate, $spot['usd_thb'], 12);
-
         return [
             'rate_thb' => $rate,
             'spot_thb' => $spot['price_thb'],
-            'twap_thb' => $twap,
+            'twap_thb' => bcmul($twapUsd, $spot['usd_thb'], 12),
             'basis' => $basis,
-            'price_usd' => $priceUsd,
+            'price_usd' => $usd,
             'usd_thb' => $spot['usd_thb'],
+            'reserve_usdt' => $spot['reserve_usdt'],
             'at' => $spot['at'],
         ];
     }
@@ -143,14 +163,19 @@ class TpixPriceService
                 return null;
             }
 
+            $hasThb = $thb !== null && $thb !== '' && (float) $thb > 0;
+            $converted = $hasThb ? self::thbToTpix(TpixAmount::fromNumber($thb, 2), $spot['price_thb']) : null;
+
+            // ราคาคงที่ใช้ได้เมื่อ "ไม่ต่ำกว่ามูลค่าตลาด" ของราคาบาท (ตรงกับตอนคิดเงินจริงใน orderTpixTotal)
+            // ราคาเหรียญขึ้นจนราคาคงที่ถูกกว่าราคาบาท → แสดงราคาตามตลาดแทน (กันซื้อด้วยเหรียญถูกแล้วยกเลิกรับคืนเป็นบาท)
             $fixed = $fixedTpix !== null && $fixedTpix !== '' && (float) $fixedTpix > 0;
-            if ($fixed) {
-                $tpix = TpixAmount::fromNumber($fixedTpix, 8);
-            } else {
-                if ($thb === null || $thb === '' || (float) $thb <= 0) {
-                    return null;
-                }
-                $tpix = self::thbToTpix(TpixAmount::fromNumber($thb, 2), $spot['price_thb']);
+            $tpix = $fixed ? TpixAmount::fromNumber($fixedTpix, 8) : $converted;
+            if ($fixed && $converted !== null && bccomp($converted, $tpix, 8) > 0) {
+                $tpix = $converted;
+                $fixed = false;
+            }
+            if ($tpix === null) {
+                return null;
             }
 
             $at = Carbon::createFromTimestamp($spot['at'])->timezone(config('app.timezone'));
@@ -245,13 +270,13 @@ class TpixPriceService
     }
 
     /**
-     * ค่าเฉลี่ยราคาบาทของ TPIX ช่วง twap_minutes (null = ข้อมูลไม่พอ)
+     * ค่าเฉลี่ยราคา USD ของ TPIX (จากพูล) ช่วง twap_minutes (null = ข้อมูลไม่พอ)
      */
-    public function twapThb(): ?string
+    public function twapUsd(): ?string
     {
         try {
             $rows = TpixPriceSnapshot::where('created_at', '>=', now()->subMinutes((int) config('tpix_pay.twap_minutes', 30)))
-                ->pluck('price_thb');
+                ->pluck('price_usd');
         } catch (\Throwable $e) {
             return null;
         }
@@ -266,6 +291,17 @@ class TpixPriceService
         }
 
         return bcdiv($sum, (string) $rows->count(), 12);
+    }
+
+    /**
+     * ค่าเฉลี่ยราคาบาท (แสดงในหน้าแอดมิน) = ค่าเฉลี่ย USD × อัตราปัจจุบัน
+     */
+    public function twapThb(): ?string
+    {
+        $usd = $this->twapUsd();
+        $fx = $usd !== null ? $this->usdThb() : null;
+
+        return $usd !== null && $fx !== null ? bcmul($usd, $fx['rate'], 12) : null;
     }
 
     /**
@@ -310,9 +346,10 @@ class TpixPriceService
             'fx_at' => $fx['at'],
         ];
 
-        if (empty($fx['fallback'])) {
-            $this->recordSnapshot($spot);
-        }
+        // บันทึกประวัติเสมอ (ค่าเฉลี่ยคิดจากราคา USD ของพูล) — อัตราแลกเปลี่ยนสำรองติดป้าย dex_fx_stale
+        // เพื่อไม่ให้ตัวสำรองอัตราแลกเปลี่ยนหยิบอัตราเก่ามาต่ออายุตัวเอง
+        $spot['source'] = empty($fx['fallback']) ? 'dex' : 'dex_fx_stale';
+        $this->recordSnapshot($spot);
 
         return $spot;
     }
@@ -327,11 +364,18 @@ class TpixPriceService
         $pair = (string) config('tpix_pay.dex.pair');
         $wtpix = strtolower((string) config('tpix_pay.dex.wtpix'));
 
-        $token0 = Cache::rememberForever('tpix_pay:pair_token0:'.strtolower($pair), function () use ($pair) {
-            $hex = $this->rpc->ethCall($pair, self::SEL_TOKEN0);
-
-            return '0x'.strtolower(substr(preg_replace('/^0x/', '', $hex), -40));
-        });
+        $usdt = strtolower((string) config('tpix_pay.dex.usdt'));
+        $cacheKey = 'tpix_pay:pair_token0:'.strtolower($pair);
+        $token0 = Cache::get($cacheKey);
+        if (! in_array($token0, [$wtpix, $usdt], true)) {
+            $hex = (string) preg_replace('/^0x/', '', $this->rpc->ethCall($pair, self::SEL_TOKEN0));
+            $token0 = strlen($hex) >= 40 ? '0x'.strtolower(substr($hex, -40)) : '';
+            // โหนดตอบผิด (เช่น "0x" จากโหนดที่ sync ไม่ทัน) ห้ามจำ — จำผิดครั้งเดียว reserve สลับข้าง ราคาเพี้ยนถาวร
+            if (! in_array($token0, [$wtpix, $usdt], true)) {
+                throw new \RuntimeException('token0 ของพูลไม่ใช่ WTPIX/USDT');
+            }
+            Cache::forever($cacheKey, $token0);
+        }
 
         $hex = preg_replace('/^0x/', '', $this->rpc->ethCall($pair, self::SEL_GET_RESERVES));
         if (strlen($hex) < 128) {
@@ -397,6 +441,7 @@ class TpixPriceService
         // สำรอง: อัตราล่าสุดที่เคยใช้ (ไม่เกิน fx_max_age_hours)
         try {
             $last = TpixPriceSnapshot::where('created_at', '>=', now()->subHours((int) config('tpix_pay.fx_max_age_hours', 24)))
+                ->where('source', 'dex')
                 ->orderByDesc('id')
                 ->first(['usd_thb', 'created_at']);
         } catch (\Throwable $e) {

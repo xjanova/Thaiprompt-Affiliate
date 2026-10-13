@@ -122,18 +122,33 @@ class TpixPriceDisplayTest extends TestCase
 
     public function test_fixed_price_is_honored_for_official_shop_product(): void
     {
-        $product = $this->product(official: true, priceTpix: '12.5');
+        // ราคาคงที่ 400 TPIX สูงกว่ามูลค่าตลาดของ ฿1,000 (307.69 TPIX) → ใช้ราคาคงที่
+        $product = $this->product(official: true, priceTpix: '400');
 
-        $this->assertSame('12.50000000', TpixPriceService::fixedPriceFor($product));
+        $this->assertSame('400.00000000', TpixPriceService::fixedPriceFor($product));
 
         $html = Blade::render('<x-tpix-price :product="$product" size="lg" />', ['product' => $product]);
-        $this->assertStringContainsString('12.50 TPIX', $html);
-        $this->assertStringNotContainsString('≈ 12.50', $html);
+        $this->assertStringContainsString('400.00 TPIX', $html);
+        $this->assertStringNotContainsString('≈ 400.00', $html);
         $this->assertStringContainsString('ราคาเหรียญคงที่จากร้าน', $html);
 
         $api = $this->prices->apiFieldsForProduct($product);
-        $this->assertSame('12.5', $api['price_tpix']);
+        $this->assertSame('400', $api['price_tpix']);
         $this->assertTrue($api['tpix']['fixed']);
+    }
+
+    public function test_fixed_price_below_market_value_shows_the_market_price(): void
+    {
+        // ราคาคงที่ 12.5 TPIX ต่ำกว่ามูลค่าตลาดของ ฿1,000 → แสดง/คิดเงินตามตลาด (กันซื้อด้วยเหรียญถูกแล้วยกเลิกรับคืนเป็นบาท)
+        $product = $this->product(official: true, priceTpix: '12.5');
+
+        $html = Blade::render('<x-tpix-price :product="$product" size="lg" />', ['product' => $product]);
+        $this->assertStringContainsString('≈ 307.69 TPIX', $html);
+        $this->assertStringNotContainsString('ราคาเหรียญคงที่จากร้าน', $html);
+
+        $api = $this->prices->apiFieldsForProduct($product);
+        $this->assertSame('307.6924', $api['price_tpix']);
+        $this->assertFalse($api['tpix']['fixed']);
     }
 
     public function test_fixed_price_is_ignored_for_third_party_seller_product(): void
@@ -171,8 +186,8 @@ class TpixPriceDisplayTest extends TestCase
 
     public function test_shop_presenter_adds_tpix_fields_and_skips_affiliate_products(): void
     {
-        $official = $this->product(official: true, priceTpix: '12.5');
-        $this->assertSame('12.5', ShopPresenter::productTpix($official, 1000)['price_tpix']);
+        $official = $this->product(official: true, priceTpix: '400');
+        $this->assertSame('400', ShopPresenter::productTpix($official, 1000)['price_tpix']);
 
         $thirdParty = $this->product(official: false, priceTpix: null);
         $this->assertSame('307.6924', ShopPresenter::productTpix($thirdParty, 1000)['price_tpix']);

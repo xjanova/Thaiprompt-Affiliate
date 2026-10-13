@@ -26,6 +26,8 @@ class TpixPaySettings
 
     public const KEY_MAX_PER_USER_DAY = 'tpix_pay.max_per_user_day_thb';
 
+    public const KEY_MAX_POOL_RATIO = 'tpix_pay.max_pool_ratio';
+
     private const CACHE_KEY = 'tpix_pay:settings:v1';
 
     private const MEMO_SECONDS = 30;
@@ -34,7 +36,7 @@ class TpixPaySettings
     private ?array $memo = null;
 
     /**
-     * @return array{enabled: bool, receive_address: string, confirmations: int, show_prices: bool, max_per_payment_thb: float, max_per_user_day_thb: float}
+     * @return array{enabled: bool, receive_address: string, confirmations: int, show_prices: bool, max_per_payment_thb: float, max_per_user_day_thb: float, max_pool_ratio: float}
      */
     public function all(): array
     {
@@ -78,6 +80,12 @@ class TpixPaySettings
         return $this->all()['max_per_payment_thb'];
     }
 
+    /** เพดานต่อรายการเทียบสภาพคล่องพูล (เท่าของมูลค่าฝั่ง USDT) — 0 = ไม่จำกัด */
+    public function maxPoolRatio(): float
+    {
+        return $this->all()['max_pool_ratio'];
+    }
+
     /** เพดานต่อผู้ใช้ต่อ 24 ชม. (บาท) — 0 = ไม่จำกัด */
     public function maxPerUserDayThb(): float
     {
@@ -87,7 +95,7 @@ class TpixPaySettings
     /**
      * บันทึกค่าจากหน้าแอดมิน
      *
-     * @param  array{enabled?: bool, receive_address?: string, confirmations?: int, show_prices?: bool, max_per_payment_thb?: float, max_per_user_day_thb?: float}  $values
+     * @param  array{enabled?: bool, receive_address?: string, confirmations?: int, show_prices?: bool, max_per_payment_thb?: float, max_per_user_day_thb?: float, max_pool_ratio?: float}  $values
      */
     public function save(array $values): void
     {
@@ -103,7 +111,7 @@ class TpixPaySettings
         if (array_key_exists('confirmations', $values)) {
             Setting::set(self::KEY_CONFIRMATIONS, (string) max(1, min(64, (int) $values['confirmations'])), 'integer', 'tpix_pay');
         }
-        foreach ([self::KEY_MAX_PER_PAYMENT => 'max_per_payment_thb', self::KEY_MAX_PER_USER_DAY => 'max_per_user_day_thb'] as $key => $field) {
+        foreach ([self::KEY_MAX_PER_PAYMENT => 'max_per_payment_thb', self::KEY_MAX_PER_USER_DAY => 'max_per_user_day_thb', self::KEY_MAX_POOL_RATIO => 'max_pool_ratio'] as $key => $field) {
             if (array_key_exists($field, $values)) {
                 Setting::set($key, (string) round(max(0, (float) $values[$field]), 2), 'float', 'tpix_pay');
             }
@@ -128,7 +136,7 @@ class TpixPaySettings
     }
 
     /**
-     * @return array{enabled: bool, receive_address: string, confirmations: int, show_prices: bool, max_per_payment_thb: float, max_per_user_day_thb: float}
+     * @return array{enabled: bool, receive_address: string, confirmations: int, show_prices: bool, max_per_payment_thb: float, max_per_user_day_thb: float, max_pool_ratio: float}
      */
     private function load(): array
     {
@@ -142,6 +150,7 @@ class TpixPaySettings
                 self::KEY_SHOW_PRICES,
                 self::KEY_MAX_PER_PAYMENT,
                 self::KEY_MAX_PER_USER_DAY,
+                self::KEY_MAX_POOL_RATIO,
             ])->pluck('value', 'key');
         } catch (\Throwable $e) {
             Log::warning('TpixPaySettings: read failed', ['error' => $e->getMessage()]);
@@ -159,6 +168,7 @@ class TpixPaySettings
             // เพดานกันความเสี่ยงสภาพคล่อง: พูล DEX ยังบาง เหรียญที่รับมาขายคืนเป็นเงินบาทตามราคานี้ไม่ได้ทั้งหมด
             'max_per_payment_thb' => max(0.0, (float) ($rows[self::KEY_MAX_PER_PAYMENT] ?? ($defaults['max_per_payment_thb'] ?? 20000))),
             'max_per_user_day_thb' => max(0.0, (float) ($rows[self::KEY_MAX_PER_USER_DAY] ?? ($defaults['max_per_user_day_thb'] ?? 50000))),
+            'max_pool_ratio' => max(0.0, (float) ($rows[self::KEY_MAX_POOL_RATIO] ?? ($defaults['max_pool_ratio'] ?? 5))),
         ];
     }
 }

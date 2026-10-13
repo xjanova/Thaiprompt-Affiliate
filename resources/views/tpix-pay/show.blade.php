@@ -311,7 +311,7 @@
                     }
                     const hash = await eth.request({
                         method: 'eth_sendTransaction',
-                        params: [{ from: accounts[0], to: this.d.receive_address, value: this.d.amount_wei_hex, gas: '0x5208' }],
+                        params: [{ from: accounts[0], to: this.d.receive_address, value: this.d.amount_wei_hex }],
                     });
                     this.flash('ส่งเหรียญแล้ว กำลังยืนยันบนเชน…', 'info');
                     await this.submit(hash);

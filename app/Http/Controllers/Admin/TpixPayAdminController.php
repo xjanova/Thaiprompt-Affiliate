@@ -43,6 +43,8 @@ class TpixPayAdminController extends Controller
             'paid_tpix' => (string) TpixPayment::whereIn('status', TpixPayment::SETTLED_STATUSES)->where('paid_at', '>=', $since)->sum('amount_tpix'),
             'open_count' => TpixPayment::whereIn('status', [TpixPayment::STATUS_PENDING, TpixPayment::STATUS_CONFIRMING])->where('expires_at', '>', now())->count(),
             'attention_count' => TpixPayment::whereIn('status', [TpixPayment::STATUS_LATE, TpixPayment::STATUS_CONFIRMING])->where('updated_at', '<', now()->subMinutes(10))->count(),
+            // ไม่ใช้ meta->needs_review = true: MariaDB เทียบ JSON boolean กับ 1 ไม่ตรง (json_extract คืน 'true')
+            'review_count' => TpixPayment::where('status', TpixPayment::STATUS_LATE)->where('meta', 'like', '%"needs_review":true%')->count(),
         ];
 
         return view('admin.tpix-pay.index', [
@@ -72,6 +74,7 @@ class TpixPayAdminController extends Controller
             'confirmations' => ['required', 'integer', 'min:1', 'max:64'],
             'max_per_payment_thb' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'max_per_user_day_thb' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'max_pool_ratio' => ['required', 'numeric', 'min:0', 'max:1000'],
         ], [
             'receive_address.regex' => 'ที่อยู่กระเป๋าต้องขึ้นต้น 0x ตามด้วยตัวอักษร 0-9 a-f 40 ตัว',
         ]);
@@ -90,9 +93,20 @@ class TpixPayAdminController extends Controller
             'confirmations' => (int) $validated['confirmations'],
             'max_per_payment_thb' => (float) $validated['max_per_payment_thb'],
             'max_per_user_day_thb' => (float) $validated['max_per_user_day_thb'],
+            'max_pool_ratio' => (float) $validated['max_pool_ratio'],
         ]);
 
         return back()->with('success', 'บันทึกการตั้งค่าชำระด้วย TPIX แล้ว');
+    }
+
+    /**
+     * อนุมัติเงิน TPIX ที่เข้ามาแล้วแต่ติดเพดาน (โอนช้า/โอนซ้ำ) → เติมเข้ากระเป๋าผู้ใช้ตามราคาปัจจุบัน
+     */
+    public function approve(int $id, TpixPaymentService $service): RedirectResponse
+    {
+        $result = $service->approveHeld(TpixPayment::findOrFail($id));
+
+        return back()->with($result['status'] === TpixPayment::STATUS_CREDITED_WALLET ? 'success' : 'error', $result['message']);
     }
 
     /**

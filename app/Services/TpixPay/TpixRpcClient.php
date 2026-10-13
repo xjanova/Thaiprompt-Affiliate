@@ -71,6 +71,60 @@ class TpixRpcClient
         throw new RuntimeException($lastError);
     }
 
+    /**
+     * เรียกหลายเมธอดในคำขอเดียว (JSON-RPC batch) — คืน result ตามลำดับที่ส่ง (null = รายการนั้นไม่มีผล/ผิดพลาด)
+     *
+     * @param  array<int, array{0: string, 1: array<int, mixed>}>  $calls  [[method, params], ...]
+     * @return array<int, mixed>
+     *
+     * @throws RuntimeException เมื่อติดต่อโหนดไม่ได้ทุกตัว
+     */
+    public function batch(array $calls): array
+    {
+        if ($calls === []) {
+            return [];
+        }
+
+        $payload = [];
+        foreach (array_values($calls) as $i => [$method, $params]) {
+            $payload[] = ['jsonrpc' => '2.0', 'id' => $i, 'method' => $method, 'params' => $params];
+        }
+
+        $urls = array_values(array_filter([
+            (string) config('tpix_pay.rpc_url'),
+            (string) config('tpix_pay.rpc_backup_url'),
+        ]));
+
+        foreach ($urls as $url) {
+            try {
+                $response = Http::withHeaders([
+                    'User-Agent' => (string) config('tpix_pay.user_agent'),
+                    'Accept' => 'application/json',
+                ])
+                    ->timeout((int) config('tpix_pay.http_timeout', 8) * 2)
+                    ->post($url, $payload);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $json = $response->successful() ? $response->json() : null;
+            if (! is_array($json) || ! array_is_list($json)) {
+                continue;
+            }
+
+            $results = array_fill(0, count($payload), null);
+            foreach ($json as $row) {
+                if (is_array($row) && isset($row['id']) && array_key_exists((int) $row['id'], $results) && ! isset($row['error'])) {
+                    $results[(int) $row['id']] = $row['result'] ?? null;
+                }
+            }
+
+            return $results;
+        }
+
+        throw new RuntimeException('ติดต่อโหนดเชน TPIX ไม่ได้ (batch)');
+    }
+
     /** chain id ที่โหนดรายงาน (ใช้ตรวจว่าชี้เชนถูก) */
     public function chainId(): int
     {

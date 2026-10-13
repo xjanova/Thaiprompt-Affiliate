@@ -84,6 +84,8 @@ class TpixPaymentService
             throw new TpixPayException(TpixPayException::PRICE_UNAVAILABLE, 'ยังดึงราคา TPIX จริงไม่ได้ในขณะนี้ กรุณาลองใหม่อีกครั้งหรือเลือกวิธีชำระอื่น');
         }
 
+        $this->assertPoolDepth($amountThb, $rate['reserve_usdt'], $rate['usd_thb']);
+
         $amountThbStr = number_format($amountThb, 2, '.', '');
         $baseTpix = $isOrder
             ? $this->orderTpixTotal($order, $rate['rate_thb'])
@@ -191,6 +193,13 @@ class TpixPaymentService
                 $line = bcdiv(bcmul($line, $net, 18), $gross, 18);
             }
 
+            // ❗ ราคาคงที่ต้องไม่ต่ำกว่ามูลค่าตลาดของยอดบาทบรรทัดนี้ — ไม่งั้นซื้อด้วยเหรียญถูก แล้วยกเลิก/โอนช้า
+            //    ได้คืน/เติมกระเป๋าเป็นบาทเต็ม (amount_thb) = กำไรจากส่วนต่าง · ราคาคงที่จึงมีผลเฉพาะเมื่อแพงกว่าตลาด
+            $market = bcdiv($net, $rateThb, 18);
+            if (bccomp($market, $line, 18) > 0) {
+                $line = $market;
+            }
+
             $fixedSum = bcadd($fixedSum, $line, 18);
             $convertThb = bcsub($convertThb, $net, 2);
         }
@@ -202,33 +211,6 @@ class TpixPaymentService
         $converted = bccomp($convertThb, '0', 2) > 0 ? bcdiv($convertThb, $rateThb, 18) : '0';
 
         return TpixAmount::ceil(bcadd($fixedSum, $converted, 18), 4);
-    }
-
-    /**
-     * ยอด TPIX ตัวอย่างสำหรับแสดงก่อนสั่งซื้อ (หน้า checkout) — ใช้ราคาคิดเงินจริง
-     *
-     * @return array{tpix: string, tpix_display: string, rate_thb: string, rate_display: string, basis: string}|null
-     */
-    public function previewThb(float $thb): ?array
-    {
-        if ($thb <= 0) {
-            return null;
-        }
-
-        $rate = $this->prices->quoteRate();
-        if ($rate === null) {
-            return null;
-        }
-
-        $tpix = TpixPriceService::thbToTpix(number_format($thb, 2, '.', ''), $rate['rate_thb']);
-
-        return [
-            'tpix' => $tpix,
-            'tpix_display' => TpixAmount::display($tpix, 4),
-            'rate_thb' => $rate['rate_thb'],
-            'rate_display' => TpixPriceService::formatRate($rate['rate_thb']),
-            'basis' => $rate['basis'],
-        ];
     }
 
     /**
@@ -314,6 +296,51 @@ class TpixPaymentService
                 ));
             }
         }
+
+        $spot = $this->prices->spot();
+        if ($spot !== null) {
+            $this->assertPoolDepth($amountThb, $spot['reserve_usdt'], $spot['usd_thb']);
+        }
+    }
+
+    /**
+     * เพดานตามสภาพคล่องของตลาด: ยอดต่อรายการต้องไม่เกิน max_pool_ratio × มูลค่าฝั่ง USDT ในพูล
+     * พูลบาง = ปั่นราคาได้ถูก (ดันราคา 2 เท่าแล้วค้างไว้ทั้งช่วงค่าเฉลี่ย) และเหรียญที่รับมาขายคืนตามราคานี้ไม่ได้
+     *
+     * @throws TpixPayException
+     */
+    public function assertPoolDepth(float $amountThb, string $reserveUsdt, string $usdThb): void
+    {
+        $ratio = $this->settings->maxPoolRatio();
+        if ($ratio <= 0) {
+            return;
+        }
+
+        $maxThb = (float) bcmul(bcmul($reserveUsdt, $usdThb, 6), TpixAmount::fromNumber($ratio, 4), 2);
+        if ($amountThb > $maxThb) {
+            throw new TpixPayException(TpixPayException::LIMIT_EXCEEDED, sprintf(
+                'ยอดนี้เกินสภาพคล่องของตลาด TPIX ตอนนี้ — ชำระด้วย TPIX ได้สูงสุด %s บาทต่อรายการ',
+                number_format(max(0, $maxThb), 2)
+            ));
+        }
+    }
+
+    /**
+     * ยังอยู่ในเพดานต่อผู้ใช้ 24 ชม. หรือไม่ (ใช้กับเงินที่เข้ามาแล้ว — โอนช้า/โอนซ้ำ — ซึ่งปฏิเสธไม่ได้ แต่ห้ามเติมเกินเพดานอัตโนมัติ)
+     */
+    private function withinDailyCap(?int $userId, float $amountThb): bool
+    {
+        $perDay = $this->settings->maxPerUserDayThb();
+        if ($perDay <= 0 || ! $userId) {
+            return true;
+        }
+
+        $used = (float) TpixPayment::where('user_id', $userId)
+            ->where('created_at', '>=', now()->subDay())
+            ->whereIn('status', TpixPayment::SETTLED_STATUSES)
+            ->sum('amount_thb');
+
+        return $used + $amountThb <= $perDay;
     }
 
     // =====================================================================
@@ -376,6 +403,14 @@ class TpixPaymentService
                 return ['status' => 'pending', 'message' => (string) $check['reason']];
 
             case TpixTxVerifier::CONFIRMING:
+                // ❗ ผูกเลขธุรกรรมเฉพาะเมื่อเข้าบล็อกแล้ว + receipt สำเร็จ — ธุรกรรมที่ยังค้างใน mempool อาจถูกเร่ง/ยกเลิก/หลุด
+                //    ถ้าผูกไว้ก่อน ใบจะติดกับ hash ที่ไม่มีวันผ่าน และ hash จริงที่โอนทีหลังจะถูกปฏิเสธ (คนอื่นแกล้งจองใบได้ด้วย)
+                if ($check['block_number'] === null) {
+                    $this->rememberSubmittedHash($payment, $hash);
+
+                    return ['status' => 'pending', 'message' => 'ธุรกรรมยังรอเข้าบล็อก ระบบจะตรวจให้อัตโนมัติ'];
+                }
+
                 if (! $this->claimHash($payment, $hash, $check, TpixPayment::STATUS_CONFIRMING)) {
                     return ['status' => 'rejected', 'message' => 'ธุรกรรมนี้ถูกใช้ชำระรายการอื่นไปแล้ว'];
                 }
@@ -432,6 +467,18 @@ class TpixPaymentService
                 $locked->forceFill($this->txFields($hash, $check))->save();
 
                 if ($locked->purpose === TpixPayment::PURPOSE_WALLET_TOPUP) {
+                    $transaction = $locked->payment_transaction_id
+                        ? PaymentTransaction::whereKey($locked->payment_transaction_id)->lockForUpdate()->first()
+                        : null;
+
+                    // บิลเติมเงินเดียวกันถูกปิดไปแล้วด้วยใบ TPIX อีกใบ (ออกใบซ้ำช่วงใกล้หมดเวลา) → เติมใบนี้แยก ไม่กลืนเงิน
+                    if ($transaction && $transaction->isCompleted()) {
+                        $this->creditWallet($locked, (float) $locked->amount_thb, 'เติมเงินด้วย TPIX ('.$locked->reference.')');
+                        $this->markSettled($locked, TpixPayment::STATUS_CREDITED_WALLET);
+
+                        return ['status' => TpixPayment::STATUS_CREDITED_WALLET, 'message' => 'เติมเงินเข้ากระเป๋าเรียบร้อยแล้ว'];
+                    }
+
                     $this->completeTransaction($locked);
                     $this->markSettled($locked, TpixPayment::STATUS_PAID);
 
@@ -508,6 +555,11 @@ class TpixPaymentService
 
         $valueThb = floor((float) bcmul((string) $payment->amount_tpix, $rate['rate_thb'], 4) * 100) / 100;
 
+        // เงินเข้าแล้วแต่เกินเพดานต่อวัน → ไม่เติมอัตโนมัติ (กันใช้โอนช้าเป็นทางแลกเหรียญเป็นบาทเกินเพดาน) ให้แอดมินอนุมัติ
+        if (! $this->withinDailyCap($payment->user_id, $valueThb)) {
+            return $this->holdForReview($payment, $hash, $check, 'โอนหลังหมดเวลาและเกินเพดานต่อวัน — รอแอดมินอนุมัติ');
+        }
+
         try {
             $outcome = DB::transaction(function () use ($payment, $hash, $check, $valueThb, $rate) {
                 $locked = TpixPayment::whereKey($payment->id)->lockForUpdate()->first();
@@ -556,6 +608,82 @@ class TpixPaymentService
                 ? 'ได้รับเหรียญหลังหมดเวลา — เติม '.number_format($valueThb, 2).' บาทตามราคาปัจจุบันเข้ากระเป๋า และชำระคำสั่งซื้อจากกระเป๋าให้แล้ว'
                 : 'ได้รับเหรียญหลังหมดเวลา — เติม '.number_format($valueThb, 2).' บาทตามราคาปัจจุบันเข้ากระเป๋าเงินของคุณแล้ว',
         ];
+    }
+
+    /**
+     * แอดมินอนุมัติเงินที่เข้ามาหลังหมดเวลา/โอนซ้ำที่ติดเพดาน → ตรวจบนเชนซ้ำ แล้วเติมเข้ากระเป๋าตามราคาปัจจุบัน
+     *
+     * @return array{status: string, message: string}
+     */
+    public function approveHeld(TpixPayment $payment): array
+    {
+        if ($payment->status !== TpixPayment::STATUS_LATE || ! $payment->tx_hash || empty($payment->meta['needs_review'])) {
+            return ['status' => 'rejected', 'message' => 'รายการนี้ไม่ได้รอการอนุมัติ'];
+        }
+
+        try {
+            $check = $this->verifier->check($payment, (string) $payment->tx_hash);
+        } catch (\Throwable $e) {
+            return ['status' => 'pending', 'message' => 'ตรวจกับเชนไม่ได้ชั่วคราว ลองใหม่อีกครั้ง'];
+        }
+
+        // ใบโอนซ้ำถูกสร้างหลังธุรกรรม → ช่วงเวลา/ยอดตรวจกับใบต้นทางไปแล้วตอนบันทึก ที่นี่ยืนยันแค่ว่าธุรกรรมสำเร็จ + ยอดตรง
+        $mined = $check['block_number'] !== null && $check['value_wei'] === (string) $payment->amount_wei;
+        if (! $mined || $check['confirmations'] < $this->settings->confirmations()) {
+            return ['status' => 'rejected', 'message' => 'ยืนยันธุรกรรมบนเชนไม่ผ่าน: '.($check['reason'] ?? 'ยอดหรือ confirmation ไม่ครบ')];
+        }
+
+        $rate = $this->prices->quoteRate();
+        if ($rate === null) {
+            return ['status' => 'pending', 'message' => 'ยังไม่รู้ราคา TPIX ปัจจุบัน ลองใหม่อีกครั้ง'];
+        }
+        $valueThb = floor((float) bcmul((string) $payment->amount_tpix, $rate['rate_thb'], 4) * 100) / 100;
+
+        DB::transaction(function () use ($payment, $valueThb, $rate) {
+            $locked = TpixPayment::whereKey($payment->id)->lockForUpdate()->first();
+            if (! $locked || $locked->status !== TpixPayment::STATUS_LATE) {
+                return;
+            }
+            if ($valueThb > 0) {
+                $this->creditWallet($locked, $valueThb, 'แอดมินอนุมัติ: ได้รับ TPIX '.$locked->reference.' — คิดมูลค่าตามราคาปัจจุบัน');
+            }
+            $this->closeTransaction($locked, 'แอดมินอนุมัติเงิน TPIX ที่ติดเพดาน — เติมเข้ากระเป๋าเงิน');
+            $locked->meta = array_merge($locked->meta ?? [], [
+                'needs_review' => false,
+                'approved_at' => now()->toIso8601String(),
+                'late_rate_thb' => $rate['rate_thb'],
+                'late_value_thb' => $valueThb,
+            ]);
+            $locked->failure_reason = null;
+            $this->markSettled($locked, TpixPayment::STATUS_CREDITED_WALLET);
+        });
+
+        return ['status' => TpixPayment::STATUS_CREDITED_WALLET, 'message' => 'เติม '.number_format($valueThb, 2).' บาทเข้ากระเป๋าผู้ใช้แล้ว'];
+    }
+
+    /**
+     * ผูกธุรกรรมไว้สถานะ late + ธงรอแอดมิน (ตัวสแกนไม่วนตรวจซ้ำ)
+     *
+     * @param  array<string, mixed>  $check
+     * @return array{status: string, message: string}
+     */
+    private function holdForReview(TpixPayment $payment, string $hash, array $check, string $reason): array
+    {
+        if (! $this->claimHash($payment, $hash, $check, TpixPayment::STATUS_LATE)) {
+            return ['status' => 'rejected', 'message' => 'ธุรกรรมนี้ถูกใช้ชำระรายการอื่นไปแล้ว'];
+        }
+
+        $fresh = $payment->fresh();
+        if ($fresh) {
+            $fresh->forceFill([
+                'failure_reason' => $reason,
+                'meta' => array_merge($fresh->meta ?? [], ['needs_review' => true]),
+            ])->save();
+        }
+
+        Log::critical('TpixPay: payment held for admin review', ['payment_id' => $payment->id, 'reason' => $reason]);
+
+        return ['status' => TpixPayment::STATUS_LATE, 'message' => 'ได้รับเหรียญแล้ว — รายการนี้รอแอดมินตรวจสอบก่อนเติมเข้ากระเป๋า'];
     }
 
     /**
@@ -634,38 +762,50 @@ class TpixPaymentService
         $waiting = TpixPayment::whereIn('status', [TpixPayment::STATUS_CONFIRMING, TpixPayment::STATUS_LATE])
             ->whereNotNull('tx_hash')
             ->where('updated_at', '>=', now()->subDays(2))
-            ->limit(100)
-            ->get();
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get()
+            ->reject(fn (TpixPayment $p) => ! empty($p->meta['needs_review']));
         foreach ($waiting as $payment) {
-            $result = $this->verifyAndSettle($payment, (string) $payment->tx_hash);
-            if (in_array($result['status'], TpixPayment::SETTLED_STATUSES, true)) {
-                $stats['confirmed']++;
+            try {
+                $result = $this->verifyAndSettle($payment, (string) $payment->tx_hash);
+                if (in_array($result['status'], TpixPayment::SETTLED_STATUSES, true)) {
+                    $stats['confirmed']++;
+                }
+            } catch (\Throwable $e) {
+                Log::error('TpixPay scan: confirm failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
             }
         }
 
         // 5) เลขธุรกรรมที่ลูกค้าส่งมาตอนเชนล่ม/ยังไม่เจอ
-        $submitted = TpixPayment::whereIn('status', [TpixPayment::STATUS_PENDING, TpixPayment::STATUS_EXPIRED, TpixPayment::STATUS_FAILED])
+        // submitted_at ถูกตั้งตอนจำเลขธุรกรรม (rememberSubmittedHash) — ใช้กรองใน SQL ก่อน limit (meta มีทุกใบ กรองไม่ได้)
+        $submitted = TpixPayment::whereIn('status', [TpixPayment::STATUS_PENDING, TpixPayment::STATUS_EXPIRED, TpixPayment::STATUS_FAILED, TpixPayment::STATUS_CANCELLED])
             ->whereNull('tx_hash')
-            ->whereNotNull('meta')
+            ->whereNotNull('submitted_at')
             ->where('expires_at', '>=', now()->subMinutes($grace))
-            ->limit(100)
+            ->orderByDesc('id')
+            ->limit(200)
             ->get()
             ->filter(fn (TpixPayment $p) => ! empty($p->meta['submitted_hashes']));
         foreach ($submitted as $payment) {
             foreach ((array) $payment->meta['submitted_hashes'] as $hash) {
-                if (TpixPayment::where('tx_hash', $hash)->exists()) {
-                    continue;
-                }
-                $result = $this->verifyAndSettle($payment->fresh(), (string) $hash);
-                if (in_array($result['status'], ['confirming', ...TpixPayment::SETTLED_STATUSES], true)) {
-                    $stats['matched']++;
-                    break;
+                try {
+                    if (TpixPayment::where('tx_hash', $hash)->exists()) {
+                        continue;
+                    }
+                    $result = $this->verifyAndSettle($payment->fresh(), (string) $hash);
+                    if (in_array($result['status'], ['confirming', ...TpixPayment::SETTLED_STATUSES], true)) {
+                        $stats['matched']++;
+                        break;
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('TpixPay scan: submitted hash failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
                 }
             }
         }
 
-        // 6) สแกนการโอนเข้ากระเป๋ารับเงินจาก explorer แล้วจับคู่ด้วยยอด wei ตรงตัว (ตัดสินด้วย RPC อีกชั้น)
-        // รวมใบที่ถูกยกเลิก (ออเดอร์จ่ายด้วยใบอื่นแล้ว) — ถ้ามีคนโอนยอดของใบนั้นเข้ามา ต้องเติมเข้ากระเป๋า ไม่ใช่เมิน
+        // 6) ไล่ทุกบล็อกใหม่ทาง RPC (เก็บตำแหน่งที่สแกนถึงใน DB) แล้วจับคู่การโอนเข้ากระเป๋ารับเงินด้วยยอด wei ตรงตัว
+        //    (เดิมใช้ explorer 3 หน้า — ธุรกรรม 0 TPIX ฟรีจำนวนมากดันเงินจริงหลุดหน้าต่างได้)
         $open = TpixPayment::whereIn('status', [TpixPayment::STATUS_PENDING, TpixPayment::STATUS_EXPIRED, TpixPayment::STATUS_FAILED, TpixPayment::STATUS_CANCELLED])
             ->whereNull('tx_hash')
             ->where('expires_at', '>=', now()->subMinutes($grace))
@@ -675,19 +815,20 @@ class TpixPaymentService
             ->get();
 
         $addresses = $open->pluck('receive_address')->merge($settledRecently->pluck('receive_address'))
-            ->map(fn ($a) => strtolower((string) $a))->unique()->values();
+            ->map(fn ($a) => strtolower((string) $a))->unique()->values()->all();
 
-        foreach ($addresses as $address) {
-            $since = $open->where(fn ($p) => strtolower($p->receive_address) === $address)->min('created_at')
-                ?? $settledRecently->where(fn ($p) => strtolower($p->receive_address) === $address)->min('created_at');
-            $incoming = $this->incomingTransfers($address, $since);
+        try {
+            $incoming = $this->incomingFromBlocks($addresses);
+        } catch (\Throwable $e) {
+            Log::warning('TpixPay scan: block scan failed', ['error' => $e->getMessage()]);
+            $incoming = [];
+        }
 
-            foreach ($incoming as $item) {
-                $hash = strtolower((string) ($item['hash'] ?? ''));
-                $value = (string) ($item['value'] ?? '');
-                if (! TpixTxVerifier::isValidHash($hash) || ! preg_match('/^\d+$/', $value)) {
-                    continue;
-                }
+        foreach ($incoming as $item) {
+            try {
+                $hash = $item['hash'];
+                $value = $item['value'];
+                $address = $item['to'];
                 if (TpixPayment::where('tx_hash', $hash)->exists()) {
                     continue;
                 }
@@ -704,12 +845,14 @@ class TpixPaymentService
                     continue;
                 }
 
-                // ยอดตรงกับใบที่จ่ายไปแล้ว (โอนซ้ำ) → เติมเข้ากระเป๋า
+                // ยอดตรงกับใบที่จ่ายไปแล้ว (โอนซ้ำ) → เติมเข้ากระเป๋า (เกินเพดาน = รอแอดมิน)
                 $origin = $settledRecently->first(fn (TpixPayment $p) => strtolower($p->receive_address) === $address
                     && $p->amount_wei === $value);
                 if ($origin && $this->creditDuplicateTransfer($origin, $hash)) {
                     $stats['stray']++;
                 }
+            } catch (\Throwable $e) {
+                Log::error('TpixPay scan: incoming transfer failed', ['tx_hash' => $item['hash'] ?? null, 'error' => $e->getMessage()]);
             }
         }
 
@@ -738,8 +881,11 @@ class TpixPaymentService
                     ->whereColumn('tpix_payments.payable_id', 'orders.id')
                     ->where('tpix_payments.purpose', TpixPayment::PURPOSE_ORDER)
                     ->where(function ($open) use ($grace) {
-                        $open->whereNotNull('tpix_payments.tx_hash')
-                            ->orWhere('tpix_payments.expires_at', '>=', now()->subMinutes($grace));
+                        // ผูกธุรกรรมแล้วแต่ยังไม่จบ (รอ confirmation / โอนช้ารอคิดราคา) หรือยังอยู่ในช่วงกันยอด
+                        $open->where(fn ($q) => $q->whereNotNull('tpix_payments.tx_hash')
+                            ->whereIn('tpix_payments.status', [TpixPayment::STATUS_CONFIRMING, TpixPayment::STATUS_LATE]))
+                            ->orWhere(fn ($q) => $q->whereNull('tpix_payments.tx_hash')
+                                ->where('tpix_payments.expires_at', '>=', now()->subMinutes($grace)));
                     });
             })
             ->whereNotExists(function ($q) {
@@ -750,7 +896,14 @@ class TpixPaymentService
                     ->whereIn('payment_transactions.status', ['pending', 'processing'])
                     ->where(function ($live) {
                         $live->whereNull('payment_transactions.expired_at')
-                            ->orWhere('payment_transactions.expired_at', '>', now());
+                            ->orWhere('payment_transactions.expired_at', '>', now())
+                            // QR พร้อมเพย์/โอนที่ยอดจองยังใช้ได้ (อยู่ได้ ~24 ชม. เกินอายุบิล) — SMS ยังตัดบิลได้
+                            ->orWhereExists(function ($ua) {
+                                $ua->selectRaw('1')->from('unique_payment_amounts')
+                                    ->whereColumn('unique_payment_amounts.transaction_id', 'payment_transactions.id')
+                                    ->where('unique_payment_amounts.status', 'reserved')
+                                    ->where('unique_payment_amounts.expires_at', '>', now());
+                            });
                     });
             })
             ->orderBy('id')
@@ -783,6 +936,82 @@ class TpixPaymentService
         }
 
         return $cancelled;
+    }
+
+    /**
+     * การโอนเหรียญ TPIX (native) เข้ากระเป๋าที่ระบุ จากบล็อกใหม่ตั้งแต่ตำแหน่งที่สแกนล่าสุด (เก็บใน settings — ไม่หายตอน deploy)
+     *
+     * ไม่มีใบเปิด → เลื่อนตำแหน่งไปบล็อกล่าสุดเฉย ๆ (ธุรกรรมที่จ่ายใบต้องเกิดหลังออกใบอยู่แล้ว)
+     * สแกนสูงสุด scan_max_blocks ต่อรอบ (ค้างนานก็ไล่ตามทัน) · ขอทีละ scan_batch บล็อกในคำขอเดียว (JSON-RPC batch)
+     *
+     * @param  array<int, string>  $addresses  ที่อยู่ตัวพิมพ์เล็ก
+     * @return array<int, array{hash: string, value: string, to: string}>
+     */
+    public function incomingFromBlocks(array $addresses): array
+    {
+        $latest = $this->rpc->blockNumber();
+        $cursor = (int) \App\Models\Setting::get('tpix_pay.scan_block', 0);
+        $lookback = (int) ceil(((int) config('tpix_pay.quote_ttl_minutes', 30) + (int) config('tpix_pay.late_grace_minutes', 120)) * 60 / 2);
+
+        if ($addresses === [] || $cursor <= 0) {
+            // เริ่มครั้งแรกย้อน ~1 นาที · ไม่มีใบเปิด = ไม่ต้องอ่านบล็อก
+            $this->saveScanCursor($addresses === [] ? $latest : max(0, $latest - 30));
+            if ($addresses === []) {
+                return [];
+            }
+            $cursor = max(0, $latest - 30);
+        }
+
+        // ระบบหยุดไปนาน → ย้อนไม่เกินช่วงที่ใบยังรับเงินได้
+        $from = max($cursor + 1, $latest - $lookback);
+        $to = min($latest, $from + max(30, (int) config('tpix_pay.scan_max_blocks', 900)) - 1);
+        if ($from > $to) {
+            return [];
+        }
+
+        $wanted = array_flip($addresses);
+        $found = [];
+        $batch = max(5, (int) config('tpix_pay.scan_batch', 40));
+
+        for ($start = $from; $start <= $to; $start += $batch) {
+            $end = min($to, $start + $batch - 1);
+            $calls = [];
+            for ($n = $start; $n <= $end; $n++) {
+                $calls[] = ['eth_getBlockByNumber', ['0x'.dechex($n), true]];
+            }
+
+            $blocks = $this->rpc->batch($calls);
+            foreach ($blocks as $i => $block) {
+                if (! is_array($block)) {
+                    // บล็อกหายจากคำตอบ → หยุดก่อนบล็อกนี้ รอบหน้าอ่านต่อ (ไม่ข้ามเงิน)
+                    $this->saveScanCursor($start + $i - 1);
+
+                    return $found;
+                }
+                foreach ((array) ($block['transactions'] ?? []) as $tx) {
+                    if (! is_array($tx)) {
+                        continue;
+                    }
+                    $toAddr = strtolower((string) ($tx['to'] ?? ''));
+                    if (! isset($wanted[$toAddr])) {
+                        continue;
+                    }
+                    $value = TpixAmount::hexToDec((string) ($tx['value'] ?? '0x0'));
+                    if ($value === '0' || ! TpixTxVerifier::isValidHash($tx['hash'] ?? null)) {
+                        continue;
+                    }
+                    $found[] = ['hash' => strtolower((string) $tx['hash']), 'value' => $value, 'to' => $toAddr];
+                }
+            }
+            $this->saveScanCursor($end);
+        }
+
+        return $found;
+    }
+
+    private function saveScanCursor(int $block): void
+    {
+        \App\Models\Setting::set('tpix_pay.scan_block', (string) max(0, $block), 'integer', 'tpix_pay');
     }
 
     /**
@@ -1008,9 +1237,11 @@ class TpixPaymentService
             return false;
         }
         $valueThb = floor((float) bcmul((string) $origin->amount_tpix, $rate['rate_thb'], 4) * 100) / 100;
+        // เกินเพดานต่อวัน → บันทึกไว้ให้แอดมินอนุมัติ ไม่เติมอัตโนมัติ
+        $review = ! $this->withinDailyCap($origin->user_id, $valueThb);
 
         try {
-            return (bool) DB::transaction(function () use ($origin, $hash, $check, $rate, $valueThb) {
+            return (bool) DB::transaction(function () use ($origin, $hash, $check, $rate, $valueThb, $review) {
                 $stray = TpixPayment::create([
                     'reference' => 'TPX'.Str::upper(Str::random(21)),
                     'user_id' => $origin->user_id,
@@ -1024,16 +1255,23 @@ class TpixPaymentService
                     'amount_wei' => $origin->amount_wei,
                     'amount_tpix' => $origin->amount_tpix,
                     'receive_address' => $origin->receive_address,
-                    'status' => TpixPayment::STATUS_CREDITED_WALLET,
+                    'status' => $review ? TpixPayment::STATUS_LATE : TpixPayment::STATUS_CREDITED_WALLET,
                     'tx_hash' => $hash,
                     'from_address' => $check['from'],
                     'block_number' => $check['block_number'],
                     'confirmations' => $check['confirmations'],
                     'submitted_at' => now(),
                     'expires_at' => now(),
-                    'paid_at' => now(),
-                    'meta' => ['duplicate_of' => $origin->reference],
+                    'paid_at' => $review ? null : now(),
+                    'failure_reason' => $review ? 'โอนซ้ำยอดเดิมและเกินเพดานต่อวัน — รอแอดมินอนุมัติ' : null,
+                    'meta' => ['duplicate_of' => $origin->reference, 'needs_review' => $review],
                 ]);
+
+                if ($review) {
+                    Log::critical('TpixPay: duplicate transfer over the daily cap — waiting for admin review', ['stray_id' => $stray->id]);
+
+                    return true;
+                }
 
                 if ($valueThb > 0) {
                     $this->creditWallet($stray, $valueThb, 'ได้รับ TPIX ซ้ำยอดเดิมของรายการ '.$origin->reference.' — เติมมูลค่าปัจจุบันเข้ากระเป๋า');
