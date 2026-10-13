@@ -154,10 +154,116 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 /**
+ * ดึง push token ของเครื่องนี้
+ *
+ * 🔔 (2026-10-13) Android = FCM device token ตรงจาก Firebase (project plptdb · google-services.json)
+ *   เซิร์ฟเวอร์ส่งผ่าน FCM HTTP v1 ของเราเอง (ExpoPushService) ไม่ต้องฝากคีย์ FCM ไว้กับ Expo
+ *   — เดิมขอ Expo push token ซึ่งต้องมีคีย์ FCM บน Expo ด้วย จึงไม่เคยได้ token สักเครื่อง
+ * iOS = Expo push token เหมือนเดิม
+ */
+const fetchPushToken = async (): Promise<string | null> => {
+  if (Platform.OS === 'android') {
+    try {
+      const deviceToken = await Notifications.getDevicePushTokenAsync();
+      const value = typeof deviceToken?.data === 'string' ? deviceToken.data : null;
+      return value && value.length > 0 ? value : null;
+    } catch (tokenError) {
+      console.warn('⚠️ Failed to get FCM device token:', tokenError);
+      return null;
+    }
+  }
+
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId) {
+    console.warn('⚠️ No EAS project ID found, skipping push token registration');
+    return null;
+  }
+  try {
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    return tokenData.data;
+  } catch (tokenError) {
+    console.warn('⚠️ Failed to get Expo push token:', tokenError);
+    return null;
+  }
+};
+
+/** device_id ของเครื่องนี้ (สร้างและเก็บไว้ครั้งแรก) */
+const getOrCreateDeviceId = async (): Promise<string> => {
+  let deviceId: string | null = null;
+  try {
+    deviceId = await SecureStore.getItemAsync(DEVICE_ID_STORAGE_KEY);
+  } catch (e) {
+    console.warn('⚠️ Failed to get device_id from storage:', e);
+  }
+
+  if (!deviceId) {
+    deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    try {
+      await SecureStore.setItemAsync(DEVICE_ID_STORAGE_KEY, deviceId);
+    } catch (e) {
+      console.warn('⚠️ Failed to save device_id:', e);
+    }
+  }
+  return deviceId;
+};
+
+/**
+ * ส่ง token ไปผูกกับบัญชีบนเซิร์ฟเวอร์
+ *
+ * @returns true = เซิร์ฟเวอร์รับแล้ว (ส่งแจ้งเตือนถึงเครื่องนี้ได้)
+ */
+const sendTokenToServer = async (token: string): Promise<boolean> => {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    const response = await registerPushToken({
+      token,
+      platform: Platform.OS as 'android' | 'ios',
+      device_id: deviceId || undefined,
+      device_name: Device.modelName || undefined,
+      app_version: APP_INFO.VERSION,
+    });
+
+    if (!response.success) {
+      console.warn('⚠️ Failed to register push token:', response.message);
+      return false;
+    }
+
+    try {
+      await SecureStore.setItemAsync(PUSH_TOKEN_STORAGE_KEY, token);
+    } catch {
+      // เก็บไม่ได้ก็ยังใช้งาน push ได้ แค่ถอดตอน logout ด้วย device_id อย่างเดียว
+    }
+    return true;
+  } catch (registerError) {
+    // ไม่ crash ถ้าลงทะเบียนไม่สำเร็จ
+    console.warn('⚠️ Push token registration error (non-critical):', registerError);
+    return false;
+  }
+};
+
+/**
+ * FCM หมุน token ใหม่ได้เอง (ล้างข้อมูลแอป / Google หมุนรอบ) → ผูก token ใหม่กับบัญชีทันที
+ * ไม่งั้นเซิร์ฟเวอร์ยิงไป token เก่าที่ตายแล้ว และเครื่องนี้เงียบไปจนกว่าจะเปิดแอปใหม่
+ */
+let tokenRefreshSubscription: { remove: () => void } | null = null;
+const ensureTokenRefreshListener = (): void => {
+  if (tokenRefreshSubscription) return;
+  try {
+    tokenRefreshSubscription = Notifications.addPushTokenListener((next) => {
+      const value = typeof next?.data === 'string' ? next.data : null;
+      if (!value) return;
+      sendTokenToServer(value).catch(() => {});
+    });
+  } catch (e) {
+    console.warn('⚠️ Push token listener error (non-critical):', e);
+  }
+};
+
+/**
  * ดึง Push Token และลงทะเบียนกับ server
  * ป้องกันการเรียกซ้ำซ้อน
  *
- * @returns Promise<string | null> - Push Token หรือ null ถ้าไม่สำเร็จ
+ * @returns Promise<string | null> - Push Token ที่เซิร์ฟเวอร์รับแล้ว หรือ null ถ้าไม่สำเร็จ
  */
 export const registerForPushNotifications = async (): Promise<string | null> => {
   // ป้องกันการเรียกซ้ำ
@@ -175,88 +281,30 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     // ขอสิทธิ์
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) {
-      isRegistering = false;
       return null;
     }
 
-    // ดึง project ID
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) {
-      console.warn('⚠️ No EAS project ID found, skipping push token registration');
-      isRegistering = false;
-      return null;
-    }
-
-    // ดึง Expo Push Token
-    let token: string;
-    try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-      token = tokenData.data;
-    } catch (tokenError) {
-      console.error('Failed to get Expo push token:', tokenError);
-      isRegistering = false;
-      return null;
-    }
-
-    // ดึง device_id จาก storage (ถ้ามี)
-    let deviceId: string | null = null;
-    try {
-      deviceId = await SecureStore.getItemAsync(DEVICE_ID_STORAGE_KEY);
-    } catch (e) {
-      console.warn('⚠️ Failed to get device_id from storage:', e);
-    }
-
-    // ถ้ายังไม่มี device_id ให้สร้างใหม่และบันทึก
-    if (!deviceId) {
-      deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      try {
-        await SecureStore.setItemAsync(DEVICE_ID_STORAGE_KEY, deviceId);
-      } catch (e) {
-        console.warn('⚠️ Failed to save device_id:', e);
-      }
-    }
-
-    // ลงทะเบียน token กับ server
-    try {
-      const deviceInfo = {
-        token,
-        platform: Platform.OS as 'android' | 'ios',
-        device_id: deviceId || undefined,
-        device_name: Device.modelName || undefined,
-        app_version: APP_INFO.VERSION,
-      };
-
-      const response = await registerPushToken(deviceInfo);
-
-      if (response.success) {
-        try {
-          await SecureStore.setItemAsync(PUSH_TOKEN_STORAGE_KEY, token);
-        } catch {
-          // เก็บไม่ได้ก็ยังใช้งาน push ได้ แค่ถอดตอน logout ด้วย device_id อย่างเดียว
-        }
-      } else {
-        console.warn('⚠️ Failed to register push token:', response.message);
-      }
-    } catch (registerError) {
-      // ไม่ crash ถ้าลงทะเบียนไม่สำเร็จ
-      console.warn('⚠️ Push token registration error (non-critical):', registerError);
-    }
-
-    // ตั้งค่า Android notification channel (non-blocking)
+    // ช่องแจ้งเตือน Android ต้องมีก่อนข้อความแรกจะมาถึง (เซิร์ฟเวอร์ระบุ channelId มาในข้อความ)
     if (Platform.OS === 'android') {
-      setupAndroidChannels().catch((e) => {
+      await setupAndroidChannels().catch((e) => {
         console.warn('⚠️ Android channels setup error (non-critical):', e);
       });
     }
 
-    isRegistering = false;
-    return token;
+    const token = await fetchPushToken();
+    if (!token) {
+      return null;
+    }
+
+    ensureTokenRefreshListener();
+
+    const registered = await sendTokenToServer(token);
+    return registered ? token : null;
   } catch (error) {
     console.error('Register push notification error:', error);
-    isRegistering = false;
     return null;
+  } finally {
+    isRegistering = false;
   }
 };
 

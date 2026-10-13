@@ -5,7 +5,8 @@
  * - ปฏิเสธถาวร → พาไปตั้งค่าเครื่อง · กลับมาจากตั้งค่า → ตรวจสิทธิ์ใหม่อัตโนมัติ
  * - ประเภทการแจ้งเตือน = ช่องแจ้งเตือนจริงของ Android (ออเดอร์/ข้อความ/โปรโมชั่น ฯลฯ) ปิดเปิดได้ในตั้งค่าเครื่อง
  *   (ไม่มีสวิตช์หลอกที่กดแล้วไม่ได้บันทึกที่ไหน)
- * - ทดสอบ = แจ้งเตือนในเครื่อง (ไม่ยิง server ไม่นับโควตาใดๆ)
+ * - ทดสอบ = ให้เซิร์ฟเวอร์ยิง push จริงมาที่เครื่อง (2026-10-13) — เดิมเป็นแจ้งเตือนในเครื่องเอง
+ *   ทำให้ดูเหมือนใช้ได้ทั้งที่เซิร์ฟเวอร์ส่งไม่ถึง · ยังไม่ได้ผูก token → ลงทะเบียนใหม่แล้วลองอีกครั้ง
  * - ไม่แสดง push token บนจอ (PLAY-22)
  */
 
@@ -19,8 +20,8 @@ import {
   isPushNotificationSupported,
   registerForPushNotifications,
   requestNotificationPermission,
-  sendLocalNotification,
 } from '@/services/notifications';
+import { sendTestPush } from '@/services/api/accountApi';
 import { Button3D, Card3D, EmptyState, Icon, Pill, Screen, resultHaptic, type IconName } from '@/components/ui';
 import { MenuGroup, MenuRow, type MenuTone } from '@/components/profile';
 import { useTheme, radii, spacing, typography } from '@/theme';
@@ -108,7 +109,7 @@ export default function NotificationSettingsScreen() {
         const token = await registerForPushNotifications();
         if (!mountedRef.current) return;
         if (!token) {
-          Alert.alert('เปิดแล้ว แต่ยังเชื่อมกับบัญชีไม่ได้', 'ตรวจอินเทอร์เน็ตแล้วเปิดหน้านี้ใหม่อีกครั้งนะ');
+          Alert.alert('เปิดแล้ว แต่ยังลงทะเบียนเครื่องนี้กับระบบไม่สำเร็จ', 'ลองกดอีกครั้งภายหลัง ถ้ายังไม่ได้ ให้อัปเดตแอปเป็นรุ่นล่าสุด');
           return;
         }
       }
@@ -119,9 +120,34 @@ export default function NotificationSettingsScreen() {
     }
   };
 
+  const [testing, setTesting] = useState(false);
+  const testingRef = useRef(false);
+
   const sendTest = async () => {
-    await sendLocalNotification('ทดสอบการแจ้งเตือน', 'ถ้าเห็นข้อความนี้ แปลว่าแจ้งเตือนใช้งานได้แล้ว', { type: 'test' });
-    resultHaptic('success');
+    if (testingRef.current) return;
+    testingRef.current = true;
+    setTesting(true);
+    try {
+      let result = await sendTestPush();
+      // ยังไม่ได้ผูก token กับบัญชี → ลงทะเบียนใหม่แล้วลองอีกครั้ง
+      if (!result.success && result.code === 'NO_PUSH_TOKEN') {
+        const token = await registerForPushNotifications();
+        if (token) {
+          result = await sendTestPush();
+        }
+      }
+      if (!mountedRef.current) return;
+      if (result.success) {
+        resultHaptic('success');
+        Alert.alert('ส่งแล้ว', 'รอสักครู่ แจ้งเตือนทดสอบจะเด้งขึ้นที่เครื่องนี้ ถ้าไม่ขึ้นภายใน 1 นาที ลองปิดแล้วเปิดแอปใหม่');
+      } else {
+        resultHaptic('error');
+        Alert.alert('ยังส่งแจ้งเตือนไม่ได้', result.message);
+      }
+    } finally {
+      testingRef.current = false;
+      if (mountedRef.current) setTesting(false);
+    }
   };
 
   if (loading) {
@@ -174,7 +200,7 @@ export default function NotificationSettingsScreen() {
 
         {granted ? (
           <View style={styles.buttons}>
-            <Button3D title="ทดสอบ" icon="paper-plane-tilt" variant="secondary" onPress={sendTest} style={styles.flex} />
+            <Button3D title={testing ? 'กำลังส่ง…' : 'ทดสอบ'} icon="paper-plane-tilt" variant="secondary" onPress={sendTest} disabled={testing} style={styles.flex} />
             <Button3D title="ดูการแจ้งเตือน" icon="bell" variant="navy" onPress={() => router.push('/notifications')} style={styles.flex} />
           </View>
         ) : (
