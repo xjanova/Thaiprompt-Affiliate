@@ -173,6 +173,7 @@
                         <p class="text-2xl font-bold text-purple-400">
                             ฿{{ number_format($service->base_price, 2) }}
                         </p>
+                        <x-tpix-price :thb="$service->base_price" class="mt-1" />
                     </div>
 
                     {{-- PV Badge --}}

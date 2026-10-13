@@ -23,6 +23,7 @@
                         <span class="text-gray-700">ยอดรวม:</span>
                         <span class="text-purple-600">{{ number_format($category->price, 2) }} บาท</span>
                     </div>
+                    <div class="mt-2 text-right"><x-tpix-price :thb="$category->price" size="lg" /></div>
                 </div>
             </div>
 

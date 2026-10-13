@@ -19,6 +19,9 @@
 @php
     $coMethods = collect($paymentMethods ?? []);
     $coCardEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'credit_card' && ($m['enabled'] ?? false));
+    // 🪙 เหรียญ TPIX — เปิดรับ + รู้ราคาจริง (ราคา ณ ตอนเปิดหน้า ใช้แสดงยอดประมาณ · ยอดจริงออกหลังยืนยันคำสั่งซื้อ)
+    $coTpixEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'tpix' && ($m['enabled'] ?? false));
+    $coTpixSpot = $coTpixEnabled ? app(\App\Services\TpixPay\TpixPriceService::class)->spot() : null;
     $coBankEnabled = $coMethods->contains(fn ($m) => ($m['id'] ?? null) === 'bank_transfer' && ($m['enabled'] ?? false));
 
     $coAddresses = $addresses->map(fn ($a) => [
@@ -50,6 +53,9 @@
         'walletBalance' => round((float) $walletBalance, 2),
         'hasPhysical' => (bool) $hasPhysicalProducts,
         'promptpayEnabled' => (bool) ($promptpayEnabled ?? false),
+        'tpixEnabled' => $coTpixEnabled && $coTpixSpot !== null,
+        'tpixRate' => $coTpixSpot['price_thb'] ?? null,
+        'tpixRateDisplay' => $coTpixSpot ? \App\Services\TpixPay\TpixPriceService::formatRate($coTpixSpot['price_thb']) : null,
         'fallbackTotal' => round((float) $total, 2),
         'openPinFor' => $coErrorCode === 'ADDRESS_LOCATION_REQUIRED' ? ($coErrorContext['address_id'] ?? null) : null,
     ];
@@ -215,6 +221,24 @@
                                 <span class="tp-muted" style="display:block; font-size:12.5px;" x-text="cfg.promptpayEnabled ? 'สแกนจ่ายผ่านแอปธนาคาร ระบบยืนยันอัตโนมัติ' : 'ยังไม่เปิดให้บริการ'"></span>
                             </span>
                         </button>
+
+                        @if($coTpixEnabled)
+                            <button type="button" class="sf-opt" :class="{ 'is-on': payment === 'tpix', 'is-disabled': !cfg.tpixEnabled }" @click="setPayment('tpix')">
+                                <span class="sf-radio"></span>
+                                <span class="tp-tile" style="width:40px; height:40px; display:inline-grid; place-items:center;">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f5b72e"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#a86b05" stroke-width="1.4"/><path d="M8.6 8.4h6.8v1.9h-2.4V16h-2V10.3H8.6z" fill="#7c4a03"/></svg>
+                                </span>
+                                <span style="flex:1; min-width:0;">
+                                    <strong style="display:block;">เหรียญ TPIX (TPIX Chain)</strong>
+                                    <span class="tp-muted" style="display:block; font-size:12.5px;" x-show="cfg.tpixEnabled">
+                                        <span class="tp-num" style="font-weight:800; color:var(--ink);" x-text="tpixEstimate()"></span>
+                                        · 1 TPIX = <span class="tp-num" x-text="cfg.tpixRateDisplay"></span> ราคาจริงจาก TPIX DEX
+                                    </span>
+                                    <span class="tp-muted" style="display:block; font-size:12px;" x-show="cfg.tpixEnabled">จ่ายด้วย MetaMask / สแกน QR · ยอดเหรียญจริงออกให้หลังยืนยันคำสั่งซื้อ</span>
+                                    <span class="tp-muted" style="display:block; font-size:12.5px;" x-show="!cfg.tpixEnabled">ยังดึงราคา TPIX ไม่ได้ในขณะนี้</span>
+                                </span>
+                            </button>
+                        @endif
 
                         @if($hasPhysicalProducts)
                             <button type="button" class="sf-opt" :class="{ 'is-on': payment === 'cod', 'is-disabled': !codAvailable() }" @click="setPayment('cod')">
@@ -454,6 +478,7 @@
                 if (this.delivery === 'rider' && !this.riderAvailable()) { return 'ส่งด้วยไรเดอร์ไม่ได้ กรุณาเลือกส่งพัสดุ'; }
                 if (this.payment === 'cod' && !this.codAvailable()) { return this.codReason(); }
                 if (this.payment === 'promptpay' && !cfg.promptpayEnabled) { return 'พร้อมเพย์ยังไม่เปิดให้บริการ'; }
+                if (this.payment === 'tpix' && !cfg.tpixEnabled) { return 'ยังชำระด้วยเหรียญ TPIX ไม่ได้ในขณะนี้'; }
                 if (this.walletShort()) { return 'ยอดเงินในกระเป๋าไม่พอ กรุณาเติมเงินหรือเลือกวิธีอื่น'; }
                 return '';
             },
@@ -462,7 +487,15 @@
                 if (this.payment === 'wallet') { return 'ชำระ ' + this.money(this.grand()) + ' ด้วยกระเป๋าเงิน'; }
                 if (this.payment === 'cod') { return 'ยืนยันสั่งซื้อ (จ่ายปลายทาง)'; }
                 if (this.payment === 'promptpay') { return 'ยืนยันและรับ QR พร้อมเพย์'; }
+                if (this.payment === 'tpix') { return 'ยืนยันและรับยอดเหรียญ TPIX'; }
                 return 'ยืนยันคำสั่งซื้อ';
+            },
+            // ยอด TPIX โดยประมาณของยอดรวม (ปัดขึ้น 4 ตำแหน่ง เหมือนเซิร์ฟเวอร์ · ยอดจริงมีเลขท้ายยืนยันอัตโนมัติ)
+            tpixEstimate() {
+                const rate = Number(cfg.tpixRate || 0);
+                if (!rate) { return ''; }
+                const t = Math.ceil(this.grand() / rate * 10000) / 10000;
+                return '≈ ' + t.toLocaleString('th-TH', { maximumFractionDigits: t >= 100 ? 2 : 4 }) + ' TPIX';
             },
 
             setAddress(id) { this.addressId = id; this.requote(); },
@@ -482,6 +515,7 @@
             },
             setPayment(p) {
                 if (p === 'promptpay' && !cfg.promptpayEnabled) { return; }
+                if (p === 'tpix' && !cfg.tpixEnabled) { return; }
                 if (p === 'cod' && !this.codAvailable()) { window.tpShop.notify(this.codReason(), 'info'); return; }
                 this.payment = p;
                 if (LEGACY.includes(p)) {

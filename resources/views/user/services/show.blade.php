@@ -73,6 +73,7 @@
                             <i class="fas fa-tag text-purple-400 text-2xl mb-2"></i>
                             <p class="text-sm text-white/60">ราคาเริ่มต้น</p>
                             <p class="font-semibold text-white">฿{{ number_format($service->base_price, 2) }}</p>
+                            <x-tpix-price :thb="$service->base_price" class="mt-1" />
                         </div>
 
                         <div class="text-center p-4 bg-white/10 backdrop-blur-lg rounded-xl">

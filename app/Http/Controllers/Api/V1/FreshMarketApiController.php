@@ -11,6 +11,7 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\Setting;
 use App\Services\FreshMarketService;
+use App\Services\TpixPay\TpixPriceService;
 use App\Support\FreshMarketValidationText;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -219,6 +220,8 @@ class FreshMarketApiController extends Controller
                 'unit' => $r->unit,
                 'main_image_url' => $r->primary_image,
                 'shop_name' => $r->seller?->shop_name,
+                // 🪙 ราคาเป็นเหรียญ TPIX (price_tpix, tpix) — คีย์เพิ่ม แอปรุ่นเก่าไม่อ่านก็ไม่พัง
+                ...app(TpixPriceService::class)->apiFields((float) $r->price),
             ])->values(),
         ]);
     }
@@ -304,6 +307,7 @@ class FreshMarketApiController extends Controller
                 'track_stock' => $l->tracksStock(),
                 'max_order_quantity' => (int) $l->max_order_quantity,
                 'has_options' => (int) ($l->option_groups_count ?? 0) > 0,
+                ...app(TpixPriceService::class)->apiFields((float) $l->price),
             ])->values(),
         ]);
     }
@@ -1122,6 +1126,8 @@ class FreshMarketApiController extends Controller
                 'name' => $l->category->name,
                 'icon' => $l->category->icon,
             ] : null,
+            // 🪙 ราคาเป็นเหรียญ TPIX ของราคาตั้งต้น (price_tpix, tpix) — คีย์เพิ่มต่อท้าย
+            ...app(TpixPriceService::class)->apiFields((float) $l->price),
         ];
     }
 

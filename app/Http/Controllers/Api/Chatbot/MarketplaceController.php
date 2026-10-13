@@ -63,7 +63,8 @@ class MarketplaceController extends Controller
             $query->orderBy($sortBy, $sortOrder);
         }
 
-        $bots = $query->paginate(12);
+        // 🪙 เพิ่มราคาเป็นเหรียญ TPIX ต่อท้ายข้อมูลบอทเดิม (คีย์เดิมไม่เปลี่ยน)
+        $bots = $query->paginate(12)->through(fn (AiBotProfile $bot) => array_merge($bot->toArray(), $this->botTpix($bot)));
 
         return response()->json([
             'success' => true,
@@ -87,7 +88,7 @@ class MarketplaceController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'bot' => $bot,
+                'bot' => array_merge($bot->toArray(), $this->botTpix($bot)),
                 'stats' => [
                     'active_rentals' => $bot->active_rentals_count,
                     'total_conversations' => $bot->conversations()->count(),
@@ -286,5 +287,26 @@ class MarketplaceController extends Controller
             'message' => 'ต่ออายุสำเร็จ',
             'data' => $rental,
         ]);
+    }
+
+    /**
+     * ราคาเช่าบอทเป็นเหรียญ TPIX (คีย์เพิ่มต่อท้าย — แอปรุ่นเก่าไม่อ่านก็ไม่พัง)
+     *
+     *   rental_price_per_month_tpix / rental_price_per_message_tpix  string|null  ยอดเหรียญตัวเลขล้วน
+     *   tpix  {monthly: array|null, per_message: array|null}  รายละเอียดแบบเดียวกับ TpixPriceService::apiFields
+     *
+     * @return array<string, mixed>
+     */
+    private function botTpix(AiBotProfile $bot): array
+    {
+        $prices = app(\App\Services\TpixPay\TpixPriceService::class);
+        $monthly = $prices->apiFields($bot->rental_price_per_month !== null ? (float) $bot->rental_price_per_month : null);
+        $perMessage = $prices->apiFields($bot->rental_price_per_message !== null ? (float) $bot->rental_price_per_message : null);
+
+        return [
+            'rental_price_per_month_tpix' => $monthly['price_tpix'],
+            'rental_price_per_message_tpix' => $perMessage['price_tpix'],
+            'tpix' => ['monthly' => $monthly['tpix'], 'per_message' => $perMessage['tpix']],
+        ];
     }
 }

@@ -165,6 +165,9 @@
                                         <span class="text-2xl font-black text-purple-700">{{ $product->currency }} {{ number_format($product->base_price, 2) }}</span>
                                     </div>
                                 </div>
+                                @if(strtoupper((string) ($product->currency ?: 'THB')) === 'THB')
+                                    <x-tpix-price :thb="$product->base_price" class="mt-2" />
+                                @endif
                             </div>
 
                             <!-- Stats -->

@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
-import { BrandArt, Card3D, Icon, Pill, PriceText, tapHaptic } from '@/components/ui';
+import { BrandArt, Card3D, Icon, Pill, PriceText, TpixPrice, tapHaptic } from '@/components/ui';
 import { useTheme, radii, spacing, typography, shadowStyle } from '@/theme';
 import { formatDistance } from '@/services/location';
 import { fmImageUri, type FmFollowedShop, type FmListingSummary, type FmNearbyShop, type FmShopListing } from '@/services/api/taladsodApi';
@@ -96,6 +96,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, width, hideSh
           <View style={styles.priceCol}>
             <PriceText amount={listing.price} size="md" tone="strong" suffix={listing.unit ? `/${listing.unit}` : undefined} />
             {hasDiscount && <PriceText amount={listing.compare_at_price} size="xs" tone="muted" strike bold={false} />}
+            {/* 🪙 ราคาเหรียญ TPIX (ไม่มีข้อมูล = ไม่แสดง) */}
+            <TpixPrice tpix={listing.tpix} size="xs" style={styles.tpix} />
           </View>
           <LinearGradient colors={gradients.navy} style={[styles.addButton, shadowStyle('sm', colors.shadowDark)]}>
             <Icon name="plus" size={17} color={colors.goldLight} weight="bold" />
@@ -191,6 +193,7 @@ export const NearbyShopCard: React.FC<{ shop: FmNearbyShop; width: number }> = (
                     {item.title}
                   </Text>
                   <PriceText amount={item.price} size="xs" tone="gold" />
+                  <TpixPrice tpix={item.tpix} size="xs" />
                 </View>
               );
             })}
@@ -369,6 +372,9 @@ const styles = StyleSheet.create({
   },
   priceCol: {
     flex: 1,
+  },
+  tpix: {
+    marginTop: 2,
   },
   addButton: {
     width: 32,

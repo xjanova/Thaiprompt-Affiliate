@@ -156,6 +156,9 @@
                         <div class="ts-kv"><span>จำนวนร้าน</span><b x-text="(cart.shops || []).length">{{ count($shops) }}</b></div>
                         <div class="ts-kv"><span>จำนวนสินค้า</span><b x-text="cart.items_count">{{ (int) ($cart['items_count'] ?? 0) }}</b></div>
                         <div class="sf-total"><span class="ts-muted">ยอดสินค้ารวม</span><span class="tp-num">฿<span x-text="money(cart.subtotal)">{{ $ui::money($cart['subtotal'] ?? 0) }}</span></span></div>
+                        {{-- 🪙 ยอดเป็นเหรียญ TPIX (เซิร์ฟเวอร์คำนวณ) — ตะกร้าเปลี่ยนแล้วยอดบาทไม่ตรง จึงซ่อน (ยอดจริงคิดตอนชำระเงิน) --}}
+                        @php $tsTpixThb = round((float) ($cart['subtotal'] ?? 0), 2); @endphp
+                        <div style="text-align:right; margin-top:-4px;" x-show="Math.abs(Number(cart.subtotal || 0) - {{ $tsTpixThb }}) < 0.005"><x-tpix-price :thb="$tsTpixThb" /></div>
                         <div class="ts-stack" style="gap:6px;">
                             @if(in_array('wallet', $paymentMethods, true))
                                 <span class="ts-pill ts-tone-info" style="align-self:flex-start;"><i class="fas fa-wallet" aria-hidden="true"></i> จ่ายด้วยกระเป๋าเงิน (ระบบถือเงินไว้จนได้รับของ)</span>

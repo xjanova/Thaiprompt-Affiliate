@@ -245,6 +245,7 @@
                                                 ฿{{ number_format($roomType->base_price) }}
                                             </p>
                                             <p class="text-xs text-gray-500 dark:text-gray-400">ต่อคืน (ไม่รวมภาษี)</p>
+                                            <x-tpix-price :thb="$roomType->base_price" class="mt-1" />
                                         </div>
 
                                         <a href="{{ route('hotels.bookings.create', [
@@ -404,6 +405,7 @@
                                     ฿{{ number_format($hotel->lowest_price) }}
                                 </p>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">ต่อคืน</span>
+                                <div class="mt-2"><x-tpix-price :thb="$hotel->lowest_price" size="lg" /></div>
                             </div>
                         </div>
 
@@ -439,6 +441,7 @@
                                             <h4 class="font-medium text-sm text-gray-800 dark:text-white truncate">{{ $related->name }}</h4>
                                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $related->city }}</p>
                                             <p class="text-sm font-bold text-cyan-600 dark:text-cyan-400 mt-1">฿{{ number_format($related->lowest_price) }}</p>
+                                            <x-tpix-price :thb="$related->lowest_price" class="mt-1" />
                                         </div>
                                     </a>
                                 @endforeach
@@ -461,6 +464,7 @@
                                             <h4 class="font-medium text-sm text-gray-800 dark:text-white truncate">{{ $related->name }}</h4>
                                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $related->city }}</p>
                                             <p class="text-sm font-bold text-cyan-600 dark:text-cyan-400 mt-1">฿{{ number_format($related->lowest_price) }}</p>
+                                            <x-tpix-price :thb="$related->lowest_price" class="mt-1" />
                                         </div>
                                     </a>
                                 @endforeach

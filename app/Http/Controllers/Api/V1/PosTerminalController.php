@@ -933,6 +933,8 @@ class PosTerminalController extends Controller
                 'category_name' => $p->category?->name,
                 'image_url' => $p->image_url,
                 'updated_at' => $p->updated_at?->toISOString(),
+                // 🪙 ราคาเป็นเหรียญ TPIX (price_tpix, tpix) — คีย์เพิ่ม เครื่อง POS รุ่นเก่าไม่อ่านก็ไม่พัง
+                ...app(\App\Services\TpixPay\TpixPriceService::class)->apiFieldsForProduct($p, $p->price),
             ]);
 
         // อัพเดท last sync

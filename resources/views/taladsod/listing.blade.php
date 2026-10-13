@@ -241,6 +241,8 @@
                                 <span class="ts-pill solid ts-tone-bad">-{{ (int) round($listing->discount_percentage) }}%</span>
                             @endif
                         </div>
+                        {{-- 🪙 ราคาเป็นเหรียญ TPIX ของราคาตั้งต้น (ตัวเลือกที่บวกเพิ่มคิดตอนชำระ) — ไม่รู้ราคา = ไม่แสดง --}}
+                        <x-tpix-price :thb="$listing->price" size="lg" style="display:block; margin-top:8px;" />
                         <div class="ts-row" style="gap:6px; margin-top:8px;">
                             @if(! $available)
                                 <span class="ts-pill ts-tone-bad"><i class="fas fa-box-open" aria-hidden="true"></i> หมดชั่วคราว</span>

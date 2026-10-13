@@ -13,6 +13,7 @@ use App\Models\VendorStore;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\Pricing\PricingEngine;
 use App\Services\ShippingService;
+use App\Services\TpixPay\TpixPriceService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -588,6 +589,8 @@ class ShopCartService
                 'is_available' => $reason === null,
                 'unavailable_reason' => $reason,
                 'store' => $store ? ['id' => (int) $store->id, 'name' => (string) $store->store_name] : null,
+                // 🪙 ยอดบรรทัดเป็นเหรียญ TPIX (โดยประมาณ ณ ราคาตลาดตอนนี้ — ยอดจริงออกตอนชำระเงิน) · คีย์เพิ่มต่อท้าย
+                ...$this->lineTpix($product, (float) $unitPrice, (int) $item->quantity),
             ];
         }
 
@@ -636,6 +639,9 @@ class ShopCartService
 
         $subtotal = round($subtotal, 2);
         $threshold = (float) ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD;
+        $grandTotal = round(max(0.0, $subtotal + $shippingTotal - $discountTotal), 2);
+        // 🪙 ยอดรวมเป็นเหรียญ TPIX โดยประมาณ (แปลงจากยอดบาท) — ยอดเหรียญจริงออกตอนเลือกจ่ายด้วย TPIX
+        $grandTotalTpix = app(TpixPriceService::class)->apiFields($grandTotal);
 
         return [
             'items' => $itemsOut,
@@ -661,13 +667,40 @@ class ShopCartService
                 'subtotal' => $subtotal,
                 'shipping_fee' => round($shippingTotal, 2),
                 'discount' => round($discountTotal, 2),
-                'grand_total' => round(max(0.0, $subtotal + $shippingTotal - $discountTotal), 2),
+                'grand_total' => $grandTotal,
+                'grand_total_tpix' => $grandTotalTpix['price_tpix'],
+                'tpix' => $grandTotalTpix['tpix'],
                 'free_shipping_threshold' => $threshold,
                 'amount_to_free_shipping' => round(max(0.0, $threshold - $subtotal), 2),
                 'rider_available' => $groups !== [] && collect($groups)->every(fn ($g) => ! $g['has_physical'] || $g['rider']['available']),
                 'cod_available' => $groups !== [] && collect($groups)->every(fn ($g) => $g['cod']['available']),
             ],
         ];
+    }
+
+    /**
+     * ราคาเหรียญ TPIX ของบรรทัดตะกร้า (โดยประมาณ ณ ราคาตลาดตอนนี้ — ยอดจริงออกตอนชำระเงิน)
+     *
+     *   tpix             ป้ายราคา "ต่อชิ้น" (รูปแบบเดียวกับข้อมูลสินค้า — แอปคูณจำนวนเองตอนปรับจำนวนในตะกร้า)
+     *   line_total_tpix  ยอดทั้งบรรทัด (ราคา × จำนวน)
+     * ราคาคงที่ใช้เฉพาะ Official Shop (fixedPriceFor กรองให้)
+     *
+     * @return array{line_total_tpix: string|null, tpix: array<string, mixed>|null}
+     */
+    private function lineTpix(?Product $product, float $unitPrice, int $quantity): array
+    {
+        if (! $product || $product->is_affiliate) {
+            return ['line_total_tpix' => null, 'tpix' => null];
+        }
+
+        $prices = app(TpixPriceService::class);
+        $fixed = TpixPriceService::fixedPriceFor($product);
+        $qty = max(1, $quantity);
+
+        $unit = $prices->apiFields($unitPrice, $fixed);
+        $line = $prices->apiFields(round($unitPrice * $qty, 2), $fixed !== null ? bcmul($fixed, (string) $qty, 8) : null);
+
+        return ['line_total_tpix' => $line['price_tpix'], 'tpix' => $unit['tpix']];
     }
 
     // =====================================================

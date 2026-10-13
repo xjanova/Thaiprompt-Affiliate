@@ -4,7 +4,7 @@
  * import { Text, Icon, BrandArt, RoyalHeader, GlassIconButton, IconButton,
  *          Button3D, Card3D, Chip, Pill, SectionHeader, StatTile, EmptyState,
  *          BannerCard, BannerSlider, ConsentSheet, WebsiteButton, openWebsite,
- *          PriceText, formatBaht, Screen, ScreenHeader } from '@/components/ui';
+ *          PriceText, formatBaht, TpixPrice, TpixTotal, TpixCoin, Screen, ScreenHeader } from '@/components/ui';
  *
  * กติกา: ห้ามใช้อีโมจิเป็นไอคอน (ใช้ <Icon name=.../> หรือส่งชื่อไอคอนให้ prop icon)
  *        Text/TextInput ต้อง import จาก '@/components/ui/Text' (ฟอนต์ Anuphan อัตโนมัติ)
@@ -56,6 +56,9 @@ export type { WebsiteButtonProps, OpenWebsiteResult } from './WebsiteButton';
 
 export { PriceText, formatBaht, toAmount } from './PriceText';
 export type { PriceTextProps, FormatBahtOptions, PriceDecimals } from './PriceText';
+
+export { TpixPrice, TpixTotal, TpixCoin } from './TpixPrice';
+export type { TpixPriceProps, TpixTotalProps, TpixCoinProps } from './TpixPrice';
 
 export { Screen, ScreenHeader } from './Screen';
 export type { ScreenProps, ScreenHeaderProps } from './Screen';

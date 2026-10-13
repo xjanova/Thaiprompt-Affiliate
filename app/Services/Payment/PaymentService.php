@@ -48,6 +48,8 @@ class PaymentService
         'razorpay' => RazorpayProvider::class,
         'truemoney' => TrueMoneyProvider::class,
         'nfc_card' => NFCCardProvider::class,
+        // 🪙 (2026-10-13) เหรียญ TPIX บนเชน 4289 — ยืนยันเงินเข้าจากเชน (TpixPaymentService)
+        'tpix' => TpixPaymentProvider::class,
     ];
 
     public function __construct()
@@ -936,6 +938,22 @@ class PaymentService
             }
         } catch (\Throwable $e) {
             Log::debug('OrderStripe availability check failed: '.$e->getMessage());
+        }
+
+        // 🪙 (2026-10-13) เหรียญ TPIX — แสดงเมื่อแอดมินเปิดรับและตั้งกระเป๋ารับเงินแล้ว (คิดยอดตามราคาจริงจากพูล DEX)
+        try {
+            if (app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled()) {
+                $methods[] = [
+                    'id' => 'tpix',
+                    'name' => 'เหรียญ TPIX',
+                    'description' => 'จ่ายด้วยเหรียญ TPIX บนเชน TPIX ตามราคาตลาดจริง (TPIX DEX)',
+                    'icon' => '🪙',
+                    'enabled' => true,
+                    'category' => 'crypto',
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::debug('TPIX payment availability check failed: '.$e->getMessage());
         }
 
         return $methods;

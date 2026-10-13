@@ -26,6 +26,9 @@ class Product extends Model
         'short_description',
         'price',
         'price_coins',
+        // 🪙 ราคา TPIX คงที่ (ไม่บังคับ) — มีผลเฉพาะสินค้า Official Shop (TpixPriceService::fixedPriceFor)
+        //    ❗ ห้ามเปิดให้ฟอร์ม/API ของผู้ขายทั่วไปส่งค่านี้ (ตั้งเหรียญต่ำแล้วซื้อเอง = ได้เงินบาทเต็ม)
+        'price_tpix',
         'allow_coin_purchase',
         'compare_at_price',
         // ⚡ ดีลจริง — ยืนยันราคาลดกับปลายทาง (Lazada) ครั้งล่าสุดเมื่อไหร่ + ลดกี่ %
@@ -91,6 +94,7 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'price_coins' => 'decimal:2',
+        'price_tpix' => 'decimal:8',
         'allow_coin_purchase' => 'boolean',
         'compare_at_price' => 'decimal:2',
         'deal_verified_at' => 'datetime',

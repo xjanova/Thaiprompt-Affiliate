@@ -198,6 +198,9 @@
                                                 {{ $relatedProduct->name }}
                                             </h3>
                                             <p class="text-sm text-gray-600">{{ $relatedProduct->currency }} {{ number_format($relatedProduct->base_price, 2) }}</p>
+                                            @if(strtoupper((string) ($relatedProduct->currency ?: 'THB')) === 'THB')
+                                                <x-tpix-price :thb="$relatedProduct->base_price" class="mt-1" />
+                                            @endif
                                         </div>
                                     </div>
                                 </a>
@@ -216,6 +219,10 @@
                         <div class="text-5xl font-black text-purple-700 mb-2">
                             {{ $product->currency }} {{ number_format($product->base_price, 2) }}
                         </div>
+                        {{-- 🪙 ราคาเป็นเหรียญ TPIX — แปลงได้เฉพาะสินค้าที่ตั้งราคาเป็นบาท --}}
+                        @if(strtoupper((string) ($product->currency ?: 'THB')) === 'THB')
+                            <x-tpix-price :thb="$product->base_price" size="lg" />
+                        @endif
                     </div>
 
                     @if($product->estimated_delivery_days)

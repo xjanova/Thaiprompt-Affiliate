@@ -169,6 +169,8 @@
                                 ฿{{ number_format($booking->total_amount) }}
                             </span>
                         </div>
+                        {{-- 🪙 ยอดรวมเป็นเหรียญ TPIX (ไม่รู้ราคา = ไม่แสดง) --}}
+                        <div class="mt-2 text-right"><x-tpix-price :thb="$booking->total_amount" size="lg" /></div>
                     </div>
 
                     <!-- Security -->

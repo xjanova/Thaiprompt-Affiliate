@@ -8,6 +8,7 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketShopFollower;
 use App\Models\User;
 use App\Services\FreshMarketShopPresenceService;
+use App\Services\TpixPay\TpixPriceService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,6 +74,8 @@ class FreshMarketShopApiController extends Controller
                 'max_order_quantity' => (int) $l->max_order_quantity,
                 'has_options' => (int) ($l->option_groups_count ?? 0) > 0,
                 'can_order' => $canOrder,
+                // 🪙 ราคาเป็นเหรียญ TPIX (price_tpix, tpix) — คีย์เพิ่ม แอปรุ่นเก่าไม่อ่านก็ไม่พัง
+                ...app(TpixPriceService::class)->apiFields((float) $l->price),
             ])->values(),
         ]), 'ดึงข้อมูลร้านสำเร็จ');
     }

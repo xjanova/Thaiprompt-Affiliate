@@ -316,6 +316,16 @@ class CheckoutController extends Controller
             ? ' (แยกเป็น '.count($orderIds).' คำสั่งซื้อตามร้านค้า)'
             : '';
 
+        // 🪙 TPIX → หน้าจ่ายเหรียญของออเดอร์แรก (ออเดอร์ถัดไปมีลิงก์ต่อในหน้าจ่าย) · ออกยอดไม่สำเร็จ → หน้าคำสั่งซื้อ
+        if ($paymentMethod === PaymentMethod::TPIX) {
+            $firstPayment = collect((array) ($result['payments'] ?? []))->first();
+            $reference = $firstPayment['tpix']['reference'] ?? null;
+
+            return $reference
+                ? redirect()->route('tpix-pay.show', $reference)->with('success', 'สร้างคำสั่งซื้อแล้ว กรุณาโอนเหรียญ TPIX ตามยอดด้านล่าง'.$splitNote)
+                : redirect()->route('orders.show', $firstOrderId)->with('error', $firstPayment['message'] ?? 'ออกยอดชำระด้วย TPIX ไม่สำเร็จ กรุณากดชำระใหม่');
+        }
+
         return match ($paymentMethod) {
             PaymentMethod::WALLET => redirect()->route('checkout.success', $firstOrderId)
                 ->with('success', 'ชำระเงินด้วยกระเป๋าเงินสำเร็จ'.$splitNote),
@@ -527,6 +537,11 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.success', $order->id);
         }
 
+        // 🪙 TPIX → หน้าจ่ายเหรียญ (ใช้ใบที่ยังเปิดอยู่ หรือออกใบใหม่ตามราคาปัจจุบัน)
+        if (PaymentMethod::normalize((string) $order->payment_method) === PaymentMethod::TPIX) {
+            return $this->redirectToTpix($order);
+        }
+
         // Get payment transaction
         $transaction = $order->paymentTransaction;
 
@@ -650,6 +665,18 @@ class CheckoutController extends Controller
     }
 
     /**
+     * 🪙 ออเดอร์ที่เลือกจ่าย TPIX → หน้าจ่ายเหรียญ
+     */
+    private function redirectToTpix(Order $order)
+    {
+        $result = app(\App\Services\TpixPay\TpixPaymentService::class)->openQuoteForOrder($order, 'web');
+
+        return $result['reference']
+            ? redirect()->route('tpix-pay.show', $result['reference'])
+            : redirect()->route('orders.show', $order->id)->with('error', $result['error']);
+    }
+
+    /**
      * Show payment processing page (GET - for PRG pattern)
      * ใช้ข้อมูล transaction ที่สร้างไว้แล้ว ไม่สร้างทศนิยมใหม่
      * เมื่อ refresh หน้า ยอดทศนิยมจะเหมือนเดิม
@@ -664,6 +691,11 @@ class CheckoutController extends Controller
         // ถ้าชำระแล้ว → redirect ไปหน้า success
         if ($order->payment_status === 'paid') {
             return redirect()->route('checkout.success', $order->id);
+        }
+
+        // 🪙 TPIX มีหน้าจ่ายของตัวเอง
+        if (PaymentMethod::normalize((string) $order->payment_method) === PaymentMethod::TPIX) {
+            return $this->redirectToTpix($order);
         }
 
         $transaction = $order->paymentTransaction;

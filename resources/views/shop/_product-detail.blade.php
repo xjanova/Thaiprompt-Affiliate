@@ -149,6 +149,10 @@
                         </div>
                     @endif
                     <div class="tp-num" style="font-size:clamp(30px, 5vw, 42px); font-weight:800; line-height:1.15; color:var(--deep1); margin-top:4px;">฿{{ number_format($pdPrice, 2) }}</div>
+                    {{-- 🪙 ราคาเป็นเหรียญ TPIX (ไม่รู้ราคา = ไม่แสดง) · สินค้า affiliate จ่ายที่แพลตฟอร์มนอก จึงไม่โชว์ --}}
+                    @unless($pdAffiliate)
+                        <x-tpix-price :product="$product" size="lg" style="display:block; margin-top:8px;" />
+                    @endunless
 
                     @if($pdShipping)
                         <div style="display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 12px; border-radius:14px; background:var(--card-bg); box-shadow:var(--raise);">

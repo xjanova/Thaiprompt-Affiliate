@@ -674,6 +674,22 @@ Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () 
 });
 
 // ========================================
+// 🪙 ชำระด้วยเหรียญ TPIX (เชน 4289) — หน้าจ่ายเปิดด้วยรหัสอ้างอิง (ลิงก์ใบแจ้งหนี้) ไม่ต้องล็อกอิน
+//    (แอปเปิดหน้านี้ในเบราว์เซอร์ได้ทันที · หน้าไม่มีข้อมูลส่วนตัว · ส่งเลขธุรกรรมได้แค่ "จ่าย" ใบนี้)
+// ========================================
+Route::prefix('tpix-pay')->name('tpix-pay.')->group(function () {
+    Route::middleware('auth')->group(function () {
+        Route::get('/topup', [\App\Http\Controllers\TpixPayController::class, 'topupForm'])->name('topup');
+        Route::post('/topup', [\App\Http\Controllers\TpixPayController::class, 'topupStore'])->middleware('throttle:10,1,tpix-topup')->name('topup.store');
+        Route::post('/order/{id}', [\App\Http\Controllers\TpixPayController::class, 'startForOrder'])->whereNumber('id')->middleware('throttle:10,1,tpix-order')->name('order');
+    });
+    Route::get('/{reference}', [\App\Http\Controllers\TpixPayController::class, 'show'])->middleware('throttle:60,1,tpix-show')->name('show');
+    Route::get('/{reference}/status', [\App\Http\Controllers\TpixPayController::class, 'status'])->middleware('throttle:40,1,tpix-status')->name('status');
+    Route::post('/{reference}/submit', [\App\Http\Controllers\TpixPayController::class, 'submit'])->middleware('throttle:12,1,tpix-submit')->name('submit');
+    Route::get('/{reference}/qr.svg', [\App\Http\Controllers\TpixPayController::class, 'qr'])->middleware('throttle:30,1,tpix-qr')->name('qr');
+});
+
+// ========================================
 // HOTEL BOOKING ROUTES
 // ========================================
 

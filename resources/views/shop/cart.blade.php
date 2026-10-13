@@ -23,6 +23,8 @@
     })->values();
     $ctBlocked = $ctLines->contains(fn ($l) => ! $l['ok']);
     $ctUpdateUrl = url('/cart/__ID__');
+    // 🪙 ยอดที่ใช้แปลงเป็น TPIX = ยอดเดียวกับ subtotal() ฝั่ง Alpine ตอนโหลดหน้า (นับเฉพาะรายการที่สั่งได้)
+    $ctTpixThb = round((float) $ctLines->sum(fn ($l) => $l['ok'] ? $l['price'] * $l['qty'] : 0), 2);
 @endphp
 
 @section('content')
@@ -123,6 +125,8 @@
                             · ร้านใกล้บ้านเลือกส่งด่วนด้วยไรเดอร์ได้
                         </div>
                         <div class="sf-total"><span style="font-weight:800; color:var(--ink);">ยอดรวม</span><span class="tp-num" x-text="money(subtotal())">฿{{ number_format((float) $total, 2) }}</span></div>
+                        {{-- 🪙 ยอดเป็นเหรียญ TPIX (เซิร์ฟเวอร์คำนวณ) — ปรับจำนวนแล้วยอดบาทเปลี่ยน จึงซ่อน (ยอด TPIX จริงคิดตอนชำระเงิน) --}}
+                        <div style="text-align:right; margin-top:-4px;" x-show="Math.abs(subtotal() - {{ $ctTpixThb }}) < 0.005"><x-tpix-price :thb="$ctTpixThb" /></div>
                         @if($ctBlocked)
                             <button type="button" class="sf-btn3d is-block is-disabled" disabled>ชำระเงินไม่ได้ — มีสินค้าที่สั่งไม่ได้</button>
                         @else

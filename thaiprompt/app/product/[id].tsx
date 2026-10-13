@@ -66,6 +66,7 @@ import {
   RoyalHeader,
   Screen,
   SectionHeader,
+  TpixPrice,
   formatBaht,
   resultHaptic,
 } from '@/components/ui';
@@ -454,6 +455,8 @@ export default function ProductDetailScreen() {
               <PriceText amount={product.price} size="xl" tone="gold" />
               {hasDiscount && <PriceText amount={product.original_price} size="sm" tone="muted" strike bold={false} />}
             </View>
+            {/* 🪙 ราคาเหรียญ TPIX ตามราคาจริงจาก DEX (ไม่มีข้อมูล = ไม่แสดง) */}
+            <TpixPrice tpix={product.tpix} variant="detailed" style={styles.tpixBox} />
 
             <View style={styles.ratingRow}>
               {product.review_count > 0 ? (
@@ -610,6 +613,7 @@ export default function ProductDetailScreen() {
             <View style={styles.flex}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>ราคารวม</Text>
               <PriceText amount={product.price * quantity} size="lg" tone="strong" />
+              <TpixPrice tpix={product.tpix} thb={product.price * quantity} quantity={quantity} size="xs" />
             </View>
             <QuantityStepper value={quantity} min={1} max={maxQty} onChange={setQuantity} />
           </View>
@@ -705,6 +709,9 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: spacing.sm,
     marginTop: spacing.xs,
+  },
+  tpixBox: {
+    marginTop: spacing.sm,
   },
   ratingRow: {
     flexDirection: 'row',

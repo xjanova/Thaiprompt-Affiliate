@@ -3,6 +3,7 @@
  *
  * - ไทม์ไลน์ตาม enum จริงของ orders.status (ไม่มี 'confirmed')
  * - ยังไม่จ่าย: แสดง QR พร้อมเพย์ที่ค้าง + poll สถานะ / ขอ QR ใหม่ / จ่ายด้วยกระเป๋า
+ *   / 🪙 จ่ายด้วยเหรียญ TPIX (POST /payment/order tpix → หน้า /tpix-pay/{reference}) · ใบ TPIX ที่ค้าง = การ์ดเปิดหน้าจ่าย
  * - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ (ชื่อ ทะเบียน โทร) + แผนที่ตำแหน่งไรเดอร์สด (GET /orders/shop/{id}/rider-location)
  *   + แชร์ตำแหน่งของฉันให้ไรเดอร์ + ลิงก์ติดตามบนเว็บ — รีเฟรชทุก 15 วินาทีระหว่างไรเดอร์วิ่ง
  * - ส่งพัสดุ: เลขพัสดุ (คัดลอกได้) + ประวัติการขนส่ง
@@ -53,6 +54,7 @@ import {
   PriceText,
   Screen,
   SectionHeader,
+  TpixCoin,
   formatBaht,
   resultHaptic,
 } from '@/components/ui';
@@ -78,6 +80,8 @@ import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
 import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { getSellerOrder } from '@/services/api/merchantApi';
+import { normalizeTpixPayment, rememberTpixPayment } from '@/services/api/tpixApi';
+import { useTpixSpot } from '@/stores/tpixPriceStore';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Tab = 'detail' | 'chat';
@@ -216,6 +220,16 @@ export default function OrderDetailScreen() {
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);
   const payBusyRef = useRef(false);
+  const tpixBusyRef = useRef(false);
+  const focusCountRef = useRef(0);
+
+  // 🪙 เหรียญ TPIX: เปิดรับไหม (GET /tpix/price) + ใบเสนอยอดที่ค้างของออเดอร์นี้
+  const { paymentsEnabled: tpixPaymentsEnabled } = useTpixSpot(isAuthenticated);
+  const tpixAvailable = tpixPaymentsEnabled === true || order?.payment_method === 'tpix';
+  const tpixPending = useMemo(
+    () => (payment?.payment_method === 'tpix' ? normalizeTpixPayment(payment.tpix) : null),
+    [payment]
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -280,6 +294,14 @@ export default function OrderDetailScreen() {
   useEffect(() => {
     load('initial');
   }, [load]);
+
+  // กลับมาจากหน้าอื่น (เช่น หน้าจ่าย TPIX) → โหลดสถานะล่าสุดเงียบๆ
+  useFocusEffect(
+    useCallback(() => {
+      focusCountRef.current += 1;
+      if (focusCountRef.current > 1) load('silent');
+    }, [load])
+  );
 
   // ---------- รีเฟรชอัตโนมัติ ----------
   const riderActive = !!order?.rider && ACTIVE_RIDER_STATUSES.includes(order.rider.status);
@@ -357,6 +379,48 @@ export default function OrderDetailScreen() {
     }
     setPayment({ ...res.data, order_id: res.data.order_id || order.id });
     setPayState('waiting');
+  };
+
+  /**
+   * 🪙 ออกยอดเหรียญ TPIX ของออเดอร์นี้ (ใบเดิมยังไม่หมดเวลา = server คืนใบเดิม) แล้วเปิดหน้าจ่าย TPIX
+   */
+  const startTpix = async () => {
+    if (!order || tpixBusyRef.current) return;
+    tpixBusyRef.current = true;
+    try {
+      const res = await payOrder(order.id, 'tpix');
+      if (!mountedRef.current) return;
+      if (!res.success) {
+        resultHaptic('error');
+        if (res.code === 'ALREADY_PAID') {
+          load('silent');
+          return;
+        }
+        Alert.alert('จ่ายด้วยเหรียญ TPIX ไม่ได้', res.message);
+        return;
+      }
+      const tpix = normalizeTpixPayment(res.data?.tpix);
+      if (!tpix) {
+        Alert.alert('จ่ายด้วยเหรียญ TPIX ไม่ได้', 'ระบบยังออกยอดเหรียญให้ไม่ได้ตอนนี้ ลองใหม่อีกครั้ง หรือเลือกวิธีจ่ายอื่นนะ');
+        return;
+      }
+      rememberTpixPayment(tpix);
+      setPayment({ ...res.data, order_id: res.data.order_id || order.id });
+      setPayState('waiting');
+      router.push(`/tpix-pay/${tpix.reference}?from=order` as never);
+    } finally {
+      tpixBusyRef.current = false;
+    }
+  };
+
+  /** เปิดใบเสนอยอด TPIX ที่ค้าง (หมดเวลา/ข้อมูลไม่ครบ → ออกยอดใหม่) */
+  const openTpixPayment = () => {
+    if (tpixPending && payState !== 'expired') {
+      rememberTpixPayment(tpixPending);
+      router.push(`/tpix-pay/${tpixPending.reference}?from=order` as never);
+      return;
+    }
+    return startTpix();
   };
 
   const payWithWallet = () => {
@@ -547,11 +611,54 @@ export default function OrderDetailScreen() {
       </Card3D>
 
       {/* ---------- ชำระเงินที่ค้าง ---------- */}
-      {payment && order.payment_status !== 'paid' && (
+      {payment && order.payment_status !== 'paid' && payment.payment_method === 'tpix' && (
+        <>
+          {/* 🪙 ใบเสนอยอดเหรียญ TPIX ที่ค้าง → เปิดหน้าจ่าย TPIX (QR/ที่อยู่/เลขธุรกรรมอยู่ในหน้านั้น) */}
+          <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
+            <View style={styles.rowBetween}>
+              <View style={[styles.coinTile, { backgroundColor: colors.goldSoft }]}>
+                <TpixCoin size={26} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={[typography.h3, { color: colors.textStrong }]}>รอชำระด้วยเหรียญ TPIX</Text>
+                <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+                  {tpixPending && payState !== 'expired'
+                    ? `โอน ${tpixPending.amount_tpix} TPIX (ตรงทุกหลัก) · ${formatBaht(order.total_amount, { decimals: 2 })}`
+                    : `ยอด ${formatBaht(order.total_amount, { decimals: 2 })} ออกยอดเหรียญใหม่ได้ตามราคาปัจจุบัน`}
+                </Text>
+              </View>
+              {payState === 'paid' ? (
+                <Pill label="ชำระแล้ว" tone="success" icon="check-circle" />
+              ) : payState === 'expired' ? (
+                <Pill label="หมดเวลา" tone="danger" icon="clock" />
+              ) : (
+                <Pill label="รอโอน" tone="warning" icon="hourglass" />
+              )}
+            </View>
+            {payState !== 'paid' && (
+              <Button3D
+                title={tpixPending && payState !== 'expired' ? 'เปิดหน้าจ่าย TPIX' : 'ออกยอดเหรียญใหม่'}
+                icon="coins"
+                size="md"
+                fullWidth
+                onPress={openTpixPayment}
+                style={styles.gapTop}
+              />
+            )}
+          </Card3D>
+          {payState !== 'paid' && (
+            <Button3D title="จ่ายด้วยกระเป๋าเงินแทน" icon="wallet" variant="ghost" size="sm" onPress={payWithWallet} style={styles.center} />
+          )}
+        </>
+      )}
+      {payment && order.payment_status !== 'paid' && payment.payment_method !== 'tpix' && (
         <>
           <PromptPayQR payment={payment} state={payState} onRenew={() => startPay('promptpay')} />
           {payState !== 'paid' && (
             <Button3D title="จ่ายด้วยกระเป๋าเงินแทน" icon="wallet" variant="ghost" size="sm" onPress={payWithWallet} style={styles.center} />
+          )}
+          {payState !== 'paid' && tpixAvailable && (
+            <Button3D title="จ่ายด้วยเหรียญ TPIX แทน" icon="coins" variant="ghost" size="sm" onPress={startTpix} style={styles.center} />
           )}
         </>
       )}
@@ -570,6 +677,18 @@ export default function OrderDetailScreen() {
             <Button3D title="สแกนพร้อมเพย์" icon="qr-code" size="md" onPress={() => startPay('promptpay')} style={styles.flex} />
             <Button3D title="กระเป๋าเงิน" icon="wallet" variant="secondary" size="md" onPress={payWithWallet} style={styles.flex} />
           </View>
+          {/* 🪙 จ่ายด้วยเหรียญ TPIX (เมื่อ server เปิดรับ หรือออเดอร์นี้เลือก TPIX ไว้) */}
+          {tpixAvailable && (
+            <Button3D
+              title="จ่ายด้วยเหรียญ TPIX"
+              icon="coins"
+              variant="navy"
+              size="md"
+              fullWidth
+              onPress={startTpix}
+              style={styles.gapTopSm}
+            />
+          )}
         </Card3D>
       )}
       {codWaiting && (
@@ -940,6 +1059,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.lg,
+  },
+  coinTile: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   riderRow: {
     flexDirection: 'row',

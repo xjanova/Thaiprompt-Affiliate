@@ -326,6 +326,14 @@
                         @csrf
                         <button type="submit" class="sf-btn3d is-block" :disabled="busy"><i class="fas fa-credit-card"></i> ชำระเงินตอนนี้</button>
                     </form>
+                    {{-- 🪙 จ่ายด้วยเหรียญ TPIX (แสดงเมื่อแอดมินเปิดรับ) — ยอดคิดตามราคาจริงจากพูล TPIX DEX --}}
+                    @if(! $order->isCod() && app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled())
+                        <form method="POST" action="{{ route('tpix-pay.order', $order->id) }}" style="margin:0;" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+                            @csrf
+                            <button type="submit" class="sf-btn3d is-block is-soft" :disabled="busy">จ่ายด้วยเหรียญ TPIX</button>
+                        </form>
+                        <x-tpix-price :thb="$order->total_amount" size="lg" />
+                    @endif
                 </div>
             @endif
 

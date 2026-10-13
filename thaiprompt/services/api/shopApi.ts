@@ -17,6 +17,7 @@ import {
   type ApiResult,
   type Pagination,
 } from './client';
+import type { TpixPriceTag } from './tpixApi';
 
 // =====================================================
 // สินค้า / ร้าน
@@ -60,6 +61,10 @@ export interface ShopProduct {
   can_add_to_cart: boolean;
   seller_id: number | null;
   store: ProductStoreRef | null;
+  /** 🪙 ราคา TPIX ต่อชิ้นแบบตัวเลขล้วน เช่น "307.6924" (server เก่าไม่ส่ง · null = ซ่อน) */
+  price_tpix?: string | null;
+  /** 🪙 ป้ายราคา TPIX — แสดงด้วย <TpixPrice tpix={product.tpix} /> (null = ซ่อน) */
+  tpix?: TpixPriceTag | null;
 }
 
 export interface ShopProductReview {
@@ -194,7 +199,8 @@ export const getStoreProducts = async (
 // =====================================================
 
 export type DeliveryMethod = 'parcel' | 'rider';
-export type CheckoutPaymentMethod = 'wallet' | 'promptpay' | 'cod';
+/** tpix = เหรียญ TPIX (เชน 4289) — เสนอเฉพาะเมื่อ server เปิดรับ (GET /payment/methods หรือ /tpix/price) */
+export type CheckoutPaymentMethod = 'wallet' | 'promptpay' | 'cod' | 'tpix';
 
 export interface CartItem {
   id: number;
@@ -211,6 +217,9 @@ export interface CartItem {
   is_available: boolean;
   unavailable_reason: string | null;
   store: { id: number; name: string } | null;
+  /** 🪙 ราคา TPIX ต่อชิ้น (server เก่าไม่ส่ง · null = ซ่อน) */
+  price_tpix?: string | null;
+  tpix?: TpixPriceTag | null;
 }
 
 export interface CartStoreGroup {
@@ -344,6 +353,13 @@ export interface PaymentInstruction {
   ref_no: string | null;
   promptpay: { account_name: string; promptpay_id: string } | null;
   message?: string;
+  /** หน้าจ่ายบนเว็บ (TPIX = pay_url) */
+  redirect_url?: string | null;
+  /**
+   * 🪙 ใบเสนอยอดเหรียญ TPIX (payment_method = 'tpix') — ข้อมูลดิบจาก server
+   * ใช้ normalizeTpixPayment() จาก tpixApi ก่อนใช้เสมอ
+   */
+  tpix?: unknown;
 }
 
 export interface CheckoutResult {
@@ -390,10 +406,13 @@ export interface PaymentMethodInfo {
 export const getPaymentMethods = (): Promise<ApiResult<{ methods: PaymentMethodInfo[] }>> =>
   apiGet<{ methods: PaymentMethodInfo[] }>('/payment/methods');
 
-/** ขอ QR ใหม่ / เปลี่ยนไปจ่ายด้วยกระเป๋าเงิน — 409 ALREADY_PAID / COD_ORDER / ORDER_NOT_PAYABLE */
+/**
+ * ขอ QR ใหม่ / เปลี่ยนไปจ่ายด้วยกระเป๋าเงิน / ออกยอดเหรียญ TPIX — 409 ALREADY_PAID / COD_ORDER / ORDER_NOT_PAYABLE
+ * tpix: data.tpix = ใบเสนอยอด (normalizeTpixPayment) · ใบเดิมยังไม่หมดเวลา = server คืนใบเดิม
+ */
 export const payOrder = (
   orderId: number,
-  paymentMethod: 'promptpay' | 'wallet' | 'bank_transfer'
+  paymentMethod: 'promptpay' | 'wallet' | 'bank_transfer' | 'tpix'
 ): Promise<ApiResult<PaymentInstruction & { order: { id: number; status: string; payment_status: string } }>> =>
   apiPost('/payment/order', { order_id: orderId, payment_method: paymentMethod });
 

@@ -8,7 +8,9 @@
  * ขั้นตอน
  *   1. form     เลือกที่อยู่ · วิธีส่ง (พัสดุ | ไรเดอร์ เมื่อร้านรองรับ + ค่าส่งจาก server)
  *               · วิธีจ่าย (กระเป๋าเงิน | พร้อมเพย์ | เก็บเงินปลายทาง เฉพาะส่งด้วยไรเดอร์) · คูปอง (server ตรวจ) · หมายเหตุ
+ *               · 🪙 เหรียญ TPIX (เมื่อ server เปิดรับ) — แสดงยอดเหรียญโดยประมาณสดจากราคา DEX
  *   2. payment  พร้อมเพย์: แสดง QR ของแต่ละออเดอร์ (ยอดตรงทุกสตางค์) + poll สถานะทุก 4 วินาที + ขอ QR ใหม่ได้
+ *               TPIX: ไปหน้า /tpix-pay/{reference} ของใบแรก (สั่งหลายร้าน = รายการใบอื่นอยู่ในหน้านั้น)
  *   3. done     สรุปคำสั่งซื้อ
  *
  * ความปลอดภัย
@@ -52,6 +54,8 @@ import {
   PriceText,
   Screen,
   SectionHeader,
+  TpixCoin,
+  TpixTotal,
   formatBaht,
   resultHaptic,
 } from '@/components/ui';
@@ -79,6 +83,15 @@ import type { CartRiderQuote } from '@/services/api/shopApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { guardKycRequired } from '@/services/ekyc/kycGate';
+import {
+  estimateTpixTotal,
+  formatTpix,
+  normalizeTpixPayment,
+  rememberTpixGroup,
+  rememberTpixPayment,
+  type TpixGroupEntry,
+} from '@/services/api/tpixApi';
+import { useTpixPriceStore, useTpixSpot } from '@/stores/tpixPriceStore';
 import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
@@ -107,6 +120,7 @@ const PAYMENT_LABEL: Record<CheckoutPaymentMethod, string> = {
   wallet: 'กระเป๋าเงิน',
   promptpay: 'พร้อมเพย์',
   cod: 'เก็บเงินปลายทาง',
+  tpix: 'เหรียญ TPIX',
 };
 
 // =====================================================
@@ -194,6 +208,12 @@ export default function CheckoutScreen() {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [promptpayEnabled, setPromptpayEnabled] = useState<boolean | null>(null);
+  /** 🪙 GET /payment/methods มี id "tpix" ที่เปิดอยู่ (null = ยังไม่รู้ / server ไม่บอก) */
+  const [tpixMethodEnabled, setTpixMethodEnabled] = useState<boolean | null>(null);
+  // 🪙 ราคา TPIX สด — คิดยอดเหรียญโดยประมาณ + เช็คว่าเปิดรับชำระด้วย TPIX ไหม
+  const { spot: tpixSpot, paymentsEnabled: tpixPaymentsEnabled } = useTpixSpot(isAuthenticated);
+  /** เสนอตัวเลือก TPIX เมื่อ server เปิดรับ (รายการวิธีจ่าย หรือ /tpix/price บอก) */
+  const tpixAvailable = tpixMethodEnabled === true || (tpixMethodEnabled !== false && tpixPaymentsEnabled === true);
 
   // ---------- ผลการสั่ง ----------
   const [step, setStep] = useState<Step>('form');
@@ -261,6 +281,9 @@ export default function CheckoutScreen() {
     if (!mountedRef.current || !res.success) return;
     const methods = Array.isArray(res.data?.methods) ? res.data.methods : [];
     setPromptpayEnabled(methods.some((m) => m.id === 'promptpay' && m.enabled !== false));
+    // server รุ่นที่ยังไม่มี tpix ในรายการ → ไม่รู้ (null) ให้ /tpix/price ตัดสินแทน
+    const tpixMethod = methods.find((m) => m.id === 'tpix');
+    setTpixMethodEnabled(tpixMethod ? tpixMethod.enabled !== false : null);
   }, [isAuthenticated]);
 
   const fetchQuote = useCallback(async () => {
@@ -351,6 +374,15 @@ export default function CheckoutScreen() {
       setPayment('wallet');
     }
   }, [payment, promptpayEnabled]);
+
+  // 🪙 แอดมินปิดรับ TPIX ระหว่างอยู่หน้านี้ → กลับไปกระเป๋าเงิน (ยังไม่รู้ = ไม่เปลี่ยน)
+  useEffect(() => {
+    if (payment !== 'tpix' || step !== 'form') return;
+    if (tpixMethodEnabled === false || (tpixMethodEnabled === null && tpixPaymentsEnabled === false)) {
+      setPayment('wallet');
+      setNotice('ตอนนี้ยังชำระด้วยเหรียญ TPIX ไม่ได้ เปลี่ยนเป็นจ่ายด้วยกระเป๋าเงินให้แล้ว');
+    }
+  }, [payment, step, tpixMethodEnabled, tpixPaymentsEnabled]);
 
   // =====================================================
   // ไรเดอร์คนโปรด: โหลดเมื่อเลือกส่งด้วยไรเดอร์ (ครั้งแรก + กลับมาจากหน้าไรเดอร์ใกล้ฉัน)
@@ -444,6 +476,11 @@ export default function CheckoutScreen() {
   const availableItems = (quote?.items ?? []).filter((i) => i.is_available);
   const walletShort = payment === 'wallet' && walletBalance !== null && walletBalance < grandTotal;
 
+  // 🪙 ยอดเหรียญโดยประมาณของยอดชำระ (รายการราคาเหรียญคงที่ไม่แปลงจากบาท) — ยอดจริงออกหลังกดสั่งซื้อ
+  const tpixLines = availableItems.map((i) => ({ tpix: i.tpix, quantity: i.quantity, thb: i.line_total }));
+  const tpixEstimate = estimateTpixTotal(grandTotal, tpixSpot?.price_thb ?? null, tpixLines);
+  const tpixRateText = tpixSpot?.price_thb_display ?? null;
+
   /** ชุดข้อมูลที่กดสั่ง — เปลี่ยน = คีย์ใหม่ (ไม่เปลี่ยน = ใช้คีย์เดิมตอนลองใหม่ กันสั่งซ้ำ) */
   const lockRiderId = delivery === 'rider' && preferredRiderId ? preferredRiderId : null;
   const signature = JSON.stringify({
@@ -525,6 +562,8 @@ export default function CheckoutScreen() {
         Alert.alert('เปลี่ยนตัวเลือกก่อนนะ', res.message);
         fetchQuote();
         loadPaymentMethods();
+        // 🪙 TPIX: ราคา/การเปิดรับอาจเปลี่ยน → โหลดราคาใหม่
+        if (payment === 'tpix') useTpixPriceStore.getState().refresh();
         return;
       case 'CHECKOUT_IN_PROGRESS':
         Alert.alert('กำลังสร้างคำสั่งซื้อ', 'รอสักครู่แล้วกดยืนยันอีกครั้ง ระบบจะไม่สั่งซ้ำ');
@@ -538,6 +577,41 @@ export default function CheckoutScreen() {
       default:
         Alert.alert('สั่งซื้อไม่สำเร็จ', res.message);
     }
+  };
+
+  /**
+   * 🪙 เก็บใบเสนอยอด TPIX ของทุกออเดอร์ไว้ในแคช แล้วเปิดหน้าจ่ายของใบแรกที่ออกยอดสำเร็จ
+   * @returns false = ไม่มีใบไหนออกยอดสำเร็จ (ให้หน้าสำเร็จบอกว่าไปจ่ายใหม่ที่หน้าคำสั่งซื้อ)
+   */
+  const openTpixPayments = (data: CheckoutResult): boolean => {
+    const list = Array.isArray(data.payments) ? data.payments : [];
+    const entries: TpixGroupEntry[] = data.orders.map((order) => {
+      const p = list.find((x) => x.order_id === order.id);
+      const tpix = p ? normalizeTpixPayment(p.tpix) : null;
+      if (tpix) rememberTpixPayment(tpix);
+      return {
+        order_id: order.id,
+        order_number: order.order_number || null,
+        store_name: order.store?.name || null,
+        amount_thb: Number(order.total_amount) || 0,
+        reference: tpix?.reference ?? null,
+        message: tpix ? null : p?.message && /[฀-๿]/.test(p.message) ? p.message : null,
+      };
+    });
+    const first = entries.find((e) => e.reference);
+    if (!first?.reference) {
+      const failed = entries.find((e) => e.message)?.message;
+      Alert.alert(
+        'ออกยอดเหรียญ TPIX ไม่สำเร็จ',
+        `${failed || 'ระบบยังออกยอดเหรียญให้ไม่ได้ตอนนี้'}\nคำสั่งซื้อถูกสร้างแล้ว กดชำระใหม่ได้จากหน้าคำสั่งซื้อ`
+      );
+      return false;
+    }
+    const groupId = data.checkout_id || `checkout-${first.order_id}`;
+    rememberTpixGroup(groupId, entries);
+    leavingRef.current = true;
+    router.replace(`/tpix-pay/${first.reference}?group=${encodeURIComponent(groupId)}&from=checkout` as never);
+    return true;
   };
 
   const submit = async () => {
@@ -580,6 +654,13 @@ export default function CheckoutScreen() {
     setResult(data);
     if (typeof data.wallet_balance === 'number') setWalletBalance(data.wallet_balance);
 
+    // 🪙 จ่ายด้วยเหรียญ TPIX → ไปหน้าจ่าย TPIX ของใบแรก (สั่งหลายร้าน = รายการใบอื่นอยู่ในหน้านั้น)
+    if ((data.payment_method === 'tpix' || payment === 'tpix') && data.payment_status !== 'paid') {
+      if (openTpixPayments(data)) return;
+      setStep('done');
+      return;
+    }
+
     if (data.payment_status === 'pending' && Array.isArray(data.payments) && data.payments.length > 0) {
       const states: Record<string, PromptPayState> = {};
       data.payments.forEach((p, index) => {
@@ -621,10 +702,14 @@ export default function CheckoutScreen() {
 
     const lines = [
       `ยอดชำระ ${formatBaht(grandTotal, { decimals: 2 })}`,
+      payment === 'tpix' && tpixEstimate !== null ? `ประมาณ ${formatTpix(tpixEstimate)} TPIX` : '',
       `จ่ายด้วย: ${PAYMENT_LABEL[payment]}`,
       `จัดส่ง: ${delivery === 'rider' ? 'ไรเดอร์' : 'พัสดุ'}`,
       quote.stores.length > 1 ? `แยกเป็น ${quote.stores.length} คำสั่งซื้อตามร้าน` : '',
       payment === 'wallet' ? 'ระบบจะตัดเงินจากกระเป๋าทันที' : '',
+      payment === 'tpix'
+        ? 'ยอดเหรียญที่แน่นอนจะออกให้หลังยืนยัน โอนให้ตรงทุกหลักภายในเวลาที่กำหนด'
+        : '',
     ].filter(Boolean);
 
     Alert.alert('ยืนยันสั่งซื้อ?', lines.join('\n'), [
@@ -810,9 +895,11 @@ export default function CheckoutScreen() {
     const message =
       status === 'cod'
         ? 'เตรียมเงินสดไว้จ่ายไรเดอร์ตอนรับของนะ ร้านจะเริ่มเตรียมสินค้าเร็วๆ นี้'
-        : delivery === 'rider'
-          ? 'ร้านได้รับคำสั่งซื้อแล้ว เงินของคุณพักไว้ที่ระบบ เมื่อไรเดอร์มาถึง เปิดหน้าคำสั่งซื้อแล้วสแกน QR ใส่กันเพื่อรับของ'
-          : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
+        : result.payment_method === 'tpix' && status !== 'paid'
+          ? 'ยังออกยอดเหรียญ TPIX ไม่สำเร็จ เปิดหน้าคำสั่งซื้อแล้วกดชำระใหม่ได้เลย (ด้วยเหรียญ TPIX หรือวิธีอื่น)'
+          : delivery === 'rider'
+            ? 'ร้านได้รับคำสั่งซื้อแล้ว เงินของคุณพักไว้ที่ระบบ เมื่อไรเดอร์มาถึง เปิดหน้าคำสั่งซื้อแล้วสแกน QR ใส่กันเพื่อรับของ'
+            : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
     return (
       <Screen title="สั่งซื้อสำเร็จ" onBack={goOrders}>
         <Card3D gradientBorder shadow="lg" padding={spacing.xl} style={styles.block}>
@@ -1146,6 +1233,31 @@ export default function CheckoutScreen() {
           disabledReason="พร้อมเพย์ปิดใช้งานชั่วคราว"
           onPress={() => setPayment('promptpay')}
         />
+        {/* 🪙 เหรียญ TPIX (เชน 4289) — แสดงเฉพาะเมื่อ server เปิดรับ · คำนวณสดจากราคาจริงบน DEX */}
+        {tpixAvailable && (
+          <OptionCard
+            icon="coins"
+            title="เหรียญ TPIX"
+            subtitle={
+              tpixEstimate !== null && tpixRateText
+                ? `≈ ${formatTpix(tpixEstimate)} TPIX · 1 TPIX = ${tpixRateText}`
+                : 'โอนเหรียญจากกระเป๋าคริปโต (TPIX Chain) ระบบยืนยันบนเชนให้อัตโนมัติ'
+            }
+            selected={payment === 'tpix'}
+            onPress={() => setPayment('tpix')}
+            right={<TpixCoin size={22} />}
+          />
+        )}
+        {payment === 'tpix' && tpixAvailable && (
+          <NoticeBanner
+            tone="info"
+            icon="info"
+            text={`ยอดเหรียญที่แน่นอน (มีเลขท้ายเฉพาะคำสั่งซื้อ) จะออกให้หลังกดยืนยันสั่งซื้อ และล็อกราคาไว้ช่วงเวลาหนึ่ง โอนจากกระเป๋าที่รองรับเครือข่าย TPIX Chain เช่น MetaMask / Trust Wallet${
+              quote.stores.length > 1 ? `\nสั่งจาก ${quote.stores.length} ร้าน จะได้ยอดเหรียญแยกร้านละยอด` : ''
+            }`}
+            style={styles.block}
+          />
+        )}
         {/*
           เก็บเงินปลายทาง (U9): แสดงเฉพาะเมื่อ server เปิดให้ตะกร้านี้เก็บปลายทางได้จริง (summary.cod_available)
           ส่งด้วยไรเดอร์ต้องจ่ายก่อน (rider.allow_cod = false) → ซ่อนตัวเลือกนี้ ไม่โชว์ข้อความชวนเข้าใจผิด
@@ -1297,6 +1409,8 @@ export default function CheckoutScreen() {
             <Text style={[typography.h3, { color: colors.textStrong }]}>ยอดชำระ</Text>
             <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
           </View>
+          {/* 🪙 ยอดเหรียญ TPIX โดยประมาณ (ราคาสดจาก DEX) */}
+          <TpixTotal thb={summary.grand_total} lines={tpixLines} showRate size="sm" align="right" style={styles.gapTopSm} />
         </Card3D>
 
         {delivery === 'rider' && payment !== 'cod' && <EscrowNotice style={styles.block} />}
@@ -1311,7 +1425,10 @@ export default function CheckoutScreen() {
           {quoteLoading ? (
             <ActivityIndicator color={colors.gold} style={styles.totalLoader} />
           ) : (
-            <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
+            <>
+              <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
+              {payment === 'tpix' && <TpixTotal thb={summary.grand_total} lines={tpixLines} size="xs" />}
+            </>
           )}
         </View>
         <Button3D

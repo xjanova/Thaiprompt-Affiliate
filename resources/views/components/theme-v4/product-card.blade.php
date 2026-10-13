@@ -49,6 +49,8 @@
     $pcPlatform = $pcAffiliate && ($product->external_platform ?? '') === 'aliexpress' ? 'AliExpress' : 'Lazada';
     $pcInStock = $pcModel ? $product->isInStock() : true;
     $pcOfficial = $pcModel && $product->seller_id && $product->isOfficialShopProduct();
+    // 🪙 ราคา TPIX คงที่ใช้ได้เฉพาะ Official Shop (fixedPriceFor กรองให้) · object จำลอง = แปลงจากบาทอย่างเดียว
+    $pcTpixFixed = $pcModel ? \App\Services\TpixPay\TpixPriceService::fixedPriceFor($product) : null;
 
     // คะแนนสะสม (ค่าเดิมคือ PV — ใช้ถ้อยคำกลางๆ เพราะหน้าเว็บอาจเปิดในแอป)
     $pcPoints = 0.0;
@@ -128,6 +130,9 @@
                     <span class="sf-compare">฿{{ number_format($pcCompare, 0) }}</span>
                 @endif
             </div>
+            @unless($pcAffiliate)
+                <x-tpix-price :thb="$pcPrice" :tpix="$pcTpixFixed" style="margin-top:5px;" />
+            @endunless
             @if($pcRating > 0 || $pcSales > 0 || $pcPoints > 0)
                 <div class="sf-meta">
                     @if($pcRating > 0)

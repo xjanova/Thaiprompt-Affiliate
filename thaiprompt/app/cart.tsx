@@ -17,7 +17,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore, type CartItem } from '@/stores/cartStore';
-import { Button3D, Card3D, EmptyState, Icon, Pill, PriceText, Screen, resultHaptic } from '@/components/ui';
+import { Button3D, Card3D, EmptyState, Icon, Pill, PriceText, Screen, TpixPrice, TpixTotal, resultHaptic } from '@/components/ui';
+import { useTpixSpot } from '@/stores/tpixPriceStore';
 import { IconTile, MetaItem, QuantityStepper, StickyBar, ThumbImage } from '@/components/shop';
 import { useTheme, spacing, typography } from '@/theme';
 
@@ -67,6 +68,8 @@ const ItemRow: React.FC<ItemRowProps> = ({ item, quantity, busy, onQuantity, onR
           <PriceText amount={item.unit_price} size="sm" tone="gold" />
           {hasDiscount && <PriceText amount={item.original_price} size="xs" tone="muted" strike bold={false} />}
         </View>
+        {/* 🪙 ราคาเหรียญ TPIX ต่อชิ้น */}
+        <TpixPrice tpix={item.tpix} size="xs" />
 
         {!item.is_available ? (
           <MetaItem
@@ -78,7 +81,12 @@ const ItemRow: React.FC<ItemRowProps> = ({ item, quantity, busy, onQuantity, onR
         ) : (
           <View style={styles.qtyRow}>
             <QuantityStepper value={quantity} min={1} max={maxQty} size="sm" onChange={onQuantity} busy={busy} />
-            <PriceText amount={item.unit_price * quantity} size="md" tone="strong" />
+            <View style={styles.lineTotal}>
+              <PriceText amount={item.unit_price * quantity} size="md" tone="strong" />
+              {quantity > 1 && (
+                <TpixPrice tpix={item.tpix} thb={item.unit_price * quantity} quantity={quantity} size="xs" align="right" />
+              )}
+            </View>
           </View>
         )}
         {item.is_available && item.stock !== null && item.stock <= 5 && (
@@ -96,6 +104,8 @@ export default function CartScreen() {
   const cart = useCartStore((s) => s.cart);
   const loading = useCartStore((s) => s.loading);
   const loadError = useCartStore((s) => s.error);
+  // 🪙 ราคา TPIX สด (ใช้คิดยอดรวมโดยประมาณ)
+  useTpixSpot(isAuthenticated);
 
   const [refreshing, setRefreshing] = useState(false);
   /** จำนวนที่ผู้ใช้กดไว้แต่ยังไม่ได้ส่ง/ยังไม่ตอบกลับ */
@@ -244,6 +254,12 @@ export default function CartScreen() {
     }
     return Array.from(byStore.values()).filter((g) => g.items.length > 0);
   }, [cart?.stores, availableItems]);
+
+  /** 🪙 รายการสำหรับคิดยอดเหรียญรวม (รายการราคาเหรียญคงที่ไม่แปลงจากบาท) */
+  const tpixLines = useMemo(
+    () => availableItems.map((i) => ({ tpix: i.tpix, quantity: i.quantity, thb: i.line_total })),
+    [availableItems]
+  );
 
   const removeUnavailable = () => {
     Alert.alert(
@@ -436,6 +452,8 @@ export default function CartScreen() {
         <View style={styles.flex}>
           <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดรวมโดยประมาณ</Text>
           <PriceText amount={summary.grand_total} size="lg" tone="gold" />
+          {/* 🪙 ยอดเหรียญ TPIX โดยประมาณ (ราคาสดจาก DEX · ยอดจริงออกตอนสั่งซื้อ) */}
+          <TpixTotal thb={summary.grand_total} lines={tpixLines} size="xs" />
         </View>
         <Button3D
           title={unavailableItems.length > 0 ? 'จัดการตะกร้าก่อน' : 'ไปชำระเงิน'}
@@ -507,6 +525,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  lineTotal: {
+    flexShrink: 1,
+    alignItems: 'flex-end',
   },
   unavailable: {
     marginTop: spacing.xs,

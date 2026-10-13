@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Validator;
 class PaymentApiController extends Controller
 {
     /** วิธีชำระที่แอปใช้กับออเดอร์ร้านค้าที่ค้างจ่ายได้ */
-    private const APP_PAYMENT_METHODS = [PaymentMethod::WALLET, PaymentMethod::PROMPTPAY, PaymentMethod::BANK_TRANSFER];
+    private const APP_PAYMENT_METHODS = [PaymentMethod::WALLET, PaymentMethod::PROMPTPAY, PaymentMethod::BANK_TRANSFER, PaymentMethod::TPIX];
 
     protected PaymentService $paymentService;
 
@@ -302,6 +302,12 @@ class PaymentApiController extends Controller
                 'code' => 'ORDER_NOT_PAYABLE',
                 'message' => 'คำสั่งซื้อนี้ชำระเงินไม่ได้แล้ว',
             ], 409),
+            // 🪙 TPIX: ข้อความจาก TpixPayException เป็นภาษาไทยที่ผู้ใช้อ่านได้ (ราคายังไม่พร้อม / เกินเพดาน / ยังไม่เปิด)
+            str_contains($failure, 'TPIX') => response()->json([
+                'success' => false,
+                'code' => 'TPIX_UNAVAILABLE',
+                'message' => $failure,
+            ], 422),
             default => response()->json([
                 'success' => false,
                 'code' => 'PAYMENT_FAILED',
@@ -572,6 +578,14 @@ class PaymentApiController extends Controller
         // Deep link สำหรับ TrueMoney หรืออื่นๆ
         if (isset($paymentResponse['deep_link'])) {
             $response['deep_link'] = $paymentResponse['deep_link'];
+        }
+
+        // 🪙 เหรียญ TPIX (เติมเงินด้วย TPIX)
+        if ($transaction->payment_method === 'tpix') {
+            $response['tpix'] = \App\Services\TpixPay\TpixPaymentPresenter::forTransaction($transaction, $paymentData);
+            if (! empty($response['tpix']['pay_url'])) {
+                $response['redirect_url'] = $response['tpix']['pay_url'];
+            }
         }
 
         // Bank info สำหรับ Bank Transfer

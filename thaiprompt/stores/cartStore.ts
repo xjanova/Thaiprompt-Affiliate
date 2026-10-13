@@ -29,6 +29,7 @@ import {
   type CartStoreGroup,
 } from '@/services/api/shopApi';
 import { num, type ApiResult } from '@/services/api/client';
+import { normalizeTpixTag } from '@/services/api/tpixApi';
 
 export type { Cart, CartItem, CartStoreGroup };
 
@@ -80,6 +81,11 @@ const normalizeItem = (raw: any): CartItem => ({
   is_available: raw?.is_available !== false,
   unavailable_reason: typeof raw?.unavailable_reason === 'string' ? raw.unavailable_reason : null,
   store: raw?.store && typeof raw.store === 'object' ? { id: num(raw.store.id), name: String(raw.store.name ?? '') } : null,
+  // 🪙 ราคา TPIX ต่อชิ้น — คง undefined ไว้เมื่อ server ไม่ส่ง (ต่างจาก null = server สั่งซ่อน)
+  ...(raw && typeof raw === 'object' && 'tpix' in raw ? { tpix: normalizeTpixTag(raw.tpix) } : {}),
+  ...(raw && typeof raw === 'object' && 'price_tpix' in raw
+    ? { price_tpix: typeof raw.price_tpix === 'string' ? raw.price_tpix : null }
+    : {}),
 });
 
 const nullableNum = (value: unknown): number | null =>
