@@ -77,7 +77,8 @@ class FacebookStoryReferralTest extends TestCase
 
     public function test_emoji_story_reply_is_tracked_and_welcomed_as_response(): void
     {
-        $this->dispatch($this->reply('❤️'));
+        $event = $this->reply('❤️');
+        $this->dispatch($event);
         $this->assertDatabaseHas('fortune_story_events', [
             'facebook_user_id' => self::PSID, 'source' => 'story', 'event_type' => 'reply',
             'story_id' => 'story-1', 'story_url' => 'https://facebook.com/stories/story-1',
@@ -88,7 +89,24 @@ class FacebookStoryReferralTest extends TestCase
         $this->assertArrayNotHasKey('tag', $welcome);
         $this->assertStringContainsString('วัน เดือน ปีเกิด', $welcome['message']['text']);
         $this->assertNotNull(FortuneStoryEvent::first()->welcomed_at);
+        $this->assertSame(intdiv($event['timestamp'], 1000), FortuneStoryEvent::first()->inbound_at->getTimestamp());
         $this->assertSame([], $this->controller->conversations);
+    }
+
+    public function test_window_uses_real_timestamp_in_the_app_timezone(): void
+    {
+        config(['app.timezone' => 'Asia/Bangkok']);
+        date_default_timezone_set('Asia/Bangkok');
+        $event = $this->event(['referral' => ['ref' => 'STORY_23h']]);
+        $event['timestamp'] = now()->subHours(23)->getTimestampMs();
+        $this->dispatch($event);
+        $this->assertCount(1, $this->welcomes());
+        $this->assertSame(intdiv($event['timestamp'], 1000), FortuneStoryEvent::first()->inbound_at->getTimestamp());
+        $future = $this->event(['referral' => ['ref' => 'STORY_future']]);
+        $future['timestamp'] = now()->addMinutes(10)->getTimestampMs();
+        $this->dispatch($future);
+        $this->assertCount(1, $this->welcomes());
+        $this->assertNull(FortuneStoryEvent::where('story_slug', 'future')->first()->welcomed_at);
     }
 
     public function test_short_reply_is_welcomed_but_birthdate_uses_existing_flow(): void

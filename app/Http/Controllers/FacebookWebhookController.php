@@ -628,7 +628,7 @@ class FacebookWebhookController extends Controller
             $pageId = (string) ($messaging['recipient']['id'] ?? $this->settings->facebook_page_id ?? '');
             $timestamp = $messaging['timestamp'] ?? null;
             $inboundAt = is_numeric($timestamp) && $timestamp > 0
-                ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp)
+                ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp, config('app.timezone'))
                 : null;
             $identity = $messaging['message']['mid'] ?? $messaging['postback']['mid']
                 ?? json_encode([$timestamp, $story]);
