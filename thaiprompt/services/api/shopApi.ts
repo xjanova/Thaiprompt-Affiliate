@@ -288,6 +288,8 @@ export interface Cart {
     amount_to_free_shipping: number | null;
     rider_available: boolean;
     cod_available: boolean;
+    /** 🪙 false = ตะกร้านี้จ่ายด้วย TPIX ไม่ได้ (มีสินค้า Lazada) · undefined = server รุ่นเก่า */
+    tpix_payable?: boolean;
   };
 }
 

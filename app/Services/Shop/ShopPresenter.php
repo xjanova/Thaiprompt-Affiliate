@@ -105,7 +105,8 @@ class ShopPresenter
      */
     public static function productTpix(Product $product, float|int|string|null $price = null): array
     {
-        if ($product->is_affiliate) {
+        // สินค้า Lazada (affiliate/ดึงเข้ามาขาย) ไม่แสดงราคา TPIX
+        if (\App\Services\TpixPay\TpixPriceService::isExternalProduct($product)) {
             return ['price_tpix' => null, 'tpix' => null];
         }
 

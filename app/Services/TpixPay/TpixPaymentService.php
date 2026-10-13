@@ -67,6 +67,10 @@ class TpixPaymentService
             throw new TpixPayException(TpixPayException::INVALID_AMOUNT, 'ไม่พบคำสั่งซื้อของรายการนี้');
         }
 
+        if ($isOrder && $order->items->contains(fn ($item) => TpixPriceService::isExternalProduct($item->product))) {
+            throw new TpixPayException(TpixPayException::DISABLED, 'สินค้าจาก Lazada ชำระด้วยเหรียญ TPIX ไม่ได้');
+        }
+
         $metadata = $transaction->metadata ?? [];
         $amountThb = $isOrder
             ? round((float) $order->total_amount, 2)

@@ -25,11 +25,14 @@
 @php
     $tpxThb = $thb;
     $tpxFixed = $tpix;
+    $tpxExternal = false;
     if ($product instanceof \App\Models\Product) {
+        // สินค้า Lazada (affiliate/ดึงเข้ามาขาย) ไม่แสดงราคา TPIX
+        $tpxExternal = \App\Services\TpixPay\TpixPriceService::isExternalProduct($product);
         $tpxThb ??= $product->price;
         $tpxFixed ??= \App\Services\TpixPay\TpixPriceService::fixedPriceFor($product);
     }
-    $tpx = app(\App\Services\TpixPay\TpixPriceService::class)->forDisplay($tpxThb, $tpxFixed);
+    $tpx = $tpxExternal ? null : app(\App\Services\TpixPay\TpixPriceService::class)->forDisplay($tpxThb, $tpxFixed);
 @endphp
 
 @if($tpx)

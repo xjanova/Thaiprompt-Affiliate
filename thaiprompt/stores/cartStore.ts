@@ -181,6 +181,7 @@ export const normalizeCart = (raw: any): Cart => {
       amount_to_free_shipping: s.amount_to_free_shipping === null || s.amount_to_free_shipping === undefined ? null : num(s.amount_to_free_shipping),
       rider_available: s.rider_available === true,
       cod_available: s.cod_available === true,
+      ...(typeof s.tpix_payable === 'boolean' ? { tpix_payable: s.tpix_payable } : {}),
     },
   };
 };

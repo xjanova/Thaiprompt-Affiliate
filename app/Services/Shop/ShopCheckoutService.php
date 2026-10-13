@@ -265,6 +265,11 @@ class ShopCheckoutService
 
         // 🪙 TPIX: เพดานต่อรายการ/ต่อวัน ตรวจก่อนสร้างออเดอร์ (ออเดอร์แยกตามร้าน = ใบเสนอยอดละร้าน)
         if ($paymentMethod === PaymentMethod::TPIX) {
+            // สินค้า Lazada ต้องใช้เงินบาทซื้อจาก Lazada มาส่ง → จ่ายด้วย TPIX ไม่ได้ (เจ้าของสั่ง 2026-10-13)
+            if ($lines->contains(fn (CartItem $item) => \App\Services\TpixPay\TpixPriceService::isExternalProduct($item->product))) {
+                throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, 'สินค้าจาก Lazada ชำระด้วยเหรียญ TPIX ไม่ได้ กรุณาเลือกวิธีชำระอื่น', 422);
+            }
+
             $tpix = app(\App\Services\TpixPay\TpixPaymentService::class);
             try {
                 foreach ($plans as $plan) {

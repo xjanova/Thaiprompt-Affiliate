@@ -197,6 +197,31 @@ class TpixPriceDisplayTest extends TestCase
         $this->assertSame(['price_tpix' => null, 'tpix' => null], ShopPresenter::productTpix($affiliate, 1000));
     }
 
+    public function test_lazada_products_never_show_a_tpix_price(): void
+    {
+        // เจ้าของสั่ง: บน Thaiprompt สินค้า Lazada ไม่ต้องแสดงราคา TPIX (ทั้งลิงก์ affiliate และที่ดึงเข้ามาขายในร้าน)
+        $imported = $this->product(official: true, priceTpix: null);
+        $imported->forceFill(['sku' => 'LZD-5329571666']);
+
+        $bySource = $this->product(official: false, priceTpix: null);
+        $bySource->forceFill(['attributes' => ['source' => ['platform' => 'lazada', 'item_id' => '1']]]);
+
+        $byPlatform = $this->product(official: false, priceTpix: null);
+        $byPlatform->forceFill(['external_platform' => 'lazada']);
+
+        foreach ([$imported, $bySource, $byPlatform] as $product) {
+            $this->assertTrue(TpixPriceService::isExternalProduct($product));
+            $this->assertSame('', trim(Blade::render('<x-tpix-price :product="$product" size="lg" />', ['product' => $product])));
+            $this->assertSame(['price_tpix' => null, 'tpix' => null], ShopPresenter::productTpix($product, 1000));
+            $this->assertSame(['price_tpix' => null, 'tpix' => null], $this->prices->apiFieldsForProduct($product));
+        }
+
+        // สินค้าปกติยังแสดง
+        $normal = $this->product(official: false, priceTpix: null);
+        $this->assertFalse(TpixPriceService::isExternalProduct($normal));
+        $this->assertStringContainsString('307.69 TPIX', Blade::render('<x-tpix-price :product="$product" />', ['product' => $normal]));
+    }
+
     /**
      * สินค้าจำลองที่ไม่แตะฐานข้อมูล (isOfficialShopProduct ปกติค้นผู้ขายทางการจากตาราง users)
      */
