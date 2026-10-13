@@ -1673,7 +1673,20 @@ class FreshMarketChannelManager
 
         // ถ้ามี order_id → ดึงจาก DB โดยตรง
         if ($orderId) {
-            $order = FreshMarketOrder::find($orderId);
+            $order = FreshMarketOrder::with('seller')->find($orderId);
+
+            // 🔒 (2026-10-13) เห็นสถานะได้เฉพาะผู้ซื้อหรือร้านของออเดอร์นี้ — เดิมใครรู้เลขออเดอร์ (เรียงกัน) ก็กดดูได้
+            //    ไม่ใช่ของตัวเอง = ตอบเหมือนไม่พบออเดอร์ (ไม่บอกว่ามีอยู่จริง)
+            $viewer = $this->lineBuyerFor($conversation);
+            $isOrderBuyer = $order && $viewer && (int) $order->buyer_id === (int) $viewer->id;
+            $isOrderSeller = $order && $order->seller && (
+                ($order->seller->line_user_id && $order->seller->line_user_id === $lineUserId)
+                || ($viewer && (int) $order->seller->user_id === (int) $viewer->id)
+            );
+            if (! $isOrderBuyer && ! $isOrderSeller) {
+                $order = null;
+            }
+
             if ($order) {
                 $statusLabels = [
                     'pending' => '⏳ รอผู้ขายรับออเดอร์',
@@ -1694,8 +1707,7 @@ class FreshMarketChannelManager
                 ];
 
                 // กติกาตัดเวลา (2026-10-13): ผู้ซื้อเจ้าของออเดอร์ยกเลิกได้ (ร้านยังไม่รับ / ร้านเตรียมช้า / หาไรเดอร์ไม่ได้เกินเวลา)
-                $buyer = $this->lineBuyerFor($conversation);
-                if ($buyer && (int) $order->buyer_id === (int) $buyer->id && $order->canBeCancelled('buyer')) {
+                if ($isOrderBuyer && $order->canBeCancelled('buyer')) {
                     $note = $order->buyerCancelNote(true);
                     $text .= $note ? "\n\n⏱️ {$note}" : '';
                     array_unshift($quickReplies, [

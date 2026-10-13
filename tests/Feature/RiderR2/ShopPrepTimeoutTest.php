@@ -196,6 +196,18 @@ class ShopPrepTimeoutTest extends HandoverTestCase
         $order2 = $this->placeFreshRiderOrder($buyer, $listing);
         $manager->handlePostback($other->line_user_id, 'action=buyer_cancel_order&order_id='.$order2->id.'&confirm=1', ['reply_token' => 'reply-stranger']);
         $this->assertSame(FreshMarketOrder::STATUS_PENDING, $order2->fresh()->order_status);
+
+        // 🔒 คนอื่นดูสถานะออเดอร์ของผู้ซื้อด้วยเลขออเดอร์ไม่ได้ (ตอบเหมือนไม่พบ ไม่บอกเลขออเดอร์)
+        $manager->handlePostback($other->line_user_id, 'action=track_order&order_id='.$order2->id, ['reply_token' => 'reply-stranger-track']);
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), '/message/reply') && $r['replyToken'] === 'reply-stranger-track'
+            && str_contains((string) ($r['messages'][0]['text'] ?? ''), 'ไม่พบข้อมูลออเดอร์')
+            && ! str_contains(json_encode($r['messages'], JSON_UNESCAPED_UNICODE), (string) $order2->order_number));
+
+        // ร้านของออเดอร์ (ผ่านบัญชีผู้ใช้ของร้าน) ยังดูสถานะได้
+        $sellerUser->forceFill(['line_user_id' => 'U-shop-'.$sellerUser->id])->save();
+        $manager->handlePostback($sellerUser->line_user_id, 'action=track_order&order_id='.$order2->id, ['reply_token' => 'reply-seller-track']);
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), '/message/reply') && $r['replyToken'] === 'reply-seller-track'
+            && str_contains((string) ($r['messages'][0]['text'] ?? ''), (string) $order2->order_number));
     }
 
     public function test_to_api_array_exposes_buyer_cancel_fields(): void
