@@ -989,7 +989,8 @@ class FortuneChartService
         [$basisTitle, $basisNote] = match ($d['basis']) {
             'lagna' => ["ลัคนาราศี{$d['anchor']}", 'ภพนับจากลัคนา'],
             'moon' => ["จันทร์ลัคน์ราศี{$d['anchor']}", 'ไม่ทราบเวลาเกิด · ภพนับจากจันทร์ลัคน์'],
-            default => ['ไม่ทราบเวลาเกิด', 'จันทร์ย้ายราศีวันเกิด · วางดาวตามราศี ไม่มีภพ'],
+            // 🕰️ บอกเหตุผลตรง ๆ ว่าทำไมไม่มีลัคนา/ภพ — ลูกค้าเห็นวงนอกเป็นราศีแล้วนึกว่าผังขาดไป
+            default => ['ไม่แสดงลัคนาและภพ', "ไม่ทราบเวลาเกิด · ใส่ลัคนาจะคลาดเคลื่อน\nวงนอกจึงเป็นราศี (บอกเวลาเกิดเพื่อดูภพได้)"],
         };
 
         $left = [['เกิดวัน'.$d['dayOfWeek'], 30, $lavender]];
@@ -1006,7 +1007,7 @@ class FortuneChartService
 
         $right = [
             [$basisTitle, 30, $gold],
-            [$basisNote, 20, $muted],
+            ...array_map(fn (string $line): array => [$line, 20, $muted], explode("\n", $basisNote)),
             ['มิตร: '.(implode(' ', $d['friends']) ?: '-'), 25, $mint],
             ['ศัตรู: '.(implode(' ', $d['enemies']) ?: '-'), 25, $rose],
         ];
