@@ -5861,9 +5861,12 @@ class FortuneConversationService
             //   (2026-05-13 clarification: chart = ส่วนของการทำนาย ต้องส่ง — ไม่ใช่ "ข้อมูลอื่นแทรก")
             $chartImageUrl = null;
             try {
-                $birthDate = $reading->birth_date?->format('Y-m-d');
+                // 🕰️ ต้องส่งเวลา/จังหวัดเกิดด้วย — ส่งแค่วันที่ = ไม่มีลัคนา ⇒ วันที่จันทร์ย้ายราศีจะไม่มีภพ (ตนุ/ปัตนิ ฯลฯ หายจากรูป)
+                $birthDate = $reading->birthDateTimeForChart();
                 if ($birthDate) {
-                    $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $userProfile['gender'] ?? null);
+                    $chartImageUrl = $this->chartService->generateBirthChart(
+                        $birthDate, $name, $userProfile['gender'] ?? null, null, $reading->birthProvinceIfKnown()
+                    );
                 } else {
                     $chartImageUrl = $this->chartService->generateQuickChart($name);
                 }
