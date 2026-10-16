@@ -92,6 +92,16 @@ describe('playerWindow', () => {
   it('ยังไม่เคยดู', () => {
     expect(playerWindow({ watched_seconds: 0, duration_seconds: 300, completed: false })).toEqual({ start: 0, maxAllowed: 0 });
   });
+  it('มี last_position_seconds: เล่นต่อจากตำแหน่งล่าสุดของ server (ย้อนไปทบทวนไว้)', () => {
+    expect(
+      playerWindow({ watched_seconds: 200, duration_seconds: 300, completed: false, last_position_seconds: 120 })
+    ).toEqual({ start: 117, maxAllowed: 200 });
+  });
+  it('last_position_seconds = 0 → ใช้ watched_seconds', () => {
+    expect(
+      playerWindow({ watched_seconds: 100, duration_seconds: 300, completed: false, last_position_seconds: 0 })
+    ).toEqual({ start: 97, maxAllowed: 100 });
+  });
 });
 
 describe('เวลา', () => {

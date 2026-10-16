@@ -229,6 +229,12 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   QUIZ_LOCKED: 'ดูวิดีโอให้ครบทุกบทก่อน แล้วค่อยทำแบบทดสอบนะ',
   QUIZ_COOLDOWN: 'เพิ่งทำแบบทดสอบไป รอสักครู่แล้วลองใหม่ได้นะ',
   ATTEMPT_EXPIRED: 'หมดเวลาทำแบบทดสอบรอบนี้แล้ว เริ่มรอบใหม่ได้เลย',
+  ATTEMPT_SUBMITTED: 'ส่งคำตอบชุดนี้ไปแล้ว ดูผลสอบได้เลย',
+  ATTEMPT_NOT_FOUND: 'ไม่พบแบบทดสอบรอบนี้ เริ่มรอบใหม่ได้เลย',
+  QUIZ_BUSY: 'กำลังเตรียมแบบทดสอบอยู่ ลองกดอีกครั้งนะ',
+  COURSE_NOT_FOUND: 'ไม่พบหลักสูตรนี้ หรือหลักสูตรปิดอยู่',
+  LESSON_NOT_FOUND: 'ไม่พบบทเรียนนี้ หรือบทเรียนปิดอยู่',
+  CLASSROOM_ERROR: 'ระบบห้องเรียนขัดข้องชั่วคราว ลองใหม่อีกครั้งนะ',
 };
 
 const STATUS_CODE: Record<number, string> = {

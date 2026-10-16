@@ -117,7 +117,7 @@ export const LessonPlayer = forwardRef<LessonPlayerHandle, LessonPlayerProps>(
           key={webKey}
           ref={webRef}
           source={{ html, baseUrl: PLAYER_BASE_URL }}
-          originWhitelist={['https://*']}
+          originWhitelist={['https://*', 'about:blank']}
           onMessage={handleMessage}
           // iframe ของ YouTube โหลดได้ · หน้าหลักห้ามเปลี่ยนไปที่อื่น (กดโลโก้ YouTube แล้วหลุดออกจากบทเรียน)
           onShouldStartLoadWithRequest={(req) =>

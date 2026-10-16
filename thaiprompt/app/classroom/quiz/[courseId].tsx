@@ -217,6 +217,17 @@ export default function ClassroomQuizScreen() {
         setPhase({ kind: 'expired' });
         return;
       }
+      if (res.code === 'ATTEMPT_SUBMITTED' || res.code === 'ATTEMPT_NOT_FOUND') {
+        // ส่งไปแล้ว (เช่น รอบก่อนเน็ตหลุดแต่ server ได้รับ / ส่งจากอีกเครื่อง) หรือรอบนี้ไม่มีแล้ว
+        // → กลับหน้าแนะนำ แล้วโหลดผลสอบล่าสุด/เวลารอสอบใหม่จาก server
+        inProgressRef.current = false;
+        invalidateClassroomCourses();
+        setIntroError(res.message || thaiMessageForCode(res.code));
+        setPhase({ kind: 'loading' });
+        loadCourse().catch(() => {});
+        useAuthStore.getState().refreshUser().catch(() => {});
+        return;
+      }
       // เน็ตหลุด/ระบบขัดข้อง → คงคำตอบไว้ กดส่งใหม่ได้
       setInlineError(res.message);
       resultHaptic('error');

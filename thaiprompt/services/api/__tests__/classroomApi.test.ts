@@ -9,6 +9,7 @@ import {
   cooldownFromFailure,
   normalizeCourse,
   normalizeCourseDetail,
+  normalizeLesson,
   normalizeProgress,
   normalizeQuizStart,
   normalizeSubmitResult,
@@ -105,6 +106,16 @@ describe('normalizeCourseDetail', () => {
     expect(d.last_attempt).toBeNull();
     expect(d.retry_available_at).toBeNull();
     expect(d.progress_pct).toBe(0);
+  });
+});
+
+describe('normalizeLesson: last_position_seconds', () => {
+  it('อ่านเมื่อ server ส่งมา · ไม่ส่ง = ไม่มีฟิลด์', () => {
+    expect(
+      normalizeLesson({ id: 1, title: 'บท', youtube_id: 'dQw4w9WgXcQ', duration_seconds: 60, last_position_seconds: '42' })
+        .last_position_seconds
+    ).toBe(42);
+    expect(normalizeLesson({ id: 1, duration_seconds: 60 }).last_position_seconds).toBeUndefined();
   });
 });
 

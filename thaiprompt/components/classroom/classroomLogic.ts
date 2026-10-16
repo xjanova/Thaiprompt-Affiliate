@@ -74,17 +74,24 @@ export const allLessonsDone = (lessons: readonly Pick<ClassroomLesson, 'complete
 /**
  * จุดเริ่มเล่น + จุดไกลสุดที่เลื่อนไปได้ (กันข้ามไปข้างหน้าในหน้าเล่น — server ก็ไม่นับเวลาที่ข้ามอยู่แล้ว)
  * - ดูจบแล้ว = เริ่มต้นใหม่ เลื่อนได้ทั้งคลิป
- * - ยังไม่จบ = เล่นต่อจากที่ดูไว้ (ถอยหลัง 3 วิ ให้ต่อเนื่อง) เลื่อนได้ไม่เกินที่ดูแล้ว
+ * - ยังไม่จบ = เล่นต่อจากตำแหน่งล่าสุดที่ server บันทึก (last_position_seconds · ไม่มี = watched_seconds)
+ *   ถอยหลัง 3 วิ ให้ต่อเนื่อง · เลื่อนได้ไม่เกินจุดไกลสุดที่ดูแล้ว
  */
 export const playerWindow = (
-  lesson: Pick<ClassroomLesson, 'watched_seconds' | 'duration_seconds' | 'completed'>
+  lesson: Pick<ClassroomLesson, 'watched_seconds' | 'duration_seconds' | 'completed' | 'last_position_seconds'>
 ): { start: number; maxAllowed: number } => {
   const duration = Math.max(0, lesson.duration_seconds);
   if (lesson.completed) return { start: 0, maxAllowed: duration > 0 ? duration : Number.MAX_SAFE_INTEGER };
   const watched = Math.max(0, Math.floor(lesson.watched_seconds));
-  const cap = duration > 5 ? duration - 5 : watched;
-  const start = Math.max(0, Math.min(watched, cap) - 3);
-  return { start, maxAllowed: Math.max(watched, start) };
+  const lastPos =
+    typeof lesson.last_position_seconds === 'number' && Number.isFinite(lesson.last_position_seconds) && lesson.last_position_seconds > 0
+      ? Math.floor(lesson.last_position_seconds)
+      : null;
+  const resumeAt = lastPos ?? watched;
+  const cap = duration > 5 ? duration - 5 : resumeAt;
+  const start = Math.max(0, Math.min(resumeAt, cap) - 3);
+  const furthest = Math.max(watched, lastPos ?? 0);
+  return { start, maxAllowed: Math.max(duration > 0 ? Math.min(furthest, duration) : furthest, start) };
 };
 
 // =====================================================

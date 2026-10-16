@@ -48,6 +48,8 @@ export interface ClassroomLesson {
   duration_seconds: number;
   watched_seconds: number;
   completed: boolean;
+  /** ตำแหน่งล่าสุดที่ server บันทึกไว้ (วินาที) — server รุ่นเก่าไม่ส่ง = undefined → ใช้ watched_seconds แทน */
+  last_position_seconds?: number;
 }
 
 export interface ClassroomAttemptSummary {
@@ -139,7 +141,7 @@ export const safeYoutubeId = (value: unknown): string | null => {
 
 export const normalizeLesson = (raw: any): ClassroomLesson => {
   const duration = nonNeg(raw?.duration_seconds);
-  return {
+  const lesson: ClassroomLesson = {
     id: num(raw?.id),
     title: str(raw?.title) ?? 'บทเรียน',
     youtube_id: safeYoutubeId(raw?.youtube_id),
@@ -147,6 +149,9 @@ export const normalizeLesson = (raw: any): ClassroomLesson => {
     watched_seconds: nonNeg(raw?.watched_seconds),
     completed: isTruthyFlag(raw?.completed),
   };
+  const lastPos = optNum(raw?.last_position_seconds);
+  if (Number.isFinite(lastPos)) lesson.last_position_seconds = Math.max(0, lastPos);
+  return lesson;
 };
 
 export const normalizeCourse = (raw: any): ClassroomCourse => {
