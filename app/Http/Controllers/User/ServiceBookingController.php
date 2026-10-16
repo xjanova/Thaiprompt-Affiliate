@@ -217,7 +217,8 @@ class ServiceBookingController extends Controller
             'contact_phone' => 'nullable|string|max:20',
             'selected_options' => 'nullable|array',
             'customer_notes' => 'nullable|string|max:1000',
-            'payment_method' => 'required|string|in:wallet,promptpay,card',
+            // 🪙 tpix = จ่ายด้วยเหรียญ TPIX (เหรียญเข้ากระเป๋าก่อน แล้วชำระการจองจากกระเป๋าให้อัตโนมัติ)
+            'payment_method' => 'required|string|in:wallet,promptpay,card,tpix',
         ]);
 
         $validated['service_id'] = $service->id;
@@ -226,6 +227,19 @@ class ServiceBookingController extends Controller
         try {
             // สร้างการจอง
             $booking = $this->bookingService->createBooking($validated);
+
+            // 🪙 เหรียญ TPIX: การจองรอชำระ → หน้าจ่าย (ได้เหรียญแล้วระบบชำระ + หาผู้ให้บริการให้)
+            if ($validated['payment_method'] === 'tpix') {
+                try {
+                    $quote = app(\App\Services\TpixPay\TpixCheckoutService::class)->quoteServiceBooking($booking);
+                } catch (\App\Services\TpixPay\TpixPayException $e) {
+                    return redirect()
+                        ->route('user.bookings.show', $booking)
+                        ->with('error', 'สร้างการจองแล้ว แต่ออกยอดชำระด้วย TPIX ไม่สำเร็จ: '.$e->getMessage());
+                }
+
+                return redirect()->route('tpix-pay.show', $quote->reference);
+            }
 
             // ชำระเงิน
             $this->bookingService->processPayment($booking, $validated['payment_method']);

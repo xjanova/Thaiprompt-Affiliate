@@ -24,8 +24,15 @@ final class TpixPaymentPresenter
     {
         $required = app(TpixPaySettings::class)->confirmations();
         $secondsLeft = $payment->expires_at ? max(0, now()->diffInSeconds($payment->expires_at, false)) : 0;
+        // ตลาดสด / จองบริการ: ผลการสั่งหลังได้เหรียญ (เลขออเดอร์/การจอง + ข้อความไทย) — คีย์เพิ่ม แอปรุ่นเก่าไม่อ่านก็ไม่พัง
+        $checkout = TpixCheckoutService::present($payment);
 
         return [
+            'checkout' => $checkout,
+            'fresh_market_order_id' => $checkout['fresh_market_order_id'] ?? null,
+            'service_booking_id' => $checkout['service_booking_id'] ?? null,
+            'fulfilment_status' => $checkout['status'] ?? null,
+            'fulfilment_message' => $checkout['message'] ?? null,
             'method' => 'tpix',
             'reference' => $payment->reference,
             'purpose' => $payment->purpose,

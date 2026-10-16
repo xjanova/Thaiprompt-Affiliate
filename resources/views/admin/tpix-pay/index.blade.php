@@ -176,7 +176,18 @@
                             <td style="padding:8px;">
                                 <div class="tp-num" style="font-weight:700;color:var(--ink);">{{ $p->reference }}</div>
                                 <div class="tp-muted" style="font-size:.78rem;">
-                                    {{ $p->purpose === 'order' ? 'คำสั่งซื้อ #'.($p->meta['order_number'] ?? $p->payable_id) : 'เติมเงินเข้ากระเป๋า' }}
+                                    @if($p->purpose === 'order')
+                                        คำสั่งซื้อ #{{ $p->meta['order_number'] ?? $p->payable_id }}
+                                    @elseif($p->isCheckoutPurpose())
+                                        {{ $p->meta['title'] ?? ($p->purpose === 'fresh_market' ? 'ตลาดสด' : 'จองบริการ') }}
+                                        @php($tpxF = $p->fulfilmentStatus())
+                                        @if($tpxF === 'placed') · สั่งสำเร็จ {{ $p->meta['fulfilment']['result_number'] ?? '' }}
+                                        @elseif($tpxF === 'failed') · สั่งไม่สำเร็จ (เงินอยู่ในกระเป๋า)
+                                        @elseif($tpxF) · กำลังสั่ง ({{ $tpxF }})
+                                        @endif
+                                    @else
+                                        เติมเงินเข้ากระเป๋า
+                                    @endif
                                     @if(! empty($p->meta['late'])) · โอนช้า @endif
                                     @if(! empty($p->meta['duplicate_of'])) · โอนซ้ำของ {{ $p->meta['duplicate_of'] }} @endif
                                 </div>

@@ -2,6 +2,8 @@
  * จ่ายด้วยเหรียญ TPIX — ใบเสนอยอดเดียว (GET /tpix/payments/{reference})
  *
  * เข้ามาจาก: หน้าชำระเงิน (?from=checkout&group=<checkout_id>) · หน้าคำสั่งซื้อ (?from=order) · เติมเงิน (?from=topup)
+ *            · ตลาดสด (?from=taladsod — purpose fresh_market: ได้เหรียญแล้วระบบเติมกระเป๋าแล้วสั่งให้ → fresh_market_order_id)
+ *            · จองบริการ (purpose service_booking — ได้เหรียญแล้วระบบชำระการจองจากกระเป๋าให้)
  *
  * หน้าตา (ธีมรอยัล): การ์ดหัวขอบทอง (เลขคำสั่งซื้อ + ยอดบาท + สถานะ) → การ์ดจ่าย (ยอดเหรียญตัวใหญ่ + คัดลอก
  *   · นับถอยหลัง · QR บนแผ่นขาว · กระเป๋ารับเงิน + คัดลอก · ปุ่มเปิดกระเป๋า/เปิดหน้าจ่ายบนเว็บ) → ช่องวางเลขธุรกรรม
@@ -38,9 +40,11 @@ import {
 } from '@/components/ui';
 import { Field, IconTile, NoticeBanner, openHttpsLink } from '@/components/shop';
 import { payOrder } from '@/services/api/shopApi';
+import { useTaladsodCartStore } from '@/stores/taladsodCartStore';
 import {
   TPIX_ACTIVE_STATUSES,
   getTpixPayment,
+  isTpixFulfilling,
   isTpixReference,
   isValidTxHash,
   normalizeTpixPayment,
@@ -213,7 +217,10 @@ export default function TpixPayScreen() {
   }, [poll]);
 
   const status = payment?.status ?? 'pending';
-  const active = !!payment && TPIX_ACTIVE_STATUSES.includes(status);
+  // ตลาดสด/จองบริการ: ได้เหรียญแล้วแต่ระบบยังสั่งไม่เสร็จ → เช็คต่อจนรู้ผล
+  const active = !!payment && (TPIX_ACTIVE_STATUSES.includes(status) || isTpixFulfilling(payment));
+  const isFreshMarket = payment?.purpose === 'fresh_market';
+  const isBooking = payment?.purpose === 'service_booking';
 
   // เช็คสถานะทุก 5 วินาทีระหว่างเปิดหน้านี้ + กลับจากแอปกระเป๋า = เช็คทันที
   useFocusEffect(
@@ -268,10 +275,14 @@ export default function TpixPayScreen() {
 
   const exitTarget = useMemo((): string => {
     if (payment?.purpose === 'wallet_topup' || from === 'topup') return '/(tabs)/wallet';
+    if (payment?.purpose === 'fresh_market') {
+      return payment.fresh_market_order_id ? `/taladsod/order/${payment.fresh_market_order_id}` : '/taladsod/orders';
+    }
+    if (payment?.purpose === 'service_booking') return '/(tabs)/wallet';
     if (group.length > 1) return '/(tabs)/orders';
     if (payment?.order_id) return `/order/${payment.order_id}`;
     return '/(tabs)/orders';
-  }, [payment?.purpose, payment?.order_id, from, group.length]);
+  }, [payment?.purpose, payment?.order_id, payment?.fresh_market_order_id, from, group.length]);
 
   const goExit = useCallback(() => {
     leavingRef.current = true;
@@ -403,6 +414,18 @@ export default function TpixPayScreen() {
   /** ออกยอดใหม่หลังหมดเวลา (ออเดอร์) / กลับไปเริ่มเติมเงินใหม่ (เติมเงิน) */
   const renew = async () => {
     if (!payment || renewBusyRef.current) return;
+    // ตลาดสด: กลับไปหน้าสั่งซื้อของร้านนี้ (ตะกร้ายังอยู่) แล้วกดจ่ายใหม่ = ยอดตามราคาปัจจุบัน
+    if (payment.purpose === 'fresh_market') {
+      leavingRef.current = true;
+      router.replace(
+        (payment.fresh_market_seller_id ? `/taladsod/checkout?seller_id=${payment.fresh_market_seller_id}` : '/taladsod/cart') as never
+      );
+      return;
+    }
+    if (payment.purpose === 'service_booking') {
+      Alert.alert('ยอดนี้หมดเวลาแล้ว', 'เปิดการจองอีกครั้งจากหน้าเว็บเพื่อออกยอดใหม่ หรือชำระด้วยกระเป๋าเงิน');
+      return;
+    }
     if (payment.purpose === 'wallet_topup' || !payment.order_id) {
       leavingRef.current = true;
       router.replace('/wallet-topup' as never);
@@ -450,7 +473,7 @@ export default function TpixPayScreen() {
   };
 
   const confirmRenew = () => {
-    if (payment?.purpose === 'wallet_topup' || !payment?.order_id) {
+    if (payment?.purpose === 'wallet_topup' || payment?.purpose === 'fresh_market' || !payment?.order_id) {
       renew();
       return;
     }
@@ -502,6 +525,7 @@ export default function TpixPayScreen() {
   }
 
   const isTopup = payment.purpose === 'wallet_topup';
+  const checkoutLabel = isFreshMarket || isBooking ? payment.checkout_title || (isFreshMarket ? 'ตลาดสด' : 'จองบริการ') : null;
   const shownStatus = timeUp ? 'expired' : status;
   const statusLabel = timeUp ? 'หมดเวลา' : payment.status_label || STATUS_LABEL[status] || status;
   const canPay = status === 'pending' && !timeUp;
@@ -519,7 +543,13 @@ export default function TpixPayScreen() {
         </View>
         <View style={styles.flex}>
           <Text style={[typography.caption, { color: colors.textMuted }]}>
-            {isTopup ? 'เติมเงินเข้ากระเป๋า' : payment.order_number ? `คำสั่งซื้อ ${payment.order_number}` : 'คำสั่งซื้อ'}
+            {isTopup
+              ? 'เติมเงินเข้ากระเป๋า'
+              : checkoutLabel
+                ? checkoutLabel
+                : payment.order_number
+                  ? `คำสั่งซื้อ ${payment.order_number}`
+                  : 'คำสั่งซื้อ'}
           </Text>
           <PriceText amount={payment.amount_thb} decimals={2} size="lg" tone="strong" />
         </View>
@@ -527,6 +557,118 @@ export default function TpixPayScreen() {
       </View>
     </Card3D>
   );
+
+  // ---------- ตลาดสด / จองบริการ: ได้เหรียญแล้ว → ผลการสั่งด้วยกระเป๋าเงิน ----------
+  if (settled && (isFreshMarket || isBooking)) {
+    const fulfil = payment.fulfilment_status;
+    const placed = fulfil === 'placed' || (status === 'paid' && fulfil !== 'failed');
+    const placing = fulfil === 'pending';
+    const title = placing
+      ? 'ได้รับเหรียญแล้ว กำลังสั่งให้'
+      : placed
+        ? isFreshMarket
+          ? 'สั่งซื้อสำเร็จ'
+          : 'ชำระการจองสำเร็จ'
+        : 'เงินอยู่ในกระเป๋าเงินของคุณ';
+    const message = placing
+      ? 'เติมมูลค่าเข้ากระเป๋าเงินแล้ว ระบบกำลังสั่งจากกระเป๋าให้ รอสักครู่นะ'
+      : payment.fulfilment_message ||
+        (placed
+          ? 'ร้านได้รับคำสั่งซื้อแล้ว เงินพักไว้จนคุณได้รับของ'
+          : 'ระบบได้รับเหรียญแต่สั่งให้ไม่สำเร็จ ยอดเงินเติมเข้ากระเป๋าเงินของคุณแล้ว สั่งใหม่ด้วยกระเป๋าเงินได้ทันที');
+    const tone = placed ? 'success' : placing ? 'info' : 'warning';
+    const goFreshOrder = () => {
+      if (!payment.fresh_market_order_id) return;
+      leavingRef.current = true;
+      useTaladsodCartStore.getState().refresh().catch(() => {});
+      router.replace(`/taladsod/order/${payment.fresh_market_order_id}?placed=1` as never);
+    };
+    return (
+      <Screen title="จ่ายด้วยเหรียญ TPIX" subtitle={checkoutLabel || undefined} onBack={goBack}>
+        <Card3D gradientBorder shadow="lg" padding={spacing.xl} style={styles.block}>
+          <View style={[styles.medalOuter, { backgroundColor: tone === 'success' ? colors.successSoft : colors.goldSoft }]}>
+            <LinearGradient
+              colors={tone === 'success' ? gradients.success : gradients.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.medalInner}
+            >
+              {placing ? (
+                <ActivityIndicator color={colors.textOnGold} />
+              ) : (
+                <Icon
+                  name={placed ? 'check' : 'wallet'}
+                  size={32}
+                  color={placed ? colors.textOnAccent : colors.textOnGold}
+                  weight="bold"
+                />
+              )}
+            </LinearGradient>
+          </View>
+          <Text style={[typography.serif, styles.center, { color: colors.textStrong }]}>{title}</Text>
+          <Text style={[typography.body, styles.center, styles.gapTopSm, { color: colors.textMuted }]}>{message}</Text>
+          <View style={[styles.doneBox, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>ยอดเหรียญที่ได้รับ</Text>
+            <View style={styles.doneAmountRow}>
+              <TpixCoin size={20} />
+              <Text selectable style={[typography.h2, styles.mono, { color: colors.goldDeep }]}>
+                {payment.amount_tpix} TPIX
+              </Text>
+            </View>
+            <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
+              มูลค่า {formatBaht(payment.amount_thb, { decimals: 2 })}
+            </Text>
+          </View>
+          {!!payment.explorer_tx_url && (
+            <Button3D
+              title="ดูธุรกรรมบนเชน"
+              icon="arrow-square-out"
+              variant="ghost"
+              size="sm"
+              onPress={() => openHttpsLink(payment.explorer_tx_url, 'ธุรกรรม TPIX')}
+              style={styles.gapTop}
+            />
+          )}
+        </Card3D>
+
+        {placed && isFreshMarket && !!payment.fresh_market_order_id && (
+          <Button3D title="ดูออเดอร์ตลาดสด" icon="receipt" size="lg" fullWidth onPress={goFreshOrder} />
+        )}
+        {!placed && !placing && (
+          <>
+            <Button3D
+              title="ดูกระเป๋าเงิน"
+              icon="wallet"
+              size="lg"
+              fullWidth
+              onPress={() => {
+                leavingRef.current = true;
+                router.replace('/(tabs)/wallet' as never);
+              }}
+            />
+            {isFreshMarket && (
+              <Button3D
+                title="กลับไปสั่งใหม่ด้วยกระเป๋าเงิน"
+                icon="shopping-cart"
+                variant="secondary"
+                size="lg"
+                fullWidth
+                onPress={() => {
+                  leavingRef.current = true;
+                  useTaladsodCartStore.getState().refresh().catch(() => {});
+                  router.replace('/taladsod/cart' as never);
+                }}
+                style={styles.gapTop}
+              />
+            )}
+          </>
+        )}
+        {placed && isBooking && (
+          <NoticeBanner tone="success" icon="calendar" text="ระบบกำลังหาผู้ให้บริการให้ ติดตามการจองได้ที่หน้าเว็บ" style={styles.block} />
+        )}
+      </Screen>
+    );
+  }
 
   // ---------- สำเร็จ ----------
   if (settled) {

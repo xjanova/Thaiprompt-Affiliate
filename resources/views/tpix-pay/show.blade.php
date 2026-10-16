@@ -1,6 +1,7 @@
 {{--
  | 🪙 หน้าจ่ายด้วยเหรียญ TPIX (เชน 4289) — ธีม V4 (frontend-v4)
- | ข้อมูลจาก TpixPayController@show: $payment, $data (TpixPaymentPresenter::present), $order|null, $siblings, $canRequote
+ | ข้อมูลจาก TpixPayController@show: $payment, $data (TpixPaymentPresenter::present), $order|null, $siblings, $canRequote, $retryUrl|null
+ | ตลาดสด / จองบริการ ($data['checkout'] ไม่ว่าง): ได้เหรียญ → เติมกระเป๋า → ระบบสั่ง/ชำระให้ (d.checkout.status = pending|placed|failed)
  |
  | ช่องทางจ่าย 3 แบบ (ทุกแบบต้องโอน "ยอดตรงทุกหลัก" — เลขท้ายเฉพาะใบใช้ยืนยันอัตโนมัติ):
  |   1) ปุ่มจ่ายด้วยกระเป๋าในเบราว์เซอร์ (MetaMask ฯลฯ — EIP-1193 ส่งยอด wei ตรงตัวให้เอง) → ส่งเลขธุรกรรมให้อัตโนมัติ
@@ -10,7 +11,7 @@
  --}}
 @extends('layouts.frontend-v4')
 
-@section('title', 'ชำระด้วยเหรียญ TPIX'.($order ? ' #'.$order->order_number : ''))
+@section('title', 'ชำระด้วยเหรียญ TPIX'.($order ? ' #'.$order->order_number : (! empty($data['checkout']['title']) ? ' · '.$data['checkout']['title'] : '')))
 
 @section('content')
 <x-theme-v4.shop-kit />
@@ -32,6 +33,8 @@
         <p class="tp-muted" style="margin:6px 0 0;">
             @if($order)
                 คำสั่งซื้อ #{{ $order->order_number }}
+            @elseif(! empty($data['checkout']))
+                {{ $data['checkout']['title'] ?: ($payment->purpose === 'fresh_market' ? 'ตลาดสด' : 'จองบริการ') }}
             @else
                 เติมเงินเข้ากระเป๋า
             @endif
@@ -45,16 +48,37 @@
         <template x-if="d.status === 'paid'">
             <div class="tp-card sf-note sf-note-ok" style="text-align:center;">
                 <div style="font-size:18px; font-weight:800;"><i class="fas fa-circle-check"></i> ได้รับเหรียญแล้ว ชำระเงินสำเร็จ</div>
+                <div style="font-size:13.5px; margin-top:4px;" x-show="d.checkout && d.checkout.message" x-text="d.checkout ? d.checkout.message : ''"></div>
                 <div class="tp-muted" style="font-size:12.5px; margin-top:4px;" x-show="d.tx_hash">
                     ธุรกรรม <a :href="d.explorer_tx_url" target="_blank" rel="noopener" class="tp-num" style="word-break:break-all;" x-text="d.tx_hash"></a>
                 </div>
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                     <a x-show="cfg.successUrl" :href="cfg.successUrl" class="sf-btn3d">ดูคำสั่งซื้อที่สำเร็จ</a>
-                    <a x-show="!cfg.successUrl && cfg.walletUrl" :href="cfg.walletUrl" class="sf-btn3d">ไปที่กระเป๋าเงิน</a>
+                    <a x-show="!cfg.successUrl && d.checkout && d.checkout.result_url" :href="d.checkout ? d.checkout.result_url : '#'" class="sf-btn3d"
+                       x-text="d.checkout && d.checkout.kind === 'service_booking' ? 'ดูการจอง' : 'ดูออเดอร์ตลาดสด'"></a>
+                    <a x-show="!cfg.successUrl && !(d.checkout && d.checkout.result_url) && cfg.walletUrl" :href="cfg.walletUrl" class="sf-btn3d">ไปที่กระเป๋าเงิน</a>
                 </div>
             </div>
         </template>
-        <template x-if="d.status === 'credited_wallet'">
+        <template x-if="d.status === 'credited_wallet' && d.checkout && d.checkout.status === 'pending'">
+            <div class="tp-card sf-note sf-note-info" style="text-align:center;">
+                <div style="font-weight:800;"><i class="fas fa-spinner fa-spin"></i> ได้รับเหรียญแล้ว — กำลังสั่งให้</div>
+                <div style="font-size:13px; margin-top:4px;">เติมมูลค่าเข้ากระเป๋าเงินของคุณแล้ว ระบบกำลังสั่งซื้อ/ชำระการจองจากกระเป๋าให้ หน้านี้จะอัปเดตเอง</div>
+            </div>
+        </template>
+        <template x-if="d.status === 'credited_wallet' && d.checkout && d.checkout.status !== 'pending'">
+            <div class="tp-card sf-note sf-note-warn">
+                <div style="font-weight:800;"><i class="fas fa-wallet"></i> ได้รับเหรียญแล้ว แต่สั่งให้ไม่สำเร็จ — เงินอยู่ในกระเป๋าเงินของคุณ</div>
+                <div style="font-size:13px; margin-top:4px;" x-text="d.checkout.message || 'ยอดเงินเติมเข้ากระเป๋าเงินของคุณแล้ว สั่งใหม่ด้วยกระเป๋าเงินได้ทันที'"></div>
+                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <a x-show="cfg.walletUrl" :href="cfg.walletUrl" class="sf-btn3d is-soft">ดูกระเป๋าเงิน</a>
+                    @if($retryUrl)
+                        <a href="{{ $retryUrl }}" class="sf-btn3d">{{ $payment->purpose === 'fresh_market' ? 'กลับไปสั่งใหม่ (จ่ายด้วยกระเป๋าเงิน)' : 'ดูการจอง' }}</a>
+                    @endif
+                </div>
+            </div>
+        </template>
+        <template x-if="d.status === 'credited_wallet' && !d.checkout">
             <div class="tp-card sf-note sf-note-info">
                 <div style="font-weight:800;"><i class="fas fa-wallet"></i> ได้รับเหรียญแล้ว — เติมมูลค่าเข้ากระเป๋าเงินของคุณ</div>
                 <div style="font-size:13px; margin-top:4px;" x-text="note || 'คำสั่งซื้อนี้ปิดไปก่อนเหรียญมาถึง (หรือโอนหลังหมดเวลา) ระบบจึงเติมมูลค่าเป็นเงินบาทเข้ากระเป๋าแทน เงินไม่หาย ใช้ซื้อสินค้าต่อได้ทันที'"></div>
@@ -81,6 +105,8 @@
                         @csrf
                         <button type="submit" class="sf-btn3d">ออกยอดใหม่ตามราคาปัจจุบัน</button>
                     </form>
+                @elseif($retryUrl && $payment->purpose === 'fresh_market')
+                    <a href="{{ $retryUrl }}" class="sf-btn3d" style="margin-top:10px;">กลับไปหน้าสั่งซื้อเพื่อออกยอดใหม่</a>
                 @endif
             </div>
         </template>
@@ -259,7 +285,9 @@
             },
             schedule() {
                 clearTimeout(this.timer);
-                if (this.d.is_settled || this.d.status === 'cancelled') { return; }
+                // ตลาดสด/จองบริการ: ได้เหรียญแล้วแต่ยังสั่งไม่เสร็จ → โพลต่อจนรู้ผล
+                const placing = this.d.checkout && this.d.checkout.status === 'pending';
+                if ((this.d.is_settled && !placing) || this.d.status === 'cancelled') { return; }
                 // หมดเวลาแล้วยังตรวจต่อ (เงินที่โอนก่อนหมดเวลา) แต่ช้าลง
                 const wait = ['expired', 'late'].includes(this.d.status) ? 15000 : 5000;
                 this.timer = setTimeout(() => this.poll(), wait);

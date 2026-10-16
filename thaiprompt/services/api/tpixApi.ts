@@ -243,6 +243,10 @@ export type TpixPaymentStatus =
 /** สถานะที่ยังต้องเช็คต่อ (ยังไม่จบ) */
 export const TPIX_ACTIVE_STATUSES: readonly string[] = ['pending', 'confirming', 'late'];
 
+/** ใบตลาดสด/จองบริการที่ได้เหรียญแล้วแต่ระบบยังสั่งไม่เสร็จ → ต้องเช็คต่อ */
+export const isTpixFulfilling = (p: { fulfilment_status?: string | null } | null | undefined): boolean =>
+  p?.fulfilment_status === 'pending';
+
 export interface TpixPayment {
   reference: string;
   /** order | wallet_topup */
@@ -284,6 +288,18 @@ export interface TpixPayment {
   explorer_tx_url: string | null;
   failure_reason: string | null;
   paid_at: string | null;
+  /** 🪙 ตลาดสด: ออเดอร์ที่ระบบสั่งให้หลังได้เหรียญ (null = ยังไม่ได้สั่ง/สั่งไม่สำเร็จ) */
+  fresh_market_order_id: number | null;
+  /** 🪙 การจองบริการของใบนี้ */
+  service_booking_id: number | null;
+  /** ตลาดสด/จองบริการ: pending = ได้เหรียญแล้วกำลังสั่ง · placed = สั่ง/จ่ายสำเร็จ · failed = ไม่สำเร็จ เงินอยู่ในกระเป๋า */
+  fulfilment_status: 'pending' | 'placed' | 'failed' | null;
+  /** ข้อความไทยของผลการสั่ง (เช่น เลขออเดอร์ / เหตุผลที่สั่งไม่สำเร็จ) */
+  fulfilment_message: string | null;
+  /** ชื่อรายการ เช่น "ตลาดสด · ร้านผัก" */
+  checkout_title: string | null;
+  /** ร้านตลาดสดของใบนี้ (พากลับไปหน้าสั่งซื้อเมื่อใบหมดเวลา/สั่งไม่สำเร็จ) */
+  fresh_market_seller_id: number | null;
 }
 
 const REFERENCE_RE = /^TPX[A-Z0-9]{21}$/;
@@ -323,6 +339,7 @@ export const normalizeTpixPayment = (raw: unknown): TpixPayment | null => {
   const payUrl = str(p.pay_url);
   const secondsLeft = p.seconds_left === null || p.seconds_left === undefined ? null : Math.max(0, num(p.seconds_left));
   const orderId = num(p.order_id, 0);
+  const checkout = p.checkout && typeof p.checkout === 'object' ? (p.checkout as Record<string, unknown>) : null;
 
   return {
     reference,
@@ -359,6 +376,15 @@ export const normalizeTpixPayment = (raw: unknown): TpixPayment | null => {
     explorer_tx_url: httpsOrNull(p.explorer_tx_url),
     failure_reason: str(p.failure_reason),
     paid_at: str(p.paid_at),
+    fresh_market_order_id: num(p.fresh_market_order_id, 0) > 0 ? num(p.fresh_market_order_id) : null,
+    service_booking_id: num(p.service_booking_id, 0) > 0 ? num(p.service_booking_id) : null,
+    fulfilment_status:
+      p.fulfilment_status === 'pending' || p.fulfilment_status === 'placed' || p.fulfilment_status === 'failed'
+        ? p.fulfilment_status
+        : null,
+    fulfilment_message: str(p.fulfilment_message),
+    checkout_title: checkout ? str(checkout.title) : null,
+    fresh_market_seller_id: checkout && num(checkout.seller_id, 0) > 0 ? num(checkout.seller_id) : null,
   };
 };
 

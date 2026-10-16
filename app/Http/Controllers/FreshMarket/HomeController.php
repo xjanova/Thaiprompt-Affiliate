@@ -605,7 +605,8 @@ class HomeController extends Controller
             'option_ids.*' => 'integer|min:1',
             'item_note' => 'nullable|string|max:255',
             'delivery_type' => 'required|in:pickup,rider',
-            'payment_method' => 'nullable|in:wallet,cod',
+            // 🪙 tpix = จ่ายด้วยเหรียญ TPIX (ออกใบเสนอยอดแล้วไปหน้าจ่าย)
+            'payment_method' => 'nullable|in:wallet,cod,tpix',
             'buyer_latitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-90,90',
             'buyer_longitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-180,180',
             'delivery_address' => 'required_if:delivery_type,rider|nullable|string|max:500',
@@ -625,6 +626,18 @@ class HomeController extends Controller
         $this->claimSessionReferral();
 
         try {
+            // 🪙 เหรียญ TPIX: ตรวจด่านเดียวกับการสั่งจริง → ใบเสนอยอด → หน้าจ่าย (ได้เหรียญแล้วระบบสั่งด้วยกระเป๋าเงินให้)
+            if (($validated['payment_method'] ?? null) === 'tpix') {
+                $quote = app(\App\Services\TpixPay\TpixCheckoutService::class)->quoteFreshMarket(auth()->user(), (int) $listing->seller_id, [[
+                    'listing_id' => (int) $listing->id,
+                    'quantity' => (int) $validated['quantity'],
+                    'option_ids' => $validated['option_ids'] ?? [],
+                    'note' => $validated['item_note'] ?? null,
+                ]], array_merge($validated, ['channel' => 'web']));
+
+                return redirect()->route('tpix-pay.show', $quote->reference);
+            }
+
             $order = $this->marketService->createOrder(auth()->user(), $listing, array_merge($validated, [
                 // ไม่ได้เลือกตัวเลือกมา = [] → สินค้าที่มีกลุ่มบังคับจะแจ้งให้เลือกก่อน
                 'option_ids' => $validated['option_ids'] ?? [],
@@ -642,6 +655,8 @@ class HomeController extends Controller
                 return back()->withInput()->with('error', EkycGate::buyerWebMessage())->with(EkycGate::FLASH_KEY, true);
             }
 
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\App\Services\TpixPay\TpixPayException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             Log::error('FreshMarket web: สั่งซื้อล้มเหลว', [

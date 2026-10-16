@@ -676,19 +676,47 @@ class ServiceBooking extends Model
 
     /**
      * บันทึก action log
+     *
+     * public — ServiceBookingService เรียกจากภายนอก (createBooking / processPayment)
+     * เดิมเป็น protected → เรียกจากบริการแล้วโยน BadMethodCallException ทำให้สร้างการจองไม่สำเร็จ
      */
-    protected function logAction(string $action, array $data = []): void
+    public function logAction(string $action, array $data = []): void
     {
-        ServiceBookingAction::create([
-            'booking_id' => $this->id,
-            'action' => $action,
-            'from_status' => $this->getOriginal('status'),
-            'to_status' => $this->status,
-            'data' => $data,
-            'user_id' => auth()->id(),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        // ชื่อ action ในโค้ด → ค่า enum ของตาราง service_booking_actions (ชื่อเดิมเก็บไว้ใน metadata.action)
+        $enum = match ($action) {
+            'created' => 'created',
+            'payment_completed' => 'paid',
+            'payment_refunded' => 'refunded',
+            'cancelled' => 'cancelled',
+            'provider_notified' => 'notified',
+            'provider_viewed' => 'viewed',
+            'provider_accepted' => 'accepted',
+            'provider_rejected' => 'rejected',
+            'journey_started' => 'on_way',
+            'service_started' => 'started',
+            'service_completed' => 'completed',
+            default => 'updated',
+        };
+
+        // บันทึกประวัติไม่สำเร็จต้องไม่ทำให้การจอง/การจ่ายเงินล้ม (เดิมเขียนคอลัมน์ data ที่ไม่มีอยู่จริง)
+        try {
+            ServiceBookingAction::create([
+                'booking_id' => $this->id,
+                'action' => $enum,
+                'from_status' => $this->getOriginal('status'),
+                'to_status' => $this->status,
+                'metadata' => array_merge(['action' => $action], $data),
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ServiceBooking: บันทึกประวัติไม่สำเร็จ', [
+                'booking_id' => $this->id,
+                'action' => $action,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     // ===========================================

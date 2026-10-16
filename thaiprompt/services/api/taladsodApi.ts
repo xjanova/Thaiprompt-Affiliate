@@ -24,7 +24,7 @@ import {
   type ApiResult,
   type Pagination,
 } from './client';
-import { normalizeTpixTag, type TpixPriceTag } from './tpixApi';
+import { normalizeTpixPayment, normalizeTpixTag, type TpixPayment, type TpixPriceTag } from './tpixApi';
 
 const BASE = '/fresh-market';
 
@@ -938,8 +938,16 @@ export const normalizeFmOrder = (raw: any): FmOrder => {
   };
 };
 
+/** 🪙 การรับเหรียญ TPIX ของตลาดสด (แยกจาก payment_methods — server รุ่นเก่าไม่ส่ง = ปิด) */
+export interface FmTpixConfig {
+  enabled: boolean;
+  /** เพดานต่อรายการ (บาท) — null = ไม่จำกัด · server ตรวจซ้ำเสมอ */
+  max_per_payment_thb: number | null;
+}
+
 export interface FmConfig {
   payment_methods: FmPaymentMethod[];
+  tpix: FmTpixConfig;
   rider_enabled: boolean;
   rider_max_distance_km: number;
   pending_expiry_minutes: number;
@@ -1123,6 +1131,10 @@ export const getTaladsodConfig = async (): Promise<ApiResult<FmConfig>> =>
       .filter((m: unknown): m is FmPaymentMethod => m === 'wallet' || m === 'cod');
     return {
       payment_methods: Array.from(new Set<FmPaymentMethod>(methods)),
+      tpix: {
+        enabled: raw?.tpix?.enabled === true,
+        max_per_payment_thb: num(raw?.tpix?.max_per_payment_thb, 0) > 0 ? num(raw?.tpix?.max_per_payment_thb) : null,
+      },
       rider_enabled: bool(raw?.rider_enabled),
       rider_max_distance_km: num(raw?.rider_max_distance_km, 15),
       pending_expiry_minutes: num(raw?.pending_expiry_minutes, 30),
@@ -1410,6 +1422,34 @@ export const placeFmOrderFromCart = async (input: FmCheckoutInput): Promise<ApiR
   const notes = (input.delivery_notes || '').trim();
   if (notes) body.delivery_notes = notes.slice(0, 500);
   return mapResult(await withThai(apiPost<any>(`${BASE}/orders`, body, { timeout: 30000 })), normalizeFmOrder);
+};
+
+/**
+ * 🪙 จ่ายตะกร้าร้านนี้ด้วยเหรียญ TPIX — POST /fresh-market/orders {payment_method: 'tpix'}
+ * ได้ใบเสนอยอด (ยังไม่มีออเดอร์ · ตะกร้ายังอยู่) → เปิดหน้า /tpix-pay/{reference}
+ * ได้เหรียญแล้ว server เติมเข้ากระเป๋าแล้วสั่งด้วยกระเป๋าเงินให้ (สถานะใบมี fresh_market_order_id)
+ */
+export const startFmTpixCheckout = async (input: Omit<FmCheckoutInput, 'payment_method'>): Promise<ApiResult<TpixPayment>> => {
+  const body: Record<string, unknown> = {
+    seller_id: input.seller_id,
+    delivery_type: input.delivery_type,
+    payment_method: 'tpix',
+  };
+  if (input.delivery_type === 'rider') {
+    body.delivery_address = (input.delivery_address || '').trim().slice(0, 500);
+    body.buyer_latitude = input.buyer_latitude;
+    body.buyer_longitude = input.buyer_longitude;
+    if (input.preferred_rider_id && input.preferred_rider_id > 0) body.preferred_rider_id = input.preferred_rider_id;
+  }
+  const notes = (input.delivery_notes || '').trim();
+  if (notes) body.delivery_notes = notes.slice(0, 500);
+  const res = await withThai(apiPost<any>(`${BASE}/orders`, body, { timeout: 30000 }));
+  if (!res.success) return res;
+  const payment = normalizeTpixPayment(res.data?.tpix);
+  if (!payment) {
+    return { success: false, code: 'INVALID_RESPONSE', status: res.status, message: 'ออกยอดเหรียญ TPIX ไม่สำเร็จ ลองใหม่อีกครั้งนะ' };
+  }
+  return { ...res, data: payment };
 };
 
 export const getFmOrders = async (
