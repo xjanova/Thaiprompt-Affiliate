@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\PaymentTransaction;
 use App\Models\Service;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingItem;
 use App\Models\ServiceBookingLocation;
 use App\Models\ServiceBookingTracking;
 use App\Models\ServiceProvider;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -205,41 +206,90 @@ class ServiceBookingService
     }
 
     /**
-     * ชำระเงิน
+     * ชำระเงินการจอง (ตอนนี้รองรับเฉพาะกระเป๋าเงิน — เหรียญ TPIX เติมเข้ากระเป๋าก่อนแล้วจ่ายผ่านเส้นนี้)
      *
-     * @throws \Exception
+     * ล็อกแถวการจอง + กระเป๋า → กดซ้ำ/สองแท็บพร้อมกันหักเงินครั้งเดียว
+     * (เดิมเรียก WalletService::deduct ซึ่งไม่มีอยู่จริง — จ่ายผ่านกระเป๋าไม่เคยสำเร็จ)
+     *
+     * @throws \Exception ข้อความภาษาไทยสำหรับแสดงผู้ใช้
      */
-    public function processPayment(ServiceBooking $booking, string $paymentMethod = 'wallet'): PaymentTransaction
+    public function processPayment(ServiceBooking $booking, string $paymentMethod = 'wallet'): ?WalletTransaction
     {
-        if ($booking->payment_status === 'paid') {
-            throw new \Exception('การจองนี้ชำระเงินแล้ว');
+        if ($paymentMethod !== 'wallet') {
+            throw new \Exception('ยังไม่รองรับวิธีชำระเงินนี้ กรุณาชำระผ่านกระเป๋าเงินหรือเหรียญ TPIX');
         }
 
-        return DB::transaction(function () use ($booking, $paymentMethod) {
-            if ($paymentMethod === 'wallet') {
-                // ชำระผ่าน Wallet
-                $transaction = $this->walletService->deduct(
-                    $booking->user,
-                    $booking->total_amount,
-                    'service_booking',
-                    "ชำระค่าบริการ #{$booking->booking_number}",
-                    [
-                        'booking_id' => $booking->id,
-                        'service_id' => $booking->service_id,
-                    ]
-                );
+        $transaction = DB::transaction(function () use ($booking) {
+            $locked = ServiceBooking::whereKey($booking->id)->lockForUpdate()->first();
 
-                $booking->markAsPaid($transaction);
-
-                // อัพเดทสถานะเป็น paid (พร้อมมอบหมาย provider)
-                $booking->updateStatus('paid');
-
-                return $transaction;
+            if (! $locked) {
+                throw new \Exception('ไม่พบการจองนี้');
             }
 
-            // TODO: รองรับ payment methods อื่น ๆ (PromptPay, Card, etc.)
-            throw new \Exception('Payment method ไม่รองรับ');
+            if ($locked->payment_status === 'paid') {
+                throw new \Exception('การจองนี้ชำระเงินแล้ว');
+            }
+
+            if (in_array($locked->status, ['cancelled', 'completed'], true)) {
+                throw new \Exception('การจองนี้ปิดไปแล้ว ชำระเงินไม่ได้');
+            }
+
+            $amount = round((float) $locked->total_amount, 2);
+            $walletTransaction = null;
+
+            if ($amount > 0) {
+                $user = $locked->user;
+                if (! $user) {
+                    throw new \Exception('ไม่พบผู้จองของรายการนี้');
+                }
+
+                $wallet = Wallet::whereKey($this->walletService->getOrCreateWallet($user)->id)->lockForUpdate()->first();
+
+                if (! $wallet || ! $wallet->isActive()) {
+                    throw new \Exception('กระเป๋าเงินของคุณใช้งานไม่ได้ในขณะนี้');
+                }
+
+                if ((float) $wallet->balance < $amount) {
+                    throw new \Exception('ยอดเงินในกระเป๋าไม่เพียงพอ (ต้องชำระ ฿'.number_format($amount, 2)
+                        .' คงเหลือ ฿'.number_format((float) $wallet->balance, 2).')');
+                }
+
+                $walletTransaction = $this->walletService->deductForService(
+                    $wallet,
+                    $amount,
+                    "ชำระค่าบริการ #{$locked->booking_number}",
+                    'service_booking',
+                    $locked->id,
+                    [
+                        'booking_id' => $locked->id,
+                        'service_id' => $locked->service_id,
+                    ]
+                );
+            }
+
+            $locked->forceFill([
+                'payment_method' => 'wallet',
+                'payment_status' => 'paid',
+                'metadata' => array_merge($locked->metadata ?? [], [
+                    'wallet_transaction_id' => $walletTransaction?->id,
+                    'paid_amount' => $amount,
+                    'paid_at' => now()->toIso8601String(),
+                ]),
+            ])->save();
+
+            $locked->logAction('payment_completed', [
+                'wallet_transaction_id' => $walletTransaction?->id,
+            ]);
+
+            // อัพเดทสถานะเป็น paid (พร้อมมอบหมาย provider)
+            $locked->updateStatus('paid');
+
+            return $walletTransaction;
         });
+
+        $booking->refresh();
+
+        return $transaction;
     }
 
     /**
@@ -614,43 +664,61 @@ class ServiceBookingService
      */
     public function cancelBooking(ServiceBooking $booking, string $reason, string $cancelledBy = 'customer'): bool
     {
-        return DB::transaction(function () use ($booking, $reason, $cancelledBy) {
+        $result = DB::transaction(function () use ($booking, $reason, $cancelledBy) {
+            // ล็อกแถวการจอง → ยกเลิกซ้ำ/พร้อมกันคืนเงินครั้งเดียว
+            $locked = ServiceBooking::whereKey($booking->id)->lockForUpdate()->first() ?? $booking;
+
             // ยกเลิก
-            $booking->cancel($reason, $cancelledBy);
+            $locked->cancel($reason, $cancelledBy);
 
             // คืนเงิน (ถ้าชำระแล้ว)
-            if ($booking->payment_status === 'paid') {
-                $this->refundPayment($booking);
+            if ($locked->payment_status === 'paid') {
+                $this->refundPayment($locked);
             }
 
             // ปลดล็อค provider
-            if ($booking->provider) {
-                $booking->provider->setAvailable();
+            if ($locked->provider) {
+                $locked->provider->setAvailable();
             }
 
             return true;
         });
+
+        $booking->refresh();
+
+        return $result;
     }
 
     /**
-     * คืนเงิน
+     * คืนเงินเข้ากระเป๋าผู้จอง (การจองที่จ่ายผ่านกระเป๋า — รวมที่จ่ายด้วยเหรียญ TPIX ซึ่งเข้ากระเป๋าก่อน)
+     *
+     * เรียกภายในธุรกรรมที่ล็อกแถวการจองแล้ว · คืนครั้งเดียว (payment_status เปลี่ยนเป็น refunded)
      */
-    protected function refundPayment(ServiceBooking $booking): void
+    public function refundPayment(ServiceBooking $booking): void
     {
-        if ($booking->payment_method === 'wallet' && $booking->paymentTransaction) {
-            $this->walletService->refund(
-                $booking->user,
-                $booking->total_amount,
-                'service_booking_refund',
+        if ($booking->payment_method !== 'wallet' || $booking->payment_status !== 'paid') {
+            return;
+        }
+
+        $amount = round((float) ($booking->metadata['paid_amount'] ?? $booking->total_amount), 2);
+
+        if ($amount > 0 && $booking->user) {
+            $wallet = $this->walletService->getOrCreateWallet($booking->user);
+            $this->walletService->deposit(
+                $wallet,
+                $amount,
                 "คืนเงินการจอง #{$booking->booking_number}",
+                'service_booking_refund',
+                $booking->id,
                 [
                     'booking_id' => $booking->id,
-                    'original_transaction_id' => $booking->payment_transaction_id,
-                ]
+                    'wallet_transaction_id' => $booking->metadata['wallet_transaction_id'] ?? null,
+                ],
+                'refund'
             );
-
-            $booking->refund();
         }
+
+        $booking->refund();
     }
 
     /**

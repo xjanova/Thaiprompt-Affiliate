@@ -184,6 +184,15 @@ class AntiAbuseService
         $feeInfo = $this->calculateCancellationFee($booking);
 
         return DB::transaction(function () use ($booking, $cancelledByType, $reason, $feeInfo) {
+            // ล็อกแถวการจอง → ยกเลิกซ้ำพร้อมกันคืนเงินครั้งเดียว
+            $locked = ServiceBooking::whereKey($booking->id)->lockForUpdate()->first();
+            if ($locked) {
+                $booking->setRawAttributes($locked->getAttributes(), true);
+            }
+            if ($booking->status === 'cancelled') {
+                return ['success' => false, 'fee' => 0, 'message' => 'การจองนี้ถูกยกเลิกไปแล้ว'];
+            }
+
             // อัพเดท booking
             $booking->update([
                 'status' => 'cancelled',
@@ -196,6 +205,12 @@ class AntiAbuseService
             // สร้าง Penalty record ถ้ามีค่าปรับ
             if ($feeInfo['fee'] > 0) {
                 $this->createPenalty($booking, $cancelledByType, $feeInfo);
+            }
+
+            // จ่ายแล้ว (กระเป๋าเงิน / เหรียญ TPIX ที่เข้ากระเป๋าก่อน) → คืนเงินเต็มเข้ากระเป๋า
+            // ค่าปรับเป็นรายการแยก (ServiceBookingPenalty สถานะ pending ให้แอดมินเรียกเก็บ/ยกเว้น) จึงไม่หักจากยอดคืน
+            if ($booking->payment_status === 'paid') {
+                app(\App\Services\ServiceBookingService::class)->refundPayment($booking);
             }
 
             // อัพเดท Trust Score

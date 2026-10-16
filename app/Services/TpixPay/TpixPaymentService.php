@@ -489,6 +489,24 @@ class TpixPaymentService
                     return ['status' => TpixPayment::STATUS_PAID, 'message' => 'เติมเงินเข้ากระเป๋าเรียบร้อยแล้ว'];
                 }
 
+                // ตลาดสด / จองบริการ: เติมมูลค่าเข้ากระเป๋าก่อน (ธุรกรรมเดียวกับการผูกเลขธุรกรรม — เงินไม่หาย)
+                // แล้วค่อยสั่ง/จ่ายด้วยเส้นกระเป๋าเงินของระบบนั้นหลัง commit (TpixCheckoutService::fulfil)
+                if ($locked->isCheckoutPurpose()) {
+                    $this->creditWallet(
+                        $locked,
+                        (float) $locked->amount_thb,
+                        ($locked->purpose === TpixPayment::PURPOSE_FRESH_MARKET ? 'รับชำระตลาดสดด้วย TPIX (' : 'รับชำระการจองบริการด้วย TPIX (')
+                            .$locked->reference.') — เติมเข้ากระเป๋าก่อนตัดชำระ',
+                        'deposit'
+                    );
+                    $locked->meta = array_merge($locked->meta ?? [], [
+                        'fulfilment' => ['status' => TpixPayment::FULFIL_PENDING, 'attempts' => 0],
+                    ]);
+                    $this->markSettled($locked, TpixPayment::STATUS_CREDITED_WALLET);
+
+                    return ['status' => TpixPayment::STATUS_CREDITED_WALLET, 'message' => '', 'fulfil' => true];
+                }
+
                 $order = Order::whereKey($locked->payable_id)->lockForUpdate()->first();
                 $payable = $order
                     && $order->payment_status !== 'paid'
@@ -520,6 +538,9 @@ class TpixPaymentService
             return ['status' => 'rejected', 'message' => 'ธุรกรรมนี้ถูกใช้ชำระรายการอื่นไปแล้ว'];
         }
 
+        $fulfil = (bool) ($outcome['fulfil'] ?? false);
+        unset($outcome['fulfil']);
+
         if ($outcome['status'] === TpixPayment::STATUS_PAID || $outcome['status'] === TpixPayment::STATUS_CREDITED_WALLET) {
             Log::info('TpixPay: payment settled', [
                 'payment_id' => $payment->id,
@@ -527,6 +548,11 @@ class TpixPaymentService
                 'status' => $outcome['status'],
                 'tx_hash' => $hash,
             ]);
+        }
+
+        // เงินอยู่ในกระเป๋าแล้ว → สั่งซื้อ/ชำระการจองด้วยกระเป๋า (ไม่ throw · ไม่สำเร็จ = เงินอยู่ในกระเป๋า + เหตุผลในใบ)
+        if ($fulfil) {
+            $outcome = app(TpixCheckoutService::class)->fulfil($payment->fresh() ?? $payment);
         }
 
         return $outcome;
@@ -585,7 +611,7 @@ class TpixPaymentService
                     'late' => true,
                     'late_rate_thb' => $rate['rate_thb'],
                     'late_value_thb' => $valueThb,
-                ]);
+                ], $this->lateFulfilment($locked));
                 $this->markSettled($locked, TpixPayment::STATUS_CREDITED_WALLET);
 
                 return ['status' => TpixPayment::STATUS_CREDITED_WALLET, 'message' => ''];
@@ -657,7 +683,7 @@ class TpixPaymentService
                 'approved_at' => now()->toIso8601String(),
                 'late_rate_thb' => $rate['rate_thb'],
                 'late_value_thb' => $valueThb,
-            ]);
+            ], $this->lateFulfilment($locked));
             $locked->failure_reason = null;
             $this->markSettled($locked, TpixPayment::STATUS_CREDITED_WALLET);
         });
@@ -696,6 +722,14 @@ class TpixPaymentService
     public function refresh(TpixPayment $payment): TpixPayment
     {
         if ($payment->isSettled()) {
+            // ได้เงินแล้วแต่ยังไม่ได้สั่ง (รอบก่อนล้มชั่วคราว) → ลองสั่งอีกครั้ง
+            if ($payment->isCheckoutPurpose() && $payment->fulfilmentStatus() === TpixPayment::FULFIL_PENDING
+                && \Illuminate\Support\Facades\Cache::add('tpix_pay:fulfil:'.$payment->id, 1, 8)) {
+                app(TpixCheckoutService::class)->fulfil($payment);
+
+                return $payment->fresh() ?? $payment;
+            }
+
             return $payment;
         }
 
@@ -741,11 +775,11 @@ class TpixPaymentService
     // =====================================================================
 
     /**
-     * @return array{snapshot: bool, confirmed: int, matched: int, expired: int, released: int, stray: int, cancelled_orders: int}
+     * @return array{snapshot: bool, confirmed: int, matched: int, expired: int, released: int, stray: int, cancelled_orders: int, fulfilled: int}
      */
     public function scan(): array
     {
-        $stats = ['snapshot' => false, 'confirmed' => 0, 'matched' => 0, 'expired' => 0, 'released' => 0, 'stray' => 0, 'cancelled_orders' => 0];
+        $stats = ['snapshot' => false, 'confirmed' => 0, 'matched' => 0, 'expired' => 0, 'released' => 0, 'stray' => 0, 'cancelled_orders' => 0, 'fulfilled' => 0];
 
         // 1) ราคาย้อนหลัง (ค่าเฉลี่ยกันปั่นราคา) — บันทึกเองไม่เกินนาทีละครั้ง
         $stats['snapshot'] = $this->prices->computeSpot() !== null;
@@ -866,6 +900,13 @@ class TpixPaymentService
         // 7) ออเดอร์ TPIX ที่ไม่มีการโอนจนพ้นช่วงกันยอด → ยกเลิกผ่าน Order::cancel (คืนคูปอง/สต็อก)
         //    (งานล้างบิลของ SMS Checker ดูแลเฉพาะพร้อมเพย์/โอน)
         $stats['cancelled_orders'] = $this->expireAbandonedOrders();
+
+        // 8) ใบตลาดสด/จองบริการที่ได้เงินแล้วแต่ยังไม่ได้สั่ง (รอบแรกล้มชั่วคราว) → ลองอีกครั้ง
+        try {
+            $stats['fulfilled'] = app(TpixCheckoutService::class)->retryPending();
+        } catch (\Throwable $e) {
+            Log::error('TpixPay scan: retry checkout fulfilment failed', ['error' => $e->getMessage()]);
+        }
 
         return $stats;
     }
@@ -1197,7 +1238,7 @@ class TpixPaymentService
             ]);
     }
 
-    private function creditWallet(TpixPayment $payment, float $amountThb, string $description): void
+    private function creditWallet(TpixPayment $payment, float $amountThb, string $description, string $type = 'refund'): void
     {
         $user = $payment->user_id ? User::find($payment->user_id) : null;
         if (! $user) {
@@ -1218,8 +1259,26 @@ class TpixPaymentService
                 'tx_hash' => $payment->tx_hash,
                 'amount_tpix' => (string) $payment->amount_tpix,
             ],
-            'refund'
+            $type
         );
+    }
+
+    /**
+     * ใบตลาดสด/จองบริการที่เงินมาหลังหมดเวลา → ไม่สั่งให้อัตโนมัติ (ราคา/ของ/นัดเวลาอาจเปลี่ยนไปแล้ว) บอกเหตุผลในใบ
+     *
+     * @return array<string, mixed>
+     */
+    private function lateFulfilment(TpixPayment $payment): array
+    {
+        if (! $payment->isCheckoutPurpose()) {
+            return [];
+        }
+
+        return ['fulfilment' => [
+            'status' => TpixPayment::FULFIL_FAILED,
+            'message' => 'โอนเหรียญหลังหมดเวลา ระบบจึงไม่สั่งให้อัตโนมัติ — มูลค่าตามราคาปัจจุบันอยู่ในกระเป๋าเงินของคุณแล้ว สั่งใหม่ด้วยกระเป๋าเงินได้เลย',
+            'finished_at' => now()->toIso8601String(),
+        ]];
     }
 
     /**

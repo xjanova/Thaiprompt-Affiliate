@@ -41,6 +41,7 @@ class ServiceBookingAction extends Model
         'user_id',
         'provider_id',
         'data',
+        'metadata', // คอลัมน์จริงในตาราง (data ไม่มีอยู่จริง)
         'ip_address',
         'user_agent',
         'notes',
@@ -48,6 +49,7 @@ class ServiceBookingAction extends Model
 
     protected $casts = [
         'data' => 'array',
+        'metadata' => 'array',
         'created_at' => 'datetime',
     ];
 

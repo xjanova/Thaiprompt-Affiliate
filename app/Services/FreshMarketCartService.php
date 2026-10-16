@@ -302,6 +302,24 @@ class FreshMarketCartService
      */
     public function checkout(User $user, int $sellerId, array $data): FreshMarketOrder
     {
+        ['items' => $items, 'cart_item_ids' => $cartItemIds] = $this->checkoutLines($user, $sellerId);
+
+        unset($data['items'], $data['apply_default_options']);
+
+        return $this->market->createOrderFromItems($user, $sellerId, $items, array_merge($data, [
+            'cart_item_ids' => $cartItemIds,
+        ]));
+    }
+
+    /**
+     * รายการสั่งซื้อจากตะกร้าของร้านเดียว (ใช้ร่วมกับการจ่ายล่วงหน้าด้วยเหรียญ TPIX ที่เก็บรายการไว้ก่อนสั่งจริง)
+     *
+     * @return array{items: array<int, array{listing_id: int, quantity: int, option_ids: array<int, int>, note: ?string}>, cart_item_ids: array<int, int>}
+     *
+     * @throws FreshMarketException CART_EMPTY
+     */
+    public function checkoutLines(User $user, int $sellerId): array
+    {
         $rows = FreshMarketCartItem::where('user_id', $user->id)
             ->where('seller_id', $sellerId)
             ->orderBy('id')
@@ -311,18 +329,15 @@ class FreshMarketCartService
             throw FreshMarketException::make('CART_EMPTY', 'ยังไม่มีสินค้าของร้านนี้ในตะกร้า', 422);
         }
 
-        $items = $rows->map(fn (FreshMarketCartItem $row) => [
-            'listing_id' => (int) $row->listing_id,
-            'quantity' => (int) $row->quantity,
-            'option_ids' => $row->normalizedOptionIds(),
-            'note' => $row->note,
-        ])->all();
-
-        unset($data['items'], $data['apply_default_options']);
-
-        return $this->market->createOrderFromItems($user, $sellerId, $items, array_merge($data, [
+        return [
+            'items' => $rows->map(fn (FreshMarketCartItem $row) => [
+                'listing_id' => (int) $row->listing_id,
+                'quantity' => (int) $row->quantity,
+                'option_ids' => $row->normalizedOptionIds(),
+                'note' => $row->note,
+            ])->all(),
             'cart_item_ids' => $rows->pluck('id')->map(fn ($id) => (int) $id)->all(),
-        ]));
+        ];
     }
 
     // ╔══════════════════════════════════════════╗

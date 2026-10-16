@@ -274,6 +274,30 @@
                                     <i class="fas fa-credit-card text-green-400"></i>
                                     <span class="text-sm font-medium text-white">บัตรเครดิต/เดบิต</span>
                                 </label>
+                                {{-- 🪙 เหรียญ TPIX (เมื่อเปิดรับ + รู้ราคา) — เหรียญเข้ากระเป๋าก่อน แล้วชำระการจองให้อัตโนมัติ · เซิร์ฟเวอร์ตรวจเพดานซ้ำเสมอ --}}
+                                @php
+                                    $sbTpixSettings = app(\App\Services\TpixPay\TpixPaySettings::class);
+                                    $sbTpixSpot = $sbTpixSettings->paymentsEnabled() ? app(\App\Services\TpixPay\TpixPriceService::class)->spot() : null;
+                                    $sbTpixMax = $sbTpixSettings->maxPerPaymentThb();
+                                @endphp
+                                @if($sbTpixSpot)
+                                    <div x-data="{ tpixRate: {{ (float) $sbTpixSpot['price_thb'] }}, tpixMax: {{ (float) $sbTpixMax }} }">
+                                        <label class="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-lg rounded-lg cursor-pointer hover:bg-white/15 transition-colors"
+                                               x-show="!(tpixMax > 0 && form.totalPrice > tpixMax)">
+                                            <input type="radio" name="payment_method" value="tpix" required
+                                                   class="w-4 h-4 text-purple-600 focus:ring-purple-500">
+                                            <i class="fas fa-coins text-yellow-400"></i>
+                                            <span class="text-sm font-medium text-white">
+                                                เหรียญ TPIX
+                                                <span class="block text-xs font-normal text-white/60"
+                                                      x-text="form.totalPrice > 0 ? ('≈ ' + (form.totalPrice / tpixRate).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' TPIX · 1 TPIX = {{ \App\Services\TpixPay\TpixPriceService::formatRate($sbTpixSpot['price_thb']) }}') : 'โอนเหรียญบนเชน TPIX ระบบยืนยันให้อัตโนมัติ'"></span>
+                                            </span>
+                                        </label>
+                                        <p class="text-xs text-white/60 px-3" x-show="tpixMax > 0 && form.totalPrice > tpixMax" x-cloak>
+                                            ชำระด้วยเหรียญ TPIX ได้ไม่เกิน ฿{{ number_format($sbTpixMax, 2) }} ต่อรายการ
+                                        </p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 

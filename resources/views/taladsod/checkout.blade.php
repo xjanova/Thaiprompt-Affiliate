@@ -24,6 +24,10 @@
     $canCheckout = (bool) $shopCart['can_checkout'];
     $walletOn = in_array('wallet', $paymentMethods, true);
     $codOn = in_array('cod', $paymentMethods, true);
+    // 🪙 เหรียญ TPIX: เปิดรับ + รู้ราคา + เปิดกระเป๋าเงิน (เหรียญเข้ากระเป๋าก่อนแล้วจ่ายด้วยเส้นกระเป๋าเงิน) — เซิร์ฟเวอร์ตรวจเพดานซ้ำเสมอ
+    $tpixSettings = app(\App\Services\TpixPay\TpixPaySettings::class);
+    $tpixSpot = ($walletOn && $tpixSettings->paymentsEnabled()) ? app(\App\Services\TpixPay\TpixPriceService::class)->spot() : null;
+    $tpixOn = $tpixSpot !== null;
     // ร้านเคลื่อนที่: ใช้เฉพาะตำแหน่งสาธารณะตอนร้านเปิด ($shopPublic) — ห้ามใช้ตำแหน่งล่าสุดตอนร้านปิด (อาจเป็นบ้านของร้าน)
     $pickupPoint = ($shop && ! $shop->isMobileShop()) ? $shop->pickupPoint() : null;
     $shopPublic = $shop ? $shop->publicLocation() : null;
@@ -35,7 +39,7 @@
         $defaultDelivery = 'pickup';
     }
     $oldPay = old('payment_method');
-    $defaultPay = in_array($oldPay, $paymentMethods, true)
+    $defaultPay = (in_array($oldPay, $paymentMethods, true) || ($oldPay === 'tpix' && $tpixOn))
         ? $oldPay
         : (($walletOn && $walletBalance >= $subtotal) || ! $codOn ? ($walletOn ? 'wallet' : 'cod') : 'cod');
 
@@ -55,6 +59,10 @@
         'codOn' => $codOn,
         'riderCod' => (bool) $riderCodAllowed,
         'walletBalance' => round((float) $walletBalance, 2),
+        'tpixOn' => $tpixOn,
+        'tpixRate' => $tpixOn ? (float) $tpixSpot['price_thb'] : null,
+        'tpixRateText' => $tpixOn ? \App\Services\TpixPay\TpixPriceService::formatRate((string) $tpixSpot['price_thb']) : null,
+        'tpixMax' => round($tpixSettings->maxPerPaymentThb(), 2),
         'maxCod' => round((float) $maxCodAmount, 2),
         'canCheckout' => $canCheckout,
         'quoteUrl' => route('taladsod.cart.quote'),
@@ -222,6 +230,22 @@
                                     </span>
                                 </button>
                             @endif
+                            @if($tpixOn)
+                                <button type="button" class="ts-choice" :class="payment === 'tpix' ? 'is-on' : ''" x-on:click="payment = 'tpix'" :aria-pressed="payment === 'tpix' ? 'true' : 'false'">
+                                    <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
+                                    <span class="name">
+                                        <i class="fas fa-coins" style="color:var(--deep1);" aria-hidden="true"></i> เหรียญ TPIX
+                                        <span class="ts-muted ts-small" style="display:block; font-weight:600;" x-text="tpixEstimateText"></span>
+                                    </span>
+                                </button>
+                            @endif
+                        </div>
+                        <div class="sf-note sf-note-info" x-show="payment === 'tpix' && !tpixOverCap" x-cloak>
+                            <i class="fas fa-coins" aria-hidden="true"></i> กดยืนยันแล้วไปหน้าโอนเหรียญ (ยอดตรงทุกหลัก) — ได้รับเหรียญแล้วระบบเติมเข้ากระเป๋าเงินและสั่งซื้อให้ทันที เงินพักไว้จนได้รับของเหมือนจ่ายด้วยกระเป๋าเงิน
+                            ถ้าสั่งไม่สำเร็จ (เช่น ของหมดระหว่างโอน) ยอดจะอยู่ในกระเป๋าเงินของคุณ
+                        </div>
+                        <div class="sf-note sf-note-warn" x-show="tpixOverCap" x-cloak>
+                            ชำระด้วยเหรียญ TPIX ได้ไม่เกิน ฿<span x-text="money(tpixMax)"></span> ต่อรายการ — กรุณาเลือกวิธีชำระอื่น
                         </div>
                         <div class="sf-note sf-note-info" x-show="delivery === 'rider' && !riderCod" x-cloak>
                             <i class="fas fa-shield-halved" aria-hidden="true"></i> {{ \App\Services\Shop\ShopCartService::COD_PREPAID_REASON }}
@@ -275,9 +299,10 @@
                         <div class="sf-total"><span class="ts-muted">ยอดที่ต้องจ่าย</span><span class="tp-num">฿<span x-text="money(grandTotal)">{{ $ui::money($subtotal) }}</span></span></div>
                         <button type="submit" class="ts-btn3d ts-tone-gold lg block" :disabled="!canSubmit || submitting">
                             <i class="fas" :class="submitting ? 'fa-circle-notch ts-spin' : 'fa-circle-check'" aria-hidden="true"></i>
-                            <span x-text="submitting ? 'กำลังสั่งซื้อ...' : 'ยืนยันสั่งซื้อ'">ยืนยันสั่งซื้อ</span>
+                            <span x-text="submitting ? 'กำลังสั่งซื้อ...' : (payment === 'tpix' ? 'ไปโอนเหรียญ TPIX' : 'ยืนยันสั่งซื้อ')">ยืนยันสั่งซื้อ</span>
                         </button>
                         <p class="ts-help" style="margin:0; text-align:center;" x-text="blockText" x-show="blockText"></p>
+                        <p class="ts-help" style="margin:0; text-align:center;" x-show="payment === 'tpix' && tpixEstimateText" x-text="tpixEstimateText" x-cloak></p>
                         <p class="ts-help" style="margin:0; text-align:center;">ร้านต้องกดรับออเดอร์ก่อน — ถ้าร้านไม่รับภายในเวลาที่กำหนด ระบบยกเลิกและคืนเงินให้อัตโนมัติ</p>
                     </div>
                 </aside>
@@ -314,6 +339,7 @@
         return {
             delivery: cfg.delivery, payment: cfg.payment,
             riderEnabled: cfg.riderEnabled, riderCod: !!cfg.riderCod, walletBalance: cfg.walletBalance, maxCod: cfg.maxCod,
+            tpixMax: cfg.tpixMax || 0,
             lat: num(cfg.lat), lng: num(cfg.lng), address: cfg.address || '',
             addresses: cfg.addresses || [], pickedAddress: null,
             quote: null, quoteError: '', quoting: false, submitting: false,
@@ -328,6 +354,13 @@
             get deliveryFee() { return this.delivery === 'rider' && this.quote && this.quote.available ? Number(this.quote.fee ?? this.quote.total_fee) : 0; },
             get grandTotal() { return Math.round((cfg.subtotal + this.deliveryFee) * 100) / 100; },
             get walletShort() { return this.payment === 'wallet' && this.walletBalance < this.grandTotal; },
+            // 🪙 ยอดเหรียญโดยประมาณ (ยอดจริงออกโดยเซิร์ฟเวอร์ตอนกดยืนยัน)
+            get tpixEstimateText() {
+                if (!cfg.tpixOn || !cfg.tpixRate || this.grandTotal <= 0) { return 'โอนเหรียญบนเชน TPIX ระบบยืนยันให้อัตโนมัติ'; }
+                const est = this.grandTotal / cfg.tpixRate;
+                return '≈ ' + est.toLocaleString('en-US', { minimumFractionDigits: est >= 100 ? 2 : 4, maximumFractionDigits: est >= 100 ? 2 : 4 }) + ' TPIX · 1 TPIX = ' + cfg.tpixRateText;
+            },
+            get tpixOverCap() { return this.payment === 'tpix' && this.tpixMax > 0 && this.grandTotal > this.tpixMax; },
             get codTooHigh() { return this.payment === 'cod' && this.delivery === 'rider' && this.maxCod > 0 && this.grandTotal > this.maxCod; },
             // ไรเดอร์รอบ 2: ส่งด้วยไรเดอร์ต้องจ่ายก่อน (เว้นแต่แอดมินเปิด rider.allow_cod)
             get codUsable() { return cfg.codOn && (this.delivery !== 'rider' || this.riderCod); },
@@ -349,6 +382,7 @@
                     if (!this.quote || !this.quote.available) { return this.quoteError || 'ยังคำนวณค่าส่งไม่ได้'; }
                 }
                 if (this.walletShort) { return 'ยอดในกระเป๋าไม่พอ'; }
+                if (this.tpixOverCap) { return 'ยอดเกินเพดานชำระด้วยเหรียญ TPIX'; }
                 if (this.codTooHigh) { return 'ยอดเก็บปลายทางเกินกำหนด'; }
                 return '';
             },

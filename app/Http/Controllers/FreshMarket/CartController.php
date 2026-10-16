@@ -267,7 +267,8 @@ class CartController extends Controller
         $data = $request->validate([
             'seller_id' => 'required|integer|min:1',
             'delivery_type' => 'required|in:pickup,rider',
-            'payment_method' => 'nullable|in:wallet,cod',
+            // 🪙 tpix = จ่ายด้วยเหรียญ TPIX → ออกใบเสนอยอดแล้วไปหน้าจ่าย (ได้เหรียญแล้วระบบสั่งด้วยกระเป๋าเงินให้)
+            'payment_method' => 'nullable|in:wallet,cod,tpix',
             'buyer_latitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-90,90',
             'buyer_longitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-180,180',
             'delivery_address' => 'required_if:delivery_type,rider|nullable|string|max:500',
@@ -278,6 +279,10 @@ class CartController extends Controller
             'delivery_address.required_if' => 'กรุณากรอกที่อยู่จัดส่ง',
             'delivery_type.required' => 'กรุณาเลือกวิธีรับสินค้า',
         ]);
+
+        if (($data['payment_method'] ?? null) === 'tpix') {
+            return $this->run($request, fn () => $this->startTpixCheckout($request, $data), true);
+        }
 
         return $this->run($request, function () use ($request, $data) {
             $order = $this->cart()->checkout($request->user(), (int) $data['seller_id'], [
@@ -302,6 +307,48 @@ class CartController extends Controller
                 ->route('taladsod.orders.show', $order)
                 ->with('success', 'สั่งซื้อสำเร็จ! หมายเลข: '.$order->order_number);
         }, true);
+    }
+
+    /**
+     * 🪙 จ่ายตะกร้าร้านนี้ด้วยเหรียญ TPIX — ตรวจด่านเดียวกับการสั่งจริง แล้วไปหน้าจ่าย /tpix-pay/{reference}
+     * (ยังไม่มีออเดอร์ · ตะกร้ายังอยู่จนกว่าได้เหรียญแล้วระบบสั่งให้)
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws FreshMarketException
+     */
+    protected function startTpixCheckout(Request $request, array $data)
+    {
+        $user = $request->user();
+        $sellerId = (int) $data['seller_id'];
+        ['items' => $items, 'cart_item_ids' => $cartItemIds] = $this->cart()->checkoutLines($user, $sellerId);
+
+        try {
+            $quote = app(\App\Services\TpixPay\TpixCheckoutService::class)->quoteFreshMarket($user, $sellerId, $items, [
+                'delivery_type' => $data['delivery_type'],
+                'buyer_latitude' => $data['buyer_latitude'] ?? null,
+                'buyer_longitude' => $data['buyer_longitude'] ?? null,
+                'delivery_address' => $data['delivery_address'] ?? null,
+                'delivery_notes' => $data['delivery_notes'] ?? null,
+                'channel' => 'web',
+            ], $cartItemIds);
+        } catch (\App\Services\TpixPay\TpixPayException $e) {
+            if ($request->expectsJson()) {
+                return $this->json(false, $e->getMessage(), null, 422, ['code' => $e->errorCode]);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $url = route('tpix-pay.show', $quote->reference);
+
+        if ($request->expectsJson()) {
+            return $this->json(true, 'ออกยอดชำระด้วยเหรียญ TPIX แล้ว', [
+                'tpix' => \App\Services\TpixPay\TpixPaymentPresenter::present($quote),
+            ], 200, ['redirect' => $url]);
+        }
+
+        return redirect()->to($url);
     }
 
     // ===== Helpers =====
