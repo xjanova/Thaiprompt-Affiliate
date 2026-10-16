@@ -994,6 +994,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         require __DIR__.'/api_v1/rider_r2_profile_photo.php';
         // 🪪 AI eKYC (2026-10-04) — ยืนยันตัวตนด้วยบัตรประชาชน + ใบหน้า
         require __DIR__.'/api_v1/ekyc.php';
+        // 🎓 ห้องเรียน (2026-10-13) — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ → ป้าย "ผ่านการอบรม"
+        require __DIR__.'/api_v1/classroom.php';
     });
 });
 

@@ -169,6 +169,8 @@ class MobileApiController extends Controller
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" + สถานะ KYC แบบที่แอปใช้ (none|pending|approved|rejected)
                 'verified' => $user->isKycVerified(),
                 'kyc_status' => $user->isKycVerified() ? 'approved' : \App\Services\Ekyc\EkycService::publicStatus($user),
+                // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท {seller, rider, buyer} (ยังไม่ผ่าน = null)
+                'training_badges' => \App\Services\Classroom\TrainingBadge::allFor($user),
             ],
         ]);
     }
@@ -233,6 +235,8 @@ class MobileApiController extends Controller
                 'referralCode' => $user->referral_code,
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (แอปเก็บโปรไฟล์จากคำตอบนี้ด้วย)
                 'verified' => $user->isKycVerified(),
+                // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท (แอปเก็บโปรไฟล์จากคำตอบนี้ — ต้องมีให้ครบเหมือน GET)
+                'training_badges' => \App\Services\Classroom\TrainingBadge::allFor($user),
             ],
         ]);
     }

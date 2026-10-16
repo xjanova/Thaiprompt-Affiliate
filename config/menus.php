@@ -245,6 +245,18 @@ return [
             ],
         ],
 
+        // 🎓 (2026-10-13) ห้องเรียน — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ (วิดีโอ YouTube + แบบทดสอบ) → ป้าย "ผ่านการอบรม"
+        [
+            'id' => 'classroom',
+            'label' => 'ห้องเรียน',
+            'icon' => '🎓',
+            'route' => 'admin.classroom.index',
+            'order' => 5.85,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-700 to-amber-500',
+        ],
+
         [
             'id' => 'ecommerce',
             'label' => 'อีคอมเมิร์ซ',
@@ -1395,6 +1407,16 @@ return [
             'icon' => '🏪',
             'route' => 'user.seller-apply.index',
             'order' => 7.6,
+            'permissions' => [],
+        ],
+
+        // 🎓 (2026-10-13) ห้องเรียน — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ (ไม่บังคับ) ผ่านแล้วได้ป้าย "ผ่านการอบรม"
+        [
+            'id' => 'classroom',
+            'label' => 'ห้องเรียน',
+            'icon' => '🎓',
+            'route' => 'user.classroom.index',
+            'order' => 7.65,
             'permissions' => [],
         ],
 

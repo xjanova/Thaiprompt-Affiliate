@@ -1279,6 +1279,15 @@ class FreshMarketApiController extends Controller
      */
     protected function paginated($orders, string $role, string $message): JsonResponse
     {
+        // 🎓 โหลดร้าน/ผู้ซื้อ/ไรเดอร์ทั้งหน้าในครั้งเดียว แล้วโหลดป้ายผ่านการอบรมของทุกคน query เดียว (กัน N+1)
+        $page = new \Illuminate\Database\Eloquent\Collection($orders->items());
+        $page->loadMissing(['seller', 'buyer', 'riderJob.rider']);
+        \App\Services\Classroom\TrainingBadge::prime($page->flatMap(fn (FreshMarketOrder $o) => [
+            $o->seller?->user_id,
+            $o->buyer_id,
+            $o->riderJob?->rider?->user_id,
+        ]));
+
         return response()->json([
             'success' => true,
             'message' => $message,

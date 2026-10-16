@@ -754,3 +754,8 @@ Route::prefix('store-rating')->name('store-rating.')->group(function () {
     // กด helpful
     Route::post('/{rating}/helpful', [\App\Http\Controllers\User\StoreRatingController::class, 'markHelpful'])->name('helpful');
 });
+
+// ========================================
+// 🎓 ห้องเรียน (2026-10-13) — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ → ป้าย "ผ่านการอบรม" (user.classroom.*)
+// ========================================
+require __DIR__.'/user_classroom.php';

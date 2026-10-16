@@ -819,6 +819,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
                     'longitude' => $point['longitude'] ?? null,
                     'is_mobile' => $seller->isMobileShop(),
                     'is_open' => $seller->isOpenNow(),
+                    // 🎓 เจ้าของร้านผ่านการอบรมผู้ขาย (ยังไม่ผ่าน = null)
+                    'training_badge' => \App\Services\Classroom\TrainingBadge::for((int) $seller->user_id, 'seller'),
                 ];
             })() : null,
             'rider_job' => $job ? [
@@ -830,6 +832,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
                 'rider_phone' => in_array($job->status, ['accepted', 'picking_up', 'picked_up', 'delivering'], true)
                     ? $job->rider?->phone : null,
                 'tracking_url' => $this->safeTrackingUrl($job),
+                // 🎓 ไรเดอร์ของงานนี้ผ่านการอบรมไรเดอร์ (ยังไม่มีไรเดอร์ / ยังไม่ผ่าน = null)
+                'training_badge' => $job->rider ? \App\Services\Classroom\TrainingBadge::for((int) $job->rider->user_id, 'rider') : null,
             ] : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'accepted_at' => $this->accepted_at?->toIso8601String(),
@@ -848,6 +852,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
                 'id' => (int) $buyer->id,
                 'name' => $buyer->name,
                 'phone' => $contactVisible ? ($buyer->phone ?? null) : null,
+                // 🎓 ผู้ซื้อผ่านการอบรมผู้ซื้อ (ยังไม่ผ่าน = null)
+                'training_badge' => \App\Services\Classroom\TrainingBadge::for($buyer, 'buyer'),
             ] : null;
         }
 
