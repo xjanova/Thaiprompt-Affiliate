@@ -68,6 +68,8 @@ class SellerOrderApiController extends Controller
 
         $perPage = max(1, min(50, (int) $request->input('per_page', 20)));
         $orders = $query->paginate($perPage);
+        // 🎓 ป้ายผ่านการอบรมผู้ซื้อของทุกแถวในหน้านี้ — query เดียว (กัน N+1 ใน presentListItem)
+        \App\Services\Classroom\TrainingBadge::prime($orders->getCollection()->pluck('user_id'));
 
         return response()->json([
             'success' => true,
@@ -343,6 +345,8 @@ class SellerOrderApiController extends Controller
                 'chat' => [
                     'can_send' => $this->chatOpen($order),
                     'customer_name' => $order->user?->name ?? 'ลูกค้า',
+                    // 🎓 (2026-10-16) ลูกค้าผ่านการอบรมผู้ซื้อ (ยังไม่ผ่าน = null)
+                    'customer_training_badge' => $order->user_id ? \App\Services\Classroom\TrainingBadge::for((int) $order->user_id, 'buyer') : null,
                 ],
             ],
         ]);
@@ -612,6 +616,8 @@ class SellerOrderApiController extends Controller
             'payment_method_label' => PaymentMethod::labelTh($order->payment_method),
             'delivery_method' => $order->delivery_method ?? Order::DELIVERY_PARCEL,
             'customer_name' => $order->user?->name ?? 'ลูกค้า',
+            // 🎓 (2026-10-16) ลูกค้าผ่านการอบรมผู้ซื้อ (ยังไม่ผ่าน = null · index() เรียก TrainingBadge::prime ไว้แล้ว)
+            'customer_training_badge' => $order->user_id ? \App\Services\Classroom\TrainingBadge::for((int) $order->user_id, 'buyer') : null,
             'items_count' => (int) $items->sum('quantity'),
             'first_item' => $first ? [
                 'product_name' => (string) $first->product_name,

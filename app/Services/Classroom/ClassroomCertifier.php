@@ -84,6 +84,8 @@ class ClassroomCertifier
         TrainingBadge::forget($userId);
 
         DB::afterCommit(static function () use ($userId, $role, $courseId, $points) {
+            // ล้างอีกรอบหลัง commit — กันคำขออื่นในโปรเซสเดียวกันอ่านค่าก่อน commit ไปจำไว้
+            TrainingBadge::forget($userId);
             TrainingCertified::dispatch($userId, $role, $courseId, $points);
         });
     }

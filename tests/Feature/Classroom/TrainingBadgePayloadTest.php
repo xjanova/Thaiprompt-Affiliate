@@ -109,6 +109,33 @@ class TrainingBadgePayloadTest extends HandoverTestCase
             ->assertJsonPath('data.rider.rider.training_badge', self::badge('rider'));
     }
 
+    public function test_seller_order_list_and_chat_carry_customer_training_badge_without_n_plus_one(): void
+    {
+        [$order, $buyer, $seller] = $this->makeDeferredShopOrder();
+        $otherBuyer = $this->makeUser('ผู้ซื้อคนที่สอง');
+        $product = $this->makeProduct($seller, 80);
+        $second = $this->makePaidOrder($otherBuyer, [[$product, 1]], 40, ['status' => 'paid', 'payment_method' => 'wallet', 'delivery_method' => 'rider']);
+        $this->certify($buyer, 'buyer');
+        TrainingBadge::forget();
+
+        Sanctum::actingAs($seller);
+        $certQueries = 0;
+        DB::listen(function ($query) use (&$certQueries) {
+            if (str_contains($query->sql, 'classroom_certifications')) {
+                $certQueries++;
+            }
+        });
+
+        $rows = collect($this->getJson('/api/v1/seller/orders')->assertOk()->json('data.orders'))->keyBy('id');
+        $this->assertSame(self::badge('buyer'), $rows[$order->id]['customer_training_badge']);
+        $this->assertArrayHasKey('customer_training_badge', $rows[$second->id]);
+        $this->assertNull($rows[$second->id]['customer_training_badge']);
+        $this->assertSame(1, $certQueries, 'ป้ายของทุกแถวต้องโหลดด้วย query เดียว');
+
+        $this->getJson('/api/v1/seller/orders/'.$order->id.'/messages')->assertOk()
+            ->assertJsonPath('data.chat.customer_training_badge', self::badge('buyer'));
+    }
+
     public function test_uncertified_people_get_null_badges_without_breaking_existing_keys(): void
     {
         [$order, $buyer] = $this->makeDeferredShopOrder();
@@ -130,6 +157,7 @@ class TrainingBadgePayloadTest extends HandoverTestCase
         $seller = $this->makeSeller();
         $store = VendorStore::query()->where('user_id', $seller->id)->firstOrFail();
 
+        Sanctum::actingAs($this->makeUser('ผู้ชมร้าน')); // GET /mobile/stores/{id} อยู่ใต้ auth:sanctum
         $this->getJson('/api/v1/mobile/stores/'.$store->id)->assertOk()
             ->assertJsonPath('data.owner_verified', false)
             ->assertJsonPath('data.training_badge', null);
