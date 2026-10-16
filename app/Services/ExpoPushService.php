@@ -134,44 +134,62 @@ class ExpoPushService
     }
 
     /**
-     * ส่ง Notification จาก MobilePushNotification model
+     * ส่ง Notification จาก MobilePushNotification model (push โปร/ประกาศของแอดมิน)
+     *
+     * 🔔 (2026-10-16) แก้ให้ตรง schema จริงของตาราง mobile_push_notifications:
+     *   - กรองเครื่องตาม target_platform (all/ios/android) — เดิมอ่าน target_type ที่ไม่มีอยู่ = ส่งทุกเครื่องเสมอ
+     *   - นับผลลง success_count/failure_count · status ใช้ได้แค่ pending/scheduled/sent/failed (เดิมเขียน 'partial' = SQL error)
+     *   - ลิงก์อยู่ใน data.action_url
+     * ⚠️ ไม่กันส่งซ้ำเอง — ทางที่ส่งตามคิว/ตามเวลาต้องเรียกผ่าน sendCampaign() ที่จองแถวก่อน
      */
     public function sendNotification(MobilePushNotification $notification): array
     {
-        // ดึง push tokens ตาม target
         $tokens = $this->getTokensForNotification($notification);
 
-        if (empty($tokens)) {
-            $notification->update([
-                'status' => 'failed',
-                'error_message' => 'No valid push tokens found',
-            ]);
-
-            return ['success' => 0, 'failed' => 0, 'errors' => ['No valid push tokens found']];
-        }
-
-        // ส่ง notification
+        $data = is_array($notification->data) ? $notification->data : [];
         $results = $this->send(
             $tokens,
-            $notification->title,
-            $notification->body,
+            (string) $notification->title,
+            (string) $notification->body,
             [
-                'type' => $notification->type ?? 'general',
+                'type' => $data['type'] ?? 'general',
                 'notification_id' => $notification->id,
-                'url' => $notification->url ?? null,
+                'url' => $data['action_url'] ?? null,
+                'channel' => $data['channel'] ?? 'default',
             ]
         );
 
-        // อัพเดท status
         $notification->update([
-            'status' => $results['failed'] === 0 ? 'sent' : 'partial',
-            'sent_at' => now(),
-            'sent_count' => $results['success'],
-            'failed_count' => $results['failed'],
-            'error_message' => ! empty($results['errors']) ? implode(', ', $results['errors']) : null,
+            'status' => $results['success'] > 0 ? 'sent' : 'failed',
+            'sent_at' => $notification->sent_at ?? now(),
+            'success_count' => $results['success'],
+            'failure_count' => $results['failed'],
         ]);
 
+        if (empty($tokens)) {
+            $results['errors'][] = 'No valid push tokens found';
+        }
+
         return $results;
+    }
+
+    /**
+     * 🔔 (2026-10-16) ส่ง push campaign แบบกันส่งซ้ำ — จองแถว (pending/scheduled → sent) แบบอะตอมมิกก่อนยิง
+     *
+     * รันซ้ำ/พร้อมกันกี่รอบก็ส่งครั้งเดียว · จองไม่ได้ (ส่งไปแล้ว/ถูกยกเลิก) = คืน null
+     * ส่งล้มกลางทาง แถวยังเป็น sent → ไม่ยิงซ้ำ (เด้งซ้ำแย่กว่าตกหล่นสำหรับโปรโมชั่น)
+     */
+    public function sendCampaign(MobilePushNotification $notification): ?array
+    {
+        $claimed = MobilePushNotification::whereKey($notification->id)
+            ->whereIn('status', ['pending', 'scheduled'])
+            ->update(['status' => 'sent', 'sent_at' => now()]);
+
+        if ($claimed === 0) {
+            return null;
+        }
+
+        return $this->sendNotification($notification->fresh() ?? $notification);
     }
 
     /**
@@ -407,24 +425,9 @@ class ExpoPushService
         $query = MobileDevice::whereNotNull('push_token')
             ->where('is_active', true);
 
-        // กรองตาม target
-        switch ($notification->target_type ?? 'all') {
-            case 'user':
-                if ($notification->target_user_id) {
-                    $query->where('user_id', $notification->target_user_id);
-                }
-                break;
-
-            case 'platform':
-                if ($notification->target_platform) {
-                    $query->where('platform', $notification->target_platform);
-                }
-                break;
-
-            case 'all':
-            default:
-                // ไม่ต้องกรอง
-                break;
+        // กรองตาม target_platform (all = ทุกเครื่อง)
+        if (in_array($notification->target_platform, ['ios', 'android'], true)) {
+            $query->where('platform', $notification->target_platform);
         }
 
         return $query->pluck('push_token')->toArray();
