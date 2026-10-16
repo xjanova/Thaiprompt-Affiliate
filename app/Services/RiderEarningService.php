@@ -48,12 +48,18 @@ class RiderEarningService
 
     /**
      * เคลียร์เงินของงาน (idempotent — เรียกกี่ครั้งก็ได้ผลเท่าเดิม)
+     *
+     * 🔔 (2026-10-16) เงินเข้าวอลเลตไรเดอร์จริงในรอบนี้ → แจ้งไรเดอร์ (push เข้าแอปผ่าน NotificationService) ครั้งเดียวต่องาน
+     *
+     * @param  bool  $notifyRider  false = ผู้เรียกแจ้งไรเดอร์เองแล้ว (สแกนส่งมอบ: "ส่งมอบสำเร็จ รายได้ ฿X เข้ากระเป๋าแล้ว")
+     * @return bool true = รอบนี้เครดิตเงินเข้าวอลเลตไรเดอร์
      */
-    public function settle(RiderJob $job): void
+    public function settle(RiderJob $job, bool $notifyRider = true): bool
     {
         $codShortfall = null;
+        $credited = null;
 
-        DB::transaction(function () use ($job, &$codShortfall) {
+        DB::transaction(function () use ($job, &$codShortfall, &$credited) {
             /** @var RiderJob|null $locked */
             $locked = RiderJob::whereKey($job->id)->lockForUpdate()->first();
 
@@ -90,7 +96,9 @@ class RiderEarningService
                     if ($net > 0) {
                         $moneyDone = $this->debitCod($wallet, $locked, $net, $codShortfall);
                     } elseif ($net < 0) {
-                        $this->creditOnce($wallet, $locked, round(-$net, 2), 'ค่าส่งไรเดอร์ (ส่วนต่าง COD) งาน #'.$locked->job_number);
+                        if ($this->creditOnce($wallet, $locked, round(-$net, 2), 'ค่าส่งไรเดอร์ (ส่วนต่าง COD) งาน #'.$locked->job_number)) {
+                            $credited = ['amount' => round(-$net, 2), 'bonus' => 0.0, 'user_id' => (int) $user->id];
+                        }
                     }
 
                     if ($moneyDone) {
@@ -99,13 +107,17 @@ class RiderEarningService
                     }
                 }
             } elseif ($earnings > 0) {
-                $this->creditOnce(
+                $paid = $this->creditOnce(
                     $wallet,
                     $locked,
                     $earnings,
                     'ค่าส่งไรเดอร์ งาน #'.$locked->job_number.($bonus > 0 ? ' (รวมโบนัสจากร้าน ฿'.number_format($bonus, 2).')' : ''),
                     $bonus
                 );
+
+                if ($paid) {
+                    $credited = ['amount' => $earnings, 'bonus' => $bonus, 'user_id' => (int) $user->id];
+                }
             }
 
             // ค่าธรรมเนียมแพลตฟอร์ม: จ่ายล่วงหน้า = มีเงินแล้ว / COD = หลังหักเงินไรเดอร์สำเร็จ
@@ -132,6 +144,12 @@ class RiderEarningService
         if ($codShortfall !== null) {
             $this->notifyCodShortfall($job, $codShortfall);
         }
+
+        if ($credited !== null && $notifyRider) {
+            $this->notifyEarningCredited($job, $credited['user_id'], $credited['amount'], $credited['bonus']);
+        }
+
+        return $credited !== null;
     }
 
     /**
@@ -252,11 +270,13 @@ class RiderEarningService
 
     /**
      * เครดิตวอลเลตไรเดอร์ครั้งเดียวต่องาน (เช็ครายการเดิมก่อนเสมอ)
+     *
+     * @return bool true = เครดิตเงินเข้ารอบนี้จริง (false = ไม่มีอะไรต้องจ่าย / เคยจ่ายไปแล้ว)
      */
-    private function creditOnce(Wallet $wallet, RiderJob $job, float $amount, string $description, float $bonus = 0.0): void
+    private function creditOnce(Wallet $wallet, RiderJob $job, float $amount, string $description, float $bonus = 0.0): bool
     {
         if ($amount <= 0) {
-            return;
+            return false;
         }
 
         $exists = WalletTransaction::where('wallet_id', $wallet->id)
@@ -266,7 +286,7 @@ class RiderEarningService
             ->exists();
 
         if ($exists) {
-            return;
+            return false;
         }
 
         $this->wallets->deposit($wallet, $amount, $description, self::REF_EARNING, (int) $job->id, [
@@ -276,6 +296,36 @@ class RiderEarningService
             'source_id' => $job->source_id,
             'shop_bonus' => round($bonus, 2),
         ]);
+
+        return true;
+    }
+
+    /**
+     * แจ้งไรเดอร์ว่าค่าส่ง (+ โบนัสจากร้าน) เข้าวอลเลตแล้ว — เรียกหลัง transaction ของการเคลียร์เงินเท่านั้น
+     * ผ่าน RiderNotificationService → NotificationService::create (สะพาน push เดียว) · ไม่มี LINE push
+     */
+    private function notifyEarningCredited(RiderJob $job, int $userId, float $amount, float $bonus): void
+    {
+        try {
+            $this->notifier->notifyUser(
+                $userId,
+                'rider_earning',
+                '💰 ค่าส่ง ฿'.number_format($amount, 2).' เข้ากระเป๋าแล้ว',
+                'ส่งงาน #'.$job->job_number.' สำเร็จ'
+                    .($bonus > 0 ? ' (รวมโบนัสจากร้าน ฿'.number_format($bonus, 2).')' : '')
+                    .' ถอนได้ที่หน้ารายได้ไรเดอร์',
+                [
+                    'type' => 'rider_earning',
+                    'event' => 'earning_credited',
+                    'job_id' => (int) $job->id,
+                    'amount' => $amount,
+                    'shop_bonus' => round($bonus, 2),
+                    'screen' => 'rider',
+                ],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('RiderEarning: notify earning failed', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

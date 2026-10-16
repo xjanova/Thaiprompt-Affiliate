@@ -2140,7 +2140,12 @@ class FreshMarketService
             $this->rateRider($fresh, $riderRating, $riderReview);
         }
 
-        return $fresh->fresh();
+        $rated = $fresh->fresh();
+
+        // 🔔 แจ้งร้าน (push เข้าแอป) — ผ่านเงื่อนไข whereNull('buyer_rating') มาแล้ว = ครั้งเดียวต่อออเดอร์
+        app(SellerReviewNotifier::class)->freshMarketOrder($rated);
+
+        return $rated;
     }
 
     /**

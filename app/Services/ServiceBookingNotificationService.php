@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingNotification;
 use App\Models\ServiceProvider;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Mail;
  */
 class ServiceBookingNotificationService
 {
+    /** สวิตช์ LINE push (ค่าเริ่มต้นปิด) */
+    public const LINE_PUSH_SETTING = 'service_booking_line_push_enabled';
+
     /**
      * ส่งการแจ้งเตือนงานใหม่ถึง Provider
      *
@@ -26,8 +30,10 @@ class ServiceBookingNotificationService
     {
         $results = [];
 
-        // 1. LINE OA (ลำดับความสำคัญสูงสุด)
-        if ($provider->hasLineConnected() && $provider->isLineNotificationEnabled()) {
+        // 1. LINE OA — 🚫 ปิดไว้เป็นค่าเริ่มต้น (2026-10-16): ตัวนี้ยิง LINE push API ตรงๆ กินโควต้า 300/เดือน
+        //    (.claude/LINE_MESSAGING_RULES.md) · ผู้ให้บริการได้ push เข้าแอปจากข้อ 3 อยู่แล้ว
+        //    เปิดกลับได้ด้วย Setting `service_booking_line_push_enabled` = true เท่านั้น
+        if ($this->linePushEnabled() && $provider->hasLineConnected() && $provider->isLineNotificationEnabled()) {
             $results['line'] = $this->sendLineNotification($booking, $provider, 'new_booking');
         }
 
@@ -48,6 +54,18 @@ class ServiceBookingNotificationService
         }
 
         return $results;
+    }
+
+    /**
+     * สวิตช์ส่ง LINE push ให้ผู้ให้บริการ (ค่าเริ่มต้นปิด — โควต้า push LINE มีแค่ 300 ครั้ง/เดือน)
+     */
+    public function linePushEnabled(): bool
+    {
+        try {
+            return (bool) Setting::get(self::LINE_PUSH_SETTING, false);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -444,13 +462,16 @@ class ServiceBookingNotificationService
 
     /**
      * สร้าง Notification record
+     *
+     * @param  string|array  $message  ข้อความ LINE เป็น message object (array) → เก็บเป็น JSON
+     *                                 (เดิมรับแค่ string → ทาง LINE โยน TypeError ทำให้แจ้งงานจองล้มทั้งก้อน)
      */
     protected function createNotification(
         ServiceBooking $booking,
         ServiceProvider $provider,
         string $channel,
         string $type,
-        string $message,
+        string|array $message,
         ?string $title = null
     ): ServiceBookingNotification {
         return ServiceBookingNotification::create([

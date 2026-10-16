@@ -597,9 +597,13 @@ class RiderJobService
     /**
      * เคลียร์เงินไรเดอร์หลังส่งมอบสำเร็จ (ไม่ throw — ล้มเหลว sweep ลองใหม่)
      */
-    public function settleEarnings(RiderJob $job): void
+    /**
+     * @param  bool  $notifyRider  false = ผู้เรียกแจ้งไรเดอร์เรื่องเงินเข้าเอง (ไม่ให้ push ซ้ำ)
+     * @return bool true = รอบนี้เครดิตเงินเข้าวอลเลตไรเดอร์
+     */
+    public function settleEarnings(RiderJob $job, bool $notifyRider = true): bool
     {
-        $this->settleQuietly($job);
+        return $this->settleQuietly($job, $notifyRider);
     }
 
     /**
@@ -1274,15 +1278,17 @@ class RiderJobService
     /**
      * เคลียร์เงินแบบไม่ให้ล้มคำขอ (ล้มเหลว → sweep ลองใหม่)
      */
-    private function settleQuietly(RiderJob $job): void
+    private function settleQuietly(RiderJob $job, bool $notifyRider = true): bool
     {
         try {
-            $this->earnings->settle($job);
+            return $this->earnings->settle($job, $notifyRider);
         } catch (\Throwable $e) {
             Log::error('RiderJob: settle failed (will retry in sweep)', [
                 'job_id' => $job->id,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
     }
 
