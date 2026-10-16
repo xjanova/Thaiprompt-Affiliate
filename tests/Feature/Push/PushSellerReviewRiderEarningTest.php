@@ -14,7 +14,6 @@ use App\Models\Service;
 use App\Models\ServiceBooking;
 use App\Models\ServiceCategory;
 use App\Models\ServiceProvider;
-use App\Models\Setting;
 use App\Models\StoreRating;
 use App\Models\User;
 use App\Models\VendorStore;
@@ -196,22 +195,21 @@ class PushSellerReviewRiderEarningTest extends MoneyTestCase
 
     // ───────────────────────── 4. จองบริการ: LINE push ─────────────────────────
 
-    public function test_service_booking_line_push_is_off_by_default_and_app_push_still_goes(): void
+    public function test_new_booking_never_calls_line_even_when_provider_has_line_enabled(): void
     {
+        // owner (2026-10-16): ไม่แจ้งผ่าน LINE แล้ว แจ้งผ่านแอปอย่างเดียว — ต่อให้มี token + ผู้ให้บริการผูก LINE และเปิดแจ้ง LINE ไว้
         config(['services.line.channel_access_token' => 'test-line-token']);
         [$booking, $provider] = $this->serviceBooking();
+        $this->assertTrue($provider->isLineNotificationEnabled(), 'fixture ต้องเป็นผู้ให้บริการที่เปิด LINE ไว้จริง');
         $providerToken = $this->device($provider->user);
 
-        app(ServiceBookingNotificationService::class)->notifyNewBooking($booking, $provider);
+        $results = app(ServiceBookingNotificationService::class)->notifyNewBooking($booking, $provider);
 
-        $this->assertSame(0, $this->lineCalls(), 'ค่าเริ่มต้นต้องไม่ยิง LINE push (โควต้า 300/เดือน)');
+        $this->assertArrayNotHasKey('line', $results);
+        $this->assertSame(0, $this->lineCalls(), 'ห้ามยิง api.line.me ทุกกรณี');
+        $this->assertSame(0, \App\Models\ServiceBookingNotification::where('booking_id', $booking->id)->where('channel', 'line')->count());
         $this->assertPushedTo($providerToken, 'มีงานจองใหม่');
-
-        Setting::set(ServiceBookingNotificationService::LINE_PUSH_SETTING, '1', 'boolean', 'service_booking');
-        app(ServiceBookingNotificationService::class)->notifyNewBooking($booking->fresh(), $provider->fresh());
-
-        $this->assertSame(1, $this->lineCalls(), 'เปิดสวิตช์แล้วส่ง LINE ได้');
-        $this->assertDatabaseHas('service_booking_notifications', ['booking_id' => $booking->id, 'channel' => 'line', 'is_sent' => true]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $provider->user_id, 'type' => 'service_booking_provider_new_booking']);
     }
 
     // ───────────────────────── helpers ─────────────────────────
