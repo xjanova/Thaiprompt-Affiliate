@@ -282,12 +282,8 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
     Route::get('/status', [\App\Http\Controllers\TranslationController::class, 'status'])->name('status');
 });
 
-// Public Certificate Verification
-// ⚠️ Public Service: Certificate verification ต้องเข้าถึงได้สาธารณะ
-Route::prefix('certificate')->name('certificate.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/verify/{verificationCode}', [\App\Http\Controllers\Admin\CertificateController::class, 'verify'])->name('verify');
-    Route::match(['GET', 'HEAD'], '/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
-});
+// 🗑️ (2026-10-13) ลบหน้า certificate.verify / certificate.share ของ Academy เดิมแล้ว
+//    (ใบรับรอง Food Passport ใช้ food-passport.certifications.verify แยกต่างหาก ไม่กระทบ)
 
 // Setup Routes
 // ⚠️ Setup: ระบบติดตั้งครั้งแรก - สร้าง Super Admin (Step-by-Step Wizard)

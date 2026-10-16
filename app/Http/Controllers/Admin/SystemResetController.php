@@ -139,14 +139,14 @@ class SystemResetController extends Controller
             // User Activities
             'user_activities' => [
                 'label' => '🎯 กิจกรรมและความคืบหน้าผู้ใช้',
-                'description' => 'ลบการอ่านบทความ, ดูวิดีโอ, เควส, ควิซ, การเข้างาน',
-                'count' => $this->getTableCount(['user_article_progress', 'user_video_watches', 'quiz_attempts']),
+                'description' => 'ลบการดูวิดีโอ, เควส, การอบรม, การเข้างาน',
+                'count' => $this->getTableCount(['user_video_watches']),
                 'icon' => 'tasks',
                 'danger_level' => 'medium',
-                'tables' => ['user_article_progress', 'user_daily_streaks', 'user_quest_progress',
+                'tables' => ['user_daily_streaks', 'user_quest_progress',
                     'user_video_watches', 'user_video_levels', 'video_watch_sessions',
-                    'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
-                    'quiz_answers', 'training_enrollments', 'learning_articles',
+                    'video_coin_transactions', 'video_referral_rewards',
+                    'training_enrollments',
                     'attendance_records', 'leave_requests', 'job_applications',
                     'tarot_cart_items', 'tarot_user_limits'],
             ],
@@ -159,8 +159,7 @@ class SystemResetController extends Controller
                 'icon' => 'ticket-alt',
                 'danger_level' => 'medium',
                 'tables' => ['tickets', 'ticket_replies', 'ticket_attachments', 'ticket_ratings',
-                    'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
-                    'article_permissions'],
+                    'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments'],
             ],
 
             // AI Activities
@@ -236,15 +235,7 @@ class SystemResetController extends Controller
                     'software_quotation_selected_options'],
             ],
 
-            // Academy
-            'academy' => [
-                'label' => '🎓 ใบประกาศนียบัตร',
-                'description' => 'ลบใบประกาศนียบัตรที่ออกให้',
-                'count' => $this->getTableCount(['certificates']),
-                'icon' => 'certificate',
-                'danger_level' => 'low',
-                'tables' => ['certificates', 'article_prerequisites'],
-            ],
+            // 🗑️ (2026-10-13) หมวด 'academy' (certificates, article_prerequisites) ถูกลบไปพร้อม Academy เดิมแล้ว
         ];
     }
 
@@ -477,15 +468,14 @@ class SystemResetController extends Controller
                 'notifications', 'knowledge_chunks', 'line_bot_knowledge_bases'],
             'bookings' => ['hotel_bookings', 'hotel_reviews', 'hotel_review_votes',
                 'room_availability', 'tarot_readings', 'tarot_reading_cards'],
-            'user_activities' => ['user_article_progress', 'user_daily_streaks', 'user_quest_progress',
+            'user_activities' => ['user_daily_streaks', 'user_quest_progress',
                 'user_video_watches', 'user_video_levels', 'video_watch_sessions',
-                'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
-                'quiz_answers', 'training_enrollments', 'learning_articles',
+                'video_coin_transactions', 'video_referral_rewards',
+                'training_enrollments',
                 'attendance_records', 'leave_requests', 'job_applications',
                 'tarot_cart_items', 'tarot_user_limits'],
             'tickets' => ['tickets', 'ticket_replies', 'ticket_attachments', 'ticket_ratings',
-                'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
-                'article_permissions'],
+                'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments'],
             'ai_activities' => ['ai_gen_generations', 'ai_bot_rentals', 'ai_rental_transactions',
                 'ai_owner_earnings', 'bot_automation_executions', 'bot_scheduled_posts',
                 'bot_marketplace_reviews', 'bot_rental_subscriptions', 'bot_platform_connections',
@@ -505,7 +495,6 @@ class SystemResetController extends Controller
                 'vendor_subscriptions', 'vendor_marketing_campaigns'],
             'quotations' => ['software_quotations', 'software_quotation_items',
                 'software_quotation_selected_options'],
-            'academy' => ['certificates', 'article_prerequisites'],
             'api_keys' => ['api_keys'], // User-specific API keys
         ];
 
@@ -575,7 +564,6 @@ class SystemResetController extends Controller
             'marketplace' => 'Marketplace',
             'quotations' => 'ใบเสนอราคา',
             'membership' => 'การต่ออายุ',
-            'academy' => 'ใบประกาศนียบัตร',
             'api_keys' => 'API Keys',
         ];
 
