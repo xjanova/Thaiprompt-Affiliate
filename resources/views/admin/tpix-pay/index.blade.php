@@ -28,6 +28,7 @@
             <div class="tp-muted" style="font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">หลังบ้าน · การเงิน · TPIX Chain {{ config('tpix_pay.chain_id') }}</div>
             <h1 class="tp-num" style="font-size:1.6rem;font-weight:800;color:var(--ink);margin:0;">🪙 รับชำระด้วยเหรียญ TPIX</h1>
         </div>
+        <a href="{{ route('admin.tpix-pay.reports') }}" class="tp-btn">📊 รายงาน TPIX</a>
         <span class="tp-pill" style="background:{{ $paymentsEnabled ? '#2f855a' : '#718096' }};color:#fff;">{{ $paymentsEnabled ? 'เปิดรับชำระอยู่' : 'ปิดรับชำระ' }}</span>
     </div>
 
