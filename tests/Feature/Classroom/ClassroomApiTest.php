@@ -79,14 +79,14 @@ class ClassroomApiTest extends TestCase
         $this->heartbeat($user, $lesson, 0)->assertOk();
         $this->travel(10)->seconds();
 
-        // กระโดดไปนาทีที่ 9 หลังเปิดดูจริงแค่ 10 วิ → ได้ไม่เกิน 10 + 3 วิ
+        // กระโดดไปนาทีที่ 9 หลังเปิดดูจริงแค่ 10 วิ → ได้ไม่เกินเวลาจริง 10 วิ
         $this->heartbeat($user, $lesson, 540)->assertOk()
-            ->assertJsonPath('data.watched_seconds', 13)
+            ->assertJsonPath('data.watched_seconds', 10)
             ->assertJsonPath('data.completed', false);
 
         // ย้อนกลับ = ไม่นับ
         $this->travel(10)->seconds();
-        $this->heartbeat($user, $lesson, 100)->assertOk()->assertJsonPath('data.watched_seconds', 13);
+        $this->heartbeat($user, $lesson, 100)->assertOk()->assertJsonPath('data.watched_seconds', 10);
     }
 
     public function test_stale_heartbeat_is_not_credited(): void
@@ -452,5 +452,22 @@ class ClassroomApiTest extends TestCase
             $this->assertArrayHasKey($question->correct_index, $question->choiceList());
             $this->assertNotEmpty($question->explanation);
         }
+    }
+
+    /**
+     * 🔒 (2026-10-16) ยิง heartbeat ถี่ๆ เดินหน้าทีละ 5 วิทุก 2 วิ → เครดิตต้องไม่เกินเวลาจริงที่ผ่านไป
+     */
+    public function test_rapid_heartbeats_cannot_inflate_watch_time(): void
+    {
+        $lesson = $this->makeLesson($this->makeCourse(), 600);
+        $user = User::factory()->create();
+        $this->heartbeat($user, $lesson, 0)->assertOk();
+
+        for ($i = 1; $i <= 10; $i++) {
+            $this->travel(2)->seconds();
+            $this->heartbeat($user, $lesson, $i * 5)->assertOk();
+        }
+
+        $this->assertLessThanOrEqual(20, (int) $this->heartbeat($user, $lesson, 50)->json('data.watched_seconds'));
     }
 }

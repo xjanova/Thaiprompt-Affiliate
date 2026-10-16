@@ -122,7 +122,8 @@ export const LessonPlayer = forwardRef<LessonPlayerHandle, LessonPlayerProps>(
           // iframe ของ YouTube โหลดได้ · หน้าหลักห้ามเปลี่ยนไปที่อื่น (กดโลโก้ YouTube แล้วหลุดออกจากบทเรียน)
           onShouldStartLoadWithRequest={(req) =>
             req.url === 'about:blank' ||
-            req.url.startsWith(PLAYER_BASE_URL) ||
+            req.url === PLAYER_BASE_URL ||
+            req.url.startsWith(`${PLAYER_BASE_URL.replace(/\/$/, '')}/`) ||
             (req as { isTopFrame?: boolean }).isTopFrame === false
           }
           onError={() => setError(playerErrorMessage('api'))}

@@ -102,7 +102,7 @@ return new class extends Migration
             $manifest = [
                 'created_at' => now()->toIso8601String(),
                 'reason' => 'drop legacy Academy (owner decision 2026-10-13)',
-                'migration' => '2026_10_16_090000_drop_legacy_academy_tables',
+                'migration' => '2026_10_16_100200_drop_legacy_academy_tables',
                 'restore' => 'สร้างตารางจาก tables.<name>.create_sql แล้ว import แถวจาก <name>.json (หรือใช้ DB dump ก่อน migrate)',
                 'tables' => [],
                 'menu_items' => null,

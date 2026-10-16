@@ -168,13 +168,18 @@ final class TrainingBadge
             $this->certs[$id] = [];
         }
 
-        foreach (array_chunk(array_values($missing), 500) as $chunk) {
-            ClassroomCertification::query()
-                ->whereIn('user_id', $chunk)
-                ->get(['id', 'user_id', 'role', 'course_id', 'rules_version', 'points_awarded', 'certified_at'])
-                ->each(function (ClassroomCertification $cert) {
-                    $this->certs[(int) $cert->user_id][(string) $cert->role] = $cert;
-                });
+        // 🛡️ ตราเป็นของประดับ — อ่านไม่ได้ (ตารางยังไม่มี/DB สะดุด) ต้องไม่ทำให้ /me หรือหน้าร้านพัง 500
+        try {
+            foreach (array_chunk(array_values($missing), 500) as $chunk) {
+                ClassroomCertification::query()
+                    ->whereIn('user_id', $chunk)
+                    ->get(['id', 'user_id', 'role', 'course_id', 'rules_version', 'points_awarded', 'certified_at'])
+                    ->each(function (ClassroomCertification $cert) {
+                        $this->certs[(int) $cert->user_id][(string) $cert->role] = $cert;
+                    });
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::warning('TrainingBadge: อ่านตราไม่ได้ — แสดงเป็นไม่มีตรา', ['error' => class_basename($e)]);
         }
     }
 
@@ -185,11 +190,15 @@ final class TrainingBadge
     {
         if ($this->currentVersions === null) {
             $this->currentVersions = [];
-            ClassroomCourse::query()->active()->ordered()->get(['id', 'role', 'rules_version', 'sort_order'])
-                ->each(function (ClassroomCourse $course) {
-                    // คอร์สแรกตามลำดับของแต่ละบทบาท = คอร์สที่ใช้จริง (ตรงกับ activeForRole)
-                    $this->currentVersions[$course->role] ??= (string) $course->rules_version;
-                });
+            try {
+                ClassroomCourse::query()->active()->ordered()->get(['id', 'role', 'rules_version', 'sort_order'])
+                    ->each(function (ClassroomCourse $course) {
+                        // คอร์สแรกตามลำดับของแต่ละบทบาท = คอร์สที่ใช้จริง (ตรงกับ activeForRole)
+                        $this->currentVersions[$course->role] ??= (string) $course->rules_version;
+                    });
+            } catch (\Illuminate\Database\QueryException $e) {
+                // ตารางยังไม่มี → ไม่มีเวอร์ชันให้เทียบ (ตราที่มีอยู่ถือว่าใช้ได้)
+            }
         }
 
         return $this->currentVersions;

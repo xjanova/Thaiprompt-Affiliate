@@ -16,7 +16,7 @@ Route::prefix('classroom')->name('classroom.')->controller(ClassroomController::
     Route::get('/lessons/{lesson}', 'lesson')->whereNumber('lesson')->name('lesson');
     Route::post('/lessons/{lesson}/progress', 'progress')
         ->whereNumber('lesson')
-        ->middleware('throttle:30,1,web-classroom-progress')
+        ->middleware('throttle:30,1,api-classroom-progress')
         ->name('lesson.progress');
     Route::post('/courses/{course}/quiz/start', 'startQuiz')
         ->whereNumber('course')

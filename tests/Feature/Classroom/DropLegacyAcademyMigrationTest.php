@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 🗑️ migration ลบ Academy เดิม (2026_10_16_090000) — สำรอง JSON ก่อน DROP เสมอ · ต้องใช้ MySQL
+ * 🗑️ migration ลบ Academy เดิม (2026_10_16_100200) — สำรอง JSON ก่อน DROP เสมอ · ต้องใช้ MySQL
  *
  * สร้างตาราง Academy คืนจาก CREATE TABLE ใน database/schema/mysql-schema.sql (โครงเดียวกับ prod/CI)
  * ใส่แถวปลอม + แถวเมนูตาย + ตาราง "ที่เก็บไว้" ที่มี FK ชี้เข้า Academy → รัน up()
@@ -89,7 +89,7 @@ class DropLegacyAcademyMigrationTest extends TestCase
         $menuIds = $this->insertLegacyMenuRows();
         $keptMenuId = DB::table('menu_items')->insertGetId($this->menuRow('admin.classroom', 'admin.classroom.index', null));
 
-        $migration = require database_path('migrations/2026_10_16_090000_drop_legacy_academy_tables.php');
+        $migration = require database_path('migrations/2026_10_16_100200_drop_legacy_academy_tables.php');
         $migration->up();
 
         // 1) โฟลเดอร์สำรองใหม่ 1 โฟลเดอร์
@@ -134,7 +134,7 @@ class DropLegacyAcademyMigrationTest extends TestCase
     {
         $this->createLegacyTablesFromSchemaDump();
 
-        $migration = require database_path('migrations/2026_10_16_090000_drop_legacy_academy_tables.php');
+        $migration = require database_path('migrations/2026_10_16_100200_drop_legacy_academy_tables.php');
         $migration->up();
 
         foreach (self::TABLES as $table) {

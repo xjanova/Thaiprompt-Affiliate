@@ -104,7 +104,9 @@ class ClassroomProgressService
             return 0; // หยุด/ย้อนกลับ
         }
 
-        return min($delta, $elapsed + self::GRACE_SECONDS);
+        // 🔒 (2026-10-16) เครดิตไม่เกินเวลาจริงที่ผ่านไป — เดิม +GRACE ทุก heartbeat ทำให้ยิงถี่ๆ ปั๊มเวลาดูได้ 2.5–4 เท่า
+        //    เกณฑ์จบบท 90% เผื่อความคลาดเคลื่อนของจังหวะ heartbeat ไว้แล้ว
+        return min($delta, $elapsed);
     }
 
     /**
