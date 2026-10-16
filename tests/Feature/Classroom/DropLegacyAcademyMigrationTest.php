@@ -148,13 +148,14 @@ class DropLegacyAcademyMigrationTest extends TestCase
      */
     private function createLegacyTablesFromSchemaDump(): void
     {
-        $dump = File::get(database_path('schema/mysql-schema.sql'));
+        // CI สร้าง schema dump ใหม่หลัง migrate (ตาราง Academy ถูกลบไปแล้ว) → ใช้สำเนาโครงสร้างเดิมที่เก็บไว้ใน fixture
+        $dump = File::get(base_path('tests/Fixtures/legacy_academy_tables.sql'));
 
         Schema::withoutForeignKeyConstraints(function () use ($dump) {
             foreach (self::TABLES as $table) {
                 // ตัดด้วย strpos — regex /s ข้ามไฟล์ dump ใหญ่บน CI ชนขีดจำกัด PCRE แล้วได้ 0 (หาไม่เจอ)
                 $start = strpos($dump, 'CREATE TABLE `'.$table.'` (');
-                $this->assertNotFalse($start, $table.' ต้องอยู่ใน schema dump');
+                $this->assertNotFalse($start, $table.' ต้องอยู่ใน fixture');
                 $end = strpos($dump, ';', strpos($dump, ') ENGINE=', $start));
                 $this->assertNotFalse($end, $table.' ต้องมีจุดจบคำสั่ง');
                 Schema::dropIfExists($table);
