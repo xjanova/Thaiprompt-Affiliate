@@ -152,9 +152,13 @@ class DropLegacyAcademyMigrationTest extends TestCase
 
         Schema::withoutForeignKeyConstraints(function () use ($dump) {
             foreach (self::TABLES as $table) {
-                $this->assertSame(1, preg_match('/CREATE TABLE `'.preg_quote($table, '/').'` \(.*?\) ENGINE=[^;]*;/s', $dump, $m), $table.' ต้องอยู่ใน schema dump');
+                // ตัดด้วย strpos — regex /s ข้ามไฟล์ dump ใหญ่บน CI ชนขีดจำกัด PCRE แล้วได้ 0 (หาไม่เจอ)
+                $start = strpos($dump, 'CREATE TABLE `'.$table.'` (');
+                $this->assertNotFalse($start, $table.' ต้องอยู่ใน schema dump');
+                $end = strpos($dump, ';', strpos($dump, ') ENGINE=', $start));
+                $this->assertNotFalse($end, $table.' ต้องมีจุดจบคำสั่ง');
                 Schema::dropIfExists($table);
-                DB::unprepared($m[0]);
+                DB::unprepared(substr($dump, $start, $end - $start + 1));
             }
         });
     }
