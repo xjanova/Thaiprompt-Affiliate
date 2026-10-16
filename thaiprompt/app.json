@@ -2,7 +2,7 @@
   "expo": {
     "name": "Thai Prompt APP",
     "slug": "thaiprompt",
-    "version": "3.391.0",
+    "version": "3.392.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -30,7 +30,7 @@
         "backgroundColor": "#0C1A33"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 48,
+      "versionCode": 49,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
