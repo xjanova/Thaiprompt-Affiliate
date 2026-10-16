@@ -979,6 +979,15 @@ Schedule::command('notifications:send-scheduled')
     ->name('notifications-send-scheduled')
     ->runInBackground();
 
+// 🔔 (2026-10-16) push โปร/ประกาศตั้งเวลา (mobile_push_notifications.status=scheduled)
+// เดิมบันทึกไว้แต่ไม่มีใครส่ง · จองแถวก่อนยิง → แถวเดียวไม่ส่งซ้ำ · ค้างเกิน 6 ชม. = ปิดทิ้ง ไม่ส่ง
+Schedule::command('mobile-push:send-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('mobile-push-send-scheduled')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 📊 (2026-09-25) รวมสถิติร้านค้ารายวัน (vendor_analytics) — หน้า "วิเคราะห์" ของผู้ขาย
 // ════════════════════════════════════════════════════════════════

@@ -183,7 +183,7 @@ class AntiAbuseService
         // คำนวณค่าปรับ
         $feeInfo = $this->calculateCancellationFee($booking);
 
-        return DB::transaction(function () use ($booking, $cancelledByType, $reason, $feeInfo) {
+        $result = DB::transaction(function () use ($booking, $cancelledByType, $reason, $feeInfo) {
             // ล็อกแถวการจอง → ยกเลิกซ้ำพร้อมกันคืนเงินครั้งเดียว
             $locked = ServiceBooking::whereKey($booking->id)->lockForUpdate()->first();
             if ($locked) {
@@ -224,6 +224,13 @@ class AntiAbuseService
                     : 'ยกเลิกสำเร็จ ไม่มีค่าปรับ',
             ];
         });
+
+        // 🔔 (2026-10-16) แจ้งอีกฝ่ายหลังยกเลิกสำเร็จ (นอกธุรกรรม)
+        if ($result['success']) {
+            app(\App\Services\ServiceBookingService::class)->notifyCancellation($booking->fresh() ?? $booking, $cancelledByType);
+        }
+
+        return $result;
     }
 
     /**

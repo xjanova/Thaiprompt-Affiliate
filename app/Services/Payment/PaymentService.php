@@ -551,6 +551,18 @@ class PaymentService
             'deposit_amount' => $depositAmount,
             'new_balance' => $wallet->fresh()->balance,
         ]);
+
+        // 🔔 (2026-10-16) แจ้งผู้ใช้ว่าเงินเข้าแล้ว (กล่องแจ้งเตือน + push มือถือ) แบบเดียวกับ Stripe/PayPal
+        //    completePayment ล็อกแถว + คืนก่อนถ้า completed แล้ว → แจ้งครั้งเดียวต่อบิล
+        //    push เข้าคิวหลัง commit · แจ้งไม่ได้ห้ามทำให้การเติมเงินล้ม
+        try {
+            app(\App\Services\NotificationService::class)->notifyDeposit($user, $depositAmount);
+        } catch (\Throwable $e) {
+            Log::warning('completeWalletTopup: notify failed', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

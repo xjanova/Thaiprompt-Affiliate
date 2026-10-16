@@ -542,11 +542,8 @@ class ServiceBookingService
             $booking->acceptByProvider($notes);
 
             // ส่ง notification ให้ลูกค้า
-            $this->notificationService->sendInAppNotification(
-                $booking,
-                $booking->user,
-                'booking_accepted'
-            );
+            // 🔔 แจ้งลูกค้า + push (เดิมเรียก sendInAppNotification ที่เป็น protected + รับ ServiceProvider → Error ทุกครั้ง)
+            $this->notificationService->pushToCustomer($booking, 'booking_accepted');
 
             return true;
         });
@@ -567,11 +564,8 @@ class ServiceBookingService
             }
 
             // ส่ง notification ให้ลูกค้า
-            $this->notificationService->sendInAppNotification(
-                $booking,
-                $booking->user,
-                'booking_rejected'
-            );
+            // 🔔 แจ้งลูกค้า + push (เดิมเรียก sendInAppNotification ที่เป็น protected + รับ ServiceProvider → Error ทุกครั้ง)
+            $this->notificationService->pushToCustomer($booking, 'booking_rejected');
 
             // TODO: หา provider ใหม่อัตโนมัติ
             // $this->assignProvider($booking);
@@ -589,11 +583,8 @@ class ServiceBookingService
             $booking->startJourney();
 
             // ส่ง notification
-            $this->notificationService->sendInAppNotification(
-                $booking,
-                $booking->user,
-                'provider_on_way'
-            );
+            // 🔔 แจ้งลูกค้า + push (เดิมเรียก sendInAppNotification ที่เป็น protected + รับ ServiceProvider → Error ทุกครั้ง)
+            $this->notificationService->pushToCustomer($booking, 'provider_on_way');
 
             return true;
         });
@@ -636,11 +627,8 @@ class ServiceBookingService
             }
 
             // ส่ง notification ให้ลูกค้า
-            $this->notificationService->sendInAppNotification(
-                $booking,
-                $booking->user,
-                'service_completed'
-            );
+            // 🔔 แจ้งลูกค้า + push (เดิมเรียก sendInAppNotification ที่เป็น protected + รับ ServiceProvider → Error ทุกครั้ง)
+            $this->notificationService->pushToCustomer($booking, 'service_completed');
 
             // Log ผลลัพธ์
             Log::info('Service completed and commissions processed', [
@@ -686,7 +674,26 @@ class ServiceBookingService
 
         $booking->refresh();
 
+        // 🔔 แจ้งอีกฝ่ายหลังยกเลิกสำเร็จ (นอกธุรกรรม — ส่งไม่ได้ต้องไม่ย้อนการคืนเงิน)
+        $this->notifyCancellation($booking, $cancelledBy);
+
         return $result;
+    }
+
+    /**
+     * 🔔 แจ้งการยกเลิกการจอง: ลูกค้ายกเลิก → แจ้งผู้ให้บริการ (ถ้ามอบงานแล้ว) · คนอื่นยกเลิก → แจ้งลูกค้า
+     */
+    public function notifyCancellation(ServiceBooking $booking, string $cancelledBy): void
+    {
+        if (in_array($cancelledBy, ['customer', 'user'], true)) {
+            if ($booking->provider) {
+                $this->notificationService->pushToProvider($booking, $booking->provider, 'booking_cancelled');
+            }
+
+            return;
+        }
+
+        $this->notificationService->pushToCustomer($booking, 'booking_cancelled');
     }
 
     /**

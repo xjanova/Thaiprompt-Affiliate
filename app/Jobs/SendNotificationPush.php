@@ -92,7 +92,9 @@ class SendNotificationPush implements ShouldQueue
     public static function shouldDispatch(Notification $notification): bool
     {
         // broadcast ถึงทุกคน → ใช้ระบบ push campaign ของแอดมิน (MobilePushNotification) แทน
-        if ($notification->is_broadcast) {
+        // 🔔 (2026-10-16) ยกเว้นแอดมินเลือกผู้ใช้เอง (data.targeted) → ส่งรายคนผ่านสะพานนี้
+        $data = is_array($notification->data) ? $notification->data : [];
+        if ($notification->is_broadcast && empty($data['targeted'])) {
             return false;
         }
 

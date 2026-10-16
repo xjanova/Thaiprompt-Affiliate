@@ -34,6 +34,9 @@ class ServiceBookingNotificationService
         // 2. In-App Notification
         $results['in_app'] = $this->sendInAppNotification($booking, $provider, 'new_booking');
 
+        // 3. 🔔 push เข้ามือถือผู้ให้บริการ (ผ่าน NotificationService → SendNotificationPush)
+        $results['push'] = $this->pushToProvider($booking, $provider, 'new_booking');
+
         // 3. Email (ถ้าต้องการ)
         if ($provider->email_notifications ?? false) {
             $results['email'] = $this->sendEmailNotification($booking, $provider, 'new_booking');
@@ -332,6 +335,111 @@ class ServiceBookingNotificationService
             'channel' => 'sms',
             'notification_id' => $notification->id,
         ];
+    }
+
+    /**
+     * 🔔 (2026-10-16) แจ้งเตือน + push เข้ามือถือ "ลูกค้า" ตามสถานะการจอง
+     *
+     * ผ่าน NotificationService::create เท่านั้น (ทางเดียวที่ push ออก) · ❌ ไม่ใช้ LINE push (โควต้า 300/เดือน)
+     * ส่งไม่ได้ต้องไม่ทำให้การจอง/การคืนเงินล้ม → กลืน error แล้ว log
+     *
+     * @param  string  $event  booking_accepted | booking_rejected | provider_on_way | service_completed | booking_cancelled
+     */
+    public function pushToCustomer(ServiceBooking $booking, string $event): bool
+    {
+        $user = $booking->user;
+        if (! $user) {
+            return false;
+        }
+
+        $number = $booking->booking_number;
+        $serviceName = $booking->service->name ?? 'บริการ';
+        $providerName = $booking->provider->name ?? 'ผู้ให้บริการ';
+
+        [$title, $message, $priority] = match ($event) {
+            'booking_accepted' => ['✅ ผู้ให้บริการรับงานแล้ว', "{$providerName} รับงาน {$serviceName} แล้ว · เลขที่จอง {$number}", 'high'],
+            'booking_rejected' => ['ผู้ให้บริการไม่สะดวกรับงาน', "การจอง {$number} กำลังหาผู้ให้บริการใหม่ให้ หรือยกเลิกได้ในแอป", 'high'],
+            'provider_on_way' => ['🚗 ผู้ให้บริการกำลังเดินทาง', "{$providerName} กำลังไปหาคุณ · เลขที่จอง {$number}", 'high'],
+            'service_completed' => ['✨ บริการเสร็จสิ้น', "ขอบคุณที่ใช้บริการ {$serviceName} · ให้คะแนนผู้ให้บริการได้ในแอป", 'normal'],
+            'booking_cancelled' => ['❌ การจองถูกยกเลิก', $booking->payment_status === 'refunded'
+                ? "การจอง {$number} ถูกยกเลิก · คืนเงินเข้ากระเป๋าแล้ว"
+                : "การจอง {$number} ถูกยกเลิก", 'high'],
+            default => ['แจ้งเตือนการจองบริการ', "เลขที่จอง {$number}", 'normal'],
+        };
+
+        return $this->pushTo($user, 'service_booking_'.$event, $title, $message, $priority, $booking, 'user.bookings.show');
+    }
+
+    /**
+     * 🔔 (2026-10-16) แจ้งเตือน + push เข้ามือถือ "ผู้ให้บริการ"
+     *
+     * @param  string  $event  new_booking | booking_cancelled
+     */
+    public function pushToProvider(ServiceBooking $booking, ServiceProvider $provider, string $event): bool
+    {
+        $user = $provider->user;
+        if (! $user) {
+            return false;
+        }
+
+        $number = $booking->booking_number;
+        $serviceName = $booking->service->name ?? 'บริการ';
+
+        [$title, $message, $priority] = match ($event) {
+            'new_booking' => ['🔔 มีงานจองใหม่!', "{$serviceName} · ".number_format((float) $booking->total_amount, 0).' บาท · กดรับงานในแอป', 'urgent'],
+            'booking_cancelled' => ['❌ ลูกค้ายกเลิกการจอง', "การจอง {$number} ({$serviceName}) ถูกยกเลิกแล้ว", 'high'],
+            default => ['แจ้งเตือนงานบริการ', "เลขที่จอง {$number}", 'normal'],
+        };
+
+        return $this->pushTo($user, 'service_booking_provider_'.$event, $title, $message, $priority, $booking, 'provider.bookings.show');
+    }
+
+    /**
+     * สร้างแจ้งเตือนในระบบ (→ กล่องแจ้งเตือนแอป + push) แบบไม่ทำให้ธุรกรรมต้นทางล้ม
+     */
+    protected function pushTo(
+        \App\Models\User $user,
+        string $type,
+        string $title,
+        string $message,
+        string $priority,
+        ServiceBooking $booking,
+        string $routeName
+    ): bool {
+        try {
+            $url = null;
+            try {
+                $url = route($routeName, $booking->id);
+            } catch (\Throwable) {
+                // ไม่มี route → แจ้งเตือนแบบไม่มีลิงก์
+            }
+
+            app(NotificationService::class)->create(
+                $user,
+                $type,
+                $title,
+                $message,
+                [
+                    'booking_id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'channel' => in_array($priority, ['high', 'urgent'], true) ? 'important' : 'orders',
+                ],
+                $url,
+                'ดูการจอง',
+                $priority
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('ServiceBooking push failed', [
+                'booking_id' => $booking->id,
+                'user_id' => $user->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

@@ -745,39 +745,112 @@ class NotificationService
         $scheduledAt = null
     ): int {
         try {
-            $users = $userIds
-                ? User::whereIn('id', $userIds)->get()
-                : User::all();
-
             $isScheduled = $scheduledAt && \Carbon\Carbon::parse($scheduledAt)->isFuture();
 
+            // 🔔 (2026-10-16) เลือกผู้ใช้เอง → ติดธง targeted ให้สะพาน SendNotificationPush ส่งเข้ามือถือรายคน
+            //    (broadcast ถึงทุกคน ยังถูกข้ามในสะพาน — ส่งเป็น push campaign ก้อนเดียวด้านล่างแทน)
+            $targeted = $userIds !== null;
+            if ($targeted) {
+                $data['targeted'] = true;
+            }
+
+            $query = $targeted ? User::whereIn('id', $userIds) : User::query();
+
             $count = 0;
-            foreach ($users as $user) {
-                Notification::create([
-                    'user_id' => $user->id,
-                    'type' => $type,
-                    'title' => $title,
-                    'message' => $message,
-                    'data' => $data,
-                    'action_url' => $actionUrl,
-                    'action_text' => $actionText,
-                    'priority' => $priority,
-                    'is_important' => $isImportant,
-                    'show_immediately' => $showImmediately,
-                    'is_broadcast' => true,
-                    'icon' => $icon ?? $this->getDefaultIcon($type),
-                    'color' => $color ?? $this->getDefaultColor($type),
-                    'scheduled_at' => $scheduledAt,
-                    'is_scheduled' => $isScheduled,
-                    'is_sent' => ! $isScheduled,
-                ]);
-                $count++;
+            // chunkById → ผู้ใช้หลักหมื่นไม่โหลดเข้าหน่วยความจำทีเดียว
+            $query->select('id')->chunkById(500, function ($users) use (
+                $type, $title, $message, $data, $actionUrl, $actionText, $priority, $isImportant,
+                $showImmediately, $icon, $color, $scheduledAt, $isScheduled, $targeted, &$count
+            ) {
+                foreach ($users as $user) {
+                    $notification = Notification::create([
+                        'user_id' => $user->id,
+                        'type' => $type,
+                        'title' => $title,
+                        'message' => $message,
+                        'data' => $data,
+                        'action_url' => $actionUrl,
+                        'action_text' => $actionText,
+                        'priority' => $priority,
+                        'is_important' => $isImportant,
+                        'show_immediately' => $showImmediately,
+                        'is_broadcast' => true,
+                        'icon' => $icon ?? $this->getDefaultIcon($type),
+                        'color' => $color ?? $this->getDefaultColor($type),
+                        'scheduled_at' => $scheduledAt,
+                        'is_scheduled' => $isScheduled,
+                        'is_sent' => ! $isScheduled,
+                    ]);
+                    $count++;
+
+                    // ตั้งเวลา → notifications:send-scheduled ส่งต่อให้ตอนถึงเวลา
+                    if ($targeted && ! $isScheduled) {
+                        SendNotificationPush::dispatchFor($notification);
+                    }
+                }
+            });
+
+            if (! $targeted && $count > 0) {
+                $this->queueBroadcastPush($type, $title, $message, $actionUrl, $priority, $isScheduled ? $scheduledAt : null);
             }
 
             return $count;
         } catch (Exception $e) {
             Log::error('Failed to broadcast notification: '.$e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * 🔔 (2026-10-16) ประกาศถึง "ทุกคน" → push ก้อนเดียวถึงทุกเครื่องที่ลงทะเบียน (mobile_push_notifications)
+     *
+     * ไม่ยิงรายคน (ผู้ใช้หลักหมื่น = งานหลักหมื่นในคิว) · ExpoPushService แบ่งก้อนละ 100 เอง
+     * ตั้งเวลา → แถว scheduled ให้ mobile-push:send-scheduled ส่ง · ส่งทันที → เข้าคิว SendMobilePushCampaign
+     * priority low / เรื่องสายงาน-คอมมิชชั่น (เว็บเท่านั้น) → ไม่ push · พลาดห้ามทำให้ประกาศล้ม
+     */
+    protected function queueBroadcastPush(
+        string $type,
+        string $title,
+        string $message,
+        ?string $actionUrl,
+        string $priority,
+        $scheduledAt = null
+    ): ?\App\Models\MobilePushNotification {
+        if (! in_array($priority, SendNotificationPush::PUSH_PRIORITIES, true) || SendNotificationPush::isWebOnlyType($type)) {
+            return null;
+        }
+
+        try {
+            $campaign = \App\Models\MobilePushNotification::create([
+                'title' => mb_substr($title, 0, 100),
+                'body' => $message,
+                'data' => [
+                    'action_url' => $actionUrl,
+                    'type' => $type,
+                    'channel' => SendNotificationPush::channelFor($type, $priority),
+                    'source' => 'admin_notifications',
+                ],
+                'target_platform' => 'all',
+                'scheduled_at' => $scheduledAt,
+                'status' => $scheduledAt ? 'scheduled' : 'pending',
+                'created_by' => auth()->id(),
+            ]);
+
+            if (! $scheduledAt) {
+                if (config('queue.default') === 'sync') {
+                    app()->runningInConsole()
+                        ? \App\Jobs\SendMobilePushCampaign::dispatchSync($campaign->id)
+                        : \App\Jobs\SendMobilePushCampaign::dispatchAfterResponse($campaign->id);
+                } else {
+                    \App\Jobs\SendMobilePushCampaign::dispatch($campaign->id)->onQueue('default')->afterCommit();
+                }
+            }
+
+            return $campaign;
+        } catch (\Throwable $e) {
+            Log::warning('broadcast: queue push campaign failed', ['error' => $e->getMessage()]);
+
+            return null;
         }
     }
 
