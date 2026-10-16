@@ -3,76 +3,56 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\AppDownloadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Serves the latest published release for the app's auto-update flow.
+ * เส้นเช็คอัปเดตของแอป Flutter รุ่นเก่า (app.thaiprompt.thaipromptapp ≤ 1.0.24)
  *
- * Endpoint:
- *   GET /api/v1/app/latest-version?platform=android&channel=stable
+ * GET /api/v1/app/latest-version?platform=android
  *
- * Response:
- *   {
- *     "data": {
- *       "latest_version":        "1.0.3",
- *       "latest_build":          10003,
- *       "min_supported_version": "1.0.0",
- *       "release_notes_md":      "## Thaiprompt 1.0.3 …",
- *       "apk_url":               "https://github.com/xjanova/thaipromptapp/releases/download/v1.0.3/app-release.apk",
- *       "apk_size_bytes":        18456320,
- *       "play_store_url":        "https://play.google.com/store/apps/details?id=app.thaiprompt.thaipromptapp",
- *       "published_at":          "2026-04-19T10:30:00Z"
- *     }
- *   }
+ * 🚫 กฎ owner: ลูกค้าห้ามเห็น GitHub — อัปเดตต้องผ่านระบบของเว็บเท่านั้น (2026-10-16)
+ * เดิมอ่านตาราง app_releases ซึ่งเก็บลิงก์ GitHub Releases → แอปเก่าโหลด APK จาก GitHub ตรงๆ
+ * ตอนนี้ตอบจาก APK ที่ปล่อยบนเว็บ (app:publish-apk · ตัวเดียวกับ /api/v1/app/update และปุ่ม /app/download)
+ * แอปเก่ากดอัปเดต = ได้แอป Thai Prompt APP ตัวปัจจุบันจากเซิร์ฟเวอร์เรา
  *
- * Cache: 60s (trade-off: upgrade propagation vs DB load).
+ * ยังไม่มีไฟล์บนเว็บ / ปิดสวิตช์หลังบ้าน / iOS = 404 (แอปเก่าถือว่าไม่มีอัปเดต) — ไม่ถอยไปใช้ลิงก์ในตาราง
+ *
+ * @example GET /api/v1/app/latest-version?platform=android
+ * // {"data":{"latest_version":"3.391.0","latest_build":48,"apk_url":"https://main.thaiprompt.online/storage/app-downloads/ThaiPrompt-APP-3.391.0.apk?h=…",...}}
  */
 class AppReleaseApiController extends Controller
 {
-    public function latest(Request $request): JsonResponse
+    /**
+     * เวอร์ชันล่าสุดสำหรับแอปเก่า — ไม่บังคับอัปเดต (min_supported_version ต่ำกว่าแอปเก่าทุกตัว)
+     */
+    public function latest(Request $request, AppDownloadService $downloads): JsonResponse
     {
-        $platform = $request->query('platform', 'android');
-        $channel = $request->query('channel', 'stable');
+        $platform = strtolower(trim((string) $request->query('platform', $request->header('X-Device-Platform', 'android'))));
+        $apk = $platform === 'android' ? $downloads->available() : null;
 
-        // Accept X-Device-Platform header as fallback (client sends this
-        // on every request via ApiClient interceptor).
-        $platform = in_array($platform, ['android', 'ios'])
-            ? $platform
-            : ($request->header('X-Device-Platform', 'android'));
-
-        $cacheKey = "app_release:{$platform}:{$channel}";
-        $payload = Cache::remember($cacheKey, 60, function () use ($platform, $channel) {
-            return DB::table('app_releases')
-                ->where('platform', $platform)
-                ->where('channel', $channel)
-                ->where('published', true)
-                ->whereNotNull('published_at')
-                ->orderByDesc('build_number')
-                ->first();
-        });
-
-        if (! $payload) {
+        if ($apk === null || $apk['version'] === '') {
             return response()->json([
                 'data' => null,
                 'message' => 'ยังไม่มีการเผยแพร่สำหรับแพลตฟอร์มนี้',
-            ], 404);
+            ], 404)->header('Cache-Control', 'no-store');
         }
+
+        $notes = array_map(fn (string $line) => '- '.$line, $apk['notes']);
 
         return response()->json([
             'data' => [
-                'latest_version'        => $payload->version,
-                'latest_build'          => (int) $payload->build_number,
-                'min_supported_version' => $payload->min_supported_version ?? $payload->version,
-                'release_notes_md'      => $payload->release_notes_md ?? '',
-                'apk_url'               => $payload->apk_url,
-                'apk_size_bytes'        => $payload->apk_size_bytes ? (int) $payload->apk_size_bytes : null,
-                'apk_sha256'            => $payload->apk_sha256,
-                'play_store_url'        => $payload->play_store_url,
-                'published_at'          => $payload->published_at,
+                'latest_version' => $apk['version'],
+                'latest_build' => $apk['version_code'],
+                'min_supported_version' => '1.0.0',
+                'release_notes_md' => trim("## Thai Prompt APP {$apk['version']}\n\n".implode("\n", $notes)),
+                'apk_url' => $downloads->fileUrl($apk),
+                'apk_size_bytes' => $apk['size'] > 0 ? $apk['size'] : null,
+                'apk_sha256' => $apk['sha256'] !== '' ? $apk['sha256'] : null,
+                'play_store_url' => $downloads->playStoreUrl(),
+                'published_at' => $apk['published_at'] !== '' ? $apk['published_at'] : null,
             ],
-        ]);
+        ])->header('Cache-Control', 'no-store');
     }
 }
