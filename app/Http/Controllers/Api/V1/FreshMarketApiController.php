@@ -11,6 +11,10 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\Setting;
 use App\Services\FreshMarketService;
+use App\Services\TpixPay\TpixCheckoutService;
+use App\Services\TpixPay\TpixPayException;
+use App\Services\TpixPay\TpixPaymentPresenter;
+use App\Services\TpixPay\TpixPaySettings;
 use App\Services\TpixPay\TpixPriceService;
 use App\Support\FreshMarketValidationText;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -49,6 +53,9 @@ class FreshMarketApiController extends Controller
 
         return $this->ok([
             'payment_methods' => $this->marketService->availablePaymentMethods(),
+            // 🪙 จ่ายด้วยเหรียญ TPIX (แยกจาก payment_methods — แอปรุ่นเก่าไม่รู้จักค่าใหม่ในรายการ)
+            //    ต้องเปิดกระเป๋าเงินด้วย เพราะเหรียญเข้ากระเป๋าก่อนแล้วจ่ายด้วยเส้นกระเป๋าเงิน
+            'tpix' => $this->tpixCheckoutInfo(),
             'rider_enabled' => (bool) $settings->rider_enabled,
             'cashback_enabled' => (bool) $settings->cashback_enabled,
             'rider_max_distance_km' => (float) Setting::get('rider.max_distance_km', 15),
@@ -58,6 +65,23 @@ class FreshMarketApiController extends Controller
             'max_search_radius_km' => (float) $settings->max_search_radius_km,
             'brand_name' => $settings->brand_name,
         ]);
+    }
+
+    /**
+     * สถานะการรับเหรียญ TPIX ของตลาดสด + เพดานต่อรายการ (แอปซ่อนตัวเลือกเมื่อยอดเกิน — เซิร์ฟเวอร์ตรวจซ้ำเสมอ)
+     *
+     * @return array{enabled: bool, max_per_payment_thb: float|null}
+     */
+    protected function tpixCheckoutInfo(): array
+    {
+        $settings = app(TpixPaySettings::class);
+        $enabled = $settings->paymentsEnabled() && in_array('wallet', $this->marketService->availablePaymentMethods(), true);
+        $max = $settings->maxPerPaymentThb();
+
+        return [
+            'enabled' => $enabled,
+            'max_per_payment_thb' => $max > 0 ? round($max, 2) : null,
+        ];
     }
 
     /**
@@ -402,7 +426,8 @@ class FreshMarketApiController extends Controller
             'delivery_notes' => 'nullable|string|max:500',
             'buyer_latitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-90,90',
             'buyer_longitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-180,180',
-            'payment_method' => 'required|in:wallet,cod,escrow',
+            // 🪙 tpix = จ่ายด้วยเหรียญ TPIX: ได้ใบเสนอยอด (ก้อน tpix) ยังไม่มีออเดอร์ — ได้เหรียญแล้วระบบสั่งด้วยกระเป๋าเงินให้
+            'payment_method' => 'required|in:wallet,cod,escrow,tpix',
             'preferred_rider_id' => 'nullable|integer|min:1', // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์คนโปรด
         ];
 
@@ -451,6 +476,10 @@ class FreshMarketApiController extends Controller
         return $this->handle(function () use ($request, $data, $mode, $orderData) {
             $buyer = $request->user();
 
+            if ($data['payment_method'] === 'tpix') {
+                return $this->startTpixCheckout($buyer, $data, $mode, $orderData);
+            }
+
             if ($mode === 'single') {
                 $listing = FreshMarketListing::with('seller')->find($data['listing_id']);
 
@@ -484,6 +513,60 @@ class FreshMarketApiController extends Controller
 
             return $this->ok($order->toApiArray('buyer'), 'สั่งซื้อสำเร็จ', 201);
         });
+    }
+
+    /**
+     * 🪙 สั่งซื้อด้วยเหรียญ TPIX → ออกใบเสนอยอด (ตรวจด่านเดียวกับการสั่งจริงก่อนให้โอน)
+     *
+     * ตอบ: data {payment_method: 'tpix', payment_status: 'pending', order: null, tpix: {...ใบเสนอยอด}}
+     * แอปเปิดหน้าจ่าย /tpix-pay/{reference} · ได้เหรียญแล้ว สถานะใบมี fresh_market_order_id ของออเดอร์ที่สั่งให้
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $orderData
+     */
+    protected function startTpixCheckout(\App\Models\User $buyer, array $data, string $mode, array $orderData): JsonResponse
+    {
+        $cartItemIds = [];
+
+        if ($mode === 'single') {
+            $listing = FreshMarketListing::find($data['listing_id']);
+            if (! $listing) {
+                return $this->error('LISTING_NOT_FOUND', 'ไม่พบสินค้า', 404);
+            }
+            $sellerId = (int) $listing->seller_id;
+            $items = [[
+                'listing_id' => (int) $listing->id,
+                'quantity' => (int) $data['quantity'],
+                'option_ids' => $data['option_ids'] ?? [],
+                'note' => $data['item_note'] ?? null,
+            ]];
+        } elseif ($mode === 'items') {
+            $firstListing = FreshMarketListing::find((int) $data['items'][0]['listing_id']);
+            if (! $firstListing) {
+                return $this->error('LISTING_NOT_FOUND', 'ไม่พบสินค้า', 404);
+            }
+            $sellerId = (int) $firstListing->seller_id;
+            if (! empty($data['seller_id']) && (int) $data['seller_id'] !== $sellerId) {
+                return $this->error('MIXED_SELLERS', 'สั่งได้ทีละร้าน กรุณาแยกออเดอร์ตามร้าน', 422);
+            }
+            $items = $data['items'];
+        } else {
+            $sellerId = (int) $data['seller_id'];
+            ['items' => $items, 'cart_item_ids' => $cartItemIds] = app(\App\Services\FreshMarketCartService::class)->checkoutLines($buyer, $sellerId);
+        }
+
+        try {
+            $quote = app(TpixCheckoutService::class)->quoteFreshMarket($buyer, $sellerId, $items, $orderData, $cartItemIds);
+        } catch (TpixPayException $e) {
+            return $this->error($e->errorCode, $e->getMessage(), 422);
+        }
+
+        return $this->ok([
+            'payment_method' => 'tpix',
+            'payment_status' => 'pending',
+            'order' => null,
+            'tpix' => TpixPaymentPresenter::present($quote),
+        ], 'ออกยอดชำระด้วยเหรียญ TPIX แล้ว โอนเหรียญเพื่อยืนยันคำสั่งซื้อ');
     }
 
     /**

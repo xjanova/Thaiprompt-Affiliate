@@ -40,6 +40,24 @@ class TpixPayment extends Model
 
     public const PURPOSE_WALLET_TOPUP = 'wallet_topup';
 
+    /**
+     * จ่ายตะกร้าตลาดสดล่วงหน้า: ได้เหรียญ → เติมบาทเข้ากระเป๋า → สั่งซื้อผ่านเส้นกระเป๋าเงินเดิม (escrow ฯลฯ)
+     * meta.checkout = ข้อมูลสั่งซื้อที่ตรวจแล้ว · meta.fulfilment = pending|placed|failed + ผลลัพธ์
+     */
+    public const PURPOSE_FRESH_MARKET = 'fresh_market';
+
+    /** จ่ายการจองบริการ: ได้เหรียญ → เติมบาทเข้ากระเป๋า → ชำระการจองจากกระเป๋า (payable_id = service_bookings.id) */
+    public const PURPOSE_SERVICE_BOOKING = 'service_booking';
+
+    /** ใบที่ส่งมอบด้วย "เติมกระเป๋าแล้วสั่ง/จ่ายต่อ" (ผลการสั่งเก็บใน meta.fulfilment) */
+    public const CHECKOUT_PURPOSES = [self::PURPOSE_FRESH_MARKET, self::PURPOSE_SERVICE_BOOKING];
+
+    public const FULFIL_PENDING = 'pending';
+
+    public const FULFIL_PLACED = 'placed';
+
+    public const FULFIL_FAILED = 'failed';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_CONFIRMING = 'confirming';
@@ -120,6 +138,20 @@ class TpixPayment extends Model
     public function isSettled(): bool
     {
         return in_array($this->status, self::SETTLED_STATUSES, true);
+    }
+
+    /** ใบจ่ายตลาดสด/จองบริการ (เติมกระเป๋าแล้วสั่งต่อ) */
+    public function isCheckoutPurpose(): bool
+    {
+        return in_array($this->purpose, self::CHECKOUT_PURPOSES, true);
+    }
+
+    /** สถานะการสั่งซื้อ/ชำระต่อหลังได้เหรียญ (null = ไม่ใช่ใบแบบนี้ หรือยังไม่ได้เงิน) */
+    public function fulfilmentStatus(): ?string
+    {
+        $status = $this->meta['fulfilment']['status'] ?? null;
+
+        return is_string($status) ? $status : null;
     }
 
     public function isOpen(): bool

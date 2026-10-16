@@ -24,14 +24,15 @@ class TpixPayScan extends Command
         $stats = $payments->scan();
 
         $this->line(sprintf(
-            'TPIX pay scan: price=%s confirmed=%d matched=%d expired=%d released=%d duplicate=%d cancelled_orders=%d',
+            'TPIX pay scan: price=%s confirmed=%d matched=%d expired=%d released=%d duplicate=%d cancelled_orders=%d fulfilled=%d',
             $stats['snapshot'] ? 'ok' : 'unavailable',
             $stats['confirmed'],
             $stats['matched'],
             $stats['expired'],
             $stats['released'],
             $stats['stray'],
-            $stats['cancelled_orders']
+            $stats['cancelled_orders'],
+            $stats['fulfilled'] ?? 0
         ));
 
         return self::SUCCESS;

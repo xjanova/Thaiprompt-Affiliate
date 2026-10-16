@@ -4,6 +4,8 @@
  * - รับของ: ไรเดอร์ส่ง (ปักหมุดด้วย GPS / ที่อยู่ที่บันทึกไว้ / แตะแผนที่) หรือ นัดรับที่ร้าน
  * - ค่าส่งไรเดอร์: GET /cart/quote ทุกครั้งที่หมุดเปลี่ยน (หน่วง 500ms) · นอกระยะ → เสนอนัดรับแทน
  * - จ่าย: กระเป๋าเงิน / เก็บเงินปลายทาง (ตาม config ของระบบ)
+ *         · 🪙 เหรียญ TPIX (config.tpix.enabled + รู้ราคา) → ได้ใบเสนอยอด แล้วไปหน้า /tpix-pay/{reference}
+ *           ได้เหรียญแล้ว server เติมเข้ากระเป๋าแล้วสั่งด้วยกระเป๋าเงินให้ (escrow เหมือนจ่ายด้วยกระเป๋า)
  * - ไรเดอร์ส่ง: ต้องได้ค่าส่ง (quote ready + ส่งได้) ก่อนถึงสั่งได้ — คำนวณไม่สำเร็จ = ปุ่มกลายเป็น "คำนวณค่าส่งใหม่"
  *   (กันกล่องยืนยันตัดเงินแสดงยอดที่ยังไม่รวมค่าส่ง ขณะที่ server คิดค่าส่งเองแล้วตัดจริง)
  * - กันสั่งซ้ำ: ปุ่มล็อกระหว่างส่ง + server ล้างตะกร้าร้านนั้นในธุรกรรมเดียว (กดซ้ำ = CART_EMPTY)
@@ -56,6 +58,7 @@ import {
   getShop,
   getTaladsodConfig,
   placeFmOrderFromCart,
+  startFmTpixCheckout,
   type FmConfig,
   type FmDeliveryType,
   type FmOrder,
@@ -77,9 +80,13 @@ import type { PersonCard } from '@/services/api/handoverApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { guardKycRequired } from '@/services/ekyc/kycGate';
+import { estimateTpixTotal, formatTpix, rememberTpixPayment } from '@/services/api/tpixApi';
+import { useTpixSpot } from '@/stores/tpixPriceStore';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
+/** วิธีจ่ายบนหน้านี้ = วิธีของตลาดสด + เหรียญ TPIX (เส้นแยก: ได้ใบเสนอยอดก่อน) */
+type PayChoice = FmPaymentMethod | 'tpix';
 
 /** แปลงค่าส่งตลาดสด → รูปแบบที่ชิ้นส่วนหน้าชำระเงินใช้ */
 const toRiderView = (q: FmQuote): RiderQuoteView => ({
@@ -125,7 +132,7 @@ export default function TaladsodCheckoutScreen() {
   const [shop, setShop] = useState<FmShopDetail | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [deliveryType, setDeliveryType] = useState<FmDeliveryType>('rider');
-  const [payment, setPayment] = useState<FmPaymentMethod>('wallet');
+  const [payment, setPayment] = useState<PayChoice>('wallet');
   const [pin, setPin] = useState<Pin | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [addressText, setAddressText] = useState('');
@@ -320,6 +327,23 @@ export default function TaladsodCheckoutScreen() {
   const total = Math.round((subtotal + fee) * 100) / 100;
   const methods: FmPaymentMethod[] = config?.payment_methods.length ? config.payment_methods : ['wallet', 'cod'];
 
+  // 🪙 เหรียญ TPIX: server เปิดรับ + รู้ราคาสด · ยอดเกินเพดาน = ซ่อนตัวเลือก (server ตรวจซ้ำเสมอ)
+  const { spot: tpixSpot } = useTpixSpot(isAuthenticated);
+  const tpixMax = config?.tpix.max_per_payment_thb ?? null;
+  const tpixOverCap = tpixMax !== null && total > tpixMax;
+  const tpixOn = !!config?.tpix.enabled && !!tpixSpot;
+  const tpixEstimate = estimateTpixTotal(total, tpixSpot?.price_thb ?? null);
+  const tpixCaption = tpixOverCap
+    ? `จ่ายด้วยเหรียญได้ไม่เกิน ${formatBaht(tpixMax ?? 0)} ต่อรายการ`
+    : tpixEstimate !== null && tpixSpot
+      ? `≈ ${formatTpix(tpixEstimate)} TPIX · 1 TPIX = ${tpixSpot.price_thb_display}`
+      : 'โอนเหรียญบนเชน TPIX ระบบยืนยันให้อัตโนมัติ';
+
+  // ปิดรับ TPIX / ยอดเกินเพดานระหว่างอยู่หน้านี้ → กลับไปกระเป๋าเงิน
+  useEffect(() => {
+    if (payment === 'tpix' && config && (!config.tpix.enabled || tpixOverCap)) setPayment('wallet');
+  }, [payment, config, tpixOverCap]);
+
   // ---------- กู้ผลเมื่อไม่แน่ใจว่าสั่งสำเร็จ ----------
   const findPlacedOrder = async (startedAt: number): Promise<FmOrder | null> => {
     const res = await getFmOrders({ page: 1 });
@@ -346,7 +370,10 @@ export default function TaladsodCheckoutScreen() {
   const validate = (): string | null => {
     if (!shopCart || shopCart.lines_count === 0) return 'ตะกร้าของร้านนี้ว่างแล้ว';
     if (!shopCart.can_checkout) return shopCart.is_open ? 'มีรายการที่สั่งไม่ได้ กลับไปแก้ในตะกร้าก่อนนะ' : 'ร้านปิดอยู่ตอนนี้';
-    if (!methods.includes(payment)) return 'เลือกวิธีชำระเงินก่อนนะ';
+    if (payment === 'tpix') {
+      if (!tpixOn) return 'ตอนนี้ยังจ่ายด้วยเหรียญ TPIX ไม่ได้ เลือกวิธีอื่นก่อนนะ';
+      if (tpixOverCap) return `จ่ายด้วยเหรียญ TPIX ได้ไม่เกิน ${formatBaht(tpixMax ?? 0)} ต่อรายการ`;
+    } else if (!methods.includes(payment)) return 'เลือกวิธีชำระเงินก่อนนะ';
     if (payment === 'cod' && codBlockedReason) return codBlockedReason;
     if (deliveryType === 'rider') {
       if (!pin) return 'ปักหมุดจุดส่งก่อนนะ';
@@ -497,6 +524,33 @@ export default function TaladsodCheckoutScreen() {
     attemptsRef.current += 1;
     const startedAt = Date.now();
     try {
+      // 🪙 เหรียญ TPIX: ออกใบเสนอยอด (ยังไม่มีออเดอร์ · ตะกร้ายังอยู่) → หน้าจ่าย TPIX
+      if (payment === 'tpix') {
+        const quoteRes = await startFmTpixCheckout({
+          seller_id: sellerId,
+          delivery_type: deliveryType,
+          delivery_address: deliveryType === 'rider' ? addressText.trim() : undefined,
+          buyer_latitude: deliveryType === 'rider' ? pin?.latitude : undefined,
+          buyer_longitude: deliveryType === 'rider' ? pin?.longitude : undefined,
+          delivery_notes: notes.trim() || undefined,
+          preferred_rider_id: lockRiderId ?? undefined,
+        });
+        if (!mountedRef.current) return;
+        if (quoteRes.success) {
+          rememberTpixPayment(quoteRes.data);
+          router.push(`/tpix-pay/${quoteRes.data.reference}?from=taladsod` as never);
+          return;
+        }
+        // ยังไม่มีออเดอร์/ไม่ตัดเงินแน่นอน (ได้แค่ใบเสนอยอด) → บอกเหตุผลตรง ๆ
+        if (quoteRes.code.startsWith('TPIX_') || quoteRes.status === 0 || quoteRes.status >= 500) {
+          resultHaptic('error');
+          Alert.alert('ออกยอดเหรียญ TPIX ไม่สำเร็จ', quoteRes.message);
+          return;
+        }
+        await handleFailure(quoteRes.code, quoteRes.message, quoteRes.status, startedAt, quoteRes.data);
+        return;
+      }
+
       const res = await placeFmOrderFromCart({
         seller_id: sellerId,
         delivery_type: deliveryType,
@@ -870,6 +924,25 @@ export default function TaladsodCheckoutScreen() {
                 );
               })}
             </View>
+            {/* 🪙 เหรียญ TPIX — แสดงเมื่อ server เปิดรับ + รู้ราคา · คำนวณยอดประมาณสดจากราคา DEX */}
+            {tpixOn && (
+              <View style={[styles.choiceRow, styles.gapTop]}>
+                <ChoiceTile
+                  icon="coins"
+                  title="เหรียญ TPIX"
+                  caption={tpixCaption}
+                  selected={payment === 'tpix'}
+                  disabled={tpixOverCap}
+                  onPress={() => !tpixOverCap && setPayment('tpix')}
+                  accessibilityLabel={`จ่ายด้วยเหรียญ TPIX ${tpixCaption}`}
+                />
+              </View>
+            )}
+            {payment === 'tpix' && (
+              <Notice tone="info" icon="coins" style={styles.gapTop}>
+                กดแล้วไปหน้าโอนเหรียญ (ยอดตรงทุกหลัก) ได้รับเหรียญแล้วระบบเติมเข้ากระเป๋าเงินและสั่งให้ทันที ถ้าสั่งไม่สำเร็จ (เช่น ของหมดระหว่างโอน) ยอดจะอยู่ในกระเป๋าเงินของคุณ
+              </Notice>
+            )}
             {!!codBlockedReason && methods.includes('cod') && (
               <Notice tone="info" icon="lock" style={styles.gapTop}>
                 {codBlockedReason}
@@ -938,7 +1011,7 @@ export default function TaladsodCheckoutScreen() {
             </View>
           </Card3D>
 
-          {deliveryType === 'rider' && payment === 'wallet' && <EscrowNotice style={styles.gapTop} />}
+          {deliveryType === 'rider' && (payment === 'wallet' || payment === 'tpix') && <EscrowNotice style={styles.gapTop} />}
 
           {!shopCart.can_checkout && (
             <Notice tone="warning" onPress={() => router.replace('/taladsod/cart' as never)} style={styles.gapTop}>
@@ -961,8 +1034,10 @@ export default function TaladsodCheckoutScreen() {
                 <Icon name={deliveryType === 'rider' ? 'moped' : 'shopping-bag-open'} size={14} color={colors.textMuted} />
                 <Text style={[typography.caption, { color: colors.textMuted }]}>{deliveryType === 'rider' ? 'ไรเดอร์ส่ง' : 'นัดรับ'}</Text>
                 <View style={[styles.metaDot, { backgroundColor: colors.textFaint }]} />
-                <Icon name={payment === 'wallet' ? 'wallet' : 'money'} size={14} color={colors.textMuted} />
-                <Text style={[typography.caption, { color: colors.textMuted }]}>{payment === 'wallet' ? 'กระเป๋าเงิน' : 'เงินสด'}</Text>
+                <Icon name={payment === 'wallet' ? 'wallet' : payment === 'tpix' ? 'coins' : 'money'} size={14} color={colors.textMuted} />
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  {payment === 'wallet' ? 'กระเป๋าเงิน' : payment === 'tpix' ? 'เหรียญ TPIX' : 'เงินสด'}
+                </Text>
               </View>
               {feePending && <Text style={[typography.micro, { color: colors.warning }]}>ยังไม่รวมค่าส่ง</Text>}
             </View>
@@ -973,7 +1048,15 @@ export default function TaladsodCheckoutScreen() {
             <Button3D title="คำนวณค่าส่งใหม่" icon="arrows-clockwise" size="lg" variant="secondary" fullWidth onPress={retryQuote} />
           ) : (
             <Button3D
-              title={placing ? 'กำลังสั่ง…' : quotePending ? 'กำลังคำนวณค่าส่ง…' : `ยืนยันสั่ง ${formatBaht(total)}`}
+              title={
+                placing
+                  ? 'กำลังสั่ง…'
+                  : quotePending
+                    ? 'กำลังคำนวณค่าส่ง…'
+                    : payment === 'tpix'
+                      ? `ไปจ่ายด้วย TPIX ${formatBaht(total)}`
+                      : `ยืนยันสั่ง ${formatBaht(total)}`
+              }
               icon="check-circle"
               size="lg"
               fullWidth

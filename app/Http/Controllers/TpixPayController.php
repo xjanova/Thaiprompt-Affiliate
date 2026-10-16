@@ -61,8 +61,17 @@ class TpixPayController extends Controller
                 });
         }
 
+        // ตลาดสด / จองบริการ: ลิงก์กลับไปสั่งใหม่เมื่อใบหมดเวลา (เฉพาะเจ้าของใบ)
+        $retryUrl = null;
+        if ($payment->isCheckoutPurpose() && auth()->id() === (int) $payment->user_id) {
+            $retryUrl = $payment->purpose === TpixPayment::PURPOSE_FRESH_MARKET
+                ? route('taladsod.checkout', (int) ($payment->meta['checkout']['seller_id'] ?? 0))
+                : route('user.bookings.show', (int) $payment->payable_id);
+        }
+
         return view('tpix-pay.show', [
             'payment' => $payment,
+            'retryUrl' => $retryUrl,
             'data' => TpixPaymentPresenter::present($payment),
             'order' => $order,
             'siblings' => $siblings,

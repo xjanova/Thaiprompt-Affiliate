@@ -747,10 +747,40 @@ class FreshMarketService
      * @param  array  $data  delivery_type, payment_method, default_payment_method, buyer_latitude, buyer_longitude,
      *                       delivery_address, delivery_notes, channel, apply_default_options (bool),
      *                       cart_item_ids (รายการตะกร้าที่ต้องลบเมื่อสั่งสำเร็จ — lock + ตรวจครบในธุรกรรมเดียวกัน)
+     * @param  float|null  $maxGrandTotal  ยอดสูงสุดที่ผู้ซื้อยอมจ่าย (สินค้า + ค่าส่ง) — เกิน = PRICE_CHANGED ไม่สร้างออเดอร์
+     *                                     (ใช้กับการจ่ายล่วงหน้าด้วยเหรียญ TPIX: ราคาขึ้นระหว่างโอน ต้องไม่หักเงินเดิมในกระเป๋าเพิ่ม)
+     *                                     ❗ ห้ามรับค่าจาก input ผู้ใช้ — โค้ดฝั่งเซิร์ฟเวอร์ส่งเองเท่านั้น
      *
      * @throws FreshMarketException
      */
-    public function createOrderFromItems(User $buyer, int $sellerId, array $items, array $data): FreshMarketOrder
+    public function createOrderFromItems(User $buyer, int $sellerId, array $items, array $data, ?float $maxGrandTotal = null): FreshMarketOrder
+    {
+        return $this->buildOrderFromItems($buyer, $sellerId, $items, $data, false, $maxGrandTotal);
+    }
+
+    /**
+     * คำนวณยอดของคำสั่งซื้อแบบเดียวกับตอนสั่งจริง โดยไม่สร้างออเดอร์ (ไม่ตัดสต็อก ไม่หักเงิน ไม่แจ้งร้าน)
+     *
+     * ผ่านด่านเดียวกันทั้งหมด: eKYC · ร้านเปิด · สต็อก · ตัวเลือก · ค่าส่งไรเดอร์ (จำกัดเพดานร้านแล้ว) · กติกา COD
+     * ใช้ออกยอดเหรียญ TPIX ก่อนจ่าย — ยอดที่ได้ตรงกับยอดที่ createOrderFromItems จะเก็บจริง
+     *
+     * @return array{total_amount: float, delivery_fee: float, grand_total: float, lines: int, seller_id: int, shop_name: string, payment_method: string}
+     *
+     * @throws FreshMarketException
+     */
+    public function previewOrderFromItems(User $buyer, int $sellerId, array $items, array $data): array
+    {
+        return $this->buildOrderFromItems($buyer, $sellerId, $items, $data, true, null);
+    }
+
+    /**
+     * ตัวสร้างออเดอร์จริง ($preview = true → คืนยอดก่อนเขียนข้อมูลใด ๆ)
+     *
+     * @return FreshMarketOrder|array<string, mixed>
+     *
+     * @throws FreshMarketException
+     */
+    protected function buildOrderFromItems(User $buyer, int $sellerId, array $items, array $data, bool $preview, ?float $maxGrandTotal): FreshMarketOrder|array
     {
         // 🪪 ผู้ซื้อต้องยืนยันตัวตน (AI eKYC ในแอป) ก่อนสั่งซื้อ — ด่านเดียวของทุกช่องทาง (เว็บ / ตะกร้า / API / LINE)
         //    ทุกผู้เรียกเมธอดนี้เป็นผู้ซื้อสั่งเอง (POS/แอดมินไม่ใช้เส้นนี้) จึงไม่มีทางข้าม
@@ -859,7 +889,8 @@ class FreshMarketService
 
         $order = DB::transaction(function () use (
             $buyer, $seller, $lines, $deliveryType, $paymentMethod,
-            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data, $riderPricing, $riderQuote
+            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data, $riderPricing, $riderQuote,
+            $preview, $maxGrandTotal
         ) {
             // ตะกร้า: lock + ตรวจว่ารายการยังอยู่ครบ (กดชำระซ้ำ/สองแท็บพร้อมกัน → ครั้งที่สองไม่มีของในตะกร้าแล้ว)
             $cartItemIds = FreshMarketCartItem::normalizeOptionIds($data['cart_item_ids'] ?? []);
@@ -988,6 +1019,29 @@ class FreshMarketService
                 ? (float) $distinctRates[0]
                 : ($totalAmount > 0 ? round($platformFee / $totalAmount * 100, 2) : 0.0);
             $sellerEarning = round($totalAmount - $platformFee, 2);
+            $grandTotal = round($totalAmount + $deliveryFee, 2);
+
+            // ดูยอดอย่างเดียว → คืนก่อนเขียนข้อมูลใด ๆ (ถึงตรงนี้มีแค่ล็อกแถว ธุรกรรมจบแบบไม่มีอะไรเปลี่ยน)
+            if ($preview) {
+                return [
+                    'total_amount' => $totalAmount,
+                    'delivery_fee' => round($deliveryFee, 2),
+                    'grand_total' => $grandTotal,
+                    'lines' => count($resolved),
+                    'seller_id' => (int) $seller->id,
+                    'shop_name' => (string) $seller->shop_name,
+                    'payment_method' => $paymentMethod,
+                ];
+            }
+
+            // ยอดจริงเกินยอดที่ผู้ซื้อจ่ายล่วงหน้าไว้ (ราคา/ค่าส่งเปลี่ยนระหว่างโอน) → ไม่สั่ง ไม่หักเงินส่วนเกินจากกระเป๋า
+            if ($maxGrandTotal !== null && $grandTotal > round($maxGrandTotal, 2)) {
+                throw FreshMarketException::make(
+                    'PRICE_CHANGED',
+                    'ยอดสั่งซื้อเปลี่ยนเป็น ฿'.number_format($grandTotal, 2).' (เดิม ฿'.number_format($maxGrandTotal, 2).') ระหว่างรอชำระ',
+                    409
+                );
+            }
 
             // คอลัมน์เดิม listing_id/quantity/unit_price = รายการแรก (หน้าเก่ายังแสดงได้) · total_amount = ยอดสินค้ารวมทุกรายการ
             $order = new FreshMarketOrder([
@@ -1086,6 +1140,10 @@ class FreshMarketService
 
             return $order;
         });
+
+        if ($preview) {
+            return $order; // ยอดที่คำนวณได้ (array)
+        }
 
         Log::info('FreshMarket: สร้าง order สำเร็จ', [
             'order_id' => $order->id,

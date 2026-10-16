@@ -2180,6 +2180,9 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
 // 🪙 (2026-10-13) รับชำระด้วยเหรียญ TPIX (เชน 4289) — ตั้งค่า + รายการชำระ + ตรวจซ้ำบนเชน
 Route::prefix('tpix-pay')->name('tpix-pay.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'index'])->name('index');
+    // 📊 (2026-10-16) รายงาน + กราฟ + ส่งออก CSV
+    Route::get('/reports', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'reports'])->name('reports');
+    Route::get('/export', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'export'])->middleware('throttle:10,1,admin-tpix-export')->name('export');
     Route::post('/settings', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'update'])->name('update');
     Route::post('/{id}/recheck', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'recheck'])->whereNumber('id')->middleware('throttle:30,1,admin-tpix-recheck')->name('recheck');
     Route::post('/{id}/approve', [\App\Http\Controllers\Admin\TpixPayAdminController::class, 'approve'])->whereNumber('id')->middleware('throttle:30,1,admin-tpix-approve')->name('approve');

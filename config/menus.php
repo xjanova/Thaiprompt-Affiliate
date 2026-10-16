@@ -386,6 +386,7 @@ return [
                 ['label' => 'ประวัติการถอน', 'route' => 'admin.withdrawals.index', 'icon' => 'fas fa-money-bill-wave'],
                 ['label' => 'ตั้งค่า Payment Gateway', 'route' => 'admin.payment-gateways.index', 'icon' => 'fas fa-credit-card'],
                 ['label' => 'รับชำระด้วยเหรียญ TPIX', 'route' => 'admin.tpix-pay.index', 'icon' => 'fas fa-coins', 'description' => 'กระเป๋ารับเงิน · ราคาจริงจาก TPIX DEX · รายการชำระบนเชน 4289'],
+                ['label' => 'รายงาน TPIX', 'route' => 'admin.tpix-pay.reports', 'icon' => 'fas fa-chart-line', 'description' => 'ยอดรับรายวัน · ราคา/สภาพคล่องพูล · ผู้จ่ายสูงสุด · ส่งออก CSV'],
                 ['label' => 'บัญชีธนาคาร', 'route' => 'admin.payment-bank-accounts.index', 'icon' => 'fas fa-university', 'description' => 'จัดการบัญชีธนาคารรับชำระเงิน + PromptPay + SMS Checker'],
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index', 'icon' => 'fas fa-cog'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index', 'icon' => 'fas fa-percentage'],
