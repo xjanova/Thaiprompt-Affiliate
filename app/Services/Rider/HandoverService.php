@@ -1405,7 +1405,9 @@ class HandoverService
      */
     private function afterCompleted(RiderJob $job, bool $notify = true): void
     {
-        $this->jobs->settleEarnings($job);
+        // ไรเดอร์ได้ข้อความเรื่องรายได้จากการส่งมอบอยู่แล้ว (ด้านล่าง "ส่งมอบสำเร็จ รายได้ ฿X เข้ากระเป๋าแล้ว"
+        // หรือ notifyResolved ตอนแอดมินปล่อย) → ปิดแจ้งเงินเข้าของ RiderEarningService ไม่ให้ push ซ้ำ
+        $this->jobs->settleEarnings($job, false);
 
         $source = $job->deliverableSource();
 

@@ -190,6 +190,9 @@ class StoreRating extends Model
                     'is_verified_purchase' => $orderId !== null,
                     'is_approved' => true,
                 ]);
+
+                // 🔔 ดาวร้านครั้งแรก → แจ้งเจ้าของร้าน (ส่งหลัง commit · แก้คะแนนเดิมไม่แจ้งซ้ำ)
+                app(\App\Services\SellerReviewNotifier::class)->storeRating($rating);
             }
 
             // อัพเดทคะแนนเฉลี่ยของร้าน
