@@ -70,6 +70,9 @@ import {
 } from '@/components/merchant';
 import { SkeletonBlock, SkeletonCard } from '@/components/merchant/SkeletonBlock';
 import { useTheme, palette, radii, spacing, typography, type Tone } from '@/theme';
+import { TrainingSeal } from '@/components/badges/TrustSeals';
+import { parseTrainingBadges } from '@/components/badges/trainingBadge';
+import { TrainingInviteCard } from '@/components/classroom/ClassroomKit';
 
 const POLL_MS = 30_000;
 const NOTICE_MS = 5_000;
@@ -88,6 +91,9 @@ const needsGpsFor = (p: OwnerPresence) => p.is_mobile || !p.has_fixed_location;
 export default function TaladsodSellerScreen() {
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // ตรา "ผ่านการอบรม" ของเจ้าของร้าน (โปรไฟล์ /me → training_badges.seller)
+  const rawTrainingBadges = useAuthStore((s) => s.user?.training_badges);
+  const sellerTraining = parseTrainingBadges(rawTrainingBadges)?.seller ?? null;
 
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
@@ -513,6 +519,9 @@ export default function TaladsodSellerScreen() {
                 </Text>
                 <View style={styles.pills}>
                   {dashboard.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
+                  {!!sellerTraining && (
+                    <TrainingSeal size={22} needsRefresh={sellerTraining.needs_refresh} label={sellerTraining.label} compact />
+                  )}
                   {!!dashboard.status_label && <Pill label={dashboard.status_label} tone="neutral" />}
                 </View>
               </View>
@@ -665,6 +674,9 @@ export default function TaladsodSellerScreen() {
                 </Text>
               </Card3D>
             </View>
+
+            {/* ---------- ชวนอบรมร้านค้า (ห้องเรียน · ไม่บังคับ — ผ่านแล้ว/ยังไม่มีหลักสูตร = ซ่อนเอง) ---------- */}
+            <TrainingInviteCard role="seller" style={styles.section} />
 
             {/* ---------- จัดการร้าน (ในแอป) ---------- */}
             <SectionHeader title="จัดการร้าน" subtitle="ลงขายสินค้าใหม่ ดูรายได้ ตั้งค่าร้าน" style={styles.section} />

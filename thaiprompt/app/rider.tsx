@@ -54,6 +54,7 @@ import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlo
 import { useRiderAvailability } from '@/components/rider/useRiderAvailability';
 import { purgeHandoverCache } from '@/components/rider/handoverCache';
 import { RiderRegisterForm } from '@/components/rider/RiderRegisterForm';
+import { TrainingInviteCard } from '@/components/classroom/ClassroomKit';
 
 /** ส่งตำแหน่งทุกกี่มิลลิวินาทีตอนออนไลน์และเปิดหน้านี้อยู่ (กัน server ปิดรับงานอัตโนมัติ) */
 const ONLINE_PING_MS = 45_000;
@@ -693,6 +694,9 @@ export default function RiderScreen() {
           </View>
         </>
       )}
+
+      {/* ---------- ชวนอบรมไรเดอร์ (ห้องเรียน · ไม่บังคับ — ผ่านแล้ว/ยังไม่มีหลักสูตร = ซ่อนเอง) ---------- */}
+      <TrainingInviteCard role="rider" style={styles.section} />
 
       {/* ---------- เมนูลัด ---------- */}
       <SectionHeader title="เมนูไรเดอร์" style={styles.section} />

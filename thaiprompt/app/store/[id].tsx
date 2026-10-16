@@ -27,6 +27,8 @@ import { getStore, getStoreProducts, type ShopProduct, type StoreDetail } from '
 import { Card3D, Chip, EmptyState, Icon, Pill, RoyalHeader, Screen, SectionHeader } from '@/components/ui';
 import { CartButton, MetaItem, ProductCard, SearchField, StoreLogo, formatThaiDateTime } from '@/components/shop';
 import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
+import { TrainingSeal } from '@/components/badges/TrustSeals';
+import { parseTrainingBadge } from '@/components/badges/trainingBadge';
 import { useTheme, shadowStyle, spacing, typography } from '@/theme';
 
 const PER_PAGE = 20;
@@ -53,6 +55,8 @@ export default function StoreDetailScreen() {
   const [store, setStore] = useState<StoreDetail | null>(null);
   // ป้ายทองเจ้าของร้าน (ยืนยันตัวตนด้วย eKYC แล้ว) — server ส่ง owner_verified มา ห้ามเดาเอง
   const ownerVerified = isVerifiedFlag(store?.owner_verified);
+  // ตรา "ผ่านการอบรม" ของร้าน (ห้องเรียน) — server รุ่นเก่าไม่ส่ง = null ไม่แสดง
+  const storeTraining = parseTrainingBadge(store?.training_badge, 'seller');
   const [storeError, setStoreError] = useState<{ message: string; notFound: boolean } | null>(null);
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [page, setPage] = useState(1);
@@ -219,14 +223,17 @@ export default function StoreDetailScreen() {
             {store?.is_verified && <Icon name="seal-check" size={20} color={colors.goldDeep} weight="fill" />}
           </View>
 
-          {(store?.is_verified || ownerVerified || store?.rider_delivery || store?.cod_available) && (
+          {(store?.is_verified || ownerVerified || !!storeTraining || store?.rider_delivery || store?.cod_available) && (
             <View style={styles.pills}>
               {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
               {ownerVerified && (
                 <View style={styles.ownerBadge} accessible accessibilityLabel="เจ้าของร้านยืนยันตัวตนแล้ว">
                   <VerifiedBadge size={15} />
-                  <Text style={[typography.caption, { color: colors.goldDeep }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
+                  <Text style={[typography.caption, { color: colors.success }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
                 </View>
+              )}
+              {!!storeTraining && (
+                <TrainingSeal size={15} withLabel label={storeTraining.label} needsRefresh={storeTraining.needs_refresh} />
               )}
               {store?.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="moped" />}
               {store?.cod_available && <Pill label="เก็บเงินปลายทาง" tone="info" icon="money" />}
