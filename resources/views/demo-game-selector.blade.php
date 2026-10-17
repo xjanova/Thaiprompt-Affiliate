@@ -562,7 +562,8 @@
             const canvas = document.getElementById('game-canvas');
             renderer = new THREE.WebGLRenderer({
                 canvas,
-                antialias: true,
+                // near 2x pixels the edges are already smooth: MSAA there only costs bandwidth
+                antialias: (window.devicePixelRatio || 1) < 1.75,
                 alpha: true
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -782,8 +783,21 @@
         }
 
         // ==================== ANIMATION ====================
+        // Frame pacing: on a 120/144 Hz screen draw every nth vsync so the scene runs near 60 fps
+        // (the speed its per-frame motion was tuned for) at well under half the GPU work.
+        function __paceSkip() {
+            const p = __paceSkip.s || (__paceSkip.s = { vsync: 1000 / 60, last: 0, count: 0 });
+            const now = performance.now();
+            const raw = now - p.last;
+            p.last = now;
+            if (raw > 2 && raw < 50) p.vsync = p.vsync * 0.95 + raw * 0.05;
+            if (++p.count < Math.max(1, Math.floor(1000 / p.vsync / 55))) return true;
+            p.count = 0;
+            return false;
+        }
         function animate() {
             requestAnimationFrame(animate);
+            if (__paceSkip()) return;
 
             // Smooth camera follow mouse
             targetX = mouseX * 0.001;
