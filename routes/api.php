@@ -515,12 +515,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/products', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'premiumStoreProducts']);
         });
 
-        // Academy (Mobile App) - ระบบการเรียนรู้
-        Route::prefix('mobile/academy')->group(function () {
-            Route::get('/courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourses']);
-            Route::get('/courses/{courseId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourseDetail']);
-            Route::get('/my-courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getMyCourses']);
-        });
+        // 🗑️ (2026-10-13) mobile/academy/* (ข้อมูลหลักสูตรปลอม) ลบไปพร้อม Academy เดิมแล้ว
 
         // Watch & Earn (Mobile App) - ดูคลิปได้เงิน
         Route::prefix('mobile/watch-earn')->group(function () {
@@ -999,6 +994,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         require __DIR__.'/api_v1/rider_r2_profile_photo.php';
         // 🪪 AI eKYC (2026-10-04) — ยืนยันตัวตนด้วยบัตรประชาชน + ใบหน้า
         require __DIR__.'/api_v1/ekyc.php';
+        // 🎓 ห้องเรียน (2026-10-13) — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ → ป้าย "ผ่านการอบรม"
+        require __DIR__.'/api_v1/classroom.php';
     });
 });
 

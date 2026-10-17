@@ -190,6 +190,8 @@ class ShopPresenter
             'cod_available' => $store->canUseRiderDelivery() && self::riderCodEnabled(),
             // 🪪 (2026-10-04) เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทองข้างชื่อร้านในแอป) — คนละเรื่องกับ is_verified ของร้าน
             'owner_verified' => \App\Services\Ekyc\EkycService::badge($store->user),
+            // 🎓 (2026-10-13) เจ้าของร้านผ่านการอบรมผู้ขาย (ตรากลมกรมท่าขอบทอง ข้างป้ายยืนยันตัวตน) — ยังไม่ผ่าน = null
+            'training_badge' => \App\Services\Classroom\TrainingBadge::for((int) $store->user_id, 'seller'),
         ];
     }
 
@@ -335,6 +337,8 @@ class ShopPresenter
                 'phone' => $rider->phone ?? null,
                 // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
                 'verified' => \App\Services\Ekyc\EkycService::badge($rider->user),
+                // 🎓 ป้าย "ผ่านการอบรมไรเดอร์" (ยังไม่ผ่าน = null)
+                'training_badge' => \App\Services\Classroom\TrainingBadge::for((int) $rider->user_id, 'rider'),
             ] : null,
             // หน้าติดตามไรเดอร์แบบสด (เว็บ /taladsod/track/{token}) — มีเฉพาะระหว่างงานยังไม่จบ
             'tracking_url' => $active ? $job->tracking_url : null,

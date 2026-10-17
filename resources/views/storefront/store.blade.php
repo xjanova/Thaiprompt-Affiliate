@@ -71,6 +71,8 @@
                             @if($store->is_verified)
                                 <span class="sf-badge sf-badge-deep"><i class="fas fa-circle-check"></i> ร้านยืนยันแล้ว</span>
                             @endif
+                            {{-- 🎓 เจ้าของร้านผ่านการอบรมผู้ขาย (ห้องเรียน) — ยังไม่ผ่าน = ไม่แสดง --}}
+                            <x-training-badge :user="(int) $store->user_id" role="seller" :size="20" label />
                         </div>
                         <div class="sf-meta" style="margin-top:6px; font-size:12.5px;">
                             @if(($store->rating_average ?? 0) > 0)

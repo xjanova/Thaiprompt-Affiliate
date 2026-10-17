@@ -29,6 +29,12 @@ export interface User {
   verified?: boolean;
   /** none | pending | approved | rejected */
   kyc_status?: string;
+  /**
+   * ตรา "ผ่านการอบรม" ต่อบทบาท (ห้องเรียน 2026-10-13) — ค่าดิบจาก /me
+   * { seller, rider, buyer } แต่ละตัว = { certified, role, label, needs_refresh } | null
+   * server รุ่นเก่าไม่ส่ง → ใช้ parseTrainingBadges() ก่อนแสดงเสมอ
+   */
+  training_badges?: unknown;
 }
 
 // =====================================================

@@ -124,12 +124,7 @@ class DatabaseSeeder extends Seeder
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
             SoftwareProductSeeder::class,       // ระบบผลิตภัณฑ์ซอฟต์แวร์ (MLM, E-commerce, Affiliate systems)
 
-            // 9. Academy & Learning Platform
-            AcademySeeder::class,               // ตั้งค่าระบบ Academy
-            LearningCategorySeeder::class,      // หมวดหมู่คอร์ส
-            LearningArticleSeeder::class,       // คอร์สและบทความ
-            ThaipromptCourseSeeder::class,      // 🎓 คอร์ส Thaiprompt Academy (เนื้อหาครบ + Quiz + Rewards)
-            QuizSeeder::class,                  // Quiz และคำถาม
+            // 9. (ว่าง) Academy เดิมถูกลบทั้งชุด 2026-10-13 — seeder ของมันลบตามแล้ว
 
             // 10. Accounting System
             ChartOfAccountsSeeder::class,       // ผังบัญชี (Chart of Accounts)
@@ -186,7 +181,6 @@ class DatabaseSeeder extends Seeder
 
             // 19. Menu Management System
             MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
-            AcademyMenuSeeder::class,           // 🎓 เมนู Academy สำหรับ User Dashboard
 
             // 20. Mobile App System
             MobileBannerSeeder::class,          // 📱 Mobile App Banners (3 ตัวอย่าง: Welcome, Promo, News)
@@ -207,6 +201,9 @@ class DatabaseSeeder extends Seeder
             AppConfigSeeder::class,                 // ⚙️ remote config ของแอป Flutter (กัน fallback cache-only)
             FeatureFlagSeeder::class,               // 🚩 feature flags — ทุกตัว default OFF
             FortuneCommentReplySeeder::class,       // 💬 คลังคำตอบคอมเมนต์ 100 ชุด (invite/blessing/thanks/emoji)
+
+            // 24. 🎓 ห้องเรียน (2026-10-13) — คอร์สผู้ขาย/ไรเดอร์/ผู้ซื้อ + คลังข้อสอบ (idempotent ไม่ทับที่แอดมินแก้)
+            ClassroomSeeder::class,
         ]);
 
         $this->command->info('');

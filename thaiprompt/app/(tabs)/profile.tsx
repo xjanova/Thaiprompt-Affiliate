@@ -32,6 +32,14 @@ import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { useEkycStore } from '@/stores/ekycStore';
 import { VerifiedBadge } from '@/components/people/VerifiedBadge';
+import { TrainingSeal } from '@/components/badges/TrustSeals';
+import {
+  TRAINING_ROLE_NAME,
+  certifiedRoles,
+  parseTrainingBadges,
+  pickProfileBadge,
+} from '@/components/badges/trainingBadge';
+import { TrainingInviteCard } from '@/components/classroom/ClassroomKit';
 import { uploadAvatar, changePassword } from '@/services/api';
 import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
 import { openWebsite } from '@/components/ui/WebsiteButton';
@@ -184,7 +192,7 @@ export default function ProfileScreen() {
   const kycStatus = useEkycStore((s) => s.status);
   const kycVerified = !!kycStatus?.verified;
   const kycSubtitle = kycVerified
-    ? 'ยืนยันแล้ว มีป้ายทองข้างชื่อ'
+    ? 'ยืนยันแล้ว มีตรายืนยันข้างชื่อ'
     : kycStatus?.kyc_status === 'pending'
       ? 'เจ้าหน้าที่กำลังตรวจสอบ'
       : 'ถ่ายบัตร + ใบหน้า ใช้เวลาราว 1 นาที';
@@ -193,6 +201,15 @@ export default function ProfileScreen() {
       if (isAuthenticated) useEkycStore.getState().loadStatus().catch(() => {});
     }, [isAuthenticated])
   );
+
+  // ตรา "ผ่านการอบรม" (ห้องเรียน) จาก /me → training_badges · server รุ่นเก่าไม่ส่ง = ไม่แสดง
+  const trainingBadges = parseTrainingBadges(user?.training_badges);
+  const profileTrainingBadge = pickProfileBadge(trainingBadges);
+  const passedRoles = certifiedRoles(trainingBadges);
+  const classroomSubtitle =
+    passedRoles.length > 0
+      ? `ผ่านแล้ว: ${passedRoles.map((r) => TRAINING_ROLE_NAME[r]).join(' · ')}`
+      : 'อบรมสั้นๆ รับตรา "ผ่านการอบรม" + คะแนนความประพฤติ';
 
   // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -478,6 +495,14 @@ export default function ProfileScreen() {
                   {user?.name}
                 </Text>
                 {kycVerified && <VerifiedBadge size={20} />}
+                {!!profileTrainingBadge && (
+                  <TrainingSeal
+                    size={20}
+                    needsRefresh={profileTrainingBadge.needs_refresh}
+                    label={profileTrainingBadge.label}
+                    compact
+                  />
+                )}
               </View>
               {!!user?.email && (
                 <Text numberOfLines={1} style={[typography.bodySm, styles.email, { color: colors.onHeaderMuted }]}>
@@ -539,6 +564,9 @@ export default function ProfileScreen() {
 
         {/* ---------- แผ่นงาช้าง: เมนู ---------- */}
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          {/* แบนเนอร์ชวนผู้ซื้ออบรม (ซ่อนเองเมื่อผ่านแล้ว / server ยังไม่มีห้องเรียน) */}
+          <TrainingInviteCard role="buyer" variant="banner" style={styles.trainingBanner} />
+
           <MenuGroup title="บัญชี">
             <MenuRow
               icon="user"
@@ -585,6 +613,14 @@ export default function ProfileScreen() {
               title="ที่อยู่จัดส่ง"
               subtitle="ปักหมุดให้ไรเดอร์ส่งถึงหน้าบ้าน"
               onPress={() => router.push('/addresses' as never)}
+            />
+            {/* ห้องเรียน — อบรมตามบทบาท (ร้าน / ไรเดอร์ / ผู้ซื้อ) ไม่บังคับ */}
+            <MenuRow
+              icon="graduation-cap"
+              tone={passedRoles.length > 0 ? 'gold' : 'navy'}
+              title="ห้องเรียน"
+              subtitle={classroomSubtitle}
+              onPress={() => router.push('/classroom' as never)}
             />
             {isFeatureEnabled('RIDER_ENABLED') && (
               <MenuRow
@@ -929,6 +965,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     // เว้นท้ายพ้นยอดซุ้มกนกของแถบล่าง (ยื่นขึ้นมาทับท้ายเนื้อหา)
     paddingBottom: spacing.xxxl + spacing.lg + KANOK_CREST_CLEARANCE,
+  },
+  trainingBanner: {
+    marginBottom: spacing.xl,
   },
   promo: {
     flexDirection: 'row',

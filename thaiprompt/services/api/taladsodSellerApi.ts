@@ -261,7 +261,8 @@ export interface FmSellerOrder {
   items_count: number;
   items: FmOrderItem[];
   items_summary: string | null;
-  buyer: { id: number; name: string; phone: string | null } | null;
+  /** training_badge = ตรา "ผ่านการอบรม" ของผู้ซื้อ (ห้องเรียน · role buyer) ค่าดิบ — server รุ่นเก่าไม่ส่ง */
+  buyer: { id: number; name: string; phone: string | null; training_badge?: unknown } | null;
   rider_job: {
     id: number;
     status: string;

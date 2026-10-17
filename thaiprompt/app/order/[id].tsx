@@ -79,6 +79,7 @@ import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { RiderTracker } from '@/components/taladsod';
 import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
 import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { getSellerOrder } from '@/services/api/merchantApi';
 import { normalizeTpixPayment, rememberTpixPayment } from '@/services/api/tpixApi';
@@ -746,6 +747,7 @@ export default function OrderDetailScreen() {
                     {rider.rider.name || 'ไรเดอร์'}
                   </Text>
                   {isVerifiedFlag(rider.rider.verified) && <VerifiedBadge size={15} />}
+                  <TrainingBadgeSeal value={rider.rider.training_badge} role="rider" size={15} />
                 </View>
                 {!!rider.rider.vehicle_plate && (
                   <Text style={[typography.caption, { color: colors.textMuted }]}>ทะเบียน {rider.rider.vehicle_plate}</Text>

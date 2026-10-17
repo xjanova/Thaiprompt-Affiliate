@@ -60,6 +60,8 @@ const LockedBanner: React.FC<{ job: RiderJobSummary }> = ({ job }) => {
         size={44}
         ring="none"
         verified={isVerifiedFlag(job.buyer?.verified)}
+        training={job.buyer?.training_badge}
+        trainingRole="buyer"
         surfaceColor={colors.dangerSoft}
       />
       <View style={styles.flex}>

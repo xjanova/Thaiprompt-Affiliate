@@ -62,6 +62,8 @@ export interface SellerOrderListItem {
   payment_method_label: string;
   delivery_method: 'parcel' | 'rider' | null;
   customer_name: string;
+  /** ตรา "ผ่านการอบรม" ของผู้ซื้อ (ห้องเรียน) ค่าดิบ — คีย์แบนคู่กับ customer_name · server รุ่นเก่าไม่ส่ง */
+  customer_training_badge?: unknown;
   items_count: number;
   first_item: { product_name: string; product_image: string | null } | null;
   seller_total: number;
@@ -94,7 +96,8 @@ export interface SellerOrderDetail {
     cancellation_reason?: string | null;
     [key: string]: unknown;
   };
-  customer: { name: string };
+  /** training_badge = ตรา "ผ่านการอบรม" ของผู้ซื้อ (ห้องเรียน · role buyer) ค่าดิบ — server รุ่นเก่าไม่ส่ง */
+  customer: { name: string; training_badge?: unknown };
   /** เบอร์ถูกซ่อนเมื่อออเดอร์จบเกิน 7 วัน */
   shipping: {
     name: string;
@@ -146,6 +149,8 @@ export interface SellerOrderDetail {
       vehicle_plate: string | null;
       phone: string | null;
       verified?: boolean;
+      /** ตรา "ผ่านการอบรม" ของไรเดอร์ (ห้องเรียน) ค่าดิบ — server รุ่นเก่าไม่ส่ง */
+      training_badge?: unknown;
     } | null;
     tracking_url?: string | null;
     delivered_at?: string | null;

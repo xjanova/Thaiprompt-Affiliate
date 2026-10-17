@@ -31,6 +31,7 @@ target road-horizon path chart-bar chart-line-up trend-up percent calculator meg
 fingerprint device-mobile cards sliders house-simple speedometer battery-full cell-signal-full wifi-high
 navigation-arrow broadcast storefront coffee cake hamburger pizza orange-slice fish egg-crack
 cpu scan-smiley flashlight
+graduation-cap play pause play-circle skip-forward exam certificate
 """.split()
 
 BOLD = set('plus minus check x arrow-right arrow-left caret-right caret-left caret-down caret-up sliders-horizontal hand-tap arrow-up-right'.split())

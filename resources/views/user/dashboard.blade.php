@@ -98,6 +98,8 @@
                     @else
                         <span class="tp-pill" style="color:#fff; background:#d9534f;"><i class="fas fa-id-card" style="font-size:10px;"></i> ยังไม่ยืนยันตัวตน</span>
                     @endif
+                    {{-- 🎓 ป้ายผ่านการอบรม (ห้องเรียน) ข้างป้ายยืนยันตัวตน --}}
+                    <x-training-badge :user="$user" :size="20" />
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:9px;">

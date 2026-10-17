@@ -245,6 +245,18 @@ return [
             ],
         ],
 
+        // 🎓 (2026-10-13) ห้องเรียน — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ (วิดีโอ YouTube + แบบทดสอบ) → ป้าย "ผ่านการอบรม"
+        [
+            'id' => 'classroom',
+            'label' => 'ห้องเรียน',
+            'icon' => '🎓',
+            'route' => 'admin.classroom.index',
+            'order' => 5.85,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-700 to-amber-500',
+        ],
+
         [
             'id' => 'ecommerce',
             'label' => 'อีคอมเมิร์ซ',
@@ -525,37 +537,6 @@ return [
                 // 📢 Broadcast
                 // ═══════════════════════════════════════
                 ['label' => '📢 Broadcast', 'route' => 'admin.line-bot.broadcast.index', 'description' => 'ส่งข้อความแบบรอบ'],
-            ],
-        ],
-
-        [
-            'id' => 'academy',
-            'label' => 'Academy System',
-            'icon' => '🎓',
-            'route' => null,
-            'order' => 13,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'คอร์สเรียน', 'route' => 'admin.academy.courses.index', 'icon' => 'fas fa-book-open'],
-                ['label' => 'จัดการแบบทดสอบ', 'route' => 'admin.quiz-management.index', 'icon' => 'fas fa-question-circle'],
-                ['label' => 'ใบประกาศนักเรียน', 'route' => 'admin.certificates.index', 'icon' => 'fas fa-certificate'],
-                ['label' => 'ใบประกาศระบบ', 'route' => 'admin.academy.certificates.index', 'icon' => 'fas fa-award'],
-                ['label' => 'แดชบอร์ดอาจารย์', 'route' => 'admin.instructor.dashboard', 'icon' => 'fas fa-chalkboard-teacher'],
-                ['label' => 'ตั้งค่า', 'route' => 'admin.academy.settings.index', 'icon' => 'fas fa-cog'],
-            ],
-        ],
-
-        [
-            'id' => 'learning-center',
-            'label' => 'Learning Center',
-            'icon' => '📚',
-            'route' => null,
-            'order' => 14,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'บทความ', 'route' => 'admin.articles.index', 'icon' => 'fas fa-newspaper'],
-                ['label' => 'หมวดหมู่', 'route' => 'admin.categories.index', 'icon' => 'fas fa-folder'],
-                ['label' => 'ศูนย์เรียนรู้', 'route' => 'admin.learning-center.index', 'icon' => 'fas fa-graduation-cap'],
             ],
         ],
 
@@ -1430,6 +1411,16 @@ return [
             'permissions' => [],
         ],
 
+        // 🎓 (2026-10-13) ห้องเรียน — อบรมผู้ขาย/ไรเดอร์/ผู้ซื้อ (ไม่บังคับ) ผ่านแล้วได้ป้าย "ผ่านการอบรม"
+        [
+            'id' => 'classroom',
+            'label' => 'ห้องเรียน',
+            'icon' => '🎓',
+            'route' => 'user.classroom.index',
+            'order' => 7.65,
+            'permissions' => [],
+        ],
+
         [
             'id' => 'wealth-guide',
             'label' => 'หนังสือเส้นทางเศรษฐี',
@@ -1443,58 +1434,6 @@ return [
                 ['label' => '📚 เส้นทางเศรษฐี (คู่มือเริ่มต้น)', 'route' => 'user.wealth-guide', 'description' => 'เรียนรู้พื้นฐานสู่ความสำเร็จ'],
                 ['label' => '💎 เส้นทางเศรษฐี PRO', 'route' => 'user.wealth-guide-pro', 'description' => 'เทคนิคขั้นสูงสำหรับมืออาชีพ', 'badge' => 'PRO', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
             ],
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Instructor Menu Items
-    |--------------------------------------------------------------------------
-    |
-    | เมนูสำหรับ Instructor Dashboard (ผู้สอน)
-    | แสดงเมื่อ user มี role = 'instructor' หรือเป็นเจ้าของคอร์ส
-    |
-    */
-
-    'instructor' => [
-        [
-            'id' => 'dashboard',
-            'label' => 'แดชบอร์ด',
-            'icon' => '📊',
-            'route' => 'admin.instructor.dashboard',
-            'order' => 0,
-            'permissions' => [],
-        ],
-
-        [
-            'id' => 'courses',
-            'label' => 'คอร์สของฉัน',
-            'icon' => '📚',
-            'route' => null,
-            'order' => 1,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => '📋 รายการคอร์ส', 'route' => 'admin.instructor.courses.index', 'description' => 'คอร์สทั้งหมดของฉัน'],
-                ['label' => '➕ สร้างคอร์สใหม่', 'route' => 'admin.instructor.courses.create', 'description' => 'เพิ่มคอร์สเรียนใหม่'],
-            ],
-        ],
-
-        [
-            'id' => 'earnings',
-            'label' => 'รายได้',
-            'icon' => '💰',
-            'route' => 'admin.instructor.earnings',
-            'order' => 2,
-            'permissions' => [],
-        ],
-
-        [
-            'id' => 'profile',
-            'label' => 'โปรไฟล์',
-            'icon' => '👤',
-            'route' => 'user.profile',
-            'order' => 3,
-            'permissions' => [],
         ],
     ],
 

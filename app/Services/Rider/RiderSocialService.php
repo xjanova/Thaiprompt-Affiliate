@@ -9,6 +9,7 @@ use App\Models\Rider;
 use App\Models\RiderHeart;
 use App\Models\RiderJob;
 use App\Models\User;
+use App\Services\Classroom\TrainingBadge;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\Ekyc\EkycService;
 use App\Services\Media\ProfilePhotoService;
@@ -249,6 +250,8 @@ class RiderSocialService
         $points = array_slice($points, 0, self::NEARBY_LIMIT);
 
         $hearts = $this->heartsFromViewer($viewer, array_map(fn ($p) => (int) $p['rider']->id, $points));
+        // ป้ายผ่านการอบรมของทุกคนในรายการ — query เดียว (กัน N+1 ใน personCard)
+        TrainingBadge::prime(array_map(fn ($p) => (int) $p['rider']->user_id, $points));
 
         $out = [];
         foreach ($points as $point) {
@@ -340,6 +343,7 @@ class RiderSocialService
         }
 
         $riders = Rider::with('user')->whereIn('id', $riderIds)->get()->keyBy('id');
+        TrainingBadge::prime($riders->pluck('user_id')); // ป้ายผ่านการอบรมทั้งรายการ query เดียว
 
         // งานล่าสุดที่ไรเดอร์คนนั้นส่งให้ฉันสำเร็จ
         $lastOrders = RiderJob::query()
@@ -410,6 +414,8 @@ class RiderSocialService
             'photo_url' => $user ? $this->photoUrl($user, $viewer) : null,
             // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว" (AI eKYC / แอดมินอนุมัติ)
             'verified' => EkycService::badge($user),
+            // 🎓 ป้าย "ผ่านการอบรมไรเดอร์" (ยังไม่ผ่าน = null · รายการเรียก TrainingBadge::prime ไว้ก่อนแล้ว)
+            'training_badge' => TrainingBadge::for((int) $rider->user_id, 'rider'),
             'vehicle_type' => $rider->vehicle_type,
             'vehicle_label' => $this->vehicleLabel($rider),
             'plate_masked' => self::maskPlate($rider->vehicle_plate),
@@ -591,6 +597,8 @@ class RiderSocialService
             'display_name' => self::displayName($buyer->name),
             'photo_url' => $this->photoUrl($buyer, $viewerUser),
             'verified' => EkycService::badge($buyer),
+            // 🎓 ป้าย "ผ่านการอบรมผู้ซื้อ" (ยังไม่ผ่าน = null)
+            'training_badge' => TrainingBadge::for($buyer, 'buyer'),
             'hearts_given' => $this->pairHearts((int) $viewer->id, (int) $buyer->id),
         ];
     }

@@ -58,6 +58,7 @@ import {
 } from '@/services/api/taladsodApi';
 import type { Coords } from '@/services/location';
 import { VerifiedBadge } from '@/components/people/VerifiedBadge';
+import { TrainingSeal } from '@/components/badges/TrustSeals';
 import { useTheme, spacing, typography, shadowStyle } from '@/theme';
 
 const SHOP_POLL_MS = 15000;
@@ -348,8 +349,17 @@ export default function TaladsodShopScreen() {
                 {shop.owner_verified && (
                   <View style={styles.nameRow} accessible accessibilityLabel="เจ้าของร้านยืนยันตัวตนแล้ว">
                     <VerifiedBadge size={14} />
-                    <Text style={[typography.caption, { color: colors.goldDeep }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
+                    <Text style={[typography.caption, { color: colors.success }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
                   </View>
+                )}
+                {/* ตรา "ผ่านการอบรม" ของร้าน (ห้องเรียน) — server รุ่นเก่าไม่ส่ง = ไม่แสดง */}
+                {!!shop.training_badge && (
+                  <TrainingSeal
+                    size={14}
+                    withLabel
+                    label={shop.training_badge.label}
+                    needsRefresh={shop.training_badge.needs_refresh}
+                  />
                 )}
                 <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
                   {shop.is_mobile ? 'ร้านรถเข็น / ตลาดนัด' : 'ร้านในตลาดสด'}

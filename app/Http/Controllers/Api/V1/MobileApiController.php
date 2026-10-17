@@ -169,6 +169,8 @@ class MobileApiController extends Controller
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" + สถานะ KYC แบบที่แอปใช้ (none|pending|approved|rejected)
                 'verified' => $user->isKycVerified(),
                 'kyc_status' => $user->isKycVerified() ? 'approved' : \App\Services\Ekyc\EkycService::publicStatus($user),
+                // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท {seller, rider, buyer} (ยังไม่ผ่าน = null)
+                'training_badges' => \App\Services\Classroom\TrainingBadge::allFor($user),
             ],
         ]);
     }
@@ -233,6 +235,8 @@ class MobileApiController extends Controller
                 'referralCode' => $user->referral_code,
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (แอปเก็บโปรไฟล์จากคำตอบนี้ด้วย)
                 'verified' => $user->isKycVerified(),
+                // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท (แอปเก็บโปรไฟล์จากคำตอบนี้ — ต้องมีให้ครบเหมือน GET)
+                'training_badges' => \App\Services\Classroom\TrainingBadge::allFor($user),
             ],
         ]);
     }
@@ -3029,201 +3033,6 @@ class MobileApiController extends Controller
                 'message' => 'เกิดข้อผิดพลาด',
             ], 500);
         }
-    }
-
-    // =====================================================
-    // Academy - ระบบการเรียนรู้ออนไลน์
-    // =====================================================
-
-    /**
-     * ดึงรายการหลักสูตร
-     */
-    public function getCourses(Request $request): JsonResponse
-    {
-        try {
-            $category = $request->get('category', 'all');
-
-            // หลักสูตรตัวอย่าง (สามารถเปลี่ยนเป็นดึงจาก DB ได้)
-            $courses = [
-                [
-                    'id' => 'mlm-basics',
-                    'title' => 'พื้นฐาน MLM สู่ความสำเร็จ',
-                    'description' => 'เรียนรู้หลักการ MLM ตั้งแต่เริ่มต้น สร้างทีมและรายได้อย่างยั่งยืน',
-                    'instructor' => 'อ.สมชาย รวยดี',
-                    'duration' => '4 ชั่วโมง',
-                    'lessons' => 12,
-                    'level' => 'beginner',
-                    'price' => 0,
-                    'originalPrice' => null,
-                    'rating' => 4.8,
-                    'students' => 1250,
-                    'icon' => '📚',
-                    'gradientColors' => ['#10B981', '#059669'],
-                    'isFree' => true,
-                    'isNew' => false,
-                    'isPopular' => true,
-                ],
-                [
-                    'id' => 'crypto-trading',
-                    'title' => 'เทรด Crypto สำหรับมือใหม่',
-                    'description' => 'เข้าใจตลาด Cryptocurrency และเริ่มต้นเทรดอย่างมืออาชีพ',
-                    'instructor' => 'อ.วิทย์ คริปโต',
-                    'duration' => '6 ชั่วโมง',
-                    'lessons' => 18,
-                    'level' => 'beginner',
-                    'price' => 990,
-                    'originalPrice' => 1990,
-                    'rating' => 4.9,
-                    'students' => 856,
-                    'icon' => '🪙',
-                    'gradientColors' => ['#F59E0B', '#D97706'],
-                    'isFree' => false,
-                    'isNew' => true,
-                    'isPopular' => false,
-                ],
-                [
-                    'id' => 'affiliate-marketing',
-                    'title' => 'Affiliate Marketing Masterclass',
-                    'description' => 'สร้างรายได้ Passive Income จาก Affiliate Marketing',
-                    'instructor' => 'อ.นิดา แอฟฟิลิเอท',
-                    'duration' => '8 ชั่วโมง',
-                    'lessons' => 24,
-                    'level' => 'intermediate',
-                    'price' => 1490,
-                    'originalPrice' => 2990,
-                    'rating' => 4.7,
-                    'students' => 632,
-                    'icon' => '💰',
-                    'gradientColors' => ['#8B5CF6', '#6D28D9'],
-                    'isFree' => false,
-                    'isNew' => false,
-                    'isPopular' => true,
-                ],
-                [
-                    'id' => 'leadership',
-                    'title' => 'ภาวะผู้นำและการสร้างทีม',
-                    'description' => 'พัฒนาทักษะผู้นำ สร้างทีมที่แข็งแกร่ง',
-                    'instructor' => 'อ.ประสิทธิ์ ลีดเดอร์',
-                    'duration' => '5 ชั่วโมง',
-                    'lessons' => 15,
-                    'level' => 'advanced',
-                    'price' => 1990,
-                    'originalPrice' => null,
-                    'rating' => 4.6,
-                    'students' => 423,
-                    'icon' => '👥',
-                    'gradientColors' => ['#EC4899', '#DB2777'],
-                    'isFree' => false,
-                    'isNew' => false,
-                    'isPopular' => false,
-                ],
-                [
-                    'id' => 'digital-marketing',
-                    'title' => 'Digital Marketing 2024',
-                    'description' => 'เทคนิคการตลาดดิจิทัลล่าสุด Facebook, TikTok, LINE',
-                    'instructor' => 'อ.มาร์ค ดิจิทัล',
-                    'duration' => '10 ชั่วโมง',
-                    'lessons' => 30,
-                    'level' => 'intermediate',
-                    'price' => 2490,
-                    'originalPrice' => 4990,
-                    'rating' => 4.8,
-                    'students' => 1089,
-                    'icon' => '📱',
-                    'gradientColors' => ['#3B82F6', '#2563EB'],
-                    'isFree' => false,
-                    'isNew' => true,
-                    'isPopular' => true,
-                ],
-                [
-                    'id' => 'personal-finance',
-                    'title' => 'วางแผนการเงินส่วนบุคคล',
-                    'description' => 'จัดการเงิน ออม ลงทุน สู่อิสรภาพทางการเงิน',
-                    'instructor' => 'อ.เงินทอง มั่งมี',
-                    'duration' => '3 ชั่วโมง',
-                    'lessons' => 10,
-                    'level' => 'beginner',
-                    'price' => 0,
-                    'originalPrice' => null,
-                    'rating' => 4.5,
-                    'students' => 2150,
-                    'icon' => '💳',
-                    'gradientColors' => ['#14B8A6', '#0D9488'],
-                    'isFree' => true,
-                    'isNew' => false,
-                    'isPopular' => false,
-                ],
-            ];
-
-            // กรองตาม category
-            if ($category === 'free') {
-                $courses = array_filter($courses, fn ($c) => $c['isFree']);
-            } elseif ($category === 'popular') {
-                $courses = array_filter($courses, fn ($c) => $c['isPopular']);
-            } elseif ($category === 'new') {
-                $courses = array_filter($courses, fn ($c) => $c['isNew']);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => array_values($courses),
-                'stats' => [
-                    'totalCourses' => 50,
-                    'totalStudents' => 10000,
-                    'avgRating' => 4.8,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => true,
-                'data' => [],
-            ]);
-        }
-    }
-
-    /**
-     * ดึงรายละเอียดหลักสูตร
-     */
-    public function getCourseDetail(string $courseId): JsonResponse
-    {
-        // ตัวอย่าง: หาหลักสูตรจาก ID
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $courseId,
-                'title' => 'หลักสูตรตัวอย่าง',
-                'description' => 'รายละเอียดหลักสูตร...',
-                'lessons' => [
-                    ['id' => 1, 'title' => 'บทที่ 1: แนะนำ', 'duration' => '10:00', 'isFree' => true],
-                    ['id' => 2, 'title' => 'บทที่ 2: พื้นฐาน', 'duration' => '15:00', 'isFree' => false],
-                    ['id' => 3, 'title' => 'บทที่ 3: ขั้นสูง', 'duration' => '20:00', 'isFree' => false],
-                ],
-            ],
-        ]);
-    }
-
-    /**
-     * ดึงหลักสูตรของฉัน
-     */
-    public function getMyCourses(): JsonResponse
-    {
-        $user = Auth::user();
-
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'กรุณาเข้าสู่ระบบ',
-            ], 401);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'enrolled' => [],
-                'completed' => [],
-                'inProgress' => [],
-            ],
-        ]);
     }
 
     // =====================================================
