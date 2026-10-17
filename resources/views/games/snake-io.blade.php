@@ -5479,9 +5479,22 @@
         let _isTabHidden = false;
         let _lastBgTime = 0;
 
-        function animate() {
+        // Fixed 60 game steps per second. update() moves everything by a fixed
+        // amount per call (deltaTime = 1/60), so a 120/144 Hz screen used to run
+        // the whole game 2-2.4x too fast and draw 2-2.4x the frames. A machine
+        // that cannot reach 60 behaves as before (one step per frame, no catch-up).
+        const STEP_MS = 1000 / 60;
+        let _stepAcc = 0;
+        let _stepLast = 0;
+
+        function animate(ts) {
             requestAnimationFrame(animate);
-            if (_isTabHidden) return; // ถ้าแท็บซ่อน → ให้ setInterval จัดการแทน
+            if (_isTabHidden) { _stepLast = 0; return; } // ถ้าแท็บซ่อน → ให้ setInterval จัดการแทน
+            const now = ts || performance.now();
+            _stepAcc += _stepLast ? now - _stepLast : STEP_MS;
+            _stepLast = now;
+            if (_stepAcc < STEP_MS - 3) return; // slack for jittery timestamps; the debt carries over
+            _stepAcc = Math.min(_stepAcc - STEP_MS, STEP_MS);
             update();
             renderer.render(scene, camera);
         }
