@@ -87,7 +87,8 @@ class FortuneBanTest extends Command
                 ['Status', $ban->isPermanent() ? '🔒 ถาวร' : $ban->remainingHumanReadable()],
                 ['Total ครั้งที่ทัก (attempt)', $ban->attempt_count],
                 ['Total ครั้งที่ตอบ (notify)', $ban->notify_count],
-                ['Anti-spam working', ($shouldNotify1 && ! $shouldNotify2) ? '✅ YES' : '❌ NO'],
+                ['Anti-spam working', (($platform === 'facebook' ? ! $shouldNotify1 : $shouldNotify1) && ! $shouldNotify2) ? '✅ YES' : '❌ NO'],
+                ['บล็อกจากเพจ Facebook', $platform === 'facebook' ? ($ban->isFullyEnforced() ? '✅ สำเร็จ' : '⚠️ ยังไม่ยืนยัน') : 'ไม่เกี่ยวข้อง'],
             ]
         );
 

@@ -471,7 +471,7 @@ class BillTrollGuardService
         }
 
         // 2) Bot-level ban ถาวร (ทุก platform)
-        $banService->ban(
+        $ban = $banService->ban(
             $platform,
             $userId,
             null, // null = ถาวร
@@ -480,18 +480,6 @@ class BillTrollGuardService
             $reading->facebook_user_name
         );
 
-        // 3) FB page block จริง — ห้ามทั้ง DM + คอมเมนต์บนเพจ (LINE ไม่มี API เทียบเท่า)
-        if ($platform === 'facebook') {
-            try {
-                app(\App\Services\FacebookWebhookService::class)->blockPageUser($userId);
-            } catch (\Throwable $e) {
-                Log::error('BillTrollGuard: FB blockPageUser ล้มเหลว (bot-ban ยังทำงาน)', [
-                    'user_id' => $userId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
         Log::critical('🔨 BillTrollGuard: แบนถาวร — สร้างบิลไม่ชำระครบเกณฑ์ก่อกวน', [
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
@@ -499,7 +487,7 @@ class BillTrollGuardService
             'platform' => $platform,
             'display_name' => $reading->facebook_user_name,
             'strikes' => $strikes,
-            'fb_page_blocked' => $platform === 'facebook',
+            'fb_page_blocked' => $platform === 'facebook' && $ban->isFullyEnforced(),
         ]);
     }
 

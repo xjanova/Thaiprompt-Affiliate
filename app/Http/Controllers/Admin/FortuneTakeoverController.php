@@ -350,7 +350,10 @@ class FortuneTakeoverController extends Controller
             ? route('admin.fortune.takeover.show', $reading)
             : route('admin.fortune.takeover.index');
 
-        return redirect()->to($route)->with('success', $msg);
+        return redirect()->to($route)->with(
+            $ban->isFullyEnforced() ? 'success' : 'warning',
+            $ban->isFullyEnforced() ? $msg : '⚠️ ระงับบอทแล้ว แต่ยังบล็อกจากเพจ Facebook ไม่สำเร็จ ระบบจะลองใหม่'
+        );
     }
 
     /**
