@@ -8,6 +8,7 @@ use App\Models\FortuneUserCredit;
 use App\Models\LineBotKeyword;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
+use App\Services\Fortune\FortunePredictionMenu;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -813,6 +814,17 @@ class FortuneConversationService
                                 ];
                             }
 
+                            // 🧭 (2026-10-24) ปุ่ม "กำลังทำนาย" บนเมนูช่วงทำนาย = ลูกค้าถามเองว่าถึงไหนแล้ว
+                            //   ห้ามเงียบ (กดแล้วไม่มีอะไรเกิด = คิดว่าบอทพัง) — ตอบสั้น ๆ ไม่แตะ state
+                            if (FortunePredictionMenu::isStepRequest($messageText)) {
+                                return [
+                                    'action' => 'celtic_step_reminder',
+                                    'message' => "🔮 แม่หมอกำลังทำนายให้อยู่นะคะ\n\nอีกสักครู่คำทำนายจะส่งมาในแชทนี้เลยค่ะ ไม่ต้องพิมพ์อะไรเพิ่ม 🙏",
+                                    'reading' => $inPredictionReading,
+                                    'quick_replies' => [],
+                                ];
+                            }
+
                             Log::info('Fortune: in-prediction silent_skip (AI generating)', [
                                 'facebook_user_id' => $facebookUserId,
                                 'reading_id' => $inPredictionReading->id,
@@ -845,21 +857,31 @@ class FortuneConversationService
                     // ข้ามทุก hook ระหว่างนี้ (force_tier / smart_skip / chat AI / etc.)
                     //
                     // 🚫 ถ้าลูกค้าพิมพ์ keyword นอกเรื่องทำนาย (ดูดวง/39/99/ยกเลิก/คุยกับคน)
-                    //    → silent_skip (ห้ามแทรก ห้ามสร้างบิล ห้ามยกเลิก ห้าม handoff)
+                    //    → ห้ามแทรก ห้ามสร้างบิล ห้ามยกเลิก ห้าม handoff
                     //    User spec: "ปุ่มต่างๆ เอาออกหมด ที่ไม่เกี่ยวข้องกับการทำนาย"
-                    if ($this->isInterruptKeyword($messageText)) {
-                        Log::info('Fortune: in-prediction silent_skip (interrupt keyword)', [
+                    // 🧭 (2026-10-24 reading 14367) เดิมเงียบใส่ → ลูกค้าไม่รู้ว่าบอทรออะไร ค้าง 22 นาที
+                    //    ตอนนี้ = ช่วงรอ input (ไม่ใช่ AI กำลังคิด) ⇒ ตอบเตือนขั้นที่รออยู่แทน
+                    //    ส่งด้วย reply token ของข้อความนี้ (ฟรี) · ไม่แตะ state · ไม่สร้างบิล
+                    //    + ปุ่ม "กำลังทำนาย" บนเมนูช่วงทำนาย (FortunePredictionMenu) ก็มาทางนี้
+                    if ($this->isInterruptKeyword($messageText) || FortunePredictionMenu::isStepRequest($messageText)) {
+                        Log::info('Fortune: in-prediction interrupt keyword → เตือนขั้นที่รออยู่', [
                             'facebook_user_id' => $facebookUserId,
                             'reading_id' => $inPredictionReading->id,
                             'status' => $status,
                             'text_preview' => mb_substr($messageText, 0, 30),
                         ]);
 
-                        return [
-                            'action' => 'silent_skip_in_prediction',
-                            'message' => null,
-                            'reading' => $inPredictionReading,
-                        ];
+                        // Deep-39 ที่ค้าง PAID เกิน 90 วิแล้วไหลลงมาถึงตรงนี้ — ข้อความเตือนเป็นของ Celtic
+                        //   ⇒ คงเงียบแบบเดิม (ไม่มีขั้นให้ลูกค้าทำ ระบบ recover ส่งคำทำนายเอง)
+                        if (! str_starts_with((string) $status, 'celtic_')) {
+                            return [
+                                'action' => 'silent_skip_in_prediction',
+                                'message' => null,
+                                'reading' => $inPredictionReading,
+                            ];
+                        }
+
+                        return $this->buildCelticStepReminder($inPredictionReading);
                     }
 
                     Log::info('Fortune: in-prediction → continueConversation direct', [
@@ -880,6 +902,17 @@ class FortuneConversationService
                 Log::warning('Fortune: in-prediction guard fail (non-blocking)', [
                     'error' => $inPredErr->getMessage(),
                 ]);
+            }
+
+            // 🔮 (2026-10-24) กดปุ่ม "กำลังทำนาย" จากเมนูช่วงทำนายที่ยังไม่ทันสลับคืน (ทำนายจบไปแล้ว)
+            //   ห้ามไหลเข้า AI chat — บอกตรง ๆ แล้วการส่งข้อความนี้จะคิวสลับเมนูหลักคืนให้เอง
+            if (FortunePredictionMenu::isStepRequest($messageText)) {
+                return [
+                    'action' => 'celtic_step_reminder',
+                    'message' => "🌙 ตอนนี้ไม่มีการทำนายค้างอยู่แล้วค่ะ\n\nอยากดูดวงรอบใหม่ พิมพ์ *ดูดวง* ได้เลยนะคะ",
+                    'reading' => null,
+                    'quick_replies' => [],
+                ];
             }
 
             // 🎧 (2026-06-20) On-demand voice — ลูกค้าพิมพ์ "อ่านให้ฟัง" → ผู้ช่วย AI อ่านบทสรุปให้ฟัง
@@ -14195,19 +14228,7 @@ class FortuneConversationService
      */
     protected function findInPredictionReading(string $userId): ?FortuneReading
     {
-        return FortuneReading::where(function ($q) use ($userId) {
-            $q->where('facebook_user_id', $userId)
-                ->orWhere('platform_user_id', $userId);
-        })
-            ->where('is_paid', true)
-            ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
-            ->where(function ($flag) {
-                $flag->whereNull('conversation_state')
-                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
-                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
-            })
-            ->latest('updated_at')
-            ->first();
+        return FortuneReading::findInPredictionFor($userId);
     }
 
     /**

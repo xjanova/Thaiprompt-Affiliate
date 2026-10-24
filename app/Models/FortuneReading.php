@@ -341,6 +341,30 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🔒 บิลที่ "กำลังทำนายอยู่" ของลูกค้าคนนี้ (จ่ายแล้ว + IN_PREDICTION_STATUSES)
+     *
+     * แหล่งเดียวของ IN-PREDICTION Hard Guard (FortuneConversationService) และเมนู LINE ช่วงทำนาย
+     * (FortunePredictionMenu) — สองที่ต้องเห็นตรงกันเสมอ ไม่งั้นเมนูซ่อนปุ่มดูดวงทั้งที่ guard ปล่อยแล้ว
+     * บิลที่ปักธง admin_review_alerted (ระบบยอมแพ้ ส่งให้คนกู้) ไม่นับ — ลูกค้าต้องเริ่มใหม่ได้
+     */
+    public static function findInPredictionFor(string $userId): ?self
+    {
+        return self::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->whereIn('conversation_status', self::IN_PREDICTION_STATUSES)
+            ->where(function ($flag) {
+                $flag->whereNull('conversation_state')
+                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+            })
+            ->latest('updated_at')
+            ->first();
+    }
+
+    /**
      * 🎂 (2026-05-21) หาวันเกิดล่าสุดของ user (ใช้ใน DM greeting "ดวงประจำวันสั้นๆ")
      *
      * Look up ล่าสุดที่ลูกค้าเคยกรอก birth_date — ไม่จำกัด is_paid (free reading
