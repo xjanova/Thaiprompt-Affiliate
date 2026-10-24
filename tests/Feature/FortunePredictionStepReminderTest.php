@@ -209,6 +209,46 @@ class FortunePredictionStepReminderTest extends TestCase
     }
 
     #[Test]
+    public function unknown_menu_after_cache_loss_relinks_main_when_the_lookup_cannot_confirm(): void
+    {
+        LineRichMenu::create([
+            'rich_menu_id' => 'richmenu-main',
+            'name' => FortuneRichMenuService::MAIN_MENU_NAME,
+            'areas' => [],
+            'editor_mode' => 'config',
+            'is_default' => true,
+            'is_active' => true,
+        ]);
+        // ทำนายจบแล้ว (มีบิลจ่ายเงินเร็ว ๆ นี้) + cache ถูกล้าง → ไม่รู้ว่าผูกเมนูไหนอยู่
+        $this->celticReading(FortuneReading::STATUS_COMPLETED);
+
+        $linked = [];
+        $line = $this->createMock(LineFortuneService::class);
+        // null = API ล้ม หรือ 404 — แยกไม่ได้ ต้องไม่ถือว่า "อยู่เมนูหลักแล้ว"
+        $line->method('getUserRichMenuId')->willReturnOnConsecutiveCalls(null, 'richmenu-main');
+        $line->method('linkRichMenuToUser')->willReturnCallback(function ($uid, $id) use (&$linked) {
+            $linked[] = $id;
+
+            return true;
+        });
+
+        $menus = $this->getMockBuilder(FortuneRichMenuService::class)
+            ->setConstructorArgs([FortuneTellingSetting::getSettings()])
+            ->onlyMethods(['getLineService'])
+            ->getMock();
+        $menus->method('getLineService')->willReturn($line);
+        $switcher = new FortunePredictionMenu($menus);
+
+        $this->assertSame('richmenu-main', $switcher->sync(self::UID));
+        $this->assertSame(['richmenu-main'], $linked, 'lookup ไม่ยืนยัน → ผูกเมนูหลักซ้ำ');
+
+        // lookup ยืนยันว่าอยู่เมนูหลัก → ไม่ต้องผูกซ้ำ
+        Cache::flush();
+        $this->assertSame('richmenu-main', $switcher->sync(self::UID));
+        $this->assertSame(['richmenu-main'], $linked);
+    }
+
+    #[Test]
     public function sync_ignores_non_line_ids(): void
     {
         $menus = $this->createMock(FortuneRichMenuService::class);

@@ -106,8 +106,10 @@ class FortunePredictionMenu
                 return $mainId;
             }
 
+            // null = ไม่มี per-user link (404) *หรือ* API ล้ม — แยกไม่ได้ ⇒ ห้ามเดาว่าอยู่เมนูหลัก
+            //   (เดาผิด = cache main 30 วัน ทั้งที่ค้างเมนูช่วงทำนาย) — ตกไปผูกเมนูหลักซ้ำแทน ปลอดภัยเสมอ
             $actual = $this->menus->getLineService()->getUserRichMenuId($lineUserId);
-            if (! $this->isPredictingMenuId($actual)) {
+            if ($actual !== null && ! $this->isPredictingMenuId($actual)) {
                 Cache::put(self::LINKED_KEY.$lineUserId, $mainId, now()->addDays(self::LINKED_TTL_DAYS));
 
                 return $mainId;
