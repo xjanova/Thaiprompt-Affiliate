@@ -31,7 +31,7 @@ class FortuneBan extends Command
                             {--name= : ชื่อที่แสดง (snapshot)}
                             {--unban : ปลดแบนแทน}';
 
-    protected $description = 'แบน/ปลดแบน user ไม่ให้บอทคุยด้วย (แอดมินยังคุยผ่าน Page Inbox ได้)';
+    protected $description = 'แบน/ปลดแบนผู้ก่อกวน — Facebook บล็อกจากเพจจริง';
 
     public function handle(FortuneBanService $banService): int
     {
@@ -59,7 +59,7 @@ class FortuneBan extends Command
                 return self::SUCCESS;
             }
 
-            $this->warn("ไม่พบ ban record — {$platform}:{$userId}");
+            $this->warn("ไม่พบรายการ หรือยังปลดบล็อกจากเพจไม่สำเร็จ — {$platform}:{$userId}");
 
             return self::FAILURE;
         }
@@ -88,7 +88,11 @@ class FortuneBan extends Command
             displayName: $this->option('name'),
         );
 
-        $this->info('🚫 แบนเรียบร้อย');
+        if ($ban->isFullyEnforced()) {
+            $this->info('🚫 แบนเรียบร้อย');
+        } else {
+            $this->warn('ระงับบอทแล้ว แต่บล็อกจากเพจยังไม่สำเร็จ ระบบจะลองใหม่');
+        }
         $this->table(
             ['Field', 'Value'],
             [
@@ -101,6 +105,6 @@ class FortuneBan extends Command
             ]
         );
 
-        return self::SUCCESS;
+        return $ban->isFullyEnforced() ? self::SUCCESS : self::FAILURE;
     }
 }

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCommentLinkBlock;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserBan;
 use App\Services\FacebookWebhookService;
 use App\Services\Fortune\CommentBlockAdminNotifier;
+use App\Services\Fortune\FortunePageContext;
 use App\Services\FortuneBanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -225,25 +227,24 @@ class FortuneCommentLinkBlockController extends Controller
      */
     public function unblock(FortuneCommentLinkBlock $block): RedirectResponse
     {
-        $fbService = app(FacebookWebhookService::class);
-
         $unblocked = false;
         $error = null;
 
         try {
-            $unblocked = $fbService->unblockPageUser($block->platform_user_id);
+            $ban = FortuneUserBan::forPlatform($block->platform)
+                ->where('platform_user_id', $block->platform_user_id)->first();
+            $unblocked = $ban
+                ? $this->banService->unban($block->platform, $block->platform_user_id, Auth::id())
+                : FortunePageContext::run($block->fortunePage, fn () => (new FacebookWebhookService)->unblockPageUser($block->platform_user_id));
             if (! $unblocked) {
-                $error = $fbService->lastFetchError ?? 'unknown';
+                $error = 'Facebook ยังไม่ยืนยันการปลดบล็อก';
             }
         } catch (\Throwable $e) {
             $error = $e->getMessage();
         }
 
-        // ปลดแบนระดับบอทด้วย ไม่งั้นบอทยังเงียบใส่เขาอยู่
-        try {
-            $this->banService->unban($block->platform, $block->platform_user_id, Auth::id());
-        } catch (\Throwable $e) {
-            Log::warning('unblock: ปลดแบนระดับบอทล้ม: '.$e->getMessage());
+        if (! $unblocked) {
+            return back()->with('warning', '⚠️ ยังปลดบล็อกจากเพจไม่สำเร็จ: '.$error);
         }
 
         $block->update([
@@ -251,7 +252,9 @@ class FortuneCommentLinkBlockController extends Controller
             'is_read' => true,
             'unblocked_at' => now(),
             'unblocked_by' => Auth::id(),
-            'block_error' => $error ? mb_substr($error, 0, 500) : $block->block_error,
+            'page_blocked' => false,
+            'bot_banned' => false,
+            'block_error' => null,
         ]);
 
         Log::info('Admin: ปลดบล็อกคนโพสต์ลิงก์ในคอมเมนต์', [
@@ -261,12 +264,7 @@ class FortuneCommentLinkBlockController extends Controller
             'fb_unblocked' => $unblocked,
         ]);
 
-        return back()->with(
-            $unblocked ? 'success' : 'warning',
-            $unblocked
-                ? '✨ ปลดบล็อก '.($block->display_name ?: $block->platform_user_id).' เรียบร้อย (ทั้งบนเพจและบอท)'
-                : '⚠️ ปลดแบนบอทแล้ว แต่ปลดบล็อกบนเพจไม่สำเร็จ: '.$error
-        );
+        return back()->with('success', '✨ ปลดบล็อก '.($block->display_name ?: $block->platform_user_id).' เรียบร้อย (ทั้งบนเพจและบอท)');
     }
 
     /**

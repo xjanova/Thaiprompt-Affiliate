@@ -70,7 +70,7 @@ class ModerationController extends Controller
         foreach ($candidates as $r) {
             $questions = is_array($r->questions) ? $r->questions : [];
             $haystack = mb_strtolower(
-                implode(' ', $questions) . ' ' . (string) $r->ai_response
+                implode(' ', $questions).' '.(string) $r->ai_response
             );
 
             $matched = [];
@@ -151,13 +151,13 @@ class ModerationController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('display_name', 'like', "%{$search}%")
-                  ->orWhere('platform_user_id', 'like', "%{$search}%");
+                    ->orWhere('platform_user_id', 'like', "%{$search}%");
             });
         }
         if ($activeOnly) {
             $query->where(function ($q) {
                 $q->whereNull('banned_until')
-                  ->orWhere('banned_until', '>', now());
+                    ->orWhere('banned_until', '>', now());
             });
         }
 
@@ -322,10 +322,10 @@ class ModerationController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
+            'success' => $ban->isFullyEnforced(),
             'data' => ['ban' => $ban->fresh()],
-            'message' => 'แบนผู้ใช้สำเร็จ',
-        ]);
+            'message' => $ban->isFullyEnforced() ? 'แบนผู้ใช้สำเร็จ' : 'ระงับบอทแล้ว แต่บล็อกจากเพจยังไม่สำเร็จ ระบบจะลองใหม่',
+        ], $ban->isFullyEnforced() ? 200 : 502);
     }
 
     /**
@@ -340,7 +340,12 @@ class ModerationController extends Controller
         // 🪪 (2026-05-24) Route through FortuneBanService — clears the
         //   webhook ban-cache so the user can talk to the bot again
         //   immediately (was up to 24h cache TTL before).
-        $banService->unban($platform, $platformUserId, $admin?->id);
+        if (! $banService->unban($platform, $platformUserId, $admin?->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ยังปลดบล็อกจากเพจไม่สำเร็จ เก็บรายการไว้ลองใหม่แล้ว',
+            ], 502);
+        }
 
         Log::info('Moderation: user unbanned', [
             'ban_id' => $ban->id,
@@ -430,6 +435,7 @@ class ModerationController extends Controller
         if (! is_array($cached)) {
             return [];
         }
+
         return array_values(array_filter($cached, fn ($s) => is_string($s) && $s !== ''));
     }
 
@@ -450,6 +456,7 @@ class ModerationController extends Controller
                 return $this->snippet($response, $pos, 120);
             }
         }
+
         return mb_substr($first ?: $response, 0, 160);
     }
 
@@ -457,6 +464,7 @@ class ModerationController extends Controller
     {
         $start = max(0, $pos - 40);
         $sub = mb_substr($haystack, $start, $window);
-        return ($start > 0 ? '…' : '') . trim($sub) . (mb_strlen($haystack) > $start + $window ? '…' : '');
+
+        return ($start > 0 ? '…' : '').trim($sub).(mb_strlen($haystack) > $start + $window ? '…' : '');
     }
 }

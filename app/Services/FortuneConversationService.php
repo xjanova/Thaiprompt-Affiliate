@@ -18508,17 +18508,6 @@ class FortuneConversationService
             $displayName = $reading ? ($reading->customer_name ?? null) : null;
             app(\App\Services\FortuneBanService::class)->ban($platform, $userId, null, $reason, null, $displayName);
 
-            // FB เท่านั้น — block ระดับเพจ (ห้าม DM + ห้ามคอมเมนต์/โพส) — ต้องมี permission pages_manage_metadata
-            if ($platform === 'facebook') {
-                try {
-                    (new \App\Services\FacebookWebhookService($this->settings))->blockPageUser($userId);
-                } catch (\Throwable $fb) {
-                    Log::warning('SlipOK flood ban: FB page block ล้มเหลว (bot ban ยังทำงาน)', [
-                        'user_id' => $userId, 'error' => $fb->getMessage(),
-                    ]);
-                }
-            }
-
             Log::warning('🚫 SLIP_FLOOD_BAN: แบนผู้ใช้ส่งสลิปปลอมรัวๆ', [
                 'platform' => $platform, 'user_id' => $userId, 'strikes' => $strikes, 'reading_id' => $reading?->id,
             ]);
@@ -18605,17 +18594,6 @@ class FortuneConversationService
         try {
             $reason = 'auto: คำหยาบคายรุนแรงซ้ำ '.$strikes.' ครั้ง/24ชม. (คำที่เจอ: '.mb_substr($evidence, 0, 120).')';
             app(\App\Services\FortuneBanService::class)->ban($platform, $userId, null, $reason, null, $displayName);
-
-            // FB เท่านั้น — block ระดับเพจ (ห้าม DM + คอมเมนต์) — LINE ใช้ bot ban อย่างเดียว
-            if ($platform === 'facebook') {
-                try {
-                    (new \App\Services\FacebookWebhookService($this->settings))->blockPageUser($userId);
-                } catch (\Throwable $fb) {
-                    Log::warning('AbuseAutoBan: FB page block ล้มเหลว (bot ban ยังทำงาน)', [
-                        'user_id' => $userId, 'error' => $fb->getMessage(),
-                    ]);
-                }
-            }
 
             Log::warning('🚨 ABUSE_AUTO_BAN: แบนผู้ใช้คำหยาบรุนแรง — admin review ที่ Moderation', [
                 'platform' => $platform,

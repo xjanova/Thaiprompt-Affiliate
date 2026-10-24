@@ -237,6 +237,13 @@ Schedule::command('fortune:scan-link-spammers --min=3 --days=7 --min-days=2 --wl
     ->name('fortune-scan-link-spammers')
     ->runInBackground();
 
+// แบน Facebook ต้องถึงเพจจริง และแบนชั่วคราวต้องปลดบนเพจเมื่อครบเวลา
+Schedule::command('fortune:sync-page-bans --execute --limit=50')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔮 Daily Horoscope Auto-Post — โพสดวงประจำวัน 7 วันเกิด (ระบบเดิม)
 // ════════════════════════════════════════════════════════════════

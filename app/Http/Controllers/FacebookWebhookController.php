@@ -1894,23 +1894,14 @@ class FacebookWebhookController extends Controller
             Log::debug('blockCommenterAndRecord: hide/delete ล้ม (คาดไว้ถ้ายังไม่มี scope): '.$e->getMessage());
         }
 
-        // 2) บล็อกบนเพจจริง — ห้าม DM + ห้ามคอมเมนต์/โพสต์
-        // 💡 comment.from.id ใช้เป็น PSID ได้ — ยืนยันจากที่ระบบ DM คนคอมเมนต์ด้วย id นี้สำเร็จมาแล้ว
+        // 2) บริการแบนกลางบล็อกบนเพจและเก็บผลจริง พร้อมรอลองใหม่หากล้มเหลว
         $blocked = false;
         $blockError = null;
-        try {
-            $blocked = $this->facebookService->blockPageUser($fromId);
-            if (! $blocked) {
-                $blockError = $this->facebookService->lastFetchError ?? 'unknown';
-            }
-        } catch (\Throwable $e) {
-            $blockError = $e->getMessage();
-        }
 
         // 3) แบนระดับบอท (บอทเลิกคุยด้วย)
         $botBanned = false;
         try {
-            $this->banService->ban(
+            $ban = $this->banService->ban(
                 'facebook',
                 $fromId,
                 null, // ถาวร
@@ -1919,6 +1910,8 @@ class FacebookWebhookController extends Controller
                 is_string($fromName) ? $fromName : null,
             );
             $botBanned = true;
+            $blocked = $ban->isFullyEnforced();
+            $blockError = $ban->page_block_error;
         } catch (\Throwable $e) {
             Log::warning('blockCommenterAndRecord: ban ระดับบอทล้ม: '.$e->getMessage());
         }
@@ -3132,8 +3125,7 @@ class FacebookWebhookController extends Controller
 
         // 🚫 (2026-05-22) Ban guard — user ที่ถูกแบนห้ามบอทคุยด้วย
         //    ⚠️ ต้องอยู่ "หลัง" pendingDelivery — กันลูกค้าจ่ายแล้วถูกแบนกลางทาง คำทำนายค้าง
-        //    Anti-spam: ตอบเตือนครั้งแรกเท่านั้น (cooldown 1 ชม.) หลังจากนั้นเงียบ
-        //    แอดมินยังคุยได้ผ่าน Page Inbox / admin panel (เพราะใช้ Page API ตรง)
+        //    Facebook บล็อกจากเพจจริงผ่านบริการแบนกลาง และไม่ส่งเตือนซ้ำ
         $activeBan = $this->banService->getActiveBan('facebook', $senderId);
         if ($activeBan !== null) {
             if ($this->banService->shouldNotify($activeBan)) {
@@ -4510,17 +4502,7 @@ class FacebookWebhookController extends Controller
                 $displayName,
             );
 
-            // บล็อกบนเพจ FB เฉพาะแบนถาวร — แบน 7 วันหมดอายุเอง แต่ block ไม่หมดอายุ
-            if ($isPermanent) {
-                try {
-                    $this->facebookService->blockPageUser($senderId);
-                } catch (\Throwable $blockErr) {
-                    Log::warning('FB burst-ban: block เพจไม่สำเร็จ (non-blocking)', [
-                        'sender_id' => $senderId,
-                        'error' => $blockErr->getMessage(),
-                    ]);
-                }
-            }
+            // บริการกลางบล็อกบนเพจทั้งชั่วคราว/ถาวร และปลดชั่วคราวผ่าน scheduler
 
             $signalService->markBurstBanned($signal, $displayName);
 

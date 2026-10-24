@@ -180,16 +180,16 @@ class FortuneScanLinkSpammers extends Command
                 : 'auto: ส่งแต่ลิงก์/รูป ไม่เคยพิมพ์คุย ('.$c->link_image_count.' ครั้ง)';
 
             // 1) บอทเลิกคุย (ถาวร) — ใช้ระบบ ban เดิม
-            $banService->ban('facebook', $psid, null, $reason, null, $c->display_name);
+            $ban = $banService->ban('facebook', $psid, null, $reason, null, $c->display_name);
             $banned++;
             $bannedPsids[] = $psid;
 
             // 2) block บน FB Page จริง (ห้าม DM + ห้ามโพส/คอมเมนต์)
-            if ($fbService->blockPageUser($psid)) {
+            if ($ban->isFullyEnforced()) {
                 $blocked++;
             } else {
                 $blockFailed++;
-                $this->warn('  ⚠️ block FB ล้มเหลว PSID='.$psid.' ('.($fbService->lastFetchError ?? 'unknown').')');
+                $this->warn('  ⚠️ block FB ล้มเหลว PSID='.$psid.' ('.($ban->page_block_error ?? 'unknown').')');
             }
 
             $c->update([

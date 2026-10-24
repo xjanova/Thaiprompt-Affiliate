@@ -15,7 +15,7 @@ use Illuminate\View\View;
 /**
  * Admin Fortune Ban Controller
  *
- * จัดการระบบ "คุก" (Ban/Jail) — ห้ามบอทคุยกับ user ที่ไม่เหมาะสม
+ * จัดการระบบแบนผู้ก่อกวน — Facebook บล็อกจากเพจจริงผ่านบริการกลาง
  *
  * Features:
  * - แสดงรายการ user ที่ถูกแบนทั้งหมด (active + expired)
@@ -151,12 +151,12 @@ class FortuneBanController extends Controller
 
         return redirect()
             ->route('admin.fortune.bans.index')
-            ->with('success', sprintf(
+            ->with($ban->isFullyEnforced() ? 'success' : 'warning', $ban->isFullyEnforced() ? sprintf(
                 '🚫 แบน %s:%s เรียบร้อย (%s)',
                 $ban->platform,
                 $ban->platform_user_id,
                 $ban->isPermanent() ? 'ถาวร' : $ban->remainingHumanReadable()
-            ));
+            ) : '⚠️ ระงับบอทแล้ว แต่ยังบล็อกจากเพจ Facebook ไม่สำเร็จ ระบบจะลองใหม่ กรุณาตรวจสถานะในรายการแบน');
     }
 
     /**
@@ -167,7 +167,9 @@ class FortuneBanController extends Controller
         $platform = $ban->platform;
         $userId = $ban->platform_user_id;
 
-        $this->banService->unban($platform, $userId, Auth::id());
+        if (! $this->banService->unban($platform, $userId, Auth::id())) {
+            return back()->with('warning', '⚠️ ยังปลดบล็อกจากเพจไม่สำเร็จ เก็บรายการไว้ลองใหม่แล้ว');
+        }
 
         return redirect()
             ->route('admin.fortune.bans.index')

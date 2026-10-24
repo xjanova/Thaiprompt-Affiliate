@@ -3609,7 +3609,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             // ผลลัพธ์ที่เป็นไปได้: {"<psid>": true} หรือ {"success": true}
             $json = $resp->json();
-            $ok = ($json[$psid] ?? null) !== false; // HTTP 200 = ถือว่าสำเร็จ (บาง format ไม่มี key)
+            $ok = $json === true || (is_array($json) && ! isset($json['error'])
+                && (($json[$psid] ?? null) === true || ($json['success'] ?? null) === true));
+            if (! $ok) {
+                $this->lastFetchError = 'Facebook ไม่ยืนยันการบล็อกผู้ใช้';
+            }
 
             Log::info('🚫 blockPageUser', ['psid' => $psid, 'ok' => $ok, 'resp' => $json]);
 
@@ -3653,9 +3657,16 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 return false;
             }
 
-            Log::info('✨ unblockPageUser', ['psid' => $psid, 'resp' => $resp->json()]);
+            $json = $resp->json();
+            $ok = $json === true || (is_array($json) && ! isset($json['error'])
+                && (($json[$psid] ?? null) === true || ($json['success'] ?? null) === true));
+            if (! $ok) {
+                $this->lastFetchError = 'Facebook ไม่ยืนยันการปลดบล็อกผู้ใช้';
+            }
 
-            return true;
+            Log::info('✨ unblockPageUser', ['psid' => $psid, 'ok' => $ok, 'resp' => $json]);
+
+            return $ok;
         } catch (Exception $e) {
             $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
 
