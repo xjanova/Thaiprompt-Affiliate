@@ -5430,6 +5430,43 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 🔗 (2026-10-24) ผูก Rich Menu ให้ผู้ใช้คนเดียว (ทับ per-user link เดิม)
+     *
+     * ใช้สลับเมนูช่วงทำนาย ↔ เมนูหลัก (FortunePredictionMenu) — ไม่ใช่การส่งข้อความ
+     * ⇒ ไม่กินโควต้า push 300/เดือน
+     */
+    public function linkRichMenuToUser(string $userId, string $richMenuId): bool
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->post(self::API_ENDPOINT."/user/{$userId}/richmenu/{$richMenuId}");
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::warning('LINE Rich Menu: link รายคนไม่สำเร็จ', [
+                'user_id' => $userId,
+                'rich_menu_id' => $richMenuId,
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 300),
+            ]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::warning('LINE Rich Menu: link รายคน exception', [
+                'user_id' => $userId,
+                'rich_menu_id' => $richMenuId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * 🔍 (2026-07-25) ดูว่าผู้ใช้คนนี้ผูก Rich Menu ตัวไหนอยู่ (ใช้ตรวจสอบ/debug)
      *
      * @return string|null rich menu id ที่ผูกรายคน / null = ใช้ default ของ OA

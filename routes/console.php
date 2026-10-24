@@ -164,6 +164,15 @@ Schedule::command('fortune:remind-stuck-celtic --min-minutes=30 --max-hours=6 --
     ->name('fortune-remind-stuck-celtic')
     ->runInBackground();
 
+// 🔮 (2026-10-24) คืนเมนู LINE หลักให้คนที่ทำนายจบแล้ว (เมนูช่วงทำนายไม่มีปุ่ม "ดูดวง")
+//   ปกติสลับคืนตอนบอทส่งข้อความ — ตัวนี้เก็บคนที่จบโดยไม่มีข้อความตามมา (ดู FortunePredictionMenu)
+Schedule::command('fortune:prediction-menu-sweep')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-prediction-menu-sweep')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔔 (2026-06-20) Fortune Flow Nudge — กระตุ้นขั้นเลือกแพคเกจ / กล่องกติกา
 // ════════════════════════════════════════════════════════════════

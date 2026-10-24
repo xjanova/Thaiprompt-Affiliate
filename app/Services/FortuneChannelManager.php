@@ -579,7 +579,19 @@ class FortuneChannelManager
 
         // สำหรับ LINE ใช้ Flex Message ที่สวยงาม
         if ($platform === self::PLATFORM_LINE && $platformService instanceof LineFortuneService) {
-            return $this->sendLineResponse($platformService, $userId, $result, $extra);
+            $sent = $this->sendLineResponse($platformService, $userId, $result, $extra);
+
+            // 🔮 (2026-10-24) สลับเมนูช่วงทำนาย ↔ เมนูหลักตามสถานะบิล (วิ่งใน queue ไม่หน่วงคำตอบ)
+            try {
+                \App\Services\Fortune\FortunePredictionMenu::queueSync($userId);
+            } catch (\Throwable $menuErr) {
+                Log::debug('FortuneChannelManager: queue เมนูช่วงทำนายไม่สำเร็จ (non-blocking)', [
+                    'user_id' => $userId,
+                    'error' => $menuErr->getMessage(),
+                ]);
+            }
+
+            return $sent;
         }
 
         // สำหรับ Facebook ใช้ Button/Generic Template ที่สวยงาม
@@ -2861,6 +2873,21 @@ class FortuneChannelManager
                 'awaiting_tarot_intention' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🧘 พร้อมแล้ว', 'text' => 'พร้อม'],
                 ]),
+
+                // 🧭 (2026-10-24) เตือนขั้นที่รออยู่ระหว่างทำนาย + กล่องถามเวลาเกิด Celtic
+                //   ทั้งคู่มีปุ่มใน $result['quick_replies'] (รูปแบบ title/text) — เดิม celtic_ask_birthtime
+                //   ตกไป default (sendLineFallbackResponse) = ปุ่ม "ไม่ทราบ" หายเงียบฝั่ง LINE
+                //   reply-first + push fallback ในตัว · ไม่มีปุ่ม = text ล้วน
+                'celtic_step_reminder', 'celtic_ask_birthtime' => $this->sendLineMessageWithQuickReply(
+                    $lineService,
+                    $userId,
+                    $message,
+                    $replyToken,
+                    array_map(
+                        fn ($qr) => ['label' => $qr['title'] ?? $qr['label'] ?? '', 'text' => $qr['text'] ?? ''],
+                        array_filter((array) ($result['quick_replies'] ?? []), fn ($qr) => is_array($qr) && ! empty($qr['text']))
+                    )
+                ),
 
                 // 📅 (2026-05-01) ทวนวันเกิด → quick reply ใช่/ไม่ใช่ (LINE)
                 'awaiting_birthdate_confirmation' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
