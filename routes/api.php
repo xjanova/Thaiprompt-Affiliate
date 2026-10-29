@@ -262,6 +262,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/account/delete', [\App\Http\Controllers\Api\V1\AccountController::class, 'destroy'])
             ->middleware('throttle:5,1,api-account-delete')
             ->name('api.v1.account.delete');
+        // 🔒 (2026-10-29) รหัสยืนยันการลบทางอีเมล (บัญชีที่ไม่รู้รหัสผ่าน)
+        Route::post('/account/delete/send-code', [\App\Http\Controllers\Api\V1\AccountController::class, 'sendDeletionCode'])
+            ->middleware('throttle:3,10,api-account-delete-code')
+            ->name('api.v1.account.delete.send-code');
 
         // Mobile app analytics ingestion + AI fallback (protected + rate-limited)
         Route::post('/events/batch', [\App\Http\Controllers\Api\V1\AnalyticsApiController::class, 'batch'])

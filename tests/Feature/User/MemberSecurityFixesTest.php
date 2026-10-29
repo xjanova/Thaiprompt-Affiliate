@@ -82,9 +82,10 @@ class MemberSecurityFixesTest extends TestCase
     {
         $user = $this->member(['phone' => '0812345678', 'phone_verified' => true, 'phone_verified_at' => now()]);
 
+        // อีเมลเดิม — เปลี่ยนอีเมลต้องยืนยันรหัสผ่าน (ดู AccountTakeoverGuardsTest)
         $this->actingAs($user)->put(route('user.profile.update'), [
             'name' => $user->name,
-            'email' => 'member.phone@gmail.com',
+            'email' => $user->email,
             'phone' => '',
         ])->assertSessionHasNoErrors();
 

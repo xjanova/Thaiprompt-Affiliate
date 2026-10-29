@@ -976,6 +976,16 @@ Route::get('/account/delete/login', [\App\Http\Controllers\AccountDeletionContro
 Route::post('/account/delete', [\App\Http\Controllers\AccountDeletionController::class, 'destroy'])
     ->middleware(['auth', 'throttle:5,1,web-account-delete'])
     ->name('account.delete.destroy');
+// 🔒 (2026-10-29) รหัสยืนยันการลบบัญชีทางอีเมล (บัญชี LINE/FB/Google ที่ไม่รู้รหัสผ่าน)
+Route::post('/account/delete/send-code', [\App\Http\Controllers\AccountDeletionController::class, 'sendCode'])
+    ->middleware(['auth', 'throttle:3,10,web-account-delete-code'])
+    ->name('account.delete.send-code');
+
+// ✉️ (2026-10-29) ลิงก์ยืนยันอีเมลบัญชี (ส่งหลังเปลี่ยนอีเมล) — signed URL ไม่บังคับล็อกอิน
+Route::get('/account/email/verify/{id}/{hash}', [\App\Http\Controllers\AccountEmailVerificationController::class, 'verify'])
+    ->whereNumber('id')
+    ->middleware('throttle:10,1,account-email-verify-link')
+    ->name('account.email.verify');
 
 // การรับประกันซอฟต์แวร์ (รับประกันโดย บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด)
 Route::match(['GET', 'HEAD'], '/software-warranty', function () {
