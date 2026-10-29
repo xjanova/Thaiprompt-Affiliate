@@ -37,10 +37,10 @@ class MemberSecurityFixesTest extends TestCase
         return [$user, $settings];
     }
 
-    /** session ที่เพิ่งยืนยัน 2FA สำหรับจัดการ 2FA */
-    private function verifiedFor(string $action): array
+    /** session ที่ผู้ใช้คนนี้เพิ่งยืนยัน 2FA สำหรับ action นั้น */
+    private function verifiedFor(User $user, string $action): array
     {
-        return ['2fa_verified_at' => now()->toDateTimeString(), '2fa_verified_for' => $action];
+        return ['2fa_verified_at' => now()->toDateTimeString(), '2fa_verified_for' => $action, '2fa_verified_user' => $user->id];
     }
 
     // ── โปรไฟล์ / รหัสผ่าน ───────────────────────────────────────
@@ -106,7 +106,7 @@ class MemberSecurityFixesTest extends TestCase
         $this->assertStringContainsString('action=manage_2fa', $res->headers->get('Location'));
         $this->assertTrue($settings->fresh()->enabled, 'ยังไม่ยืนยันรหัส ต้องปิด 2FA ไม่ได้');
 
-        $this->actingAs($user)->withSession($this->verifiedFor('manage_2fa'))
+        $this->actingAs($user)->withSession($this->verifiedFor($user, 'manage_2fa'))
             ->post(route('user.two-factor.disable'))
             ->assertSessionHas('success');
         $this->assertFalse($settings->fresh()->enabled);
@@ -116,11 +116,25 @@ class MemberSecurityFixesTest extends TestCase
     {
         [$user, $settings] = $this->memberWith2fa();
 
-        $this->actingAs($user)->withSession($this->verifiedFor('withdrawal'))
+        $this->actingAs($user)->withSession($this->verifiedFor($user, 'withdrawal'))
             ->post(route('user.two-factor.disable'))
             ->assertRedirect();
 
         $this->assertTrue($settings->fresh()->enabled);
+    }
+
+    public function test_another_accounts_verification_in_the_same_browser_does_not_count(): void
+    {
+        [$user, $settings] = $this->memberWith2fa();
+        $other = $this->member();
+
+        // บัญชีอื่นเคยยืนยันใน session นี้ แล้ว $user ล็อกอินต่อในเบราว์เซอร์เดิม
+        $this->actingAs($user)->withSession($this->verifiedFor($other, 'manage_2fa'))
+            ->post(route('user.two-factor.disable'))
+            ->assertRedirect();
+        $this->assertTrue($settings->fresh()->enabled);
+
+        $this->assertFalse(app(\App\Services\TwoFactorService::class)->isVerified('manage_2fa', $user->id));
     }
 
     public function test_setup_page_renders_for_a_member_with_2fa_enabled(): void
@@ -135,7 +149,7 @@ class MemberSecurityFixesTest extends TestCase
     {
         [$user] = $this->memberWith2fa();
 
-        $res = $this->actingAs($user)->withSession($this->verifiedFor('manage_2fa'))
+        $res = $this->actingAs($user)->withSession($this->verifiedFor($user, 'manage_2fa'))
             ->post(route('user.two-factor.regenerate-recovery-codes'));
 
         $res->assertRedirect(route('user.two-factor.recovery-codes'));

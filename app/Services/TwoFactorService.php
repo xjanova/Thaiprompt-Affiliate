@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TwoFactorSetting;
 use App\Models\TwoFactorUserSetting;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -45,7 +46,8 @@ class TwoFactorService
         // ยืนยันไปแล้วใน session นี้ภายในช่วงผ่อนผัน → ไม่ถามซ้ำ (ครอบคลุมทุก action ใน session เดียวกัน)
         // 🔒 (2026-10-29) เดิมใช้ last_verified_at ในฐานข้อมูล → ยืนยันบนเครื่องหนึ่งครั้ง ทุก session ทุกเครื่อง
         //    (รวมถึงเครื่องที่ถูกขโมย session) ข้าม 2FA ได้ 15 นาที
-        if ($this->isVerified()) {
+        // ต้องเป็นการยืนยันของผู้ใช้คนนี้เท่านั้น (เช็คก่อนล็อกอิน เช่น OAuth callback ผู้ใช้ยังไม่ใช่ Auth::user())
+        if ($this->isVerified(null, $user->id)) {
             return false;
         }
 
@@ -110,8 +112,7 @@ class TwoFactorService
         Session::forget('2fa_verification_pending');
 
         // Mark as verified in session
-        Session::put('2fa_verified_at', now()->toDateTimeString());
-        Session::put('2fa_verified_for', $action);
+        $this->markSessionVerified($user, $action);
 
         return [
             'success' => true,
@@ -204,8 +205,7 @@ class TwoFactorService
         Session::forget('2fa_verification_pending');
 
         // Mark as verified in session
-        Session::put('2fa_verified_at', now()->toDateTimeString());
-        Session::put('2fa_verified_for', $action);
+        $this->markSessionVerified($user, $action);
 
         return [
             'success' => true,
@@ -384,13 +384,29 @@ class TwoFactorService
     }
 
     /**
-     * Check if current session has passed 2FA
+     * บันทึกใน session ว่าผู้ใช้คนนี้ยืนยัน 2FA แล้ว (ผูกกับ user id)
      */
-    public function isVerified(?string $action = null): bool
+    private function markSessionVerified(User $user, string $action): void
+    {
+        Session::put('2fa_verified_at', now()->toDateTimeString());
+        Session::put('2fa_verified_for', $action);
+        Session::put('2fa_verified_user', (int) $user->id);
+    }
+
+    /**
+     * Check if current session has passed 2FA
+     *
+     * 🔒 (2026-10-29) สถานะยืนยันผูกกับ user id — ล็อกอินบัญชีอื่นในเบราว์เซอร์เดิม (session ย้ายข้อมูลตามมา)
+     *    ต้องไม่ได้สถานะ "ยืนยันแล้ว" ของบัญชีก่อนหน้าไปด้วย
+     *
+     * @param  int|null  $userId  ผู้ใช้ที่จะเช็ค (ค่าเริ่มต้น = ผู้ใช้ที่ล็อกอินอยู่)
+     */
+    public function isVerified(?string $action = null, ?int $userId = null): bool
     {
         $verifiedAt = Session::get('2fa_verified_at');
+        $userId ??= Auth::id();
 
-        if (! $verifiedAt) {
+        if (! $verifiedAt || ! $userId || (int) Session::get('2fa_verified_user') !== (int) $userId) {
             return false;
         }
 
@@ -399,8 +415,7 @@ class TwoFactorService
         $verifiedTime = \Carbon\Carbon::parse($verifiedAt);
 
         if ($verifiedTime->addMinutes($gracePeriod)->isPast()) {
-            Session::forget('2fa_verified_at');
-            Session::forget('2fa_verified_for');
+            Session::forget(['2fa_verified_at', '2fa_verified_for', '2fa_verified_user']);
 
             return false;
         }
@@ -420,9 +435,7 @@ class TwoFactorService
      */
     public function clearVerification(): void
     {
-        Session::forget('2fa_verified_at');
-        Session::forget('2fa_verified_for');
-        Session::forget('2fa_verification_pending');
+        Session::forget(['2fa_verified_at', '2fa_verified_for', '2fa_verified_user', '2fa_verification_pending']);
     }
 
     /**
