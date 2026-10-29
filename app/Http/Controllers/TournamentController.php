@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\GameTournament;
 use App\Models\TournamentMatch;
 use App\Models\TournamentParticipant;
+use App\Models\Wallet;
+use App\Services\WalletService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TournamentController extends Controller
 {
+    public function __construct(protected WalletService $walletService) {}
+
     /**
      * List all tournaments
      */
@@ -66,54 +72,82 @@ class TournamentController extends Controller
     }
 
     /**
-     * Register for tournament
+     * สมัครเข้าร่วมทัวร์นาเมนต์ (หักค่าสมัครจาก wallet ถ้ามี)
+     *
+     * ล็อกแถวทัวร์นาเมนต์ก่อน → การสมัครพร้อมกันต่อคิวกัน ไม่รับเกินจำนวน และกดสมัครซ้ำไม่หักเงินซ้ำ
      */
     public function register(Request $request, $slug)
     {
         $tournament = GameTournament::where('slug', $slug)->firstOrFail();
         $user = Auth::user();
+        $entryFee = round((float) $tournament->entry_fee, 2);
 
-        if (! $tournament->isRegistrationOpen()) {
-            return response()->json(['error' => 'Registration is closed'], 400);
-        }
-
-        // Check if already registered
-        if (TournamentParticipant::where('tournament_id', $tournament->id)
-            ->where('user_id', $user->id)->exists()) {
-            return response()->json(['error' => 'Already registered'], 400);
-        }
-
-        DB::beginTransaction();
         try {
-            // Check entry fee
-            if ($tournament->entry_fee > 0) {
-                if ($user->wallet_balance < $tournament->entry_fee) {
-                    return response()->json(['error' => 'Insufficient balance'], 400);
+            return DB::transaction(function () use ($tournament, $user, $entryFee) {
+                $tournament = GameTournament::whereKey($tournament->id)->lockForUpdate()->first();
+
+                if (! $tournament->isRegistrationOpen()) {
+                    return response()->json(['error' => 'ทัวร์นาเมนต์นี้ปิดรับสมัครแล้ว'], 400);
                 }
 
-                // Deduct entry fee
-                $user->decrement('wallet_balance', $tournament->entry_fee);
-            }
+                if (TournamentParticipant::where('tournament_id', $tournament->id)
+                    ->where('user_id', $user->id)->exists()) {
+                    return response()->json(['error' => 'คุณสมัครทัวร์นาเมนต์นี้แล้ว'], 400);
+                }
 
-            // Create participant
-            $participant = TournamentParticipant::create([
-                'tournament_id' => $tournament->id,
+                $wallet = null;
+
+                if ($entryFee > 0) {
+                    $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+                    $balance = round((float) ($wallet?->balance ?? 0), 2);
+
+                    if ($wallet && ! $wallet->isActive()) {
+                        return response()->json(['error' => 'กระเป๋าเงินของคุณใช้งานไม่ได้ในขณะนี้ กรุณาติดต่อเจ้าหน้าที่'], 403);
+                    }
+
+                    if ($balance < $entryFee) {
+                        return response()->json([
+                            'error' => 'ยอดเงินในกระเป๋าไม่เพียงพอสำหรับค่าสมัคร',
+                            'required' => $entryFee,
+                            'balance' => $balance,
+                        ], 400);
+                    }
+                }
+
+                $participant = TournamentParticipant::create([
+                    'tournament_id' => $tournament->id,
+                    'user_id' => $user->id,
+                    'player_name' => $user->name,
+                    'paid_entry' => $entryFee > 0,
+                    'registered_at' => now(),
+                ]);
+
+                if ($entryFee > 0) {
+                    $this->walletService->deductForService(
+                        $wallet,
+                        $entryFee,
+                        "ค่าสมัครทัวร์นาเมนต์ {$tournament->name}",
+                        'tournament_entry',
+                        $participant->id,
+                        ['tournament_id' => $tournament->id]
+                    );
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'participant' => $participant,
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            return response()->json(['error' => 'คุณสมัครทัวร์นาเมนต์นี้แล้ว'], 400);
+        } catch (\Throwable $e) {
+            Log::error('Tournament registration failed', [
                 'user_id' => $user->id,
-                'player_name' => $user->name,
-                'paid_entry' => $tournament->entry_fee > 0,
-                'registered_at' => now(),
+                'tournament_id' => $tournament->id,
+                'error' => $e->getMessage(),
             ]);
 
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'participant' => $participant,
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'สมัครทัวร์นาเมนต์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'], 500);
         }
     }
 
