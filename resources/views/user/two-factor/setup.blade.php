@@ -196,8 +196,9 @@
                 </div>
                 <p style="color:var(--ink2); font-size:13px; margin:0 0 16px;">ใช้รหัสกู้คืนเมื่อคุณไม่สามารถเข้าถึงวิธีการยืนยันตัวตนหลักได้</p>
                 <div style="display:flex; flex-direction:column; gap:8px;">
-                    <a href="{{ route('user.two-factor.recovery-codes', ['codes' => json_encode($status['recovery_codes'] ?? [])]) }}" class="tp-btn tp-btn-primary" style="justify-content:center; background:#5689b8; border-color:#5689b8;">ดูรหัสกู้คืน</a>
-                    <form action="{{ route('user.two-factor.regenerate-codes') }}" method="POST">
+                    {{-- รหัสเก็บแบบ hash ดูซ้ำไม่ได้ — บอกจำนวนที่เหลือ แล้วให้สร้างชุดใหม่ (แสดงครั้งเดียว) --}}
+                    <div style="font-size:13px; color:var(--ink2);">เหลือรหัสที่ยังไม่ได้ใช้ <strong style="color:var(--ink);">{{ $status['recovery_codes_count'] ?? 0 }}</strong> รหัส</div>
+                    <form action="{{ route('user.two-factor.regenerate-recovery-codes') }}" method="POST">
                         @csrf
                         <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่? รหัสเก่าจะใช้ไม่ได้อีกต่อไป')" class="tp-btn" style="width:100%; justify-content:center;">สร้างรหัสใหม่</button>
                     </form>
@@ -212,8 +213,9 @@
                 <p style="color:var(--ink2); font-size:13px; margin:0 0 16px;">อุปกรณ์ที่คุณเลือกให้จำการเข้าสู่ระบบไว้</p>
                 @if(!empty($status['trusted_devices']) && count($status['trusted_devices']) > 0)
                     <div style="font-size:13px; color:var(--ink2); margin-bottom:14px;">จำนวนอุปกรณ์: <span style="font-weight:800; color:var(--ink);">{{ count($status['trusted_devices']) }}</span></div>
-                    <form action="{{ route('user.two-factor.remove-all-devices') }}" method="POST">
+                    <form action="{{ route('user.two-factor.remove-all-trusted-devices') }}" method="POST">
                         @csrf
+                        @method('DELETE')
                         <button type="submit" onclick="return confirm('ลบอุปกรณ์ที่เชื่อถือทั้งหมด?')" class="tp-btn" style="width:100%; justify-content:center; background:#d9534f; border-color:#d9534f; color:#fff;">ลบอุปกรณ์ทั้งหมด</button>
                     </form>
                 @else

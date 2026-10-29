@@ -22,7 +22,7 @@
     </div>
 
     {{-- ── ฟอร์ม ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;" x-data="{ cat: '{{ old('category_id') }}', pri: '{{ old('priority', 'medium') }}' }">
+    <div class="tp-card" style="padding:24px;" x-data="{ cat: @js((string) old('category_id', '')), pri: @js((string) old('priority', 'medium')) }">
         <form method="POST" action="{{ route('user.tickets.store') }}" style="display:flex; flex-direction:column; gap:22px;">
             @csrf
 
@@ -61,7 +61,7 @@
             {{-- รายละเอียด --}}
             <div>
                 <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fa-solid fa-align-left" style="margin-right:6px;"></i>รายละเอียด *</label>
-                <textarea name="description" required rows="8"
+                <textarea name="description" required maxlength="5000" rows="8"
                           placeholder="โปรดอธิบายปัญหาหรือคำถามของคุณให้ละเอียดที่สุด เพื่อให้เราสามารถช่วยเหลือคุณได้อย่างรวดเร็ว" class="tp-input" style="resize:vertical;">{{ old('description') }}</textarea>
                 @error('description')<p style="margin-top:8px; font-size:13px; color:#d9534f;">{{ $message }}</p>@enderror
                 <p style="margin-top:8px; font-size:11px; color:var(--ink2);"><i class="fa-solid fa-info-circle" style="margin-right:4px;"></i>ควรระบุ: ขั้นตอนที่ทำให้เกิดปัญหา, ข้อความ error (ถ้ามี), และสิ่งที่คุณคาดหวัง</p>

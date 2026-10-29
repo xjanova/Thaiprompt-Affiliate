@@ -50,7 +50,7 @@
                                 <span style="width:32px; height:32px; background:color-mix(in srgb, #5689b8 16%, transparent); color:#5689b8; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;">{{ $index + 1 }}</span>
                                 <code style="font-size:16px; font-family:monospace; font-weight:800; color:var(--ink);">{{ $code }}</code>
                             </div>
-                            <button type="button" onclick="copyCode('{{ $code }}')" title="คัดลอก" style="padding:8px; background:color-mix(in srgb, #5689b8 16%, transparent); color:#5689b8; border:none; border-radius:10px; cursor:pointer;">
+                            <button type="button" data-code="{{ $code }}" onclick="copyCode(this.dataset.code)" title="คัดลอก" style="padding:8px; background:color-mix(in srgb, #5689b8 16%, transparent); color:#5689b8; border:none; border-radius:10px; cursor:pointer;">
                                 <svg style="width:18px; height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
                         </div>
@@ -80,9 +80,9 @@
     @else
         <div class="tp-card" style="padding:48px; text-align:center;">
             <span style="font-size:56px; display:block; margin-bottom:16px;">🔒</span>
-            <h2 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 8px;">ไม่พบรหัสกู้คืน</h2>
-            <p style="color:var(--ink2); margin:0 0 20px;">คุณยังไม่มีรหัสกู้คืน หรือรหัสเดิมหมดอายุแล้ว</p>
-            <form action="{{ route('user.two-factor.regenerate-codes') }}" method="POST">
+            <h2 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 8px;">ไม่มีรหัสให้แสดง</h2>
+            <p style="color:var(--ink2); margin:0 0 20px;">รหัสกู้คืนแสดงครั้งเดียวตอนสร้างเท่านั้น@if(($remaining ?? 0) > 0) · ตอนนี้ยังเหลือรหัสที่ยังไม่ได้ใช้ {{ $remaining }} รหัส@endif — ถ้าหาไม่เจอ สร้างชุดใหม่ได้ (ชุดเดิมจะใช้ไม่ได้อีก)</p>
+            <form action="{{ route('user.two-factor.regenerate-recovery-codes') }}" method="POST">
                 @csrf
                 <button type="submit" onclick="return confirm('สร้างรหัสกู้คืนใหม่?')" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;">สร้างรหัสกู้คืนใหม่</button>
             </form>
@@ -157,6 +157,11 @@ function downloadCodes() {
     showToast('✅ ดาวน์โหลดไฟล์แล้ว');
 }
 
+// ป้องกันโค้ดแทรกตอนเขียนลงหน้าต่างพิมพ์ (document.write)
+function escHtml(v) {
+    return String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function printCodes() {
     const printWindow = window.open('', '', 'width=800,height=600');
     printWindow.document.write(`
@@ -186,7 +191,7 @@ function printCodes() {
             </div>
 
             <h2>รหัสกู้คืน (${codes.length} รหัส):</h2>
-            ${codes.map((code, index) => `<div class="code">${index + 1}. ${code}</div>`).join('')}
+            ${codes.map((code, index) => `<div class="code">${index + 1}. ${escHtml(code)}</div>`).join('')}
 
             <div class="meta">
                 <p>พิมพ์โดย: ThaiPrompt Affiliate System</p>

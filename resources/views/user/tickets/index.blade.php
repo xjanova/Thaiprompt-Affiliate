@@ -50,9 +50,12 @@
     {{-- ── ตัวกรอง ───────────────────────────────────────────── --}}
     <div style="display:flex; flex-wrap:wrap; gap:8px;">
         <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm {{ !$filters['status'] ? 'tp-btn-primary' : '' }}"><i class="fa-solid fa-list"></i> ทั้งหมด</a>
-        <a href="{{ route('user.tickets.index', ['status' => 'open']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'open' ? 'background:#5689b8; border-color:#5689b8; color:#fff;' : '' }}"><i class="fa-solid fa-folder-open"></i> เปิดอยู่</a>
+        {{-- 🐛 (2026-10-29) "เปิดอยู่" = ยังไม่ปิดทั้งหมด (ตรงกับตัวเลขด้านบน) · เพิ่มแท็บ "รอข้อมูลจากคุณ" และ "ปิดแล้ว" ที่เดิมไม่มี --}}
+        <a href="{{ route('user.tickets.index', ['status' => 'active']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'active' ? 'background:#5689b8; border-color:#5689b8; color:#fff;' : '' }}"><i class="fa-solid fa-folder-open"></i> เปิดอยู่</a>
+        <a href="{{ route('user.tickets.index', ['status' => 'waiting_customer']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'waiting_customer' ? 'background:#7c5cbf; border-color:#7c5cbf; color:#fff;' : '' }}"><i class="fa-solid fa-hourglass-half"></i> รอข้อมูลจากคุณ @if(($stats['waiting'] ?? 0) > 0)<span class="tp-num">({{ $stats['waiting'] }})</span>@endif</a>
         <a href="{{ route('user.tickets.index', ['status' => 'in_progress']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'in_progress' ? 'background:#d9a441; border-color:#d9a441; color:#fff;' : '' }}"><i class="fa-solid fa-spinner"></i> กำลังดำเนินการ</a>
         <a href="{{ route('user.tickets.index', ['status' => 'resolved']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'resolved' ? 'background:#5aa07e; border-color:#5aa07e; color:#fff;' : '' }}"><i class="fa-solid fa-check"></i> แก้ไขแล้ว</a>
+        <a href="{{ route('user.tickets.index', ['status' => 'done']) }}" class="tp-btn tp-btn-sm" style="{{ $filters['status'] == 'done' ? 'background:#64748b; border-color:#64748b; color:#fff;' : '' }}"><i class="fa-solid fa-lock"></i> ปิดแล้ว</a>
     </div>
 
     {{-- ── รายการ Ticket ─────────────────────────────────────── --}}

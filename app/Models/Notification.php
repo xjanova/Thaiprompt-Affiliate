@@ -106,9 +106,12 @@ class Notification extends Model
      */
     public function archive(): void
     {
+        // 🐛 (2026-10-29) เก็บถาวรแล้วนับว่าอ่านด้วย — เดิมรายการที่ยังไม่อ่านแล้วกดเก็บ ค้างในตัวเลขกระดิ่งตลอดไป
         $this->update([
             'is_archived' => true,
             'archived_at' => now(),
+            'is_read' => true,
+            'read_at' => $this->read_at ?? now(),
         ]);
     }
 
@@ -195,6 +198,27 @@ class Notification extends Model
     public function scopeRead($query)
     {
         return $query->where('is_read', true);
+    }
+
+    /**
+     * ลิงก์ปุ่มในแจ้งเตือน — รับเฉพาะ path ภายใน หรือ http/https
+     *
+     * 🔒 (2026-10-29) ค่ามาจากฟอร์มแอดมิน (validate แค่ string) แล้วถูกใส่ใน href / window.location ของกระดิ่ง
+     *    → javascript:... ทำงานในบัญชีลูกค้าที่กด · ตัด scheme อื่นทิ้งตรงนี้ครอบทุกหน้าที่แสดง
+     */
+    public function getActionUrlAttribute($value): ?string
+    {
+        $url = trim((string) $value);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('#^/(?![/\\\\])#', $url)) {
+            return $url;
+        }
+
+        return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true) ? $url : null;
     }
 
     /**

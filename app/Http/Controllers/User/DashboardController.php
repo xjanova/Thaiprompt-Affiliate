@@ -592,61 +592,49 @@ class DashboardController extends Controller
 
             // รูปโปรไฟล์ (จะแปลงเป็น WebP อัตโนมัติ)
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
-
-            // รหัสผ่าน (ถ้ามีการเปลี่ยน)
-            'current_password' => ['nullable', 'string'],
-            'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ];
+
+        // 🔒 (2026-10-29) เดิมรับ current_password/new_password ในฟอร์มนี้ด้วย → เปลี่ยนรหัสผ่านผ่าน PUT /profile
+        //    ได้โดยไม่ผ่าน turnstile:password_change + two-factor:password_change ที่ route update-password ตั้งไว้
+        //    และถ้ากรอกรหัสใหม่แต่ไม่กรอกรหัสเดิม ระบบเงียบ ลูกค้านึกว่าเปลี่ยนแล้ว → ตอนนี้เปลี่ยนรหัสผ่านได้ทางเดียว
+        if ($request->filled('new_password')) {
+            return back()->withInput($request->except(['current_password', 'new_password', 'new_password_confirmation']))
+                ->with('error', 'เปลี่ยนรหัสผ่านที่การ์ด "เปลี่ยนรหัสผ่าน" แยกต่างหาก ข้อมูลโปรไฟล์ยังไม่ถูกบันทึก');
+        }
 
         $validated = $request->validate($rules);
 
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                $imageUploadService->deleteImage($user->profile_picture);
+            // อัปโหลดรูปใหม่ก่อน (WebP, สูงสุด 800x800, quality 90) แล้วค่อยลบรูปเดิม
+            // 🐛 (2026-10-29) เดิมลบรูปเดิมก่อน → ถ้าอัปโหลดใหม่พัง ลูกค้าเสียรูปโปรไฟล์ไปเลย
+            $oldPicture = $user->profile_picture;
+            try {
+                $validated['profile_picture'] = $imageUploadService->uploadImage(
+                    $request->file('profile_picture'),
+                    'avatars',
+                    800,
+                    800,
+                    90
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Profile picture upload failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+                return back()->withInput()->with('error', 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ ลองใช้รูปอื่นหรือลดขนาดไฟล์ แล้วบันทึกอีกครั้ง');
             }
 
-            // Upload new profile picture with WebP conversion
-            // Use 'avatars' directory, max 800x800 for avatar, quality 90
-            $validated['profile_picture'] = $imageUploadService->uploadImage(
-                $request->file('profile_picture'),
-                'avatars',
-                800,
-                800,
-                90
-            );
+            if ($oldPicture && $oldPicture !== $validated['profile_picture']) {
+                $imageUploadService->deleteImage($oldPicture);
+            }
         }
 
-        // Don't update phone if it hasn't changed, or if it changed, require verification
-        if (isset($validated['phone']) && $validated['phone'] !== $user->phone) {
+        // เบอร์เปลี่ยน (รวมถึงลบเบอร์ทิ้ง) → ต้องยืนยันเบอร์ใหม่
+        // 🐛 (2026-10-29) เดิมใช้ isset() → ลบเบอร์ (null) แล้วสถานะ "ยืนยันแล้ว" ยังค้างอยู่
+        if (array_key_exists('phone', $validated) && $validated['phone'] !== $user->phone) {
             // Phone changed - reset verification status
             $validated['phone_verified'] = false;
             $validated['phone_verified_at'] = null;
         }
-
-        // Handle password change
-        if ($request->filled('current_password') && $request->filled('new_password')) {
-            // Check if current password is correct
-            if (! Hash::check($request->current_password, $user->password)) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
-            }
-
-            // Check if new password is same as current password
-            if (Hash::check($request->new_password, $user->password)) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม');
-            }
-
-            // Update password
-            $validated['password'] = Hash::make($request->new_password);
-        }
-
-        // Remove password fields from validated array if not changing password
-        unset($validated['current_password'], $validated['new_password']);
 
         // ⚠️ SECURITY: ป้องกันไม่ให้แก้ไข ID Card fields ผ่าน profile update
         // ID Card fields สามารถแก้ไขได้โดย Admin เท่านั้น (ผ่าน Support Ticket)

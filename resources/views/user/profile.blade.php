@@ -8,6 +8,13 @@
     // ── สถานะ KYC → ป้ายสี (hex แทน dynamic tailwind) ──────────
     $kycVerified = $user->isKycVerified();
     $kycPending  = $user->isKycPending();
+
+    // Turnstile ของการเปลี่ยนรหัสผ่าน (route update-password ตรวจ point password_change)
+    $pwTurnstile = config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.password_change');
+
+    // ตัวอักษรแรกของชื่อ (mb_ — ชื่อไทยใช้ substr จะได้ไบต์ครึ่งตัว)
+    $initial = mb_strtoupper(mb_substr(trim((string) $user->name) ?: 'U', 0, 1));
+    $fallbackAvatar = 'data:image/svg+xml;charset=utf-8,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#c8a24a"/><text x="100" y="128" font-size="92" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">'.e($initial).'</text></svg>');
 @endphp
 
 @section('content')
@@ -116,7 +123,7 @@
                                         <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
                                              alt="{{ $user->name }}"
                                              style="width:100%; height:100%; object-fit:cover; border-radius:50%;"
-                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=c8a24a&color=fff&size=200';">
+                                             onerror="this.onerror=null; this.src={{ \Illuminate\Support\Js::from($fallbackAvatar) }};">
                                     </div>
                                 </div>
                             </div>
@@ -470,6 +477,14 @@
                         <h2 style="font-size:17px; font-weight:700; margin:0;">เปลี่ยนรหัสผ่าน</h2>
                     </div>
 
+                    {{-- 🐛 (2026-10-29) เดิมไม่แสดง error ของฟอร์มนี้เลย — รหัสอ่อน/ยืนยันไม่ตรง หน้าแค่โหลดใหม่เงียบๆ --}}
+                    @php $pwErrors = collect(['current_password', 'new_password', 'turnstile'])->flatMap(fn ($k) => $errors->get($k)); @endphp
+                    @if($pwErrors->isNotEmpty())
+                        <div id="nvm-pw-errors" role="alert" style="margin-bottom:14px; padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f; font-size:12.5px; color:#d9534f;">
+                            @foreach($pwErrors as $msg)<div><i class="fas fa-circle-exclamation"></i> {{ $msg }}</div>@endforeach
+                        </div>
+                    @endif
+
                     <div style="display:flex; flex-direction:column; gap:14px;">
                         {{-- รหัสผ่านปัจจุบัน --}}
                         <div>
@@ -479,7 +494,8 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="current_password"
-                                       placeholder="ใส่รหัสผ่านปัจจุบัน (ถ้าต้องการเปลี่ยน)"
+                                       form="nvm-pw-form" required autocomplete="current-password"
+                                       placeholder="ใส่รหัสผ่านปัจจุบัน"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
                                 <button type="button"
@@ -499,6 +515,7 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password"
+                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
                                        placeholder="ใส่รหัสผ่านใหม่"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
@@ -519,6 +536,7 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password_confirmation"
+                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
                                        placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
@@ -535,10 +553,25 @@
                             <i class="fas fa-circle-info"></i>
                             รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
                         </div>
+
+                        @if($pwTurnstile)
+                            {{-- widget อยู่ในฟอร์มโปรไฟล์ทาง DOM → ปิดช่องอัตโนมัติแล้วส่ง token เข้าฟอร์มรหัสผ่านทาง callback --}}
+                            <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="{{ config('turnstile.theme') }}" data-size="{{ config('turnstile.size') }}" data-response-field="false" data-callback="nvmPwTurnstile" data-expired-callback="nvmPwTurnstileReset"></div>
+                            <input type="hidden" id="nvm-pw-ts" name="cf-turnstile-response" form="nvm-pw-form">
+                        @endif
+
+                        <button type="submit" form="nvm-pw-form" class="tp-btn tp-btn-primary" style="align-self:flex-start;">
+                            <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+    </form>
+
+    {{-- 🔒 ฟอร์มเปลี่ยนรหัสผ่านแยกจากฟอร์มโปรไฟล์ — ผ่าน turnstile + 2FA (password_change) ตาม route --}}
+    <form id="nvm-pw-form" method="POST" action="{{ route('user.profile.update-password') }}">
+        @csrf
     </form>
 
     {{-- ── ปุ่มบันทึกลอย (Floating Save) ──────────────────────── --}}
@@ -568,6 +601,14 @@
 </div>
 
 @push('scripts')
+@if($pwTurnstile)
+<script>
+    // token Turnstile → ช่องในฟอร์มเปลี่ยนรหัสผ่าน
+    window.nvmPwTurnstile = (token) => { document.getElementById('nvm-pw-ts').value = token; };
+    window.nvmPwTurnstileReset = () => { document.getElementById('nvm-pw-ts').value = ''; };
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
 <script>
 /**
  * Profile Manager - Alpine.js Component
@@ -583,6 +624,8 @@ function profileManager() {
             if (form) {
                 const inputs = form.querySelectorAll('input, select, textarea');
                 inputs.forEach(input => {
+                    // ช่องรหัสผ่านเป็นของฟอร์มแยก (form="nvm-pw-form") — ไม่นับเป็นการแก้โปรไฟล์
+                    if (input.form !== form) return;
                     input.addEventListener('input', () => {
                         this.formChanged = true;
                     });

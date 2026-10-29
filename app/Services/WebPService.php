@@ -24,15 +24,16 @@ class WebPService
      * @param  UploadedFile  $file  The uploaded file
      * @param  string  $directory  The storage directory (e.g., 'branding', 'avatars')
      * @param  int  $quality  Quality of WebP conversion (0-100)
+     * @param  bool  $randomName  true = ชื่อไฟล์สุ่มล้วน (เอกสารส่วนตัว เช่น KYC — ไม่เอาชื่อไฟล์เดิมของลูกค้า และเดา URL ไม่ได้)
      * @return array ['path' => storage path, 'url' => public URL, 'original_extension' => original file extension]
      */
-    public function convertAndStore(UploadedFile $file, string $directory, int $quality = 85): array
+    public function convertAndStore(UploadedFile $file, string $directory, int $quality = 85, bool $randomName = false): array
     {
         // Get original extension
         $originalExtension = $file->getClientOriginalExtension();
 
         // Skip conversion for SVG files
-        if (strtolower($originalExtension) === 'svg') {
+        if (! $randomName && strtolower($originalExtension) === 'svg') {
             $path = $file->store($directory, 'public');
 
             return [
@@ -46,8 +47,10 @@ class WebPService
         $image = $this->imageManager->read($file->getPathname());
 
         // Generate unique filename with .webp extension
-        $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $filename = \Illuminate\Support\Str::slug($filename).'-'.uniqid().'.webp';
+        // 🔒 (2026-10-29) slug(ชื่อเดิม)+uniqid() เดาได้จากเวลาที่ส่ง และมักมีชื่อจริงของลูกค้าติดมา
+        $filename = $randomName
+            ? \Illuminate\Support\Str::random(40).'.webp'
+            : \Illuminate\Support\Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.uniqid().'.webp';
 
         // Define full path
         $fullPath = $directory.'/'.$filename;
