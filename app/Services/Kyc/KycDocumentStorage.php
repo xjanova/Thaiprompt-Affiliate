@@ -4,6 +4,7 @@ namespace App\Services\Kyc;
 
 use App\Models\KycVerification;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -171,6 +172,37 @@ class KycDocumentStorage
         } catch (\Throwable $e) {
             Log::info('KYC document: delete skipped', ['error' => class_basename($e)]);
         }
+    }
+
+    /**
+     * มีแถว kyc_verifications ไหนยังชี้พาธนี้อยู่หรือไม่ (ไฟล์เก่าบางไฟล์ถูกใช้ร่วมกันหลายแถว)
+     *
+     * @param  int|null  $exceptId  ไม่นับแถวนี้ (แถวที่กำลังถูกลบ/แทนที่รูป)
+     */
+    public function isReferenced(string $path, ?int $exceptId = null): bool
+    {
+        return DB::table('kyc_verifications')
+            ->when($exceptId !== null, fn ($q) => $q->where('id', '!=', $exceptId))
+            ->where(function ($q) use ($path) {
+                foreach (self::KINDS as $column) {
+                    $q->orWhere($column, $path);
+                }
+            })
+            ->exists();
+    }
+
+    /**
+     * ลบไฟล์เมื่อไม่มีแถวอื่นชี้แล้วเท่านั้น — ใช้ตอนแทนที่/ลบแถว ไม่งั้นแถวที่ใช้ไฟล์ร่วมกันจะกลายเป็นรูปหาย
+     *
+     * @param  int|null  $exceptId  แถวที่กำลังถูกลบ/แทนที่รูป (ไม่นับว่ายังชี้อยู่)
+     */
+    public function deleteIfUnreferenced(?string $path, ?int $exceptId = null): void
+    {
+        if (blank($path) || $this->isReferenced($path, $exceptId)) {
+            return;
+        }
+
+        $this->delete($path);
     }
 
     /**

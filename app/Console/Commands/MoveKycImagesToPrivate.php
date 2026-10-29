@@ -156,7 +156,7 @@ class MoveKycImagesToPrivate extends Command implements Isolatable
         }
 
         // ลบต้นฉบับเมื่อไม่มีแถวอื่นชี้ไฟล์เดียวกันแล้ว (ไม่งั้นแถวนั้นจะกลายเป็นรูปหาย)
-        if (! $this->referencedByAnyRow($path)) {
+        if (! $this->documents->isReferenced($path)) {
             $legacy->delete($path);
         }
 
@@ -247,17 +247,6 @@ class MoveKycImagesToPrivate extends Command implements Isolatable
 
             return false;
         }
-    }
-
-    private function referencedByAnyRow(string $path): bool
-    {
-        return DB::table('kyc_verifications')
-            ->where(function ($q) use ($path) {
-                foreach (KycDocumentStorage::KINDS as $column) {
-                    $q->orWhere($column, $path);
-                }
-            })
-            ->exists();
     }
 
     private function extensionOf(string $path): string

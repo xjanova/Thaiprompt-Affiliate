@@ -161,8 +161,9 @@ class KycVerificationObserver
             $documents = app(KycDocumentStorage::class);
             $deleted = 0;
 
+            // ไฟล์ที่แถวอื่นยังชี้อยู่ (ใช้ร่วมกัน) ต้องเก็บไว้ — ไม่นับแถวนี้ (hook deleting = แถวยังไม่หายตอนเช็ค)
             foreach ($paths as $path) {
-                if ($documents->exists($path)) {
+                if ($documents->exists($path) && ! $documents->isReferenced($path, $kycId)) {
                     $documents->delete($path);
                     $deleted++;
                 }

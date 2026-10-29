@@ -1097,8 +1097,9 @@ class MobileApiController extends Controller
                 $kyc->update([$column => $imagePath]);
 
                 // 🔒 รูปเดิมที่ถูกแทนที่ = สำเนาบัตรกำพร้า ลบทิ้ง (เดิมค้างบน public disk ถาวร)
+                //    เว้นไว้ถ้าแถวอื่นยังชี้ไฟล์เดียวกัน (ไฟล์เก่าบางไฟล์ใช้ร่วมกันหลายแถว)
                 if ($previousPath && $previousPath !== $imagePath) {
-                    $documents->delete($previousPath);
+                    $documents->deleteIfUnreferenced($previousPath, $kyc->id);
                 }
             }
 

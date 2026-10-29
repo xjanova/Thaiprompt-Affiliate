@@ -274,6 +274,34 @@ class KycPrivateImagesTest extends TestCase
         Storage::disk('local')->assertExists($kyc->fresh()->id_card_image);
     }
 
+    public function test_replacing_or_deleting_keeps_a_file_another_request_still_uses(): void
+    {
+        $owner = $this->member();
+        $shared = 'kyc/'.$owner->id.'/id_card_shared.jpg';
+        Storage::disk('public')->put($shared, 'SHARED');
+        $older = KycVerification::create(['user_id' => $owner->id, 'id_card_image' => $shared, 'status' => 'rejected']);
+        $draft = KycVerification::create(['user_id' => $owner->id, 'id_card_image' => $shared, 'status' => 'draft']);
+
+        // แอปส่งรูปบัตรใหม่ให้แถว draft → แถวเก่ายังชี้ไฟล์เดิม ห้ามลบ
+        Sanctum::actingAs($owner);
+        $this->postJson('/api/v1/kyc/upload', [
+            'image' => UploadedFile::fake()->image('card.jpg', 900, 560),
+            'type' => 'id_card',
+        ])->assertOk()->assertJsonPath('data.kycId', $draft->id);
+
+        $this->assertStringStartsWith('kyc-private/', $draft->fresh()->id_card_image);
+        Storage::disk('public')->assertExists($shared);
+        $this->app['auth']->forgetGuards();
+        $this->assertPrivateImageResponse($this->actingAs($owner)->get(route('user.kyc.image', [$older, 'id_card'])), 'SHARED');
+
+        // ลบแถวหนึ่งในสองแถวที่ใช้ไฟล์ร่วมกัน → ไฟล์ยังอยู่ · ลบแถวสุดท้าย → ไฟล์ถูกลบ
+        $twin = KycVerification::create(['user_id' => $owner->id, 'id_card_image' => $shared, 'status' => 'rejected']);
+        $twin->delete();
+        Storage::disk('public')->assertExists($shared);
+        $older->delete();
+        Storage::disk('public')->assertMissing($shared);
+    }
+
     public function test_mobile_submit_stores_images_on_private_disk(): void
     {
         $user = $this->member();
