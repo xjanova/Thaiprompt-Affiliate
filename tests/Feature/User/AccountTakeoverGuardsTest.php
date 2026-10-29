@@ -7,6 +7,7 @@ use App\Mail\VerifyAccountEmailMail;
 use App\Models\TwoFactorUserSetting;
 use App\Models\User;
 use App\Services\AccountDeletionService;
+use App\Support\AccountEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -222,6 +223,49 @@ class AccountTakeoverGuardsTest extends TestCase
 
         $this->actingAs($user)->postJson(route('user.profile.email.send-code'), ['new_email' => 'fb_1@thaiprompt.local'])
             ->assertStatus(422)->assertJsonValidationErrors('new_email');
+    }
+
+    public function test_new_email_must_be_a_real_mailbox(): void
+    {
+        $user = $this->member(['email' => 'owner@gmail.com']);
+
+        foreach (['someone@line.user', 'someone@line.local'] as $systemEmail) {
+            $this->actingAs($user)->postJson(route('user.profile.email.send-code'), ['new_email' => $systemEmail])
+                ->assertStatus(422)->assertJsonPath('errors.new_email.0', AccountEmail::NOT_DELIVERABLE_MESSAGE);
+        }
+
+        $this->actingAs($user)->put(route('user.profile.update'), [
+            'name' => $user->name,
+            'email' => 'someone@line.user',
+            'email_password' => self::PASSWORD,
+        ])->assertSessionHasErrors(['email' => AccountEmail::NOT_DELIVERABLE_MESSAGE]);
+
+        $this->assertSame('owner@gmail.com', $user->fresh()->email);
+    }
+
+    public function test_mobile_line_placeholder_email_counts_as_a_system_email(): void
+    {
+        // MobileApiController::lineLoginCallback สร้างบัญชีด้วย {LINE userId}@line.user + รหัสผ่านสุ่ม
+        $lineId = 'U'.str_repeat('c', 32);
+        $user = $this->member(['email' => $lineId.'@line.user', 'line_user_id' => $lineId]);
+
+        // ลบบัญชี: ไม่มีอีเมลจริง ไม่มี 2FA → ต้องเพิ่มอีเมลก่อน (ไม่ส่งรหัสไปกล่องที่ไม่มีใครรับ)
+        $this->assertSame(AccountDeletionService::METHOD_ADD_EMAIL, app(AccountDeletionService::class)->confirmationMethod($user));
+
+        // เพิ่มอีเมลจริง: รหัสไปที่อีเมลใหม่ ไม่ใช่ @line.user
+        $this->actingAs($user)->postJson(route('user.profile.email.send-code'), ['new_email' => 'mobile.member@gmail.com'])->assertOk();
+        $this->assertNull(Cache::get('otp:'.strtolower($lineId).'@line.user'));
+        $code = Cache::get('otp:mobile.member@gmail.com')['otp'];
+
+        $this->actingAs($user)->put(route('user.profile.update'), [
+            'name' => $user->name,
+            'email' => 'mobile.member@gmail.com',
+            'email_code' => $code,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('mobile.member@gmail.com', $user->fresh()->email);
+        Mail::assertNotSent(AccountEmailChangedMail::class);
+        $this->assertSame(AccountDeletionService::METHOD_EMAIL_CODE, app(AccountDeletionService::class)->confirmationMethod($user->fresh()));
     }
 
     public function test_profile_page_offers_the_right_confirmation_for_each_account(): void

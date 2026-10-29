@@ -587,10 +587,11 @@ class DashboardController extends Controller
         $emailMode = $emailChange->mode($user);
         $emailChanging = $emailChange->isChange($user, $request->input('email'));
 
-        $emailRules = ['required', 'email', 'max:255', 'unique:users,email,'.$user->id];
-        // กันตั้งอีเมลโดเมนสงวนเฉพาะตอนเปลี่ยน — บัญชี LINE/FB ที่ระบบตั้งอีเมลให้ ต้องแก้ชื่อ/เบอร์ได้โดยไม่ถูกบังคับเปลี่ยนอีเมล
+        $emailRules = ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id];
+        // กันตั้งอีเมลโดเมนสงวน/อีเมลระบบเฉพาะตอนเปลี่ยน — บัญชี LINE/FB ที่ระบบตั้งอีเมลให้ ต้องแก้ชื่อ/เบอร์ได้โดยไม่ถูกบังคับเปลี่ยนอีเมล
         if ($emailChanging) {
             $emailRules[] = new NotReservedEmailDomain;
+            $emailRules[] = AccountEmail::deliverableRule();
         }
 
         $rules = [
@@ -710,7 +711,7 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'new_email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
+            'new_email' => ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain, AccountEmail::deliverableRule()],
         ], [], ['new_email' => 'อีเมลใหม่']);
 
         if (! $emailChange->isChange($user, $request->input('new_email'))) {

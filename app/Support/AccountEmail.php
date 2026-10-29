@@ -3,19 +3,26 @@
 namespace App\Support;
 
 use App\Rules\NotReservedEmailDomain;
+use Closure;
 
 /**
  * 📧 อีเมลบัญชีนี้ส่งถึงคนจริงได้ไหม — ใช้ตัดสินว่าจะยืนยันตัวตน/แจ้งเตือนผ่านอีเมลได้หรือเปล่า
  *
  * บัญชีที่ระบบสร้างให้ (บอท LINE/Facebook/Telegram, แอป LINE) ได้อีเมลสังเคราะห์ที่ไม่มีกล่องจดหมายจริง:
  *   line_…@thaiprompt.local, fb_…@thaiprompt.local, tg_…@thaiprompt.local (โดเมนสงวน — NotReservedEmailDomain)
- *   line_…@line.local (MobileLineAuthController), deleted+…@invalid / deleted_…@deleted.local (บัญชีที่ลบแล้ว)
+ *   line_…@line.local (MobileLineAuthController), {LINE userId}@line.user (MobileApiController::lineLoginCallback)
+ *   deleted+…@invalid / deleted_…@deleted.local (บัญชีที่ลบแล้ว)
  * → ส่งรหัสยืนยันหรือแจ้งเตือนไปที่อีเมลพวกนี้ = ไม่มีใครได้รับ
  */
 final class AccountEmail
 {
     /** TLD ใช้งานพิเศษ (RFC 2606 / 6761 / 6762) — ไม่มีกล่องจดหมายจริงบนอินเทอร์เน็ต */
     private const NON_DELIVERABLE_TLDS = ['local', 'invalid', 'test', 'localhost', 'example'];
+
+    /** โดเมนสังเคราะห์ที่ TLD ไม่ได้อยู่ในรายการข้างบน (รวมโดเมนย่อย) */
+    private const SYNTHETIC_DOMAINS = ['line.user'];
+
+    public const NOT_DELIVERABLE_MESSAGE = 'อีเมลนี้รับรหัสหรือลิงก์ยืนยันไม่ได้ กรุณาใช้อีเมลจริงของคุณ';
 
     /** อีเมลนี้ส่งถึงเจ้าของจริงได้ (ไม่ใช่อีเมลสังเคราะห์ของระบบ) */
     public static function isDeliverable(mixed $email): bool
@@ -29,9 +36,28 @@ final class AccountEmail
         }
 
         $domain = rtrim(mb_strtolower(substr($email, strrpos($email, '@') + 1)), '.');
+        foreach (self::SYNTHETIC_DOMAINS as $synthetic) {
+            if ($domain === $synthetic || str_ends_with($domain, '.'.$synthetic)) {
+                return false;
+            }
+        }
+
         $tld = str_contains($domain, '.') ? substr($domain, strrpos($domain, '.') + 1) : $domain;
 
         return ! in_array($tld, self::NON_DELIVERABLE_TLDS, true);
+    }
+
+    /**
+     * กฎ validate ของ "อีเมลใหม่" — ต้องเป็นกล่องจดหมายจริง เพราะรหัส/ลิงก์ยืนยันจะส่งไปที่นั่น
+     * (ใช้คู่กับ 'bail' — อีเมลผิดรูปแบบให้ rule 'email' แจ้ง, โดเมนสงวนให้ NotReservedEmailDomain แจ้ง)
+     */
+    public static function deliverableRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if (! self::isDeliverable($value)) {
+                $fail(self::NOT_DELIVERABLE_MESSAGE);
+            }
+        };
     }
 
     /** อีเมลสองค่านี้คือกล่องเดียวกันไหม (ไม่สนตัวพิมพ์เล็ก/ใหญ่ และช่องว่างหัวท้าย) */
