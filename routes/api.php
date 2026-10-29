@@ -237,6 +237,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         ->where('type', 'id_card|driver_license|vehicle_registration|profile')
         ->name('api.v1.rider.documents.file');
 
+    // 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิมของตัวเอง (บัตร/คู่บัตร) — เปิดได้เฉพาะ signed URL อายุ 30 นาที
+    //    สร้างจาก POST /kyc/upload เท่านั้น (KycDocumentStorage::signedUrl) · ไฟล์อยู่บน private disk
+    Route::get('/kyc/image/{kycVerification}/{kind}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'kycImageFile'])
+        ->middleware(['signed', 'throttle:120,1,api-kyc-image'])
+        ->whereNumber('kycVerification')
+        ->whereIn('kind', array_keys(\App\Services\Kyc\KycDocumentStorage::KINDS))
+        ->name('api.v1.kyc.image');
+
     // 📸 (2026-10-04) ไรเดอร์รอบ 2: รูปโปรไฟล์พร้อมลายน้ำรหัสผู้ดู — เปิดได้เฉพาะ signed URL (~60 นาที)
     //    สร้างจาก ProfilePhotoService::urlFor() เท่านั้น · ไฟล์ต้นฉบับอยู่บน private disk ไม่มีทางเปิดตรง
     //    {viewer} = รหัส HMAC 6 ตัว (ไม่ใช่ user id) · {version} = เปลี่ยนทุกครั้งที่ถ่ายรูปใหม่

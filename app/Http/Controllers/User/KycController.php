@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\KycVerification;
+use App\Services\Kyc\KycDocumentStorage;
 use App\Services\OCR\ThaiIdCardOcrService;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
@@ -151,17 +152,18 @@ class KycController extends Controller
 
         // Store images with WebP conversion (หลังจาก OCR) — ชื่อไฟล์สุ่มล้วน
         // 🐛 (2026-10-29) เดิมไม่มี try/catch: รูปเสียหาย/แปลงไม่ได้ → 500 และรูปบัตรที่แปลงไปแล้วค้างเป็นไฟล์กำพร้า
+        // 🔒 (2026-10-29) เก็บบน private disk (kyc-private/{user_id}) — เดิมอยู่ public disk เปิดจาก /storage/… ได้ทุกคน
         $webpService = new WebPService;
+        $documents = app(KycDocumentStorage::class);
+        $directory = $documents->directoryFor($user->id);
         $idCardPath = null;
 
         try {
-            $idCardPath = $webpService->convertAndStore($request->file('id_card_image'), 'kyc/id-cards', 90, true)['path'];
-            $selfiePath = $webpService->convertAndStore($request->file('selfie_image'), 'kyc/selfies', 90, true)['path'];
+            $idCardPath = $webpService->convertAndStore($request->file('id_card_image'), $directory, 90, true, KycDocumentStorage::DISK)['path'];
+            $selfiePath = $webpService->convertAndStore($request->file('selfie_image'), $directory, 90, true, KycDocumentStorage::DISK)['path'];
         } catch (\Throwable $e) {
             Log::warning('KYC image conversion failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
-            if ($idCardPath) {
-                Storage::disk('public')->delete($idCardPath);
-            }
+            $documents->delete($idCardPath);
 
             return back()->with('error', 'อ่านไฟล์รูปไม่ได้ กรุณาถ่ายรูปใหม่เป็น JPG หรือ PNG แล้วส่งอีกครั้ง');
         }
@@ -208,5 +210,22 @@ class KycController extends Controller
         }
 
         return view('user.kyc.show', compact('kycVerification'));
+    }
+
+    /**
+     * 🔒 รูปบัตร/รูปคู่บัตรของตัวเอง (สตรีมจาก private disk · ห้าม cache)
+     *
+     * เจ้าของคำขอเท่านั้น — คนอื่น (รวมแอดมิน ที่ต้องดูผ่าน admin.kyc.image ซึ่งบันทึกการเปิดดู) ได้ 404
+     * เพื่อไม่บอกว่ามีคำขอเลขนี้อยู่ · แถว AI eKYC = 404 (รูปเข้ารหัส เปิดได้เฉพาะแอดมิน)
+     *
+     * @param  string  $kind  id_card | selfie
+     */
+    public function image(KycVerification $kycVerification, string $kind, KycDocumentStorage $documents)
+    {
+        if ((int) $kycVerification->user_id !== (int) auth()->id() || $kycVerification->isEkyc()) {
+            abort(404);
+        }
+
+        return $documents->response($kycVerification, $kind);
     }
 }

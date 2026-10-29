@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\Kyc\KycDocumentStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class KycVerification extends Model
 {
@@ -180,40 +180,59 @@ class KycVerification extends Model
     /**
      * URL ของรูปบัตรประชาชน — คืน null เมื่อไม่มีไฟล์จริง
      *
-     * @return string|null URL เต็มสำหรับใส่ใน <img src="..."> หรือ null ถ้าไฟล์หาย
+     * @param  string  $audience  owner = หน้าสมาชิก · admin = หลังบ้าน · signed = แอปมือถือ (signed URL อายุสั้น)
+     * @return string|null URL ของ route ที่ตรวจสิทธิ์ (ไม่ใช่ /storage/…) หรือ null ถ้าไฟล์หาย
      */
-    public function idCardImageUrl(): ?string
+    public function idCardImageUrl(string $audience = 'owner'): ?string
     {
-        return $this->hasIdCardImage() ? asset('storage/'.$this->id_card_image) : null;
+        return $this->documentImageUrl('id_card', $audience);
     }
 
     /**
      * URL ของรูปถ่ายคู่บัตร — คืน null เมื่อไม่มีไฟล์จริง
      *
-     * @return string|null URL เต็มสำหรับใส่ใน <img src="..."> หรือ null ถ้าไฟล์หาย
+     * @param  string  $audience  owner = หน้าสมาชิก · admin = หลังบ้าน · signed = แอปมือถือ (signed URL อายุสั้น)
      */
-    public function selfieImageUrl(): ?string
+    public function selfieImageUrl(string $audience = 'owner'): ?string
     {
-        return $this->hasSelfieImage() ? asset('storage/'.$this->selfie_image) : null;
+        return $this->documentImageUrl('selfie', $audience);
     }
 
     /**
-     * เช็คไฟล์บน public disk อย่างปลอดภัย
+     * 🔒 (2026-10-29) URL ของรูปเอกสาร KYC แบบเดิม — ชี้ไป route ที่ตรวจสิทธิ์เสมอ
      *
-     * @param  string|null  $path  พาธที่เก็บในฐานข้อมูล (relative กับ storage/app/public)
+     * เดิมคืน asset('storage/…') = ใครได้ลิงก์ก็เปิดบัตรประชาชนได้ · รูป eKYC ใช้ admin.kyc.image ชนิด card/card_face/best_frame
+     *
+     * @param  string  $kind  id_card | selfie
+     * @param  string  $audience  owner | admin | signed
+     */
+    public function documentImageUrl(string $kind, string $audience = 'owner'): ?string
+    {
+        $documents = app(KycDocumentStorage::class);
+
+        if (! $documents->exists($documents->pathFor($this, $kind))) {
+            return null;
+        }
+
+        return match ($audience) {
+            'admin' => route('admin.kyc.image', [$this, $kind]),
+            'signed' => $documents->signedUrl($this, $kind),
+            default => route('user.kyc.image', [$this, $kind]),
+        };
+    }
+
+    /**
+     * เช็คไฟล์อย่างปลอดภัย (private disk ก่อน แล้วค่อย public disk ของไฟล์เก่าที่ยังไม่ย้าย)
+     *
+     * @param  string|null  $path  พาธที่เก็บในฐานข้อมูล
      */
     protected function imageFileExists(?string $path): bool
     {
-        if (blank($path)) {
+        if ($this->isEkyc()) {
             return false;
         }
 
-        try {
-            return Storage::disk('public')->exists($path);
-        } catch (\Throwable $e) {
-            // ดิสก์มีปัญหา (permission/symlink) — ถือว่าไม่มีไฟล์ ดีกว่าให้หน้าแอดมินพัง
-            return false;
-        }
+        return app(KycDocumentStorage::class)->exists($path);
     }
 
     /**
