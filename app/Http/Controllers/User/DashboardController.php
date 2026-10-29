@@ -33,7 +33,10 @@ class DashboardController extends Controller
         // 2. สถิติ Wallet
         // ===============================================
 
-        $walletBalance = $user->wallet_balance ?? 0;
+        // ⚠️ ยอดจริงอยู่ที่ตาราง wallets — users ไม่มีคอลัมน์ wallet_balance
+        //    (เดิมอ่าน $user->wallet_balance ได้ null ตลอด → ยอดเงินขึ้น ฿0 ให้ทุกคน)
+        //    ไม่สร้างกระเป๋าให้ตอนเปิดหน้า — ยังไม่มีก็แสดง 0 ไปก่อน
+        $walletBalance = (float) ($user->wallet?->balance ?? 0);
 
         // ===============================================
         // 3. สถิติ Commission (MLM)
@@ -61,9 +64,11 @@ class DashboardController extends Controller
             ->sum('commission_amount') ?? 0;
 
         // คอมมิชชั่นเดือนที่แล้ว
+        // ⚠️ ต้อง subMonthNoOverflow — วันที่ 31 (หรือ 29-31 มี.ค.) subMonth ธรรมดาจะล้นกลับมาเป็นเดือนนี้
+        //    แล้ว % เติบโตจะเทียบเดือนนี้กับตัวเอง
         $lastMonthCommission = $user->mlmCommissions()
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+            ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount') ?? 0;
 
@@ -100,8 +105,8 @@ class DashboardController extends Controller
                 ->count();
 
             $lastMonthReferrals = $mlmMember->directReferrals()
-                ->whereYear('created_at', now()->subMonth()->year)
-                ->whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+                ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
                 ->count();
         }
 
@@ -161,12 +166,19 @@ class DashboardController extends Controller
             }
         }
 
+        // ขั้นระดับทั้งหมด — ใช้วาดแถบขั้นบนการ์ดระดับสมาชิก
+        $rankLadder = \App\Models\Rank::where('is_active', true)
+            ->orderBy('level', 'asc')
+            ->get(['id', 'level', 'name', 'name_th']);
+
         // ===============================================
         // 6. กิจกรรมล่าสุด (Recent Activity)
         // ===============================================
 
+        // ⚠️ MlmCommission ไม่มี relation ชื่อ mlmMember (มีแค่ member / fromMember)
+        //    เดิม ->with('mlmMember.user') ทำให้หน้านี้ 500 ทันทีที่ผู้ใช้มีคอมมิชชั่นสักรายการ
+        //    รายการนี้ไม่ได้ใช้ข้อมูล relation เลย จึงไม่ต้อง eager load
         $recentActivities = $user->mlmCommissions()
-            ->with('mlmMember.user')
             ->latest()
             ->limit(10)
             ->get()
@@ -188,7 +200,7 @@ class DashboardController extends Controller
         $chartValues = [];
 
         // ดึงข้อมูลคอมมิชชัน 12 เดือนในคำสั่งเดียว (แทน 12 queries)
-        $startDate = now()->subMonths(11)->startOfMonth();
+        $startDate = now()->startOfMonth()->subMonths(11);
         $monthlyCommissions = $user->mlmCommissions()
             ->where('created_at', '>=', $startDate)
             ->whereIn('status', ['approved', 'paid'])
@@ -198,7 +210,8 @@ class DashboardController extends Controller
             ->keyBy(fn ($item) => $item->year.'-'.$item->month);
 
         for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            // ⚠️ ต้องถอยจากวันที่ 1 — วันที่ 29-31 ถ้า subMonths ตรงๆ เดือนสั้นจะล้นไปเดือนถัดไป (ก.พ. หาย มี.ค. ซ้ำ)
+            $date = now()->startOfMonth()->subMonths($i);
             $key = $date->year.'-'.$date->month;
             $monthName = $date->locale('th')->translatedFormat('M Y');
 
@@ -241,7 +254,7 @@ class DashboardController extends Controller
         // ===============================================
 
         $recentCommissions = $user->mlmCommissions()
-            ->with('mlmMember.user')
+            ->with('fromMember.user')
             ->latest()
             ->limit(5)
             ->get();
@@ -296,6 +309,15 @@ class DashboardController extends Controller
             : null;
 
         // ===============================================
+        // 13. ลิงก์ชวนเพื่อน (ชุดเดียวกับ MlmDashboardController::referral)
+        // ===============================================
+
+        // หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA — อ่าน ?ref= เป็น member_code เพื่อผูกผู้แนะนำ
+        $referralUrl = ($mlmMember && $mlmMember->member_code && \Illuminate\Support\Facades\Route::has('line.registration.register'))
+            ? route('line.registration.register', ['ref' => $mlmMember->member_code])
+            : null;
+
+        // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
         // ===============================================
 
@@ -319,12 +341,15 @@ class DashboardController extends Controller
             'totalReferrals',
             'activeReferrals',
             'referralsGrowth',
+            'thisMonthReferrals',
+            'referralUrl',
 
             // Rank
             'currentRank',
             'nextRank',
             'rankProgress',
             'pointsNeeded',
+            'rankLadder',
 
             // Activities
             'recentActivities',
@@ -358,7 +383,10 @@ class DashboardController extends Controller
         // ===============================================
         // 1. ข้อมูล Wallet
         // ===============================================
-        $walletBalance = $user->wallet_balance ?? 0;
+        // ⚠️ ยอดจริงอยู่ที่ตาราง wallets — users ไม่มีคอลัมน์ wallet_balance
+        //    (เดิมอ่าน $user->wallet_balance ได้ null ตลอด → ยอดเงินขึ้น ฿0 ให้ทุกคน)
+        //    ไม่สร้างกระเป๋าให้ตอนเปิดหน้า — ยังไม่มีก็แสดง 0 ไปก่อน
+        $walletBalance = (float) ($user->wallet?->balance ?? 0);
 
         // คำนวณ wallet growth (เทียบกับเดือนที่แล้ว)
         $thisMonthEarnings = $user->mlmCommissions()
@@ -368,8 +396,8 @@ class DashboardController extends Controller
             ->sum('commission_amount') ?? 0;
 
         $lastMonthEarnings = $user->mlmCommissions()
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+            ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount') ?? 0;
 
