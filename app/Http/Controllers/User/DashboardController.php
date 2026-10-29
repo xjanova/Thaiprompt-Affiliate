@@ -736,6 +736,13 @@ class DashboardController extends Controller
                 + $marketplaceStats->clone()->where('status', 'approved')->count(),
             'paid' => $mlmStats->clone()->where('status', 'paid')->count()
                 + $marketplaceStats->clone()->where('status', 'paid')->count(),
+            // ยอดเงิน (เดิมมีแค่จำนวนรายการ ลูกค้าไม่รู้ว่าได้เท่าไร)
+            'amount_earned' => (float) $mlmStats->clone()->whereIn('status', ['approved', 'paid'])->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->whereIn('status', ['approved', 'paid'])->sum('net_commission'),
+            'amount_pending' => (float) $mlmStats->clone()->where('status', 'pending')->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->where('status', 'pending')->sum('net_commission'),
+            'amount_paid' => (float) $mlmStats->clone()->where('status', 'paid')->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->where('status', 'paid')->sum('net_commission'),
         ];
 
         return view('user.commissions', compact('commissions', 'stats'));

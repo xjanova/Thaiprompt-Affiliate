@@ -130,7 +130,7 @@ Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid:soft')->g
     // Transfer Routes
     Route::get('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/transfer', [WalletController::class, 'submitTransfer'])
-        ->middleware('two-factor:transfer')
+        ->middleware(['two-factor:transfer', 'throttle:10,1']) // จำกัดความถี่ กันเดา PIN/ยิงซ้ำ (หน้า QR จำกัด 5/นาที)
         ->name('transfer.submit');
 
     // QR Code Transfer Routes (พร้อมระบบป้องกัน)

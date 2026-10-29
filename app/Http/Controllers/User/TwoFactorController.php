@@ -110,7 +110,7 @@ class TwoFactorController extends Controller
     public function verify(Request $request)
     {
         $action = $request->input('action', 'general');
-        $redirect = $request->input('redirect');
+        $redirect = $this->safeRedirect($request->input('redirect'));
 
         return view('user.two-factor.verify', compact('action', 'redirect'));
     }
@@ -154,7 +154,7 @@ class TwoFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => $result['message'],
-            'redirect' => $request->input('redirect') ?? route('user.home'),
+            'redirect' => $this->safeRedirect($request->input('redirect')),
         ]);
     }
 
@@ -183,7 +183,7 @@ class TwoFactorController extends Controller
             'success' => true,
             'message' => $result['message'],
             'warning' => $result['warning'] ?? null,
-            'redirect' => $request->input('redirect') ?? route('user.home'),
+            'redirect' => $this->safeRedirect($request->input('redirect')),
         ]);
     }
 
@@ -251,5 +251,29 @@ class TwoFactorController extends Controller
         $userSettings->removeAllTrustedDevices();
 
         return redirect()->back()->with('success', 'ลบอุปกรณ์ที่เชื่อถือทั้งหมดเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ปลายทางหลังยืนยัน 2FA — รับเฉพาะลิงก์ภายในเว็บนี้
+     *
+     * 🔒 (2026-10-29) เดิมส่ง ?redirect= ดิบกลับไปให้ JS ทำ window.location.href
+     *    → ลิงก์ ?redirect=javascript:... รันโค้ดหลังเหยื่อกรอกรหัส 2FA (XSS) หรือพาไปเว็บปลอม (open redirect)
+     */
+    private function safeRedirect(?string $url): string
+    {
+        $url = trim((string) $url);
+
+        // path ภายใน เช่น /user/wallet (กัน //evil.com และ /\evil.com ที่เบราว์เซอร์ตีความเป็นโดเมนอื่น)
+        if (preg_match('#^/(?![/\\\\])#', $url)) {
+            return $url;
+        }
+
+        // URL เต็มที่ host ตรงกับเว็บนี้เท่านั้น
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (in_array($scheme, ['http', 'https'], true) && parse_url($url, PHP_URL_HOST) === request()->getHost()) {
+            return $url;
+        }
+
+        return route('user.home');
     }
 }

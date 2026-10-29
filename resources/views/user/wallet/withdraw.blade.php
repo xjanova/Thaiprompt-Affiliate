@@ -1,216 +1,231 @@
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'ถอนเงิน')
 
+@php
+    // ถอนเงิน — ธีมโนวาเต็ม · ยอดสุทธิคำนวณสดจากนโยบายจริง (WalletSetting ผ่าน $feePolicy)
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    [$balInt, $balDec] = explode('.', number_format((float) $wallet->balance, 2));
+    $minAmount = max(1, (float) $feePolicy['min_amount']);
+    $maxAmount = min((float) $wallet->balance, (float) $feePolicy['max_amount']);
+    // ยอดคงเหลือไม่ถึงขั้นต่ำ → ฟอร์มยังโชว์แต่กดส่งไม่ได้ พร้อมบอกเหตุผล
+    $canWithdraw = $maxAmount >= $minAmount;
+    $turnstile = config('turnstile.enabled') && config('turnstile.points.withdrawal_request');
+    $last4 = fn ($no) => substr(preg_replace('/[^0-9A-Za-z]/', '', (string) $no), -4);
+    $pct = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
+    // ส่งไม่ผ่านแล้วกลับมา → เลือกบัญชีเดิม ไม่งั้นใช้บัญชีค่าเริ่มต้น
+    $pickedMethod = (string) old('payment_method_id', optional($paymentMethods->firstWhere('is_default', true) ?? $paymentMethods->first())->id);
+@endphp
+
 @push('scripts')
-@if(config('turnstile.enabled') && config('turnstile.points.withdrawal_request'))
+@if($turnstile)
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endif
 @endpush
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #d9534f 16%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
-                <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#d9534f;"><i class="fas fa-hand-holding-usd" style="color:#fff;"></i></span>
-                <div style="flex:1; min-width:200px;">
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ถอนเงิน</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ถอนเงินจากกระเป๋าของคุณ</div>
-                </div>
-            </div>
-
-            {{-- ยอดเงินที่ถอนได้ --}}
-            <div style="margin-top:18px; padding:18px 22px; border-radius:18px; box-shadow:var(--inset);">
-                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินที่สามารถถอนได้</div>
-                <div class="tp-num" style="font-size:clamp(30px,6vw,46px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
+<section class="nvm-ph" aria-labelledby="nvm-wd-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Withdraw</div>
+            <h1 id="nvm-wd-h">ถอนเงินเข้าบัญชี</h1>
+            <p class="nvm-ph__lead">ระบบตรวจและโอนเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน · ชื่อบัญชีต้องตรงกับชื่อที่ยืนยันตัวตน</p>
+            <div class="nvm-bal">
+                <small>ยอดที่ถอนได้</small>
+                <b class="nvm-foil nvm-num">฿{{ $balInt }}<span>.{{ $balDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/withdraw.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── แบบฟอร์มถอนเงิน ───────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:18px;">📝 แบบฟอร์มถอนเงิน</div>
+@if(! $canWithdraw && $paymentMethods->isNotEmpty())
+    <section class="nvm-card nvm-alert" role="status">
+        <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/scale.webp') }}" alt="" width="58" height="58" loading="lazy">
+        <div class="nvm-alert__txt">
+            <b>ยอดคงเหลือยังไม่ถึงขั้นต่ำ</b>
+            <p>ถอนได้ตั้งแต่ ฿{{ number_format($minAmount, 2) }} ขึ้นไป ตอนนี้มี ฿{{ number_format((float) $wallet->balance, 2) }}</p>
+        </div>
+    </section>
+@endif
+
+@if($errors->any() || session('error'))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ถอนเงินไม่สำเร็จ</b>
+            @if(session('error'))<p>{{ session('error') }}</p>@endif
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+        </div>
+    </section>
+@endif
+
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-wdf-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Request</small><h2 id="nvm-wdf-h">แบบฟอร์มถอนเงิน</h2></div></div>
 
         @if($paymentMethods->isEmpty())
-            <div style="text-align:center; padding:40px 20px; border-radius:14px; box-shadow:var(--inset-sm);">
-                <div style="font-size:46px;">🏦</div>
-                <div style="font-weight:700; font-size:16px; margin-top:10px;">ยังไม่มีช่องทางรับเงิน</div>
-                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">กรุณาเพิ่มช่องทางรับเงินก่อนทำการถอน</div>
-                <a href="{{ route('user.wallet.payment-methods') }}" class="tp-btn tp-btn-primary" style="margin-top:16px;">เพิ่มช่องทางรับเงิน</a>
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/bank.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีบัญชีรับเงิน</b>
+                เพิ่มบัญชีธนาคารหรือพร้อมเพย์ก่อน แล้วกลับมาถอนได้ทันที
+                @if($nvR('user.wallet.payment-methods'))
+                    <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.wallet.payment-methods') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เพิ่มบัญชีรับเงิน</a></div>
+                @endif
             </div>
         @else
-            @php
-                // นโยบายค่าธรรมเนียม → Alpine (ห้ามใช้ @json กับ closure — ดู rule blade directive)
-                $feePolicyJs = \Illuminate\Support\Js::from($feePolicy);
-            @endphp
-            <form method="POST" action="{{ route('user.wallet.withdraw.submit') }}"
-                  style="display:flex; flex-direction:column; gap:18px;"
-                  x-data="{
-                      policy: {{ $feePolicyJs }},
-                      amount: '',
-                      get amt() { const a = parseFloat(this.amount); return isNaN(a) || a <= 0 ? 0 : a; },
-                      get fee() {
-                          if (this.amt <= 0) return 0;
-                          let f = this.policy.fee_type === 'percentage'
-                              ? this.amt * this.policy.fee_amount / 100
-                              : this.policy.fee_amount;
-                          f = Math.max(this.policy.fee_min, Math.min(this.policy.fee_max, f));
-                          return Math.round(f * 100) / 100;
-                      },
-                      get tax() {
-                          if (! this.policy.tax_enabled || this.amt <= 0 || this.amt < this.policy.tax_threshold) return 0;
-                          return Math.round(this.amt * this.policy.tax_percentage) / 100;
-                      },
-                      get net() { return Math.max(0, Math.round((this.amt - this.fee - this.tax) * 100) / 100); },
-                      fmt(n) { return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
-                  }">
+            {{-- นโยบายค่าธรรมเนียม → Alpine ผ่าน Js::from (ห้าม @json กับ closure) --}}
+            <form method="POST" action="{{ route('user.wallet.withdraw.submit') }}" class="nvm-form"
+                  x-data="nvmWithdraw({ policy: {{ \Illuminate\Support\Js::from($feePolicy) }}, amount: @js((string) old('amount', '')), max: {{ $maxAmount }}, can: @js($canWithdraw) })"
+                  @submit="busy = true" @pageshow.window="busy = false">
                 @csrf
 
-                <div>
-                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">เลือกช่องทางรับเงิน</label>
-                    <select name="payment_method_id" required class="tp-input">
-                        <option value="">-- เลือกช่องทางรับเงิน --</option>
+                <div class="nvm-field">
+                    <span class="nvm-label" id="nvm-pm-lbl">บัญชีรับเงิน <em>*</em></span>
+                    <div class="nvm-opts" role="radiogroup" aria-labelledby="nvm-pm-lbl">
                         @foreach($paymentMethods as $method)
-                            <option value="{{ $method->id }}">
-                                @if($method->type === 'bank_transfer')
-                                    🏦 {{ $method->bank_name }} - {{ $method->account_name }} ({{ substr($method->account_number, -4) }})
-                                @elseif($method->type === 'promptpay')
-                                    💳 PromptPay - {{ $method->account_name }} ({{ substr($method->account_number, -4) }})
-                                @elseif($method->type === 'paypal')
-                                    💰 PayPal - {{ $method->paypal_email }}
-                                @endif
-                                @if($method->is_default)
-                                    ⭐ (ค่าเริ่มต้น)
-                                @endif
-                            </option>
+                            <label class="nvm-opt">
+                                <input type="radio" name="payment_method_id" value="{{ $method->id }}" required @checked($pickedMethod === (string) $method->id)>
+                                <img src="{{ asset('images/nova/wallet/'.($method->type === 'promptpay' ? 'qr' : ($method->type === 'paypal' ? 'transfer' : 'bank')).'.webp') }}" alt="" width="44" height="44" loading="lazy">
+                                <span>
+                                    @if($method->type === 'bank_transfer')
+                                        <b>{{ $method->bank_name }}</b>
+                                        <small>{{ $method->account_name }} · <span class="nvm-num">•••• {{ $last4($method->account_number) }}</span></small>
+                                    @elseif($method->type === 'promptpay')
+                                        <b>พร้อมเพย์</b>
+                                        <small>{{ $method->account_name }} · <span class="nvm-num">•••• {{ $last4($method->account_number) }}</span></small>
+                                    @elseif($method->type === 'paypal')
+                                        <b>PayPal</b>
+                                        <small>{{ $method->paypal_email }}</small>
+                                    @else
+                                        <b>{{ $method->name }}</b>
+                                    @endif
+                                    @if($method->is_default)<span class="nvm-chip nvm-chip--gold">ค่าเริ่มต้น</span>@endif
+                                </span>
+                            </label>
                         @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
-                    <input type="number"
-                           name="amount"
-                           step="0.01"
-                           min="{{ max(1, $feePolicy['min_amount']) }}"
-                           max="{{ $wallet->balance }}"
-                           required
-                           x-model="amount"
-                           class="tp-input"
-                           placeholder="ระบุจำนวนเงินที่ต้องการถอน">
-                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">ยอดเงินสูงสุดที่ถอนได้: <span class="tp-num">฿{{ number_format($wallet->balance, 2) }}</span></div>
-                </div>
-
-                {{-- สรุปยอดสุทธิ — คำนวณสดตามนโยบายจริงจาก WalletSetting --}}
-                <div x-show="amt > 0" x-cloak style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
-                    <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
-                        <div style="display:flex; justify-content:space-between; color:var(--ink2);">
-                            <span>ยอดถอน</span><span class="tp-num" x-text="'฿' + fmt(amt)"></span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; color:var(--ink2);">
-                            <span>ค่าธรรมเนียม</span><span class="tp-num" x-text="'-฿' + fmt(fee)"></span>
-                        </div>
-                        <div x-show="tax > 0" style="display:flex; justify-content:space-between; color:var(--ink2);">
-                            <span>ภาษีหัก ณ ที่จ่าย</span><span class="tp-num" x-text="'-฿' + fmt(tax)"></span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-weight:800; border-top:1px solid color-mix(in srgb, var(--ink2) 25%, transparent); padding-top:6px;">
-                            <span>ยอดที่จะได้รับ</span><span class="tp-num" style="color:var(--deep1);" x-text="'฿' + fmt(net)"></span>
-                        </div>
                     </div>
+                    @if($nvR('user.wallet.payment-methods'))
+                        <span class="nvm-help">บัญชีไม่อยู่ในรายการ? <a class="nvm-link" href="{{ route('user.wallet.payment-methods') }}">จัดการบัญชีรับเงิน</a></span>
+                    @endif
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="wd-amount">จำนวนเงินที่ถอน (บาท) <em>*</em></label>
+                    <div class="nvm-amount"><span>฿</span><input id="wd-amount" type="number" name="amount" step="0.01" min="{{ $minAmount }}" max="{{ $maxAmount }}" inputmode="decimal" required class="nvm-input @error('amount') is-bad @enderror" placeholder="0.00" x-model="amount"></div>
+                    <div class="nvm-picks">
+                        <button type="button" @click="amount = String(max)">ถอนทั้งหมด ฿{{ number_format($maxAmount, 2) }}</button>
+                    </div>
+                    <span class="nvm-help">ขั้นต่ำ ฿{{ number_format($minAmount, 2) }} · สูงสุด ฿{{ number_format($maxAmount, 2) }}</span>
+                    <span class="nvm-err" x-show="amt > max" x-cloak>ยอดเกินกว่าที่ถอนได้</span>
+                </div>
+
+                {{-- สรุปยอดสุทธิ — คำนวณสดตามนโยบายจริง --}}
+                <div class="nvm-mini" x-show="amt > 0" x-cloak>
+                    <dl class="nvm-kv">
+                        <dt>ยอดถอน</dt><dd class="nvm-num" x-text="'฿' + fmt(amt)"></dd>
+                        <dt>ค่าธรรมเนียม</dt><dd class="nvm-num" x-text="'-฿' + fmt(fee)"></dd>
+                        <dt x-show="tax > 0">ภาษีหัก ณ ที่จ่าย</dt><dd class="nvm-num" x-show="tax > 0" x-text="'-฿' + fmt(tax)"></dd>
+                        <dt class="nvm-kv__total">ยอดที่จะได้รับ</dt><dd class="nvm-num nvm-kv__total" x-text="'฿' + fmt(net)"></dd>
+                    </dl>
                 </div>
 
                 @if($wallet->hasPIN())
-                {{-- PIN เฉพาะกระเป๋าที่ตั้งไว้ — ลูกค้าที่ไม่เคยตั้ง PIN ไม่ต้องกรอก
-                     (เดิมบังคับกรอกทุกคนแต่ backend ทิ้งค่า = คนตั้ง PIN จริงถอนไม่ได้) --}}
-                <div>
-                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">PIN กระเป๋าเงิน (6 หลัก)</label>
-                    <input type="password"
-                           name="pin"
-                           maxlength="6"
-                           pattern="[0-9]{6}"
-                           required
-                           class="tp-input"
-                           placeholder="ระบุ PIN 6 หลัก">
-                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">กรอก PIN เพื่อยืนยันการถอนเงิน</div>
-                </div>
-                @endif
-
-                <div>
-                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">หมายเหตุ (ถ้ามี)</label>
-                    <textarea name="user_note"
-                              rows="3"
-                              maxlength="500"
-                              class="tp-input"
-                              placeholder="หมายเหตุเพิ่มเติม (ไม่เกิน 500 ตัวอักษร)"></textarea>
-                </div>
-
-                {{-- เงื่อนไขการถอนเงิน --}}
-                <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-                    <div style="font-weight:700; font-size:13px; color:#5689b8; margin-bottom:8px;">📋 เงื่อนไขการถอนเงิน</div>
-                    <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--ink2);">
-                        <li>• จำนวนเงินขั้นต่ำในการถอนคือ {{ number_format($feePolicy['min_amount']) }} บาท</li>
-                        <li>• ค่าธรรมเนียม
-                            @if($feePolicy['fee_type'] === 'percentage')
-                                {{ rtrim(rtrim(number_format($feePolicy['fee_amount'], 2), '0'), '.') }}%
-                                (ขั้นต่ำ {{ number_format($feePolicy['fee_min']) }} บาท@if($feePolicy['fee_max'] < 999999) สูงสุด {{ number_format($feePolicy['fee_max']) }} บาท@endif)
-                            @else
-                                {{ number_format($feePolicy['fee_amount'], 2) }} บาทต่อรายการ
-                            @endif
-                        </li>
-                        @if($feePolicy['tax_enabled'] && $feePolicy['tax_percentage'] > 0)
-                        <li>• ยอดตั้งแต่ {{ number_format($feePolicy['tax_threshold']) }} บาทขึ้นไป หักภาษี ณ ที่จ่าย {{ rtrim(rtrim(number_format($feePolicy['tax_percentage'], 2), '0'), '.') }}%</li>
-                        @endif
-                        <li>• ระบบจะตรวจสอบ และโอนเข้าบัญชีเป็นรอบ — วันที่ 2 และ 17 ของทุกเดือน</li>
-                        <li>• ชื่อบัญชีรับเงินต้องตรงกับชื่อที่ยืนยันตัวตน (KYC)</li>
-                        <li>• หากพบปัญหา กรุณาติดต่อฝ่ายสนับสนุน</li>
-                    </ul>
-                </div>
-
-                @if(config('turnstile.enabled') && config('turnstile.points.withdrawal_request'))
-                <div style="display:flex; justify-content:center;">
-                    <div class="cf-turnstile"
-                         data-sitekey="{{ config('turnstile.site_key') }}"
-                         data-theme="{{ config('turnstile.theme') }}"
-                         data-size="{{ config('turnstile.size') }}">
+                    {{-- PIN เฉพาะกระเป๋าที่ตั้งไว้ — ลูกค้าที่ไม่เคยตั้ง PIN ไม่ต้องกรอก --}}
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="wd-pin">PIN กระเป๋าเงิน (6 หลัก) <em>*</em></label>
+                        <input id="wd-pin" type="password" name="pin" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off" required class="nvm-input @error('pin') is-bad @enderror" placeholder="••••••">
+                        <span class="nvm-help">กรอก PIN เพื่อยืนยันการถอนเงิน</span>
                     </div>
-                </div>
                 @endif
 
-                <div style="display:flex; flex-wrap:wrap; gap:12px;">
-                    <a href="{{ route('user.wallet.index') }}" class="tp-btn" style="flex:1; min-width:120px; text-align:center; justify-content:center;">ยกเลิก</a>
-                    <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; min-width:120px; justify-content:center; background:#d9534f; border-color:#d9534f;">ยืนยันการถอนเงิน</button>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="wd-note">หมายเหตุ (ถ้ามี)</label>
+                    <textarea id="wd-note" name="user_note" rows="3" maxlength="500" class="nvm-input" placeholder="ไม่เกิน 500 ตัวอักษร">{{ old('user_note') }}</textarea>
+                </div>
+
+                @if($turnstile)
+                    <div class="nvm-turnstile">
+                        <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="{{ config('turnstile.theme') }}" data-size="{{ config('turnstile.size') }}"></div>
+                    </div>
+                @endif
+
+                <div class="nvm-filter__btns">
+                    <a href="{{ route('user.wallet.index') }}" class="nvm-btn nvm-btn--line">ยกเลิก</a>
+                    <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="! can || busy || amt > max"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg><span x-text="busy ? 'กำลังส่งคำขอ…' : 'ยืนยันการถอนเงิน'">ยืนยันการถอนเงิน</span></button>
                 </div>
             </form>
         @endif
-    </div>
+    </section>
 
-    {{-- ── คำขอถอนเงินล่าสุด ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
-            <div class="tp-section-h">📋 คำขอถอนเงินล่าสุด</div>
-            <a href="{{ route('user.wallet.withdrawals') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
-        </div>
-        <div style="text-align:center; padding:32px 20px; color:var(--ink2);">
-            <div style="font-size:42px; opacity:.5;">💸</div>
-            <div style="font-size:13px; margin-top:8px;">คลิก "ดูทั้งหมด" เพื่อดูประวัติการถอนเงิน</div>
-        </div>
-    </div>
-
-    {{-- ── คำแนะนำ ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:18px 22px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <div class="tp-section-h" style="margin-bottom:12px;">💡 คำแนะนำ</div>
-            <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink);">
-                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>ตรวจสอบช่องทางรับเงินให้ถูกต้องก่อนถอน</span></li>
-                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>กรอกจำนวนเงินที่ต้องการถอนอย่างระมัดระวัง</span></li>
-                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>เก็บรักษา PIN ของคุณไว้เป็นความลับ</span></li>
-                <li style="display:flex; align-items:flex-start; gap:8px;"><span style="color:#5aa07e;">✅</span><span>หากลืม PIN สามารถรีเซ็ตได้ที่หน้าโปรไฟล์</span></li>
-            </ul>
-        </div>
+    <div class="nvm-stack">
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-rule-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Conditions</small><h2 id="nvm-rule-h">เงื่อนไขการถอนเงิน</h2></div></div>
+            <ol class="nvm-steps">
+                <li>ถอนขั้นต่ำ ฿{{ number_format($minAmount) }}</li>
+                <li>ค่าธรรมเนียม
+                    @if((float) $feePolicy['fee_amount'] <= 0 && (float) $feePolicy['fee_min'] <= 0)
+                        ไม่มี — ได้รับเต็มจำนวน
+                    @elseif($feePolicy['fee_type'] === 'percentage')
+                        {{ $pct($feePolicy['fee_amount']) }}% (ขั้นต่ำ ฿{{ number_format((float) $feePolicy['fee_min']) }}@if($feePolicy['fee_max'] < 999999) สูงสุด ฿{{ number_format((float) $feePolicy['fee_max']) }}@endif)
+                    @else
+                        ฿{{ number_format((float) $feePolicy['fee_amount'], 2) }} ต่อรายการ
+                    @endif
+                </li>
+                @if($feePolicy['tax_enabled'] && $feePolicy['tax_percentage'] > 0)
+                    <li>ยอดตั้งแต่ ฿{{ number_format((float) $feePolicy['tax_threshold']) }} ขึ้นไป หักภาษี ณ ที่จ่าย {{ $pct($feePolicy['tax_percentage']) }}%</li>
+                @endif
+                <li>ตรวจและโอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน</li>
+                <li>ชื่อบัญชีรับเงินต้องตรงกับชื่อที่ยืนยันตัวตน (KYC)</li>
+                {{-- (2026-10-29) เดิมเขียน "รีเซ็ตได้ที่หน้าโปรไฟล์" แต่หน้าเว็บไม่มีที่ตั้ง/รีเซ็ต PIN — รีเซ็ตได้ทางแอดมินเท่านั้น --}}
+                <li>เก็บ PIN เป็นความลับ · ลืม PIN แจ้งฝ่ายสนับสนุนเพื่อรีเซ็ต</li>
+                <li>พบปัญหาการถอนเงิน ติดต่อฝ่ายสนับสนุน</li>
+            </ol>
+        </aside>
+        @if($nvR('user.wallet.withdrawals'))
+            <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.wallet.withdrawals') }}">
+                <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="58" height="58" loading="lazy">
+                <div class="nvm-alert__txt">
+                    <b>คำขอถอนเงินของฉัน</b>
+                    <p>ดูสถานะ รอบโอน หรือยกเลิกคำขอที่ยังรอตรวจ</p>
+                </div>
+                <div class="nvm-alert__side"><small>ดูทั้งหมด →</small></div>
+            </a>
+        @endif
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // ถอนเงิน: คำนวณค่าธรรมเนียม/ภาษี/ยอดสุทธิสด (สูตรเดียวกับ WithdrawalService) + กันกดส่งซ้ำ
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmWithdraw', function (o) {
+            return {
+                policy: o.policy,
+                amount: o.amount,
+                max: o.max,
+                can: o.can,
+                busy: false,
+                get amt() { var a = parseFloat(this.amount); return isNaN(a) || a <= 0 ? 0 : a; },
+                get fee() {
+                    if (this.amt <= 0) return 0;
+                    var f = this.policy.fee_type === 'percentage' ? this.amt * this.policy.fee_amount / 100 : this.policy.fee_amount;
+                    f = Math.max(this.policy.fee_min, Math.min(this.policy.fee_max, f));
+                    return Math.round(f * 100) / 100;
+                },
+                get tax() {
+                    if (! this.policy.tax_enabled || this.amt <= 0 || this.amt < this.policy.tax_threshold) return 0;
+                    return Math.round(this.amt * this.policy.tax_percentage) / 100;
+                },
+                get net() { return Math.max(0, Math.round((this.amt - this.fee - this.tax) * 100) / 100); },
+                fmt(n) { return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+            };
+        });
+    });
+</script>
+@endpush
 @endsection

@@ -1,460 +1,291 @@
 {{--
-    QR Transfer - สแกน QR เพื่อโอนเงิน (Theme V4)
-    ใช้กล้องสแกน QR Code หรืออัพโหลดรูป QR เพื่อโอนเงินทันที
-    *** Alpine component qrTransferManager() + jsQR + fetch endpoints คงเดิมทั้งหมด ***
+    สแกนจ่าย — สแกน QR ด้วยกล้อง / อัพโหลดรูป / กรอก Wallet Address เอง แล้วโอนทันที (ธีมโนวาเต็ม)
+    endpoint เดิม: qr-transfer.lookup (ค้นผู้รับ) · qr-transfer.process (โอน, มี idempotency + throttle)
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
-@section('title', 'สแกนจ่าย QR Code')
+@section('title', 'สแกนจ่าย')
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    [$balInt, $balDec] = explode('.', number_format((float) $wallet->balance, 2));
+    $minAmount = max(0.01, (float) $feePolicy['min_amount']);
+    $hasPin = $wallet->hasPIN();
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;" x-data="qrTransferManager()">
 
-    {{-- ── Hero + ยอดเงิน ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 72%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
-                <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-camera" style="color:#fff;"></i></span>
-                <div style="flex:1; min-width:200px;">
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สแกนจ่าย</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">สแกน QR Code เพื่อโอนเงินทันที</div>
-                </div>
-            </div>
-            <div style="margin-top:18px; padding:18px 22px; border-radius:18px; box-shadow:var(--inset);">
-                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินคงเหลือ</div>
-                <div class="tp-num" style="font-size:clamp(30px,6vw,44px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
-            </div>
-        </div>
-    </div>
+<div class="nvm-stack" x-data="nvmQrPay({
+        policy: {{ \Illuminate\Support\Js::from($feePolicy) }},
+        balance: {{ (float) $wallet->balance }},
+        min: {{ $minAmount }},
+        hasPin: @js($hasPin),
+        lookupUrl: @js(route('user.wallet.qr-transfer.lookup')),
+        payUrl: @js(route('user.wallet.qr-transfer.process')),
+    })" @pagehide.window="stopCamera()">
 
-    {{-- ── โหมดสแกน (แท็บ) ────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:7px; display:flex; gap:7px;">
-        @php
-            $modes = [['scan','fa-camera','สแกนกล้อง'], ['upload','fa-image','อัพโหลดรูป'], ['manual','fa-keyboard','กรอกเอง']];
-        @endphp
-        @foreach($modes as [$mval, $mic, $mlabel])
-            <button @click="mode = '{{ $mval }}'" type="button"
-                    :style="mode === '{{ $mval }}' ? 'background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;box-shadow:var(--raise);' : 'color:var(--ink2);'"
-                    style="flex:1; border:0; cursor:pointer; font-family:inherit; font-weight:600; font-size:12.5px; padding:11px 6px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:7px; background:transparent; transition:all .18s ease;">
-                <i class="fas {{ $mic }}"></i> {{ $mlabel }}
-            </button>
-        @endforeach
-    </div>
-
-    {{-- ── พื้นที่สแกน ────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        {{-- กล้อง --}}
-        <div x-show="mode === 'scan'" x-transition>
-            <div style="position:relative;">
-                <video id="qr-video" style="width:100%; aspect-ratio:1/1; object-fit:cover; background:#000; display:block;"></video>
-                <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
-                    <div style="width:256px; height:256px; border:4px solid rgba(255,255,255,.5); border-radius:24px; position:relative;">
-                        <div style="position:absolute; inset-inline:0; top:50%; height:2px; background:var(--accent1);" class="animate-pulse"></div>
-                    </div>
-                </div>
-            </div>
-            <div style="padding:16px; text-align:center;">
-                <div style="font-size:12.5px; color:var(--ink2);">วาง QR Code ในกรอบเพื่อสแกน</div>
-                <button @click="startCamera()" x-show="!cameraActive" type="button" class="tp-btn tp-btn-primary" style="margin-top:14px;"><i class="fas fa-video"></i> เปิดกล้อง</button>
-                <button @click="stopCamera()" x-show="cameraActive" type="button" class="tp-btn" style="margin-top:14px; color:#d9534f;"><i class="fas fa-stop"></i> ปิดกล้อง</button>
+<section class="nvm-ph" aria-labelledby="nvm-qp-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Scan &amp; pay</div>
+            <h1 id="nvm-qp-h">สแกนจ่าย</h1>
+            <p class="nvm-ph__lead">สแกน QR รับเงินของสมาชิก แล้วโอนเข้ากระเป๋าเขาทันที</p>
+            <div class="nvm-bal">
+                <small>ยอดที่ใช้จ่ายได้</small>
+                <b class="nvm-foil nvm-num">฿<i x-text="balParts[0]">{{ $balInt }}</i><span x-text="'.' + balParts[1]">.{{ $balDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/phone.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
 
-        {{-- อัพโหลดรูป --}}
-        <div x-show="mode === 'upload'" x-transition style="padding:28px;">
-            <div style="text-align:center;">
-                <label style="cursor:pointer; display:block;">
-                    <div style="border:3px dashed color-mix(in srgb, var(--ink2) 35%, transparent); border-radius:18px; padding:44px 20px;">
-                        <i class="fas fa-cloud-arrow-up" style="font-size:46px; color:var(--ink2);"></i>
-                        <div style="font-size:13.5px; font-weight:600; margin-top:12px;">คลิกเพื่ออัพโหลดรูป QR Code</div>
-                        <div style="font-size:11.5px; color:var(--ink2); margin-top:4px;">รองรับ JPG, PNG, GIF</div>
+<div class="nvm-split">
+    <div class="nvm-stack">
+        {{-- ── ขั้น 1: หาผู้รับ ── --}}
+        <section class="nvm-card nvm-box" x-show="! who" aria-labelledby="nvm-qps-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Step 1</small><h2 id="nvm-qps-h">หาผู้รับเงิน</h2></div></div>
+            <div class="nvm-tabs" role="tablist">
+                <button type="button" role="tab" :class="{ 'is-on': mode === 'scan' }" :aria-selected="mode === 'scan'" @click="setMode('scan')"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>สแกนกล้อง</button>
+                <button type="button" role="tab" :class="{ 'is-on': mode === 'upload' }" :aria-selected="mode === 'upload'" @click="setMode('upload')"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>อัพโหลดรูป</button>
+                <button type="button" role="tab" :class="{ 'is-on': mode === 'manual' }" :aria-selected="mode === 'manual'" @click="setMode('manual')"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>กรอกเอง</button>
+            </div>
+
+            <div class="nvm-gap-t" x-show="mode === 'scan'">
+                <div class="nvm-scan">
+                    <video x-ref="video" playsinline muted></video>
+                    <div class="nvm-scan__frame" aria-hidden="true"><i></i></div>
+                    <div class="nvm-scan__idle" x-show="! cameraOn">
+                        <img src="{{ asset('images/nova/wallet/qr.webp') }}" alt="" width="96" height="96" loading="lazy">
+                        <span>กดเปิดกล้อง แล้วส่อง QR รับเงินของผู้รับ</span>
                     </div>
-                    <input type="file" accept="image/*" @change="handleImageUpload($event)" style="display:none;">
+                </div>
+                <div class="nvm-filter__btns nvm-gap-t">
+                    <button type="button" class="nvm-btn nvm-btn--gold" x-show="! cameraOn" @click="startCamera()"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>เปิดกล้อง</button>
+                    <button type="button" class="nvm-btn nvm-btn--line" x-show="cameraOn" x-cloak @click="stopCamera()"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ปิดกล้อง</button>
+                </div>
+            </div>
+
+            <div class="nvm-gap-t" x-show="mode === 'upload'" x-cloak>
+                <label class="nvm-drop-zone">
+                    <img src="{{ asset('images/nova/wallet/qr.webp') }}" alt="" width="72" height="72" loading="lazy">
+                    <b>เลือกรูป QR Code</b>
+                    <small>ภาพหน้าจอหรือรูปถ่าย QR รับเงิน (JPG, PNG)</small>
+                    <input type="file" accept="image/*" class="nvm-sr" @change="readImage($event)">
                 </label>
-                <div x-show="uploadedImage" x-cloak style="margin-top:18px;">
-                    <img :src="uploadedImage" style="max-width:280px; margin:0 auto; border-radius:14px; box-shadow:var(--raise);">
-                </div>
             </div>
-        </div>
 
-        {{-- กรอกเอง --}}
-        <div x-show="mode === 'manual'" x-transition style="padding:22px;">
-            <div style="max-width:440px; margin:0 auto; display:flex; flex-direction:column; gap:14px;">
-                <div>
-                    <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">Wallet Address ผู้รับ</label>
-                    <input type="text" x-model="manualAddress" @input="lookupWallet()" class="tp-input" placeholder="TPW...">
+            <form class="nvm-form nvm-gap-t" x-show="mode === 'manual'" x-cloak @submit.prevent="lookup(manual)">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="qp-addr">Wallet Address ผู้รับ</label>
+                    <input id="qp-addr" type="text" x-model="manual" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" class="nvm-input nvm-num" placeholder="TPW…">
                 </div>
-                <button @click="validateManualAddress()" :disabled="!manualAddress || manualAddress.length < 10" type="button" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center;"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
-            </div>
-        </div>
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="manual.trim().length < 10 || finding"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg><span x-text="finding ? 'กำลังค้นหา…' : 'ค้นหาผู้รับ'">ค้นหาผู้รับ</span></button>
+            </form>
+        </section>
+
+        {{-- ── ขั้น 2: ใส่ยอด + ยืนยัน ── --}}
+        <section class="nvm-card nvm-box" x-show="who" x-cloak aria-labelledby="nvm-qpf-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Step 2</small><h2 id="nvm-qpf-h">ยืนยันการจ่าย</h2></div></div>
+            <form class="nvm-form" @submit.prevent="pay()">
+                <div class="nvm-who">
+                    <span class="nvm-avatar" x-text="who ? who.user_name.replace(/^[เแโใไ]/, '').charAt(0) : ''"></span>
+                    <span><small>จ่ายให้</small><b x-text="who && who.user_name"></b><small class="nvm-num" x-text="who && who.wallet_address"></small></span>
+                    <svg class="nvm-ico"><use href="#nvm-i-check"/></svg>
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="qp-amount">จำนวนเงิน (บาท) <em>*</em></label>
+                    <div class="nvm-amount"><span>฿</span><input id="qp-amount" type="number" step="0.01" min="{{ $minAmount }}" inputmode="decimal" class="nvm-input" placeholder="0.00" x-model="amount" x-ref="amount"></div>
+                    <span class="nvm-help">ขั้นต่ำ ฿{{ number_format($minAmount, 2) }}</span>
+                    <span class="nvm-err" x-show="amt > 0 && amt < min" x-cloak>ยอดจ่ายขั้นต่ำ ฿{{ number_format($minAmount, 2) }}</span>
+                    <span class="nvm-err" x-show="total > balance" x-cloak>ยอดเงินไม่พอ (ต้องใช้ ฿<span x-text="fmt(total)"></span> รวมค่าธรรมเนียม)</span>
+                </div>
+
+                <div class="nvm-mini" x-show="amt > 0" x-cloak>
+                    <dl class="nvm-kv">
+                        <dt>ผู้รับได้</dt><dd class="nvm-num" x-text="'฿' + fmt(amt)"></dd>
+                        <dt>ค่าธรรมเนียม</dt><dd class="nvm-num" x-text="fee > 0 ? '฿' + fmt(fee) : 'ฟรี'"></dd>
+                        <dt class="nvm-kv__total">หักจากกระเป๋า</dt><dd class="nvm-num nvm-kv__total" x-text="'฿' + fmt(total)"></dd>
+                    </dl>
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="qp-note">หมายเหตุ (ถ้ามี)</label>
+                    <input id="qp-note" type="text" maxlength="255" class="nvm-input" x-model="note" placeholder="เช่น ค่าอาหาร, โอนคืน">
+                </div>
+
+                <template x-if="hasPin">
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="qp-pin">PIN กระเป๋าเงิน (6 หลัก) <em>*</em></label>
+                        <input id="qp-pin" type="password" maxlength="6" inputmode="numeric" autocomplete="off" class="nvm-input nvm-pin" x-model="pin" placeholder="••••••">
+                    </div>
+                </template>
+
+                <div class="nvm-filter__btns">
+                    <button type="button" class="nvm-btn nvm-btn--line" @click="reset()" :disabled="busy">เปลี่ยนผู้รับ</button>
+                    <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="! ok || busy"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังโอน…' : 'ยืนยันจ่ายเงิน'">ยืนยันจ่ายเงิน</span></button>
+                </div>
+            </form>
+        </section>
     </div>
 
-    {{-- ── ข้อมูลผู้รับ + ฟอร์มโอน ───────────────────────────── --}}
-    <div x-show="recipientData" x-transition x-cloak class="tp-card" style="padding:20px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">✅ ข้อมูลผู้รับเงิน</div>
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-qph-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">How it works</small><h2 id="nvm-qph-h">วิธีสแกนจ่าย</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ให้ผู้รับเปิดหน้า "QR รับเงิน" ในกระเป๋าเงินของเขา</li>
+            <li>สแกน QR — ระบบแสดงชื่อผู้รับให้ตรวจก่อน</li>
+            <li>ใส่ยอด (หรือใช้ยอดที่ผู้รับตั้งไว้ใน QR) แล้วกดยืนยัน</li>
+            <li>เงินเข้ากระเป๋าผู้รับทันที ยกเลิกไม่ได้</li>
+        </ol>
+        @if($nvR('user.wallet.qr-code'))
+            <a class="nvm-btn nvm-btn--line nvm-btn--sm nvm-gap-t" href="{{ route('user.wallet.qr-code') }}"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>QR รับเงินของฉัน</a>
+        @endif
+    </aside>
+</div>
 
-        <div style="display:flex; align-items:center; gap:14px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm); margin-bottom:18px;">
-            <span class="tp-tile" style="width:54px; height:54px; border-radius:50%; font-size:22px;"><span x-text="recipientData?.user_name?.charAt(0) || '?'"></span></span>
-            <div style="flex:1; min-width:0;">
-                <div style="font-size:16px; font-weight:700;" x-text="recipientData?.user_name"></div>
-                <div class="tp-num" style="font-size:12px; color:var(--ink2);" x-text="recipientData?.wallet_address"></div>
-            </div>
-            <i class="fas fa-circle-check" style="color:#5aa07e; font-size:22px;"></i>
-        </div>
-
-        {{-- จำนวนเงิน --}}
-        <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงินที่ต้องการโอน</label>
-        <div style="position:relative; margin-bottom:6px;">
-            <span style="position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--ink2); font-size:20px;">฿</span>
-            <input type="number" x-model="transferAmount" @input="calculateFee()" min="{{ $minTransferAmount }}" step="0.01" class="tp-input tp-num" style="padding-left:38px; font-size:22px;" placeholder="0.00">
-        </div>
-        <div style="font-size:11.5px; color:var(--ink2); margin-bottom:16px;">ยอดโอนขั้นต่ำ: ฿{{ number_format($minTransferAmount, 2) }} | ยอดคงเหลือ: ฿{{ number_format($wallet->balance, 2) }}</div>
-
-        {{-- ค่าธรรมเนียม --}}
-        <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); margin-bottom:16px; display:flex; flex-direction:column; gap:8px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px;"><span style="color:var(--ink2);">จำนวนเงินโอน</span><span class="tp-num" style="font-weight:600;">฿<span x-text="formatNumber(transferAmount || 0)"></span></span></div>
-            <div style="display:flex; justify-content:space-between; font-size:13px;">
-                <span style="color:var(--ink2);">ค่าธรรมเนียม</span>
-                <span class="tp-num" style="font-weight:600;" :style="feeAmount > 0 ? 'color:#e0a52e' : 'color:#5aa07e'">฿<span x-text="formatNumber(feeAmount)"></span><template x-if="feeAmount === 0"><span style="font-size:11px; margin-left:4px;">(ฟรี!)</span></template></span>
-            </div>
-            <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 16%, transparent); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:700;">ยอดหักทั้งหมด</span>
-                <span class="tp-num" style="font-weight:800; font-size:18px; color:var(--deep1);">฿<span x-text="formatNumber(totalDeduction)"></span></span>
-            </div>
-        </div>
-
-        {{-- เตือนยอดไม่พอ --}}
-        <div x-show="!hasEnoughBalance" x-cloak style="padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); margin-bottom:16px; color:#d9534f; font-size:12.5px;">
-            <i class="fas fa-triangle-exclamation"></i> ยอดเงินไม่เพียงพอ กรุณาเติมเงินก่อนทำรายการ
-        </div>
-
-        {{-- หมายเหตุ --}}
-        <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">หมายเหตุ (ไม่บังคับ)</label>
-        <input type="text" x-model="description" maxlength="255" class="tp-input" style="margin-bottom:16px;" placeholder="เช่น ค่าอาหาร, โอนคืน">
-
-        {{-- PIN --}}
-        <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">PIN กระเป๋าเงิน (6 หลัก)</label>
-        <input type="password" x-model="pin" maxlength="6" pattern="[0-9]{6}" class="tp-input tp-num" style="margin-bottom:18px; text-align:center; font-size:22px; letter-spacing:8px;" placeholder="● ● ● ● ● ●">
-
-        {{-- ปุ่ม --}}
-        <button @click="submitTransfer()" :disabled="!canSubmit || isSubmitting" type="button" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; height:48px; font-size:15px;">
-            <template x-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i></template>
-            <template x-if="!isSubmitting"><i class="fas fa-paper-plane"></i></template>
-            <span x-text="isSubmitting ? 'กำลังโอน...' : 'ยืนยันการโอนเงิน'"></span>
-        </button>
-        <button @click="resetForm()" type="button" class="tp-btn" style="width:100%; justify-content:center; margin-top:10px;"><i class="fas fa-xmark"></i> ยกเลิก</button>
-    </div>
-
-    {{-- ── Success Modal ─────────────────────────────────────── --}}
-    <div x-show="showSuccess" x-cloak x-transition style="position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); padding:16px;">
-        <div class="tp-card" style="max-width:420px; width:100%; padding:28px; text-align:center;">
-            <span class="tp-tile" style="width:72px; height:72px; border-radius:50%; font-size:32px; margin:0 auto; background:#5aa07e;"><i class="fas fa-check" style="color:#fff;"></i></span>
-            <div style="font-size:22px; font-weight:800; margin-top:16px;">โอนเงินสำเร็จ!</div>
-            <div style="font-size:13px; color:var(--ink2); margin-top:6px;" x-text="successMessage"></div>
-            <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); margin-top:18px; text-align:left; display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:var(--ink2);">เลขอ้างอิง</span><span class="tp-num" style="color:var(--deep1);" x-text="successData?.reference"></span></div>
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:var(--ink2);">ผู้รับ</span><span style="font-weight:600;" x-text="successData?.to_name"></span></div>
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:var(--ink2);">จำนวน</span><span class="tp-num" style="font-weight:700; color:#5aa07e;">฿<span x-text="formatNumber(successData?.amount)"></span></span></div>
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:var(--ink2);">ค่าธรรมเนียม</span><span class="tp-num">฿<span x-text="formatNumber(successData?.fee)"></span></span></div>
-            </div>
-            <a href="{{ route('user.wallet.index') }}" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; margin-top:18px;">กลับหน้ากระเป๋าเงิน</a>
+{{-- ── โอนสำเร็จ ── --}}
+<div class="nvm-modal" x-show="done" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-qpd-h">
+    <div class="nvm-card nvm-modal__box">
+        <img src="{{ asset('images/nova/wallet/deposit.webp') }}" alt="" width="110" height="110">
+        <h2 id="nvm-qpd-h">จ่ายเงินสำเร็จ</h2>
+        <p x-text="done ? 'โอน ฿' + fmt(done.amount) + ' ให้ ' + done.to_name + ' แล้ว' : ''"></p>
+        <dl class="nvm-kv nvm-mini">
+            <dt>เลขอ้างอิง</dt><dd class="nvm-num" x-text="done && done.reference"></dd>
+            <dt>ค่าธรรมเนียม</dt><dd class="nvm-num" x-text="done ? '฿' + fmt(done.fee || 0) : ''"></dd>
+            <dt class="nvm-kv__total">หักจากกระเป๋า</dt><dd class="nvm-num nvm-kv__total" x-text="done ? '฿' + fmt(done.total || done.amount) : ''"></dd>
+        </dl>
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--line" @click="done = null; reset()">จ่ายอีกรายการ</button>
+            <a class="nvm-btn nvm-btn--gold" href="{{ route('user.wallet.index') }}">กลับกระเป๋าเงิน</a>
         </div>
     </div>
 </div>
 
+</div>
+
 @push('scripts')
-<!-- jsQR for scanning QR from camera/image -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
-    function qrTransferManager() {
-        return {
-            mode: 'scan',
-            cameraActive: false,
-            videoStream: null,
-            scanInterval: null,
-            uploadedImage: null,
-            manualAddress: '',
-
-            // Recipient data
-            recipientData: null,
-
-            // Transfer form
-            transferAmount: null,
-            feeAmount: 0,
-            totalDeduction: 0,
-            hasEnoughBalance: true,
-            description: '',
-            pin: '',
-            isSubmitting: false,
-
-            // Success
-            showSuccess: false,
-            successMessage: '',
-            successData: null,
-
-            // Settings
-            balance: {{ $wallet->balance }},
-            feeType: '{{ $transferFeeType }}',
-            baseFee: {{ $transferFee }},
-            minAmount: {{ $minTransferAmount }},
-
-            get canSubmit() {
-                return this.recipientData &&
-                       this.transferAmount >= this.minAmount &&
-                       this.pin.length === 6 &&
-                       this.hasEnoughBalance;
-            },
-
-            init() {
-                // Auto start camera on mobile
-                if (this.mode === 'scan') {
-                    // Don't auto-start for privacy
-                }
-            },
-
-            async startCamera() {
-                try {
-                    const video = document.getElementById('qr-video');
-                    this.videoStream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' }
-                    });
-                    video.srcObject = this.videoStream;
-                    video.play();
-                    this.cameraActive = true;
-
-                    // Start scanning
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-
-                    this.scanInterval = setInterval(() => {
-                        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                            if (code) {
-                                this.handleQrCode(code.data);
-                            }
-                        }
-                    }, 200);
-                } catch (err) {
-                    console.error('Camera error:', err);
-                    this.showNotification('ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง', 'error');
-                }
-            },
-
-            stopCamera() {
-                if (this.videoStream) {
-                    this.videoStream.getTracks().forEach(track => track.stop());
-                    this.videoStream = null;
-                }
-                if (this.scanInterval) {
-                    clearInterval(this.scanInterval);
-                    this.scanInterval = null;
-                }
-                this.cameraActive = false;
-            },
-
-            handleImageUpload(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.uploadedImage = e.target.result;
-
-                    // Decode QR from image
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                        if (code) {
-                            this.handleQrCode(code.data);
-                        } else {
-                            this.showNotification('ไม่พบ QR Code ในรูปภาพ กรุณาลองใหม่', 'error');
-                        }
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            },
-
-            async handleQrCode(data) {
-                this.stopCamera();
-
-                try {
-                    // Parse QR data
-                    let qrData;
+    // สแกนจ่าย: อ่าน QR (กล้อง/รูป/พิมพ์เอง) → ค้นชื่อผู้รับจากเซิร์ฟเวอร์ (ไม่เชื่อชื่อใน QR) → โอน
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmQrPay', function (o) {
+            return {
+                policy: o.policy, balance: o.balance, min: o.min, hasPin: o.hasPin,
+                mode: 'scan', cameraOn: false, stream: null, timer: null,
+                manual: '', finding: false, who: null,
+                amount: '', note: '', pin: '', busy: false, done: null,
+                // คีย์กันโอนซ้ำ — ใหม่ทุกครั้งที่เลือกผู้รับ (เซิร์ฟเวอร์จำคำตอบตามคีย์นี้ 24 ชม.)
+                idemKey: '',
+                get amt() { var a = parseFloat(this.amount); return isNaN(a) || a <= 0 ? 0 : a; },
+                get fee() {
+                    if (this.amt <= 0) return 0;
+                    var f = this.policy.fee_type === 'percentage' ? this.amt * this.policy.fee_amount / 100 : this.policy.fee_amount;
+                    f = Math.max(this.policy.fee_min, Math.min(this.policy.fee_max, f));
+                    return Math.round(f * 100) / 100;
+                },
+                // ยอดบนแบนเนอร์ลดตามจริงหลังจ่ายสำเร็จ (ไม่ต้องรีเฟรช)
+                get balParts() { return this.fmt(this.balance).split('.'); },
+                get total() { return Math.round((this.amt + this.fee) * 100) / 100; },
+                get ok() { return this.who && this.amt >= this.min && this.total <= this.balance && (! this.hasPin || /^\d{6}$/.test(this.pin)); },
+                setMode(m) { if (m !== 'scan') this.stopCamera(); this.mode = m; },
+                async startCamera() {
+                    if (! navigator.mediaDevices || ! navigator.mediaDevices.getUserMedia) { window.showNotification('เบราว์เซอร์นี้เปิดกล้องไม่ได้ — ใช้อัพโหลดรูปแทน', 'error'); return; }
                     try {
-                        qrData = JSON.parse(data);
-                    } catch {
-                        // Maybe it's just a wallet address
-                        if (data.startsWith('TPW')) {
-                            qrData = { address: data };
-                        } else {
-                            throw new Error('Invalid QR format');
-                        }
+                        this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                        var v = this.$refs.video, self = this;
+                        v.srcObject = this.stream; await v.play();
+                        this.cameraOn = true;
+                        var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+                        this.timer = setInterval(function () {
+                            if (v.readyState !== v.HAVE_ENOUGH_DATA || typeof jsQR === 'undefined') return;
+                            c.width = v.videoWidth; c.height = v.videoHeight;
+                            ctx.drawImage(v, 0, 0, c.width, c.height);
+                            var code = jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+                            if (code) self.read(code.data);
+                        }, 250);
+                    } catch (e) {
+                        this.stopCamera();
+                        window.showNotification('เปิดกล้องไม่ได้ — อนุญาตการใช้กล้อง หรือใช้อัพโหลดรูปแทน', 'error');
                     }
-
-                    if (!qrData.address) {
-                        throw new Error('ไม่พบ Wallet Address ใน QR Code');
-                    }
-
-                    // Lookup wallet
-                    await this.lookupWallet(qrData.address, qrData.amount);
-
-                } catch (err) {
-                    console.error('QR parse error:', err);
-                    this.showNotification('QR Code ไม่ถูกต้อง กรุณาลองใหม่', 'error');
-                }
-            },
-
-            async lookupWallet(address = null, presetAmount = null) {
-                const walletAddress = address || this.manualAddress;
-                if (!walletAddress || walletAddress.length < 10) return;
-
-                try {
-                    const response = await fetch('{{ route("user.wallet.qr-transfer.lookup") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ wallet_address: walletAddress })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.recipientData = result.data;
-                        if (presetAmount) {
-                            this.transferAmount = presetAmount;
-                            this.calculateFee();
-                        }
-                        this.showNotification('พบผู้รับเงิน: ' + result.data.user_name, 'success');
-                    } else {
-                        this.showNotification(result.message, 'error');
-                    }
-                } catch (err) {
-                    console.error('Lookup error:', err);
-                    this.showNotification('เกิดข้อผิดพลาดในการค้นหา', 'error');
-                }
-            },
-
-            validateManualAddress() {
-                if (this.manualAddress && this.manualAddress.length >= 10) {
-                    this.lookupWallet();
-                }
-            },
-
-            async calculateFee() {
-                if (!this.transferAmount || this.transferAmount <= 0) {
-                    this.feeAmount = 0;
-                    this.totalDeduction = 0;
-                    this.hasEnoughBalance = true;
-                    return;
-                }
-
-                try {
-                    const response = await fetch('{{ route("user.wallet.qr-transfer.calculate-fee") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ amount: this.transferAmount })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.feeAmount = result.data.fee;
-                        this.totalDeduction = result.data.total;
-                        this.hasEnoughBalance = result.data.has_enough_balance;
-                    }
-                } catch (err) {
-                    console.error('Fee calculation error:', err);
-                }
-            },
-
-            async submitTransfer() {
-                if (!this.canSubmit || this.isSubmitting) return;
-
-                this.isSubmitting = true;
-
-                try {
-                    const response = await fetch('{{ route("user.wallet.qr-transfer.process") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            wallet_address: this.recipientData.wallet_address,
-                            amount: this.transferAmount,
-                            pin: this.pin,
-                            description: this.description || 'QR Transfer'
+                },
+                stopCamera() {
+                    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+                    if (this.stream) { this.stream.getTracks().forEach(function (t) { t.stop(); }); this.stream = null; }
+                    if (this.$refs.video) this.$refs.video.srcObject = null;
+                    this.cameraOn = false;
+                },
+                readImage(e) {
+                    var file = e.target.files && e.target.files[0], self = this;
+                    e.target.value = '';
+                    if (! file) return;
+                    var img = new Image(), url = URL.createObjectURL(file);
+                    img.onload = function () {
+                        // ย่อรูปใหญ่ก่อนถอดรหัส — รูปกล้องมือถือ 12MP ทำให้แท็บค้าง
+                        var s = Math.min(1, 1200 / Math.max(img.width, img.height));
+                        var c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+                        var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
+                        URL.revokeObjectURL(url);
+                        var code = typeof jsQR !== 'undefined' && jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+                        if (code) self.read(code.data); else window.showNotification('ไม่พบ QR Code ในรูป ลองรูปที่ชัดขึ้น', 'error');
+                    };
+                    img.onerror = function () { URL.revokeObjectURL(url); window.showNotification('เปิดรูปนี้ไม่ได้', 'error'); };
+                    img.src = url;
+                },
+                read(data) {
+                    this.stopCamera();
+                    var addr = '', preset = null;
+                    try { var j = JSON.parse(data); addr = j && j.address ? String(j.address) : ''; preset = j && j.amount; } catch (e) { addr = String(data || '').trim(); }
+                    if (! /^[A-Za-z0-9]{10,40}$/.test(addr)) { window.showNotification('QR นี้ไม่ใช่ QR รับเงินของ Thai Prompt', 'error'); return; }
+                    this.lookup(addr, preset);
+                },
+                lookup(addr, preset) {
+                    addr = String(addr || '').trim();
+                    if (addr.length < 10 || this.finding) return;
+                    var self = this; this.finding = true;
+                    fetch(o.lookupUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ wallet_address: addr }) })
+                        .then(function (r) { return r.json().catch(function () { return {}; }); })
+                        .then(function (j) {
+                            if (! j.success) { window.showNotification(j.message || 'ไม่พบ Wallet Address นี้', 'error'); return; }
+                            self.who = j.data;
+                            self.idemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+                            var p = parseFloat(preset);
+                            if (p > 0) self.amount = String(Math.round(p * 100) / 100);
+                            self.$nextTick(function () { self.$refs.amount && self.$refs.amount.focus(); });
                         })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.successData = result.data;
-                        this.successMessage = `โอนเงิน ฿${this.formatNumber(result.data.amount)} ให้ ${result.data.to_name} สำเร็จ`;
-                        this.showSuccess = true;
-                    } else {
-                        this.showNotification(result.message, 'error');
-                    }
-                } catch (err) {
-                    console.error('Transfer error:', err);
-                    this.showNotification('เกิดข้อผิดพลาดในการโอนเงิน', 'error');
-                } finally {
-                    this.isSubmitting = false;
-                }
-            },
-
-            resetForm() {
-                this.recipientData = null;
-                this.transferAmount = null;
-                this.feeAmount = 0;
-                this.totalDeduction = 0;
-                this.hasEnoughBalance = true;
-                this.description = '';
-                this.pin = '';
-                this.manualAddress = '';
-                this.uploadedImage = null;
-            },
-
-            formatNumber(num) {
-                return parseFloat(num || 0).toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-            },
-
-            showNotification(message, type = 'info') {
-                if (window.showNotification) { window.showNotification(message, type); return; }
-                const toast = document.createElement('div');
-                toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:12px 22px;border-radius:12px;color:#fff;z-index:130;box-shadow:0 8px 24px rgba(0,0,0,.2);' +
-                    (type === 'success' ? 'background:#5aa07e' : type === 'error' ? 'background:#d9534f' : 'background:#5689b8');
-                toast.textContent = message;
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; setTimeout(() => toast.remove(), 300); }, 3000);
-            }
-        }
-    }
+                        .catch(function () { window.showNotification('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง', 'error'); })
+                        .finally(function () { self.finding = false; });
+                },
+                pay() {
+                    if (! this.ok || this.busy) return;
+                    var self = this; this.busy = true;
+                    fetch(o.payUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Idempotency-Key': this.idemKey },
+                        body: JSON.stringify({ wallet_address: this.who.wallet_address, amount: this.amt, pin: this.pin, description: this.note || 'สแกนจ่าย' }),
+                    })
+                        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { s: r.status, j: j }; }); })
+                        .then(function (res) {
+                            if (res.j.success) { self.done = res.j.data; self.balance = Math.max(0, self.balance - (res.j.data.total || res.j.data.amount)); return; }
+                            // ต้องยืนยัน 2FA ก่อน → พาไปหน้ายืนยัน แล้วกลับมาหน้านี้
+                            if (res.j.verify_url) { window.showNotification(res.j.message, 'info'); setTimeout(function () { window.location.href = res.j.verify_url; }, 900); return; }
+                            var msg = res.j.message || (res.s === 429 ? 'ทำรายการถี่เกินไป รอสักครู่แล้วลองใหม่' : 'โอนเงินไม่สำเร็จ');
+                            if (res.j.errors) msg = Object.values(res.j.errors)[0][0];
+                            // โอนไม่ผ่าน → ใช้คีย์ใหม่ ให้ลองอีกครั้งได้จริง
+                            self.idemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+                            self.pin = '';
+                            window.showNotification(msg, 'error');
+                        })
+                        .catch(function () { window.showNotification('เชื่อมต่อไม่ได้ — ตรวจประวัติธุรกรรมก่อนลองใหม่', 'error'); })
+                        .finally(function () { self.busy = false; });
+                },
+                reset() { this.who = null; this.amount = ''; this.note = ''; this.pin = ''; this.manual = ''; this.idemKey = ''; },
+                fmt(n) { return (parseFloat(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+            };
+        });
+    });
 </script>
 @endpush
 @endsection

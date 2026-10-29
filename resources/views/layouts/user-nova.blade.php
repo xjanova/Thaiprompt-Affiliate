@@ -9,9 +9,12 @@
  |
  | การใช้งาน:  @extends('layouts.user-nova')  →  @section('content') ... @endsection
  | ส่วนเสริม:   @section('title','...')  /  @push('styles')  /  @push('scripts')
+ |
+ | โหมดสะพาน V4 ($nvmV4Bridge — ส่งมาจาก layouts.user-v4):
+ |   หน้าที่ยังเขียนด้วยคลาส tp-* ได้เปลือกนี้ + theme-v4.css + nova-v4-bridge.css (ทับตัวแปรสีเป็นโนวา)
  --}}
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th"@if(! empty($nvmV4Bridge)) class="nvm-v4"@endif>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -30,6 +33,8 @@
         // เมนูสมาชิกดึงครั้งเดียว แล้วส่งให้ทั้งเมนูข้างและช่องค้นหาในแถบบน
         $nvmMenus = app(\App\Services\MenuService::class)->getMenuForRole('user', auth()->user());
         $nvmCssVer = is_file(public_path('theme-nova/nova-member.css')) ? filemtime(public_path('theme-nova/nova-member.css')) : 1;
+        $nvmV4Bridge = ! empty($nvmV4Bridge);
+        $nvmBridgeVer = $nvmV4Bridge && is_file(public_path('theme-nova/nova-v4-bridge.css')) ? filemtime(public_path('theme-nova/nova-v4-bridge.css')) : 1;
     @endphp
 
     <title>@yield('title', 'หน้าหลัก') · {{ config('app.brand_name', 'Thai Prompt') }}</title>
@@ -58,9 +63,16 @@
     {{-- Font Awesome — ไอคอนเมนูใน config บางรายการเป็นคลาส fa- --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    {{-- Vite: Tailwind base + Alpine (มี $store.pinnedMenus) — ไม่โหลด theme-v4.css --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Vite: Tailwind base + Alpine (มี $store.pinnedMenus) — theme-v4.css โหลดเฉพาะโหมดสะพาน (หน้าที่ยังใช้คลาส tp-*) --}}
+    @if($nvmV4Bridge)
+        @vite(['resources/css/app.css', 'resources/css/theme-v4.css', 'resources/js/app.js'])
+    @else
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
     <link rel="stylesheet" href="{{ asset('theme-nova/nova-member.css') }}?v={{ $nvmCssVer }}">
+    @if($nvmV4Bridge)
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova-v4-bridge.css') }}?v={{ $nvmBridgeVer }}">
+    @endif
 
     {{-- โหมดมืด: ตั้งก่อน paint (กันจอกระพริบ) แล้วให้ Alpine รับช่วง
          ⚠️ app.js มี store 'theme' (V3) ที่ลบ class dark ตอนโหลด ถ้า localStorage.darkMode ไม่ใช่ 'true'
@@ -151,6 +163,19 @@
     <script>
         window.showNotification = function (message, type) {
             window.dispatchEvent(new CustomEvent('notify', { detail: { message: message, type: type || 'info' } }));
+        };
+        // คัดลอกข้อความ + แจ้งผล — หน้า http/เบราว์เซอร์เก่าไม่มี navigator.clipboard จึงมีทางสำรอง execCommand
+        window.nvmCopy = function (text, okMessage) {
+            var done = function () { window.showNotification(okMessage || 'คัดลอกแล้ว', 'success'); };
+            var fail = function () { window.showNotification('คัดลอกไม่สำเร็จ', 'error'); };
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, fail); return; }
+            try {
+                var t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', ''); t.className = 'nvm-sr';
+                document.body.appendChild(t); t.select();
+                document.execCommand('copy') ? done() : fail();
+                t.remove();
+            } catch (e) { fail(); }
         };
         // เผยการ์ดตอนเลื่อนถึง — เบราว์เซอร์ไม่มี IntersectionObserver ก็โชว์ทั้งหมดทันที
         (function () {
