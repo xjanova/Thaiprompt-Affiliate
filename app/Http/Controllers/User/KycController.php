@@ -9,6 +9,7 @@ use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class KycController extends Controller
 {
@@ -93,9 +94,11 @@ class KycController extends Controller
 
         // ⚠️ IMPORTANT: ต้องทำ OCR ก่อน WebP conversion เพื่อคุณภาพที่ดีที่สุด
         // เก็บรูป original ชั่วคราวสำหรับ OCR
+        // 🔒 (2026-10-29) เดิมวางบน public disk ด้วยนามสกุลจากชื่อไฟล์ที่ลูกค้าส่งมา (เช่น .php ที่ข้างในเป็น PNG จริง)
+        //    และถ้า OCR โยน \Error ไฟล์ค้างถาวร → ตอนนี้ disk ส่วนตัว + นามสกุลจากเนื้อไฟล์ + ลบใน finally
         $idCardFile = $request->file('id_card_image');
-        $tempIdCardPath = 'kyc/temp/'.uniqid('idcard_').'.'.$idCardFile->getClientOriginalExtension();
-        Storage::disk('public')->put($tempIdCardPath, file_get_contents($idCardFile->getRealPath()));
+        $tempIdCardPath = 'kyc-temp/'.Str::random(40).'.'.($idCardFile->extension() === 'png' ? 'png' : 'jpg');
+        Storage::disk('local')->put($tempIdCardPath, file_get_contents($idCardFile->getRealPath()));
 
         // Extract data from ID card using OCR (ใช้รูปต้นฉบับ)
         $extractedData = null;
@@ -103,7 +106,7 @@ class KycController extends Controller
 
         try {
             $ocrService = new ThaiIdCardOcrService;
-            $ocrResult = $ocrService->extractData($tempIdCardPath);
+            $ocrResult = $ocrService->extractData($tempIdCardPath, 'local');
 
             if (! empty($ocrResult['success'])) {
                 // OCR succeeded
@@ -112,11 +115,12 @@ class KycController extends Controller
                 // Validate ID card number if extracted
                 if (! empty($extractedData['id_card_number'])) {
                     if (! $ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
-                        Log::warning('Invalid ID card number checksum: '.$extractedData['id_card_number']);
+                        Log::warning('Invalid ID card number checksum', ['user_id' => $user->id, 'id_tail' => substr($extractedData['id_card_number'], -4)]);
                     }
                 }
 
-                Log::info('OCR extracted data successfully', ['data' => $extractedData]);
+                // 🔒 ไม่ log ค่าในบัตร (เลขบัตร/ชื่อ/ที่อยู่) — เก็บแค่ว่าอ่านช่องไหนได้
+                Log::info('OCR extracted data successfully', ['user_id' => $user->id, 'fields' => array_keys(array_filter($extractedData))]);
             } else {
                 // OCR failed with detailed error
                 $ocrError = [
@@ -133,36 +137,34 @@ class KycController extends Controller
                     $extractedData['ocr_warning'] = $ocrError;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('OCR extraction exception: '.$e->getMessage());
             $ocrError = [
                 'error' => 'เกิดข้อผิดพลาดในการประมวลผล',
                 'error_code' => 'EXCEPTION',
                 'suggestion' => 'กรุณาลองอัพโหลดใหม่อีกครั้ง',
             ];
+        } finally {
+            // ลบไฟล์ temp หลัง OCR (ทุกกรณี)
+            Storage::disk('local')->delete($tempIdCardPath);
         }
 
-        // ลบไฟล์ temp หลัง OCR
-        Storage::disk('public')->delete($tempIdCardPath);
-
-        // Store images with WebP conversion (หลังจาก OCR)
+        // Store images with WebP conversion (หลังจาก OCR) — ชื่อไฟล์สุ่มล้วน
+        // 🐛 (2026-10-29) เดิมไม่มี try/catch: รูปเสียหาย/แปลงไม่ได้ → 500 และรูปบัตรที่แปลงไปแล้วค้างเป็นไฟล์กำพร้า
         $webpService = new WebPService;
+        $idCardPath = null;
 
-        // Convert ID card image to WebP
-        $idCardResult = $webpService->convertAndStore(
-            $request->file('id_card_image'),
-            'kyc/id-cards',
-            90 // High quality for ID cards
-        );
-        $idCardPath = $idCardResult['path'];
+        try {
+            $idCardPath = $webpService->convertAndStore($request->file('id_card_image'), 'kyc/id-cards', 90, true)['path'];
+            $selfiePath = $webpService->convertAndStore($request->file('selfie_image'), 'kyc/selfies', 90, true)['path'];
+        } catch (\Throwable $e) {
+            Log::warning('KYC image conversion failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            if ($idCardPath) {
+                Storage::disk('public')->delete($idCardPath);
+            }
 
-        // Convert selfie image to WebP
-        $selfieResult = $webpService->convertAndStore(
-            $request->file('selfie_image'),
-            'kyc/selfies',
-            90 // High quality for selfies
-        );
-        $selfiePath = $selfieResult['path'];
+            return back()->with('error', 'อ่านไฟล์รูปไม่ได้ กรุณาถ่ายรูปใหม่เป็น JPG หรือ PNG แล้วส่งอีกครั้ง');
+        }
 
         // Create KYC verification record
         $kycVerification = KycVerification::create([

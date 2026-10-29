@@ -42,8 +42,10 @@ class TwoFactorService
             return false;
         }
 
-        // Check if user is within grace period
-        if ($userSettings->isWithinGracePeriod()) {
+        // ยืนยันไปแล้วใน session นี้ภายในช่วงผ่อนผัน → ไม่ถามซ้ำ (ครอบคลุมทุก action ใน session เดียวกัน)
+        // 🔒 (2026-10-29) เดิมใช้ last_verified_at ในฐานข้อมูล → ยืนยันบนเครื่องหนึ่งครั้ง ทุก session ทุกเครื่อง
+        //    (รวมถึงเครื่องที่ถูกขโมย session) ข้าม 2FA ได้ 15 นาที
+        if ($this->isVerified()) {
             return false;
         }
 

@@ -28,6 +28,18 @@ class TicketReplyObserver
         $ticket = $reply->ticket;
 
         if ($ticket && $ticket->user_id) {
+            // ลูกค้าตอบเอง → แจ้งทีมงาน (ผู้รับผิดชอบ หรือแอดมินถ้ายังไม่มีคนรับ)
+            if ($reply->user_id === $ticket->user_id) {
+                try {
+                    $this->notificationService->notifyStaffTicketReply($ticket, $reply);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to notify staff about customer reply: '.$e->getMessage(), [
+                        'reply_id' => $reply->id,
+                        'ticket_id' => $ticket->id,
+                    ]);
+                }
+            }
+
             // Don't notify user about their own replies
             if ($reply->user_id !== $ticket->user_id) {
                 try {

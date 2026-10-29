@@ -154,9 +154,10 @@ class ThaiIdCardOcrService
      * Extract data from Thai ID card or driver's license image
      *
      * @param  string  $imagePath  Path to the image file
+     * @param  string  $disk  disk ที่เก็บรูป (KYC ส่งรูปชั่วคราวบน disk ส่วนตัว 'local' — ไม่ให้เปิดจากเว็บได้)
      * @return array Extracted data with error information
      */
-    public function extractData(string $imagePath): array
+    public function extractData(string $imagePath, string $disk = 'public'): array
     {
         Log::info('OCR extractData started', [
             'imagePath' => $imagePath,
@@ -167,7 +168,7 @@ class ThaiIdCardOcrService
 
         try {
             // Check if image file exists
-            if (! Storage::disk('public')->exists($imagePath)) {
+            if (! Storage::disk($disk)->exists($imagePath)) {
                 Log::warning('OCR: Image file not found', ['path' => $imagePath]);
 
                 return [
@@ -179,7 +180,7 @@ class ThaiIdCardOcrService
             }
 
             // Read the image file
-            $imageContent = Storage::disk('public')->get($imagePath);
+            $imageContent = Storage::disk($disk)->get($imagePath);
             Log::info('OCR: Image loaded', ['size' => strlen($imageContent)]);
 
             // Validate image content
@@ -246,13 +247,13 @@ class ThaiIdCardOcrService
                 $result['ocr_method'] = $this->useRestApi ? 'REST_API' : 'SDK';
                 Log::info('OCR: Success - extracted meaningful data', [
                     'id_card_number' => ! empty($result['id_card_number']) ? '***'.substr($result['id_card_number'] ?? '', -4) : null,
-                    'thai_first_name' => $result['thai_first_name'] ?? null,
-                    'english_first_name' => $result['english_first_name'] ?? null,
+                    'has_thai_name' => ! empty($result['thai_first_name']),
+                    'has_english_name' => ! empty($result['english_first_name']),
                 ]);
 
                 return $result;
             } else {
-                Log::warning('OCR: Insufficient data extracted', ['partial_data' => $result]);
+                Log::warning('OCR: Insufficient data extracted', ['fields' => array_keys(array_filter($result))]); // 🔒 ไม่ log ค่าในบัตร (PII)
 
                 return [
                     'success' => false,
@@ -707,7 +708,7 @@ class ThaiIdCardOcrService
         ];
 
         // Log raw text for debugging (เฉพาะ debug mode)
-        Log::debug('OCR Raw Text:', ['text' => $text]);
+        Log::debug('OCR Raw Text:', ['length' => mb_strlen($text)]); // 🔒 (2026-10-29) ไม่ log ข้อความในบัตร (PII) — prod อาจตั้ง LOG_LEVEL=debug
 
         // ===============================================
         // 1. Extract ID card number (13 digits) - หลายรูปแบบ
@@ -729,7 +730,7 @@ class ThaiIdCardOcrService
                 $cleanId = preg_replace('/[\s-]+/', '', $matches[1]);
                 if (strlen($cleanId) === 13 && ctype_digit($cleanId)) {
                     $data['id_card_number'] = $cleanId;
-                    Log::debug('OCR Found ID:', ['id' => $cleanId, 'pattern' => $pattern]);
+                    Log::debug('OCR Found ID:', ['id' => '***'.substr($cleanId, -4), 'pattern' => $pattern]);
                     break;
                 }
             }
@@ -757,10 +758,7 @@ class ThaiIdCardOcrService
                     $data['thai_last_name'] = trim($matches[3]);
                 }
                 if (! empty($data['thai_first_name'])) {
-                    Log::debug('OCR Found Thai Name:', [
-                        'first' => $data['thai_first_name'],
-                        'last' => $data['thai_last_name'],
-                    ]);
+                    Log::debug('OCR Found Thai Name');
                     break;
                 }
             }
@@ -803,10 +801,7 @@ class ThaiIdCardOcrService
                     $data['english_last_name'] = trim($matches[2]);
                 }
                 if (! empty($data['english_first_name'])) {
-                    Log::debug('OCR Found English Name:', [
-                        'first' => $data['english_first_name'],
-                        'last' => $data['english_last_name'],
-                    ]);
+                    Log::debug('OCR Found English Name');
                     break;
                 }
             }
@@ -847,7 +842,7 @@ class ThaiIdCardOcrService
         $dates = array_unique($dates);
         $dates = array_values($dates);
 
-        Log::debug('OCR Found Dates:', ['dates' => $dates]);
+        Log::debug('OCR Found Dates:', ['count' => count($dates)]);
 
         // ลองหาวันเกิดที่ใกล้กับ keyword "เกิด" หรือ "Date of Birth"
         if (preg_match('/(?:เกิด|Date\s*of\s*Birth|วันเกิด|DOB)\s*[:\s]*(\d{1,2}[\/\-\s](?:\d{1,2}|ม\.ค\.?|ก\.พ\.?|มี\.ค\.?|เม\.ย\.?|พ\.ค\.?|มิ\.ย\.?|ก\.ค\.?|ส\.ค\.?|ก\.ย\.?|ต\.ค\.?|พ\.ย\.?|ธ\.ค\.?|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)[\/\-\s]*\d{4})/iu', $text, $birthMatch)) {
@@ -897,7 +892,7 @@ class ThaiIdCardOcrService
             }
         }
 
-        Log::debug('OCR Parsed Data:', ['data' => $data]);
+        Log::debug('OCR Parsed Data:', ['fields' => array_keys(array_filter($data))]);
 
         return $data;
     }

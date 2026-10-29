@@ -105,7 +105,7 @@ class OtpService
         if (! $this->settings || ! $this->settings->enabled) {
             return [
                 'success' => false,
-                'message' => 'OTP service is not enabled',
+                'message' => 'ระบบส่งรหัส OTP ยังไม่เปิดใช้งาน กรุณาใช้รหัสกู้คืนแทน',
             ];
         }
 
@@ -113,7 +113,16 @@ class OtpService
         if (! OtpVerification::checkRateLimitForUser($user->id)) {
             return [
                 'success' => false,
-                'message' => 'Too many OTP requests. Please try again later.',
+                'message' => 'ขอรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่',
+            ];
+        }
+
+        // 🐛 (2026-10-29) ยังไม่มีช่องทางอีเมล — เดิมตกไปส่ง SMS ด้วยเบอร์ว่าง → TypeError (catch Exception ไม่จับ) = 500
+        $resolvedChannel = $channel ?? \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->value('preferred_method');
+        if ($resolvedChannel === 'email') {
+            return [
+                'success' => false,
+                'message' => 'ยังส่งรหัสทางอีเมลไม่ได้ กรุณาใช้รหัสกู้คืน หรือติดต่อทีมงาน',
             ];
         }
 
@@ -140,7 +149,7 @@ class OtpService
             if ($sent) {
                 return [
                     'success' => true,
-                    'message' => 'OTP sent successfully via '.$otp->channel,
+                    'message' => 'ส่งรหัสทาง '.($otp->channel === 'line' ? 'LINE' : 'SMS').' แล้ว',
                     'channel' => $otp->channel,
                     'expires_at' => $otp->expires_at->toDateTimeString(),
                 ];
@@ -148,19 +157,20 @@ class OtpService
 
             return [
                 'success' => false,
-                'message' => 'Failed to send OTP',
+                'message' => 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
             ];
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('OTP sending failed for user', [
                 'user_id' => $user->id,
                 'channel' => $otp->channel,
                 'error' => $e->getMessage(),
             ]);
 
+            // ไม่ส่งข้อความ exception ดิบให้ลูกค้า (อาจมี endpoint/key ของผู้ให้บริการ SMS)
             return [
                 'success' => false,
-                'message' => 'Error sending OTP: '.$e->getMessage(),
+                'message' => 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
             ];
         }
     }

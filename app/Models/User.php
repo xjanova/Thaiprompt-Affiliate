@@ -783,7 +783,8 @@ class User extends Authenticatable
      */
     public function getUnreadNotificationsCountAttribute(): int
     {
-        return $this->notifications()->unread()->notExpired()->count();
+        // ไม่นับรายการที่เก็บถาวรแล้ว (หน้ารายการก็ซ่อนไว้ ตัวเลขกระดิ่งจะได้ตรงกัน)
+        return $this->notifications()->unread()->active()->notExpired()->count();
     }
 
     /**

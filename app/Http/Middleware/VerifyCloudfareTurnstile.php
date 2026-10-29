@@ -170,14 +170,14 @@ class VerifyCloudfareTurnstile
         // For API requests, return JSON response
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => __('Security verification failed. Please try again.'),
+                'message' => 'ยืนยันความปลอดภัยไม่ผ่าน กรุณาติ๊กช่องยืนยันแล้วลองอีกครั้ง',
                 'error' => 'turnstile_verification_failed',
             ], 422);
         }
 
         // For web requests, redirect back with error
         return back()->withErrors([
-            'turnstile' => __('Security verification failed. Please try again.'),
-        ])->withInput($request->except('cf-turnstile-response', 'password', 'password_confirmation'));
+            'turnstile' => 'ยืนยันความปลอดภัยไม่ผ่าน กรุณาติ๊กช่องยืนยันแล้วลองอีกครั้ง',
+        ])->withInput($request->except('cf-turnstile-response', 'password', 'password_confirmation', 'current_password', 'new_password', 'new_password_confirmation', 'pin'));
     }
 }

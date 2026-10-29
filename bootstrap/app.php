@@ -161,6 +161,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 🔐 (2026-09-13) ห้าม flash ความลับกลับลง session ตอน validation ไม่ผ่าน
         //    (ค่าเริ่มต้นกันแค่ password — token บอท Telegram ที่เจ้าของกรอกในหน้าช่องทาง จะถูกเก็บ plaintext ใน session)
         $exceptions->dontFlash(['telegram_bot_token']);
+        // 🔐 (2026-10-29) ฟอร์มเปลี่ยนรหัสผ่านสมาชิกใช้ชื่อ new_password — ค่าเริ่มต้นกันแค่ password → รหัสใหม่ค้างใน session
+        $exceptions->dontFlash(['new_password', 'new_password_confirmation', 'pin']);
 
         // 🚦 (2026-09-25) throttle แบบตัวเลข (throttle:N,M,prefix) ตอบ 429 เป็น JSON ภาษาไทยตามรูปแบบ API กลาง
         //    (ค่าเริ่มต้นของ Laravel คือข้อความอังกฤษ "Too Many Attempts.") — หน้าเว็บปกติใช้หน้า 429 เดิม

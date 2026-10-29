@@ -29,7 +29,8 @@
                     </div>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    @if(!$ticket->isClosed())
+                    {{-- ตั๋วที่ "แก้ไขแล้ว" ลูกค้ากดปิดเองได้ · ซ่อนเฉพาะตั๋วที่ปิดแล้วจริง --}}
+                    @if($ticket->status !== 'closed')
                         <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิด Ticket นี้?')">
                             @csrf
                             <button type="submit" class="tp-btn tp-btn-sm"><i class="fa-solid fa-times-circle"></i> ปิด Ticket</button>
@@ -70,10 +71,10 @@
         {{-- ข้อความแรก --}}
         <div class="tp-card" style="padding:20px;">
             <div style="display:flex; gap:14px; align-items:flex-start;">
-                <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($ticket->user->name, 0, 1) }}</div>
+                <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ mb_substr($ticket->user?->name ?? '?', 0, 1) }}</div>
                 <div style="flex:1; min-width:0;">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-                        <div style="font-weight:800; color:var(--ink);">{{ $ticket->user->name }} <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span></div>
+                        <div style="font-weight:800; color:var(--ink);">{{ $ticket->user?->name }} <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span></div>
                         <span style="font-size:12px; color:var(--ink2);">{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
                     </div>
                     <div style="border-radius:10px; box-shadow:var(--inset-sm); padding:14px;">
@@ -88,11 +89,11 @@
             @php $staff = $reply->isFromStaff(); $accent = $staff ? '#7c5cbf' : '#5689b8'; @endphp
             <div class="tp-card" style="padding:20px;">
                 <div style="display:flex; gap:14px; align-items:flex-start;">
-                    <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, {{ $accent }}, {{ $staff ? '#c05a8f' : '#7c5cbf' }}); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($reply->user->name, 0, 1) }}</div>
+                    <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, {{ $accent }}, {{ $staff ? '#c05a8f' : '#7c5cbf' }}); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ mb_substr($reply->user?->name ?? '?', 0, 1) }}</div>
                     <div style="flex:1; min-width:0;">
                         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
                             <div style="font-weight:800; color:var(--ink);">
-                                {{ $reply->user->name }}
+                                {{ $reply->user?->name ?? 'ผู้ใช้ที่ถูกลบ' }}
                                 @if($staff)
                                     <span style="margin-left:6px; display:inline-flex; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#7c5cbf; background:color-mix(in srgb, #7c5cbf 16%, transparent);"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>ทีมงาน</span>
                                 @else
@@ -111,12 +112,13 @@
     </div>
 
     {{-- ── ฟอร์มตอบกลับ ──────────────────────────────────────── --}}
-    @if(!$ticket->isClosed())
+    {{-- 🐛 (2026-10-29) เดิมซ่อนฟอร์มเมื่อ "แก้ไขแล้ว" ทั้งที่การ์ดบอกให้ตอบกลับเพื่อเปิดใหม่ → ซ่อนเฉพาะตั๋วที่ปิดแล้ว --}}
+    @if($ticket->status !== 'closed')
         <div class="tp-card" style="padding:20px;">
             <div class="tp-section-h" style="margin-bottom:14px;"><i class="fa-solid fa-reply" style="margin-right:6px;"></i>ตอบกลับ</div>
             <form method="POST" action="{{ route('user.tickets.reply', $ticket->id) }}">
                 @csrf
-                <textarea name="message" rows="4" required class="tp-input" style="resize:vertical; margin-bottom:12px;" placeholder="พิมพ์ข้อความของคุณที่นี่..."></textarea>
+                <textarea name="message" rows="4" required maxlength="5000" class="tp-input" style="resize:vertical; margin-bottom:12px;" placeholder="พิมพ์ข้อความของคุณที่นี่...">{{ old('message') }}</textarea>
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                     <p style="font-size:13px; color:var(--ink2); margin:0;"><i class="fa-solid fa-info-circle" style="margin-right:4px;"></i>ทีมงานจะตอบกลับโดยเร็วที่สุด</p>
                     <button type="submit" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-paper-plane"></i> ส่งข้อความ</button>

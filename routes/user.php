@@ -508,20 +508,22 @@ Route::prefix('investments')->name('investments.')->group(function () {
 // Two-Factor Authentication Management
 Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::get('/setup', [TwoFactorController::class, 'setup'])->name('setup');
-    Route::post('/enable', [TwoFactorController::class, 'enable'])->name('enable');
-    Route::post('/disable', [TwoFactorController::class, 'disable'])->name('disable');
+    Route::post('/enable', [TwoFactorController::class, 'enable'])->middleware('throttle:10,1,2fa-manage')->name('enable');
+    Route::post('/disable', [TwoFactorController::class, 'disable'])->middleware('throttle:10,1,2fa-manage')->name('disable');
     Route::get('/verify', [TwoFactorController::class, 'verify'])->name('verify');
-    Route::post('/send-code', [TwoFactorController::class, 'sendCode'])->name('send-code');
-    Route::post('/verify-code', [TwoFactorController::class, 'verifyCode'])->name('verify-code');
-    Route::post('/verify-recovery-code', [TwoFactorController::class, 'verifyRecoveryCode'])->name('verify-recovery-code');
+    // 🔒 (2026-10-29) เดิมไม่จำกัด: ขอ OTP วนได้ไม่จบ (ค่า SMS + โควต้า LINE push 300/เดือน) — ตัวนับใน OtpVerification ไม่เคยเกิน 1 เพราะลบแถวเก่าทุกครั้ง
+    Route::post('/send-code', [TwoFactorController::class, 'sendCode'])->middleware(['throttle:3,1,2fa-send', 'throttle:10,60,2fa-send-hour'])->name('send-code');
+    // 🔒 เดาได้ 5 ครั้ง/นาที (ใช้ถังเดียวกับรหัสกู้คืน) — เดิมเดารหัส 6 หลักได้ไม่จำกัด
+    Route::post('/verify-code', [TwoFactorController::class, 'verifyCode'])->middleware('throttle:5,1,2fa-verify')->name('verify-code');
+    Route::post('/verify-recovery-code', [TwoFactorController::class, 'verifyRecoveryCode'])->middleware('throttle:5,1,2fa-verify')->name('verify-recovery-code');
     Route::get('/recovery-codes', [TwoFactorController::class, 'showRecoveryCodes'])->name('recovery-codes');
-    Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
+    Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->middleware('throttle:10,1,2fa-manage')->name('regenerate-recovery-codes');
     Route::delete('/trusted-devices/{fingerprint}', [TwoFactorController::class, 'removeTrustedDevice'])->name('remove-trusted-device');
     Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
 
     // Google Authenticator routes
-    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->name('generate-authenticator');
-    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->name('verify-authenticator-setup');
+    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->middleware('throttle:10,1,2fa-setup')->name('generate-authenticator');
+    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->middleware('throttle:10,1,2fa-setup')->name('verify-authenticator-setup');
 });
 
 // Redirect old user shop to main frontend shop
@@ -539,7 +541,8 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     // 🎫 (2026-10-06) ตั๋วใหม่ 1 ใบ = แจ้งเตือน + push ถึงทีมงานสูงสุด 50 คน → จำกัด 5 ใบ/10 นาทีต่อบัญชี (ถังแยกชื่อ ticket-store)
     Route::post('/', [TicketController::class, 'store'])->middleware('throttle:5,10,ticket-store')->name('store');
     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
-    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    // 🎫 (2026-10-29) ตอบกลับ 1 ครั้ง = แจ้งเตือนทีมงาน → จำกัด 10 ครั้ง/นาที
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->middleware('throttle:10,1,ticket-reply')->name('reply');
     Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');
 });
 
