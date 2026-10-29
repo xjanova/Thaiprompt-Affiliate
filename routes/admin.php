@@ -239,7 +239,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Redirect /admin to /admin/dashboard
-Route::redirect('/', '/dashboard');
+// ⚠️ ปลายทางของ Route::redirect เป็น path จาก root ไม่ต่อ prefix 'admin' ให้
+//    เดิมเขียน '/dashboard' → เด้งไป /dashboard ที่ไม่มีจริง = 404 หลังล็อกอิน
+//    (แอดมินเปิด /admin → ไปล็อกอิน → intended() พากลับ /admin → /dashboard 404)
+Route::redirect('/', '/admin/dashboard');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
