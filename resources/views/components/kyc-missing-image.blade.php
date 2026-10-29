@@ -5,7 +5,7 @@
     เดิมหน้าแอดมินยิง <img> ตรงๆ พอไฟล์หายจะได้แค่ไอคอนรูปแตก แอดมินไม่รู้ว่า
     เป็นที่รูปหาย หรือที่ระบบพัง — กล่องนี้บอกสาเหตุตรงๆ พร้อมพาธไว้ให้ไล่ต่อ
 
-    @param string|null $path พาธที่เก็บในฐานข้อมูล (relative กับ storage/app/public)
+    @param string|null $path พาธที่เก็บในฐานข้อมูล (kyc-private/… บน private disk หรือไฟล์เก่าบน public disk)
 --}}
 @props(['path' => null])
 
@@ -34,7 +34,7 @@
     @if(filled($path))
         <code style="margin-top:8px; padding:4px 8px; border-radius:6px; font-size:10.5px; word-break:break-all;
                      background:color-mix(in srgb, #e0a52e 16%, transparent); color:var(--ink);">
-            storage/{{ $path }}
+            {{ $path }}
         </code>
     @endif
 

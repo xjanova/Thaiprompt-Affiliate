@@ -401,8 +401,9 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/', [KycController::class, 'index'])->name('index');
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
     // 🪪 (2026-10-04) AI eKYC: รูปบัตร/ใบหน้า (ถอดรหัส · บันทึกการเปิดดู PDPA) + ขอให้ถ่ายใหม่
+    // 🔒 (2026-10-29) + id_card/selfie = รูปของคำขอแบบเดิม (อัปโหลดเอง) ที่ย้ายออกจาก public disk แล้ว
     Route::get('/{kycVerification}/image/{kind}', [KycController::class, 'image'])
-        ->whereIn('kind', ['card', 'card_face', 'best_frame'])
+        ->whereIn('kind', ['card', 'card_face', 'best_frame', 'id_card', 'selfie'])
         ->middleware('throttle:120,1,admin-kyc-image')
         ->name('image');
     Route::post('/{kycVerification}/request-retake', [KycController::class, 'requestRetake'])->name('request-retake');

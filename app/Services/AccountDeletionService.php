@@ -373,6 +373,10 @@ class AccountDeletionService
             // ไม่ถือว่าพัง — ekyc:purge-stale ล้างรอบค้างให้อีกชั้น
         }
 
+        // 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิมบน private disk (kyc-private/{user_id}) — กวาดทั้งโฟลเดอร์
+        //    รวมรูปที่ถูกแทนที่/ไฟล์กำพร้าที่ไม่มีแถวชี้ (แถวที่มีชี้ ลบไปแล้วใน KycVerificationObserver)
+        app(\App\Services\Kyc\KycDocumentStorage::class)->deleteUserDir((int) $user->id);
+
         // 📸 (2026-10-04) สำเนารูปถ่ายสดพร้อมลายน้ำที่แคชไว้ (ไม่รอรอบล้างรายวัน)
         try {
             app(\App\Services\Media\ProfilePhotoService::class)->forgetRenderCache((int) $user->id);

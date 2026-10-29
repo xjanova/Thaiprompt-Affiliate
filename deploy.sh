@@ -944,7 +944,7 @@ print_info "Removing untracked files and directories..."
 #                                    ทดสอบแล้วบน git 2.34.1 (prod) + 2.53: เก็บ 2 ไฟล์นี้ ลบ cache/sessions/views ตามเดิม
 #                                    (STEP 4.7 สร้างโฟลเดอร์คืน) · webhook ยังเข้าได้ — รายการยกเว้นอยู่ใน
 #                                    app/Http/Middleware/PreventRequestsDuringMaintenance.php · scheduler: ท้าย routes/console.php
-git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
+git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/kyc-private' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -977,6 +977,7 @@ else
 fi
 
 # Step 4.5.2: 🪪 (2026-10-04) รูป eKYC (บัตร/หน้า เข้ารหัสแล้ว) + รูปโปรไฟล์ถ่ายสด — ย้ายออกนอก git tree แบบเดียวกับ fortune
+#   🔒 (2026-10-29) + storage/app/kyc-private (รูป KYC แบบเดิมบน private disk)
 #   ปัญหา: git clean -fdx (STEP 4.4) ลบ storage/app/ekyc + storage/app/profile-photos ทุก deploy
 #     → เคสรอแอดมินตรวจไม่มีรูป · รอบที่ส่งบัตรแล้วกลายเป็น CARD_IMAGE_MISSING · หลักฐานของบัญชีที่อนุมัติแล้วหาย
 #   แก้: ไฟล์จริงอยู่ที่ ../ekyc_data และ ../profile_photo_data (sibling public_html นอก git tree, perms 700) แล้ว symlink เข้ามา
@@ -1010,6 +1011,9 @@ persist_private_storage_dir() {
 print_info "Ensuring external eKYC + profile photo storage (survives git clean)..."
 persist_private_storage_dir "storage/app/ekyc" "$(dirname "$SCRIPT_DIR")/ekyc_data"
 persist_private_storage_dir "storage/app/profile-photos" "$(dirname "$SCRIPT_DIR")/profile_photo_data"
+# 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิม (บัตร/คู่บัตร) ที่ย้ายออกจาก public disk — App\Services\Kyc\KycDocumentStorage
+#   เหตุผลเดียวกับ eKYC: ถ้าไม่ exclude + ย้ายออกนอก git tree → git clean -fdx ลบบัตรประชาชนลูกค้าทุก deploy
+persist_private_storage_dir "storage/app/kyc-private" "$(dirname "$SCRIPT_DIR")/kyc_private_data"
 
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
 print_substep "4.6" "Syncing .env with .env.example..."

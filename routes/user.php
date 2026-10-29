@@ -87,6 +87,11 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/create', [KycController::class, 'create'])->name('create');
     Route::post('/', [KycController::class, 'store'])->name('store');
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
+    // 🔒 (2026-10-29) รูปบัตร/รูปคู่บัตรของตัวเอง — เดิมเปิดตรงจาก /storage/… ได้ทุกคน · ตอนนี้เจ้าของเท่านั้น (คนอื่น = 404)
+    Route::get('/{kycVerification}/image/{kind}', [KycController::class, 'image'])
+        ->whereIn('kind', array_keys(\App\Services\Kyc\KycDocumentStorage::KINDS))
+        ->middleware('throttle:120,1,user-kyc-image')
+        ->name('image');
 });
 
 // 🏪 (2026-09-25) สมัครเปิดร้านค้า (SELLER-07) — ยื่นคำขอ → แอดมินอนุมัติที่ admin.seller-applications.*

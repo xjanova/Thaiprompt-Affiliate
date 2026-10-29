@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\KycVerification;
 use App\Models\User;
+use App\Services\Kyc\KycDocumentStorage;
 use App\Services\OCR\ThaiIdCardOcrService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -185,8 +186,8 @@ class LineKycService
      */
     protected function processIdCardImage(User $user, string $imagePath, string $lineUserId): array
     {
-        // 1. ใช้ OCR แปลงข้อความจากบัตร
-        $ocrResult = $this->ocrService->extractData($imagePath);
+        // 1. ใช้ OCR แปลงข้อความจากบัตร (รูปอยู่บน private disk)
+        $ocrResult = $this->ocrService->extractData($imagePath, KycDocumentStorage::DISK);
 
         // 2. ตรวจสอบผลลัพธ์ OCR
         if (! $ocrResult['success']) {
@@ -362,21 +363,22 @@ class LineKycService
     protected function saveImage(string $imageContent, int $userId, string $type): array
     {
         try {
-            // สร้างชื่อไฟล์แบบ unique
+            // สร้างชื่อไฟล์แบบสุ่ม
+            // 🔒 (2026-10-29) private disk (kyc-private/{user_id}) — เดิม public disk เปิดจาก /storage/… ได้ทุกคน
+            //    และชื่อสุ่มแค่ 16 ตัว · แอดมินดูผ่าน admin.kyc.image
             $filename = sprintf(
-                'kyc/%s/%s_%s.jpg',
-                $userId,
+                '%s/%s_%s.jpg',
+                app(KycDocumentStorage::class)->directoryFor($userId),
                 $type,
-                Str::random(16)
+                Str::random(40)
             );
 
             // บันทึกไฟล์
-            Storage::disk('public')->put($filename, $imageContent);
+            Storage::disk(KycDocumentStorage::DISK)->put($filename, $imageContent);
 
             return [
                 'success' => true,
                 'path' => $filename,
-                'url' => Storage::disk('public')->url($filename),
             ];
 
         } catch (\Exception $e) {

@@ -25,9 +25,10 @@ class WebPService
      * @param  string  $directory  The storage directory (e.g., 'branding', 'avatars')
      * @param  int  $quality  Quality of WebP conversion (0-100)
      * @param  bool  $randomName  true = ชื่อไฟล์สุ่มล้วน (เอกสารส่วนตัว เช่น KYC — ไม่เอาชื่อไฟล์เดิมของลูกค้า และเดา URL ไม่ได้)
-     * @return array ['path' => storage path, 'url' => public URL, 'original_extension' => original file extension]
+     * @param  string  $disk  disk ที่เก็บ — เอกสารส่วนตัว (KYC) ใช้ 'local' ซึ่งเว็บเปิดตรงไม่ได้ (url จะเป็น null)
+     * @return array ['path' => storage path, 'url' => public URL|null, 'original_extension' => original file extension]
      */
-    public function convertAndStore(UploadedFile $file, string $directory, int $quality = 85, bool $randomName = false): array
+    public function convertAndStore(UploadedFile $file, string $directory, int $quality = 85, bool $randomName = false, string $disk = 'public'): array
     {
         // Get original extension
         $originalExtension = $file->getClientOriginalExtension();
@@ -59,7 +60,7 @@ class WebPService
         $encoded = $image->toWebp($quality);
 
         // Store the WebP image
-        Storage::disk('public')->put($fullPath, (string) $encoded);
+        Storage::disk($disk)->put($fullPath, (string) $encoded);
 
         // Track automatic conversion
         try {
@@ -70,7 +71,7 @@ class WebPService
 
         return [
             'path' => $fullPath,
-            'url' => '/storage/'.$fullPath,
+            'url' => $disk === 'public' ? '/storage/'.$fullPath : null,
             'original_extension' => $originalExtension,
         ];
     }
