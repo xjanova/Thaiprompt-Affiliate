@@ -418,7 +418,8 @@ html.dark .nvm-bar i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
     .nvm-rank .nvm-medal { grid-row: auto; width: 164px; height: 164px; }
     .nvm-medal svg { inset: 26px; width: 112px; height: 112px; }
     .nvm-rank .nvm-ladder, .nvm-rank__name { justify-content: center; }
-    .nvm-svc { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: -14px; padding: 4px 14px 10px; gap: 12px; scrollbar-width: none; }
+    /* scroll-padding เท่ากับ padding — ไม่งั้น snap ดันการ์ดแรกไปชิดขอบจอ (scrollLeft ค้างที่ 14px) */
+    .nvm-svc { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 14px; margin-inline: -14px; padding: 4px 14px 10px; gap: 12px; scrollbar-width: none; }
     .nvm-svc::-webkit-scrollbar { display: none; }
     .nvm-svc a { flex: 0 0 46%; scroll-snap-align: start; }
     .nvm-row3 { grid-template-columns: minmax(0, 1fr); }
