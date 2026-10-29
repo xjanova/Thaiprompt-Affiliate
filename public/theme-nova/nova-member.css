@@ -65,6 +65,8 @@ html.dark {
 .nvm-btn--line { background: transparent; color: var(--nvm-gold-ink) !important; box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
 .nvm-btn--line:hover { background: color-mix(in srgb, var(--nv-gold-400) 12%, transparent); }
 .nvm-btn--sm { height: 36px; padding: 0 14px; font-size: 13.5px; }
+.nvm-btn--bad { color: #fff !important; background: var(--nvm-bad); box-shadow: 0 8px 18px -10px var(--nvm-bad); }
+.nvm-btn--bad:hover { filter: brightness(1.08); }
 .nvm-ibtn { position: relative; width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .05); border: 1px solid rgba(245, 210, 127, .24); color: var(--nv-gold-200) !important; cursor: pointer; text-decoration: none; padding: 0; transition: background .2s; }
 .nvm-ibtn:hover { background: rgba(245, 210, 127, .13); }
 .nvm-ibtn .nvm-ico { width: 19px; height: 19px; }
@@ -256,6 +258,7 @@ html.dark .nvm-bar i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
 .nvm-empty { text-align: center; padding: 34px 16px; color: var(--nvm-ink-3); font-size: 14px; }
 .nvm-empty img { width: 86px; height: auto; margin: 0 auto 10px; opacity: .9; }
 .nvm-empty b { display: block; color: var(--nvm-ink); font-family: var(--nvm-font-display); font-size: 16px; margin-bottom: 4px; }
+.nvm-empty .nvm-btn { margin-top: 14px; }
 
 .nvm-rank { padding: 20px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; overflow: hidden; }
 .nvm-rank::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(80% 50% at 50% 30%, color-mix(in srgb, var(--nv-gold-400) 14%, transparent), transparent 70%); pointer-events: none; }
@@ -427,18 +430,27 @@ html.dark .nvm-bar i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
     .nvm-toasts { bottom: calc(96px + env(safe-area-inset-bottom)); }
 
     .nvm-tabbar { display: block; position: fixed; z-index: 55; left: 0; right: 0; bottom: 0; padding-bottom: env(safe-area-inset-bottom); background: rgba(7, 13, 32, .95); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 -1px 0 rgba(245, 210, 127, .2), 0 -14px 30px -18px rgba(0, 0, 0, .8); }
-    .nvm-tabbar__arch { position: absolute; left: 50%; top: -25px; width: 230px; height: auto; transform: translateX(-50%); pointer-events: none; }
+    /* ซุ้มกนกอยู่แค่ในช่องปุ่มกลาง — เดิม 230px ลายกนกพาดทับไอคอนแดชบอร์ด/กระเป๋า */
+    .nvm-tabbar__arch { position: absolute; left: 50%; top: -14px; width: min(116px, 30vw); height: auto; transform: translateX(-50%); pointer-events: none; }
     .nvm-tabbar__in { position: relative; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; }
     .nvm-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-bottom: 9px; text-decoration: none; font-size: 11px; color: var(--nv-on-night-3) !important; }
     .nvm-tab .nvm-ico { width: 22px; height: 22px; }
     .nvm-tab.is-on { color: var(--nv-gold-200) !important; }
     .nvm-tab.is-on .nvm-ico { filter: drop-shadow(0 0 6px rgba(240, 201, 106, .7)); }
     .nvm-tab--mid { position: relative; color: var(--nv-gold-300) !important; }
-    .nvm-tab--mid .nvm-tab__m { position: absolute; left: 50%; bottom: 22px; width: 64px; height: 64px; transform: translateX(-50%); display: grid; place-items: center; }
+    .nvm-tab--mid .nvm-tab__m { position: absolute; left: 50%; bottom: 22px; width: 48px; height: 48px; transform: translateX(-50%); display: grid; place-items: center; }
     .nvm-tab--mid .nvm-tab__m img { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .nvm-tab--mid .nvm-tab__m .nvm-ico { position: relative; width: 24px; height: 24px; color: var(--nv-gold-200); }
+    .nvm-tab--mid .nvm-tab__m .nvm-ico { position: relative; width: 21px; height: 21px; color: var(--nv-gold-200); }
 }
 @media (max-width: 380px) {
+    /* จอ 320–380: แถบบนเดิมกว้าง ~364px ดันหน้าทั้งหน้าเลื่อนข้างได้ — บีบปุ่ม/ระยะ + ให้โลโก้หดได้ */
+    .nvm-top__in { padding: 0 10px; gap: 6px; }
+    .nvm-top__right { gap: 6px; }
+    .nvm-top__logo { flex: 0 1 auto; min-width: 0; }
+    .nvm-top__logo img { max-width: 100%; height: auto; }
+    .nvm-ibtn { width: 36px; height: 36px; }
+    .nvm-me { padding: 2px; }
+    .nvm-me .nvm-avatar { width: 34px; height: 34px; }
     .nvm-kpi__val { font-size: 20px; }
     .nvm-wact > span { width: 44px; height: 44px; }
 }
@@ -448,4 +460,318 @@ html.nvm-preload *, html.nvm-preload *::before, html.nvm-preload *::after { tran
 @media (prefers-reduced-motion: reduce) {
     .nvm-body *, .nvm-body *::before, .nvm-body *::after { animation: none !important; transition: none !important; }
     .nvm-js .nvm-rv { opacity: 1; transform: none; }
+}
+
+/* =====================================================================
+   ชุดหน้า (page kit) — หน้าสมาชิกที่ออกแบบเป็นโนวาเต็มแล้ว (@extends('layouts.user-nova'))
+   ฮีโร่หัวหน้า · ไทล์ภาพ 3D · แจ้งเตือน · รายการธุรกรรม · ชิปสถานะ · บัตรบัญชี · ฟอร์ม · แท็บ · ตาราง
+   ภาพประกอบอยู่ที่ public/images/nova/<โมดูล>/ (ทอง 24k + ลงยากรมท่า พื้นโปร่งใส)
+   ===================================================================== */
+:root { --nvm-info: #3b6ea5; --nvm-info-bg: rgba(59, 110, 165, .12); }
+html.dark { --nvm-info: #8fb4dc; --nvm-info-bg: rgba(143, 180, 220, .13); }
+
+/* ฮีโร่หัวหน้า: กรมท่า + ลายกระจัง + ภาพประกอบขวา (ภาพพื้นหลังตั้งด้วยคลาส nvm-ph--<หน้า>) */
+.nvm-ph { position: relative; border-radius: 26px; overflow: hidden; isolation: isolate; color: var(--nv-on-night); background: radial-gradient(70% 120% at 88% 10%, rgba(245, 210, 127, .16), transparent 60%), linear-gradient(150deg, var(--nv-navy-700), var(--nv-navy-900) 62%); box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px rgba(245, 210, 127, .28); }
+.nvm-ph__bg { position: absolute; inset: 0; z-index: -2; background: var(--ph, none) right center / cover no-repeat; }
+.nvm-ph::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(95deg, rgba(7, 13, 32, .95) 0%, rgba(7, 13, 32, .8) 42%, rgba(7, 13, 32, .15) 75%, rgba(7, 13, 32, .3) 100%); }
+.nvm-ph::after { content: ""; position: absolute; inset: 0; z-index: -1; background: url(pattern-kruay-choeng.svg) center/120px repeat; opacity: .05; pointer-events: none; }
+.nvm-ph__in { display: flex; align-items: center; gap: 20px 28px; padding: 30px 34px; min-height: 210px; }
+.nvm-ph__txt { flex: 1; min-width: 0; }
+.nvm-ph__back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--nv-gold-300) !important; text-decoration: none; }
+.nvm-ph__back .nvm-ico { width: 15px; height: 15px; transform: scaleX(-1); }
+.nvm-ph h1 { font-family: var(--nvm-font-display); font-weight: 700; font-size: clamp(24px, 3vw, 34px); line-height: 1.25; margin: 8px 0 0; overflow-wrap: anywhere; }
+.nvm-ph__lead { margin: 6px 0 0; max-width: 560px; font-size: 14.5px; color: var(--nv-on-night-2); }
+.nvm-ph__art { flex: none; width: 200px; height: 200px; object-fit: contain; filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .5)); animation: nvm-float 7s ease-in-out infinite; }
+.nvm-ph .nvm-hero__actions { margin-top: 18px; }
+@keyframes nvm-float { 50% { transform: translateY(-8px) rotate(-1.5deg); } }
+/* ภาพพื้นหลังรายหน้า — แบนเนอร์มีวัตถุหลักอยู่ฝั่งขวาแล้ว จึงซ่อนภาพลอย */
+.nvm-ph--wallet { --ph: url(../images/nova/wallet/hero.webp); }
+.nvm-ph--wallet .nvm-ph__in { min-height: 270px; }
+.nvm-ph--wallet .nvm-ph__art { display: none; }
+
+/* ยอดเงินใหญ่ในฮีโร่ */
+.nvm-bal { margin-top: 16px; }
+.nvm-bal small { display: block; font-size: 12.5px; font-weight: 600; color: var(--nv-on-night-3); }
+.nvm-bal b { display: inline-block; font-family: var(--nvm-font-display); font-weight: 700; font-size: clamp(36px, 5vw, 54px); line-height: 1.12; }
+.nvm-bal b span { font-size: .55em; }
+.nvm-bal b i { font-style: normal; }
+.nvm-bal em { margin-left: 8px; font-style: normal; font-size: 13px; color: var(--nv-on-night-3); }
+
+/* ช่องคัดลอก (บนพื้นกรมท่า) */
+.nvm-copy { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; margin-top: 14px; padding: 4px 4px 4px 12px; border-radius: 12px; background: rgba(255, 255, 255, .05); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .3); }
+.nvm-copy small { font-size: 10.5px; color: var(--nv-on-night-3); white-space: nowrap; }
+.nvm-copy code { min-width: 0; font-family: var(--nvm-font-ui); font-size: 12.5px; color: var(--nv-gold-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-copy button { flex: none; width: 32px; height: 32px; border: 0; border-radius: 9px; display: grid; place-items: center; cursor: pointer; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-copy button .nvm-ico { width: 15px; height: 15px; }
+/* กล่องคัดลอกบนการ์ดกระดาษ (สว่าง/มืด) — ตัวเดิมออกแบบไว้บนพื้นกลางคืนของ hero */
+.nvm-copy.nvm-copy--box { display: flex; width: 100%; margin-top: 10px; padding: 6px 6px 6px 14px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-copy--box code { flex: 1; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--nvm-ink); }
+.nvm-copy--box button { width: auto; gap: 6px; padding: 0 12px; height: 36px; font: inherit; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; }
+/* ผลค้นผู้รับโอน */
+.nvm-who { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 10px 14px; border-radius: 14px; background: var(--nvm-good-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nvm-good) 35%, transparent); }
+.nvm-who small { display: block; font-size: 11px; color: var(--nvm-ink-3); }
+.nvm-who b { display: block; font-size: 15px; overflow-wrap: anywhere; }
+.nvm-who > .nvm-ico { margin-left: auto; width: 20px; height: 20px; color: var(--nvm-good); }
+
+/* ไทล์เมนูภาพ 3D */
+.nvm-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+.nvm-tiles .nvm-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 10px; text-align: center; overflow: hidden; }
+.nvm-tile::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(70% 55% at 50% 0%, color-mix(in srgb, var(--nv-gold-400) 22%, transparent), transparent 70%); opacity: 0; transition: opacity .35s; pointer-events: none; }
+.nvm-tile:hover::before { opacity: 1; }
+.nvm-tile img { position: relative; width: 76px; height: 76px; object-fit: contain; margin-bottom: 6px; filter: drop-shadow(0 10px 12px rgba(70, 40, 10, .25)); transition: transform .5s var(--nv-ease); }
+.nvm-tile:hover img { transform: translateY(-4px) rotate(-6deg) scale(1.06); }
+.nvm-tile b { position: relative; font-size: 14px; font-weight: 700; }
+.nvm-tile small { position: relative; font-size: 9.5px; color: var(--nvm-ink-3); }
+
+/* แจ้งเตือนแบบการ์ด (โทน: bad / warn / ok / info) */
+.nvm-alert, a.nvm-alert { --al: var(--nvm-warn); --al-bg: var(--nvm-warn-bg); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 16px 20px; color: inherit; background: linear-gradient(100deg, var(--al-bg), transparent 70%), var(--nvm-paper); box-shadow: var(--nvm-shadow), inset 0 0 0 1px var(--nvm-line), inset 4px 0 0 var(--al); }
+.nvm-alert.nvm-alert--bad { --al: var(--nvm-bad); --al-bg: var(--nvm-bad-bg); }
+.nvm-alert.nvm-alert--ok { --al: var(--nvm-good); --al-bg: var(--nvm-good-bg); }
+.nvm-alert.nvm-alert--info { --al: var(--nvm-info); --al-bg: var(--nvm-info-bg); }
+a.nvm-alert:hover { box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px var(--nvm-line-2), inset 4px 0 0 var(--al); }
+.nvm-alert__img { width: 58px; height: 58px; flex: none; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(70, 40, 10, .25)); }
+.nvm-alert__ic { width: 46px; height: 46px; flex: none; border-radius: 14px; display: grid; place-items: center; color: var(--al); background: var(--al-bg); }
+.nvm-alert__txt { flex: 1; min-width: 200px; }
+.nvm-alert__txt b { display: block; font-size: 15px; }
+.nvm-alert__txt p { margin: 2px 0 0; font-size: 13px; color: var(--nvm-ink-3); }
+.nvm-alert__side { margin-left: auto; text-align: right; }
+.nvm-alert__side b { display: block; font-family: var(--nvm-font-display); font-size: 22px; color: var(--al); white-space: nowrap; }
+.nvm-alert__side small { font-size: 12px; color: var(--nvm-ink-3); }
+
+/* เลย์เอาต์ เนื้อหาหลัก + คอลัมน์ข้าง */
+.nvm-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.nvm-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* รายการธุรกรรม */
+.nvm-txs { list-style: none; margin: 0; padding: 0; }
+.nvm-tx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; padding: 12px 4px; border-top: 1px solid var(--nvm-line); }
+.nvm-tx:first-child { border-top: 0; }
+.nvm-tx__ic { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; color: var(--nvm-ink-2); background: var(--nvm-track); }
+.nvm-tx__ic.is-in { color: var(--nvm-good); background: var(--nvm-good-bg); }
+.nvm-tx__ic .nvm-ico { width: 19px; height: 19px; }
+.nvm-tx__t { min-width: 0; }
+.nvm-tx__t b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-tx__t small { display: block; font-size: 12px; color: var(--nvm-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-tx__r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.nvm-tx__amt { font-family: var(--nvm-font-display); font-weight: 700; font-size: 15.5px; white-space: nowrap; }
+.nvm-tx__amt.is-in { color: var(--nvm-good); }
+.nvm-tx__amt.is-void { color: var(--nvm-ink-3); text-decoration: line-through; }
+.nvm-tx__r time { font-size: 11px; color: var(--nvm-ink-3); white-space: nowrap; }
+.nvm-tx__act { margin-top: 2px; font-size: 12.5px; }
+.nvm-tx__act span { display: inline-flex; align-items: center; gap: 4px; }
+.nvm-tx__act .nvm-btn--sm { height: 30px; padding: 0 12px; font-size: 12.5px; }
+.nvm-tx__t .nvm-err { display: block; }
+
+/* ชิปสถานะ (บนพื้นงาช้าง/กระดาษ — บนกรมท่าใช้ nvm-pill) */
+.nvm-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--nvm-ink-3); background: var(--nvm-track); }
+.nvm-chip .nvm-ico { width: 12px; height: 12px; }
+.nvm-chip--ok { color: var(--nvm-good); background: var(--nvm-good-bg); }
+.nvm-chip--warn { color: var(--nvm-warn); background: var(--nvm-warn-bg); }
+.nvm-chip--bad { color: var(--nvm-bad); background: var(--nvm-bad-bg); }
+.nvm-chip--info { color: var(--nvm-info); background: var(--nvm-info-bg); }
+.nvm-chip--gold { color: #1a1405; background: var(--nv-btn-gold); }
+
+/* ตัวเลขย่อย */
+.nvm-minis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nvm-mini { min-width: 0; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-mini small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-mini b { display: block; margin-top: 2px; font-family: var(--nvm-font-display); font-size: 18px; overflow-wrap: anywhere; }
+.nvm-mini b.is-in { color: var(--nvm-good); }
+.nvm-mini b.is-out { color: var(--nvm-bad); }
+.nvm-mini--wide { grid-column: 1 / -1; }
+
+/* บัตรบัญชีรับเงิน (กรมท่า + ทอง เหมือนบัตรสมาชิก) */
+.nvm-pms { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.nvm-pm { position: relative; display: flex; flex-direction: column; min-height: 128px; padding: 16px 18px; border-radius: 18px; overflow: hidden; color: var(--nv-on-night); background: radial-gradient(120% 90% at 90% 0%, rgba(245, 210, 127, .2), transparent 55%), linear-gradient(150deg, #16295a 0%, #0b1633 58%, #070d20 100%); box-shadow: 0 18px 32px -20px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(245, 210, 127, .42); }
+.nvm-pm::before { content: ""; position: absolute; inset: 0; background: url(pattern-kruay-choeng.svg) center/110px repeat; opacity: .06; }
+.nvm-pm > * { position: relative; }
+.nvm-pm__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nvm-pm__type { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--nv-gold-300); }
+.nvm-pm__type .nvm-ico { width: 15px; height: 15px; }
+.nvm-pm__name { margin-top: 12px; font-family: var(--nvm-font-display); font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-pm__sub { font-size: 12px; color: var(--nv-on-night-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-pm__no { margin-top: auto; padding-top: 10px; font-size: 13.5px; letter-spacing: .14em; color: var(--nv-on-night-2); }
+.nvm-pm.is-off { opacity: .62; }
+.nvm-pm__acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(245, 210, 127, .18); font-size: 12.5px; }
+.nvm-pm__acts form { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nvm-pm__acts button { height: 30px; padding: 0 11px; border: 0; border-radius: 9px; font: inherit; font-weight: 600; cursor: pointer; color: var(--nv-gold-200); background: rgba(255, 255, 255, .07); }
+.nvm-pm__acts button:hover { background: rgba(245, 210, 127, .16); }
+.nvm-pm__acts button.is-bad { color: #f08a84; }
+.nvm-pm__acts button:disabled { opacity: .55; cursor: wait; }
+.nvm-check { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.nvm-check input { width: 18px; height: 18px; accent-color: var(--nv-gold-500); }
+
+/* ช่องทางฝากเงิน */
+.nvm-gws { display: flex; flex-wrap: wrap; gap: 10px; }
+.nvm-gw { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; font-size: 13px; font-weight: 600; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-gw span { font-size: 18px; line-height: 1; }
+
+/* ฟอร์ม */
+.nvm-form { display: flex; flex-direction: column; gap: 16px; }
+.nvm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nvm-label { font-size: 13.5px; font-weight: 600; color: var(--nvm-ink-2); }
+.nvm-label em { font-style: normal; color: var(--nvm-bad); }
+.nvm-input { width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 14px; font: inherit; font-size: 15px; color: var(--nvm-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); transition: box-shadow .2s, background .2s; box-sizing: border-box; }
+textarea.nvm-input { height: auto; min-height: 96px; padding: 12px 14px; resize: vertical; }
+select.nvm-input { appearance: none; -webkit-appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8862b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 18px; }
+.nvm-input::placeholder { color: var(--nvm-ink-3); opacity: .8; }
+.nvm-input:focus { outline: none; background-color: var(--nvm-paper); box-shadow: inset 0 0 0 1.5px var(--nv-gold-500), 0 0 0 4px rgba(240, 201, 106, .2); }
+.nvm-input.is-bad { box-shadow: inset 0 0 0 1.5px var(--nvm-bad); }
+.nvm-input[readonly], .nvm-input:disabled { opacity: .7; cursor: not-allowed; }
+.nvm-help { font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-err { font-size: 12.5px; font-weight: 600; color: var(--nvm-bad); }
+.nvm-amount { position: relative; }
+.nvm-amount > span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-family: var(--nvm-font-display); font-size: 22px; color: var(--nvm-gold-ink); pointer-events: none; }
+.nvm-amount .nvm-input { height: 62px; padding-left: 44px; font-family: var(--nvm-font-display); font-size: 26px; font-weight: 700; }
+.nvm-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.nvm-picks button { height: 36px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--nvm-ink-2); background: var(--nvm-track); transition: background .2s, color .2s; }
+.nvm-picks button:hover, .nvm-picks button.is-on { color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.nvm-opt { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; cursor: pointer; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); transition: box-shadow .2s, background .2s; }
+.nvm-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.nvm-opt img { width: 44px; height: 44px; flex: none; object-fit: contain; }
+.nvm-opt b { display: block; font-size: 14px; }
+.nvm-opt small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-opt:has(input:checked) { background: var(--nvm-paper); box-shadow: inset 0 0 0 2px var(--nv-gold-500), 0 10px 24px -14px rgba(184, 134, 43, .7); }
+.nvm-opt:has(input:focus-visible) { outline: 2px solid var(--nv-gold-500); outline-offset: 2px; }
+.nvm-opt .nvm-chip { margin-top: 6px; }
+.nvm-opt.is-off { opacity: .5; cursor: not-allowed; }
+input[type="file"].nvm-input { height: auto; padding: 9px 10px; font-size: 13.5px; }
+input[type="file"].nvm-input::file-selector-button { margin-right: 12px; height: 34px; padding: 0 14px; border: 0; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-link { display: inline; padding: 0 3px; border: 0; background: none; font: inherit; font-weight: 700; color: var(--nvm-gold-ink); text-decoration: underline; cursor: pointer; }
+.nvm-gap-t { margin-top: 16px; }
+.nvm-btn:disabled { opacity: .6; cursor: progress; }
+
+/* แท็บลิงก์ */
+.nvm-tabs { display: flex; gap: 4px; width: max-content; max-width: 100%; padding: 4px; overflow-x: auto; border-radius: 999px; background: var(--nvm-track); scrollbar-width: none; }
+.nvm-tabs::-webkit-scrollbar { display: none; }
+.nvm-tabs a, .nvm-tabs button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 600; white-space: nowrap; text-decoration: none; cursor: pointer; color: var(--nvm-ink-3) !important; background: transparent; }
+.nvm-tabs .is-on { color: var(--nvm-gold-ink) !important; background: var(--nvm-paper); box-shadow: 0 2px 8px -2px rgba(20, 26, 43, .25), inset 0 0 0 1px var(--nvm-line-2); }
+
+/* ตาราง + รายการคู่ค่า + ขั้นตอน */
+.nvm-table-wrap { overflow-x: auto; }
+.nvm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.nvm-table th { padding: 10px 12px; border-bottom: 1px solid var(--nvm-line-2); text-align: left; font-size: 11.5px; font-weight: 700; color: var(--nvm-ink-3); white-space: nowrap; }
+.nvm-table td { padding: 12px; border-bottom: 1px solid var(--nvm-line); vertical-align: middle; }
+.nvm-table tr:last-child td { border-bottom: 0; }
+.nvm-table .r { text-align: right; }
+.nvm-table .c { text-align: center; }
+.nvm-kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 18px; margin: 0; font-size: 14px; }
+.nvm-kv dt { color: var(--nvm-ink-3); }
+.nvm-kv dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+.nvm-kv--legend { align-items: center; }
+.nvm-kv--legend dd { font-weight: 500; font-size: 13px; color: var(--nvm-ink-2); }
+.nvm-kv .nvm-kv__total { padding-top: 10px; border-top: 1px dashed var(--nvm-line-2); color: var(--nvm-ink); font-weight: 700; }
+.nvm-kv dd.nvm-kv__total { font-family: var(--nvm-font-display); font-size: 20px; color: var(--nvm-good); }
+.nvm-turnstile { display: flex; justify-content: center; }
+/* หนี้ค้างชำระ: แถบความคืบหน้าในการ์ด/แถว + ประวัติการหัก */
+.nvm-kpi .nvm-meter__bar { height: 10px; margin-top: 12px; }
+.nvm-tx__t .nvm-meter__bar { height: 8px; max-width: 280px; margin: 8px 0 4px; }
+.nvm-tx__ic.is-due { color: var(--nvm-bad); background: var(--nvm-bad-bg); }
+.nvm-tx__amt.is-due { color: var(--nvm-bad); }
+.nvm-tx__more { display: inline-block; margin-top: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.nvm-tx__hist { margin-top: 8px; padding: 10px 12px; border-radius: 12px; font-size: 12.5px; background: var(--nvm-paper-2); }
+.nvm-sec-h:has(> .nvm-tabs) { flex-wrap: wrap; row-gap: 12px; }
+.nvm-sec-h:has(> .nvm-tabs) h2 { white-space: nowrap; }
+.nvm-pin { letter-spacing: .5em; text-align: center; font-size: 20px; font-weight: 700; }
+
+/* สแกนจ่าย: กรอบกล้อง + ช่องอัพโหลดรูป */
+.nvm-scan { position: relative; width: 100%; max-width: 420px; aspect-ratio: 1; margin: 0 auto; border-radius: 22px; overflow: hidden; background: radial-gradient(80% 80% at 50% 40%, #16295a, #070d20); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .35); }
+.nvm-scan video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nvm-scan__frame { position: absolute; inset: 14%; border-radius: 18px; pointer-events: none; box-shadow: 0 0 0 999px rgba(4, 8, 22, .28); }
+.nvm-scan__frame::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 3px; background: linear-gradient(135deg, var(--nv-gold-200), var(--nv-gold-500) 40%, transparent 41%, transparent 59%, var(--nv-gold-500) 60%, var(--nv-gold-200)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.nvm-scan__frame i { position: absolute; left: 8%; right: 8%; top: 0; height: 2px; border-radius: 2px; background: var(--nv-gold-200); box-shadow: 0 0 12px 2px rgba(245, 210, 127, .7); animation: nvm-scanline 2.4s ease-in-out infinite alternate; }
+@keyframes nvm-scanline { to { top: calc(100% - 2px); } }
+.nvm-scan__idle { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; font-size: 13.5px; color: var(--nv-on-night-2); }
+.nvm-scan__idle img { width: 96px; height: 96px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .5)); }
+.nvm-drop-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 18px; border-radius: 20px; text-align: center; cursor: pointer; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 2px var(--nvm-line-2); outline-offset: 3px; transition: box-shadow .2s, background .2s; }
+.nvm-drop-zone:hover, .nvm-drop-zone:focus-within { box-shadow: inset 0 0 0 2px var(--nv-gold-500); }
+.nvm-drop-zone img { width: 72px; height: 72px; margin-bottom: 4px; }
+.nvm-drop-zone small { font-size: 12px; color: var(--nvm-ink-3); }
+@media (prefers-reduced-motion: reduce) { .nvm-scan__frame i { animation: none; top: 50%; } }
+
+/* หน้าต่างแจ้งผล (โอนสำเร็จ) */
+.nvm-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(4, 8, 22, .62); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.nvm-modal__box { width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 26px 22px 22px; text-align: center; }
+.nvm-modal__box > img { width: 110px; height: 110px; margin: -6px auto 6px; display: block; }
+.nvm-modal__box h2 { margin: 0; font-family: var(--nvm-font-display); font-size: 22px; }
+.nvm-modal__box > p { margin: 6px 0 16px; color: var(--nvm-ink-2); font-size: 14px; }
+.nvm-modal__box .nvm-kv { text-align: left; }
+.nvm-modal__box .nvm-filter__btns { margin-top: 18px; }
+
+/* QR รับเงิน: กล่องขาวคงที่ทั้งโหมดมืด (สแกนได้เสมอ) */
+.nvm-qr { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.nvm-qr__box { position: relative; padding: 16px; margin-top: 16px; border-radius: 22px; background: #fff; box-shadow: 0 22px 40px -24px rgba(7, 13, 32, .55), 0 0 0 4px rgba(245, 210, 127, .55), 0 0 0 5px rgba(184, 134, 43, .5); }
+.nvm-qr__box canvas, .nvm-qr__box img { display: block; width: 232px; height: 232px; max-width: 62vw; max-height: 62vw; }
+.nvm-qr__tag { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; color: #1a1405; background: var(--nv-btn-gold); box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .5); }
+.nvm-qr__who { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nvm-qr__who .nvm-avatar { width: 60px; height: 60px; font-size: 26px; }
+.nvm-qr__who b { font-size: 17px; margin-top: 6px; }
+.nvm-qr__who small { font-size: 12px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-qr__box.is-dim > :not(.nvm-qr__tag) { opacity: .18; filter: grayscale(1); }
+.nvm-qr__box > img { display: block; width: 232px; height: 232px; max-width: 62vw; max-height: 62vw; }
+.nvm-qr__miss { width: 232px; max-width: 62vw; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; color: #3c4356; }
+.nvm-qr__miss .nvm-ico { width: 34px; height: 34px; color: #b8862b; }
+.nvm-qr__miss small { font-size: 11.5px; color: #6b7280; }
+.nvm-qr > .nvm-chip { margin-bottom: 4px; }
+.nvm-qr__amt { width: min(300px, 100%); margin-top: 26px; text-align: left; }
+.nvm-qr .nvm-filter__btns { flex-wrap: wrap; justify-content: center; margin-top: 18px; width: 100%; }
+.nvm-qr .nvm-filter__btns .nvm-btn { flex: 1 1 140px; max-width: 220px; }
+.nvm-steps { list-style: none; margin: 0; padding: 0; counter-reset: nvm-s; display: flex; flex-direction: column; gap: 12px; }
+.nvm-steps li { counter-increment: nvm-s; display: flex; gap: 12px; font-size: 13.5px; line-height: 1.55; color: var(--nvm-ink-2); }
+.nvm-steps li::before { content: counter(nvm-s); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: var(--nvm-font-display); font-weight: 700; font-size: 13px; color: #1a1405; background: var(--nv-btn-gold); }
+
+/* แบ่งหน้า (Paginator::useTailwind) — ทับสีให้เข้ากับโนวา */
+.nvm-pager nav { display: flex; justify-content: center; }
+.nvm-pager span[aria-current] > span, .nvm-pager a, .nvm-pager span[aria-disabled] > span { border-radius: 12px !important; border: 0 !important; margin: 0 2px; color: var(--nvm-ink-2) !important; background: var(--nvm-paper) !important; box-shadow: inset 0 0 0 1px var(--nvm-line) !important; }
+.nvm-pager span[aria-current] > span { color: #1a1405 !important; background: var(--nv-btn-gold) !important; box-shadow: none !important; }
+.nvm-pager p { color: var(--nvm-ink-3) !important; }
+
+/* ตัวแปรจำนวนคอลัมน์ + แถบตัวกรอง */
+.nvm-tiles.nvm-tiles--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.nvm-kpis.nvm-kpis--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nvm-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+.nvm-filter__btns { display: flex; gap: 8px; }
+.nvm-filter__btns .nvm-btn { flex: 1; height: 48px; }
+
+/* พิมพ์: เหลือแต่เนื้อหา */
+@media print {
+    .nvm-top, .nvm-side, .nvm-tabbar, .nvm-toasts, .nvm-scrim, .no-print { display: none !important; }
+    .nvm-shell { display: block !important; }
+    .nvm-main { padding: 0 !important; }
+    .nvm-js .nvm-rv { opacity: 1 !important; transform: none !important; }
+}
+
+@media (max-width: 1279px) {
+    .nvm-kpis.nvm-kpis--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-kpis--3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (max-width: 1099px) {
+    .nvm-split { grid-template-columns: minmax(0, 1fr); }
+    .nvm-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .nvm-tiles.nvm-tiles--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+    .nvm-ph { border-radius: 22px; }
+    .nvm-ph__in { display: block; position: relative; padding: 22px 18px 24px; min-height: 0; }
+    .nvm-ph__art { position: absolute; top: 12px; right: 8px; width: 104px; height: 104px; }
+    .nvm-ph__txt h1, .nvm-ph__txt .nvm-eyebrow { padding-right: 100px; }
+    .nvm-ph .nvm-hero__actions .nvm-btn { flex: 1; }
+    .nvm-ph::before { background: linear-gradient(180deg, rgba(7, 13, 32, .55) 0%, rgba(7, 13, 32, .92) 60%); }
+    /* มือถือ: แบนเนอร์ชิดขวาบน ให้เห็นวัตถุหลักเหนือหัวข้อ แล้วค่อยมืดลงใต้ตัวเลข */
+    .nvm-ph--wallet .nvm-ph__bg { background-size: auto 230px; background-position: 72% 0; }
+    .nvm-ph--wallet::before { background: linear-gradient(180deg, rgba(7, 13, 32, .1) 0%, rgba(7, 13, 32, .55) 120px, rgba(7, 13, 32, .97) 230px); }
+    .nvm-ph--wallet .nvm-ph__in { min-height: 0; padding-top: 128px; }
+    .nvm-ph--wallet .nvm-ph__txt h1, .nvm-ph--wallet .nvm-ph__txt .nvm-eyebrow { padding-right: 0; }
+    .nvm-tiles { gap: 10px; }
+    .nvm-tiles .nvm-tile { padding: 12px 6px; border-radius: 18px; }
+    .nvm-tile img { width: 56px; height: 56px; margin-bottom: 4px; }
+    .nvm-tile b { font-size: 12.5px; }
+    .nvm-tile small { display: none; }
+    .nvm-alert, a.nvm-alert { padding: 14px 16px; }
+    .nvm-tiles--4 .nvm-tile img { width: 48px; height: 48px; }
+    .nvm-alert__side { margin-left: 0; text-align: left; }
+    .nvm-tx { gap: 2px 12px; padding: 11px 0; }
+    .nvm-tx__ic { width: 38px; height: 38px; border-radius: 12px; }
+    .nvm-kv { font-size: 13.5px; }
 }

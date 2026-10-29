@@ -216,4 +216,33 @@ class WithdrawalFlowTest extends TestCase
         $this->expectException(\Exception::class);
         $svc->completeWithdrawal($staleApproved, $admin, null, 'โอนแล้ว');
     }
+
+    /**
+     * 🐛 (2026-10-29) สถิติหน้าประวัติถอนเงิน — แต่ละตัวต้องนับแยกกัน
+     *    (เดิมต่อ scope ลง builder ตัวเดียว ตัวเลขหลังตัวแรกเป็น 0 หมด)
+     */
+    public function test_withdrawal_statistics_count_each_status_separately(): void
+    {
+        $user = $this->makeUser();
+        [, $method] = $this->fundWallet($user, 1000);
+        $admin = User::create([
+            'name' => 'แอดมิน',
+            'email' => 'admin-test@example.com',
+            'password' => bcrypt(str()->random(20)),
+        ]);
+
+        $svc = app(WithdrawalService::class);
+        $svc->createWithdrawalRequest($user, 100, $method->id);           // ค้าง pending
+        $svc->createWithdrawalRequest($user, 150, $method->id);           // ค้าง pending
+        $rejected = $svc->createWithdrawalRequest($user, 200, $method->id);
+        $svc->rejectWithdrawal($rejected, $admin, 'ทดสอบ');
+
+        $stats = $svc->getWithdrawalStatistics($user);
+
+        $this->assertEquals(450.0, (float) $stats['total_requested']);
+        $this->assertEquals(250.0, (float) $stats['total_pending']);
+        $this->assertSame(2, $stats['count_pending']);
+        $this->assertSame(1, $stats['count_rejected']);
+        $this->assertSame(0, $stats['count_completed']);
+    }
 }

@@ -164,6 +164,19 @@
         window.showNotification = function (message, type) {
             window.dispatchEvent(new CustomEvent('notify', { detail: { message: message, type: type || 'info' } }));
         };
+        // คัดลอกข้อความ + แจ้งผล — หน้า http/เบราว์เซอร์เก่าไม่มี navigator.clipboard จึงมีทางสำรอง execCommand
+        window.nvmCopy = function (text, okMessage) {
+            var done = function () { window.showNotification(okMessage || 'คัดลอกแล้ว', 'success'); };
+            var fail = function () { window.showNotification('คัดลอกไม่สำเร็จ', 'error'); };
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, fail); return; }
+            try {
+                var t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', ''); t.className = 'nvm-sr';
+                document.body.appendChild(t); t.select();
+                document.execCommand('copy') ? done() : fail();
+                t.remove();
+            } catch (e) { fail(); }
+        };
         // เผยการ์ดตอนเลื่อนถึง — เบราว์เซอร์ไม่มี IntersectionObserver ก็โชว์ทั้งหมดทันที
         (function () {
             var els = document.querySelectorAll('.nvm-rv');
