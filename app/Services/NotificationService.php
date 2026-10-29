@@ -737,12 +737,16 @@ class NotificationService
 
     /**
      * Get user's all notifications
+     *
+     * @param  string|null  $filter  'unread' = ยังไม่อ่าน, 'important' = สำคัญ, null = ทั้งหมด
      */
-    public function getAllNotifications(User $user, int $perPage = 20)
+    public function getAllNotifications(User $user, int $perPage = 20, ?string $filter = null)
     {
         return $user->notifications()
             ->active()
             ->notExpired()
+            ->when($filter === 'unread', fn ($q) => $q->unread())
+            ->when($filter === 'important', fn ($q) => $q->important())
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }

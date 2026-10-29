@@ -133,7 +133,12 @@ class TwoFactorController extends Controller
         $action = $request->input('action', 'general');
         $redirect = $this->safeRedirect($request->input('redirect'));
 
-        return view('user.two-factor.verify', compact('action', 'redirect'));
+        // จำนวนวันที่ "จำอุปกรณ์นี้" ใช้ได้ — null = ผู้ดูแลปิดตัวเลือกนี้ (ไม่แสดงช่องติ๊กที่กดแล้วไม่มีผล)
+        $rememberDays = \App\Models\TwoFactorSetting::canRememberDevice()
+            ? (int) (\App\Models\TwoFactorSetting::getActive()->remember_device_days ?? 30)
+            : null;
+
+        return view('user.two-factor.verify', compact('action', 'redirect', 'rememberDays'));
     }
 
     /**
