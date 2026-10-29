@@ -5,7 +5,9 @@ namespace App\Http\Controllers\User;
 use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
 use App\Rules\NotReservedEmailDomain;
+use App\Services\AccountEmailChangeService;
 use App\Services\ImageUploadService;
+use App\Support\AccountEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -559,11 +561,16 @@ class DashboardController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function profile()
+    public function profile(AccountEmailChangeService $emailChange)
     {
         $user = Auth::user();
 
-        return view('user.profile', compact('user'));
+        // วิธียืนยันเมื่อเปลี่ยนอีเมล (รหัสผ่าน/รหัสทางอีเมลเดิม หรือ รหัสทางอีเมลใหม่) — ฟอร์มแสดงช่องตามนี้
+        $emailChangeMode = $emailChange->mode($user);
+        $emailIsReal = AccountEmail::isDeliverable($user->email);
+        $currentEmailMasked = $emailIsReal ? AccountEmail::mask((string) $user->email) : null;
+
+        return view('user.profile', compact('user', 'emailChangeMode', 'emailIsReal', 'currentEmailMasked'));
     }
 
     /**
@@ -571,14 +578,26 @@ class DashboardController extends Controller
      *
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function updateProfile(Request $request, ImageUploadService $imageUploadService)
+    public function updateProfile(Request $request, ImageUploadService $imageUploadService, AccountEmailChangeService $emailChange)
     {
         $user = Auth::user();
+
+        // 🔒 (2026-10-29) เปลี่ยนอีเมล = ต้องยืนยันตัวตน (ดู AccountEmailChangeService)
+        $oldEmail = (string) $user->email;
+        $emailMode = $emailChange->mode($user);
+        $emailChanging = $emailChange->isChange($user, $request->input('email'));
+
+        $emailRules = ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id];
+        // กันตั้งอีเมลโดเมนสงวน/อีเมลระบบเฉพาะตอนเปลี่ยน — บัญชี LINE/FB ที่ระบบตั้งอีเมลให้ ต้องแก้ชื่อ/เบอร์ได้โดยไม่ถูกบังคับเปลี่ยนอีเมล
+        if ($emailChanging) {
+            $emailRules[] = new NotReservedEmailDomain;
+            $emailRules[] = AccountEmail::deliverableRule();
+        }
 
         $rules = [
             // ข้อมูลส่วนตัว
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
+            'email' => $emailRules,
             'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],
@@ -603,6 +622,19 @@ class DashboardController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        // ตรวจก่อนอัปโหลดรูป — ไม่ผ่านแล้วต้องไม่มีอะไรเปลี่ยน (รวมถึงรูปเดิมที่จะถูกลบหลังอัปโหลดใหม่)
+        if ($emailChanging) {
+            $error = $emailChange->confirmationError($user, $validated['email'], $request->input('email_password'), $request->input('email_code'));
+
+            if ($error !== null) {
+                return back()->withInput($request->except(['email_password', 'email_code']))
+                    ->withErrors([$error['field'] => $error['message']]);
+            }
+        } else {
+            // ต่างแค่ตัวพิมพ์เล็ก/ใหญ่ = กล่องเดิม → เก็บค่าเดิมไว้ตรงตัว
+            $validated['email'] = $oldEmail;
+        }
 
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
@@ -657,8 +689,63 @@ class DashboardController extends Controller
 
         $user->update($validated);
 
+        if ($emailChanging) {
+            $emailChange->completeChange($user, $oldEmail, $emailMode);
+
+            return redirect()->route('user.profile')->with('success', $emailMode === AccountEmailChangeService::MODE_PASSWORD
+                ? 'อัปเดตโปรไฟล์เรียบร้อยแล้ว เราส่งลิงก์ยืนยันไปที่อีเมลใหม่ (กรุณากดยืนยันภายใน 24 ชั่วโมง) และแจ้งเตือนไปที่อีเมลเดิมแล้ว'
+                : 'อัปเดตโปรไฟล์และยืนยันอีเมลใหม่เรียบร้อยแล้ว');
+        }
+
         return redirect()->route('user.profile')
             ->with('success', 'อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+    }
+
+    /**
+     * ส่งรหัส 6 หลักสำหรับเปลี่ยนอีเมล (route: user.profile.email.send-code — เรียกด้วย fetch จากหน้าโปรไฟล์)
+     *
+     * บัญชีที่มีอีเมลจริง → ส่งไปอีเมลเดิม ; บัญชีอีเมลระบบ (LINE/FB) → ส่งไปอีเมลใหม่
+     */
+    public function sendEmailChangeCode(Request $request, AccountEmailChangeService $emailChange)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'new_email' => ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain, AccountEmail::deliverableRule()],
+        ], [], ['new_email' => 'อีเมลใหม่']);
+
+        if (! $emailChange->isChange($user, $request->input('new_email'))) {
+            return response()->json(['success' => false, 'message' => 'อีเมลใหม่ต้องไม่ซ้ำกับอีเมลปัจจุบัน'], 422);
+        }
+
+        $result = $emailChange->sendCode($user, (string) $request->input('new_email'));
+        $sent = (bool) ($result['success'] ?? false);
+
+        return response()->json([
+            'success' => $sent,
+            'message' => $result['message'] ?? 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่',
+            'retry_after' => $result['retry_after'] ?? null,
+        ], $sent ? 200 : (isset($result['retry_after']) ? 429 : 503));
+    }
+
+    /**
+     * ส่งลิงก์ยืนยันอีเมลอีกครั้ง (route: user.profile.email.resend-verification)
+     */
+    public function resendEmailVerification(AccountEmailChangeService $emailChange)
+    {
+        $user = Auth::user();
+
+        if ($user->email_verified_at) {
+            return back()->with('success', 'อีเมลนี้ยืนยันแล้ว');
+        }
+
+        if (! AccountEmail::isDeliverable($user->email)) {
+            return back()->with('error', 'บัญชีนี้ยังไม่มีอีเมลจริง กรุณาเปลี่ยนเป็นอีเมลของคุณก่อน');
+        }
+
+        return $emailChange->sendVerificationLink($user)
+            ? back()->with('success', 'ส่งลิงก์ยืนยันไปที่ '.AccountEmail::mask((string) $user->email).' แล้ว')
+            : back()->with('error', 'ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้งในภายหลัง');
     }
 
     /**

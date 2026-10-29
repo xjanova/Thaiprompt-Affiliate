@@ -37,9 +37,10 @@ class EmailOtpService
     /**
      * Generate and send OTP to email
      *
-     * @param  string  $purpose  'signup', 'login', 'reset_password'
+     * @param  string  $purpose  'signup', 'login', 'reset_password', 'email_change:…', 'account_delete:…'
+     * @param  array<int, string>  $details  บรรทัดอธิบายเพิ่มในอีเมล (เช่น "กำลังเปลี่ยนอีเมลเป็น …") ให้เจ้าของรู้ว่ารหัสนี้ใช้ทำอะไร
      */
-    public function sendOtp(string $email, string $purpose = 'signup'): array
+    public function sendOtp(string $email, string $purpose = 'signup', array $details = []): array
     {
         $email = strtolower(trim($email));
 
@@ -62,7 +63,7 @@ class EmailOtpService
 
         // Send email
         try {
-            $this->sendOtpEmail($email, $otp, $purpose);
+            $this->sendOtpEmail($email, $otp, $purpose, $details);
 
             // Set cooldown
             $this->setCooldown($email);
@@ -114,6 +115,7 @@ class EmailOtpService
             return [
                 'valid' => false,
                 'message' => 'รหัส OTP ไม่ตรงกับวัตถุประสงค์',
+                'reason' => 'purpose_mismatch',
             ];
         }
 
@@ -294,17 +296,21 @@ class EmailOtpService
     /**
      * Send OTP email
      */
-    private function sendOtpEmail(string $email, string $otp, string $purpose): void
+    private function sendOtpEmail(string $email, string $otp, string $purpose, array $details = []): void
     {
-        $subject = match ($purpose) {
+        // purpose ที่ผูกกับบัญชี/เป้าหมายจะมี ":…" ต่อท้าย (เช่น email_change:12:ab34) — ดูแค่ส่วนหน้า
+        $subject = match (strtok($purpose, ':')) {
             'signup' => 'ยืนยันอีเมลสำหรับการสมัครสมาชิก',
             'login' => 'รหัส OTP สำหรับเข้าสู่ระบบ',
             'reset_password' => 'รหัส OTP สำหรับรีเซ็ตรหัสผ่าน',
+            'email_change' => 'รหัสยืนยันการเปลี่ยนอีเมลบัญชี',
+            'account_delete' => 'รหัสยืนยันการลบบัญชี',
             default => 'รหัส OTP ของคุณ',
         };
 
-        $message = "รหัส OTP ของคุณคือ: {$otp}\n\n";
-        $message .= 'รหัสนี้จะหมดอายุใน '.(self::OTP_VALIDITY / 60)." นาที\n\n";
+        $message = $details ? implode("\n", $details)."\n\n" : '';
+        $message .= "รหัส OTP ของคุณคือ: {$otp}\n\n";
+        $message .= 'รหัสนี้จะหมดอายุใน '.(self::OTP_VALIDITY / 60)." นาที ห้ามบอกรหัสนี้กับใคร รวมถึงคนที่อ้างว่าเป็นทีมงาน\n\n";
         $message .= 'หากคุณไม่ได้ทำการนี้ กรุณาเพิกเฉยต่ออีเมลนี้';
 
         Mail::raw($message, function ($mail) use ($email, $subject) {

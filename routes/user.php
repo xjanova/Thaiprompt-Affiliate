@@ -56,6 +56,13 @@ Route::get('/profile', [DashboardController::class, 'profile'])->name('profile')
 Route::put('/profile', [DashboardController::class, 'updateProfile'])
     ->middleware('two-factor:profile_change')
     ->name('profile.update');
+// 🔒 (2026-10-29) เปลี่ยนอีเมลต้องยืนยันตัวตน — ส่งรหัส 6 หลัก (อีเมลเดิมหรืออีเมลใหม่ตามชนิดบัญชี) + ส่งลิงก์ยืนยันซ้ำ
+Route::post('/profile/email/send-code', [DashboardController::class, 'sendEmailChangeCode'])
+    ->middleware('throttle:5,10,profile-email-code')
+    ->name('profile.email.send-code');
+Route::post('/profile/email/resend-verification', [DashboardController::class, 'resendEmailVerification'])
+    ->middleware('throttle:3,10,profile-email-verify')
+    ->name('profile.email.resend-verification');
 Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])
     ->middleware(['turnstile:password_change', 'two-factor:password_change'])
     ->name('profile.update-password');
