@@ -286,6 +286,22 @@ class FortuneAIService
      */
     protected const DEEP_TOTAL_BUDGET_SEC = 150;
 
+    /** 🚦 เวลารอคิวของ key หนึ่งตัวก่อนข้ามไปตัวถัดไป — สั้นเพราะงานส่วนใหญ่มีลูกค้ารออยู่ */
+    protected const KEY_LOCK_WAIT_SEC = 12;
+
+    /**
+     * 🚦 (2026-10-31) เวลารอคิวของ key ตัวสุดท้าย สำหรับงานหลังบ้านที่ไม่มีลูกค้ารอ
+     *    ส่งผ่าน withConfigOverride(['key_wait_sec' => ...]) เหลือเวลาจาก budget 150 วิ
+     *    ไว้ให้ emergency broadening ลอง key อื่นต่อได้ถ้าคิวไม่ขยับจริง ๆ
+     *
+     * เคสจริง 14 วันย้อนหลังถึง 2026-10-31: เลนโพส (00:00) กับเลนแชท (00:01) แย่ง key เดียวกัน
+     * โมเดลตอบ 9-17 วิ แต่รอคิวได้แค่ 12 วิ → ข้าม key ทั้งที่ไม่มีตัวอื่นให้ข้ามไป
+     * ⇒ `horoscope:generate-daily` ล้ม 9 คืน และโพสดวงรายวันขาดไป 1 วันเกิดใน 3 คืน
+     *
+     * ⚠️ ห้ามใช้กับงานที่มีลูกค้ารอ — ProcessFortuneTelling มี timeout แค่ 120 วิ
+     */
+    public const BATCH_KEY_WAIT_SEC = 120;
+
     /**
      * 🐢 Gemini Pro models (เช่น gemini-3.1-pro-preview, gemini-2.5-pro) ใช้ reasoning หนัก
      * ตอบช้ากว่า Flash มาก (30-90s) → ขยาย timeout เฉพาะ Pro เพื่อกัน cURL error 28
@@ -5205,6 +5221,7 @@ PROMPT;
      * 🔮 (2026-09-15) ความยาว/อุณหภูมิ/เพดานเวลา **เฉพาะ call ถัดไป** ของ generateWithRetryAndFallback()
      *
      * คีย์ที่รับ: max_tokens · temperature · reasoning_effort · budget_sec (เพดานเวลาวนลอง key)
+     *           · key_wait_sec (เวลารอคิวของ key ตัวสุดท้าย ดู BATCH_KEY_WAIT_SEC)
      * ⚠️ เป็น property แบบ ONE-SHOT ไม่ใช่พารามิเตอร์ใหม่ — เทสต์หลายไฟล์ subclass
      *    generateWithRetryAndFallbackInner() ด้วย signature เดิม เพิ่มพารามิเตอร์ = fatal ทั้งชุด
      */
@@ -5241,6 +5258,7 @@ PROMPT;
         }
         // เพดานเวลารวมของการวนลอง key — ผู้เรียกที่มีคนรอหน้าเว็บ (ตัดที่ ~55 วิ) ตั้งให้สั้นกว่า 150 วิของบอทได้
         $budgetSec = (float) ($configOverride['budget_sec'] ?? self::DEEP_TOTAL_BUDGET_SEC);
+        $lastKeyWaitSec = (int) ($configOverride['key_wait_sec'] ?? self::KEY_LOCK_WAIT_SEC);
         $startTime = microtime(true);
 
         // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
@@ -5311,17 +5329,23 @@ PROMPT;
 
             // 🎯 (2026-05-02) Cache::lock — serialize calls per-key (queue สำหรับ concurrent predictions)
             //   user request: "ถ้ามีการทำนายพร้อมๆ กันต้องมีคิว ในการส่ง request เพื่อไม่ติด limit"
-            //   - Try get lock 12s (พอให้คน อื่นจบ AI call)
-            //   - ถ้า lock ไม่ได้ → skip ไป key ถัดไป (ไม่บล็อกนาน)
+            //   - รอคิว KEY_LOCK_WAIT_SEC แล้ว skip ไป key ถัดไป (ไม่บล็อกนาน)
+            //   - key ตัวสุดท้ายไม่มีตัวให้ skip ไปแล้ว งานหลังบ้านจึงขอรอยาวขึ้นได้ (ดู BATCH_KEY_WAIT_SEC)
+            $lockWaitSec = $index === count($allKeys) - 1 ? $lastKeyWaitSec : self::KEY_LOCK_WAIT_SEC;
             $lockKey = 'ai_key_lock:'.$keyInfo['provider'].':'.md5($keyInfo['api_key']);
             $aiLock = Cache::lock($lockKey, 90); // hold up to 90s
             $lockAcquired = false;
             try {
-                $lockAcquired = $aiLock->block(12); // wait max 12s for slot
+                $lockAcquired = $aiLock->block($lockWaitSec);
             } catch (\Throwable $lockErr) {
-                Log::info('FortuneAI: ข้าม key — รอ lock เกิน 12s', [
+                // 🚦 (2026-10-31) ต้องนับลง $errors — เดิมข้ามเงียบ ๆ ทำให้ key เดียวที่ไม่ว่างกลายเป็น
+                //    "ลองแล้ว 0 keys" ซึ่งอ่านเหมือนไม่มี key ใช้ได้ และ $errors ว่างปิด emergency broadening ด้วย
+                $errors[] = "{$keyInfo['provider']}/{$keyInfo['name']}: "
+                    .Str::limit($lockErr->getMessage() ?: "key ไม่ว่าง รอคิวเกิน {$lockWaitSec} วิ", 150);
+                Log::info('FortuneAI: ข้าม key — รอ lock เกินกำหนด', [
                     'key' => $keyInfo['name'] ?? '?',
                     'provider' => $keyInfo['provider'],
+                    'wait_sec' => $lockWaitSec,
                 ]);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false);
 

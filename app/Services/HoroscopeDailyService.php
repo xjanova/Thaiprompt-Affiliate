@@ -257,11 +257,13 @@ class HoroscopeDailyService
             $brief = (new DailyAstroBrief)->build($birthDay, $date);
             $prompt = $this->buildBirthDayPromptFromBrief($brief);
 
-            $result = $this->aiService->generateWithRetryAndFallback(
-                questions: [$prompt],
-                promptTemplate: null,
-                readingType: 'basic'
-            );
+            $result = $this->aiService
+                ->withConfigOverride(['key_wait_sec' => FortuneAIService::BATCH_KEY_WAIT_SEC])
+                ->generateWithRetryAndFallback(
+                    questions: [$prompt],
+                    promptTemplate: null,
+                    readingType: 'basic'
+                );
 
             $parsed = $this->parseAIPrediction($result['response'] ?? '');
 
@@ -326,6 +328,24 @@ class HoroscopeDailyService
 
             return $prediction->fresh();
         } catch (\Exception $e) {
+            // 🪞🏁 (2026-10-31) เช็คเลนโพสก่อนทำเครื่องหมายว่าล้ม — แถวเดียวกันอาจถูก mirror ไปแล้ว
+            //    ระหว่างที่เรารอ AI เคสจริง 2026-10-31: วันศุกร์ mirror เสร็จ 00:01:10 แต่เลนแชท
+            //    เขียนทับเป็น failed พร้อมข้อความ error ตอน 00:01:15 ลูกค้าวันศุกร์จึงไม่ได้ดวงของวันนี้
+            //    จนรอบกู้ 00:20 ทั้งที่บทความเสร็จแล้ว
+            $lateAdopted = app(DailyArticleMirror::class)->adoptForDay($birthDay, $date);
+            if ($lateAdopted !== null) {
+                Log::warning('HoroscopeDaily: ยิง AI ล้มแต่เลนโพสมีบทความแล้ว → ใช้ของเลนโพส', [
+                    'birth_day' => $birthDay,
+                    'day_name' => DailyArticleMirror::dayName($birthDay),
+                    'target_date' => $date->toDateString(),
+                    'error' => $e->getMessage(),
+                ]);
+
+                $this->clearBirthDayCache($birthDay, $date);
+
+                return $lateAdopted;
+            }
+
             $prediction->update([
                 'status' => 'failed',
                 'overall_prediction_th' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
