@@ -1,26 +1,17 @@
 <?php
 
-use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
-use App\Http\Controllers\Admin\Accounting\ContactController;
-use App\Http\Controllers\Admin\Accounting\ExpenseController;
-use App\Http\Controllers\Admin\Accounting\FlowAccountController;
-use App\Http\Controllers\Admin\Accounting\InvoiceController;
-use App\Http\Controllers\Admin\Accounting\ProductController;
-use App\Http\Controllers\Admin\Accounting\ReportController;
 // 🩹 (2026-05-08) ลบ — class ไม่มีใน codebase ทำให้ artisan route:list crash
 //   ส่งผลให้ webhook line/fortune 500 (Laravel boot fail) → LINE ดูดวงไม่ได้
 // use App\Http\Controllers\Admin\AdvancedAnalyticsController;
 // use App\Http\Controllers\Admin\AdvancedNLPController;
 use App\Http\Controllers\Admin\AiApiKeyController;
 use App\Http\Controllers\Admin\AiBotController;
-use App\Http\Controllers\Admin\AiContentWriterController;
 use App\Http\Controllers\Admin\AiGenAdminController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AntiAbuseController;
 use App\Http\Controllers\Admin\ArrowXThemeController;
-use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\ClassicXSettingsController;
@@ -28,12 +19,10 @@ use App\Http\Controllers\Admin\CloudflareController;
 use App\Http\Controllers\Admin\CryptoManagementController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DebtController;
-use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\Dev\DevReleaseController;
 use App\Http\Controllers\Admin\DeveloperApprovalController;
 use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\EmailController;
-use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FacebookOAuthController;
 use App\Http\Controllers\Admin\FeaturedStoreController;
 use App\Http\Controllers\Admin\FloatingToolsController;
@@ -85,20 +74,12 @@ use App\Http\Controllers\Admin\HotelManagementController;
 use App\Http\Controllers\Admin\HotelOwnerController;
 use App\Http\Controllers\Admin\HotelReviewManagementController;
 use App\Http\Controllers\Admin\HotelSpecialOfferController;
-use App\Http\Controllers\Admin\HrmDashboardController;
 use App\Http\Controllers\Admin\IconController;
 use App\Http\Controllers\Admin\IdCardController;
-use App\Http\Controllers\Admin\JobApplicationController;
-use App\Http\Controllers\Admin\JobPostingController;
-use App\Http\Controllers\Admin\KeywordABTestController;
 use App\Http\Controllers\Admin\KeywordActivityLogController;
-use App\Http\Controllers\Admin\KeywordPerformanceDashboardController;
-use App\Http\Controllers\Admin\KeywordSuggestionController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\KycController;
-use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\LazadaImportController;
-use App\Http\Controllers\Admin\LeaveController;
 use App\Http\Controllers\Admin\LineBotAiController;
 use App\Http\Controllers\Admin\LineBotKeywordAnalyticsController;
 use App\Http\Controllers\Admin\LineBotKeywordController;
@@ -124,7 +105,6 @@ use App\Http\Controllers\Admin\MobilePairController;
 use App\Http\Controllers\Admin\NFCCardController;
 use App\Http\Controllers\Admin\NFCReaderController;
 use App\Http\Controllers\Admin\NFCTransactionController;
-use App\Http\Controllers\Admin\NLPAnalysisController;
 use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficialShopAdminController;
@@ -134,17 +114,7 @@ use App\Http\Controllers\Admin\PageViewAnalyticsController;
 use App\Http\Controllers\Admin\PaymentBankAccountController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\PayoutController;
-use App\Http\Controllers\Admin\PayrollController;
-use App\Http\Controllers\Admin\PerformanceGoalController;
-use App\Http\Controllers\Admin\PerformanceReviewController;
-use App\Http\Controllers\Admin\PerformanceTemplateController;
 use App\Http\Controllers\Admin\PlatformRevenueController;
-use App\Http\Controllers\Admin\Pos\PosLabelController;
-use App\Http\Controllers\Admin\PosAdvertisementController;
-use App\Http\Controllers\Admin\PosDashboardController;
-use App\Http\Controllers\Admin\PosDeviceController;
-use App\Http\Controllers\Admin\PositionController;
-use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\RecruitTemplateController;
 use App\Http\Controllers\Admin\RiderController;
@@ -152,12 +122,10 @@ use App\Http\Controllers\Admin\RiderJobController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RoomTypeManagementController;
 use App\Http\Controllers\Admin\SecurityController;
-use App\Http\Controllers\Admin\SentimentAnalysisController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\ServiceBookingController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
-use App\Http\Controllers\Admin\ServicePricingRuleController;
 use App\Http\Controllers\Admin\ServiceProviderController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
@@ -174,8 +142,6 @@ use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\TokenManagementController;
 use App\Http\Controllers\Admin\TPIXController;
 use App\Http\Controllers\Admin\TpixDeploymentController;
-use App\Http\Controllers\Admin\TrainingCourseController;
-use App\Http\Controllers\Admin\TrainingEnrollmentController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\UnifiedReportController;
 use App\Http\Controllers\Admin\UserController;
@@ -184,7 +150,6 @@ use App\Http\Controllers\Admin\VendorStoreController;
 use App\Http\Controllers\Admin\VideoRewardAdminController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WalletSettingsController;
-use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\WindowsUiController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\NotificationController;
@@ -360,14 +325,6 @@ Route::prefix('site-settings')->name('site-settings.')->group(function () {
 Route::prefix('header-settings')->name('header-settings.')->group(function () {
     Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');
     Route::put('/', [HeaderSettingsController::class, 'update'])->name('update');
-});
-
-// WebP Management
-Route::prefix('webp')->name('webp.')->group(function () {
-    Route::get('/', [WebPManagementController::class, 'index'])->name('index');
-    Route::post('/convert', [WebPManagementController::class, 'convert'])->name('convert');
-    Route::get('/progress', [WebPManagementController::class, 'progress'])->name('progress');
-    Route::get('/directory-details', [WebPManagementController::class, 'directoryDetails'])->name('directory-details');
 });
 
 // Security Management
@@ -616,13 +573,6 @@ Route::prefix('nfc-transactions')->name('nfc-transactions.')->group(function () 
 
 // Language Settings
 Route::prefix('settings')->name('settings.')->group(function () {
-    Route::get('languages', [LanguageSettingController::class, 'index'])->name('languages');
-    Route::post('languages', [LanguageSettingController::class, 'update'])->name('languages.update');
-    Route::post('languages/{code}/toggle', [LanguageSettingController::class, 'toggle'])->name('languages.toggle');
-    Route::put('languages/{code}', [LanguageSettingController::class, 'updateLanguage'])->name('languages.update-single');
-    Route::post('languages/reorder', [LanguageSettingController::class, 'reorder'])->name('languages.reorder');
-    Route::get('languages/switcher', [LanguageSettingController::class, 'getSwitcherSettings'])->name('languages.switcher');
-    Route::put('languages/switcher', [LanguageSettingController::class, 'updateSwitcherSettings'])->name('languages.switcher.update');
 
     // OCR Settings
     Route::get('ocr', [SettingsController::class, 'ocr'])->name('ocr');
@@ -883,98 +833,6 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/keyword-stats', [KeywordActivityLogController::class, 'getKeywordStats'])->name('keyword-stats');
             Route::get('/user-history', [KeywordActivityLogController::class, 'getUserHistory'])->name('user-history');
             Route::post('/clear-old-logs', [KeywordActivityLogController::class, 'clearOldLogs'])->name('clear-old-logs');
-        });
-
-        // Performance Dashboard & Analytics
-        Route::prefix('performance')->name('performance.')->group(function () {
-            Route::get('/', [KeywordPerformanceDashboardController::class, 'index'])->name('index');
-            Route::get('/chart-data', [KeywordPerformanceDashboardController::class, 'getChartData'])->name('chart-data');
-            Route::get('/comparison-data', [KeywordPerformanceDashboardController::class, 'getComparisonData'])->name('comparison-data');
-            Route::get('/response-time-data', [KeywordPerformanceDashboardController::class, 'getResponseTimeData'])->name('response-time-data');
-            Route::get('/trend-data', [KeywordPerformanceDashboardController::class, 'getTrendData'])->name('trend-data');
-            Route::get('/{keyword}/details', [KeywordPerformanceDashboardController::class, 'getKeywordDetails'])->name('details');
-            Route::get('/export', [KeywordPerformanceDashboardController::class, 'exportReport'])->name('export');
-        });
-
-        // Keyword Suggestions Engine
-        Route::prefix('suggestions')->name('suggestions.')->group(function () {
-            Route::get('/', [KeywordSuggestionController::class, 'index'])->name('index');
-            Route::get('/json', [KeywordSuggestionController::class, 'getSuggestionsJson'])->name('json');
-            Route::get('/stats', [KeywordSuggestionController::class, 'getStatistics'])->name('stats');
-            Route::get('/recommendations', [KeywordSuggestionController::class, 'getRecommendations'])->name('recommendations');
-            Route::post('/preview', [KeywordSuggestionController::class, 'preview'])->name('preview');
-            Route::post('/approve', [KeywordSuggestionController::class, 'approve'])->name('approve');
-            Route::post('/approve-batch', [KeywordSuggestionController::class, 'approveBatch'])->name('approve-batch');
-            Route::post('/reject', [KeywordSuggestionController::class, 'reject'])->name('reject');
-            Route::get('/detail', [KeywordSuggestionController::class, 'getDetail'])->name('detail');
-            Route::get('/refresh', [KeywordSuggestionController::class, 'refresh'])->name('refresh');
-            Route::get('/export', [KeywordSuggestionController::class, 'export'])->name('export');
-        });
-
-        // A/B Testing System
-        Route::prefix('ab-tests')->name('ab-tests.')->group(function () {
-            Route::get('/', [KeywordABTestController::class, 'index'])->name('index');
-            Route::get('/create', [KeywordABTestController::class, 'create'])->name('create');
-            Route::post('/', [KeywordABTestController::class, 'store'])->name('store');
-            Route::get('/{test}', [KeywordABTestController::class, 'show'])->name('show');
-            Route::get('/{test}/edit', [KeywordABTestController::class, 'edit'])->name('edit');
-            Route::put('/{test}', [KeywordABTestController::class, 'update'])->name('update');
-            Route::post('/{test}/start', [KeywordABTestController::class, 'start'])->name('start');
-            Route::post('/{test}/pause', [KeywordABTestController::class, 'pause'])->name('pause');
-            Route::post('/{test}/complete', [KeywordABTestController::class, 'complete'])->name('complete');
-            Route::post('/{test}/apply-winner', [KeywordABTestController::class, 'applyWinner'])->name('apply-winner');
-            Route::delete('/{test}', [KeywordABTestController::class, 'destroy'])->name('destroy');
-            Route::get('/api/list', [KeywordABTestController::class, 'listJson'])->name('list-json');
-            Route::get('/api/statistics', [KeywordABTestController::class, 'statistics'])->name('statistics');
-            Route::get('/api/recommendations', [KeywordABTestController::class, 'recommendations'])->name('recommendations');
-            Route::get('/{test}/chart-data', [KeywordABTestController::class, 'chartData'])->name('chart-data');
-            Route::get('/{test}/timeline-data', [KeywordABTestController::class, 'timelineData'])->name('timeline-data');
-        });
-
-        // Sentiment Analysis System
-        Route::prefix('sentiment-analysis')->name('sentiment-analysis.')->group(function () {
-            Route::get('/', [SentimentAnalysisController::class, 'index'])->name('index');
-            Route::get('/{sentiment}', [SentimentAnalysisController::class, 'show'])->name('show');
-            Route::delete('/{sentiment}', [SentimentAnalysisController::class, 'destroy'])->name('destroy');
-            Route::get('/api/list', [SentimentAnalysisController::class, 'listJson'])->name('list-json');
-            Route::get('/api/statistics', [SentimentAnalysisController::class, 'statistics'])->name('statistics');
-            Route::get('/api/trend-data', [SentimentAnalysisController::class, 'trendData'])->name('trend-data');
-            Route::get('/api/pain-points', [SentimentAnalysisController::class, 'painPointsData'])->name('pain-points');
-            Route::get('/api/emotions', [SentimentAnalysisController::class, 'emotionData'])->name('emotions');
-            Route::get('/api/recommendations', [SentimentAnalysisController::class, 'recommendations'])->name('recommendations');
-            Route::get('/api/top-complaints', [SentimentAnalysisController::class, 'topComplaints'])->name('top-complaints');
-            Route::get('/api/urgent-issues', [SentimentAnalysisController::class, 'urgentIssues'])->name('urgent-issues');
-            Route::get('/api/export-report', [SentimentAnalysisController::class, 'exportReport'])->name('export-report');
-        });
-
-        // NLP Enhancement System (Entity Extraction, Intent Recognition, Clustering - Phase 2.4)
-        Route::prefix('nlp-analysis')->name('nlp-analysis.')->group(function () {
-            // Dashboard
-            Route::get('/', [NLPAnalysisController::class, 'index'])->name('index');
-
-            // Entities Management
-            Route::get('/entities', [NLPAnalysisController::class, 'entities'])->name('entities');
-            Route::delete('/entities/{entity}', [NLPAnalysisController::class, 'deleteEntity'])->name('delete-entity');
-
-            // Intents Management
-            Route::get('/intents', [NLPAnalysisController::class, 'intents'])->name('intents');
-            Route::delete('/intents/{intent}', [NLPAnalysisController::class, 'deleteIntent'])->name('delete-intent');
-
-            // Clusters Management
-            Route::get('/clusters', [NLPAnalysisController::class, 'clusters'])->name('clusters');
-            Route::get('/clusters/{cluster}', [NLPAnalysisController::class, 'showCluster'])->name('show-cluster');
-            Route::post('/clusters', [NLPAnalysisController::class, 'createCluster'])->name('create-cluster');
-            Route::put('/clusters/{cluster}', [NLPAnalysisController::class, 'updateCluster'])->name('update-cluster');
-            Route::delete('/clusters/{cluster}', [NLPAnalysisController::class, 'deleteCluster'])->name('delete-cluster');
-
-            // API Endpoints for Data & Analytics
-            Route::get('/api/entity-statistics', [NLPAnalysisController::class, 'entityStatistics'])->name('entity-statistics');
-            Route::get('/api/intent-statistics', [NLPAnalysisController::class, 'intentStatistics'])->name('intent-statistics');
-            Route::get('/api/cluster-usage', [NLPAnalysisController::class, 'clusterUsageData'])->name('cluster-usage');
-            Route::get('/api/cluster-recommendations', [NLPAnalysisController::class, 'clusterRecommendations'])->name('cluster-recommendations');
-            Route::get('/api/related-keywords', [NLPAnalysisController::class, 'relatedKeywords'])->name('related-keywords');
-            Route::get('/api/entity-cooccurrence', [NLPAnalysisController::class, 'entityCoOccurrence'])->name('entity-cooccurrence');
-            Route::get('/api/export-report', [NLPAnalysisController::class, 'exportReport'])->name('export-report');
         });
 
         // 🩹 (2026-05-08) Advanced NLP + Advanced Analytics — ลบทั้งบล็อก
@@ -1380,262 +1238,6 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/calculator', function () {
         return view('admin.mlm.calculator');
     })->name('calculator');
-});
-
-// HRM (Human Resource Management) System
-Route::prefix('hrm')->name('hrm.')->group(function () {
-    // HRM Dashboard
-    Route::get('/dashboard', [HrmDashboardController::class, 'index'])->name('dashboard');
-
-    // Employee Management
-    Route::prefix('employees')->name('employees.')->group(function () {
-        Route::get('/', [EmployeeController::class, 'index'])->name('index');
-        Route::get('/create', [EmployeeController::class, 'create'])->name('create');
-        Route::post('/', [EmployeeController::class, 'store'])->name('store');
-        Route::get('/{employee}', [EmployeeController::class, 'show'])->name('show');
-        Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])->name('edit');
-        Route::put('/{employee}', [EmployeeController::class, 'update'])->name('update');
-        Route::delete('/{employee}', [EmployeeController::class, 'destroy'])->name('destroy');
-        Route::get('/export/csv', [EmployeeController::class, 'export'])->name('export');
-    });
-
-    // Department Management
-    Route::prefix('departments')->name('departments.')->group(function () {
-        Route::get('/', [DepartmentController::class, 'index'])->name('index');
-        Route::get('/create', [DepartmentController::class, 'create'])->name('create');
-        Route::post('/', [DepartmentController::class, 'store'])->name('store');
-        Route::get('/{department}', [DepartmentController::class, 'show'])->name('show');
-        Route::get('/{department}/edit', [DepartmentController::class, 'edit'])->name('edit');
-        Route::put('/{department}', [DepartmentController::class, 'update'])->name('update');
-        Route::delete('/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
-    });
-
-    // Position Management (simplified routes)
-    Route::resource('positions', PositionController::class);
-
-    // Attendance Management
-    Route::prefix('attendance')->name('attendance.')->group(function () {
-        Route::get('/', [AttendanceController::class, 'index'])->name('index');
-        Route::get('/employee/{employee}', [AttendanceController::class, 'employeeReport'])->name('employee-report');
-        Route::post('/mark-absent', [AttendanceController::class, 'markAbsent'])->name('mark-absent');
-        Route::post('/bulk-import', [AttendanceController::class, 'bulkImport'])->name('bulk-import');
-    });
-
-    // Leave Management
-    Route::prefix('leave')->name('leave.')->group(function () {
-        Route::get('/', [LeaveController::class, 'index'])->name('index');
-        Route::get('/{leaveRequest}', [LeaveController::class, 'show'])->name('show');
-        Route::post('/{leaveRequest}/approve', [LeaveController::class, 'approve'])->name('approve');
-        Route::post('/{leaveRequest}/reject', [LeaveController::class, 'reject'])->name('reject');
-        Route::get('/calendar/view', [LeaveController::class, 'calendar'])->name('calendar');
-
-        // Leave Types Management
-        Route::get('/types/manage', [LeaveController::class, 'leaveTypes'])->name('types');
-        Route::get('/types/create', [LeaveController::class, 'createLeaveType'])->name('types.create');
-        Route::post('/types', [LeaveController::class, 'storeLeaveType'])->name('types.store');
-        Route::get('/types/{leaveType}/edit', [LeaveController::class, 'editLeaveType'])->name('types.edit');
-        Route::put('/types/{leaveType}', [LeaveController::class, 'updateLeaveType'])->name('types.update');
-    });
-
-    // Payroll Management
-    Route::prefix('payroll')->name('payroll.')->group(function () {
-        Route::get('/', [PayrollController::class, 'index'])->name('index');
-        Route::get('/{payroll}', [PayrollController::class, 'show'])->name('show');
-        Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
-        Route::post('/{payroll}/approve', [PayrollController::class, 'approve'])->name('approve');
-        Route::post('/{payroll}/mark-paid', [PayrollController::class, 'markAsPaid'])->name('mark-paid');
-        Route::get('/{payroll}/payslip', [PayrollController::class, 'downloadPayslip'])->name('payslip');
-        Route::post('/bulk-approve', [PayrollController::class, 'bulkApprove'])->name('bulk-approve');
-        Route::get('/export/csv', [PayrollController::class, 'export'])->name('export');
-    });
-
-    // Performance Management
-    Route::prefix('performance')->name('performance.')->group(function () {
-        // Performance Reviews
-        Route::resource('reviews', PerformanceReviewController::class);
-
-        // Performance Goals
-        Route::resource('goals', PerformanceGoalController::class);
-
-        // Performance Templates
-        Route::resource('templates', PerformanceTemplateController::class);
-    });
-
-    // Recruitment Management
-    Route::prefix('recruitment')->name('recruitment.')->group(function () {
-        // Job Postings
-        Route::resource('jobs', JobPostingController::class);
-
-        // Job Applications
-        Route::resource('applications', JobApplicationController::class);
-    });
-
-    // Training Management
-    Route::prefix('training')->name('training.')->group(function () {
-        // Training Courses
-        Route::resource('courses', TrainingCourseController::class);
-
-        // Training Enrollments (also accessible as schedules)
-        Route::resource('enrollments', TrainingEnrollmentController::class);
-
-        // Alias for schedules (maps to enrollments)
-        Route::get('/schedules', [TrainingEnrollmentController::class, 'index'])->name('schedules');
-    });
-});
-
-/*
-|--------------------------------------------------------------------------
-| Accounting System Routes
-|--------------------------------------------------------------------------
-*/
-Route::prefix('accounting')->name('accounting.')->group(function () {
-    // Dashboard
-    Route::get('/', [AccountingDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/setup', [AccountingDashboardController::class, 'setup'])->name('setup');
-    Route::post('/setup', [AccountingDashboardController::class, 'saveSetup'])->name('setup.save');
-
-    // Invoices
-    Route::resource('invoices', InvoiceController::class);
-    Route::post('invoices/{invoice}/items', [InvoiceController::class, 'addItem'])->name('invoices.items.add');
-    Route::delete('invoices/{invoice}/items/{item}', [InvoiceController::class, 'removeItem'])->name('invoices.items.remove');
-    Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments');
-    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
-    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
-
-    // Expenses
-    Route::resource('expenses', ExpenseController::class);
-    Route::post('expenses/{expense}/items', [ExpenseController::class, 'addItem'])->name('expenses.items.add');
-    Route::delete('expenses/{expense}/items/{item}', [ExpenseController::class, 'removeItem'])->name('expenses.items.remove');
-    Route::post('expenses/{expense}/payments', [ExpenseController::class, 'recordPayment'])->name('expenses.payments');
-
-    // Contacts (Customers & Vendors)
-    Route::resource('contacts', ContactController::class);
-    Route::get('contacts/{contact}/statement', [ContactController::class, 'statement'])->name('contacts.statement');
-
-    // Products & Services
-    Route::resource('products', ProductController::class);
-    Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk-import');
-
-    // Reports
-    Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/', [ReportController::class, 'index'])->name('index');
-        Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
-        Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
-        Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
-        Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
-        Route::get('/expenses', [ReportController::class, 'expenses'])->name('expenses');
-        Route::get('/tax', [ReportController::class, 'tax'])->name('tax');
-    });
-
-    // FlowAccount Integration
-    Route::prefix('flowaccount')->name('flowaccount.')->group(function () {
-        // Dashboard และหน้าหลัก
-        Route::get('/', [FlowAccountController::class, 'index'])->name('index');
-
-        // การเชื่อมต่อ OAuth
-        Route::get('/connect', [FlowAccountController::class, 'showConnectForm'])->name('connect.form');
-        Route::post('/connect', [FlowAccountController::class, 'connect'])->name('connect');
-        Route::get('/callback', [FlowAccountController::class, 'callback'])->name('callback');
-        Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
-        Route::get('/test', [FlowAccountController::class, 'testConnection'])->name('test');
-
-        // การตั้งค่า
-        Route::get('/settings', [FlowAccountController::class, 'settings'])->name('settings');
-        Route::post('/settings', [FlowAccountController::class, 'saveSettings'])->name('settings.save');
-
-        // การซิงค์ข้อมูล
-        Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
-        Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
-
-        // ประวัติการซิงค์
-        Route::get('/logs', [FlowAccountController::class, 'syncLogs'])->name('logs');
-        Route::post('/logs/clear', [FlowAccountController::class, 'clearLogs'])->name('logs.clear');
-
-        // สถิติ
-        Route::get('/stats', [FlowAccountController::class, 'getStats'])->name('stats');
-
-        // ดึงข้อมูลจาก FlowAccount API
-        Route::get('/fetch/{endpoint}', [FlowAccountController::class, 'fetchFromFlowAccount'])->name('fetch');
-    });
-});
-
-// POS Management
-Route::prefix('pos')->name('pos.')->group(function () {
-    // Dashboard
-    Route::get('/', [PosDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/analytics', [PosDashboardController::class, 'analytics'])->name('analytics');
-    Route::get('/sales-chart', [PosDashboardController::class, 'salesChart'])->name('sales-chart');
-
-    // Devices Management
-    Route::resource('devices', PosDeviceController::class);
-    Route::post('devices/{device}/regenerate-license', [PosDeviceController::class, 'regenerateLicenseKey'])->name('devices.regenerate-license');
-    Route::post('devices/{device}/toggle-status', [PosDeviceController::class, 'toggleStatus'])->name('devices.toggle-status');
-    Route::post('devices/{device}/extend-subscription', [PosDeviceController::class, 'extendSubscription'])->name('devices.extend-subscription');
-    Route::post('devices/{device}/suspend', [PosDeviceController::class, 'suspend'])->name('devices.suspend');
-    Route::post('devices/{device}/reactivate', [PosDeviceController::class, 'reactivate'])->name('devices.reactivate');
-    Route::post('devices/{device}/force-offline', [PosDeviceController::class, 'forceOffline'])->name('devices.force-offline');
-    Route::get('devices-export', [PosDeviceController::class, 'export'])->name('devices.export');
-
-    // Transactions Management
-    Route::get('transactions', [PosTransactionController::class, 'index'])->name('transactions.index');
-    Route::get('transactions/{transaction}', [PosTransactionController::class, 'show'])->name('transactions.show');
-    Route::post('transactions/{transaction}/refund', [PosTransactionController::class, 'refund'])->name('transactions.refund');
-    Route::post('transactions/{transaction}/void', [PosTransactionController::class, 'void'])->name('transactions.void');
-    Route::get('transactions/{transaction}/receipt', [PosTransactionController::class, 'receipt'])->name('transactions.receipt');
-    Route::get('transactions/{transaction}/print', [PosTransactionController::class, 'printReceipt'])->name('transactions.print');
-    Route::get('transactions-export', [PosTransactionController::class, 'export'])->name('transactions.export');
-    Route::get('transactions-analytics', [PosTransactionController::class, 'analytics'])->name('transactions.analytics');
-
-    // Advertisements Management
-    Route::resource('advertisements', PosAdvertisementController::class);
-    Route::post('advertisements/{advertisement}/toggle-status', [PosAdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
-    Route::post('advertisements/reorder', [PosAdvertisementController::class, 'reorder'])->name('advertisements.reorder');
-    Route::get('advertisements/{advertisement}/preview', [PosAdvertisementController::class, 'preview'])->name('advertisements.preview');
-    Route::post('advertisements/{advertisement}/duplicate', [PosAdvertisementController::class, 'duplicate'])->name('advertisements.duplicate');
-    Route::get('advertisements-analytics', [PosAdvertisementController::class, 'analytics'])->name('advertisements.analytics');
-
-    // Label Printing Management
-    Route::prefix('labels')->name('labels.')->group(function () {
-        // Dashboard
-        Route::get('/', [PosLabelController::class, 'index'])->name('index');
-
-        // Product Label Printing
-        Route::get('/print-product', [PosLabelController::class, 'printProductLabels'])->name('print-product');
-
-        // Shipping Label Printing
-        Route::get('/print-shipping', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping');
-        Route::get('/print-shipping/{transaction}', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping.transaction');
-
-        // Preview Page (แสดงฉลากสำหรับพิมพ์)
-        Route::get('/preview', [PosLabelController::class, 'showPreview'])->name('preview');
-
-        // Template Management (จัดการ Templates)
-        Route::prefix('templates')->name('templates.')->group(function () {
-            Route::get('/', [PosLabelController::class, 'listTemplates'])->name('index');
-            Route::get('/create', [PosLabelController::class, 'createTemplate'])->name('create');
-            Route::post('/', [PosLabelController::class, 'storeTemplate'])->name('store');
-            Route::get('/{template}/edit', [PosLabelController::class, 'editTemplate'])->name('edit');
-            Route::get('/{template}/designer', [PosLabelController::class, 'designerTemplate'])->name('designer');
-            Route::put('/{template}', [PosLabelController::class, 'updateTemplate'])->name('update');
-            Route::delete('/{template}', [PosLabelController::class, 'destroyTemplate'])->name('destroy');
-            Route::post('/{template}/duplicate', [PosLabelController::class, 'duplicateTemplate'])->name('duplicate');
-        });
-
-        // API endpoints
-        Route::get('/api/products', [PosLabelController::class, 'getProducts'])->name('api.products');
-        Route::get('/api/search-products', [PosLabelController::class, 'searchProducts'])->name('api.search-products');
-        Route::post('/api/preview', [PosLabelController::class, 'preview'])->name('api.preview');
-        Route::post('/api/print', [PosLabelController::class, 'print'])->name('api.print');
-        Route::post('/api/print-shipping/{transaction}', [PosLabelController::class, 'printShippingFromTransaction'])->name('api.print-shipping');
-        Route::get('/api/templates', [PosLabelController::class, 'getTemplates'])->name('api.templates');
-        Route::get('/api/paper-sizes', [PosLabelController::class, 'getPaperSizes'])->name('api.paper-sizes');
-        Route::post('/api/batch-session', [PosLabelController::class, 'createBatchSession'])->name('api.batch-session');
-
-        // Print History
-        Route::get('/history', [PosLabelController::class, 'history'])->name('history');
-        Route::get('/history/{print}', [PosLabelController::class, 'show'])->name('show');
-        Route::delete('/history/{print}', [PosLabelController::class, 'destroy'])->name('destroy');
-    });
 });
 
 // Theme Management
@@ -2347,8 +1949,6 @@ Route::post('service-categories/reorder', [ServiceCategoryController::class, 're
 
 // Services Management
 Route::resource('services', ServiceController::class);
-Route::get('services-blocked', [ServiceController::class, 'blocked'])
-    ->name('services.blocked');
 Route::post('services/{service}/toggle-active', [ServiceController::class, 'toggleActive'])
     ->name('services.toggle-active');
 Route::post('services/{service}/toggle-featured', [ServiceController::class, 'toggleFeatured'])
@@ -2530,18 +2130,6 @@ Route::prefix('service-providers')->name('service-providers.')->group(function (
     Route::post('/{serviceProvider}/toggle-active', [ServiceProviderController::class, 'toggleActive'])->name('toggle-active');
 });
 
-// Service Pricing Rules Management
-Route::prefix('service-pricing-rules')->name('service-pricing-rules.')->group(function () {
-    Route::get('/', [ServicePricingRuleController::class, 'index'])->name('index');
-    Route::get('/create', [ServicePricingRuleController::class, 'create'])->name('create');
-    Route::post('/', [ServicePricingRuleController::class, 'store'])->name('store');
-    Route::get('/{pricingRule}', [ServicePricingRuleController::class, 'show'])->name('show');
-    Route::get('/{pricingRule}/edit', [ServicePricingRuleController::class, 'edit'])->name('edit');
-    Route::put('/{pricingRule}', [ServicePricingRuleController::class, 'update'])->name('update');
-    Route::delete('/{pricingRule}', [ServicePricingRuleController::class, 'destroy'])->name('destroy');
-    Route::post('/{pricingRule}/toggle-active', [ServicePricingRuleController::class, 'toggleActive'])->name('toggle-active');
-});
-
 /*
 |--------------------------------------------------------------------------
 | Platform Revenue Routes - ระบบรายได้ Platform
@@ -2644,62 +2232,6 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
 // ต่อจาก platform-revenue group (สำหรับ sub-modules ที่ต้องอยู่ใน namespace platform-revenue)
 // =========================================
 Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
-
-    // =========================================
-    // AI Content Writer System
-    // =========================================
-    Route::prefix('ai-content-writer')->name('ai-content-writer.')->group(function () {
-
-        // Dashboard
-        Route::get('/', [AiContentWriterController::class, 'dashboard'])
-            ->name('dashboard');
-
-        // Settings (API Keys)
-        Route::get('/settings', [AiContentWriterController::class, 'settings'])
-            ->name('settings');
-        Route::post('/settings', [AiContentWriterController::class, 'saveSettings'])
-            ->name('settings.save');
-        Route::post('/settings/test/{provider}', [AiContentWriterController::class, 'testApiConnection'])
-            ->name('settings.test');
-
-        // Templates (เทมเพลตสร้าง Content)
-        Route::get('/templates', [AiContentWriterController::class, 'templates'])
-            ->name('templates');
-        Route::get('/templates/create', [AiContentWriterController::class, 'createTemplate'])
-            ->name('templates.create');
-        Route::post('/templates', [AiContentWriterController::class, 'storeTemplate'])
-            ->name('templates.store');
-        Route::get('/templates/{id}/edit', [AiContentWriterController::class, 'editTemplate'])
-            ->name('templates.edit');
-        Route::put('/templates/{id}', [AiContentWriterController::class, 'updateTemplate'])
-            ->name('templates.update');
-        Route::delete('/templates/{id}', [AiContentWriterController::class, 'deleteTemplate'])
-            ->name('templates.delete');
-
-        // Projects (โปรเจกต์ Content)
-        Route::get('/projects', [AiContentWriterController::class, 'projects'])
-            ->name('projects');
-        Route::get('/projects/{id}', [AiContentWriterController::class, 'showProject'])
-            ->name('projects.show');
-        Route::delete('/projects/{id}', [AiContentWriterController::class, 'deleteProject'])
-            ->name('projects.delete');
-
-        // Generations (ประวัติการสร้าง)
-        Route::get('/generations', [AiContentWriterController::class, 'generations'])
-            ->name('generations');
-        Route::get('/generations/{id}', [AiContentWriterController::class, 'showGeneration'])
-            ->name('generations.show');
-
-        // Usage Logs
-        Route::get('/usage-logs', [AiContentWriterController::class, 'usageLogs'])
-            ->name('usage-logs');
-
-        // Playground (ทดสอบสร้าง Content)
-        Route::get('/playground', [AiContentWriterController::class, 'playground'])
-            ->name('playground');
-        Route::post('/playground/generate', [AiContentWriterController::class, 'quickGenerate'])
-            ->name('playground.generate');
-    });
 
 });
 

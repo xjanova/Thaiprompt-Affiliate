@@ -63,14 +63,6 @@ class Position extends Model
     }
 
     /**
-     * Get job postings for this position
-     */
-    public function jobPostings()
-    {
-        return $this->hasMany(JobPosting::class);
-    }
-
-    /**
      * Get salary range formatted
      */
     public function getSalaryRangeAttribute()

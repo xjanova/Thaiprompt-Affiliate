@@ -122,8 +122,6 @@ class DatabaseSeeder extends Seeder
 
             // 10. Accounting System
             ChartOfAccountsSeeder::class,       // ผังบัญชี (Chart of Accounts)
-            AccountingPermissionsSeeder::class, // สิทธิ์การใช้งานระบบบัญชี
-            AccountingDemoSeeder::class,        // ข้อมูลทดสอบสำหรับระบบบัญชี
 
             // 11. HRM System
             HrmSeeder::class,                   // ระบบ HR Management
