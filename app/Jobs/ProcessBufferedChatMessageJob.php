@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\ChatReplyRecovery;
 use App\Services\Fortune\MessageBuffer;
+use App\Services\Fortune\ReplyTokenVault;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Bus\Queueable;
@@ -84,6 +86,10 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
         try {
             $settings = FortuneTellingSetting::getSettings();
             $service = new FortuneConversationService($settings);
+            // 🩹 (2026-10-30) เดิมไม่ตั้ง → ตกเป็น default 'line' ⇒ คำถามรอแอดมินของลูกค้า FB ถูกบันทึกเป็น line
+            //   ตัวกรองและยอดแยกแพลตฟอร์มในหน้าแอดมินจึงเพี้ยน (prod: 29 แถวตั้งแต่ 2026-10-01)
+            //   ตอนส่งคำตอบไม่ผิดช่องทาง เพราะ controller เดา platform จากรูปแบบ id ให้อีกชั้น
+            $service->setPlatform($this->platform);
 
             // 🛡️ (2026-06-17) ระหว่างรอ buffer (สูงสุด ~1 นาที) ถ้าลูกค้าเริ่ม "ดูดวงที่จ่ายแล้ว" ไปแล้ว
             //   → ห้ามส่ง chat reply ที่ค้างมาแทรกกลางการทำนาย (reading flow เป็นเจ้าของบทสนทนาแล้ว)
@@ -95,6 +101,19 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
                 return;
             }
 
+            // 🌙 (2026-10-30) มีคำถามที่ค้างจากรอบ AI ตอบไม่ทัน → ตอบรวมในรอบนี้ทีเดียว
+            //   claim แล้ว retry job ของก้อนนั้นจะไม่ทำงาน ลูกค้าจึงไม่ได้คำตอบซ้ำ
+            $recovery = app(ChatReplyRecovery::class);
+            $count = (int) ($flushed['count'] ?? 1);
+            $carried = $recovery->claim($this->platform, $this->userId);
+            if ($carried !== null && $recovery->adminAlreadyAnswered($carried)) {
+                $carried = null;
+            }
+            if ($carried !== null) {
+                $combined = $recovery->mergeText($carried, $combined);
+                $count += (int) ($carried['count'] ?? 1);
+            }
+
             // เรียก tryAIChatResponse ด้วย bypassBuffer=true → ไม่เข้า buffer อีก
             //   📚 (2026-06-17) ส่ง buffered_count → AI รู้ว่านี่คือ "หลายข้อความรวมเป็นก้อนเดียว"
             //   (ร่ายยาว) → วิเคราะห์รวมแล้วตอบทีเดียว ไม่ตอบทีละบรรทัด
@@ -102,9 +121,23 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
                 $this->userId,
                 $combined,
                 null,   // userProfile — chat path resolve เอง
-                ['buffered_count' => (int) ($flushed['count'] ?? 1)],   // dmContext — จำนวนข้อความที่รวม
+                ['buffered_count' => $count, 'chat_budget_ms' => $this->chatBudgetMs()],   // dmContext — จำนวนข้อความที่รวม + งบเวลา AI
                 true,   // bypassBuffer
             );
+
+            // 🌙 (2026-10-30) AI ล้มหมดงบ → ห้ามจบแบบเงียบ
+            if (($result['action'] ?? null) === FortuneConversationService::ACTION_AI_CHAT_FAILED) {
+                $recovery->recover($service, $this->platform, $this->userId, [
+                    'text' => $combined,
+                    'count' => $count,
+                    'saved_question_ids' => array_values(array_filter(array_merge(
+                        $carried['saved_question_ids'] ?? [],
+                        [$result['saved_question_id'] ?? null]
+                    ))),
+                ]);
+
+                return;
+            }
 
             if ($result === null || empty($result['message'])) {
                 Log::debug('ProcessBufferedChatMessageJob: tryAIChatResponse returned null/empty', [
@@ -118,18 +151,44 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             // 🎟️ (2026-08-26) ยืม replyToken ที่เทิร์น silent_skip ฝากไว้ → ตอบฟรี ไม่กินโควต้า push
             //   เคสจริง FTU-260826-X6106: แชทหลัง pro session หมดเวลา → job นี้ตอบ
             //   แต่ไม่มี token → push → โควต้าหมด → ลูกค้าไม่ได้รับอะไรเลย
-            app(FortuneChannelManager::class)->sendResponse(
+            $sent = app(FortuneChannelManager::class)->sendResponse(
                 $this->platform,
                 $this->userId,
                 $result,
                 $this->borrowedReplyExtra()
             );
+
+            if ($sent && $carried !== null) {
+                $recovery->markAnswered($carried, (string) $result['message']);
+            }
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedChatMessageJob: exception', [
                 'user_id' => $this->userId,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * ⏱️ (2026-10-30) งบเวลา AI ของเทิร์นนี้ (มิลลิวินาที)
+     *
+     * LINE ต้องตอบให้ทันอายุ replyToken ไม่งั้นคำตอบกลายเป็น push · เผื่อเวลาส่ง 3 วิ
+     * ที่ flush ~31 วิ เหลือ token 19 วิ ⇒ งบ 16 วิ = ลองได้ 2 คีย์
+     * Facebook/Telegram ไม่มีเพดานนี้ ใช้งบเต็ม
+     */
+    protected function chatBudgetMs(): int
+    {
+        if ($this->platform !== 'line') {
+            return ChatReplyRecovery::FIRST_BUDGET_MS;
+        }
+
+        $left = ReplyTokenVault::secondsLeft($this->platform, $this->userId);
+
+        if ($left === null) {
+            return 15000;
+        }
+
+        return max(8000, min(ChatReplyRecovery::FIRST_BUDGET_MS, ($left - 3) * 1000));
     }
 
     /**

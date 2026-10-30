@@ -869,7 +869,7 @@ class FortuneChannelManager
                 'ai_redirect_deep_reading' => $this->sendFacebookDeepReadingRedirect($fbService, $richService, $userId, $result),
 
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
-                'keyword_matched', 'ai_chat_response', 'fortune_throttled', 'busy', 'busy_processing',
+                'keyword_matched', 'ai_chat_response', 'ai_chat_hold', 'fortune_throttled', 'busy', 'busy_processing',
                 'bank_account_info', 'partial', 'processing', 'queued',
                 // 🃏 (2026-07-25) กล่อง "ได้ไพ่ X ความหมาย..." ตอนเปิดไพ่ Deep 39
                 //   (แยก action ออกจาก 'processing' — LINE ต้องส่งข้อความนี้ ไม่ใช่ Flex "กำลังสร้าง")
@@ -2840,6 +2840,12 @@ class FortuneChannelManager
             'reading_id' => $reading?->id ?? null,
         ]);
 
+        // 🌙 (2026-10-30) กล่องแจ้ง "AI ตอบไม่ทัน" คือ ping ตามกฎข้อ 1 — reply เท่านั้น ห้าม push
+        //   ต้องอยู่นอก match: ส่งไม่สำเร็จใน match จะตกไป sendMessageWithReplyFallback ซึ่ง push เอง
+        if ($action === 'ai_chat_hold') {
+            return $this->sendLineHoldReply($lineService, $message, $replyToken, $result['quick_reply_options'] ?? []);
+        }
+
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
         try {
             $sent = match ($action) {
@@ -4237,6 +4243,32 @@ class FortuneChannelManager
 
             return $lineService->sendMessageWithReplyFallback($userId, mb_substr($fallbackText, 0, 2000), $replyToken);
         }
+    }
+
+    /**
+     * 🌙 (2026-10-30) ส่งกล่องแจ้ง "AI ตอบไม่ทัน" ด้วย replyToken อย่างเดียว
+     *
+     * ⚠️ ห้ามเปลี่ยนไปใช้ sendMessageWithReplyFallback / sendLineMessageWithQuickReply — สองตัวนั้นตกไป push
+     *
+     * @param  array<int,array{label:string,text:string}>  $quickReplies
+     * @return bool false = ไม่มี token หรือ token ใช้ไม่ได้ (ไม่มีอะไรถูกส่ง)
+     */
+    protected function sendLineHoldReply(LineFortuneService $lineService, string $message, ?string $replyToken, array $quickReplies): bool
+    {
+        if (empty($replyToken)) {
+            return false;
+        }
+
+        $textMessage = ['type' => 'text', 'text' => $message];
+
+        if ($quickReplies !== []) {
+            $textMessage['quickReply'] = ['items' => array_map(fn (array $reply) => [
+                'type' => 'action',
+                'action' => ['type' => 'message', 'label' => $reply['label'], 'text' => $reply['text']],
+            ], $quickReplies)];
+        }
+
+        return $lineService->replyMessage($replyToken, [$textMessage]);
     }
 
     /**

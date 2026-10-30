@@ -10,6 +10,7 @@ use App\Support\AnthropicMessages;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -259,6 +260,16 @@ class FortuneAIService
     protected const CHAT_PROVIDER_TIMEOUT = 15;
 
     /**
+     * ⏱️ (2026-10-30) เพดานต่อ "หนึ่งคีย์" ในแชท — ต้องสั้นกว่างบรวม ไม่งั้นคีย์แรกกินงบหมด
+     *   เดิมคีย์แรกรอเต็ม 15 วิ = เท่างบรวมพอดี ⇒ timeout ครั้งเดียวจบเทิร์น ไม่เคยถึงคีย์ที่เหลือ
+     *   วัดจาก prod 73 เทิร์น (2026-10-30): p50 1.7 วิ · p95 5.6 วิ · สูงสุด 10.9 วิ
+     */
+    protected const CHAT_ATTEMPT_TIMEOUT = 8;
+
+    /** ⏱️ เหลือเวลาน้อยกว่านี้ไม่เริ่มคีย์ใหม่ — เริ่มไปก็ timeout เสียเปล่า */
+    protected const CHAT_MIN_ATTEMPT_MS = 3000;
+
+    /**
      * ⏱️ (2026-10-06) เพดานเวลาของ parseBirthDateWithAI — รอบแรก + รอบลองคีย์อื่น
      *   prod ปกติตอบใน 0-2 วิ แต่ 6 ครั้งค้างจนครบ 15 วิแล้วได้ 0 ไบต์
      *   8 + 6 = 14 วิ → แย่สุดยังไม่ช้ากว่าเดิม (15 วิ ครั้งเดียว) แต่ได้ลองคีย์ที่สอง
@@ -315,6 +326,25 @@ class FortuneAIService
         }
 
         return $defaultTimeout;
+    }
+
+    /**
+     * ⏱️ (2026-10-30) เพดานเวลาของคีย์หนึ่งตัวในแชท ตามเวลาที่เหลือของเทิร์น
+     *   รุ่น reasoning (Gemini Pro / OpenAI Responses) ปล่อยใช้เพดานเดิมของมัน ตัด 8 วิ = ไม่เคยตอบทัน
+     *
+     * @param  int  $remainingMs  เวลาที่เหลือของเทิร์น (มิลลิวินาที)
+     * @return array ส่วนที่ต้องต่อท้าย $config ของการเรียก AI
+     */
+    protected function chatAttemptOptions(string $provider, string $model, int $remainingMs): array
+    {
+        $isSlowModel = $this->geminiTimeoutFor(0, $model) !== 0
+            || ($provider === 'openai' && $this->isOpenAiResponsesModel($model));
+
+        if ($isSlowModel) {
+            return [];
+        }
+
+        return ['timeout' => max(1, min(self::CHAT_ATTEMPT_TIMEOUT, (int) floor($remainingMs / 1000)))];
     }
 
     /**
@@ -778,11 +808,12 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
      *
      * @param  string  $messageText  ข้อความจากผู้ใช้
      * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @param  array  $callOptions  ค่าเพิ่มของการเรียก AI ครั้งนี้ (เช่น ['timeout' => 8])
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
      */
-    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat', ?string $guardText = null): array
+    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat', ?string $guardText = null, array $callOptions = []): array
     {
         // 🛡 (2026-05-26) Input sanitizer — block adversarial input ก่อน call AI
         //   ลูกค้ารู้โค้ดอาจส่ง "ignore previous instructions" / "DAN mode" / "write Python"
@@ -875,7 +906,7 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         $config = [
             'temperature' => 0.8,
             'max_tokens' => 512,
-        ];
+        ] + $callOptions;
 
         $startTime = microtime(true);
 
@@ -2469,6 +2500,7 @@ PROMPT;
      * @param  string  $messageText  ข้อความจากผู้ใช้
      * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
      * @param  array  $history  ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     * @param  array  $callOptions  ค่าเพิ่มของการเรียก AI ครั้งนี้ (เช่น ['timeout' => 8])
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
@@ -2477,11 +2509,12 @@ PROMPT;
         string $messageText,
         ?array $userProfile = null,
         array $history = [],
-        string $sanitizeMode = 'chat'  // 🛡 (2026-05-26 v2)
+        string $sanitizeMode = 'chat',  // 🛡 (2026-05-26 v2)
+        array $callOptions = []
     ): array {
         // ถ้าไม่มี history → ใช้ generateChatResponse ปกติ (มี input guard อยู่แล้ว)
         if (empty($history)) {
-            return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
+            return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode, null, $callOptions);
         }
 
         // 🛡 (2026-05-26) Input sanitizer — same guard
@@ -2557,7 +2590,7 @@ PROMPT;
         $config = [
             'temperature' => 0.8,
             'max_tokens' => 512,
-        ];
+        ] + $callOptions;
 
         $startTime = microtime(true);
 
@@ -2580,6 +2613,10 @@ PROMPT;
 
             return $this->sanitizeChatResult($result, $sanitizeMode);
 
+        } catch (ConnectionException $e) {
+            // ⏱️ (2026-10-30) timeout = คีย์นี้ค้าง ไม่ใช่ history มีปัญหา — ลองคีย์เดิมซ้ำแค่เสียเวลาอีก 15 วิ
+            //   (prod: เคส 30 วิ ทั้งหมดมาจากจุดนี้) ส่งต่อให้ผู้เรียกไปลองคีย์อื่นแทน
+            throw $e;
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat with history ล้มเหลว ลอง fallback ไม่มี history', [
                 'provider' => $chatProvider,
@@ -2587,7 +2624,7 @@ PROMPT;
             ]);
 
             // Fallback: ลองส่งโดยไม่มี history
-            return $this->generateChatResponse($messageText, $userProfile);
+            return $this->generateChatResponse($messageText, $userProfile, 'chat', null, $callOptions);
         }
     }
 
@@ -3264,12 +3301,20 @@ PROMPT;
             //   → Groq บอก 5s แต่จริงๆ rate-limit window ยาวกว่า → retry ไม่มีประโยชน์
             //   User spec change: "ปิด retry — fallback Pool ทันทีมี 429"
             //   Logic ปัจจุบัน: 429 → log + fallback Pool ตรง (เร็วกว่า ลด Groq quota 2x)
+            //
+            // ⏱️ (2026-10-30) จำกัดเวลาคีย์นี้ให้เหลืองบไว้ลองคีย์อื่น — เดิมรอเต็มงบ timeout ทีเดียวจบเทิร์น
+            $primaryOptions = $this->chatAttemptOptions(
+                (string) $this->settings->getChatAIProvider(),
+                (string) $this->settings->getChatAIModel(),
+                $totalTimeoutMs
+            );
+
             try {
                 if (! empty($history)) {
-                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history, $sanitizeMode);
+                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history, $sanitizeMode, $primaryOptions);
                 }
 
-                return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
+                return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode, null, $primaryOptions);
             } catch (Exception $primaryErr) {
                 $errMsg = $primaryErr->getMessage();
                 $is429 = str_contains($errMsg, '429') || stripos($errMsg, 'rate limit') !== false;
@@ -3334,6 +3379,12 @@ PROMPT;
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
         }
 
+        // ⏱️ (2026-10-30) คีย์ของ Step 1 เพิ่งล้มไป — ไม่ลองซ้ำ เหลือแค่ตัวเดียวถึงค่อยลองอีกรอบ
+        if ($hasDirectKey) {
+            $otherKeys = array_values(array_filter($allKeys, fn ($k) => ($k['api_key'] ?? null) !== $directApiKey));
+            $allKeys = empty($otherKeys) ? $allKeys : $otherKeys;
+        }
+
         // 🆕 (2026-05-15) 2-Phase Pool Fallback — Free first, Paid as emergency
         //   user spec: "ใช้คีย์ฟรีก่อน ถ้าไม่ทันจริงๆ เปลี่ยนคีย์แล้วหลายคีย์ นานเกิน 10s
         //               ตัดสินใจใช้คีย์เสียเงินแทน ไม่ต้องหมุนในโควต้าฟรี"
@@ -3384,15 +3435,17 @@ PROMPT;
 
         $errors = [];
         $attempts = 0;
-        $freePhaseBudgetMs = min($totalTimeoutMs, 10000);  // free: 10s ceiling
+        // ⏱️ (2026-10-30) ไม่มีคีย์เสียเงินรอรับช่วง = ไม่มีเหตุให้ตัดคีย์ฟรีที่ 10 วิ ใช้งบเต็ม
+        //   prod ไม่มีคีย์ paid เลย: 10 วิของ Step 1 ทำให้เทิร์นจบด้วย free=0, paid=0 ทั้งที่งบยังเหลือ
+        $freePhaseBudgetMs = empty($paidKeys) ? $totalTimeoutMs : min($totalTimeoutMs, 10000);  // free: 10s ceiling
         $paidMaxAttempts = 2;
         $paidAttempts = 0;
 
         // ─── PHASE 1: Free keys ──────────────────────────────────────────
         foreach ($freeKeys as $keyInfo) {
             $currentElapsed = $elapsedMs();
-            if ($currentElapsed >= $freePhaseBudgetMs) {
-                Log::info('FortuneAIService: Phase 1 (free) เกิน 10s → ข้ามไป Phase 2 (paid)', [
+            if ($currentElapsed >= $freePhaseBudgetMs || $totalTimeoutMs - $currentElapsed < self::CHAT_MIN_ATTEMPT_MS) {
+                Log::info('FortuneAIService: Phase 1 (free) หมดงบ → ข้ามไป Phase 2 (paid)', [
                     'elapsed_ms' => $currentElapsed,
                     'phase1_budget_ms' => $freePhaseBudgetMs,
                     'free_attempts_made' => $attempts,
@@ -3412,7 +3465,8 @@ PROMPT;
             $callStart = microtime(true);
 
             try {
-                $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
+                $attemptConfig = $config + $this->chatAttemptOptions($keyInfo['provider'], $keyInfo['model'], $totalTimeoutMs - $currentElapsed);
+                $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $attemptConfig, $history);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
                 // 🩹 (2026-05-19) Record usage — กัน dashboard เห็น 0 tokens ทั้งที่ใช้จริง
@@ -3465,7 +3519,8 @@ PROMPT;
                 if ($paidAttempts >= $paidMaxAttempts) {
                     break;
                 }
-                if ($elapsedMs() >= $totalTimeoutMs) {
+                $remainingMs = $totalTimeoutMs - $elapsedMs();
+                if ($remainingMs < self::CHAT_MIN_ATTEMPT_MS) {
                     Log::warning('FortuneAIService: Phase 2 (paid) เกิน total budget → หยุด', [
                         'elapsed_ms' => $elapsedMs(),
                         'budget_ms' => $totalTimeoutMs,
@@ -3478,7 +3533,8 @@ PROMPT;
                 $callStart = microtime(true);
 
                 try {
-                    $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
+                    $attemptConfig = $config + $this->chatAttemptOptions($keyInfo['provider'], $keyInfo['model'], $remainingMs);
+                    $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $attemptConfig, $history);
                     $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
                     // 🩹 (2026-05-19) Record usage สำหรับ paid key path ด้วย
@@ -3586,7 +3642,7 @@ PROMPT;
             $genConfigChat1['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
+        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($config['timeout'] ?? $this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -3668,7 +3724,7 @@ PROMPT;
         // เพิ่มข้อความปัจจุบัน
         $messages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
@@ -4836,7 +4892,7 @@ PROMPT;
         }
         $messages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
                 'anthropic-version' => AnthropicMessages::API_VERSION,
