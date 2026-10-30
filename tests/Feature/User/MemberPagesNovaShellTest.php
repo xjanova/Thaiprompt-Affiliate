@@ -31,14 +31,7 @@ class MemberPagesNovaShellTest extends TestCase
      * ⚠️ แก้หน้าไหนแล้วให้ลบออกจากรายการนี้ — เทสต์จะเฝ้าไม่ให้พังซ้ำ
      */
     private const KNOWN_BROKEN = [
-        'user/coupons', 'user/coupons/available', 'user/coupons/history',
-        'user/dex/add-liquidity', 'user/dex/pools', 'user/dex/swap-history',
-        'user/interactions/following-stores', 'user/interactions/recently-viewed', 'user/interactions/wishlist',
-        'user/marketing/recruit', 'user/marketing/recruit/analytics',
-        'user/premium-stores', 'user/ranks/dashboard', 'user/ranks/widget-data',
-        'user/star-upgrade', 'user/store-rating/history', 'user/team-transfer/approvals/list',
-        'user/tokens/my/balances', 'user/tokens/my/portfolio', 'user/tokens/my/tokens', 'user/tokens/referrals/my-codes',
-        'user/tpix/deposit', 'user/tpix/send', 'user/tpix/transactions', 'user/tpix/wallet', 'user/tpix/withdrawal',
+        'user/ranks/dashboard', 'user/ranks/widget-data', 'user/star-upgrade',
     ];
 
     public function test_every_member_page_renders_in_the_nova_shell(): void

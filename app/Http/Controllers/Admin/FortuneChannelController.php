@@ -833,7 +833,7 @@ class FortuneChannelController extends Controller
         // ดึงสถิติ Facebook
         $fbStats = [
             'total_readings' => FortuneReading::where('platform', 'facebook')->count(),
-            'total_deep' => FortuneReading::where('platform', 'facebook')->where('is_deep_reading', true)->count(),
+            'total_deep' => FortuneReading::where('platform', 'facebook')->deep()->count(),
             'unique_users' => FortuneReading::where('platform', 'facebook')->distinct('platform_user_id')->count('platform_user_id'),
             'total_revenue' => FortuneReading::where('platform', 'facebook')->where('is_paid', true)->sum('amount_paid'),
             'recent_readings' => FortuneReading::where('platform', 'facebook')
@@ -847,8 +847,8 @@ class FortuneChannelController extends Controller
         if (class_exists(\App\Models\FortuneCommentEngagement::class)) {
             $commentStats = [
                 'total' => \App\Models\FortuneCommentEngagement::count(),
-                'replied' => \App\Models\FortuneCommentEngagement::where('status', 'replied')->count(),
-                'dm_sent' => \App\Models\FortuneCommentEngagement::where('dm_sent', true)->count(),
+                'replied' => \App\Models\FortuneCommentEngagement::whereNotNull('comment_reply')->count(),
+                'dm_sent' => \App\Models\FortuneCommentEngagement::whereNotNull('dm_message')->count(),
             ];
         }
 

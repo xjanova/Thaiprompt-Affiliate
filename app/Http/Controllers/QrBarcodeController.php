@@ -78,31 +78,6 @@ class QrBarcodeController extends Controller
     }
 
     /**
-     * Get user's QR/Barcode history
-     */
-    public function history()
-    {
-        if (! auth()->check()) {
-            return redirect()->route('qr-barcode.index')
-                ->with('error', 'กรุณาเข้าสู่ระบบเพื่อดูประวัติ');
-        }
-
-        $codes = QrBarcode::where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        $stats = [
-            'total' => QrBarcode::where('user_id', auth()->id())->count(),
-            'qrcodes' => QrBarcode::where('user_id', auth()->id())->where('type', 'qrcode')->count(),
-            'barcodes' => QrBarcode::where('user_id', auth()->id())->where('type', 'barcode')->count(),
-            'favorites' => QrBarcode::where('user_id', auth()->id())->where('is_favorite', true)->count(),
-            'total_scans' => QrBarcode::where('user_id', auth()->id())->sum('scan_count'),
-        ];
-
-        return view('frontend.qr-barcode.history', compact('codes', 'stats'));
-    }
-
-    /**
      * Show single QR/Barcode details
      */
     public function show($id)
@@ -256,72 +231,6 @@ class QrBarcodeController extends Controller
             'content' => $request->content,
             'decoded' => $this->parseContent($request->content),
         ]);
-    }
-
-    /**
-     * Templates page
-     */
-    public function templates()
-    {
-        $templates = QrBarcodeTemplate::public()->paginate(24);
-
-        return view('frontend.qr-barcode.templates', compact('templates'));
-    }
-
-    /**
-     * Gallery page (public QR/Barcodes)
-     */
-    public function gallery()
-    {
-        $codes = QrBarcode::public()
-            ->with('user')
-            ->orderBy('scan_count', 'desc')
-            ->paginate(24);
-
-        return view('frontend.qr-barcode.gallery', compact('codes'));
-    }
-
-    /**
-     * Analytics page
-     */
-    public function analytics()
-    {
-        if (! auth()->check()) {
-            return redirect()->route('qr-barcode.index');
-        }
-
-        $codes = QrBarcode::where('user_id', auth()->id())
-            ->with('scans')
-            ->get();
-
-        $totalScans = $codes->sum('scan_count');
-        $scansByDevice = [];
-        $scansByCountry = [];
-        $scansByDate = [];
-
-        foreach ($codes as $code) {
-            foreach ($code->scans as $scan) {
-                // Group by device
-                $device = $scan->device_type ?? 'unknown';
-                $scansByDevice[$device] = ($scansByDevice[$device] ?? 0) + 1;
-
-                // Group by country
-                $country = $scan->country ?? 'unknown';
-                $scansByCountry[$country] = ($scansByCountry[$country] ?? 0) + 1;
-
-                // Group by date
-                $date = $scan->scanned_at->format('Y-m-d');
-                $scansByDate[$date] = ($scansByDate[$date] ?? 0) + 1;
-            }
-        }
-
-        return view('frontend.qr-barcode.analytics', compact(
-            'codes',
-            'totalScans',
-            'scansByDevice',
-            'scansByCountry',
-            'scansByDate'
-        ));
     }
 
     /**

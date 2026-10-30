@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AiBotProfile extends Model
@@ -113,6 +114,14 @@ class AiBotProfile extends Model
     public function conversations(): HasMany
     {
         return $this->hasMany(AiConversation::class, 'bot_profile_id');
+    }
+
+    /**
+     * ข้อความทั้งหมดในบทสนทนาของบอทนี้
+     */
+    public function messages(): HasManyThrough
+    {
+        return $this->hasManyThrough(AiMessage::class, AiConversation::class, 'bot_profile_id', 'conversation_id');
     }
 
     /**

@@ -72,7 +72,7 @@
                 หัวข้ออีเมล (Subject) <span class="text-red-500">*</span>
             </label>
             <input type="text" name="subject" value="{{ old('subject') }}"
-                   placeholder="ยินดีต้อนรับสู่ {{app_name}}"
+                   placeholder="ยินดีต้อนรับสู่ @{{app_name}}"
                    class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('subject') border-red-500 @enderror"
                    required>
             @error('subject')

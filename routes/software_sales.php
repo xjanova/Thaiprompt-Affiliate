@@ -74,13 +74,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Route::resource('software-products.options.values', App\Http\Controllers\Admin\SoftwareProductOptionValueController::class);
 
     // จัดการใบเสนอราคา
-    Route::resource('software-quotations', App\Http\Controllers\Admin\SoftwareQuotationManagementController::class);
+    Route::resource('software-quotations', App\Http\Controllers\Admin\SoftwareQuotationManagementController::class)->except(['create', 'store']);
     Route::post('software-quotations/{quotation}/send', [App\Http\Controllers\Admin\SoftwareQuotationManagementController::class, 'send'])->name('software-quotations.send');
     Route::post('software-quotations/{quotation}/approve', [App\Http\Controllers\Admin\SoftwareQuotationManagementController::class, 'approve'])->name('software-quotations.approve');
     Route::post('software-quotations/{quotation}/reject', [App\Http\Controllers\Admin\SoftwareQuotationManagementController::class, 'reject'])->name('software-quotations.reject');
 
     // จัดการแผนผ่อนชำระ
-    Route::resource('installment-plans', App\Http\Controllers\Admin\InstallmentPlanController::class);
+    Route::resource('installment-plans', App\Http\Controllers\Admin\InstallmentPlanController::class)->only(['index', 'show']);
     Route::post('installment-plans/{plan}/payments/{payment}/mark-paid', [App\Http\Controllers\Admin\InstallmentPlanController::class, 'markPaymentAsPaid'])->name('installment-plans.payments.mark-paid');
     Route::post('installment-plans/{plan}/cancel', [App\Http\Controllers\Admin\InstallmentPlanController::class, 'cancel'])->name('installment-plans.cancel');
 

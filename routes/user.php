@@ -307,9 +307,6 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
 
     // My Tokens (Creator View)
-    Route::get('/my/tokens', [\App\Http\Controllers\User\TokenController::class, 'myTokens'])->name('my-tokens');
-    Route::get('/my/balances', [\App\Http\Controllers\User\TokenController::class, 'myBalances'])->name('my-balances');
-    Route::get('/my/portfolio', [\App\Http\Controllers\User\TokenController::class, 'portfolio'])->name('portfolio');
 
     // Create Token
     Route::get('/create', [\App\Http\Controllers\User\TokenController::class, 'create'])->name('create');
@@ -332,7 +329,6 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::get('/referrals', [\App\Http\Controllers\User\TokenController::class, 'referrals'])->name('referrals');
     Route::post('/referrals/use', [\App\Http\Controllers\User\TokenController::class, 'useReferralCode'])->name('referrals.use');
     Route::post('/referrals/verify', [\App\Http\Controllers\User\TokenController::class, 'verifyReferralCode'])->name('referrals.verify');
-    Route::get('/referrals/my-codes', [\App\Http\Controllers\User\TokenController::class, 'myReferralCodes'])->name('referrals.my-codes');
 
     // Token Transactions History
     Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
@@ -472,9 +468,6 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
 // Product & Store Interactions (User)
 Route::prefix('interactions')->name('interactions.')->group(function () {
     // รายการโปรด (Wishlist)
-    Route::get('/wishlist', [\App\Http\Controllers\User\ProductInteractionController::class, 'wishlist'])->name('wishlist');
-    Route::get('/recently-viewed', [\App\Http\Controllers\User\ProductInteractionController::class, 'recentlyViewed'])->name('recently-viewed');
-    Route::get('/following-stores', [\App\Http\Controllers\User\ProductInteractionController::class, 'followingStores'])->name('following-stores');
 
     // Product Interactions
     Route::post('/products/{product}/like', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleLike'])->name('products.like');
@@ -486,20 +479,6 @@ Route::prefix('interactions')->name('interactions.')->group(function () {
     Route::post('/stores/{store}/follow', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleFollow'])->name('stores.follow');
     Route::put('/stores/{store}/follow-settings', [\App\Http\Controllers\User\ProductInteractionController::class, 'updateFollowSettings'])->name('stores.follow.settings');
     Route::get('/stores/{store}/status', [\App\Http\Controllers\User\ProductInteractionController::class, 'getStoreStatus'])->name('stores.status');
-});
-
-// Coupon System (User)
-Route::prefix('coupons')->name('coupons.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\User\CouponController::class, 'index'])->name('index');
-    Route::get('/available', [\App\Http\Controllers\User\CouponController::class, 'available'])->name('available');
-    Route::post('/{coupon}/collect', [\App\Http\Controllers\User\CouponController::class, 'collect'])->name('collect');
-    Route::get('/history', [\App\Http\Controllers\User\CouponController::class, 'history'])->name('history');
-});
-
-// Premium Stores (User)
-Route::prefix('premium-stores')->name('premium-stores.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\User\PremiumStoreController::class, 'index'])->name('index');
-    Route::get('/{store}', [\App\Http\Controllers\User\PremiumStoreController::class, 'show'])->name('show');
 });
 
 // Two-Factor Authentication Management
@@ -617,7 +596,6 @@ Route::prefix('video-coins')->name('video-coins.')->group(function () {
     Route::post('/exchange', [\App\Http\Controllers\User\VideoCoinController::class, 'submitExchange'])->name('exchange.submit');
 });
 
-
 // ============================================
 // Rider System Routes (ระบบไรเดอร์)
 // ============================================
@@ -672,15 +650,8 @@ Route::prefix('rider')->name('rider.')->controller(\App\Http\Controllers\User\Ri
 // STORE RATING - ให้คะแนนร้านค้า
 // ========================================
 Route::prefix('store-rating')->name('store-rating.')->group(function () {
-    // ประวัติการให้คะแนน
-    Route::get('/history', [\App\Http\Controllers\User\StoreRatingController::class, 'history'])->name('history');
-
     // ให้คะแนนร้านค้า
-    Route::get('/{store}/create', [\App\Http\Controllers\User\StoreRatingController::class, 'create'])->name('create');
     Route::post('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'store'])->name('store');
-
-    // ดูคะแนนร้านค้า (public)
-    Route::get('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'showStoreRatings'])->name('show');
 
     // ลบคะแนน
     Route::delete('/{rating}', [\App\Http\Controllers\User\StoreRatingController::class, 'destroy'])->name('destroy');

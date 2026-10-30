@@ -19,7 +19,7 @@
             <p class="text-gray-600 dark:text-gray-400 mt-1">แก้ไขและ Deploy Rich Menu สำหรับ LINE Thaiprompt OA หลัก</p>
         </div>
         <div class="flex gap-3 mt-4 md:mt-0">
-            <a href="{{ route('admin.rich-menu.index') }}"
+            <a href="{{ route('admin.line-bot.rich-menu.index') }}"
                class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition text-sm">
                 <span>📋</span> Rich Menu ทั้งหมด
             </a>
@@ -211,7 +211,7 @@ function thaipromptRichMenuEditor() {
 
         async loadConfig() {
             try {
-                const res = await fetch('{{ route("admin.rich-menu.thaiprompt.config") }}');
+                const res = await fetch('{{ route("admin.line-bot.rich-menu.thaiprompt.config") }}');
                 const data = await res.json();
                 if (data.success && data.config) {
                     this.config = data.config;
@@ -227,7 +227,7 @@ function thaipromptRichMenuEditor() {
             this.statusMessage = '';
 
             try {
-                const res = await fetch('{{ route("admin.rich-menu.thaiprompt.deploy") }}', {
+                const res = await fetch('{{ route("admin.line-bot.rich-menu.thaiprompt.deploy") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ function thaipromptRichMenuEditor() {
             formData.append('image', file);
 
             try {
-                const res = await fetch('{{ route("admin.rich-menu.thaiprompt.upload-image") }}', {
+                const res = await fetch('{{ route("admin.line-bot.rich-menu.thaiprompt.upload-image") }}', {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                     body: formData,
@@ -282,7 +282,7 @@ function thaipromptRichMenuEditor() {
             this.statusMessage = '';
 
             try {
-                const res = await fetch('{{ route("admin.rich-menu.thaiprompt.deploy") }}', {
+                const res = await fetch('{{ route("admin.line-bot.rich-menu.thaiprompt.deploy") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

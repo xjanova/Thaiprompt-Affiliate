@@ -140,7 +140,7 @@ class GpsMonitoringController extends Controller
                 'latitude' => $provider->current_latitude,
                 'longitude' => $provider->current_longitude,
                 'last_update' => $provider->last_location_update,
-                'is_available' => $provider->is_available ?? false,
+                'is_available' => $provider->status === 'available',
             ];
         })->toArray();
     }
@@ -239,7 +239,7 @@ class GpsMonitoringController extends Controller
     private function calculateStats($bookings)
     {
         // นับ providers ที่ online
-        $activeProviders = ServiceProvider::where('is_available', true)
+        $activeProviders = ServiceProvider::where('status', 'available')
             ->whereNotNull('current_latitude')
             ->where('last_location_update', '>=', now()->subMinutes(10))
             ->count();
