@@ -28,7 +28,7 @@ class CryptoPriceChartController extends Controller
     {
         $currencies = CryptoCurrency::where('is_active', true)
             ->with('latestRate')
-            ->orderBy('market_cap', 'desc')
+            ->orderBy('sort_order')
             ->get();
 
         // Get current prices with 24h changes

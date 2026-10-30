@@ -174,7 +174,7 @@
                                 <img :src="'/icons/cryptocurrency/' + coin.code.toLowerCase() + '.svg'"
                                      :alt="coin.code"
                                      class="w-8 h-8"
-                                     @error="$el.style.display='none'">
+                                     x-on:error="$el.style.display='none'">
                                 <div>
                                     <div class="text-white font-bold" x-text="coin.code"></div>
                                     <div class="text-gray-400 text-sm" x-text="coin.name"></div>
@@ -202,7 +202,7 @@
                                 <img :src="'/icons/cryptocurrency/' + coin.code.toLowerCase() + '.svg'"
                                      :alt="coin.code"
                                      class="w-8 h-8"
-                                     @error="$el.style.display='none'">
+                                     x-on:error="$el.style.display='none'">
                                 <div>
                                     <div class="text-white font-bold" x-text="coin.code"></div>
                                     <div class="text-gray-400 text-sm" x-text="coin.name"></div>

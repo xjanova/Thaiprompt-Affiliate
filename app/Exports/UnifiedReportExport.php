@@ -214,8 +214,8 @@ abstract class BaseReportSheet implements FromCollection, ShouldAutoSize, WithHe
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                 ],
             ],
-            // All cells border
-            'A:Z' => [
+            // เส้นขอบเฉพาะช่วงที่มีข้อมูล (ใส่ทั้งคอลัมน์ทำให้สร้างเซลล์ครบล้านแถวจนหน่วยความจำเต็ม)
+            $sheet->calculateWorksheetDimension() => [
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,

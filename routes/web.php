@@ -119,7 +119,6 @@ Route::get('/manifest.json', function () {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 })->name('manifest.json');
 
-
 // Prompt to Web Routes
 // ⚠️ Public Tool: Prompt-to-web generator ต้องถูก index โดย search engines
 Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
@@ -738,16 +737,12 @@ Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
     Route::match(['GET', 'HEAD'], '/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
     Route::post('/decode', [\App\Http\Controllers\QrBarcodeController::class, 'decode'])->name('decode');
-    Route::match(['GET', 'HEAD'], '/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
-    Route::match(['GET', 'HEAD'], '/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
     Route::match(['GET', 'HEAD'], '/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
     Route::match(['GET', 'HEAD'], '/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
         Route::post('/store', [\App\Http\Controllers\QrBarcodeController::class, 'store'])->name('store');
-        Route::get('/history', [\App\Http\Controllers\QrBarcodeController::class, 'history'])->name('history');
-        Route::get('/analytics', [\App\Http\Controllers\QrBarcodeController::class, 'analytics'])->name('analytics');
         Route::put('/update/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'destroy'])->name('destroy');
         Route::post('/favorite/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'toggleFavorite'])->name('favorite');
@@ -1063,10 +1058,6 @@ Route::middleware(['auth'])->prefix('software')->name('software.')->group(functi
     // ดาวน์โหลดผ่าน product (ต้องมี license)
     Route::get('/download/{product}', [SoftwareDownloadController::class, 'download'])
         ->name('download');
-
-    // ประวัติการดาวน์โหลด
-    Route::get('/downloads/history', [SoftwareDownloadController::class, 'history'])
-        ->name('downloads.history');
 });
 
 // Public download route (ใช้ token - ไม่ต้อง auth)

@@ -98,7 +98,7 @@
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-rose-500 dark:focus:ring-rose-400 focus:border-transparent text-gray-900 dark:text-white transition">
                             <option value="" data-translate>-- เลือกประเภทห้อง --</option>
                             @foreach($roomTypes as $roomType)
-                                <option value="{{ $roomType->id }}">{{ $roomType->name }} (฿{{ number_format($roomType->price_per_night, 2) }}/คืน)</option>
+                                <option value="{{ $roomType->id }}" data-hotel-id="{{ $roomType->hotel_id }}">{{ $roomType->name }} (฿{{ number_format($roomType->base_price, 2) }}/คืน)</option>
                             @endforeach
                         </select>
                     </div>
@@ -107,7 +107,7 @@
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" data-translate>
                             จำนวนห้อง <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" name="rooms_count" min="1" value="1" required
+                        <input type="number" name="number_of_rooms" min="1" value="1" required
                                class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-rose-500 dark:focus:ring-rose-400 focus:border-transparent text-gray-900 dark:text-white transition">
                     </div>
 
@@ -217,7 +217,7 @@
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" data-translate>
                             จำนวนผู้ใหญ่ <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" name="adults" min="1" value="2" required
+                        <input type="number" name="number_of_adults" min="1" value="2" required
                                class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white transition">
                     </div>
 
@@ -225,7 +225,7 @@
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" data-translate>
                             จำนวนเด็ก
                         </label>
-                        <input type="number" name="children" min="0" value="0"
+                        <input type="number" name="number_of_children" min="0" value="0"
                                class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white transition">
                     </div>
                 </div>
@@ -343,6 +343,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     checkInInput.addEventListener('change', calculateNights);
     checkOutInput.addEventListener('change', calculateNights);
+
+    // แสดงเฉพาะประเภทห้องของโรงแรมที่เลือก
+    const hotelSelect = document.querySelector('select[name="hotel_id"]');
+    const roomTypeSelect = document.querySelector('select[name="room_type_id"]');
+
+    hotelSelect.addEventListener('change', function() {
+        roomTypeSelect.value = '';
+        roomTypeSelect.querySelectorAll('option[data-hotel-id]').forEach(function(option) {
+            option.hidden = option.dataset.hotelId !== hotelSelect.value;
+        });
+    });
 });
 </script>
 @endsection

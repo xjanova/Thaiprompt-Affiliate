@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
 use App\Models\HotelBooking;
+use App\Models\RoomType;
+use App\Models\User;
 use App\Services\HotelBookingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -175,8 +177,10 @@ class HotelBookingManagementController extends Controller
     public function create()
     {
         $hotels = Hotel::active()->get();
+        $roomTypes = RoomType::active()->whereIn('hotel_id', $hotels->pluck('id'))->orderBy('name')->get();
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
 
-        return view('admin.hotels.bookings.create', compact('hotels'));
+        return view('admin.hotels.bookings.create', compact('hotels', 'roomTypes', 'users'));
     }
 
     /**

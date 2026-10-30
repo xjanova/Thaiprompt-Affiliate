@@ -5,7 +5,7 @@
     <div class="bg-gradient-to-r from-yellow-600 to-yellow-800 rounded-lg shadow-lg p-6 mb-6">
         <div class="flex items-center justify-between">
             <div><h1 class="text-3xl font-bold text-white">Quotations</h1><p class="text-yellow-100 mt-1">Manage customer quotations</p></div>
-            <a href="{{ route('admin.quotations.create') }}" class="bg-white text-yellow-600 px-4 py-2 rounded-lg">New Quotation</a>
+            
         </div>
     </div>
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6"><p class="text-sm text-yellow-700"><strong>Under Development:</strong> Quotation management system.</p></div>
