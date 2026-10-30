@@ -82,6 +82,14 @@ class FortuneConversationService
     public const PAID_SLIP_CAP_MULTIPLIER = 2;
 
     /**
+     * 🌙 (2026-10-30) ผลของ tryAIChatResponse เส้น job เมื่อ AI ล้มหมดงบ
+     *
+     * ต้องแยกจาก null ซึ่งแปลว่า "ตั้งใจเงียบ" (โดน silence / AI เลือก [SKIP])
+     * ไม่งั้น job จะแยกไม่ออกว่าต้องกู้เทิร์นนี้หรือไม่
+     */
+    public const ACTION_AI_CHAT_FAILED = 'ai_chat_failed';
+
+    /**
      * 🛡️ (2026-09-16) บิลจ่ายแล้ว (นับจาก paid_at) เก่าเกินกี่วัน ถึงไม่นับว่า "กำลังทำนาย" ใน hasPaidActiveReading()
      *
      * ต้องเท่ากับ `--max-age-days` ของ fortune:expire-stuck-paid (30) — cron ตัวนั้นติดธง
@@ -12436,13 +12444,21 @@ class FortuneConversationService
      * ระหว่าง outage active → ลูกค้าจะได้ข้อความ "แม่หมอไม่อยู่" ครั้งเดียว
      * แล้ว silent ทั้งหมด (กัน block ราคา/ทักทาย ซ้ำที่ลูกค้าเห็นเป็นสแปม)
      */
-    protected function isAiOutageActive(): bool
+    public function isAiOutageActive(): bool
     {
         try {
             return (bool) Cache::get('fortune:ai_outage_active', false);
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    /**
+     * 🌙 (2026-10-30) กล่องตอบตอนยอมแพ้การกู้แชท — ใช้ตัวนับ fail/cooldown/outage ชุดเดียวกับเส้น sync
+     */
+    public function aiChatGiveUpResponse(string $userId, string $messageText): array
+    {
+        return $this->makeWelcomeGuideResponseWithCooldown($userId, $messageText);
     }
 
     /**
@@ -23542,7 +23558,10 @@ PROMPT;
             // 💬 (2026-05-28) ขยาย gate — นับ "ระบายวนไม่ดูดวง" (venting) ด้วย ไม่ใช่แค่ chitchat/meta
             //   เคส สุบิน สาวันดี 68 turns: venting ไม่เคยถูกนับ → ไม่ silence
             //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้อง empathy + 1323)
-            if (($this->looksLikeMetaOrChitchat($messageText) || $this->looksLikeLowValueRamble($messageText))
+            //   🌙 (2026-10-30) chat_retry = ข้อความเดิมที่นับไปแล้วตอนลองรอบแรก — ห้ามนับซ้ำ
+            $isChatRetry = ! empty($dmContext['chat_retry']);
+            if (! $isChatRetry
+                && ($this->looksLikeMetaOrChitchat($messageText) || $this->looksLikeLowValueRamble($messageText))
                 && ! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)
                 && ! app(\App\Services\Fortune\CustomerPersonaService::class)->hasCriticalKeyword($messageText)) {
                 try {
@@ -23588,7 +23607,7 @@ PROMPT;
             //      วิกฤต (hasCriticalKeyword) ถูกเช็คใน recordFreeChatTurn เอง
             //      🛡️ (2026-05-30 Fix D) buy-intent ที่หลุดมาถึง chat AI = ถูกนับด้วย (ไม่ bypass แล้ว)
             //         เพราะ clean "ดูดวง" จะ route ไป tier menu ก่อน ไม่มาถึงนี่ — ที่มาถึง = แทรกใน ramble
-            if (! $this->hasPaidActiveReading($userId)) {
+            if (! $isChatRetry && ! $this->hasPaidActiveReading($userId)) {
                 try {
                     $turnCapResult = app(\App\Services\Fortune\CustomerPersonaService::class)
                         ->recordFreeChatTurn($platformForSilence, $userId, $messageText);
@@ -24099,7 +24118,8 @@ PROMPT;
                     $messageForAI,
                     $userProfile,
                     $history,
-                    15000,  // totalTimeoutMs (Phase G)
+                    // ⏱️ totalTimeoutMs (Phase G) — 15 วิเพื่อทัน webhook; เส้น job ไม่ติดเพดานนั้น ส่งงบตัวเองมา (2026-10-30)
+                    (int) ($dmContext['chat_budget_ms'] ?? 15000),
                     8,      // 🎯 (2026-05-22) maxPoolAttempts 4→8 — Pool fallback ล้มเหลว `free=4, paid=0`
                     $userId, // userContext (Phase H)
                     $sanitizeMode // 🛡 (2026-05-26 v2)
@@ -24121,6 +24141,12 @@ PROMPT;
             $responseText = trim($result['response'] ?? '');
 
             if (empty($responseText)) {
+                // 🌙 (2026-10-30) เส้น job ไม่มี fallback ปลายทาง — ตอบว่างคือ AI ล้ม ไม่ใช่ตั้งใจเงียบ
+                //   ยกเว้น AI ตอบ [SKIP] (จังหวะเงียบ) ซึ่ง sanitizeChatResult ลอกจนว่างแล้วจดไว้ใน chose_silence
+                if ($bypassBuffer && empty($result['chose_silence'])) {
+                    throw new \Exception('AI Chat ตอบกลับว่าง');
+                }
+
                 return null;
             }
 
@@ -24277,13 +24303,27 @@ PROMPT;
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
 
-            $this->saveQuestionForAdmin(
-                $userId,
-                $messageText,
-                'ai_failed',
-                null,
-                $userProfile['name'] ?? null
-            );
+            // 🌙 (2026-10-30) รอบกู้ = คำถามเดิมที่บันทึกไปแล้วตอนลองรอบแรก — ไม่บันทึกซ้ำ
+            $savedQuestionId = ! empty($dmContext['chat_retry'])
+                ? null
+                : $this->saveQuestionForAdmin(
+                    $userId,
+                    $messageText,
+                    'ai_failed',
+                    null,
+                    $userProfile['name'] ?? null
+                );
+
+            // 🌙 (2026-10-30) เส้น job ไม่มี fallback ปลายทาง: null = ลูกค้าเงียบ (prod ราว 5% ของแชท)
+            //   บอกให้ job รู้ว่าเทิร์นนี้ล้มจริง จะได้ส่งเข้า ChatReplyRecovery
+            if ($bypassBuffer) {
+                return [
+                    'action' => self::ACTION_AI_CHAT_FAILED,
+                    'message' => '',
+                    'reading' => null,
+                    'saved_question_id' => $savedQuestionId,
+                ];
+            }
 
             return null;
         }
@@ -24963,6 +25003,8 @@ PROMPT;
 
     /**
      * บันทึกคำถามที่ AI ตอบไม่ได้ ให้แอดมินมาตอบกลับทีหลัง
+     *
+     * @return int|null id ของแถวที่บันทึก (null = บันทึกไม่สำเร็จ)
      */
     protected function saveQuestionForAdmin(
         string $userId,
@@ -24970,19 +25012,21 @@ PROMPT;
         string $reason = 'ai_cannot_answer',
         ?string $aiResponse = null,
         ?string $userName = null
-    ): void {
+    ): ?int {
         try {
-            \App\Models\FortuneSavedQuestion::saveQuestion(
+            return \App\Models\FortuneSavedQuestion::saveQuestion(
                 platformUserId: $userId,
                 question: $question,
                 reason: $reason,
                 aiResponse: $aiResponse,
                 userName: $userName,
                 platform: $this->currentPlatform
-            );
+            )->id;
         } catch (\Exception $e) {
             // ไม่ให้ error กระทบ flow หลัก
             Log::warning('Fortune: บันทึกคำถามล้มเหลว', ['error' => $e->getMessage()]);
+
+            return null;
         }
     }
 

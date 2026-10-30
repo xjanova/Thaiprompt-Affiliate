@@ -84,6 +84,11 @@ $lineService->sendMessage($userId, $suggestion);
 `message_debounce_seconds` ต้อง **ไม่เกิน ~45 วิ** — ถ้าตั้ง 60 job จะตื่นมาตอน token ตายพอดีเสมอ
 (เคยตั้ง 60 → ยืม token ไม่ได้เลยสักครั้ง → ลดเหลือ 30 บน prod)
 
+### 🪤 กับดัก: กล่องแจ้งในเส้น job ห้ามอยู่ใน `match` ของ `sendLineResponse`
+ส่งไม่สำเร็จใน `match` จะตกไป `sendMessageWithReplyFallback` ซึ่ง **push เอง** ⇒ `ai_chat_hold` ถูกแยกออกมาก่อน `match`
+และยิง `replyMessage()` ตรง · ไม่มี token = ไม่ส่งอะไร
+เมื่อ AI ตอบไม่ทัน LINE ไม่มี retry job (คำตอบตามหลังไม่มี token) — `ChatReplyRecovery` เก็บคำถามไว้ แล้วตอบรวมตอนลูกค้าทักรอบถัดไป
+
 ### 🪤 กับดัก: job ที่ลูกค้าเป็นคนจุดมี **3 ตัว** ต้องต่อ vault ครบ
 `ProcessBufferedCelticMessageJob` · `ProcessBufferedProSessionMessageJob` · `ProcessBufferedChatMessageJob`
 กวาดด้วย: `grep -rn "sendResponse(" app/ --include=*.php | grep -v FortuneChannelManager.php`
