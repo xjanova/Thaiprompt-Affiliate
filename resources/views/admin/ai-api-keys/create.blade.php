@@ -59,7 +59,7 @@
                 <select x-model="form.model" class="tp-input" style="width:100%;">
                     <option value="">-- ใช้ค่า default ของ provider --</option>
                     <template x-for="m in availableModels" :key="m">
-                        <option :value="m" x-text="m"></option>
+                        <option :value="m" x-text="(modelLabels[form.provider] || {})[m] || m"></option>
                     </template>
                 </select>
                 <p class="tp-muted" style="margin-top:6px;font-size:.76rem;">
@@ -200,6 +200,7 @@ function createApiKey() {
         submitting: false,
         // 🎯 (2026-05-01) provider → models map (cascading dropdown)
         modelsByProvider: @json($modelsByProvider),
+        modelLabels: @json($modelLabels),
         defaultBaseUrls: @json($defaultBaseUrls),
         availableModels: [],
         defaultBaseUrl: '',

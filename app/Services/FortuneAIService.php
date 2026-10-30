@@ -6,6 +6,7 @@ use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneScopeGuard;
+use App\Support\AnthropicMessages;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
@@ -2017,7 +2018,7 @@ PROMPT;
             }
 
             $apiKey = $apiKey ?: $acquiredKey->api_key;
-            $model = $model ?: ($acquiredKey->resolveModel() ?? 'gemini-2.0-flash');
+            $model = $model ?: ($acquiredKey->resolveModel() ?? AiApiKey::defaultModelFor('gemini'));
         }
 
         $userText = trim($userText) !== '' ? $userText : 'อธิบายสิ่งที่เห็นในรูป';
@@ -2160,7 +2161,8 @@ PROMPT;
         //     with this model. Only the default (1) value is supported"
         //     → ห้ามส่ง 'temperature' เลย (reasoning models บังคับ 1.0)
         //   gpt-4o/4-turbo legacy ยังใช้ max_tokens + temperature ได้ปกติ
-        $isReasoningModel = (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+        // 🔄 (2026-10-30) รวม gpt-6.x ด้วย — schema เดียวกับ gpt-5
+        $isReasoningModel = (bool) preg_match('/^(gpt-[5-9]|o[1-9])/i', $model);
         $tokens = $config['max_tokens'] ?? 800;
 
         $payload = [
@@ -3638,7 +3640,8 @@ PROMPT;
             'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($apiKey),
+            'xiaomi' => rtrim(AiApiKey::DEFAULT_BASE_URLS['xiaomi'], '/').'/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
@@ -4602,7 +4605,8 @@ PROMPT;
             'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($apiKey),
+            'xiaomi' => rtrim(AiApiKey::DEFAULT_BASE_URLS['xiaomi'], '/').'/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
@@ -4769,21 +4773,20 @@ PROMPT;
         $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $model,
-                'max_tokens' => $config['max_tokens'] ?? 512,
-                'system' => $systemMessage,
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'temperature' => $config['temperature'] ?? 0.8,
-            ])->throw();
+            // 🤖 (2026-10-30) body ตามกติกาแต่ละรุ่น — Claude 4.7+/5.x ห้าม temperature
+            ->post($endpoint, AnthropicMessages::body(
+                $model,
+                $systemMessage,
+                [['role' => 'user', 'content' => $prompt]],
+                (int) ($config['max_tokens'] ?? 512),
+                (float) ($config['temperature'] ?? 0.8),
+            ))->throw();
 
         $data = $response->json();
-        $text = $data['content'][0]['text'] ?? '';
+        $text = AnthropicMessages::text($data);
 
         if (empty($text)) {
             throw new Exception('Chat anthropic: ไม่ได้รับคำตอบ (empty response)');
@@ -4836,19 +4839,19 @@ PROMPT;
         $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $model,
-                'max_tokens' => $config['max_tokens'] ?? 512,
-                'system' => $systemMessage,
-                'messages' => $messages,
-                'temperature' => $config['temperature'] ?? 0.8,
-            ])->throw();
+            ->post($endpoint, AnthropicMessages::body(
+                $model,
+                $systemMessage,
+                $messages,
+                (int) ($config['max_tokens'] ?? 512),
+                (float) ($config['temperature'] ?? 0.8),
+            ))->throw();
 
         $data = $response->json();
-        $text = $data['content'][0]['text'] ?? '';
+        $text = AnthropicMessages::text($data);
 
         if (empty($text)) {
             throw new Exception('Chat anthropic (history): ไม่ได้รับคำตอบ');
@@ -5797,7 +5800,7 @@ PROMPT;
                 $keys[] = [
                     'provider' => 'openrouter',
                     'api_key' => $claudeKey,
-                    'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-haiku'),
+                    'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-haiku-5.5'),
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Claude/OpenRouter Key',
@@ -6053,19 +6056,13 @@ PROMPT;
      */
     protected function getDefaultModelForProvider(string $provider): string
     {
-        return match ($provider) {
-            'gemini' => 'gemini-2.5-flash',
-            'groq' => 'llama-3.3-70b-versatile',
-            'grok' => 'grok-3-latest',  // 🎯 (2026-05-22) grok-2-* deprecated by xAI → use grok-3-latest
-            'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
-            'openrouter' => 'anthropic/claude-3-haiku',
-            'deepseek' => 'deepseek-chat',
-            'typhoon' => 'typhoon-v2-70b-instruct',
-            'xiaomi' => 'mimo-v2.5-pro',          // 🆕 (2026-05-01) Xiaomi MiMo
-            'openai' => 'gpt-4o-mini',
-            'anthropic' => 'claude-haiku-4-5',
-            default => 'gemini-2.5-flash',
-        };
+        // 🔄 (2026-10-30) ใช้ default ของ Pool (AiApiKey::MODELS_BY_PROVIDER) — รายการเดิมชี้โมเดลที่ปิดแล้วหลายตัว
+        //   qwen คงรุ่น HuggingFace ไว้ — path นี้ใช้กับ token hf_ ของระบบเดิม (ดู qwenChatUrl)
+        if ($provider === 'qwen') {
+            return 'Qwen/Qwen2.5-72B-Instruct';
+        }
+
+        return AiApiKey::defaultModelFor($provider) ?? AiApiKey::defaultModelFor('gemini');
     }
 
     /**
@@ -6633,6 +6630,22 @@ PROMPT;
         }
     }
 
+    /**
+     * 🔄 (2026-10-30) URL แชทของ Qwen ตามชนิด key
+     *
+     * Pool (หน้า AI API Keys) ใช้ DashScope (Model Studio) — ชื่อโมเดลแบบ qwen3.7-plus
+     * แต่ระบบเดิมใช้ HuggingFace router (token ขึ้นต้น hf_, ชื่อโมเดลแบบ Qwen/Qwen2.5-72B-Instruct)
+     * → แยกด้วย prefix ของ key ให้ทั้งสองแบบยังใช้ได้
+     */
+    protected function qwenChatUrl(?string $apiKey): string
+    {
+        if (str_starts_with((string) $apiKey, 'hf_')) {
+            return 'https://router.huggingface.co/v1/chat/completions';
+        }
+
+        return rtrim(AiApiKey::DEFAULT_BASE_URLS['qwen'], '/').'/chat/completions';
+    }
+
     protected function callQwen(string $prompt, array $config = []): array
     {
         try {
@@ -6640,7 +6653,7 @@ PROMPT;
             // ให้คุณภาพคำทำนายดีกว่า text generation API เดิม
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
-                ->post('https://router.huggingface.co/v1/chat/completions', [
+                ->post($this->qwenChatUrl($this->apiKey), [
                     'model' => $this->model,
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
@@ -6674,12 +6687,15 @@ PROMPT;
      *   - GPT-5.x family (gpt-5, gpt-5.5, gpt-5.5-pro, gpt-5.5-mini, gpt-5.4, gpt-5.4-mini)
      *   - o-series reasoning (o1, o1-preview, o1-mini, o3, o3-mini, o4)
      *
+     *   - 🔄 (2026-10-30) GPT-6.x (gpt-6-luna, gpt-6.1-sol, gpt-6-astra …) — reasoning ทุกรุ่น
+     *     และบางรุ่นไม่มี function calling บน Chat Completions → ต้องไป Responses
+     *
      * Legacy /v1/chat/completions ยังใช้ได้สำหรับ:
      *   - gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo
      */
     protected function isOpenAiResponsesModel(string $model): bool
     {
-        return (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+        return (bool) preg_match('/^(gpt-[5-9]|o[1-9])/i', $model);
     }
 
     /**
@@ -6849,22 +6865,20 @@ PROMPT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withHeaders([
                     'x-api-key' => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
+                    'anthropic-version' => AnthropicMessages::API_VERSION,
                     'content-type' => 'application/json',
                 ])
-                ->post($endpoint, [
-                    'model' => $this->model,
-                    'max_tokens' => $config['max_tokens'] ?? 2048,
-                    'system' => $this->getReadingSystemMessage(),
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'temperature' => $config['temperature'] ?? 0.7,
-                ])->throw();
+                ->post($endpoint, AnthropicMessages::body(
+                    $this->model,
+                    $this->getReadingSystemMessage(),
+                    [['role' => 'user', 'content' => $prompt]],
+                    (int) ($config['max_tokens'] ?? 2048),
+                    (float) ($config['temperature'] ?? 0.7),
+                ))->throw();
 
             $data = $response->json();
 
-            $text = $data['content'][0]['text'] ?? '';
+            $text = AnthropicMessages::text($data);
             $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
             $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
 
@@ -7125,9 +7139,8 @@ TXT;
      */
     protected function callGrok(string $prompt, array $config = []): array
     {
-        // 🎯 (2026-05-22) grok-2-* deprecated by xAI → ใช้ grok-3-latest เป็น fallback
-        //   ก่อนหน้านี้: 'grok-2-latest' fallback → xAI ตอบ 400 "Model not found"
-        $effectiveModel = $this->model ?: 'grok-3-latest';
+        // 🔄 (2026-10-30) grok-2/3 ปิดแล้ว → fallback ตาม default ของ Pool
+        $effectiveModel = $this->model ?: AiApiKey::defaultModelFor('grok');
 
         try {
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
@@ -7184,7 +7197,7 @@ TXT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.deepseek.com/chat/completions', [
-                    'model' => $this->model ?: 'deepseek-chat',
+                    'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
@@ -7201,12 +7214,12 @@ TXT;
                 'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
                 'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
                 'provider' => 'deepseek',
-                'model' => $this->model ?: 'deepseek-chat',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
             ];
         } catch (Exception $e) {
             Log::error('DeepSeek API Error', [
                 'error' => $e->getMessage(),
-                'model' => $this->model ?: 'deepseek-chat',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
             ]);
             throw new Exception("DeepSeek API Error: {$e->getMessage()}");
         }
@@ -7232,7 +7245,7 @@ TXT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.opentyphoon.ai/v1/chat/completions', [
-                    'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                    'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
@@ -7249,12 +7262,12 @@ TXT;
                 'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
                 'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
                 'provider' => 'typhoon',
-                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
             ];
         } catch (Exception $e) {
             Log::error('Typhoon API Error', [
                 'error' => $e->getMessage(),
-                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
             ]);
             throw new Exception("Typhoon API Error: {$e->getMessage()}");
         }
@@ -7317,7 +7330,7 @@ TXT;
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($this->apiKey),
             'xiaomi' => rtrim($this->currentBaseUrl ?: (AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1'), '/').'/chat/completions',
             default => throw new Exception("Provider '{$this->provider}' ไม่รองรับ Playground"),
         };
@@ -7447,16 +7460,16 @@ TXT;
         $response = Http::timeout(90)
             ->withHeaders([
                 'x-api-key' => $this->apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $this->model,
-                'max_tokens' => $config['max_tokens'] ?? 2048,
-                'system' => $systemMessage,
-                'messages' => $messages,
-                'temperature' => $config['temperature'] ?? 0.75,
-            ])->throw();
+            ->post($endpoint, AnthropicMessages::body(
+                $this->model,
+                $systemMessage,
+                $messages,
+                (int) ($config['max_tokens'] ?? 2048),
+                (float) ($config['temperature'] ?? 0.75),
+            ))->throw();
 
         $data = $response->json();
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -7465,7 +7478,7 @@ TXT;
         $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
 
         return [
-            'response' => $data['content'][0]['text'] ?? '',
+            'response' => AnthropicMessages::text($data),
             'tokens_used' => $inputTokens + $outputTokens,
             'provider' => 'anthropic',
             'model' => $this->model,

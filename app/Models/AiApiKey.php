@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AI API Key Model
@@ -87,177 +88,290 @@ class AiApiKey extends Model
     /**
      * 🎯 (2026-05-01) Models ที่มีให้เลือกแต่ละ provider — สำหรับ admin dropdown
      *
-     * ⚠️ Maintenance: เมื่อ provider ออกโมเดลใหม่ ให้เพิ่มที่นี่ — ลำดับแสดง = ลำดับใน array
-     *    ตัวแรกของแต่ละ provider = default model
+     * ⚠️ Maintenance: เมื่อ provider ออกโมเดลใหม่ ให้เพิ่มที่นี่ + MODEL_PRICING — ลำดับแสดง = ลำดับใน array
+     *    ตัวแรกของแต่ละ provider = default model ของ resolveModel() เมื่อ key ไม่ได้ตั้ง model
+     *    → วาง "ตัวคุ้มราคา" ไว้แรกเสมอ กัน key ใหม่เผลอ default เป็นตัวแพงสุด
+     *
+     * 🔄 (2026-10-30) อัปเดตทุกค่ายตามหน้า docs/pricing ทางการ (เช็ค 2026-10-30)
+     *   โมเดลที่ปิดแล้วถูกลบออก — migration 2026_10_30_120000 รีแมป DB rows ที่ค้างค่าเก่าให้อัตโนมัติ
      */
     public const MODELS_BY_PROVIDER = [
         'grok' => [
-            // 🆕 (2026-05-22) Grok 4 — newest generation (mid-2026)
-            'grok-4-latest',                  // ⭐ flagship — รุ่นใหม่สุด
-            'grok-4',                         // stable snapshot
-            'grok-4-fast',                    // low-latency variant
-            // Grok 3 — reasoning models (Feb 2026)
-            'grok-3-latest',                  // ⭐ apidog/xAI default (recommended)
-            'grok-3',                         // stable
-            'grok-3-mini',                    // ถูก + เร็ว
-            'grok-3-mini-fast',               // mini optimized for speed
-            'grok-3-fast',                    // full-size, optimized latency
-            // 🚫 (2026-05-22) Grok 2 series + grok-beta — DEPRECATED by xAI (400 "Model not found")
-            //   ลบออกจาก dropdown แล้ว — migration 2026_05_22_210000 อัปเดต DB อัตโนมัติ
+            // docs.x.ai/docs/models — ไม่มี grok-5
+            // 🚫 grok-4 / grok-4-latest / grok-4-fast* / grok-3* ปลดแล้ว 2026-05-15
+            //    (ยังยิงได้แต่ถูก redirect ไป grok-4.3 และคิดราคา grok-4.3)
+            'grok-4.3',                       // ⭐ DEFAULT — ถูกสุดของรุ่นปัจจุบัน ($1.25/$2.50) 1M context
+            'grok-4.7',                       // รุ่นใหม่สุด ($2/$6) 500K context — prompt ≥200K คิด 2 เท่า
+            'grok-4.6',                       // ($2/$6)
+            'grok-4.5',                       // ($2/$6)
+            'grok-4.20-0309-non-reasoning',   // ($1.25/$2.50) ไม่ใช้ reasoning — ตอบเร็ว
+            'grok-4.20-0309-reasoning',       // ($1.25/$2.50)
+            'grok-build-0.1',                 // งานเขียนโค้ด ($1/$2) แทน grok-code-fast-1
         ],
         'groq' => [
-            // 🚫 (2026-05-24) ลบ models ที่ Groq ลบไปแล้ว — verify จาก console.groq.com/docs/models
-            //   - llama-3.1-70b-versatile          (shutdown 2025-01-24 → llama-3.3-70b-versatile)
-            //   - meta-llama/llama-4-maverick-...  (shutdown 2026-03-09 → openai/gpt-oss-120b)
-            //   - gemma2-9b-it                     (shutdown 2025-10-08 → llama-3.1-8b-instant)
-            //   - mixtral-8x7b-32768               (shutdown 2025-03-20 → llama-3.3-70b-versatile)
-            //   ลบจาก dropdown แล้ว — migration 2026_05_24_120000 อัปเดต DB อัตโนมัติ
-            'llama-3.3-70b-versatile',                          // ⭐ production default
-            'llama-3.1-8b-instant',                             // production — เร็ว+ถูก
-            'meta-llama/llama-4-scout-17b-16e-instruct',        // preview — Llama 4 Scout
-            'qwen/qwen3-32b',                                   // preview — Qwen 3
-            'openai/gpt-oss-120b',                              // production — flagship
-            'openai/gpt-oss-20b',                               // production — เร็วสุด 1000 t/s
+            // console.groq.com/docs/deprecations
+            // 🚫 (2026-10-30) Groq ปิด Llama ทั้งหมดสำหรับ free/dev tier แล้ว:
+            //   - llama-3.3-70b-versatile / llama-3.1-8b-instant      (ปิด 2026-08-16 — เหลือเฉพาะ enterprise)
+            //   - meta-llama/llama-4-scout-17b-16e-instruct / qwen/qwen3-32b (ปิด 2026-07-17)
+            //   - qwen/qwen3.6-27b                                      (ปิด 2026-09-14)
+            //   → key free tier เหลือแค่ gpt-oss 2 ตัว (+ qwen3.8 preview)
+            'openai/gpt-oss-120b',            // ⭐ DEFAULT — production ($0.15/$0.60) แทน llama-3.3-70b
+            'openai/gpt-oss-20b',             // production — เร็ว+ถูกสุด ($0.075/$0.30) แทน llama-3.1-8b
+            'qwen/qwen3.8-27b',               // preview ($0.80/$4.00) — preview อาจถูกปิดโดยแจ้งล่วงหน้าสั้น
         ],
         'openai' => [
-            // 🔬 (2026-08-17) Verified live กับ key prod (id 37) บน /v1/responses:
-            //   ✅ valid : gpt-5.6-luna / gpt-5.6-terra / gpt-5.6-sol (ยิงจริงผ่านทั้ง 3, effort=low → reasoning 0 token)
-            //   ✅ valid : gpt-5.4-mini / gpt-5.4-nano / gpt-5.4 / gpt-5.5 / gpt-5.5-pro / gpt-5-mini / gpt-5 / gpt-4o*
-            //   ❌ 400 model_not_found : gpt-5.5-mini  ← ไม่มีจริง! ลบออกแล้ว (เคยอยู่ใน dropdown ผิด)
-            //   ราคา/1M tokens (in/out · cached-in = 10% ของ in):
-            //     5.6-luna=$0.20/$1.20 · 5.6-terra=$2/$12 · 5.6-sol=$5/$30   (Terra+Luna ลดราคา 30 ก.ค. 2026)
-            //     5.5=$5/$30 · 5.5-pro=$30/$180 · 5.4=$2.50/$15 · 5.4-mini=$0.75/$4.50 · 5.4-nano=$0.20/$1.25
-            //   ⚠️ 5.6 ทุกตัว: context 1.05M / max output 128K — แต่คำขอที่ input เกิน 272K
-            //      จะถูกคิด input 2× และ output 1.5× "ทั้งคำขอ" (ของเราสูงสุด ~12K → ปลอดภัย)
-            //   ⚠️ ตัวแรก = default ของ resolveModel() เมื่อ key ไม่ได้ตั้ง model →
-            //      วาง "ตัวคุ้มราคา" (5.6-luna) ไว้แรก กัน key ใหม่เผลอ default เป็นตัวแพงสุด
+            // 🔬 (2026-08-17) Verified live กับ key prod (id 37) บน /v1/responses: gpt-5.6-* / 5.5 / 5.4 / gpt-4o*
+            //   ❌ 400 model_not_found : gpt-5.5-mini ← ไม่มีจริง (migration 2026_05_29_120000)
+            // 🔄 (2026-10-30) developers.openai.com/api/docs/pricing + /deprecations
+            //   ราคา 5.6 ปรับใหม่: sol $4/$20 (เดิม $5/$30) · terra $2/$12 · luna $0.20/$1.20
+            //   ⚠️ input เกิน 272K คิด input 2× / output 1.5× "ทั้งคำขอ" (ของเราสูงสุด ~12K → ปลอดภัย)
+            //   ⚠️ ตัวแรก = default ของ resolveModel() — คง 5.6-luna (ยิงจริงบน prod แล้ว) ไว้แรก
             //
-            // GPT-5.6 family (2026) — ⭐ generation ปัจจุบัน
-            //   🚫 ข้าม Terra: Artificial Analysis ยืนยัน Sol กับ Luna นำ Terra "ทุกจุด" บนกราฟ intelligence-vs-cost
-            //      (Luna max=52 ชนะ Terra high=50 ทั้งที่ถูกกว่า 10 เท่า) — คงไว้ใน dropdown เพื่อความครบ แต่ไม่แนะนำ
-            'gpt-5.6-luna',                   // ⭐ DEFAULT — ถูกสุด+ฉลาดกว่า 5.4-mini ($0.20/$1.20, AA index 52)
-            'gpt-5.6-sol',                    // flagship 5.6 ($5/$30, AA index 59) — ใช้กับ sensitive/งานยากจริง
-            'gpt-5.6-terra',                  // ⚠️ dominated by luna+sol ($2/$12, AA index 55) — ไม่แนะนำ
-            // GPT-5.4 family — gen ก่อนหน้า (ยังใช้ได้ แต่แพงกว่า+ฉลาดน้อยกว่า luna)
-            'gpt-5.4-mini',                   // เดิม DEFAULT ($0.75/$4.50, AA index ~41)
-            'gpt-5.4',                        // workhorse คุณภาพสูง ($2.50/$15)
-            'gpt-5.4-nano',                   // ($0.20/$1.25) — ราคาพอกัน luna แต่ฉลาดน้อยกว่าชัดเจน → ไม่มีเหตุผลเลือก
+            // GPT-5.6 family — ⭐ ที่ใช้บน prod อยู่ (verified)
+            'gpt-5.6-luna',                   // ⭐ DEFAULT — ($0.20/$1.20)
+            'gpt-5.6-sol',                    // flagship 5.6 ($4/$20) — ใช้กับ sensitive/งานยากจริง
+            'gpt-5.6-terra',                  // ($2/$12) — Artificial Analysis: แพ้ luna+sol ทุกจุด ไม่แนะนำ
+            // GPT-6 family (DevDay 2026-09-29) — 🆕 ยังไม่ได้ยิงจริงกับ key prod: กด "ทดสอบ" ก่อนลงสนาม
+            //   Responses API: gpt-6-astra ไม่รับ effort 'none' / gpt-6.1-sol ไม่รับ 'none','minimal'
+            //   (โค้ดเราส่ง 'low' → ใช้ได้)
+            'gpt-6-luna',                     // ถูกสุดของ gen 6 ($0.10/$0.50)
+            'gpt-6.1-terra',                  // ($1/$5)
+            'gpt-6.1-sol',                    // ($2/$10)
+            'gpt-6-sol',                      // ($2/$10)
+            'gpt-6-astra',                    // flagship ($10/$50 — แพงมาก)
+            // GPT-5.5 / 5.4 — gen ก่อนหน้า (ยังใช้ได้)
+            'gpt-5.5',                        // ($5/$30)
+            'gpt-5.5-pro',                    // ($30/$180 — แพงมาก)
+            'gpt-5.4',                        // ($2.50/$15)
+            'gpt-5.4-mini',                   // ($0.75/$4.50)
             'gpt-5.4-pro',                    // 5.4 ตัวฉลาดสุด
-            // GPT-5.5 family — flagship ปัจจุบัน (แพง — ใช้เมื่อต้องการคุณภาพสูงสุด)
-            'gpt-5.5',                        // flagship multimodal ($5/$30)
-            'gpt-5.5-pro',                    // ฉลาดสุด reasoning+agentic ($30/$180 — แพงมาก)
-            // 🗑️ (2026-05-29) ลบ 'gpt-5.5-mini' — OpenAI ไม่มีรุ่นนี้ (ยืนยัน 400 model_not_found)
-            //    migration 2026_05_29_120000 รีแมป DB row ที่ติด gpt-5.5-mini → gpt-5.4-mini อัตโนมัติ
-            // Legacy GPT-5 (ส.ค. 2025) — ยังใช้ได้ แต่ gen เก่ากว่า 5.4
-            'gpt-5',
-            'gpt-5-mini',
-            // GPT-4 family — stable (ใช้ได้ตลอด, ถูก แต่ไม่ใช่ reasoning gen → อ่อนกับงาน premium)
-            'gpt-4o',                         // $2.50/$10
-            'gpt-4o-mini',                    // $0.15/$0.60 — ถูกสุด
-            'gpt-4-turbo',
-            'gpt-4',
-            'gpt-3.5-turbo',
-            // o-series reasoning models
-            'o1-preview',
-            'o1-mini',
-            'o3-mini',
-            // 🎙️ TTS models — เลือกได้ถ้า key purpose='tts'
+            'gpt-5.4-nano',                   // ⚠️ deprecated — ปิด 2027-04-01 ($0.20/$1.25)
+            // ⚠️ Deprecated — ยังยิงได้ แต่มีวันปิดแล้ว
+            'gpt-5',                          // ปิด 2026-12-11
+            'gpt-5-mini',                     // ปิด 2026-12-11
+            'gpt-4o',                         // ปิด 2027-01-14 ($2.50/$10)
+            'gpt-4o-mini',                    // ปิด 2027-01-14 ($0.15/$0.60)
+            // 🚫 (2026-10-30) ลบ gpt-4 / gpt-4-turbo / gpt-3.5-turbo / o3-mini (ปิด 2026-10-23)
+            //    และ o1-preview / o1-mini (ปิดตั้งแต่ 2025) — migration รีแมปเป็น gpt-5.6-luna
+            // 🎙️ TTS models — เลือกได้ถ้า key purpose='tts' — ⚠️ ทั้ง 3 ตัวปิด 2027-01-06
+            //    ตัวแทน (gpt-realtime-2.1-mini) เป็น Realtime API ไม่ใช่ /v1/audio/speech — ต้องเขียน provider ใหม่
             'gpt-4o-mini-tts',
             'tts-1',
             'tts-1-hd',
         ],
         'gemini' => [
-            // 🚫 (2026-05-24) ลบ Gemini 2.0/1.5 ที่ Google deprecated — verify ai.google.dev/gemini-api/docs/models
-            //   - gemini-2.0-flash-001 / -lite / -exp → "will be shut down soon"
-            //   - gemini-1.5-flash / -flash-8b / -pro → not listed (likely removed)
-            //   migration 2026_05_24_120000 อัปเดต DB rows อัตโนมัติ → gemini-2.5-flash
-            //
-            // 🚫 (2026-05-26) ลบ gemini-3.1-flash-lite-preview — Google shut down แล้ว
-            //   error: "This model models/gemini-3.1-flash-lite-preview is no longer available"
-            //   ใช้ stable version แทน: gemini-3.1-flash-lite (drop `-preview` suffix)
-            //   migration 2026_05_26_140000 อัปเดต DB rows อัตโนมัติ → gemini-3.1-flash-lite
-            //
-            // 🚫 (2026-05-26 v2) ลบ ALL preview models — admin directive "ใช้ได้จริงเท่านั้น"
-            //   Google docs: "Most production apps should use a specific stable model"
-            //                 "Preview models will be deprecated with at least 2 weeks notice"
-            //   ลบ gemini-3.1-pro-preview + gemini-3-flash-preview (no stable Gemini 3 Pro yet)
-            //   → ใช้ gemini-2.5-pro สำหรับ reasoning, gemini-3.5-flash สำหรับ frontier flash
-            //   migration 2026_05_26_150000 อัปเดต DB rows: preview → gemini-2.5-pro
-
-            // ⭐ Stable models only — production-grade, ไม่มีความเสี่ยง shutdown 2-week notice
-            // Gemini 3.x stable (Q2 2026 release)
-            'gemini-3.5-flash',               // ⭐ frontier flash — multimodal/agentic, รุ่นใหม่สุด
-            'gemini-3.1-flash-lite',          // ⭐ ถูกที่สุด, high-volume
-
-            // Gemini 2.5 stable (legacy แต่ใช้ได้นาน)
-            'gemini-2.5-pro',                 // ⭐ ฉลาดสุด — deep reasoning, แทน 3.1-pro-preview
-            'gemini-2.5-flash',               // ⭐ balanced — default ปลอดภัย ใช้กันแพร่หลายในระบบเรา
-            'gemini-2.5-flash-lite',          // ถูก
+            // ai.google.dev/gemini-api/docs/models + /deprecations (หน้า 2026-10-28)
+            // 🚫 (2026-05-26 v2) admin directive "ใช้ได้จริงเท่านั้น" — stable เท่านั้น ห้าม preview
+            // 🔄 (2026-10-30) gemini-3.5-flash ถูก supersede → Google route ไป 3.6-flash เอง
+            //    migration รีแมป DB → gemini-3.6-flash ให้ราคาในตารางตรงกับที่ถูกคิดจริง
+            //    ยังไม่มี gemini-3.x Pro แบบ stable — ตัว Pro-class stable คือ gemini-4-argon
+            'gemini-3.6-flash',               // ⭐ DEFAULT — frontier flash ($0.75/$3.75) มี free tier
+            'gemini-3.5-flash-lite',          // ⭐ ถูก+มี free tier ($0.30/$2.50) — แทน 3.1-flash-lite
+            'gemini-3.8-flash',               // flash ใหม่สุด ($0.75/$3.75) — ⚠️ ขึ้นเป็น $1.50/$7.50 ตั้งแต่ 2027-01-01
+            'gemini-4-argon',                 // flagship ($2/$10 → $4/$20 ตั้งแต่ 2026-12-01) ❌ ไม่มี free tier
+            'gemini-3.1-flash-lite',          // ถูกสุด ($0.25/$1.50) — ⚠️ ปิดเร็วสุด 2027-05-07
+            // Gemini 2.5 stable — ยังไม่มีวันปิด แต่ "เฉพาะ project ที่เคยเรียกช่วงหลัง" เท่านั้นที่ยังใช้ได้
+            'gemini-2.5-pro',
+            'gemini-2.5-flash',
+            'gemini-2.5-flash-lite',
         ],
         'qwen' => [
-            'qwen-max',
+            // alibabacloud.com/help/en/model-studio/model-pricing (Singapore, หน้า 2026-10-29)
+            // 🚫 qwen-turbo / qwen2.5-* ไม่อยู่ในรายการ international แล้ว
+            'qwen3.7-plus',                   // ⭐ DEFAULT — recommended ($0.40/$1.60 ช่วง 0-256K)
+            'qwen3.8-flash',                  // recommended ถูกสุด ($0.15/$0.47)
+            'qwen3.8-max',                    // recommended flagship ($2/$6)
             'qwen-plus',
-            'qwen-turbo',
-            'qwen2.5-72b-instruct',
-            'qwen2.5-coder-32b-instruct',
+            'qwen-max',
+            'qwen-flash',
+            'qwen3-coder-flash',
         ],
         'openrouter' => [
-            // 🔄 (2026-05-02) อัปเดตชื่อ model ตาม OpenRouter ปัจจุบัน
-            //   ตัวเก่า "anthropic/claude-3.5-sonnet" ถูก deprecate → 404
-            'anthropic/claude-sonnet-4',          // ⭐ Claude Sonnet 4 — แทน 3.5-sonnet
-            'anthropic/claude-haiku-4.5',         // ⭐ Claude Haiku 4.5 — เร็ว+ถูก
-            'anthropic/claude-3-5-sonnet',        // hyphenated alias (ถ้ายังมี)
-            'anthropic/claude-3.7-sonnet',
-            'openai/gpt-4o',
-            'openai/gpt-4o-mini',
-            'meta-llama/llama-3.3-70b-instruct',
-            'meta-llama/llama-3.1-405b-instruct',
-            'google/gemini-2.0-flash-001',        // ⭐ stable แทน :free experimental
-            'mistralai/mistral-large',
-            'deepseek/deepseek-chat',
-            'x-ai/grok-2-1212',
+            // 🔄 (2026-10-30) เช็คจาก GET openrouter.ai/api/v1/models จริง
+            //   slug เก่า anthropic/claude-sonnet-4, google/gemini-2.0-flash-001, x-ai/grok-2-1212 หายแล้ว (404)
+            'anthropic/claude-haiku-5.5',     // ⭐ DEFAULT — ถูกสุด ($0.10/$0.50)
+            'anthropic/claude-sonnet-5.5',
+            'anthropic/claude-opus-5.5',
+            'openai/gpt-6-luna',
+            'openai/gpt-6.1-sol',
+            'google/gemini-3.5-flash-lite',
+            'google/gemini-3.8-flash',
+            'x-ai/grok-4.3',
+            'deepseek/deepseek-v4-pro-0813',
+            'qwen/qwen3.8-flash',
+            'mistralai/mistral-large-4-0',
+            'meta/muse-spark-1.3',
         ],
         'anthropic' => [
+            // platform.claude.com/docs models overview + model-deprecations
+            // 🤖 (2026-10-30) Claude 4.7+ / 5.x ไม่รับ temperature — request สร้างผ่าน App\Support\AnthropicMessages
+            // 🚫 retired: claude-opus-4 / claude-sonnet-4 (2026-06-15), claude-3-5-sonnet / 3-5-haiku / 3-opus
+            //    claude-sonnet-4-5 ปิด 2026-11-30 → ไม่ใส่ใน dropdown แล้ว
+            'claude-haiku-5-5',               // ⭐ DEFAULT — ถูกสุด ($0.10/$0.50 เมื่อ prompt ≤100K)
+            'claude-sonnet-5-5',              // งานทั่วไปคุณภาพสูง ($2/$10)
+            'claude-opus-5-5',                // Opus ปัจจุบัน ($4/$20) — คิด (thinking) ตลอด ปิดไม่ได้
+            'claude-fable-5-1',               // ฉลาดสุด ($10/$50 — แพงมาก) — คิดตลอด
+            // legacy — ยังใช้ได้
+            'claude-opus-5',
+            'claude-sonnet-5',
+            'claude-opus-4-8',
             'claude-opus-4-7',
+            'claude-opus-4-6',
             'claude-sonnet-4-6',
             'claude-haiku-4-5',
-            'claude-opus-4',
-            'claude-sonnet-4',
-            'claude-3-5-sonnet-20241022',
-            'claude-3-5-haiku-20241022',
-            'claude-3-opus-20240229',
         ],
         'deepseek' => [
-            'deepseek-chat',
-            'deepseek-coder',
-            'deepseek-reasoner',
+            // api-docs.deepseek.com/quick_start/pricing
+            // 🚫 deepseek-chat / deepseek-reasoner ประกาศยุติ 2026-07-24 · deepseek-coder ไม่อยู่ในรายการแล้ว
+            'deepseek-flash',                 // ⭐ DEFAULT — V4.1-Flash ($0.30/$1.20 ช่วง peak) รับรูปได้
+            'deepseek-v4-pro',                // V4-Pro ($1.32/$3.96 ช่วง peak)
         ],
         'typhoon' => [
-            'typhoon-v2-70b-instruct',
-            'typhoon-v2-8b-instruct',
-            'typhoon-v1.5x-70b-instruct',
+            // docs.opentyphoon.ai/en/models — ฟรี (5 req/s, 200 req/min)
+            'typhoon-v2.5-30b-a3b-instruct',  // ⭐ DEFAULT — flagship ปัจจุบัน 128K context
+            'typhoon-v2.1-12b-instruct',      // flagship รุ่นก่อน 56K context
         ],
         'xiaomi' => [
-            'mimo-v2.5-pro',
-            'mimo-v2-pro',
-            'mimo-v2.5',
-            'mimo-v2-omni',
-            'mimo-v2-flash',
+            // mimo.mi.com pricing (อัปเดต 2026-10-21)
+            // 🚫 mimo-v2.5-pro / mimo-v2.5 ปิด 2026-10-21 (ยิงแล้ว fail) · mimo-v2-* ไม่อยู่ในรายการ
+            'mimo-v2.6-pro',                  // ⭐ DEFAULT ($0.435/$0.87)
+            'mimo-v2.6-flash',                // ถูกสุด ($0.14/$0.28)
+            'mimo-v2.6-pro-ultraspeed',       // เร็วพิเศษ ($4.35/$8.70)
         ],
         // 🎙️ (2026-05-08) MiniMax TTS — text-to-audio
         //   ใช้กับ purpose='tts' — สังเคราะห์เสียงสรุปคำทำนาย Celtic 99฿
         //   📚 https://platform.minimax.io/docs/api-reference/speech-t2a-http
         //   v2 endpoint = https://api.minimax.io/v1/t2a_v2 (ไม่ต้อง group_id ใน URL แล้ว)
-        //   models เรียงจากใหม่→เก่า — ใหม่กว่า = quality ดีกว่า + ราคาถูกกว่า ตามทั่วไป
+        //   ราคาคิดต่อจำนวนตัวอักษร (ไม่ใช่ token) — hd $100 / turbo $60 ต่อ 1M ตัวอักษร · ไม่มี speech-3
         'minimax' => [
-            'speech-2.8-hd',          // ⭐ ใหม่สุด — HD quality (current generation)
+            'speech-2.8-hd',          // ⭐ ใหม่สุด — HD quality — interjection tag ใช้ได้เฉพาะ 2.8
             'speech-2.8-turbo',       // ⭐ ใหม่สุด — turbo (เร็ว+ถูก)
-            'speech-2.6-hd',          // gen ก่อน 2.8
+            'speech-2.6-hd',          // legacy — emotion 'whisper' ใช้ได้เฉพาะ 2.6
             'speech-2.6-turbo',
-            'speech-02-hd',           // older HD
-            'speech-02-turbo',        // older turbo
-            'speech-01-hd',           // legacy
-            'speech-01-turbo',        // legacy
+            'speech-02-hd',           // legacy
+            'speech-02-turbo',        // legacy
+            'speech-01-hd',           // legacy — ไม่อยู่ในหน้าราคาแล้ว
+            'speech-01-turbo',        // legacy — ไม่อยู่ในหน้าราคาแล้ว
+        ],
+    ];
+
+    /**
+     * 💰 (2026-10-30) ราคาต่อโมเดล — USD ต่อ 1M tokens [input, output, cached_input|null]
+     *
+     * ใช้แสดงในตารางหน้า admin + คำนวณค่าใช้จ่ายโดยประมาณจาก usage logs (ดู pricingFor / estimateCostUsd)
+     *   null ช่องที่ 3     = ค่ายไม่ประกาศราคา cache
+     *   ['unit' => 'chars', 'price' => N] = คิด N USD ต่อ 1M ตัวอักษร (TTS) — ไม่คำนวณจาก token
+     *   ['free' => true]   = ไม่มีค่าใช้จ่าย (เช่น Typhoon)
+     *
+     * ⚠️ ราคาเปลี่ยนบ่อย — อัปเดตพร้อม MODELS_BY_PROVIDER ทุกครั้ง (เช็คล่าสุด 2026-10-30)
+     *    เป็น "ประมาณการ" — ไม่รวมส่วนลด batch / ราคาตามความยาว prompt / ช่วง off-peak / cache hit
+     */
+    public const MODEL_PRICING = [
+        'grok' => [
+            'grok-4.3' => [1.25, 2.50, 0.20],
+            'grok-4.7' => [2.00, 6.00, 0.50],
+            'grok-4.6' => [2.00, 6.00, 0.50],
+            'grok-4.5' => [2.00, 6.00, 0.30],
+            'grok-4.20-0309-non-reasoning' => [1.25, 2.50, 0.20],
+            'grok-4.20-0309-reasoning' => [1.25, 2.50, 0.20],
+            'grok-build-0.1' => [1.00, 2.00, 0.20],
+        ],
+        'groq' => [
+            'openai/gpt-oss-120b' => [0.15, 0.60, null],
+            'openai/gpt-oss-20b' => [0.075, 0.30, null],
+            'qwen/qwen3.8-27b' => [0.80, 4.00, null],
+        ],
+        'openai' => [
+            'gpt-5.6-luna' => [0.20, 1.20, 0.02],
+            'gpt-5.6-sol' => [4.00, 20.00, 0.40],
+            'gpt-5.6-terra' => [2.00, 12.00, 0.20],
+            'gpt-6-luna' => [0.10, 0.50, 0.01],
+            'gpt-6.1-terra' => [1.00, 5.00, 0.05],
+            'gpt-6.1-sol' => [2.00, 10.00, 0.10],
+            'gpt-6-sol' => [2.00, 10.00, 0.20],
+            'gpt-6-astra' => [10.00, 50.00, 1.00],
+            'gpt-5.5' => [5.00, 30.00, 0.50],
+            'gpt-5.5-pro' => [30.00, 180.00, null],
+            'gpt-5.4' => [2.50, 15.00, 0.25],
+            'gpt-5.4-mini' => [0.75, 4.50, 0.075],
+            'gpt-5.4-nano' => [0.20, 1.25, 0.02],
+            'gpt-5' => [1.25, 10.00, 0.125],
+            'gpt-5-mini' => [0.25, 2.00, 0.025],
+            'gpt-4o' => [2.50, 10.00, 1.25],
+            'gpt-4o-mini' => [0.15, 0.60, 0.075],
+            // gpt-4o-mini-tts: input = text tokens, output = audio tokens
+            'gpt-4o-mini-tts' => [0.60, 12.00, null],
+            'tts-1' => ['unit' => 'chars', 'price' => 15.00],
+            'tts-1-hd' => ['unit' => 'chars', 'price' => 30.00],
+        ],
+        'gemini' => [
+            'gemini-3.6-flash' => [0.75, 3.75, 0.075],
+            'gemini-3.5-flash-lite' => [0.30, 2.50, 0.03],
+            'gemini-3.8-flash' => [0.75, 3.75, 0.075],
+            'gemini-4-argon' => [2.00, 10.00, 0.10],
+            'gemini-3.1-flash-lite' => [0.25, 1.50, 0.025],
+            'gemini-2.5-pro' => [1.25, 10.00, 0.125],
+            'gemini-2.5-flash' => [0.30, 2.50, 0.03],
+            'gemini-2.5-flash-lite' => [0.10, 0.40, 0.01],
+        ],
+        'qwen' => [
+            'qwen3.7-plus' => [0.40, 1.60, null],
+            'qwen3.8-flash' => [0.15, 0.47, null],
+            'qwen3.8-max' => [2.00, 6.00, null],
+            'qwen-plus' => [0.40, 1.20, null],
+            'qwen-max' => [1.60, 6.40, null],
+            'qwen-flash' => [0.05, 0.40, null],
+            'qwen3-coder-flash' => [0.30, 1.50, null],
+        ],
+        'openrouter' => [
+            'anthropic/claude-haiku-5.5' => [0.10, 0.50, 0.01],
+            'anthropic/claude-sonnet-5.5' => [2.00, 10.00, 0.10],
+            'anthropic/claude-opus-5.5' => [4.00, 20.00, 0.20],
+            'openai/gpt-6-luna' => [0.10, 0.50, 0.01],
+            'openai/gpt-6.1-sol' => [2.00, 10.00, 0.10],
+            'google/gemini-3.5-flash-lite' => [0.30, 2.50, 0.03],
+            'google/gemini-3.8-flash' => [0.825, 4.125, 0.0825],
+            'x-ai/grok-4.3' => [1.25, 2.50, 0.20],
+            'deepseek/deepseek-v4-pro-0813' => [1.32, 3.96, 0.044],
+            'qwen/qwen3.8-flash' => [0.15, 0.47, 0.016],
+            'mistralai/mistral-large-4-0' => [0.70, 2.10, 0.07],
+            'meta/muse-spark-1.3' => [1.25, 4.25, null],
+        ],
+        'anthropic' => [
+            // Haiku 5.5: ราคานี้สำหรับ prompt ≤100K tokens (เกินคิด $0.50/$2.50)
+            'claude-haiku-5-5' => [0.10, 0.50, 0.01],
+            'claude-sonnet-5-5' => [2.00, 10.00, 0.20],
+            'claude-opus-5-5' => [4.00, 20.00, 0.20],
+            'claude-fable-5-1' => [10.00, 50.00, 0.25],
+            'claude-opus-5' => [5.00, 25.00, 0.50],
+            'claude-sonnet-5' => [2.00, 10.00, 0.20],
+            'claude-opus-4-8' => [5.00, 25.00, 0.50],
+            'claude-opus-4-7' => [5.00, 25.00, 0.50],
+            'claude-opus-4-6' => [5.00, 25.00, 0.50],
+            'claude-sonnet-4-6' => [3.00, 15.00, 0.30],
+            'claude-haiku-4-5' => [1.00, 5.00, 0.10],
+        ],
+        'deepseek' => [
+            // ราคาช่วง peak (จ-ศ 01-04, 06-10 UTC) — off-peak ถูกลงครึ่งหนึ่ง
+            'deepseek-flash' => [0.30, 1.20, 0.006],
+            'deepseek-v4-pro' => [1.32, 3.96, 0.044],
+        ],
+        'typhoon' => [
+            'typhoon-v2.5-30b-a3b-instruct' => ['free' => true],
+            'typhoon-v2.1-12b-instruct' => ['free' => true],
+        ],
+        'xiaomi' => [
+            'mimo-v2.6-pro' => [0.435, 0.87, 0.0036],
+            'mimo-v2.6-flash' => [0.14, 0.28, 0.0028],
+            'mimo-v2.6-pro-ultraspeed' => [4.35, 8.70, 0.036],
+        ],
+        'minimax' => [
+            'speech-2.8-hd' => ['unit' => 'chars', 'price' => 100.00],
+            'speech-2.8-turbo' => ['unit' => 'chars', 'price' => 60.00],
+            'speech-2.6-hd' => ['unit' => 'chars', 'price' => 100.00],
+            'speech-2.6-turbo' => ['unit' => 'chars', 'price' => 60.00],
+            'speech-02-hd' => ['unit' => 'chars', 'price' => 100.00],
+            'speech-02-turbo' => ['unit' => 'chars', 'price' => 60.00],
         ],
     ];
 
@@ -294,34 +408,17 @@ class AiApiKey extends Model
      */
     public const MODEL_TPM_FREE_TIER = [
         'groq' => [
-            // 🚫 (2026-05-24) ลบ entries ของ models ที่ Groq ลบไปแล้ว (ดู MODELS_BY_PROVIDER comment)
-            //
-            // 🔧 (2026-05-24 v2) Verified จาก https://console.groq.com/docs/rate-limits — ค่าจริง free tier
-            //    ก่อนหน้านี้ผิด: 8b-instant=30000 (จริง=6000), 70b-versatile=6000 (จริง=12000)
-            //    → 8b ทะลุง่ายมาก → 413 "Request too large"
-            //    → 70b ถูก filter ทิ้งเร็วเกิน เพราะคิดว่าทะลุที่ 6000
-            '_default' => 6000,
-            'llama-3.3-70b-versatile' => 12000,                  // ✅ verified Groq free
-            'llama-3.1-8b-instant' => 6000,                      // ✅ verified — ก่อนหน้านี้ใส่ 30000 ผิด!
-            'meta-llama/llama-4-scout-17b-16e-instruct' => 30000, // ✅ verified — สูงสุด, เหมาะ heavy prompts
-            'qwen/qwen3-32b' => 6000,                            // ✅ verified preview
-            'openai/gpt-oss-120b' => 8000,                       // ✅ verified
-            'openai/gpt-oss-20b' => 8000,                        // ✅ verified
+            // 🔄 (2026-10-30) Llama/Qwen3 ปิดสำหรับ free/dev tier แล้ว — เหลือ gpt-oss (ดู MODELS_BY_PROVIDER)
+            //    console.groq.com/docs/rate-limits: gpt-oss 8K TPM · qwen3.8-27b 8K TPM (ตาราง base ของ Developer plan)
+            '_default' => 8000,
+            'openai/gpt-oss-120b' => 8000,
+            'openai/gpt-oss-20b' => 8000,
+            'qwen/qwen3.8-27b' => 8000,
         ],
         'gemini' => [
-            // Gemini ใช้ Project quota เป็นหลัก (RPD/TPD) — TPM ไม่ใช่ bottleneck หลัก
-            // แต่ใส่ไว้กันเหนียว
-            // 🚫 (2026-05-24) ลบ entries 2.0/1.5 ที่ Google deprecated
+            // Gemini ใช้ Project quota เป็นหลัก (RPD/TPD) — TPM ไม่ใช่ bottleneck หลัก ใส่ไว้กันเหนียว
+            // 🔄 (2026-10-30) ตัวเลข free tier ต่อโมเดลดูได้เฉพาะใน AI Studio — ใช้ 250K ทุกรุ่นตามเดิม
             '_default' => 250000,
-            // Gemini 3.x stable
-            'gemini-3.5-flash' => 250000,
-            'gemini-3.1-flash-lite' => 250000,
-            // 🚫 (2026-05-26 v2) ลบ ALL preview models — production-grade only
-            //   - gemini-3.1-pro-preview, gemini-3-flash-preview, gemini-3.1-flash-lite-preview shut down
-            // Gemini 2.5 stable
-            'gemini-2.5-pro' => 250000,
-            'gemini-2.5-flash' => 250000,
-            'gemini-2.5-flash-lite' => 250000,
         ],
         'grok' => ['_default' => 100000],
         'openai' => ['_default' => 200000],                  // Tier 1
@@ -336,25 +433,21 @@ class AiApiKey extends Model
 
     public const MODEL_RPM_FREE_TIER = [
         'groq' => [
-            // 🚫 (2026-05-24) ลบ entries ของ models ที่ Groq ลบไปแล้ว (ดู MODELS_BY_PROVIDER comment)
-            // 🔧 (2026-05-24 v2) Verified Groq free RPM — ทุกตัว 30 ยกเว้น qwen3-32b = 60
-            '_default' => 28,                                      // 30 actual - safety 5%
-            'llama-3.3-70b-versatile' => 28,
-            'llama-3.1-8b-instant' => 28,
-            'meta-llama/llama-4-scout-17b-16e-instruct' => 28,
-            'qwen/qwen3-32b' => 55,                                // ⭐ 60 actual — ดี ใช้สลับเป็น overflow
+            // 🔄 (2026-10-30) gpt-oss / qwen3.8-27b = 30 RPM → ใช้ 28 (safety 5%)
+            '_default' => 28,
             'openai/gpt-oss-120b' => 28,
             'openai/gpt-oss-20b' => 28,
+            'qwen/qwen3.8-27b' => 28,
         ],
         'gemini' => [
-            // 🚫 (2026-05-24) ลบ entries 2.0/1.5 ที่ Google deprecated/removed
-            '_default' => 9,                                       // เริ่มที่ 2.5 Flash
-            // Gemini 3.x stable
-            'gemini-3.5-flash' => 9,                               // 10 actual
-            'gemini-3.1-flash-lite' => 14,                         // 15 actual
-            // 🚫 (2026-05-26 v2) ลบ ALL preview models — production-grade only
-            //   - gemini-3.1-pro-preview, gemini-3-flash-preview, gemini-3.1-flash-lite-preview shut down
-            // Gemini 2.5 stable
+            // 🔄 (2026-10-30) Google ไม่ประกาศ RPM free tier บนเว็บแล้ว (ดูใน AI Studio) — ค่าประมาณเดิมต่อรุ่น
+            '_default' => 9,
+            'gemini-3.6-flash' => 9,
+            'gemini-3.8-flash' => 9,
+            'gemini-3.5-flash-lite' => 14,
+            'gemini-3.1-flash-lite' => 14,
+            // gemini-4-argon ไม่มี free tier → ทุก key เป็น paid (Tier 1 ~150 RPM)
+            'gemini-4-argon' => 140,
             'gemini-2.5-pro' => 4,                                 // 5 actual
             'gemini-2.5-flash' => 9,                               // 10 actual
             'gemini-2.5-flash-lite' => 14,                         // 15 actual
@@ -869,6 +962,15 @@ class AiApiKey extends Model
      *   2. ตัวแรกของ MODELS_BY_PROVIDER[provider]
      *   3. null
      */
+    /**
+     * 🔄 (2026-10-30) default model ของ provider = ตัวแรกใน MODELS_BY_PROVIDER
+     * ให้ fallback ทุกจุดในระบบชี้ที่เดียว — ไม่ต้องตามแก้ hardcode เวลาค่ายปิดโมเดล
+     */
+    public static function defaultModelFor(string $provider): ?string
+    {
+        return self::MODELS_BY_PROVIDER[$provider][0] ?? null;
+    }
+
     public function resolveModel(): ?string
     {
         if (! empty($this->model)) {
@@ -878,6 +980,94 @@ class AiApiKey extends Model
         $list = self::MODELS_BY_PROVIDER[$this->provider] ?? [];
 
         return $list[0] ?? null;
+    }
+
+    /**
+     * 💰 (2026-10-30) ราคาของ provider + model — normalize จาก MODEL_PRICING
+     *
+     * Anthropic: id ที่มีวันที่ต่อท้าย (claude-haiku-4-5-20251001) ใช้ราคาของ alias
+     *
+     * @return array{unit: string, input: float|null, output: float|null, cached: float|null, free: bool}|null
+     *   unit 'tokens' = USD/1M tokens · 'chars' = USD/1M ตัวอักษร (input = ราคา) · null = ไม่รู้ราคา
+     */
+    public static function pricingFor(string $provider, ?string $model): ?array
+    {
+        if (empty($model)) {
+            return null;
+        }
+
+        $table = self::MODEL_PRICING[$provider] ?? [];
+        $row = $table[$model] ?? null;
+        if ($row === null && $provider === 'anthropic') {
+            $row = $table[preg_replace('/-\d{8}$/', '', $model)] ?? null;
+        }
+        if ($row === null) {
+            return null;
+        }
+
+        if (! empty($row['free'])) {
+            return ['unit' => 'tokens', 'input' => 0.0, 'output' => 0.0, 'cached' => 0.0, 'free' => true];
+        }
+
+        if (($row['unit'] ?? null) === 'chars') {
+            return ['unit' => 'chars', 'input' => (float) $row['price'], 'output' => null, 'cached' => null, 'free' => false];
+        }
+
+        return [
+            'unit' => 'tokens',
+            'input' => (float) $row[0],
+            'output' => (float) $row[1],
+            'cached' => isset($row[2]) ? (float) $row[2] : null,
+            'free' => false,
+        ];
+    }
+
+    /**
+     * 💰 (2026-10-30) ประมาณค่าใช้จ่าย (USD) จากจำนวน token — ไม่รวมส่วนลด cache
+     *
+     * @return float|null null = ไม่รู้ราคา หรือโมเดลคิดต่อตัวอักษร (TTS)
+     */
+    public static function estimateCostUsd(string $provider, ?string $model, int $inputTokens, int $outputTokens): ?float
+    {
+        $price = self::pricingFor($provider, $model);
+        if ($price === null || $price['unit'] !== 'tokens') {
+            return null;
+        }
+
+        return ($inputTokens * $price['input'] + $outputTokens * $price['output']) / 1_000_000;
+    }
+
+    /**
+     * 💰 (2026-10-30) ข้อความใน dropdown เลือกโมเดล — ชื่อโมเดล + ราคา ให้ admin เห็นก่อนเลือก
+     *
+     * @return array<string, array<string, string>> [provider => [model => label]]
+     */
+    public static function modelOptionLabels(): array
+    {
+        $fmt = fn (float $v) => '$'.rtrim(rtrim(number_format($v, 4), '0'), '.');
+
+        $labels = [];
+        foreach (self::MODELS_BY_PROVIDER as $provider => $models) {
+            foreach ($models as $model) {
+                $p = self::pricingFor($provider, $model);
+                $labels[$provider][$model] = match (true) {
+                    $p === null => "{$model} — ไม่ทราบราคา",
+                    $p['free'] => "{$model} — ฟรี",
+                    $p['unit'] === 'chars' => "{$model} — {$fmt($p['input'])} / 1M ตัวอักษร",
+                    default => "{$model} — เข้า {$fmt($p['input'])} / ออก {$fmt($p['output'])} ต่อ 1M tokens",
+                };
+            }
+        }
+
+        return $labels;
+    }
+
+    /**
+     * ราคาของโมเดลที่ key นี้ใช้จริง (รวมกรณีไม่ได้ตั้ง model → default ของ provider)
+     */
+    public function getPricingAttribute(): ?array
+    {
+        return self::pricingFor((string) $this->provider, $this->resolveModel());
     }
 
     /**
