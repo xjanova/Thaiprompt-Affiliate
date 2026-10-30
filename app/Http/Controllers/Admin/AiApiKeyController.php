@@ -200,13 +200,20 @@ class AiApiKeyController extends Controller
         // 🔐 (2026-10-30, owner) เทส key ใหม่ "ก่อน" บันทึก — เดิมบันทึกทับก่อนแล้วค่อยเทส
         //   เคสจริง: เบราว์เซอร์เติมรหัสผ่านลงช่อง API Key ตอนแอดมินแก้โมเดล → key #37 กับ #23 โดนทับจนยิงไม่ได้
         //   ถ้าค่ายปฏิเสธ key ใหม่ ให้คง key เดิมไว้ ส่วนการตั้งค่าอื่นยังบันทึกตามปกติ
+        $existing = AiApiKey::findOrFail($id);
+        $modelCheck = null;
         $testResult = null;
         if ($apiKeyChanged) {
-            $testResult = $this->testCandidateKey(AiApiKey::findOrFail($id), $validated);
+            $testResult = $modelCheck = $this->testCandidateKey($existing, $validated);
             if ($testResult['rejected']) {
                 unset($validated['api_key']);
             }
+        } elseif (array_key_exists('model', $validated) && ($validated['model'] ?: null) !== ($existing->model ?: null)) {
+            // 🔬 เปลี่ยนแค่โมเดลก็ต้องดูว่าบัญชีนี้มีโมเดลนั้นไหม เพราะ router อ่านโมเดลจาก key แล้ว
+            //   ใช้แค่คำเตือน — เทสไม่สำเร็จไม่ขวางการบันทึก และไม่แตะสถานะเทสของ key
+            $modelCheck = $this->testCandidateKey($existing, $validated);
         }
+        $modelWarning = $modelCheck['model_warning'] ?? null;
 
         try {
             $key = $this->poolService->updateKey($id, $validated);
@@ -250,14 +257,16 @@ class AiApiKeyController extends Controller
                 ]);
         }
 
+        $message = $apiKeyChanged
+            ? ($testResult['passed']
+                ? '✅ อัพเดท + เทสผ่าน — key พร้อมใช้'
+                : '⚠️ อัพเดทแล้ว แต่ key ใหม่เทสไม่ผ่าน ('.($testResult['message'] ?? 'unknown').') — กรุณาแก้แล้วทดสอบ')
+            : 'อัพเดท API Key สำเร็จ';
+
         return response()->json([
             'success' => true,
-            'warning' => $testResult !== null && ! $testResult['passed'],
-            'message' => $apiKeyChanged
-                ? ($testResult['passed']
-                    ? '✅ อัพเดท + เทสผ่าน — key พร้อมใช้'
-                    : '⚠️ อัพเดทแล้ว แต่ key ใหม่เทสไม่ผ่าน ('.($testResult['message'] ?? 'unknown').') — กรุณาแก้แล้วทดสอบ')
-                : 'อัพเดท API Key สำเร็จ',
+            'warning' => ($testResult !== null && ! $testResult['passed']) || $modelWarning !== null,
+            'message' => $modelWarning !== null ? "{$message}\n⚠️ {$modelWarning}" : $message,
             'data' => [
                 'id' => $key->id,
                 'name' => $key->name,
@@ -274,7 +283,7 @@ class AiApiKeyController extends Controller
      * ⚠️ 403 ก็ไม่นับ — key OpenAI แบบจำกัดสิทธิ์อาจอ่าน /models ไม่ได้ ทั้งที่ยิงงานจริงได้
      *
      * @param  array<string, mixed>  $validated  ค่าที่กำลังจะบันทึก (รวม api_key, model, base_url ใหม่)
-     * @return array{passed: bool, rejected: bool, status: int|null, message: string|null, response_time_ms: int|float|null}
+     * @return array{passed: bool, rejected: bool, status: int|null, message: string|null, response_time_ms: int|float|null, model_warning: string|null}
      */
     protected function testCandidateKey(AiApiKey $key, array $validated): array
     {
@@ -287,6 +296,7 @@ class AiApiKeyController extends Controller
                 'status' => null,
                 'message' => null,
                 'response_time_ms' => $result['response_time_ms'] ?? null,
+                'model_warning' => $result['model_warning'] ?? null,
             ];
         } catch (\Throwable $testErr) {
             $response = $testErr instanceof ClientException ? $testErr->getResponse() : null;
@@ -299,6 +309,7 @@ class AiApiKeyController extends Controller
                 'status' => $status,
                 'message' => \App\Support\SafeLog::exceptionMessage($testErr),
                 'response_time_ms' => null,
+                'model_warning' => null,
             ];
         }
     }

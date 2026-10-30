@@ -55,6 +55,9 @@ class AiApiKeyUpdateGuardTest extends TestCase
 
             public ?string $testedModel = null;
 
+            /** @var array<int, string>|null รายชื่อโมเดลของบัญชี — null = มีโมเดลที่ตั้งไว้เสมอ */
+            public ?array $listedModels = null;
+
             public function __construct(AiApiKeyPoolService $pool, private ?\Throwable $failure)
             {
                 parent::__construct($pool);
@@ -69,7 +72,9 @@ class AiApiKeyUpdateGuardTest extends TestCase
                     throw $this->failure;
                 }
 
-                return ['data' => [['id' => (string) $key->model]]];
+                $ids = $this->listedModels ?? [(string) $key->model];
+
+                return ['data' => array_map(fn ($id) => ['id' => $id], $ids)];
             }
         };
     }
@@ -171,11 +176,36 @@ class AiApiKeyUpdateGuardTest extends TestCase
         $key = $this->existingKey();
         $controller = $this->controller($this->incorrectKeyError());
 
-        $response = $this->update($controller, $key, ['api_key' => '', 'model' => 'gpt-6-luna']);
+        $response = $this->update($controller, $key, ['api_key' => '', 'model' => $key->model]);
 
         $this->assertTrue($response->getData(true)['success']);
         $this->assertNull($controller->testedKey);
         $this->assertSame($this->oldSecret(), $key->fresh()->api_key);
+    }
+
+    public function test_changing_only_the_model_warns_when_the_account_lacks_it(): void
+    {
+        $key = $this->existingKey();
+        $controller = $this->controller();
+        $controller->listedModels = ['gpt-5.6-luna'];
+
+        $response = $this->update($controller, $key, ['model' => 'gpt-6-luna']);
+
+        $this->assertTrue($response->getData(true)['success']);
+        $this->assertTrue($response->getData(true)['warning']);
+        $this->assertStringContainsString('gpt-6-luna', $response->getData(true)['message']);
+        $this->assertSame('gpt-6-luna', $key->fresh()->model, 'เตือนเฉยๆ ไม่ขวางการบันทึก');
+    }
+
+    public function test_changing_only_the_model_ignores_a_failed_check(): void
+    {
+        $key = $this->existingKey();
+
+        $response = $this->update($this->controller($this->incorrectKeyError()), $key, ['model' => 'gpt-6-luna']);
+
+        $this->assertTrue($response->getData(true)['success']);
+        $this->assertFalse($response->getData(true)['warning']);
         $this->assertSame('gpt-6-luna', $key->fresh()->model);
+        $this->assertNull($key->fresh()->last_test_failed_at);
     }
 }
