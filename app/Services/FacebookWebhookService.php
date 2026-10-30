@@ -3607,10 +3607,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 return false;
             }
 
-            // ผลลัพธ์ที่เป็นไปได้: {"<psid>": true} หรือ {"success": true}
             $json = $resp->json();
-            $ok = $json === true || (is_array($json) && ! isset($json['error'])
-                && (($json[$psid] ?? null) === true || ($json['success'] ?? null) === true));
+            $ok = $this->pageBlockConfirmed($json);
             if (! $ok) {
                 $this->lastFetchError = 'Facebook ไม่ยืนยันการบล็อกผู้ใช้';
             }
@@ -3652,14 +3650,14 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             ]);
 
             if (! $resp->successful()) {
-                $this->lastFetchError = 'HTTP '.$resp->status().' | '.($resp->json('error.message') ?? 'unknown');
+                $this->lastFetchError = 'HTTP '.$resp->status().' | code='.$resp->json('error.code')
+                    .' | '.($resp->json('error.message') ?? 'unknown');
 
                 return false;
             }
 
             $json = $resp->json();
-            $ok = $json === true || (is_array($json) && ! isset($json['error'])
-                && (($json[$psid] ?? null) === true || ($json['success'] ?? null) === true));
+            $ok = $this->pageBlockConfirmed($json);
             if (! $ok) {
                 $this->lastFetchError = 'Facebook ไม่ยืนยันการปลดบล็อกผู้ใช้';
             }
@@ -3672,6 +3670,19 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         }
+    }
+
+    /**
+     * อ่านผล Graph API ของ /{page-id}/blocked
+     *
+     * 🩹 (2026-10-31) Facebook ตอบ {"<id>": true} โดย <id> เป็นคนละเลขกับ PSID ที่เราส่งไป
+     *   โค้ดเดิมเทียบคีย์กับ PSID จึงถือว่าล้มทั้งที่บล็อกสำเร็จ แล้วลองซ้ำ 2,203 ครั้งใน 9 ชม.
+     *   จนเพจโดน code 368 ⇒ ดูแค่ว่าในคำตอบมีค่า true หรือไม่ ห้ามอิงคีย์
+     */
+    private function pageBlockConfirmed(mixed $json): bool
+    {
+        return $json === true
+            || (is_array($json) && ! isset($json['error']) && in_array(true, $json, true));
     }
 
     /**
