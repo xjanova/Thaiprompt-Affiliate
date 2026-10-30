@@ -801,42 +801,6 @@ if ($threatEnabled) {
     }
 }
 
-// ────────────────────────────────────────────────────────────────
-// 🎬 VIDEO AUTOMATION SYSTEM
-// ────────────────────────────────────────────────────────────────
-
-// 29) Video Automation Schedules — schedule processing (ทุก 5 นาที)
-Schedule::command('video-automation:process --schedules --limit=5')
-    ->everyFiveMinutes()
-    ->withoutOverlapping(10)
-    ->onOneServer()
-    ->name('video-automation-schedules')
-    ->runInBackground();
-
-// 30) Video Automation Pending — pending jobs (ทุก 2 นาที)
-Schedule::command('video-automation:process --pending --limit=3')
-    ->everyTwoMinutes()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('video-automation-pending')
-    ->runInBackground();
-
-// 31) Video Automation Retry — failed jobs retry (ทุก 30 นาที)
-Schedule::command('video-automation:process --retry --limit=5')
-    ->everyThirtyMinutes()
-    ->withoutOverlapping(35)
-    ->onOneServer()
-    ->name('video-automation-retry')
-    ->runInBackground();
-
-// 32) Video Automation Cleanup — ลบไฟล์ต้นฉบับหลังโพสสำเร็จ (hourly)
-Schedule::command('video-automation:process --cleanup --limit=10')
-    ->hourly()
-    ->withoutOverlapping(15)
-    ->onOneServer()
-    ->name('video-automation-cleanup')
-    ->runInBackground();
-
 // ════════════════════════════════════════════════════════════════
 // 🌸 (2026-08-04) ความจำบทสนทนาของน้อง Eve — เพดานเก็บ 7 วัน
 // ════════════════════════════════════════════════════════════════

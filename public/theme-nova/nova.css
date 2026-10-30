@@ -299,7 +299,7 @@
 .nv-herocta { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; }
 
 /* ท้ายเว็บ */
-.nv-foot { position: relative; z-index: 5; margin-top: auto; padding: 70px 0 34px; color: rgba(236, 229, 210, .72); background: linear-gradient(180deg, #0a1530, #050916); font-family: var(--nv-font-ui); }
+.nv-foot { position: relative; z-index: 5; overflow-x: clip; margin-top: auto; padding: 70px 0 34px; color: rgba(236, 229, 210, .72); background: linear-gradient(180deg, #0a1530, #050916); font-family: var(--nv-font-ui); }
 /* ลายไทยเป็นพื้นหลังท้ายเว็บ: ประจำยามทองโปร่ง (จางลงตรงกลางให้อ่านตัวหนังสือง่าย) + ขอบกรวยเชิงห้อยจากขอบบน */
 .nv-foot::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: url(pattern-prajamyam.svg) center top / 124px 124px repeat; opacity: .2; -webkit-mask-image: radial-gradient(130% 100% at 50% 100%, #000 0%, rgba(0, 0, 0, .55) 45%, #000 100%); mask-image: radial-gradient(130% 100% at 50% 100%, #000 0%, rgba(0, 0, 0, .55) 45%, #000 100%); }
 .nv-foot::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 30px; z-index: 1; pointer-events: none; background: url(pattern-kruay-choeng.svg) center top / 40px 30px repeat-x; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }

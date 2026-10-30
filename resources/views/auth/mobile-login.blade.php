@@ -28,19 +28,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Tailwind CDN - ใช้สำหรับ mobile เพื่อความเสถียร --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Kanit', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    @vite('resources/css/app.css')
 
     <style>
         body {

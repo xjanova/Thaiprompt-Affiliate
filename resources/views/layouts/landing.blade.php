@@ -14,7 +14,7 @@
  */
 --}}
 <!DOCTYPE html>
-<html lang="th" x-data="landingPageManager()" :class="{ 'dark': darkMode }" x-init="init()">
+<html lang="th" x-data="landingPageManager()" x-init="init()">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
