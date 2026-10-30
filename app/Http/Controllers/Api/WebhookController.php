@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\AppReleaseSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -65,22 +64,6 @@ class WebhookController extends Controller
                     ]);
                 }
 
-                // Populate app_releases — this is the source of truth that
-                // /api/v1/app/latest-version reads. Without this step the
-                // mobile auto-update flow never sees new releases.
-                $syncResult = null;
-                try {
-                    $syncResult = app(AppReleaseSync::class)
-                        ->upsertFromGitHubRelease($release);
-                } catch (\Throwable $e) {
-                    // Log but don't fail the webhook — cache clear should
-                    // still proceed so manual table edits propagate quickly.
-                    Log::error('app_releases sync failed (continuing webhook)', [
-                        'tag' => $tagName,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
                 // Clear version caches
                 $this->clearVersionCaches();
 
@@ -88,7 +71,6 @@ class WebhookController extends Controller
                     'tag' => $tagName,
                     'name' => $releaseName,
                     'prerelease' => $isPrerelease,
-                    'app_releases_sync' => $syncResult ?? 'skipped',
                 ]);
 
                 return response()->json([
@@ -98,7 +80,6 @@ class WebhookController extends Controller
                         'tag' => $tagName,
                         'name' => $releaseName,
                         'prerelease' => $isPrerelease,
-                        'app_releases_sync' => $syncResult ?? 'skipped',
                     ],
                 ]);
             }
