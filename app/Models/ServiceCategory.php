@@ -187,6 +187,6 @@ class ServiceCategory extends Model
      */
     public function getUrl(): string
     {
-        return route('services.category', $this->slug);
+        return route('user.services.category', $this);
     }
 }

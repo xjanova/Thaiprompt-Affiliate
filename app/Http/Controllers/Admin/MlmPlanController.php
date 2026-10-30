@@ -16,11 +16,6 @@ class MlmPlanController extends Controller
         return view('admin.mlm.plans.index', compact('plans'));
     }
 
-    public function create()
-    {
-        return view('admin.mlm.plans.create-package');
-    }
-
     /**
      * แสดงผังสายงานแบบ Classic
      *

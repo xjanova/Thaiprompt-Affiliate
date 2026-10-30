@@ -155,7 +155,7 @@ class CertificationService
     protected function generateCertificateQRCode(FoodCertification $certification): void
     {
         try {
-            $url = route('food-passport.certifications.verify', $certification->certificate_number);
+            $url = route('api.food-passport.certifications.verify', $certification->certificate_number);
 
             $qrCode = QrCode::format('png')
                 ->size(400)

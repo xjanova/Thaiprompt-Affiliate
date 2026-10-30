@@ -46,9 +46,8 @@
     @endif
 
     {{-- Form --}}
-    <form method="POST" action="{{ isset($broadcast) ? route('admin.line-bot.broadcast.update', $broadcast->id) : route('admin.line-bot.broadcast.store') }}">
+    <form method="POST" action="{{ route('admin.line-bot.broadcast.store') }}">
         @csrf
-        @isset($broadcast) @method('PUT') @endisset
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- Main Content --}}

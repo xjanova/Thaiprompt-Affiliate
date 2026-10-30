@@ -80,7 +80,7 @@ class FoodCertification extends Model
      */
     public function getVerificationUrlAttribute(): string
     {
-        return route('food-passport.certifications.verify', $this->certificate_number);
+        return route('api.food-passport.certifications.verify', $this->certificate_number);
     }
 
     /**

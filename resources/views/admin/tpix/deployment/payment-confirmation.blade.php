@@ -301,7 +301,7 @@ function paymentConfirmation(pricing, requiredAmount) {
 
                     // Redirect ไปหน้า Deploy หลัง 2 วินาที
                     setTimeout(() => {
-                        window.location.href = '{{ route("admin.tpix.deployment.step", [$config->slug, 5]) }}';
+                        window.location.href = '{{ route("admin.tpix.deployment.step5", $config->slug) }}';
                     }, 2000);
                 } else {
                     throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -320,7 +320,7 @@ function paymentConfirmation(pricing, requiredAmount) {
          */
         cancelPayment() {
             if (confirm('ยืนยันการยกเลิกการชำระเงิน?')) {
-                window.location.href = '{{ route("admin.tpix.deployment.step", [$config->slug, 4]) }}';
+                window.location.href = '{{ route("admin.tpix.deployment.step4", $config->slug) }}';
             }
         },
 

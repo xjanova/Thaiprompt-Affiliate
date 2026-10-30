@@ -138,7 +138,7 @@
 
                 {{-- Virtual ID Card Link (แสดงเฉพาะ Rank 3+) --}}
                 @if($rankLevel >= 3)
-                <a href="{{ route('user.id-card') }}"
+                <a href="{{ route('user.ranks.id-card') }}"
                    class="inline-flex items-center gap-2 glass-fusion rounded-full px-4 py-2 shadow-lg hover:bg-white/30 transition-all">
                     <i class="fas fa-id-card text-white"></i>
                     <span class="text-white text-sm font-semibold">ดูบัตร ID</span>

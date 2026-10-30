@@ -116,8 +116,8 @@
                 [
                     'label' => 'รายงาน',
                     'icon' => 'fas fa-chart-bar',
-                    'url' => route('admin.reports.index'),
-                    'active' => request()->routeIs('admin.reports.*'),
+                    'url' => route('admin.unified-reports.index'),
+                    'active' => request()->routeIs('admin.unified-reports.*'),
                 ],
                 [
                     'label' => 'ตั้งค่า',

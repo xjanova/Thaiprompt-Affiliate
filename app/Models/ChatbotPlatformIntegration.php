@@ -196,7 +196,7 @@ class ChatbotPlatformIntegration extends Model
      */
     public function getWebhookUrl(): string
     {
-        return $this->webhook_url ?? route('chatbot.webhook', [
+        return $this->webhook_url ?? route('api.webhook.chatbot.handle', [
             'platform' => $this->platform_type,
             'integration_id' => $this->id,
         ]);

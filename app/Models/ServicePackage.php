@@ -304,14 +304,6 @@ class ServicePackage extends Model
     // ===========================================
 
     /**
-     * URL ของแพคเกจ
-     */
-    public function getUrl(): string
-    {
-        return route('services.packages.show', $this->slug);
-    }
-
-    /**
      * แสดงสถานะโปรโมชั่น
      */
     public function getPromotionStatusText(): string
