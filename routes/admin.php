@@ -25,7 +25,6 @@ use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\ClassicXSettingsController;
 use App\Http\Controllers\Admin\CloudflareController;
-use App\Http\Controllers\Admin\CoinShopController;
 use App\Http\Controllers\Admin\CryptoManagementController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DebtController;
@@ -72,8 +71,6 @@ use App\Http\Controllers\Admin\FortuneVoiceDiagnosticController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
 use App\Http\Controllers\Admin\FortuneVoiceStorageController;
 use App\Http\Controllers\Admin\FreshMarketController;
-use App\Http\Controllers\Admin\GameController;
-use App\Http\Controllers\Admin\GameSettingsController;
 use App\Http\Controllers\Admin\GoogleOAuthController;
 use App\Http\Controllers\Admin\GpsMonitoringController;
 use App\Http\Controllers\Admin\HDWalletManagementController;
@@ -91,7 +88,6 @@ use App\Http\Controllers\Admin\HotelSpecialOfferController;
 use App\Http\Controllers\Admin\HrmDashboardController;
 use App\Http\Controllers\Admin\IconController;
 use App\Http\Controllers\Admin\IdCardController;
-use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\JobApplicationController;
 use App\Http\Controllers\Admin\JobPostingController;
 use App\Http\Controllers\Admin\KeywordABTestController;
@@ -168,7 +164,6 @@ use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\SloganController;
 use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\SmsGatewayAdminController;
-use App\Http\Controllers\Admin\StakingPlanController;
 use App\Http\Controllers\Admin\StorefrontSettingsController;
 use App\Http\Controllers\Admin\SuperAdminHotelController;
 use App\Http\Controllers\Admin\TarotManagementController;
@@ -186,7 +181,6 @@ use App\Http\Controllers\Admin\UnifiedReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserGuideController;
 use App\Http\Controllers\Admin\VendorStoreController;
-use App\Http\Controllers\Admin\VideoMissionController;
 use App\Http\Controllers\Admin\VideoRewardAdminController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WalletSettingsController;
@@ -310,56 +304,6 @@ Route::prefix('seller-applications')->name('seller-applications.')->group(functi
 Route::resource('roles', RoleController::class);
 Route::get('roles/{role}/permissions', [RoleController::class, 'permissions'])->name('roles.permissions');
 Route::put('roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.permissions.update');
-
-// Investment & Staking Management
-Route::prefix('investments')->name('investments.')->group(function () {
-    Route::get('/', [InvestmentController::class, 'index'])->name('index');
-
-    // Investment Plans
-    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans.index');
-    Route::get('/plans/create', [InvestmentController::class, 'createPlan'])->name('plans.create');
-    Route::post('/plans', [InvestmentController::class, 'storePlan'])->name('plans.store');
-    Route::get('/plans/{plan}/edit', [InvestmentController::class, 'editPlan'])->name('plans.edit');
-    Route::put('/plans/{plan}', [InvestmentController::class, 'updatePlan'])->name('plans.update');
-    Route::delete('/plans/{plan}', [InvestmentController::class, 'destroyPlan'])->name('plans.destroy');
-
-    // Staking Positions
-    Route::get('/positions', [InvestmentController::class, 'positions'])->name('positions.index');
-    Route::get('/positions/{position}', [InvestmentController::class, 'showPosition'])->name('positions.show');
-    Route::post('/positions/{position}/approve', [InvestmentController::class, 'approvePosition'])->name('positions.approve');
-    Route::post('/positions/{position}/reject', [InvestmentController::class, 'rejectPosition'])->name('positions.reject');
-
-    // ROI Distributions
-    Route::get('/distributions', [InvestmentController::class, 'distributions'])->name('distributions.index');
-    Route::post('/distributions/trigger', [InvestmentController::class, 'triggerDistribution'])->name('distributions.trigger');
-    Route::post('/distributions/retry-failed', [InvestmentController::class, 'retryFailedDistributions'])->name('distributions.retry-failed');
-
-    // Utilities
-    Route::post('/process-mature', [InvestmentController::class, 'processMaturePositions'])->name('process-mature');
-});
-
-// Staking Plans Management (Enhanced V3)
-Route::prefix('staking-plans')->name('staking-plans.')->group(function () {
-    Route::get('/', [StakingPlanController::class, 'index'])->name('index');
-    Route::get('/create', [StakingPlanController::class, 'create'])->name('create');
-    Route::post('/', [StakingPlanController::class, 'store'])->name('store');
-    Route::get('/{stakingPlan}', [StakingPlanController::class, 'show'])->name('show');
-    Route::get('/{stakingPlan}/edit', [StakingPlanController::class, 'edit'])->name('edit');
-    Route::put('/{stakingPlan}', [StakingPlanController::class, 'update'])->name('update');
-    Route::delete('/{stakingPlan}', [StakingPlanController::class, 'destroy'])->name('destroy');
-
-    // การจัดการแผน
-    Route::post('/{stakingPlan}/pause', [StakingPlanController::class, 'pause'])->name('pause');
-    Route::post('/{stakingPlan}/resume', [StakingPlanController::class, 'resume'])->name('resume');
-    Route::post('/{stakingPlan}/toggle-active', [StakingPlanController::class, 'toggleActive'])->name('toggle-active');
-
-    // ตั้งค่า Coin
-    Route::get('/settings/coin', [StakingPlanController::class, 'coinSettings'])->name('coin-settings');
-    Route::put('/settings/coin', [StakingPlanController::class, 'updateCoinSettings'])->name('coin-settings.update');
-
-    // รายงาน Positions
-    Route::get('/reports/positions', [StakingPlanController::class, 'positions'])->name('positions');
-});
 
 // KYC Verification Management
 Route::prefix('kyc')->name('kyc.')->group(function () {
@@ -2207,7 +2151,6 @@ Route::prefix('hotels')->name('hotels.api.')->group(function () {
 
 Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     // Dashboard
-    Route::get('/dashboard', [AiGenAdminController::class, 'dashboard'])->name('dashboard');
 
     // Providers Management
     Route::get('/providers', [AiGenAdminController::class, 'providers'])->name('providers.index');
@@ -2218,75 +2161,24 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::delete('/providers/{providerId}', [AiGenAdminController::class, 'deleteProvider'])->name('providers.destroy');
 
     // Packages Management
-    Route::get('/packages', [AiGenAdminController::class, 'packages'])->name('packages.index');
-    Route::post('/packages', [AiGenAdminController::class, 'createPackage'])->name('packages.store');
-    Route::put('/packages/{packageId}', [AiGenAdminController::class, 'updatePackage'])->name('packages.update');
-    Route::delete('/packages/{packageId}', [AiGenAdminController::class, 'deletePackage'])->name('packages.destroy');
 
     // Quotas Management
-    Route::get('/quotas', [AiGenAdminController::class, 'quotas'])->name('quotas.index');
-    Route::post('/quotas', [AiGenAdminController::class, 'saveQuota'])->name('quotas.store');
-    Route::put('/quotas/{quotaId}', [AiGenAdminController::class, 'saveQuota'])->name('quotas.update');
 
     // Usage Logs & Analytics
-    Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
 
     // Generations Gallery
-    Route::get('/generations', [AiGenAdminController::class, 'generations'])->name('generations');
 
     // Subscriptions
-    Route::get('/subscriptions', [AiGenAdminController::class, 'subscriptions'])->name('subscriptions');
 
     // Settings (Wallet, Pricing, General)
     Route::get('/settings', [AiGenAdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AiGenAdminController::class, 'saveSettings'])->name('settings.save');
 
     // Promotions Management
-    Route::get('/promotions', [AiGenAdminController::class, 'promotions'])->name('promotions.index');
-    Route::post('/promotions', [AiGenAdminController::class, 'createPromotion'])->name('promotions.store');
-    Route::put('/promotions/{promotionId}', [AiGenAdminController::class, 'updatePromotion'])->name('promotions.update');
-    Route::delete('/promotions/{promotionId}', [AiGenAdminController::class, 'deletePromotion'])->name('promotions.destroy');
 
     // Storage Management (จัดการพื้นที่เก็บภาพ)
     Route::get('/storage/info', [AiGenAdminController::class, 'storageInfo'])->name('storage.info');
     Route::post('/storage/cleanup', [AiGenAdminController::class, 'storageCleanup'])->name('storage.cleanup');
-});
-
-// Game Management Routes
-Route::prefix('games')->name('games.')->group(function () {
-    Route::get('/', [GameController::class, 'index'])->name('index');
-    Route::get('/create', [GameController::class, 'create'])->name('create');
-    Route::post('/', [GameController::class, 'store'])->name('store');
-    Route::post('/update-order', [GameController::class, 'updateOrder'])->name('update-order');
-
-    // ✅ Game Settings Management — ต้องอยู่ก่อน wildcard /{game}
-    Route::prefix('game-settings')->name('game-settings.')->group(function () {
-        Route::get('/', [GameSettingsController::class, 'index'])
-            ->name('index');
-        Route::put('/update', [GameSettingsController::class, 'update'])
-            ->name('update');
-
-        // ✅ อัพโหลด/ลบไฟล์เสียง (เพลง/เอฟเฟค)
-        Route::post('/upload-audio', [GameSettingsController::class, 'uploadAudio'])
-            ->name('upload-audio');
-        Route::delete('/delete-audio', [GameSettingsController::class, 'deleteAudio'])
-            ->name('delete-audio');
-
-        // ✅ Seed ข้อมูล Music Settings (ถ้ายังไม่มี)
-        Route::post('/seed-music', [GameSettingsController::class, 'seedMusic'])
-            ->name('seed-music');
-
-        // ✅ Seed ข้อมูล Server Limits (ถ้ายังไม่มี)
-        Route::post('/seed-server-limits', [GameSettingsController::class, 'seedServerLimits'])
-            ->name('seed-server-limits');
-    });
-
-    // ⚠️ Wildcard routes ต้องอยู่ท้ายสุด! (ไม่งั้นจะจับ /game-settings, /snake-io ไปก่อน)
-    Route::get('/{game}', [GameController::class, 'show'])->name('show');
-    Route::get('/{game}/edit', [GameController::class, 'edit'])->name('edit');
-    Route::put('/{game}', [GameController::class, 'update'])->name('update');
-    Route::delete('/{game}', [GameController::class, 'destroy'])->name('destroy');
-    Route::patch('/{game}/toggle-active', [GameController::class, 'toggleActive'])->name('toggle-active');
 });
 
 // Arrow X Theme System Routes
@@ -2353,9 +2245,6 @@ Route::prefix('recruit-templates')->name('recruit-templates.')->group(function (
     Route::post('/{recruitTemplate}/toggle-active', [RecruitTemplateController::class, 'toggleActive'])->name('toggle-active');
     Route::get('/{recruitTemplate}/preview', [RecruitTemplateController::class, 'preview'])->name('preview');
 });
-
-// Bot Automation System Routes
-require __DIR__.'/bot_automation.php';
 
 // =====================================
 // TPIX Native Coin Deployment Wizard
@@ -3069,65 +2958,6 @@ Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
     Route::get('/auto-under-attack/status', [CloudflareController::class, 'getAutoUnderAttackStatus'])->name('auto-under-attack.status');
     Route::post('/auto-under-attack/toggle', [CloudflareController::class, 'toggleUnderAttackMode'])->name('auto-under-attack.toggle');
     Route::get('/auto-under-attack/test', [CloudflareController::class, 'testAutoUnderAttack'])->name('auto-under-attack.test');
-});
-
-// ============================================
-// Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)
-// ============================================
-Route::prefix('video-missions')->name('video-missions.')->group(function () {
-    // Dashboard
-    Route::get('/', [VideoMissionController::class, 'index'])->name('index');
-
-    // Missions CRUD
-    Route::get('/missions', [VideoMissionController::class, 'missions'])->name('missions');
-    Route::get('/missions/create', [VideoMissionController::class, 'create'])->name('create');
-    Route::post('/missions', [VideoMissionController::class, 'store'])->name('store');
-    Route::get('/missions/{mission}', [VideoMissionController::class, 'show'])->name('show');
-    Route::get('/missions/{mission}/edit', [VideoMissionController::class, 'edit'])->name('edit');
-    Route::put('/missions/{mission}', [VideoMissionController::class, 'update'])->name('update');
-    Route::delete('/missions/{mission}', [VideoMissionController::class, 'destroy'])->name('destroy');
-    Route::post('/missions/{mission}/toggle-active', [VideoMissionController::class, 'toggleActive'])->name('toggle-active');
-
-    // Completions (การทำภารกิจ)
-    Route::get('/completions', [VideoMissionController::class, 'completions'])->name('completions');
-    Route::get('/completions/{completion}', [VideoMissionController::class, 'showCompletion'])->name('completion');
-    Route::post('/completions/{completion}/verify', [VideoMissionController::class, 'verifyCompletion'])->name('completion.verify');
-    Route::post('/completions/{completion}/reject', [VideoMissionController::class, 'rejectCompletion'])->name('completion.reject');
-
-    // Rank Limits
-    Route::get('/rank-limits', [VideoMissionController::class, 'rankLimits'])->name('rank-limits');
-    Route::put('/rank-limits', [VideoMissionController::class, 'updateRankLimits'])->name('rank-limits.update');
-
-    // Settings
-    Route::get('/settings', [VideoMissionController::class, 'settings'])->name('settings');
-    Route::put('/settings', [VideoMissionController::class, 'updateSettings'])->name('settings.update');
-
-    // Reports
-    Route::get('/reports', [VideoMissionController::class, 'reports'])->name('reports');
-
-    // YouTube Import
-    Route::get('/import-youtube', [VideoMissionController::class, 'importYouTube'])->name('import-youtube');
-    Route::post('/import-youtube', [VideoMissionController::class, 'processImportYouTube'])->name('import-youtube.process');
-});
-
-// ============================================
-// Coin Shop Management Routes (ร้านค้า Coins)
-// ============================================
-Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
-    // Products CRUD
-    Route::get('/', [CoinShopController::class, 'index'])->name('index');
-    Route::get('/create', [CoinShopController::class, 'create'])->name('create');
-    Route::post('/', [CoinShopController::class, 'store'])->name('store');
-    Route::get('/{product}/edit', [CoinShopController::class, 'edit'])->name('edit');
-    Route::put('/{product}', [CoinShopController::class, 'update'])->name('update');
-    Route::delete('/{product}', [CoinShopController::class, 'destroy'])->name('destroy');
-    Route::post('/{product}/toggle-active', [CoinShopController::class, 'toggleActive'])->name('toggle-active');
-
-    // Purchases Management
-    Route::get('/purchases', [CoinShopController::class, 'purchases'])->name('purchases');
-    Route::get('/purchases/{purchase}', [CoinShopController::class, 'purchaseDetail'])->name('purchases.detail');
-    Route::put('/purchases/{purchase}/status', [CoinShopController::class, 'updatePurchaseStatus'])->name('purchases.update-status');
-    Route::post('/purchases/{purchase}/refund', [CoinShopController::class, 'refundPurchase'])->name('purchases.refund');
 });
 
 // ============================================

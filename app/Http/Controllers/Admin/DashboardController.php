@@ -10,7 +10,6 @@ use App\Models\KycVerification;
 use App\Models\MlmCommission;
 use App\Models\MlmMember;
 use App\Models\Ticket;
-use App\Models\TradingMarketData;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -120,20 +119,6 @@ class DashboardController extends Controller
             'rejected' => KycVerification::rejected()->count(),
         ];
 
-        // Trading stats (if table exists)
-        $tradingStats = [];
-        try {
-            if (DB::getSchemaBuilder()->hasTable('trading_market_data')) {
-                $tradingStats = [
-                    'active_pairs' => TradingMarketData::distinct('symbol')->count('symbol'),
-                    'total_volume_24h' => TradingMarketData::where('created_at', '>=', now()->subDay())
-                        ->sum('volume'),
-                ];
-            }
-        } catch (\Exception $e) {
-            // Table doesn't exist or other error, skip
-        }
-
         // Ticket stats
         $ticketStats = [
             'open' => Ticket::open()->count(),
@@ -188,7 +173,6 @@ class DashboardController extends Controller
             'cryptoWithdrawals',
             'cryptoTransactionsCount',
             'kycStats',
-            'tradingStats',
             'ticketStats',
             'recentTickets',
             'pageViewStats'

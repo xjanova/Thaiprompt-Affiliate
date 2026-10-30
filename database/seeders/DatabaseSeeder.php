@@ -133,24 +133,13 @@ class DatabaseSeeder extends Seeder
             TarotCelticPositionMeaningsSeeder::class, // 🔮 คำทำนายไพ่ Celtic Cross 7,800 entries (78 ใบ × 10 ตำแหน่ง × 2 ทิศ × 5 หมวด)
             ProvinceSeeder::class,              // ข้อมูลจังหวัดไทย 77 จังหวัด พร้อมพิกัด GPS
             HotelSeeder::class,                 // ระบบจองโรงแรม
-            InvestmentPlanSeeder::class,        // แพลนการลงทุน
-            TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
-            VideoMissionSystemSeeder::class,    // 🆕 ระบบภารกิจดูคลิปรับรางวัล (Video Missions, Rank Limits, Anti-Cheat)
-            VideoMissionYouTubeSeeder::class,   // 🎬 นำเข้าวิดีโอจากช่อง YouTube (@Metal-XProject)
-            CoinShopSeeder::class,              // 🛒 ระบบร้านค้า Coins (Coin Shop Products)
-            GameSeeder::class,                  // ระบบเกม (Game System)
-            GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
-            GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)
-            MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
             TicketSlaSeeder::class,             // SLA Policies สำหรับ Ticket System (เป้าหมายเวลาตอบกลับและแก้ไข)
 
             // 14. Bot Automation System
-            BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
-            BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
             AiContentWriterSeeder::class,       // 🖊️ AI Content Writer System (Settings, Templates สำหรับสร้าง Content)
 
             // 15. Service Booking System

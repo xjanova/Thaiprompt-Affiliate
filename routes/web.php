@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SetupController;
-use App\Http\Controllers\Frontend\GameController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\OtpController;
@@ -174,68 +173,6 @@ Route::prefix('demo')->name('demo.')->group(function () {
     })->name('components');
 });
 
-// Tournament Routes
-// ⚠️ SEO: Tournament pages มี SEO value สูง
-Route::prefix('tournaments')->name('tournaments.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\TournamentController::class, 'show'])->name('show');
-    Route::match(['GET', 'HEAD'], '/{slug}/leaderboard', [\App\Http\Controllers\TournamentController::class, 'leaderboard'])->name('leaderboard');
-
-    // Authenticated routes
-    Route::middleware('auth')->group(function () {
-        Route::post('/{slug}/register', [\App\Http\Controllers\TournamentController::class, 'register'])->name('register');
-        Route::post('/{slug}/submit-score', [\App\Http\Controllers\TournamentController::class, 'submitScore'])->name('submit-score');
-    });
-});
-
-// Rewards & Missions Routes (Authenticated)
-Route::middleware('auth')->prefix('rewards')->name('rewards.')->group(function () {
-    Route::get('/daily', [\App\Http\Controllers\RewardController::class, 'daily'])->name('daily');
-    Route::post('/daily/claim', [\App\Http\Controllers\RewardController::class, 'claimDaily'])->name('daily.claim');
-
-    Route::get('/missions', [\App\Http\Controllers\RewardController::class, 'missions'])->name('missions');
-    Route::post('/missions/{missionId}/claim', [\App\Http\Controllers\RewardController::class, 'claimMission'])->name('missions.claim');
-    Route::get('/missions/progress', [\App\Http\Controllers\RewardController::class, 'getMissionsProgress'])->name('missions.progress');
-});
-
-// Games Routes
-// ⚠️ SEO Critical: Game pages สำคัญสำหรับ organic traffic
-Route::prefix('games')->name('games.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
-
-    // API Routes for game progress
-    Route::middleware('auth')->group(function () {
-        Route::post('/{slug}/save-progress', [\App\Http\Controllers\GameController::class, 'saveProgress'])->name('save-progress');
-        Route::post('/{slug}/change-loadout', [\App\Http\Controllers\GameController::class, 'changeLoadout'])->name('change-loadout');
-
-        // Game Shop Routes
-        Route::prefix('{slug}/shop')->name('shop.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\GameShopController::class, 'index'])->name('index');
-            Route::post('/purchase/{skinId}', [\App\Http\Controllers\GameShopController::class, 'purchaseSkin'])->name('purchase');
-            Route::get('/owned', [\App\Http\Controllers\GameShopController::class, 'getOwnedSkins'])->name('owned');
-        });
-
-        // Game Achievements Routes
-        Route::get('/{slug}/achievements', [\App\Http\Controllers\GameController::class, 'achievements'])->name('achievements');
-
-        // Multiplayer API Routes
-        Route::prefix('{slug}/multiplayer')->name('multiplayer.')->group(function () {
-            Route::post('/create-room', [\App\Http\Controllers\MultiplayerController::class, 'createRoom'])->name('create-room');
-            Route::get('/rooms', [\App\Http\Controllers\MultiplayerController::class, 'listRooms'])->name('rooms');
-            Route::post('/join/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'joinRoom'])->name('join');
-            Route::post('/leave/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'leaveRoom'])->name('leave');
-            Route::post('/update/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'updatePosition'])->name('update');
-            Route::get('/state/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'getRoomState'])->name('state');
-            Route::post('/death/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'reportDeath'])->name('death');
-        });
-    });
-
-    Route::match(['GET', 'HEAD'], '/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
-});
-
-Route::get('/demo/game-selector', [GameController::class, 'index'])->name('demo.game-selector');
-Route::get('/api/games', [GameController::class, 'getGames'])->name('api.games');
 
 Route::get('/demo/audio-spectrum', function () {
     return view('demo-audio-spectrum');
@@ -1027,95 +964,6 @@ Route::prefix('chatbot/marketplace')->name('chatbot.marketplace.')->group(functi
         Route::get('/my-rentals', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myRentals'])->name('my-rentals');
         Route::get('/my-earnings', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myEarnings'])->name('my-earnings');
     });
-});
-
-// ========================================
-// TRADING BOT SYSTEM ROUTES
-// ========================================
-
-use App\Http\Controllers\Admin\TradingBotAdminController;
-use App\Http\Controllers\TradingBotController;
-
-// Public Trading Bot Marketplace
-// ⚠️ Marketplace: Trading bot marketplace ต้องถูก index โดย search engines
-Route::prefix('trading-bot')->name('trading-bot.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/marketplace', [TradingBotController::class, 'marketplace'])->name('marketplace');
-});
-
-// Authenticated Trading Bot Routes
-Route::middleware('auth')->prefix('trading-bot')->name('trading-bot.')->group(function () {
-    // Dashboard
-    Route::get('/', [TradingBotController::class, 'index'])->name('index');
-
-    // Subscription
-    Route::post('/subscribe/{package}', [TradingBotController::class, 'subscribe'])->name('subscribe');
-
-    // Bot Management
-    Route::get('/bots/create', [TradingBotController::class, 'create'])->name('create');
-    Route::post('/bots', [TradingBotController::class, 'store'])->name('store');
-    Route::get('/bots/{bot}', [TradingBotController::class, 'show'])->name('show');
-    Route::get('/bots/{bot}/edit', [TradingBotController::class, 'edit'])->name('edit');
-    Route::put('/bots/{bot}', [TradingBotController::class, 'update'])->name('update');
-    Route::delete('/bots/{bot}', [TradingBotController::class, 'destroy'])->name('destroy');
-    Route::post('/bots/{bot}/start', [TradingBotController::class, 'start'])->name('start');
-    Route::post('/bots/{bot}/stop', [TradingBotController::class, 'stop'])->name('stop');
-    Route::get('/bots/{bot}/analytics', [TradingBotController::class, 'analytics'])->name('analytics');
-    Route::get('/bots/{bot}/advanced-config', [TradingBotController::class, 'advancedConfig'])->name('advanced-config');
-    Route::get('/bots/{bot}/pro-analytics', [TradingBotController::class, 'proAnalytics'])->name('pro-analytics');
-
-    // Multi-Exchange & Risk Management
-    Route::get('/multi-exchange', [TradingBotController::class, 'multiExchange'])->name('multi-exchange');
-    Route::get('/risk-management', [TradingBotController::class, 'riskManagement'])->name('risk-management');
-
-    // Trading Accounts
-    Route::get('/accounts', [TradingBotController::class, 'accounts'])->name('accounts');
-    Route::post('/accounts', [TradingBotController::class, 'storeAccount'])->name('accounts.store');
-
-    // Strategies
-    Route::get('/strategies', [TradingBotController::class, 'strategies'])->name('strategies');
-    Route::get('/strategies/create', [TradingBotController::class, 'createStrategy'])->name('strategies.create');
-    Route::post('/strategies', [TradingBotController::class, 'storeStrategy'])->name('strategies.store');
-});
-
-// Admin Trading Bot Routes
-Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin/trading-bot')->name('admin.trading-bot.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [TradingBotAdminController::class, 'dashboard'])->name('dashboard');
-
-    // Package Management
-    Route::get('/packages', [TradingBotAdminController::class, 'packages'])->name('packages.index');
-    Route::get('/packages/create', [TradingBotAdminController::class, 'createPackage'])->name('packages.create');
-    Route::post('/packages', [TradingBotAdminController::class, 'storePackage'])->name('packages.store');
-    Route::get('/packages/{package}/edit', [TradingBotAdminController::class, 'editPackage'])->name('packages.edit');
-    Route::put('/packages/{package}', [TradingBotAdminController::class, 'updatePackage'])->name('packages.update');
-    Route::delete('/packages/{package}', [TradingBotAdminController::class, 'destroyPackage'])->name('packages.destroy');
-
-    // Subscription Management
-    Route::get('/subscriptions', [TradingBotAdminController::class, 'subscriptions'])->name('subscriptions.index');
-    Route::get('/subscriptions/{subscription}', [TradingBotAdminController::class, 'showSubscription'])->name('subscriptions.show');
-    Route::post('/subscriptions/{subscription}/cancel', [TradingBotAdminController::class, 'cancelSubscription'])->name('subscriptions.cancel');
-
-    // Bot Management
-    Route::get('/bots', [TradingBotAdminController::class, 'bots'])->name('bots.index');
-    Route::get('/bots/{bot}', [TradingBotAdminController::class, 'showBot'])->name('bots.show');
-    Route::post('/bots/{bot}/stop', [TradingBotAdminController::class, 'stopBot'])->name('bots.stop');
-    Route::post('/bots/{bot}/start', [TradingBotAdminController::class, 'startBot'])->name('bots.start');
-    Route::delete('/bots/{bot}', [TradingBotAdminController::class, 'destroyBot'])->name('bots.destroy');
-
-    // Exchange Management
-    Route::get('/exchanges', [TradingBotAdminController::class, 'exchanges'])->name('exchanges.index');
-    Route::post('/exchanges', [TradingBotAdminController::class, 'storeExchange'])->name('exchanges.store');
-    Route::put('/exchanges/{exchange}', [TradingBotAdminController::class, 'updateExchange'])->name('exchanges.update');
-
-    // Analytics
-    Route::get('/analytics', [TradingBotAdminController::class, 'analytics'])->name('analytics');
-
-    // Arbitrage Monitor
-    Route::get('/arbitrage-monitor', [TradingBotAdminController::class, 'arbitrageMonitor'])->name('arbitrage-monitor');
-
-    // Settings
-    Route::get('/settings', [TradingBotAdminController::class, 'settings'])->name('settings');
-    Route::put('/settings', [TradingBotAdminController::class, 'updateSettings'])->name('settings.update');
 });
 
 /*

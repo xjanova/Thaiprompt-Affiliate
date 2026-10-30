@@ -331,24 +331,6 @@ Schedule::command('fortune:content:publish')
     });
 
 // ════════════════════════════════════════════════════════════════
-// 🤖 Bot Automation — รัน automation ที่ถึงเวลาตาม next_execution_at
-// ════════════════════════════════════════════════════════════════
-// ปัญหาก่อนแก้: command `bot:process-automations` มีอยู่แต่ไม่ถูกลงทะเบียน
-// scheduler เลย ทำให้ "โพสเดี๋ยวนี้" (manual) ใช้ได้ แต่ auto-post ไม่ยิง
-//
-// ทุกนาที — เช็ค BotAutomation::dueForExecution() (active + next_execution_at <= now)
-//   แล้วเรียก executeAutomation() ผ่าน BotAutomationService
-//
-// withoutOverlapping(5) — กัน overlap 5 นาที (เผื่อ AI gen content ช้า)
-// onOneServer() — กัน multi-server รันซ้ำ
-Schedule::command('bot:process-automations')
-    ->everyMinute()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('bot-process-automations')
-    ->runInBackground();
-
-// ════════════════════════════════════════════════════════════════
 // 🪙 (2026-10-13) ชำระด้วยเหรียญ TPIX — ตรวจธุรกรรมบนเชน 4289 + บันทึกราคาพูล DEX ทุกนาที
 // ════════════════════════════════════════════════════════════════
 // เงินที่ลูกค้าโอนแล้วแต่ไม่ได้ส่งเลขธุรกรรม / รอ confirmation / เชนล่มตอนส่ง → ตัวนี้ตามเก็บให้
@@ -358,17 +340,6 @@ Schedule::command('tpix:pay-scan')
     ->onOneServer()
     ->name('tpix-pay-scan')
     ->runInBackground();
-
-// ════════════════════════════════════════════════════════════════
-// 📤 Bot Scheduled Posts — โพสที่ admin ตั้งเวลาเฉพาะเจาะจงไว้
-// ════════════════════════════════════════════════════════════════
-// ทุกนาที — เช็ค BotScheduledPost::dueForPublishing() แล้ว dispatch
-//   PublishScheduledPostJob ทีละโพส (ผ่าน queue)
-Schedule::job(new \App\Jobs\BotAutomation\ProcessScheduledPostsJob)
-    ->everyMinute()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('bot-scheduled-posts-publish');
 
 // ════════════════════════════════════════════════════════════════
 // 🚨 (2026-05-25) GHOST SCHEDULES RESCUE — Migrate Kernel.php → routes/console.php
@@ -782,22 +753,6 @@ Schedule::command('line:cleanup-tokens --force')
     ->withoutOverlapping()
     ->onOneServer()
     ->name('line-cleanup-tokens')
-    ->runInBackground();
-
-// 22) Investment Distribute ROI — ROI to staking positions (daily 00:05)
-Schedule::command('investment:distribute-roi')
-    ->dailyAt('00:05')
-    ->withoutOverlapping(60)
-    ->onOneServer()
-    ->name('investment-distribute-roi')
-    ->runInBackground();
-
-// 23) Investment Distribute ROI Retry — retry ROI ที่ fail (ทุก 6 ชั่วโมง)
-Schedule::command('investment:distribute-roi --retry')
-    ->everySixHours()
-    ->withoutOverlapping(60)
-    ->onOneServer()
-    ->name('investment-distribute-roi-retry')
     ->runInBackground();
 
 // 24) Threat Intelligence Update — DB-driven schedule

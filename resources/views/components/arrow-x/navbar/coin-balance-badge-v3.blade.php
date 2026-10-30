@@ -39,7 +39,6 @@
 
     // สร้าง route สำหรับ coins
     $coinsRoute = route('user.video-coins.index');
-    $coinShopRoute = route('user.coin-shop.index');
     $exchangeRoute = route('user.video-coins.exchange');
 @endphp
 
@@ -290,15 +289,6 @@ class="relative">
             <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider mb-2">จัดการ Coins</p>
 
             <div class="grid grid-cols-2 gap-2">
-                {{-- ร้านค้า Coins --}}
-                <a href="{{ $coinShopRoute }}"
-                   class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-all group">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:shadow-purple-500/40 transition-all">
-                        <i class="fas fa-store"></i>
-                    </div>
-                    <span class="text-sm text-white font-medium">ร้านค้า</span>
-                </a>
-
                 {{-- แลกเป็นเงิน --}}
                 <a href="{{ $exchangeRoute }}"
                    class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-all group">
