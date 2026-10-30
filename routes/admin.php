@@ -15,20 +15,11 @@ use App\Http\Controllers\Admin\Accounting\ReportController;
 use App\Http\Controllers\Admin\AiApiKeyController;
 use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiContentWriterController;
-use App\Http\Controllers\Admin\AICoreAlertController;
-use App\Http\Controllers\Admin\AICoreAnalyticsController;
-use App\Http\Controllers\Admin\AICoreController;
-use App\Http\Controllers\Admin\AICoreFeatureController;
-use App\Http\Controllers\Admin\AICoreQuotaController;
-use App\Http\Controllers\Admin\AICoreScheduleController;
-use App\Http\Controllers\Admin\AICoreTenantController;
 use App\Http\Controllers\Admin\AiGenAdminController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AntiAbuseController;
-use App\Http\Controllers\Admin\ApiEndpointController;
-use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\ArrowXThemeController;
 use App\Http\Controllers\Admin\ArticleManagementController;
 use App\Http\Controllers\Admin\AttendanceController;
@@ -43,15 +34,11 @@ use App\Http\Controllers\Admin\CoinShopController;
 use App\Http\Controllers\Admin\CryptoManagementController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DebtController;
-use App\Http\Controllers\Admin\DemoDataController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\Dev\DevReleaseController;
 use App\Http\Controllers\Admin\DeveloperApprovalController;
 use App\Http\Controllers\Admin\ECommerceController;
-use App\Http\Controllers\Admin\EmailAnalyticsController;
-use App\Http\Controllers\Admin\EmailCampaignController;
 use App\Http\Controllers\Admin\EmailController;
-use App\Http\Controllers\Admin\EmailQueueController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FacebookOAuthController;
 use App\Http\Controllers\Admin\FeaturedStoreController;
@@ -89,7 +76,6 @@ use App\Http\Controllers\Admin\FortuneVoiceController;
 use App\Http\Controllers\Admin\FortuneVoiceDiagnosticController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
 use App\Http\Controllers\Admin\FortuneVoiceStorageController;
-use App\Http\Controllers\Admin\ForumAdminController;
 use App\Http\Controllers\Admin\FreshMarketController;
 use App\Http\Controllers\Admin\GameController;
 use App\Http\Controllers\Admin\GameSettingsController;
@@ -97,7 +83,6 @@ use App\Http\Controllers\Admin\GoogleOAuthController;
 use App\Http\Controllers\Admin\GpsMonitoringController;
 use App\Http\Controllers\Admin\HDWalletManagementController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
-use App\Http\Controllers\Admin\HomepageManagerController;
 use App\Http\Controllers\Admin\HoroscopeAnalyticsController;
 use App\Http\Controllers\Admin\HoroscopeDailyPredictionController;
 use App\Http\Controllers\Admin\HoroscopeDreamManagementController;
@@ -137,7 +122,6 @@ use App\Http\Controllers\Admin\MarketplaceAccountController;
 use App\Http\Controllers\Admin\MarketplaceCommissionController;
 use App\Http\Controllers\Admin\MarketplaceOrderController;
 use App\Http\Controllers\Admin\MarketplaceProductController;
-use App\Http\Controllers\Admin\MenuManagementController;
 use App\Http\Controllers\Admin\MlmCommissionController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\MlmMemberController;
@@ -156,9 +140,6 @@ use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficialShopAdminController;
 use App\Http\Controllers\Admin\OfficialShopSelectionController;
 use App\Http\Controllers\Admin\OtpSettingsController;
-use App\Http\Controllers\Admin\PageBuilderController;
-use App\Http\Controllers\Admin\PageBuilderSectionController;
-use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PageViewAnalyticsController;
 use App\Http\Controllers\Admin\PaymentBankAccountController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
@@ -193,16 +174,11 @@ use App\Http\Controllers\Admin\ServiceProviderController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\SloganController;
-use App\Http\Controllers\Admin\SmartSlideController;
-use App\Http\Controllers\Admin\SmartSlideLayerController;
-use App\Http\Controllers\Admin\SmartSliderController;
 use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\SmsGatewayAdminController;
 use App\Http\Controllers\Admin\StakingPlanController;
-use App\Http\Controllers\Admin\StarUpgradePriceController;
 use App\Http\Controllers\Admin\StorefrontSettingsController;
 use App\Http\Controllers\Admin\SuperAdminHotelController;
-use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\TarotManagementController;
 use App\Http\Controllers\Admin\TeamTransferController;
 use App\Http\Controllers\Admin\ThaipromptRichMenuController;
@@ -213,13 +189,11 @@ use App\Http\Controllers\Admin\TPIXController;
 use App\Http\Controllers\Admin\TpixDeploymentController;
 use App\Http\Controllers\Admin\TrainingCourseController;
 use App\Http\Controllers\Admin\TrainingEnrollmentController;
-use App\Http\Controllers\Admin\TrendManagementController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\UnifiedReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserGuideController;
 use App\Http\Controllers\Admin\VendorStoreController;
-use App\Http\Controllers\Admin\VideoAutomationController;
 use App\Http\Controllers\Admin\VideoMissionController;
 use App\Http\Controllers\Admin\VideoRewardAdminController;
 use App\Http\Controllers\Admin\WalletController;
@@ -447,13 +421,6 @@ Route::prefix('site-settings')->name('site-settings.')->group(function () {
     Route::delete('/logo', [SiteSettingsController::class, 'deleteLogo'])->name('logo.delete');
 });
 
-// Demo Data Management (จัดการข้อมูลทดสอบ)
-Route::prefix('demo-data')->name('demo-data.')->group(function () {
-    Route::get('/', [DemoDataController::class, 'index'])->name('index');
-    Route::post('/clean', [DemoDataController::class, 'clean'])->name('clean');
-    Route::get('/stats', [DemoDataController::class, 'stats'])->name('stats');
-});
-
 // Header Settings
 Route::prefix('header-settings')->name('header-settings.')->group(function () {
     Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');
@@ -488,10 +455,6 @@ Route::prefix('security')->name('security.')->group(function () {
     Route::post('/threat-intelligence/check', [SecurityController::class, 'checkIpThreat'])->name('threat-intelligence.check');
     Route::put('/threat-intelligence/settings', [SecurityController::class, 'updateThreatSettings'])->name('threat-intelligence.settings');
 });
-
-// Pages Management (CMS)
-Route::resource('pages', PageController::class);
-Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
 
 // Windows UI Management (Visual Customization Only - Menus are hard-coded)
 Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
@@ -830,34 +793,6 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::get('/', [EmailController::class, 'index'])->name('index');
     Route::get('/statistics', [EmailController::class, 'statistics'])->name('statistics');
 
-    // Email Campaigns (⭐ NEW)
-    Route::prefix('campaigns')->name('campaigns.')->group(function () {
-        Route::get('/', [EmailCampaignController::class, 'index'])->name('index');
-        Route::get('/create', [EmailCampaignController::class, 'create'])->name('create');
-        Route::post('/', [EmailCampaignController::class, 'store'])->name('store');
-        Route::get('/{campaign}', [EmailCampaignController::class, 'show'])->name('show');
-        Route::get('/{campaign}/edit', [EmailCampaignController::class, 'edit'])->name('edit');
-        Route::put('/{campaign}', [EmailCampaignController::class, 'update'])->name('update');
-        Route::delete('/{campaign}', [EmailCampaignController::class, 'destroy'])->name('destroy');
-
-        // Campaign Actions
-        Route::post('/{campaign}/start', [EmailCampaignController::class, 'start'])->name('start');
-        Route::post('/{campaign}/pause', [EmailCampaignController::class, 'pause'])->name('pause');
-        Route::post('/{campaign}/cancel', [EmailCampaignController::class, 'cancel'])->name('cancel');
-    });
-
-    // Email Queue (⭐ NEW)
-    Route::prefix('queue')->name('queue.')->group(function () {
-        Route::get('/', [EmailQueueController::class, 'index'])->name('index');
-        Route::get('/{recipient}', [EmailQueueController::class, 'show'])->name('show');
-        Route::post('/{recipient}/retry', [EmailQueueController::class, 'retry'])->name('retry');
-        Route::post('/campaign/{campaign}/retry-all', [EmailQueueController::class, 'retryAll'])->name('retry-all');
-        Route::delete('/failed/clear', [EmailQueueController::class, 'clearFailed'])->name('clear-failed');
-    });
-
-    // Email Analytics (⭐ NEW)
-    Route::get('/analytics', [EmailAnalyticsController::class, 'index'])->name('analytics');
-    Route::get('/analytics/export', [EmailAnalyticsController::class, 'export'])->name('analytics.export');
 
     // Email Logs
     Route::get('/logs', [EmailController::class, 'logs'])->name('logs');
@@ -1192,90 +1127,6 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::post('/settings', [TwoFactorSettingsController::class, 'update'])->name('settings.update');
 });
 
-// =============================================================================
-// AI CORE - CENTRALIZED AI MANAGEMENT SYSTEM
-// =============================================================================
-// ระบบควบคุม AI ทั้งหมดแบบรวมศูนย์
-// จัดการ Features, Tenants, Quotas, Schedules, Alerts
-Route::prefix('ai-core')->name('ai-core.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [AICoreController::class, 'dashboard'])->name('dashboard');
-
-    // Features Management
-    Route::prefix('features')->name('features.')->group(function () {
-        Route::get('/', [AICoreFeatureController::class, 'index'])->name('index');
-        Route::get('/create', [AICoreFeatureController::class, 'create'])->name('create');
-        Route::post('/', [AICoreFeatureController::class, 'store'])->name('store');
-        Route::get('/{feature}', [AICoreFeatureController::class, 'show'])->name('show');
-        Route::get('/{feature}/edit', [AICoreFeatureController::class, 'edit'])->name('edit');
-        Route::put('/{feature}', [AICoreFeatureController::class, 'update'])->name('update');
-        Route::delete('/{feature}', [AICoreFeatureController::class, 'destroy'])->name('destroy');
-        Route::post('/{feature}/toggle', [AICoreFeatureController::class, 'toggle'])->name('toggle');
-    });
-
-    // Tenants Management
-    Route::prefix('tenants')->name('tenants.')->group(function () {
-        Route::get('/', [AICoreTenantController::class, 'index'])->name('index');
-        Route::get('/create', [AICoreTenantController::class, 'create'])->name('create');
-        Route::post('/', [AICoreTenantController::class, 'store'])->name('store');
-        Route::get('/{tenant}', [AICoreTenantController::class, 'show'])->name('show');
-        Route::get('/{tenant}/edit', [AICoreTenantController::class, 'edit'])->name('edit');
-        Route::put('/{tenant}', [AICoreTenantController::class, 'update'])->name('update');
-        Route::delete('/{tenant}', [AICoreTenantController::class, 'destroy'])->name('destroy');
-        Route::post('/{tenant}/toggle', [AICoreTenantController::class, 'toggle'])->name('toggle');
-
-        // Feature Access for Tenant
-        Route::get('/{tenant}/features', [AICoreTenantController::class, 'features'])->name('features');
-        Route::post('/{tenant}/features/{feature}/enable', [AICoreTenantController::class, 'enableFeature'])->name('features.enable');
-        Route::post('/{tenant}/features/{feature}/disable', [AICoreTenantController::class, 'disableFeature'])->name('features.disable');
-    });
-
-    // Quotas Management
-    Route::prefix('quotas')->name('quotas.')->group(function () {
-        Route::get('/', [AICoreQuotaController::class, 'index'])->name('index');
-        Route::get('/{tenant}/{feature}', [AICoreQuotaController::class, 'manage'])->name('manage');
-        Route::post('/{tenant}/{feature}/add-bonus', [AICoreQuotaController::class, 'addBonus'])->name('add-bonus');
-        Route::post('/{tenant}/{feature}/reset', [AICoreQuotaController::class, 'reset'])->name('reset');
-        Route::post('/reset-all-expired', [AICoreQuotaController::class, 'resetAllExpired'])->name('reset-all-expired');
-    });
-
-    // Schedules Management
-    Route::prefix('schedules')->name('schedules.')->group(function () {
-        Route::get('/', [AICoreScheduleController::class, 'index'])->name('index');
-        Route::get('/create', [AICoreScheduleController::class, 'create'])->name('create');
-        Route::post('/', [AICoreScheduleController::class, 'store'])->name('store');
-        Route::get('/{schedule}', [AICoreScheduleController::class, 'show'])->name('show');
-        Route::get('/{schedule}/edit', [AICoreScheduleController::class, 'edit'])->name('edit');
-        Route::put('/{schedule}', [AICoreScheduleController::class, 'update'])->name('update');
-        Route::delete('/{schedule}', [AICoreScheduleController::class, 'destroy'])->name('destroy');
-        Route::post('/{schedule}/toggle', [AICoreScheduleController::class, 'toggle'])->name('toggle');
-        Route::post('/{schedule}/execute', [AICoreScheduleController::class, 'execute'])->name('execute');
-    });
-
-    // Alerts Management
-    Route::prefix('alerts')->name('alerts.')->group(function () {
-        Route::get('/', [AICoreAlertController::class, 'index'])->name('index');
-        Route::get('/{alert}', [AICoreAlertController::class, 'show'])->name('show');
-        Route::post('/{alert}/read', [AICoreAlertController::class, 'markAsRead'])->name('read');
-        Route::post('/{alert}/acknowledge', [AICoreAlertController::class, 'acknowledge'])->name('acknowledge');
-        Route::post('/{alert}/resolve', [AICoreAlertController::class, 'resolve'])->name('resolve');
-        Route::post('/{alert}/dismiss', [AICoreAlertController::class, 'dismiss'])->name('dismiss');
-        Route::post('/mark-all-read', [AICoreAlertController::class, 'markAllAsRead'])->name('mark-all-read');
-    });
-
-    // Usage Analytics
-    Route::prefix('analytics')->name('analytics.')->group(function () {
-        Route::get('/', [AICoreAnalyticsController::class, 'index'])->name('index');
-        Route::get('/feature/{feature}', [AICoreAnalyticsController::class, 'featureUsage'])->name('feature');
-        Route::get('/tenant/{tenant}', [AICoreAnalyticsController::class, 'tenantUsage'])->name('tenant');
-        Route::get('/export', [AICoreAnalyticsController::class, 'export'])->name('export');
-    });
-
-    // Global Settings
-    Route::get('/settings', [AICoreController::class, 'settings'])->name('settings.index');
-    Route::post('/settings', [AICoreController::class, 'updateSettings'])->name('settings.update');
-});
-
 // Learning Center - User View
 Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::get('/', [LearningCenterController::class, 'index'])->name('index');
@@ -1399,19 +1250,6 @@ Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
     Route::post('/{id}/test', [AiBotController::class, 'test'])->name('test');
     Route::post('/{id}/duplicate', [AiBotController::class, 'duplicate'])->name('duplicate');
     Route::get('/providers/{providerId}/models', [AiBotController::class, 'getModelsByProvider'])->name('providers.models');
-});
-
-// API Endpoint Management
-Route::prefix('api-endpoints')->name('api-endpoints.')->group(function () {
-    Route::get('/', [ApiEndpointController::class, 'index'])->name('index');
-    Route::get('/create', [ApiEndpointController::class, 'create'])->name('create');
-    Route::post('/', [ApiEndpointController::class, 'store'])->name('store');
-    Route::get('/{apiEndpoint}', [ApiEndpointController::class, 'show'])->name('show');
-    Route::get('/{apiEndpoint}/edit', [ApiEndpointController::class, 'edit'])->name('edit');
-    Route::put('/{apiEndpoint}', [ApiEndpointController::class, 'update'])->name('update');
-    Route::delete('/{apiEndpoint}', [ApiEndpointController::class, 'destroy'])->name('destroy');
-    Route::post('/{apiEndpoint}/toggle-status', [ApiEndpointController::class, 'toggleStatus'])->name('toggle-status');
-    Route::get('/{apiEndpoint}/analytics', [ApiEndpointController::class, 'analytics'])->name('analytics');
 });
 
 // Knowledge Base Management (RAG System)
@@ -2435,25 +2273,6 @@ Route::prefix('pricing')->name('pricing.')->group(function () {
 // =====================================================
 // Route::prefix('app-management')->name('app-management.')->group(function () { ... });
 
-// Viral Trend Detection Routes (ยังใช้อยู่)
-Route::prefix('trends')->name('trends.')->group(function () {
-    Route::get('/', [TrendManagementController::class, 'index'])->name('index');
-    Route::get('/keywords', [TrendManagementController::class, 'keywords'])->name('keywords');
-    Route::get('/{trend}', [TrendManagementController::class, 'show'])->name('show');
-    Route::post('/{trend}/generate-content', [TrendManagementController::class, 'generateContent'])->name('generate-content');
-
-    // Trend Sources Management
-    Route::prefix('sources')->name('sources.')->group(function () {
-        Route::get('/', [TrendManagementController::class, 'sources'])->name('index');
-        Route::get('/create', [TrendManagementController::class, 'createSource'])->name('create');
-        Route::post('/', [TrendManagementController::class, 'storeSource'])->name('store');
-        Route::get('/{source}/edit', [TrendManagementController::class, 'editSource'])->name('edit');
-        Route::put('/{source}', [TrendManagementController::class, 'updateSource'])->name('update');
-        Route::delete('/{source}', [TrendManagementController::class, 'deleteSource'])->name('delete');
-        Route::post('/{source}/test-scrape', [TrendManagementController::class, 'testScrape'])->name('test-scrape');
-    });
-});
-
 // Video Reward System Admin
 Route::prefix('video-rewards')->name('video-rewards.')->group(function () {
     // Dashboard & Statistics
@@ -2482,88 +2301,6 @@ Route::prefix('video-rewards')->name('video-rewards.')->group(function () {
     // Exchange Rate Management
     Route::get('/exchange-rates', [VideoRewardAdminController::class, 'exchangeRates'])->name('exchange-rates.index');
     Route::put('/exchange-rates/{rateId}', [VideoRewardAdminController::class, 'updateExchangeRate'])->name('exchange-rates.update');
-});
-
-// Page Builder (Homepage/Wiki Builder)
-Route::prefix('page-builder')->name('page-builder.')->group(function () {
-    // Page Management
-    Route::get('/', [PageBuilderController::class, 'index'])->name('index');
-    Route::get('/create', [PageBuilderController::class, 'create'])->name('create');
-    Route::post('/', [PageBuilderController::class, 'store'])->name('store');
-    Route::get('/{page}/edit', [PageBuilderController::class, 'edit'])->name('edit');
-    Route::put('/{page}', [PageBuilderController::class, 'update'])->name('update');
-    Route::delete('/{page}', [PageBuilderController::class, 'destroy'])->name('destroy');
-    Route::post('/{page}/duplicate', [PageBuilderController::class, 'duplicate'])->name('duplicate');
-    Route::post('/{page}/toggle-active', [PageBuilderController::class, 'toggleActive'])->name('toggle-active');
-    Route::post('/{page}/reorder-sections', [PageBuilderController::class, 'reorderSections'])->name('reorder-sections');
-    Route::get('/{page}/preview', [PageBuilderController::class, 'preview'])->name('preview');
-
-    // Section Management
-    Route::prefix('{page}/sections')->name('sections.')->group(function () {
-        Route::post('/', [PageBuilderSectionController::class, 'store'])->name('store');
-        Route::post('/from-template/{template}', [PageBuilderSectionController::class, 'createFromTemplate'])->name('from-template');
-    });
-
-    Route::prefix('sections/{section}')->name('sections.')->group(function () {
-        Route::get('/edit', [PageBuilderSectionController::class, 'edit'])->name('edit');
-        Route::put('/', [PageBuilderSectionController::class, 'update'])->name('update');
-        Route::delete('/', [PageBuilderSectionController::class, 'destroy'])->name('destroy');
-        Route::post('/duplicate', [PageBuilderSectionController::class, 'duplicate'])->name('duplicate');
-        Route::post('/move-up', [PageBuilderSectionController::class, 'moveUp'])->name('move-up');
-        Route::post('/move-down', [PageBuilderSectionController::class, 'moveDown'])->name('move-down');
-        Route::post('/toggle-visibility', [PageBuilderSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
-        Route::post('/toggle-active', [PageBuilderSectionController::class, 'toggleActive'])->name('toggle-active');
-    });
-});
-
-// Homepage Manager - Visual Page Builder สำหรับหน้าแรก
-Route::prefix('homepage-manager')->name('homepage-manager.')->group(function () {
-    // หน้าหลัก Visual Editor
-    Route::get('/', [HomepageManagerController::class, 'index'])->name('index');
-    Route::get('/preview', [HomepageManagerController::class, 'preview'])->name('preview');
-
-    // หน้า Templates Gallery (UI)
-    Route::get('/templates', [HomepageManagerController::class, 'templatesIndex'])->name('templates.index');
-    Route::get('/templates/{template}/preview', [HomepageManagerController::class, 'previewTemplate'])->name('templates.preview');
-
-    // หน้าจัดการ Sections (UI)
-    Route::get('/sections', [HomepageManagerController::class, 'sectionsIndex'])->name('sections.index');
-
-    // API สำหรับดึงข้อมูล
-    Route::get('/sections/data', [HomepageManagerController::class, 'getSections'])->name('sections.data');
-    Route::get('/api/templates', [HomepageManagerController::class, 'getTemplates'])->name('templates.get');
-
-    // Section Management
-    Route::post('/sections', [HomepageManagerController::class, 'storeSection'])->name('sections.store');
-    Route::put('/sections/{section}', [HomepageManagerController::class, 'updateSection'])->name('sections.update');
-    Route::delete('/sections/{section}', [HomepageManagerController::class, 'destroySection'])->name('sections.destroy');
-    Route::post('/sections/{section}/toggle', [HomepageManagerController::class, 'toggleSection'])->name('sections.toggle');
-    Route::post('/sections/{section}/duplicate', [HomepageManagerController::class, 'duplicateSection'])->name('sections.duplicate');
-    Route::post('/sections/reorder', [HomepageManagerController::class, 'reorderSections'])->name('sections.reorder');
-
-    // Element Management
-    Route::post('/sections/{section}/elements', [HomepageManagerController::class, 'storeElement'])->name('elements.store');
-    Route::put('/elements/{element}', [HomepageManagerController::class, 'updateElement'])->name('elements.update');
-    Route::delete('/elements/{element}', [HomepageManagerController::class, 'destroyElement'])->name('elements.destroy');
-    Route::post('/elements/{element}/duplicate', [HomepageManagerController::class, 'duplicateElement'])->name('elements.duplicate');
-    Route::post('/sections/{section}/elements/reorder', [HomepageManagerController::class, 'reorderElements'])->name('elements.reorder');
-
-    // Template Management
-    Route::post('/templates/{template}/import', [HomepageManagerController::class, 'importTemplate'])->name('templates.import');
-    Route::post('/templates/save', [HomepageManagerController::class, 'saveAsTemplate'])->name('templates.save');
-
-    // Import/Export
-    Route::get('/export', [HomepageManagerController::class, 'export'])->name('export');
-    Route::post('/import', [HomepageManagerController::class, 'import'])->name('import');
-
-    // Media Upload
-    Route::post('/upload', [HomepageManagerController::class, 'uploadImage'])->name('upload');
-
-    // Clear All
-    Route::post('/clear', [HomepageManagerController::class, 'clearAll'])->name('clear');
-
-    // Save All Sections
-    Route::post('/save-all', [HomepageManagerController::class, 'saveAll'])->name('save-all');
 });
 
 // Hotel Owner Management (Super Admin)
@@ -2596,87 +2333,9 @@ Route::prefix('hotels')->name('hotels.api.')->group(function () {
     Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
 });
 
-// System Reset (Super Admin Only)
-Route::prefix('system-reset')->name('system-reset.')->group(function () {
-    Route::get('/', [SystemResetController::class, 'index'])->name('index');
-    Route::post('/reset', [SystemResetController::class, 'reset'])->name('reset');
-    Route::get('/statistics', [SystemResetController::class, 'getStatistics'])->name('statistics');
-    Route::get('/logs', [SystemResetController::class, 'getLogs'])->name('logs');
-    Route::get('/logs/{id}', [SystemResetController::class, 'showLog'])->name('show');
-});
-
-// API Management - จัดการ API endpoints และ API keys
-Route::prefix('api-management')->name('api-management.')->group(function () {
-
-    // API Endpoints Management
-    Route::prefix('endpoints')->name('endpoints.')->group(function () {
-        Route::get('/', [ApiEndpointController::class, 'index'])->name('index');
-        Route::get('/create', [ApiEndpointController::class, 'create'])->name('create');
-        Route::post('/', [ApiEndpointController::class, 'store'])->name('store');
-        Route::get('/{apiEndpoint}', [ApiEndpointController::class, 'show'])->name('show');
-        Route::get('/{apiEndpoint}/edit', [ApiEndpointController::class, 'edit'])->name('edit');
-        Route::put('/{apiEndpoint}', [ApiEndpointController::class, 'update'])->name('update');
-        Route::delete('/{apiEndpoint}', [ApiEndpointController::class, 'destroy'])->name('destroy');
-        Route::post('/{apiEndpoint}/toggle-status', [ApiEndpointController::class, 'toggleStatus'])->name('toggle-status');
-        Route::get('/{apiEndpoint}/analytics', [ApiEndpointController::class, 'analytics'])->name('analytics');
-    });
-
-    // API Keys Management
-    Route::prefix('keys')->name('keys.')->group(function () {
-        Route::get('/', [ApiKeyController::class, 'index'])->name('index');
-        Route::get('/create', [ApiKeyController::class, 'create'])->name('create');
-        Route::post('/', [ApiKeyController::class, 'store'])->name('store');
-        Route::get('/{apiKey}', [ApiKeyController::class, 'show'])->name('show');
-        Route::get('/{apiKey}/edit', [ApiKeyController::class, 'edit'])->name('edit');
-        Route::put('/{apiKey}', [ApiKeyController::class, 'update'])->name('update');
-        Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy'])->name('destroy');
-        Route::post('/{apiKey}/toggle-status', [ApiKeyController::class, 'toggleStatus'])->name('toggle-status');
-        Route::post('/{apiKey}/reset-usage', [ApiKeyController::class, 'resetUsage'])->name('reset-usage');
-        Route::get('/{apiKey}/analytics', [ApiKeyController::class, 'analytics'])->name('analytics');
-    });
-});
-
 // ========================================
 // SMART SLIDER PRO SYSTEM
 // ========================================
-
-Route::prefix('smart-sliders')->name('smart-sliders.')->group(function () {
-    // Main slider management
-    Route::get('/', [SmartSliderController::class, 'index'])->name('index');
-    Route::get('/create', [SmartSliderController::class, 'create'])->name('create');
-    Route::post('/', [SmartSliderController::class, 'store'])->name('store');
-    Route::get('/{smartSlider}/edit', [SmartSliderController::class, 'edit'])->name('edit');
-    Route::put('/{smartSlider}', [SmartSliderController::class, 'update'])->name('update');
-    Route::delete('/{smartSlider}', [SmartSliderController::class, 'destroy'])->name('destroy');
-
-    // Slider operations
-    Route::post('/{smartSlider}/duplicate', [SmartSliderController::class, 'duplicate'])->name('duplicate');
-    Route::post('/{smartSlider}/toggle-publish', [SmartSliderController::class, 'togglePublish'])->name('toggle-publish');
-    Route::get('/{smartSlider}/export', [SmartSliderController::class, 'export'])->name('export');
-    Route::post('/import', [SmartSliderController::class, 'import'])->name('import');
-    Route::get('/{smartSlider}/analytics', [SmartSliderController::class, 'analytics'])->name('analytics');
-
-    // Slide management
-    Route::post('/{slider}/slides', [SmartSlideController::class, 'store'])->name('slides.store');
-    Route::put('/slides/{slide}', [SmartSlideController::class, 'update'])->name('slides.update');
-    Route::delete('/slides/{slide}', [SmartSlideController::class, 'destroy'])->name('slides.destroy');
-    Route::post('/slides/{slide}/duplicate', [SmartSlideController::class, 'duplicate'])->name('slides.duplicate');
-    Route::post('/{slider}/slides/reorder', [SmartSlideController::class, 'reorder'])->name('slides.reorder');
-
-    // Media uploads
-    Route::post('/slides/upload-background', [SmartSlideController::class, 'uploadBackground'])->name('slides.upload-background');
-    Route::post('/slides/upload-video', [SmartSlideController::class, 'uploadVideo'])->name('slides.upload-video');
-
-    // Layer management
-    Route::post('/slides/{slide}/layers', [SmartSlideLayerController::class, 'store'])->name('layers.store');
-    Route::put('/layers/{layer}', [SmartSlideLayerController::class, 'update'])->name('layers.update');
-    Route::delete('/layers/{layer}', [SmartSlideLayerController::class, 'destroy'])->name('layers.destroy');
-    Route::post('/layers/{layer}/duplicate', [SmartSlideLayerController::class, 'duplicate'])->name('layers.duplicate');
-    Route::post('/slides/{slide}/layers/reorder', [SmartSlideLayerController::class, 'reorder'])->name('layers.reorder');
-    Route::post('/layers/upload-image', [SmartSlideLayerController::class, 'uploadImage'])->name('layers.upload-image');
-    Route::put('/layers/{layer}/position', [SmartSlideLayerController::class, 'updatePosition'])->name('layers.update-position');
-    Route::put('/slides/{slide}/layers/batch', [SmartSlideLayerController::class, 'batchUpdate'])->name('layers.batch-update');
-});
 
 // ========================================
 // AI GEN - IMAGE & VIDEO GENERATION SYSTEM
@@ -3229,133 +2888,6 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
 });
 
 // =========================================
-// Video Automation System
-// ระบบสร้างวีดีโออัตโนมัติ (Suno + Freepik + YouTube)
-// ⚠️ ย้ายออกมาจาก platform-revenue group เพื่อให้ route name ตรงกับ views
-// URL: /admin/platform-revenue/video-automation/*
-// Route name: admin.video-automation.*
-// =========================================
-Route::prefix('platform-revenue/video-automation')->name('video-automation.')->group(function () {
-
-    // Dashboard
-    // ⚠️ บาง views ใช้ชื่อ 'index' บาง views ใช้ 'dashboard' — ลงทะเบียนทั้งสองชื่อ
-    Route::get('/', [VideoAutomationController::class, 'dashboard'])
-        ->name('dashboard');
-    Route::get('/', [VideoAutomationController::class, 'dashboard'])
-        ->name('index');
-    Route::get('/stats', [VideoAutomationController::class, 'getDashboardStats'])
-        ->name('stats');
-
-    // Settings (API Keys, Credentials)
-    Route::get('/settings', [VideoAutomationController::class, 'settings'])
-        ->name('settings');
-    Route::post('/settings', [VideoAutomationController::class, 'saveSettings'])
-        ->name('settings.save');
-    Route::post('/settings', [VideoAutomationController::class, 'saveSettings'])
-        ->name('settings.update');
-    Route::post('/settings/test/{apiType}', [VideoAutomationController::class, 'testApiConnection'])
-        ->name('settings.test');
-
-    // Platforms (YouTube, Facebook, Instagram, TikTok, etc.)
-    Route::get('/platforms', [VideoAutomationController::class, 'platforms'])
-        ->name('platforms');
-    Route::post('/platforms', [VideoAutomationController::class, 'savePlatform'])
-        ->name('platforms.save');
-    Route::delete('/platforms/{id}', [VideoAutomationController::class, 'deletePlatform'])
-        ->name('platforms.delete');
-    Route::post('/platforms/{id}/disconnect', [VideoAutomationController::class, 'deletePlatform'])
-        ->name('platforms.disconnect');
-
-    // YouTube OAuth
-    Route::get('/youtube/connect', [VideoAutomationController::class, 'connectYouTube'])
-        ->name('youtube.connect');
-    Route::get('/youtube/connect', [VideoAutomationController::class, 'connectYouTube'])
-        ->name('youtube.auth');
-    Route::get('/youtube/callback', [VideoAutomationController::class, 'youtubeCallback'])
-        ->name('youtube.callback');
-
-    // Templates (เทมเพลตสำหรับสร้างวีดีโอ)
-    Route::get('/templates', [VideoAutomationController::class, 'templates'])
-        ->name('templates');
-    Route::get('/templates', [VideoAutomationController::class, 'templates'])
-        ->name('templates.index');
-    Route::get('/templates/create', [VideoAutomationController::class, 'createTemplate'])
-        ->name('templates.create');
-    Route::post('/templates', [VideoAutomationController::class, 'storeTemplate'])
-        ->name('templates.store');
-    Route::get('/templates/{id}/edit', [VideoAutomationController::class, 'editTemplate'])
-        ->name('templates.edit');
-    Route::put('/templates/{id}', [VideoAutomationController::class, 'updateTemplate'])
-        ->name('templates.update');
-    Route::delete('/templates/{id}', [VideoAutomationController::class, 'deleteTemplate'])
-        ->name('templates.destroy');
-
-    // Projects (โปรเจกต์สร้างวีดีโอ)
-    Route::get('/projects', [VideoAutomationController::class, 'projects'])
-        ->name('projects');
-    Route::get('/projects', [VideoAutomationController::class, 'projects'])
-        ->name('projects.index');
-    Route::get('/projects/create', [VideoAutomationController::class, 'createProject'])
-        ->name('projects.create');
-    Route::post('/projects', [VideoAutomationController::class, 'storeProject'])
-        ->name('projects.store');
-    Route::get('/projects/{id}', [VideoAutomationController::class, 'showProject'])
-        ->name('projects.show');
-    Route::post('/projects/{id}/run', [VideoAutomationController::class, 'runProject'])
-        ->name('projects.start');
-    Route::post('/projects/{id}/retry', [VideoAutomationController::class, 'runProject'])
-        ->name('projects.retry');
-    Route::post('/projects/{id}/cancel', [VideoAutomationController::class, 'runProject'])
-        ->name('projects.cancel');
-    Route::delete('/projects/{id}', [VideoAutomationController::class, 'deleteProject'])
-        ->name('projects.destroy');
-
-    // Jobs (งานที่รัน)
-    Route::get('/jobs', [VideoAutomationController::class, 'jobs'])
-        ->name('jobs');
-    Route::get('/jobs', [VideoAutomationController::class, 'jobs'])
-        ->name('jobs.index');
-    Route::get('/jobs/{id}/logs', [VideoAutomationController::class, 'getJobLogs'])
-        ->name('jobs.logs');
-    Route::post('/jobs/{id}/retry', [VideoAutomationController::class, 'retryJob'])
-        ->name('jobs.retry');
-    Route::post('/jobs/{id}/cancel', [VideoAutomationController::class, 'retryJob'])
-        ->name('jobs.cancel');
-
-    // Schedules (ตารางเวลาอัตโนมัติ)
-    Route::get('/schedules', [VideoAutomationController::class, 'schedules'])
-        ->name('schedules');
-    Route::get('/schedules/create', [VideoAutomationController::class, 'schedules'])
-        ->name('schedules.create');
-    Route::get('/schedules/{id}/edit', [VideoAutomationController::class, 'schedules'])
-        ->name('schedules.edit');
-    Route::post('/schedules', [VideoAutomationController::class, 'saveSchedule'])
-        ->name('schedules.save');
-    Route::post('/schedules/{id}/run', [VideoAutomationController::class, 'saveSchedule'])
-        ->name('schedules.run');
-    Route::delete('/schedules/{id}', [VideoAutomationController::class, 'deleteSchedule'])
-        ->name('schedules.destroy');
-
-    // Publish History (ประวัติการโพสต์)
-    Route::get('/publish-history', [VideoAutomationController::class, 'publishHistory'])
-        ->name('publish-history');
-    Route::get('/publish-history/stats', [VideoAutomationController::class, 'getPublishStats'])
-        ->name('publish-history.stats');
-    Route::get('/publish-history/{id}', [VideoAutomationController::class, 'showPublishHistory'])
-        ->name('publish-history.show');
-    Route::put('/publish-history/{id}/engagement', [VideoAutomationController::class, 'updatePublishEngagement'])
-        ->name('publish-history.engagement');
-    Route::delete('/publish-history/{id}', [VideoAutomationController::class, 'deletePublishHistory'])
-        ->name('publish-history.delete');
-    Route::delete('/publish-history/{id}/source-files', [VideoAutomationController::class, 'deletePublishSourceFiles'])
-        ->name('publish-history.delete-source');
-
-    // Documentation (คู่มือการใช้งาน)
-    Route::get('/documentation', [VideoAutomationController::class, 'documentation'])
-        ->name('documentation');
-});
-
-// =========================================
 // ต่อจาก platform-revenue group (สำหรับ sub-modules ที่ต้องอยู่ใน namespace platform-revenue)
 // =========================================
 Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
@@ -3416,77 +2948,6 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
             ->name('playground.generate');
     });
 
-    // =========================================
-    // Forum Management System - ระบบจัดการฟอรั่มชุมชน
-    // =========================================
-    Route::prefix('forum')->name('forum.')->group(function () {
-
-        // Categories (จัดการหมวดหมู่)
-        Route::get('/categories', [ForumAdminController::class, 'categories'])
-            ->name('categories.index');
-        Route::get('/categories/create', [ForumAdminController::class, 'createCategory'])
-            ->name('categories.create');
-        Route::post('/categories', [ForumAdminController::class, 'storeCategory'])
-            ->name('categories.store');
-        Route::get('/categories/{category}/edit', [ForumAdminController::class, 'editCategory'])
-            ->name('categories.edit');
-        Route::put('/categories/{category}', [ForumAdminController::class, 'updateCategory'])
-            ->name('categories.update');
-        Route::delete('/categories/{category}', [ForumAdminController::class, 'deleteCategory'])
-            ->name('categories.delete');
-        Route::post('/categories/reorder', [ForumAdminController::class, 'reorderCategories'])
-            ->name('categories.reorder');
-
-        // Threads (จัดการกระทู้)
-        Route::get('/threads', [ForumAdminController::class, 'threads'])
-            ->name('threads.index');
-        Route::get('/threads/{thread}', [ForumAdminController::class, 'showThread'])
-            ->name('threads.show');
-        Route::put('/threads/{thread}/pin', [ForumAdminController::class, 'togglePin'])
-            ->name('threads.pin');
-        Route::put('/threads/{thread}/lock', [ForumAdminController::class, 'toggleLock'])
-            ->name('threads.lock');
-        Route::put('/threads/{thread}/feature', [ForumAdminController::class, 'toggleFeature'])
-            ->name('threads.feature');
-        Route::delete('/threads/{thread}', [ForumAdminController::class, 'deleteThread'])
-            ->name('threads.delete');
-
-        // Reports (จัดการรายงาน)
-        Route::get('/reports', [ForumAdminController::class, 'reports'])
-            ->name('reports.index');
-        Route::get('/reports/{report}', [ForumAdminController::class, 'showReport'])
-            ->name('reports.show');
-        Route::put('/reports/{report}/resolve', [ForumAdminController::class, 'resolveReport'])
-            ->name('reports.resolve');
-        Route::put('/reports/{report}/dismiss', [ForumAdminController::class, 'dismissReport'])
-            ->name('reports.dismiss');
-
-        // Trophies (จัดการถ้วยรางวัล)
-        Route::get('/trophies', [ForumAdminController::class, 'trophies'])
-            ->name('trophies.index');
-        Route::get('/trophies/create', [ForumAdminController::class, 'createTrophy'])
-            ->name('trophies.create');
-        Route::post('/trophies', [ForumAdminController::class, 'storeTrophy'])
-            ->name('trophies.store');
-        Route::get('/trophies/{trophy}/edit', [ForumAdminController::class, 'editTrophy'])
-            ->name('trophies.edit');
-        Route::put('/trophies/{trophy}', [ForumAdminController::class, 'updateTrophy'])
-            ->name('trophies.update');
-        Route::delete('/trophies/{trophy}', [ForumAdminController::class, 'deleteTrophy'])
-            ->name('trophies.delete');
-        Route::post('/trophies/{trophy}/award/{user}', [ForumAdminController::class, 'awardTrophy'])
-            ->name('trophies.award');
-
-        // Analytics (สถิติ)
-        Route::get('/analytics', [ForumAdminController::class, 'analytics'])
-            ->name('analytics.index');
-
-        // Settings (ตั้งค่า)
-        Route::get('/settings', [ForumAdminController::class, 'settings'])
-            ->name('settings.index');
-        Route::post('/settings', [ForumAdminController::class, 'saveSettings'])
-            ->name('settings.save');
-    });
 });
 
 /*
@@ -3806,21 +3267,6 @@ Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
 });
 
 // ============================================
-// Star Upgrade Price Management (ราคาอัพเกรดดาว)
-// ============================================
-Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
-    // จัดการราคาดาว
-    Route::get('/', [StarUpgradePriceController::class, 'index'])->name('index');
-    Route::get('/{starPrice}/edit', [StarUpgradePriceController::class, 'edit'])->name('edit');
-    Route::put('/{starPrice}', [StarUpgradePriceController::class, 'update'])->name('update');
-    Route::post('/{starPrice}/toggle-active', [StarUpgradePriceController::class, 'toggleActive'])->name('toggle-active');
-
-    // ประวัติการอัพเกรด
-    Route::get('/history', [StarUpgradePriceController::class, 'history'])->name('history');
-    Route::post('/history/{upgrade}/refund', [StarUpgradePriceController::class, 'refund'])->name('refund');
-});
-
-// ============================================
 // Documentation Routes (เอกสารระบบ)
 // ============================================
 Route::prefix('documentation')->name('documentation.')->group(function () {
@@ -3845,55 +3291,6 @@ Route::prefix('slogans')->name('slogans.')->group(function () {
     // API Routes
     Route::post('/{slogan}/toggle-active', [SloganController::class, 'toggleActive'])->name('toggle-active');
     Route::get('/api/random', [SloganController::class, 'random'])->name('random');
-});
-
-// ============================================
-// Menu Management Routes (จัดการสิทธิ์เมนู)
-// ============================================
-Route::prefix('menu-management')->name('menu-management.')->group(function () {
-    // หน้าหลัก - แสดงรายการเมนูและการตั้งค่า
-    Route::get('/', [MenuManagementController::class, 'index'])
-        ->name('index');
-
-    // API: ดึงเมนูตาม Dashboard Type และ Role
-    Route::get('/menus', [MenuManagementController::class, 'getMenus'])
-        ->name('menus');
-
-    // API: อัพเดทการตั้งค่าเมนูสำหรับ Role
-    Route::post('/role-setting', [MenuManagementController::class, 'updateRoleSetting'])
-        ->name('role-setting.update');
-
-    // API: อัพเดทลำดับเมนู (Drag & Drop)
-    Route::post('/order', [MenuManagementController::class, 'updateOrder'])
-        ->name('order.update');
-
-    // API: อัพเดทลำดับเมนูสำหรับ Role
-    Route::post('/role-order', [MenuManagementController::class, 'updateRoleOrder'])
-        ->name('role-order.update');
-
-    // API: Toggle เปิด/ปิดเมนู
-    Route::post('/{menuItem}/toggle-active', [MenuManagementController::class, 'toggleActive'])
-        ->name('toggle-active');
-
-    // API: Toggle แสดง/ซ่อนเมนู
-    Route::post('/{menuItem}/toggle-visible', [MenuManagementController::class, 'toggleVisible'])
-        ->name('toggle-visible');
-
-    // API: Bulk toggle สำหรับ Role
-    Route::post('/bulk-toggle-role', [MenuManagementController::class, 'bulkToggleRole'])
-        ->name('bulk-toggle-role');
-
-    // API: แก้ไขข้อมูลเมนู
-    Route::put('/{menuItem}', [MenuManagementController::class, 'update'])
-        ->name('update');
-
-    // API: ซิงค์เมนูจาก config
-    Route::post('/sync-from-config', [MenuManagementController::class, 'syncFromConfig'])
-        ->name('sync-from-config');
-
-    // API: รีเซ็ตการตั้งค่า Role
-    Route::post('/reset-role-settings', [MenuManagementController::class, 'resetRoleSettings'])
-        ->name('reset-role-settings');
 });
 
 // ============================================

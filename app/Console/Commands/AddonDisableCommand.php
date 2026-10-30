@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AddonService;
 use Illuminate\Console\Command;
 
 class AddonDisableCommand extends Command

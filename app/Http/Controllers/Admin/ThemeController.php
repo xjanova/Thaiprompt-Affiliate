@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Theme;
 use App\Models\ThemePreset;
 use App\Services\ThemeService;
 use Illuminate\Http\Request;

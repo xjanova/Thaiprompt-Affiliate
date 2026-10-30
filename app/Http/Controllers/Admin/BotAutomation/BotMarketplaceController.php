@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin\BotAutomation;
 use App\Http\Controllers\Controller;
 use App\Models\BotAutomation\BotMarketplaceListing;
 use App\Models\BotAutomation\BotMarketplaceReview;
-use App\Models\BotAutomation\BotMarketplaceSubscription;
 use Illuminate\Http\Request;
 
 class BotMarketplaceController extends Controller

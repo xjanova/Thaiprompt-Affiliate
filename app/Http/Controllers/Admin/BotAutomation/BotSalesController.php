@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Admin\BotAutomation;
 
 use App\Http\Controllers\Controller;
-use App\Models\BotAutomation\BotSalesConversion;
-use App\Models\BotAutomation\BotSalesLead;
 use Illuminate\Http\Request;
 
 class BotSalesController extends Controller

@@ -6,7 +6,6 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\Frontend\GameController;
 use App\Http\Controllers\Frontend\HomeController;
-use App\Http\Controllers\Frontend\PageController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\SitemapController;
@@ -479,9 +478,13 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:10,1')->name('eve.memory.forget');
 });
 
-// Dynamic Page Routes (Privacy Policy, Terms, etc.)
-// ⚠️ Legal Critical: Privacy Policy, Terms of Service ต้องเข้าถึงได้ตลอดเวลา
-Route::match(['GET', 'HEAD'], '/page/{slug}', [PageController::class, 'show'])->name('page.show');
+// หน้าเนื้อหา hardcode ใน Blade (ยกเลิกระบบจัดการเพจ) — ลิงก์ /page/* เดิมยังอยู่ในเว็บอื่นและผลค้นหา จึงต้อง redirect ถาวร
+Route::match(['GET', 'HEAD'], '/faq', [HomeController::class, 'faq'])->name('faq');
+Route::permanentRedirect('/page/about-us', '/about');
+Route::permanentRedirect('/page/contact', '/contact');
+Route::permanentRedirect('/page/faq', '/faq');
+Route::permanentRedirect('/page/privacy-policy', '/privacy-policy');
+Route::permanentRedirect('/page/terms-of-service', '/terms-of-service');
 
 // Marketplace Routes (Public browsing, Auth for renting)
 // ⚠️ E-commerce Critical: Marketplace pages ต้องถูก index โดย search engines
@@ -742,19 +745,6 @@ Route::middleware('auth')->prefix('hotels')->name('hotels.')->group(function () 
         Route::post('/{id}/helpful', [\App\Http\Controllers\HotelReviewController::class, 'markHelpful'])->name('helpful');
         Route::post('/{id}/not-helpful', [\App\Http\Controllers\HotelReviewController::class, 'markNotHelpful'])->name('not-helpful');
     });
-});
-
-// ========================================
-// SMART SLIDER FRONTEND ROUTES
-// ========================================
-use App\Http\Controllers\Frontend\SliderController;
-
-// ⚠️ Public Component: Slider component ต้องรองรับ HEAD method
-Route::prefix('sliders')->name('sliders.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/{idOrAlias}', [SliderController::class, 'show'])->name('show');
-    Route::match(['GET', 'HEAD'], '/{idOrAlias}/data', [SliderController::class, 'getData'])->name('data');
-    Route::post('/{slider}/track-click', [SliderController::class, 'trackClick'])->name('track-click');
-    Route::post('/{slider}/track-slide-change', [SliderController::class, 'trackSlideChange'])->name('track-slide-change');
 });
 
 // User Routes (Protected by auth middleware and role check)

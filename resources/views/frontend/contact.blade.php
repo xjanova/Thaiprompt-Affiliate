@@ -45,7 +45,7 @@
                 <b class="nv-ccard__title">คู่มือการใช้งาน</b>
                 <span class="nv-ccard__text">วิธีใช้ร้านค้า ตลาดสด ไรเดอร์ และกระเป๋าเงิน</span>
             </a>
-            <a class="nv-ccard" href="{{ $ctR('page.show', 'faq') }}">
+            <a class="nv-ccard" href="{{ $ctR('faq') }}">
                 <span class="nv-ccard__ic"><i class="fas fa-circle-question" aria-hidden="true"></i></span>
                 <span class="nv-ccard__en">FAQ</span>
                 <b class="nv-ccard__title">คำถามที่พบบ่อย</b>
@@ -57,6 +57,16 @@
                 <b class="nv-ccard__title">โครงการของเรา</b>
                 <span class="nv-ccard__text">@xjanova</span>
             </a>
+        </div>
+
+        {{-- ข้อมูลนิติบุคคล hardcode ที่นี่ (เดิมอยู่ในหน้า CMS "ติดต่อเรา") --}}
+        <div class="nv-ccard mt-6">
+            <span class="nv-ccard__ic"><i class="fas fa-building" aria-hidden="true"></i></span>
+            <span class="nv-ccard__en">COMPANY</span>
+            <b class="nv-ccard__title">บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด (XMAN ENTERPRISE CO., LTD.)</b>
+            <span class="nv-ccard__text">ไทยพร๊อมท์ (Thaiprompt / TP-Affiliate) ดำเนินการและให้บริการโดยบริษัทนี้ · เลขทะเบียนนิติบุคคล 0675563000120</span>
+            <span class="nv-ccard__text">โทร <a href="tel:0909335963">090-9335963</a> · <a href="mailto:{{ $ctEmail }}">{{ $ctEmail }}</a></span>
+            <span class="nv-ccard__text"><a href="https://main.thaiprompt.online">main.thaiprompt.online</a> · <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer">xman4289.com</a></span>
         </div>
 
         <a href="{{ $ctR('home') }}" class="nv-btn nv-btn--ghost nv-btn--lg nv-page-hero__back"><i class="fas fa-arrow-left" aria-hidden="true"></i> กลับหน้าแรก</a>

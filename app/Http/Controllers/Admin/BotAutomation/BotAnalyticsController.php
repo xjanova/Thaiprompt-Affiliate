@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin\BotAutomation;
 use App\Http\Controllers\Controller;
 use App\Models\BotAutomation\BotAutomation;
 use App\Models\BotAutomation\BotAutomationExecution;
-use App\Models\BotAutomation\BotEngagementMetric;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 

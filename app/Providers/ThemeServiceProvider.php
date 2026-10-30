@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\Theme;
 use App\Services\ThemeService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;

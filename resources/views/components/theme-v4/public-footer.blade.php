@@ -66,9 +66,9 @@
         <div>
             <div class="tp-foot-h">บริษัท</div>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <a href="{{ $pfRoute('page.show', 'about-us') }}" class="tp-foot-link">เกี่ยวกับเรา</a>
-                <a href="{{ $pfRoute('page.show', 'contact') }}" class="tp-foot-link">ติดต่อเรา</a>
-                <a href="{{ $pfRoute('page.show', 'faq') }}" class="tp-foot-link">คำถามที่พบบ่อย</a>
+                <a href="{{ $pfRoute('about') }}" class="tp-foot-link">เกี่ยวกับเรา</a>
+                <a href="{{ $pfRoute('contact') }}" class="tp-foot-link">ติดต่อเรา</a>
+                <a href="{{ $pfRoute('faq') }}" class="tp-foot-link">คำถามที่พบบ่อย</a>
                 <a href="{{ $pfRoute('wiki.index') }}" class="tp-foot-link">วิกิแพลตฟอร์ม</a>
             </div>
         </div>

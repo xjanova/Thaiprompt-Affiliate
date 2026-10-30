@@ -14,7 +14,6 @@ use App\Http\Controllers\Api\NFCPairingApiController;
 use App\Http\Controllers\Api\QualityController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\TraceabilityController;
-use App\Http\Controllers\Api\TrendApiController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TranslateController;
@@ -845,28 +844,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/exchange/request', [CoinExchangeController::class, 'exchange']);
             Route::get('/exchange/history', [CoinExchangeController::class, 'history']);
             Route::get('/exchange/requests/{requestId}', [CoinExchangeController::class, 'show']);
-        });
-
-        // Viral Trend Detection API
-        Route::prefix('trends')->group(function () {
-            Route::get('/dashboard', [TrendApiController::class, 'dashboard']);
-            Route::get('/', [TrendApiController::class, 'index']);
-            Route::get('/{trend}', [TrendApiController::class, 'show']);
-            Route::post('/{trend}/generate-content', [TrendApiController::class, 'generateContent']);
-
-            // Keywords
-            Route::get('/keywords/trending', [TrendApiController::class, 'trendingKeywords']);
-            Route::get('/keywords/emerging', [TrendApiController::class, 'emergingKeywords']);
-            Route::get('/keywords/{keyword}/related', [TrendApiController::class, 'relatedKeywords']);
-
-            // Sources
-            Route::get('/sources', [TrendApiController::class, 'sources']);
-            Route::post('/sources', [TrendApiController::class, 'createSource']);
-            Route::put('/sources/{source}', [TrendApiController::class, 'updateSource']);
-            Route::delete('/sources/{source}', [TrendApiController::class, 'deleteSource']);
-
-            // Analytics
-            Route::get('/analytics', [TrendApiController::class, 'analytics']);
         });
 
         // LINE OA Signup Analytics API ถูกลบแล้ว (ใช้ LINE Message Analytics แทน)

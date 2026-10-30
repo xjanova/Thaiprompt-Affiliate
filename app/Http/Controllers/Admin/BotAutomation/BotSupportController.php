@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin\BotAutomation;
 
 use App\Http\Controllers\Controller;
-use App\Models\BotAutomation\BotSupportTicket;
 use Illuminate\Http\Request;
 
 class BotSupportController extends Controller

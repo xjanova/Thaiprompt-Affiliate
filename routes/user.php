@@ -681,23 +681,6 @@ Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
 });
 
 // ============================================
-// Star Upgrade Routes (อัพเกรดดาวด้วย Coins)
-// ============================================
-Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
-    // หน้าหลัก - ดูดาวปัจจุบันและตัวเลือกอัพเกรด
-    Route::get('/', [\App\Http\Controllers\User\StarUpgradeController::class, 'index'])->name('index');
-
-    // ดำเนินการอัพเกรด
-    Route::post('/upgrade', [\App\Http\Controllers\User\StarUpgradeController::class, 'upgrade'])->name('upgrade');
-
-    // ประวัติการอัพเกรด
-    Route::get('/history', [\App\Http\Controllers\User\StarUpgradeController::class, 'history'])->name('history');
-
-    // API: ตรวจสอบการอัพเกรด
-    Route::post('/check', [\App\Http\Controllers\User\StarUpgradeController::class, 'checkUpgrade'])->name('check');
-});
-
-// ============================================
 // Academy / Learning Center Routes (ศูนย์การเรียนรู้)
 // ============================================
 Route::prefix('academy')->name('academy.')->group(function () {

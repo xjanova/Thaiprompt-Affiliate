@@ -126,6 +126,16 @@ class HomeController extends Controller
         return view('frontend.contact');
     }
 
+    /**
+     * หน้าคำถามที่พบบ่อย (hardcode ใน Blade)
+     *
+     * @return \Illuminate\View\View
+     */
+    public function faq()
+    {
+        return view('frontend.faq');
+    }
+
     // หน้าเก่า 3 Doors (investors, developers, community) และ presentation ถูกลบออกแล้ว
     // เปลี่ยนไปใช้หน้าแรกใหม่ที่มืออาชีพและน่าเชื่อถือกว่า
     // @deprecated 2025-12-03

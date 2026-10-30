@@ -31,7 +31,6 @@ class DatabaseSeeder extends Seeder
             WindowsUiSeeder::class,             // Windows UI Settings (Colors, Themes, RGB - NO menu items)
             AppControlSectionSeeder::class,     // UI Control Sections (Navigation Bar, Tab Bar, Header, FAB)
             ComponentSettingSeeder::class,      // UI Component Settings (Buttons, Inputs, Cards, Text)
-            ApiEndpointSeeder::class,           // API Endpoints Configuration (Users, Products, Orders, Analytics, etc.)
 
             // 2. User & Demo Data
             AdminUsersSeeder::class,            // 👑 สร้าง Super Admin, Admin, Manager
@@ -40,13 +39,9 @@ class DatabaseSeeder extends Seeder
             KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
 
             // 3. Content & Pages
-            DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
             SloganSeeder::class,                // 🆕 คำขวัญ/คำคม 200+ คำ สำหรับ Dashboard
-            HomepageManagerSeeder::class,       // 🏠 Homepage Manager - Sections, Elements, Templates
             StoreBannerSeeder::class,           // 🎨 Store Banners - Slides สำหรับ Storefront Homepage
-            // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
-            // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
@@ -76,7 +71,6 @@ class DatabaseSeeder extends Seeder
             FortuneSystemVoiceClipSeeder::class,  // 🎧 คลังเสียงระบบ (ข้อความกลาง: กล่องกระตุ้น/กติกา/วันเกิด/เตือนจ่าย ฯลฯ)
 
             // 5. AI & Integrations
-            AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama via Together AI)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
 
@@ -162,7 +156,6 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
-            VideoAutomationSeeder::class,       // 🎬 Video Automation System (Templates, Settings สำหรับ Suno AI + Freepik + YouTube)
             AiContentWriterSeeder::class,       // 🖊️ AI Content Writer System (Settings, Templates สำหรับสร้าง Content)
 
             // 15. Service Booking System
@@ -180,12 +173,7 @@ class DatabaseSeeder extends Seeder
             LabelTemplateSeeder::class,         // 🆕 เทมเพลตฉลากเริ่มต้น (ป้ายราคา, ฉลากจัดส่ง, Food Passport, ฉลากเปล่า)
             PosLabelTemplateSeeder::class,      // 🆕 POS Label Templates (Product Label, Shipping Label for POS)
 
-            // 18. Community Forum System
-            ForumCategorySeeder::class,         // 🆕 หมวดหมู่ฟอรั่ม (MLM, E-commerce, AI, Crypto, Help, etc.)
-            ForumTrophySeeder::class,           // 🆕 โทรฟี่ฟอรั่ม (Positive/Negative badges, ติดชื่อตลอด)
 
-            // 19. Menu Management System
-            MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
             AcademyMenuSeeder::class,           // 🎓 เมนู Academy สำหรับ User Dashboard
 
             // 20. Mobile App System

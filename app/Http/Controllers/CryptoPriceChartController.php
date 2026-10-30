@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\CryptoCurrency;
-use App\Models\CryptoPriceHistory;
 use App\Services\Crypto\CryptoPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
