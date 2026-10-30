@@ -237,7 +237,7 @@ class ChatReplyRecovery
                 'platform' => $platform,
                 'user_id' => $userId,
                 'action' => $response['action'] ?? null,
-                'error' => SafeLog::redactSecrets($e->getMessage()),   // URL ของ Telegram มี bot token
+                'error' => SafeLog::exceptionMessage($e),
             ]);
         }
     }

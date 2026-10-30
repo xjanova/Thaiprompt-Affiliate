@@ -98,7 +98,7 @@ class RetryFailedChatReplyJob implements ShouldQueue
         } catch (\Throwable $e) {
             Log::error('RetryFailedChatReplyJob: exception', [
                 'user_id' => $this->userId,
-                'error' => SafeLog::redactSecrets($e->getMessage()),   // URL ของ Telegram มี bot token
+                'error' => SafeLog::exceptionMessage($e),
             ]);
         }
     }
