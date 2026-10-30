@@ -410,12 +410,16 @@ class FortuneHoroscopeService
         $prompt = $this->buildTextPrompt($campaign, $targetDate, $birthDay, $astrologyData);
 
         // ใช้ FortuneAIService::generateWithRetryAndFallback
-        $result = $this->aiService->generateWithRetryAndFallback(
-            questions: ["ทำนายดวงวันนี้สำหรับคนเกิดวัน{$dayName}"],
-            userProfile: ['name' => "คนเกิดวัน{$dayName}"],
-            promptTemplate: $prompt,
-            readingType: 'basic',
-        );
+        // 🚦 (2026-10-31) งานหลังบ้าน รอคิว key ได้ — ใบที่ล้มตอนนี้จะหายจากโพส 00:05 เลย
+        //    (รอบกู้ 00:20 ซ่อมได้แค่ฝั่งแชท โพสออกไปแล้ว)
+        $result = $this->aiService
+            ->withConfigOverride(['key_wait_sec' => FortuneAIService::BATCH_KEY_WAIT_SEC])
+            ->generateWithRetryAndFallback(
+                questions: ["ทำนายดวงวันนี้สำหรับคนเกิดวัน{$dayName}"],
+                userProfile: ['name' => "คนเกิดวัน{$dayName}"],
+                promptTemplate: $prompt,
+                readingType: 'basic',
+            );
 
         return [
             'response' => $result['response'] ?? '',
