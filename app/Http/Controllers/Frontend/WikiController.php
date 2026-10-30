@@ -137,7 +137,6 @@ class WikiController extends Controller
             $businessCategories = 30; // จากการวิเคราะห์โครงสร้าง (อัพเดท 2026-03)
 
             // ดึง Windows UI RGB colors (พร้อม fallback ถ้าตารางยังไม่มี)
-            $windowsRgb = $this->getSafeWindowsRgb();
 
             // ดึงสถิติจากฐานข้อมูล (พร้อม fallback ถ้าตารางยังไม่มี)
             $dbStats = $this->getSafeDatabaseStats();
@@ -154,42 +153,8 @@ class WikiController extends Controller
                 'services_count' => $servicesCount,
                 'api_endpoints' => $apiEndpoints,
                 'business_categories' => $businessCategories,
-                'windows_rgb' => $windowsRgb,
             ];
         });
-    }
-
-    /**
-     * ดึง Windows UI RGB settings อย่างปลอดภัย
-     *
-     * ถ้าตารางยังไม่มีหรือเกิด error จะ return ค่า default
-     *
-     * @return array RGB color settings
-     */
-    private function getSafeWindowsRgb(): array
-    {
-        $defaultRgb = [
-            'primary_rgb' => '59, 130, 246',
-            'secondary_rgb' => '139, 92, 246',
-            'accent_rgb' => '236, 72, 153',
-        ];
-
-        try {
-            // ตรวจสอบว่าตารางมีอยู่หรือไม่
-            if (! Schema::hasTable('windows_ui_settings')) {
-                return $defaultRgb;
-            }
-
-            return [
-                'primary_rgb' => \App\Models\WindowsUiSetting::get('primary_rgb', $defaultRgb['primary_rgb']),
-                'secondary_rgb' => \App\Models\WindowsUiSetting::get('secondary_rgb', $defaultRgb['secondary_rgb']),
-                'accent_rgb' => \App\Models\WindowsUiSetting::get('accent_rgb', $defaultRgb['accent_rgb']),
-            ];
-        } catch (\Exception $e) {
-            Log::warning('Wiki: ไม่สามารถดึง Windows UI RGB ได้: '.$e->getMessage());
-
-            return $defaultRgb;
-        }
     }
 
     /**

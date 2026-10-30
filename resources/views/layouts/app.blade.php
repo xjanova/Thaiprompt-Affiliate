@@ -8,13 +8,6 @@
     @php
         $pageType = $pageType ?? 'home';
         $seoData = $seoData ?? [];
-        // ธีมโนวา: เฉพาะหน้าสาธารณะที่ยังใช้เลย์เอาต์นี้ — ส่วนผู้ใช้/โรงแรม/หลังบ้านที่ใช้เลย์เอาต์เดียวกันไม่แตะ (เจ้าของสั่งยกเว้นส่วนผู้ใช้)
-        // หน้าโรงแรม/ตลาดบอท: เฉพาะหน้าดูสาธารณะ (ระบุชื่อ route ตรงๆ) — หน้าจอง/เช่า (ต้องล็อกอิน) ยังเป็นเลย์เอาต์เดิม
-        $novaShell = config('shop.nova_public', true) && request()->routeIs(
-            'tarot.*', 'qr-barcode.*', 'software.products.*',
-            'marketplace.index', 'marketplace.show', 'nfc.verify',
-            'hotels.index', 'hotels.featured', 'hotels.show', 'hotels.search', 'hotels.by-city', 'hotels.by-province', 'hotels.by-region', 'hotels.reviews.index'
-        );
     @endphp
 
     {!! render_seo_meta($pageType, $seoData) !!}
@@ -50,48 +43,19 @@
     <x-dark-mode-init />
     <x-dark-mode-styles />
 
-    @if($novaShell)
         {{-- แถบหัวโนวาอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
         <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
         <link rel="stylesheet" href="{{ asset('theme-nova/nova-tw.css') }}?v={{ is_file(public_path('theme-nova/nova-tw.css')) ? filemtime(public_path('theme-nova/nova-tw.css')) : 1 }}">
-    @endif
 
     @stack('styles')
 
     @stack('seo')
 
-    @unless($novaShell)
-    <style>
-        /* Ensure Windows UI has proper z-index */
-        body {
-            @php
-                $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
-                $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
-            @endphp
-            @if($taskbarPosition === 'top')
-                padding-top: {{ $taskbarHeight }}px;
-            @else
-                padding-bottom: {{ $taskbarHeight }}px;
-            @endif
-        }
-    </style>
-    @endunless
-
     {{-- Laravel Echo Configuration --}}
     <x-echo-config />
 </head>
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300{{ $novaShell ? ' nv-tw' : '' }}">
-    <!-- Spaceship Background -->
-    <x-spaceship-background />
-
-    @php
-        // กำหนด taskbar type ตาม auth status
-        $taskbarType = auth()->check() ? 'user' : 'guest';
-    @endphp
-
-    @if($novaShell)
-        {{-- ธีมโนวา: แถบหัวทึบติดบน + ท้ายเว็บโนวา แทนแถบงาน Classic X --}}
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 nv-tw">
         <div class="nv-tw" style="min-height:100vh; display:flex; flex-direction:column;">
             <x-nova.header :solid="true" :search="true" :active="request()->routeIs('tarot.*') ? 'fortune' : ''" />
             <main class="nv-auto-bg" style="flex:1;">
@@ -99,24 +63,6 @@
             </main>
             <x-nova.footer />
         </div>
-    @else
-    <!-- Classic X Sidebar -->
-    <x-classic-x-sidebar type="{{ $taskbarType }}" />
-
-    <!-- Classic X Content Wrapper -->
-    <div class="classic-x-content" id="classicXContent">
-        <!-- Page Content -->
-        <main>
-            @yield('content')
-        </main>
-
-        <!-- Footer -->
-        @include('layouts.footer')
-    </div>
-
-    <!-- Floating Action Buttons for Classic X Theme -->
-    <x-classic-x-floating-buttons />
-    @endif
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 

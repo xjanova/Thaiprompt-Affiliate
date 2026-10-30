@@ -21,8 +21,6 @@ import './alpine/stores/sidebar';
 import './alpine/stores/language';
 import './alpine/stores/pinned-menus';
 
-// Import Additional Stores (Theme Presets)
-import './alpine-stores';
 
 // Make Alpine available globally
 window.Alpine = Alpine;

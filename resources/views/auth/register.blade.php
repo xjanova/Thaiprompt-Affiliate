@@ -24,9 +24,6 @@
         $siteSettings = \App\Models\SiteSetting::getSetting();
         $appName = $siteSettings->site_name ?: config('app.brand_name', 'Thai Prompt');
 
-        // 🔖 โลโก้ตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อน แล้วค่อยถอยไป SiteSetting
-        //    เหตุผลเดียวกับหน้า login — ดูคอมเมนต์ใน auth/login.blade.php (เลิกถอยไป SiteSetting.logo ที่เป็นแบรนด์เก่า)
-        $logo = optional(\App\Models\ThemeSetting::active())->logo_path;
         $favicon = $siteSettings->favicon;
     @endphp
 
@@ -137,7 +134,7 @@
     </style>
     @include('auth.partials.nova-skin')
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden {{ config('shop.nova_public', true) ? 'nv-auth' : '' }}">
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden nv-auth">
     {{-- Background Effects --}}
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         {{-- ภาพประกอบซุ้มลายกนกทอง (เจนเอง เก็บที่ public/images/art) --}}
@@ -174,26 +171,15 @@
                         <div class="text-center mb-6">
                             {{-- Logo --}}
                             <div class="flex justify-center mb-4">
-                                @if($logo)
-                                    <div class="relative group">
-                                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-                                        <div class="relative bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-                                            <img src="{{ asset('storage/' . $logo) }}"
-                                                 alt="{{ $appName }}"
-                                                 class="h-14 sm:h-16 w-auto animate-float">
-                                        </div>
-                                    </div>
-                                @else
-                                    {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
-                                    <div class="relative group">
-                                        <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25"></div>
-                                        <picture class="relative block animate-float">
-                                            <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
-                                            <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
-                                                 width="165" height="48" class="h-12 sm:h-14 w-auto">
-                                        </picture>
-                                    </div>
-                                @endif
+                                {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
+                                <div class="relative group">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25"></div>
+                                    <picture class="relative block animate-float">
+                                        <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
+                                        <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
+                                             width="165" height="48" class="h-12 sm:h-14 w-auto">
+                                    </picture>
+                                </div>
                             </div>
 
                             <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">สมัครสมาชิก</h1>

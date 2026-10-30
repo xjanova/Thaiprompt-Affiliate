@@ -119,68 +119,6 @@ Route::get('/manifest.json', function () {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 })->name('manifest.json');
 
-// Demo Routes
-Route::get('/demo/loading', function () {
-    return view('demo-loading');
-})->name('demo.loading');
-
-Route::get('/demo/3d-navigation', function () {
-    return view('demo-3d-navigation');
-})->name('demo.3d-navigation');
-
-Route::get('/demo/space-shooter', function () {
-    return view('demo-space-shooter');
-})->name('demo.space-shooter');
-
-// V3 UI Themes Demo Routes
-Route::prefix('demo')->name('demo.')->group(function () {
-    Route::get('/', function () {
-        return view('demo.index');
-    })->name('index');
-
-    Route::get('/theme1', function () {
-        return view('demo.theme1');
-    })->name('theme1');
-
-    Route::get('/theme2', function () {
-        return view('demo.theme2');
-    })->name('theme2');
-
-    Route::get('/theme3', function () {
-        return view('demo.theme3');
-    })->name('theme3');
-
-    // Dashboard Examples
-    Route::get('/dashboard1', function () {
-        return view('demo.dashboard1');
-    })->name('dashboard1');
-
-    Route::get('/dashboard2', function () {
-        return view('demo.dashboard2');
-    })->name('dashboard2');
-
-    Route::get('/dashboard3', function () {
-        return view('demo.dashboard3');
-    })->name('dashboard3');
-
-    Route::get('/dashboard4', function () {
-        return view('demo.dashboard4');
-    })->name('dashboard4');
-
-    // Arrow X Components Showcase
-    Route::get('/components', function () {
-        return view('demo.components');
-    })->name('components');
-});
-
-
-Route::get('/demo/audio-spectrum', function () {
-    return view('demo-audio-spectrum');
-})->name('demo.audio-spectrum');
-
-Route::get('/demo/snooker', function () {
-    return view('demo-snooker');
-})->name('demo.snooker');
 
 // Prompt to Web Routes
 // ⚠️ Public Tool: Prompt-to-web generator ต้องถูก index โดย search engines
@@ -193,10 +131,6 @@ Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
     Route::match(['GET', 'HEAD'], '/list', [\App\Http\Controllers\PromptToWebController::class, 'list'])->name('list');
     Route::delete('/{id}', [\App\Http\Controllers\PromptToWebController::class, 'delete'])->name('delete');
 });
-
-Route::get('/demo/tetris', function () {
-    return view('demo-tetris');
-})->name('demo.tetris');
 
 // Sitemap
 // ⚠️ SEO Critical: Search engines ใช้ HEAD request ตรวจสอบ sitemap

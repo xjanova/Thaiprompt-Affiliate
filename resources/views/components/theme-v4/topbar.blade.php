@@ -81,10 +81,6 @@
             </a>
         @endif
         @endauth
-        {{-- สลับโทนสี --}}
-        <button @click="$store.tp.cyclePalette()" type="button" class="tp-icon-btn" title="สลับโทนสี (palette)">
-            <span style="width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,var(--accent1) 50%,var(--accent2) 50%); box-shadow:inset 1px 1px 2px rgba(255,255,255,.5);"></span>
-        </button>
         {{-- สลับสว่าง/มืด --}}
         <button @click="$store.tp.toggleDark()" type="button" class="tp-icon-btn" title="สลับโหมดสว่าง/มืด" style="color:var(--deep2);">
             <i class="fas fa-moon" x-show="!$store.tp.dark"></i>
@@ -150,9 +146,6 @@
                 @if(\Illuminate\Support\Facades\Route::has($settingsRoute))
                     <a href="{{ route($settingsRoute) }}" class="tpdd-item"><span class="tpdd-ic"><i class="fas fa-cog"></i></span> ตั้งค่า</a>
                 @endif
-                <button @click="$store.tp.studioOpen = true; open=false" type="button" class="tpdd-item" style="width:100%; text-align:left; background:transparent; border:0; cursor:pointer; font-family:inherit;">
-                    <span class="tpdd-ic"><i class="fas fa-palette"></i></span> ปรับแต่งธีม
-                </button>
                 <hr class="tp-divider" style="margin:6px 4px;">
 
                 {{-- ออกจากระบบ --}}

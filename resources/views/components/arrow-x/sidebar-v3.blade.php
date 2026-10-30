@@ -29,13 +29,9 @@
 ])
 
 @php
-    // ดึงโลโก้จาก ThemeSetting (โลโก้ธีม - แยกจากโลโก้เว็บไซต์)
-    // ไม่ได้ตั้งไว้ → ใช้เครื่องหมาย T ทองของแบรนด์ Thai Prompt (กล่องเล็ก 40px ใช้เครื่องหมายแทนโลโก้แนวนอน)
-    $themeSetting = \App\Models\ThemeSetting::active();
-    $themeLogo = $themeSetting && $themeSetting->logo_path
-        ? asset('storage/' . $themeSetting->logo_path)
-        : ($logo ?: asset('images/brand/thaiprompt-mark.png'));
-    $themeBrandName = $themeSetting->brand_name ?? $title;
+    // โลโก้เว็บไซต์ถ้ามี ไม่งั้นใช้เครื่องหมาย T ทองของแบรนด์
+    $themeLogo = $logo ?: asset('images/brand/thaiprompt-mark.png');
+    $themeBrandName = config('app.brand_name', 'Thai Prompt');
 
     // โหลดเมนูจาก MenuService สำหรับทุก type (admin, user, seller)
     $menuService = app(\App\Services\MenuService::class);
@@ -202,26 +198,9 @@
                     {{-- Inner Glow --}}
                     <div class="absolute inset-2 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
 
-                    {{-- Footer Logo (จาก Theme Setting) หรือ Rocket Icon (Fallback) --}}
-                    @php
-                        $logoAnimation = $themeSetting->footer_logo_animation ?? 'float';
-                        $animationClass = match($logoAnimation) {
-                            'none' => '',
-                            'float' => 'animate-float',
-                            'spin' => 'animate-spin-slow',
-                            'bounce' => 'animate-bounce',
-                            'pulse' => 'animate-pulse',
-                            'swing' => 'animate-swing',
-                            default => 'animate-float'
-                        };
-                    @endphp
-                    @if($themeSetting && $themeSetting->footer_logo_path)
-                        <img src="{{ asset('storage/' . $themeSetting->footer_logo_path) }}"
-                             alt="Footer Logo"
-                             class="w-10 h-10 object-contain drop-shadow-2xl relative z-10 {{ $animationClass }}">
-                    @else
-                        <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 {{ $animationClass }}"></i>
-                    @endif
+                    <img src="{{ asset('images/brand/thaiprompt-footer-mark.webp') }}"
+                         alt="Footer Logo"
+                         class="w-10 h-10 object-contain drop-shadow-2xl relative z-10 animate-pulse">
 
                     {{-- Shine Effect --}}
                     <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shine-effect"></div>

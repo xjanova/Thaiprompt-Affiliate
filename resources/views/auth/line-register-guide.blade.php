@@ -68,7 +68,6 @@
     </style>
     {{-- ธีมโนวา: พื้นกลางคืน + วัตถุตกแต่งชุดเดียวกับหน้าเข้าสู่ระบบ · เขียว LINE คงไว้เฉพาะโลโก้และปุ่มแอดไลน์ (สีแบรนด์) --}}
     @include('auth.partials.nova-skin')
-    @if(config('shop.nova_public', true))
     <style>
         .nv-lg .max-w-2xl > .glass-fusion { background: linear-gradient(160deg, rgba(20, 36, 84, .8), rgba(7, 13, 32, .9)) !important; border: 1px solid rgba(245, 210, 127, .26) !important; box-shadow: 0 34px 80px -30px rgba(0, 0, 0, .85), inset 0 1px 0 rgba(255, 255, 255, .07) !important; }
         .nv-lg .max-w-2xl > .glass-fusion .glass-fusion { background: rgba(255, 255, 255, .04) !important; border: 1px solid rgba(245, 210, 127, .2) !important; box-shadow: none !important; }
@@ -83,9 +82,8 @@
         .nv-lg .grid > a { background: rgba(255, 255, 255, .05) !important; background-image: none !important; color: #fbf6ea !important; border: 1px solid rgba(245, 210, 127, .32) !important; box-shadow: none !important; }
         .nv-lg .grid > a:hover { background: rgba(255, 255, 255, .1) !important; border-color: rgba(245, 210, 127, .6) !important; }
     </style>
-    @endif
 </head>
-<body class="{{ config('shop.nova_public', true) ? 'nv-auth nv-lg' : 'animated-gradient' }} min-h-screen">
+<body class="nv-auth nv-lg min-h-screen">
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
         <div class="max-w-2xl w-full">
             <div class="glass-fusion backdrop-blur-2xl bg-white/90 dark:bg-gray-800/90 rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 p-8 md:p-12 animate-fade-in-up">

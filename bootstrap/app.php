@@ -71,7 +71,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackRequestMetrics::class, // Track request/response metrics
             \App\Http\Middleware\TrackPageView::class, // Track page views for analytics
             \App\Http\Middleware\CheckMaintenanceMode::class, // Maintenance mode check
-            // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
             // 🔒 (2026-09-25) บัญชีที่ถูกระงับ (users.blocked_at) → ออกจากระบบทันทีทุกหน้า
             \App\Http\Middleware\EnsureAccountActive::class,
         ]);

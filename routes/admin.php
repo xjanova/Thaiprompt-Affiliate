@@ -11,10 +11,8 @@ use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AntiAbuseController;
-use App\Http\Controllers\Admin\ArrowXThemeController;
 use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
-use App\Http\Controllers\Admin\ClassicXSettingsController;
 use App\Http\Controllers\Admin\CloudflareController;
 use App\Http\Controllers\Admin\CryptoManagementController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -137,7 +135,6 @@ use App\Http\Controllers\Admin\SuperAdminHotelController;
 use App\Http\Controllers\Admin\TarotManagementController;
 use App\Http\Controllers\Admin\TeamTransferController;
 use App\Http\Controllers\Admin\ThaipromptRichMenuController;
-use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\TokenManagementController;
 use App\Http\Controllers\Admin\TPIXController;
@@ -150,7 +147,6 @@ use App\Http\Controllers\Admin\VendorStoreController;
 use App\Http\Controllers\Admin\VideoRewardAdminController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WalletSettingsController;
-use App\Http\Controllers\Admin\WindowsUiController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\DevMode;
@@ -290,7 +286,6 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
-Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
 
 // Profile (V3)
 Route::get('profile', [SettingsController::class, 'profile'])->name('profile.index');
@@ -346,25 +341,6 @@ Route::prefix('security')->name('security.')->group(function () {
     Route::get('/threat-intelligence/progress', [SecurityController::class, 'getThreatUpdateProgress'])->name('threat-intelligence.progress');
     Route::post('/threat-intelligence/check', [SecurityController::class, 'checkIpThreat'])->name('threat-intelligence.check');
     Route::put('/threat-intelligence/settings', [SecurityController::class, 'updateThreatSettings'])->name('threat-intelligence.settings');
-});
-
-// Windows UI Management (Visual Customization Only - Menus are hard-coded)
-Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
-    Route::get('/', [WindowsUiController::class, 'index'])->name('index');
-    Route::put('/', [WindowsUiController::class, 'update'])->name('update');
-    Route::put('/start-button-settings', [WindowsUiController::class, 'updateStartButtonSettings'])->name('start-button-settings.update');
-    Route::put('/menu-settings', [WindowsUiController::class, 'updateMenuSettings'])->name('menu-settings.update');
-    Route::put('/menu-rgb-settings', [WindowsUiController::class, 'updateMenuRgbSettings'])->name('menu-rgb-settings.update');
-    Route::get('/rgb-settings', [WindowsUiController::class, 'rgbSettings'])->name('rgb-settings');
-    Route::put('/rgb-settings', [WindowsUiController::class, 'updateRgbSettings'])->name('rgb-settings.update');
-});
-
-// Classic X Theme Settings (WordPress-Inspired Premium Theme)
-Route::prefix('classic-x-settings')->name('classic-x-settings.')->group(function () {
-    Route::get('/', [ClassicXSettingsController::class, 'index'])->name('index');
-    Route::put('/', [ClassicXSettingsController::class, 'update'])->name('update');
-    Route::post('/reset', [ClassicXSettingsController::class, 'reset'])->name('reset');
-    Route::get('/preview', [ClassicXSettingsController::class, 'preview'])->name('preview');
 });
 
 // SEO Management
@@ -1240,24 +1216,6 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('calculator');
 });
 
-// Theme Management
-Route::prefix('themes')->name('themes.')->group(function () {
-    Route::get('/', [ThemeController::class, 'index'])->name('index');
-    Route::get('/builder/{id?}', [ThemeController::class, 'builder'])->name('builder');
-    Route::post('/', [ThemeController::class, 'store'])->name('store');
-    Route::put('/{id}', [ThemeController::class, 'update'])->name('update');
-    Route::delete('/{id}', [ThemeController::class, 'destroy'])->name('destroy');
-    Route::post('/{id}/duplicate', [ThemeController::class, 'duplicate'])->name('duplicate');
-    Route::post('/preset/{presetId}', [ThemeController::class, 'createFromPreset'])->name('create-from-preset');
-    Route::post('/{id}/preview', [ThemeController::class, 'uploadPreview'])->name('upload-preview');
-    Route::get('/{id}/statistics', [ThemeController::class, 'statistics'])->name('statistics');
-    Route::get('/{id}/export', [ThemeController::class, 'export'])->name('export');
-    Route::post('/import', [ThemeController::class, 'import'])->name('import');
-    Route::post('/initialize', [ThemeController::class, 'initialize'])->name('initialize');
-    Route::post('/{id}/set-default', [ThemeController::class, 'setDefault'])->name('set-default');
-    Route::post('/{id}/toggle-active', [ThemeController::class, 'toggleActive'])->name('toggle-active');
-});
-
 // Icon Management
 Route::prefix('icons')->name('icons.')->group(function () {
     Route::get('/', [IconController::class, 'index'])->name('index');
@@ -1781,57 +1739,6 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     // Storage Management (จัดการพื้นที่เก็บภาพ)
     Route::get('/storage/info', [AiGenAdminController::class, 'storageInfo'])->name('storage.info');
     Route::post('/storage/cleanup', [AiGenAdminController::class, 'storageCleanup'])->name('storage.cleanup');
-});
-
-// Arrow X Theme System Routes
-Route::prefix('arrow-x-theme')->name('arrow-x-theme.')->group(function () {
-    // Dashboard
-    Route::get('/', [ArrowXThemeController::class, 'index'])
-        ->name('index');
-
-    // General Settings
-    Route::get('/general-settings', [ArrowXThemeController::class, 'generalSettings'])
-        ->name('general-settings');
-    Route::put('/general-settings', [ArrowXThemeController::class, 'updateGeneralSettings'])
-        ->name('general-settings.update');
-
-    // Color Settings
-    Route::get('/color-settings', [ArrowXThemeController::class, 'colorSettings'])
-        ->name('color-settings');
-    Route::put('/color-settings', [ArrowXThemeController::class, 'updateColorSettings'])
-        ->name('color-settings.update');
-    Route::post('/apply-preset', [ArrowXThemeController::class, 'applyPreset'])
-        ->name('apply-preset');
-
-    // RGB Effects
-    Route::get('/rgb-effects', [ArrowXThemeController::class, 'rgbEffects'])
-        ->name('rgb-effects');
-    Route::post('/rgb-effects', [ArrowXThemeController::class, 'storeRgbEffect'])
-        ->name('rgb-effects.store');
-    Route::put('/rgb-effects/{rgbEffect}', [ArrowXThemeController::class, 'updateRgbEffect'])
-        ->name('rgb-effects.update');
-    Route::delete('/rgb-effects/{rgbEffect}', [ArrowXThemeController::class, 'destroyRgbEffect'])
-        ->name('rgb-effects.destroy');
-
-    // Typography
-    Route::get('/typography', [ArrowXThemeController::class, 'typography'])
-        ->name('typography');
-    Route::put('/typography', [ArrowXThemeController::class, 'updateTypography'])
-        ->name('typography.update');
-
-    // Upload Assets
-    Route::post('/upload-logo', [ArrowXThemeController::class, 'uploadLogo'])
-        ->name('upload-logo');
-    Route::post('/upload-favicon', [ArrowXThemeController::class, 'uploadFavicon'])
-        ->name('upload-favicon');
-
-    // Cache Management
-    Route::post('/compile', [ArrowXThemeController::class, 'compileTheme'])
-        ->name('compile');
-    Route::post('/clear-cache', [ArrowXThemeController::class, 'clearCache'])
-        ->name('clear-cache');
-    Route::post('/compile-files', [ArrowXThemeController::class, 'compileToFiles'])
-        ->name('compile-files');
 });
 
 // Recruit Template Management Routes

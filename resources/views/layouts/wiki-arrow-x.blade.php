@@ -11,22 +11,9 @@
     <title>@yield('title', 'Wiki') - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Favicon - พร้อม fallback ถ้าตารางยังไม่มี --}}
-    @php
-        $faviconPath = asset('images/brand/favicon.ico');
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('theme_settings')) {
-                $themeSetting = \App\Models\ThemeSetting::active();
-                if ($themeSetting && $themeSetting->favicon_path) {
-                    $faviconPath = asset('storage/' . $themeSetting->favicon_path);
-                }
-            }
-        } catch (\Exception $e) {
-            // ใช้ค่า default ถ้าเกิด error
-        }
-    @endphp
-    <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -279,20 +266,18 @@
         }
     </style>
 
-    @if(config('shop.nova_public', true))
-        {{-- ธีมโนวา: แถบหัว/ท้ายอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
-        <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
-        <link rel="stylesheet" href="{{ asset('theme-nova/nova-tw.css') }}?v={{ is_file(public_path('theme-nova/nova-tw.css')) ? filemtime(public_path('theme-nova/nova-tw.css')) : 1 }}">
-        <style>
-            /* พื้นหลังวิกิ: ม่วง-ชมพูเดิม → ฟ้าราตรีกรมท่า-ทองของโนวา */
-            .wiki-bg { background: radial-gradient(120% 70% at 50% 110%, rgba(212, 166, 74, .2), transparent 55%), radial-gradient(90% 60% at 50% -10%, #1d3676, transparent 62%), linear-gradient(180deg, #081230 0%, #0a1636 45%, #050916 100%) !important; }
-            .wiki-bg-orbs { display: none; }
-        </style>
-    @endif
+    {{-- ธีมโนวา: แถบหัว/ท้ายอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+    <link rel="stylesheet" href="{{ asset('theme-nova/nova-tw.css') }}?v={{ is_file(public_path('theme-nova/nova-tw.css')) ? filemtime(public_path('theme-nova/nova-tw.css')) : 1 }}">
+    <style>
+        /* พื้นหลังวิกิ: ม่วง-ชมพูเดิม → ฟ้าราตรีกรมท่า-ทองของโนวา */
+        .wiki-bg { background: radial-gradient(120% 70% at 50% 110%, rgba(212, 166, 74, .2), transparent 55%), radial-gradient(90% 60% at 50% -10%, #1d3676, transparent 62%), linear-gradient(180deg, #081230 0%, #0a1636 45%, #050916 100%) !important; }
+        .wiki-bg-orbs { display: none; }
+    </style>
     @stack('styles')
 </head>
-<body class="min-h-full font-sans {{ config('shop.nova_public', true) ? 'nv-tw' : '' }}"
+<body class="min-h-full font-sans nv-tw"
       x-data="{
           isDark: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
           toggleTheme() {
@@ -333,129 +318,7 @@
     </div>
 
     {{-- Top Navigation Bar - Arrow X V3 Glass Fusion --}}
-    @if(config('shop.nova_public', true))
-        <x-nova.header :solid="true" :search="false" active="" />
-    @else
-    <header class="sticky top-0 z-50 glass-fusion border-b border-white/20 dark:border-gray-700/50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                {{-- Logo & Brand --}}
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('home') }}" class="flex items-center gap-3 group">
-                        @php
-                            $logo = null;
-                            try {
-                                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
-                                    $logo = \App\Models\Setting::get('logo');
-                                }
-                            } catch (\Exception $e) {
-                                // ใช้ค่า default ถ้าเกิด error
-                            }
-                        @endphp
-                        @if($logo)
-                            <img src="{{ asset('storage/' . $logo) }}" alt="Thai Prompt" class="h-10 w-auto group-hover:scale-105 transition-transform">
-                            <span class="hidden sm:block text-gray-800 dark:text-white font-bold text-lg dark:drop-shadow">
-                                {{ config('app.brand_name', 'Thai Prompt') }}
-                            </span>
-                        @else
-                            {{-- โลโก้แบรนด์ Thai Prompt (สลับรูปตามโหมดมืดให้เอง) --}}
-                            <x-theme-v4.brand-logo :height="40" class="group-hover:scale-105 transition-transform" />
-                        @endif
-                    </a>
-                </div>
-
-                {{-- Navigation Links --}}
-                <nav class="hidden md:flex items-center gap-6">
-                    <a href="{{ route('home') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
-                        <i class="fas fa-home mr-2"></i>หน้าแรก
-                    </a>
-                    <a href="{{ route('wiki.index') }}" class="text-gray-900 dark:text-white font-medium transition-colors dark:drop-shadow border-b-2 border-gray-900 dark:border-white pb-1">
-                        <i class="fas fa-book mr-2"></i>Wiki
-                    </a>
-                    <a href="{{ route('storefront.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
-                        <i class="fas fa-store mr-2"></i>ร้านค้า
-                    </a>
-                </nav>
-
-                {{-- Right Side Actions --}}
-                <div class="flex items-center gap-3">
-                    {{-- Dark Mode Toggle --}}
-                    <button @click="toggleTheme()"
-                            type="button"
-                            class="p-2.5 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-110 active:scale-95 text-gray-700 dark:text-white"
-                            :title="isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
-                        <i x-show="!isDark" class="fas fa-moon dark:drop-shadow"></i>
-                        <i x-show="isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
-                    </button>
-
-                    {{-- Auth Buttons --}}
-                    @guest
-                        <a href="{{ route('login') }}"
-                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-white/90 hover:text-gray-900 dark:hover:text-white font-medium transition-colors">
-                            <i class="fas fa-sign-in-alt"></i>
-                            <span>เข้าสู่ระบบ</span>
-                        </a>
-                        <a href="{{ route('register') }}"
-                           class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105">
-                            <i class="fas fa-user-plus"></i>
-                            <span class="hidden sm:inline">สมัครสมาชิก</span>
-                        </a>
-                    @else
-                        {{-- User Dropdown --}}
-                        <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open"
-                                    class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
-                                <img src="{{ auth()->user()->profile_picture_url }}"
-                                     alt="{{ auth()->user()->name }}"
-                                     class="w-8 h-8 rounded-lg object-cover shadow-lg"
-                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr(auth()->user()->name, 0, 1)) }}&background=8B5CF6&color=fff&size=64';">
-                                <span class="hidden md:block text-gray-800 dark:text-white font-medium text-sm dark:drop-shadow">{{ auth()->user()->name }}</span>
-                                <i class="fas fa-chevron-down text-gray-500 dark:text-white/60 text-xs dark:drop-shadow transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                            </button>
-
-                            {{-- Dropdown Menu --}}
-                            <div x-show="open"
-                                 x-cloak
-                                 @click.outside="open = false"
-                                 x-transition
-                                 class="absolute top-full right-0 mt-2 w-56 glass-dropdown rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50">
-                                <div class="px-4 py-3 border-b border-white/20">
-                                    <p class="text-white font-medium text-sm">{{ auth()->user()->name }}</p>
-                                    <p class="text-white/60 text-xs">{{ auth()->user()->email }}</p>
-                                </div>
-                                <div class="py-2">
-                                    <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-all">
-                                        <i class="fas fa-tachometer-alt w-5"></i>
-                                        <span>แดชบอร์ด</span>
-                                    </a>
-                                    <a href="{{ route('user.profile') }}" class="flex items-center gap-3 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-all">
-                                        <i class="fas fa-user w-5"></i>
-                                        <span>โปรไฟล์</span>
-                                    </a>
-                                    @if(auth()->user()->hasRole(['admin', 'super_admin']))
-                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-all">
-                                        <i class="fas fa-cog w-5"></i>
-                                        <span>แอดมิน</span>
-                                    </a>
-                                    @endif
-                                </div>
-                                <div class="py-2 border-t border-white/20">
-                                    <form action="{{ route('logout') }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-all">
-                                            <i class="fas fa-sign-out-alt w-5"></i>
-                                            <span>ออกจากระบบ</span>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    @endguest
-                </div>
-            </div>
-        </div>
-    </header>
-    @endif
+    <x-nova.header :solid="true" :search="false" active="" />
 
     {{-- Main Content --}}
     <main class="min-h-screen">
@@ -463,26 +326,7 @@
     </main>
 
     {{-- Footer --}}
-    @if(config('shop.nova_public', true))
-        <x-nova.footer />
-    @else
-    <footer class="glass-fusion border-t border-gray-200 dark:border-white/20 dark:border-gray-700/50 py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="text-gray-600 dark:text-white/60 text-sm">
-                    &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
-                </div>
-                <div class="flex items-center gap-6">
-                    <a href="{{ route('wiki.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Wiki</a>
-                    <a href="{{ route('storefront.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">ร้านค้า</a>
-                    @auth
-                    <a href="{{ route('user.dashboard') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Dashboard</a>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </footer>
-    @endif
+    <x-nova.footer />
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-[90] space-y-2 max-w-md"
