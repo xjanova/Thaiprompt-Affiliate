@@ -2,6 +2,7 @@
 
 namespace App\Services\Fortune;
 
+use App\Models\AiApiKey;
 use App\Models\FortuneTellingSetting;
 use App\Services\AiApiKeyPoolService;
 use App\Services\FortuneAIService;
@@ -54,6 +55,9 @@ class FortuneSensitivityDetector
      * เพดานรอ classifier (วินาที) — ใช้ทั้งค่ายที่ตั้งไว้และเส้นแชท
      */
     protected const CLASSIFIER_TIMEOUT_SEC = 5;
+
+    /** เพดาน output ของโมเดลแนว reasoning (รวม token คิด) — JSON คำตอบจริงใช้ ~60 tokens */
+    protected const REASONING_MAX_TOKENS = 600;
 
     protected const CLASSIFIER_SYSTEM_PROMPT = <<<'PROMPT'
 You are a classifier analyzing customer messages to a Thai fortune-telling bot.
@@ -383,9 +387,9 @@ PROMPT;
     protected function classifyViaConfiguredProvider(string $userInput, string $message): ?string
     {
         $provider = $this->settings->sensitive_classifier_provider ?? 'groq';
-        // 🎯 (2026-05-24) Default ใช้ llama-3.3-70b-versatile (TPM 12000) ดีกว่า 8b-instant (TPM 6000)
-        //    ลด 413 "Request too large" ที่เกิดเมื่อหลาย classifier call พร้อมกัน
-        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.3-70b-versatile';
+        // 🔄 (2026-10-30) Groq ปิด Llama ทุกตัวสำหรับ free/dev tier แล้ว → fallback ตาม default ของ Pool (gpt-oss)
+        $model = $this->settings->sensitive_classifier_model
+            ?: (AiApiKey::defaultModelFor($provider) ?? 'openai/gpt-oss-20b');
 
         $endpoint = match ($provider) {
             'groq' => 'https://api.groq.com/openai/v1/chat/completions',
@@ -407,12 +411,24 @@ PROMPT;
             ],
         ];
 
+        // 🔄 (2026-10-30) โมเดลแนว reasoning คิดก่อนตอบ — token คิดนับรวมใน max_tokens
+        //   150 tokens เดิมหมดไปกับการคิด → คำตอบว่าง ⇒ สั่งคิดน้อย + เผื่อเพดาน
+        if (str_starts_with($model, 'openai/gpt-oss')) {
+            $payload['reasoning_effort'] = 'low';
+            $payload['max_tokens'] = self::REASONING_MAX_TOKENS;
+        } elseif ($provider === 'openai' && preg_match('/^(gpt-[5-9]|o[1-9])/', $model)) {
+            // gpt-5+ / o-series บน Chat Completions: ไม่รับ temperature ≠ 1 และต้องใช้ max_completion_tokens
+            unset($payload['temperature'], $payload['max_tokens']);
+            $payload['reasoning_effort'] = 'low';
+            $payload['max_completion_tokens'] = self::REASONING_MAX_TOKENS;
+        }
+
         // 🪙 (2026-05-24 Phase 6) Pre-flight: ประมาณ token + filter key ที่ใกล้ทะลุ TPM
         //   เดิม: detector ขอ key 1 ตัวจาก pool → ส่ง request → 413 → exception
         //   ใหม่: loop max 3 keys, mark TPM saturated เมื่อ 413, ลอง key ถัดไป
         $estimatedTokens = AiApiKeyPoolService::estimateTokens(self::CLASSIFIER_SYSTEM_PROMPT)
             + AiApiKeyPoolService::estimateTokens($message)
-            + 150;  // + max_tokens
+            + ($payload['max_tokens'] ?? $payload['max_completion_tokens'] ?? 150);  // + เพดาน output
 
         $pool = app(AiApiKeyPoolService::class);
         $response = null;

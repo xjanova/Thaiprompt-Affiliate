@@ -79,7 +79,7 @@
                 <select x-model="form.model" class="tp-input" style="width:100%;">
                     <option value="">-- ใช้ค่า default ของ provider --</option>
                     @foreach($modelsByProvider[$key->provider] as $m)
-                        <option value="{{ $m }}" {{ $key->model === $m ? 'selected' : '' }}>{{ $m }}</option>
+                        <option value="{{ $m }}" {{ $key->model === $m ? 'selected' : '' }}>{{ $modelLabels[$key->provider][$m] ?? $m }}</option>
                     @endforeach
                 </select>
                 <p class="tp-muted" style="margin:6px 0 0;font-size:.78rem;">

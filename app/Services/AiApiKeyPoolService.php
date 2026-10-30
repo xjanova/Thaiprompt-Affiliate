@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AiApiKey;
 use App\Models\AiApiKeySetting;
+use App\Models\AiApiKeyUsageLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -1227,7 +1228,9 @@ class AiApiKeyPoolService
             ->orderBy('id')
             ->get();
 
-        return $keys->map(function ($key) use ($provider) {
+        $monthCosts = $this->getMonthCostsByKey($keys);
+
+        return $keys->map(function ($key) use ($provider, $monthCosts) {
             return [
                 'id' => $key->id,
                 'name' => $key->name,
@@ -1267,8 +1270,56 @@ class AiApiKeyPoolService
                 'rpm' => $this->getKeyRpm($provider, $key->id),
                 'load_score' => $this->getKeyLoadScore($provider, $key),
                 'rate_limit_per_minute' => $key->rate_limit_per_minute,
+                // 💰 (2026-10-30) ราคาโมเดล + ค่าใช้จ่ายเดือนนี้ (ประมาณจาก usage logs)
+                'pricing' => $key->pricing,
+                'cost_month_usd' => $monthCosts[$key->id]['usd'] ?? 0.0,
+                'cost_month_partial' => $monthCosts[$key->id]['partial'] ?? false,
             ];
         })->toArray();
+    }
+
+    /**
+     * 💰 (2026-10-30) ค่าใช้จ่ายโดยประมาณเดือนนี้ต่อ key (USD) — คำนวณจาก input/output tokens ใน usage logs
+     *
+     * ใช้ model ที่บันทึกใน log (ถ้าว่าง → model ของ key) เพราะ key อาจเคยเปลี่ยน model กลางเดือน
+     * partial = true เมื่อมี token ของโมเดลที่ไม่รู้ราคา (ยอดจริงสูงกว่าที่แสดง)
+     *
+     * @param  \Illuminate\Support\Collection<int, AiApiKey>  $keys
+     * @return array<int, array{usd: float, partial: bool}>
+     */
+    protected function getMonthCostsByKey($keys): array
+    {
+        if ($keys->isEmpty()) {
+            return [];
+        }
+
+        $rows = AiApiKeyUsageLog::query()
+            ->selectRaw('ai_api_key_id, model, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens')
+            ->whereIn('ai_api_key_id', $keys->pluck('id'))
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->where('is_success', true)
+            ->groupBy('ai_api_key_id', 'model')
+            ->get();
+
+        $byId = $keys->keyBy('id');
+        $costs = [];
+        foreach ($rows as $row) {
+            $key = $byId->get($row->ai_api_key_id);
+            if (! $key) {
+                continue;
+            }
+            $usd = AiApiKey::estimateCostUsd(
+                (string) $key->provider,
+                $row->model ?: $key->resolveModel(),
+                (int) $row->input_tokens,
+                (int) $row->output_tokens
+            );
+            $costs[$key->id]['usd'] = ($costs[$key->id]['usd'] ?? 0.0) + ($usd ?? 0.0);
+            $costs[$key->id]['partial'] = ($costs[$key->id]['partial'] ?? false)
+                || ($usd === null && ((int) $row->input_tokens + (int) $row->output_tokens) > 0);
+        }
+
+        return $costs;
     }
 
     /**

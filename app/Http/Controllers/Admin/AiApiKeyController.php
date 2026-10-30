@@ -8,6 +8,7 @@ use App\Models\AiApiKeySetting;
 use App\Models\AiApiKeyUsageLog;
 use App\Services\AiApiKeyHealthProbeService;
 use App\Services\AiApiKeyPoolService;
+use App\Support\AnthropicMessages;
 use GuzzleHttp\Client;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -74,6 +75,7 @@ class AiApiKeyController extends Controller
             'provider' => $provider,
             'providers' => AiApiKey::PROVIDERS,
             'modelsByProvider' => AiApiKey::MODELS_BY_PROVIDER,
+            'modelLabels' => AiApiKey::modelOptionLabels(),   // 💰 (2026-10-30) ชื่อ + ราคาใน dropdown
             'defaultBaseUrls' => AiApiKey::DEFAULT_BASE_URLS,
             'pageTitle' => 'เพิ่ม API Key ใหม่',
         ]);
@@ -163,6 +165,7 @@ class AiApiKeyController extends Controller
             'key' => $key,
             'providers' => AiApiKey::PROVIDERS,
             'modelsByProvider' => AiApiKey::MODELS_BY_PROVIDER,
+            'modelLabels' => AiApiKey::modelOptionLabels(),   // 💰 (2026-10-30) ชื่อ + ราคาใน dropdown
             'defaultBaseUrls' => AiApiKey::DEFAULT_BASE_URLS,
             'pageTitle' => "แก้ไข {$key->name}",
         ]);
@@ -564,11 +567,12 @@ class AiApiKeyController extends Controller
         $failedCount = (int) (clone $totalQuery)->where('is_success', false)->count();
         $successRate = $totalRequests > 0 ? round((($totalRequests - $failedCount) / $totalRequests) * 100, 1) : 100;
 
-        // Breakdown per key
+        // Breakdown per key + model
+        //   💰 (2026-10-30) แยกตาม model ที่บันทึกใน log ด้วย — key อาจเปลี่ยน model กลางช่วง → ราคาไม่เท่ากัน
         $breakdownQuery = AiApiKeyUsageLog::query()
-            ->selectRaw('ai_api_key_id, SUM(total_tokens) as tokens, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, COUNT(*) as requests, SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END) as failed')
+            ->selectRaw('ai_api_key_id, model, SUM(total_tokens) as tokens, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, COUNT(*) as requests, SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END) as failed')
             ->whereBetween('created_at', [$start, $end])
-            ->groupBy('ai_api_key_id')
+            ->groupBy('ai_api_key_id', 'model')
             ->orderByDesc('tokens');
         if (! empty($keyIds)) {
             $breakdownQuery->whereIn('ai_api_key_id', $keyIds);
@@ -580,11 +584,17 @@ class AiApiKeyController extends Controller
 
         $breakdown = $breakdownRaw->map(function ($row) use ($keysIndex) {
             $key = $keysIndex->get($row->ai_api_key_id);
+            $model = $row->model ?: ($key ? $key->resolveModel() : null);
+            $costUsd = $key
+                ? AiApiKey::estimateCostUsd((string) $key->provider, $model, (int) $row->input_tokens, (int) $row->output_tokens)
+                : null;
 
             return [
                 'key_id' => $row->ai_api_key_id,
                 'name' => $key ? "{$key->provider}/{$key->name}" : "Key #{$row->ai_api_key_id}",
-                'model' => $key->model ?? '-',
+                'model' => $model ?? '-',
+                // 💰 null = ไม่รู้ราคา (ไม่อยู่ใน AiApiKey::MODEL_PRICING)
+                'cost_usd' => $costUsd !== null ? round($costUsd, 4) : null,
                 // 🚫 (2026-05-23) ลบ default 'any' — null = ไม่ระบุ
                 'purpose' => $key->purpose ?? null,
                 'total_tokens' => (int) $row->tokens,
@@ -594,6 +604,10 @@ class AiApiKeyController extends Controller
                 'failed' => (int) $row->failed,
             ];
         })->values();
+
+        // 💰 (2026-10-30) ค่าใช้จ่ายรวมโดยประมาณ — partial = มีแถวที่ไม่รู้ราคา (ยอดจริงสูงกว่า)
+        $totalCostUsd = round((float) $breakdown->sum(fn ($r) => $r['cost_usd'] ?? 0), 4);
+        $costPartial = $breakdown->contains(fn ($r) => $r['cost_usd'] === null && $r['total_tokens'] > 0);
 
         return response()->json([
             'success' => true,
@@ -606,6 +620,8 @@ class AiApiKeyController extends Controller
                 'total_requests' => $totalRequests,
                 'failed_count' => $failedCount,
                 'success_rate' => $successRate,
+                'total_cost_usd' => $totalCostUsd,
+                'cost_partial' => $costPartial,
                 'date_range' => [
                     'start' => $start->format('Y-m-d'),
                     'end' => $end->format('Y-m-d'),
@@ -685,23 +701,8 @@ class AiApiKeyController extends Controller
         $startTime = microtime(true);
         $model = $key->resolveModel();
 
-        // ทดสอบตาม provider
-        switch ($key->provider) {
-            case 'grok':
-                $response = $this->testGrokApi($key->api_key);
-                break;
-            case 'groq':
-                $response = $this->testGroqApi($key->api_key);
-                break;
-            case 'openai':
-                $response = $this->testOpenAiApi($key->api_key);
-                break;
-            case 'gemini':
-                $response = $this->testGeminiApi($key->api_key);
-                break;
-            default:
-                throw new \Exception('Provider ไม่รองรับการทดสอบ');
-        }
+        // ทดสอบตาม provider — ยิง GET /models (ฟรี ไม่กิน token)
+        $response = $this->fetchModelList($key);
 
         $responseTime = round((microtime(true) - $startTime) * 1000);
 
@@ -710,7 +711,9 @@ class AiApiKeyController extends Controller
         $modelKnown = null;
         $warning = null;
         if ($model !== null && ! empty($available)) {
-            $modelKnown = in_array($model, $available, true);
+            // Anthropic คืน id เต็มที่มีวันที่ต่อท้าย (claude-haiku-4-5-20251001) → นับ alias ที่ขึ้นต้นตรงกันด้วย
+            $modelKnown = in_array($model, $available, true)
+                || ($key->provider === 'anthropic' && collect($available)->contains(fn ($id) => str_starts_with($id, $model.'-')));
             if (! $modelKnown) {
                 $warning = "โมเดล '{$model}' ไม่อยู่ในรายชื่อของบัญชีนี้ ("
                     .count($available).' โมเดล) — ถ้ายิงงานจริงแล้วขึ้น model_not_found ให้เปลี่ยนโมเดลของ key นี้';
@@ -766,65 +769,39 @@ class AiApiKeyController extends Controller
     }
 
     /**
-     * ทดสอบ Grok API
+     * 🔬 (2026-10-30) ดึงรายชื่อโมเดลของ key — ใช้เป็นการทดสอบว่า key ใช้ได้
+     *
+     * เดิมรองรับแค่ grok/groq/openai/gemini → key ของ anthropic/deepseek/qwen/openrouter/
+     * typhoon/xiaomi เทสไม่ผ่านเสมอ ("Provider ไม่รองรับการทดสอบ") → ไม่มี last_test_passed_at
+     * → scopeAvailable() ไม่เคยหยิบมาใช้ ทั้งที่ FortuneAIService เรียก provider พวกนี้ได้
+     * ใช้ resolveBaseUrl() เพื่อเคารพ base_url ที่ตั้งราย key ด้วย
      */
-    protected function testGrokApi(string $apiKey): array
+    protected function fetchModelList(AiApiKey $key): array
     {
-        $client = new Client;
-        $response = $client->get('https://api.x.ai/v1/models', [
-            'headers' => [
-                'Authorization' => "Bearer {$apiKey}",
+        $baseUrl = rtrim((string) $key->resolveBaseUrl(), '/');
+        if ($baseUrl === '') {
+            throw new \Exception('ไม่มี base URL ของ provider นี้');
+        }
+
+        $headers = match ($key->provider) {
+            'grok', 'groq', 'openai', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'xiaomi' => [
+                'Authorization' => "Bearer {$key->api_key}",
             ],
-            'timeout' => 10,
-        ]);
-
-        return json_decode($response->getBody(), true);
-    }
-
-    /**
-     * ทดสอบ Groq API
-     */
-    protected function testGroqApi(string $apiKey): array
-    {
-        $client = new Client;
-        $response = $client->get('https://api.groq.com/openai/v1/models', [
-            'headers' => [
-                'Authorization' => "Bearer {$apiKey}",
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            'gemini' => ['x-goog-api-key' => $key->api_key],
+            'anthropic' => [
+                'x-api-key' => $key->api_key,
+                'anthropic-version' => AnthropicMessages::API_VERSION,
             ],
-            'timeout' => 10,
-        ]);
+            default => throw new \Exception('Provider ไม่รองรับการทดสอบ (TTS ของ MiniMax ทดสอบผ่านหน้าเสียงแทน)'),
+        };
 
-        return json_decode($response->getBody(), true);
-    }
-
-    /**
-     * ทดสอบ OpenAI API
-     */
-    protected function testOpenAiApi(string $apiKey): array
-    {
         $client = new Client;
-        $response = $client->get('https://api.openai.com/v1/models', [
-            'headers' => [
-                'Authorization' => "Bearer {$apiKey}",
-            ],
+        $response = $client->get("{$baseUrl}/models", [
+            'headers' => $headers,
             'timeout' => 10,
         ]);
 
-        return json_decode($response->getBody(), true);
-    }
-
-    /**
-     * ทดสอบ Gemini API
-     */
-    protected function testGeminiApi(string $apiKey): array
-    {
-        $client = new Client;
-        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
-        $response = $client->get('https://generativelanguage.googleapis.com/v1/models', [
-            'timeout' => 10,
-            'headers' => ['x-goog-api-key' => $apiKey],
-        ]);
-
-        return json_decode($response->getBody(), true);
+        return json_decode($response->getBody(), true) ?? [];
     }
 }
