@@ -335,22 +335,19 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-2">
-                                        <form action="{{ route('admin.anti-abuse.penalties.update', $penalty) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.anti-abuse.penalties.charge', $penalty) }}" method="POST" class="inline">
                                             @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="action" value="charge">
-                                            <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg">
+                                            <button type="submit"
+                                                    onclick="return confirm('ยืนยันการหักเงินค่าปรับ ฿{{ number_format($penalty->penalty_amount) }}?')"
+                                                    class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg">
                                                 <i class="fas fa-check mr-1"></i>เรียกเก็บ
                                             </button>
                                         </form>
-                                        <form action="{{ route('admin.anti-abuse.penalties.update', $penalty) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="action" value="waive">
-                                            <button type="submit" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs rounded-lg">
-                                                <i class="fas fa-times mr-1"></i>ยกเว้น
-                                            </button>
-                                        </form>
+                                        {{-- การยกเว้นต้องระบุเหตุผล จึงพาไปหน้ารายการค่าปรับที่มีฟอร์มกรอกเหตุผล --}}
+                                        <a href="{{ route('admin.anti-abuse.penalties', ['status' => 'pending']) }}"
+                                           class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs rounded-lg">
+                                            <i class="fas fa-times mr-1"></i>ยกเว้น
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

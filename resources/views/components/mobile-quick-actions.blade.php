@@ -81,7 +81,7 @@
             [
                 'label' => 'รายงาน',
                 'icon' => 'fas fa-chart-bar',
-                'url' => route('admin.reports.index'),
+                'url' => route('admin.unified-reports.index'),
                 'color' => 'from-blue-500 to-indigo-600',
                 'darkColor' => 'from-blue-600 to-indigo-700',
             ],

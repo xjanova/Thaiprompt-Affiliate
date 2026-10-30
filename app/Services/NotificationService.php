@@ -378,7 +378,7 @@ class NotificationService
                     'amount' => $commission->amount,
                     'type' => $commission->type,
                 ],
-                route('admin.commissions.show', $commission->id),
+                route('admin.mlm.commissions.show', $commission->id),
                 'ดูและอนุมัติ',
                 'high',
                 true,
@@ -595,7 +595,7 @@ class NotificationService
             [
                 'verification_type' => $kycVerification->verification_type ?? 'standard',
             ],
-            route('user.profile.index'),
+            route('user.profile'),
             'ดูโปรไฟล์',
             'urgent',
             true,

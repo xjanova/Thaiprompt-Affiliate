@@ -383,7 +383,7 @@ class LineRegistrationSession extends Model
 
         // ถ้าสมัครเสร็จแล้ว ให้รวม redirect URL
         if ($this->status === self::STATUS_COMPLETED && $this->user_id) {
-            $response['redirect_url'] = route('user.profile.edit');
+            $response['redirect_url'] = route('user.profile');
             $response['user'] = [
                 'name' => $this->user?->name,
                 'avatar' => $this->user?->line_picture_url ?? $this->user?->avatar_url,

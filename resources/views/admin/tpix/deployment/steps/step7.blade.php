@@ -1,7 +1,7 @@
 @extends('admin.tpix.deployment._wizard-layout')
 
 @section('step-content')
-<form method="POST" action="{{ route('admin.tpix.deployment.step7.save', $config->slug) }}"
+<form method="POST" action="{{ route('admin.tpix.deployment.step7.complete', $config->slug) }}"
       x-data="{
           submittingCMC: false,
           submittingCG: false,

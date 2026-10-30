@@ -15,7 +15,7 @@
                             <h2 class="mb-2"><i class="fas fa-building me-2"></i>Hotels Management</h2>
                             <p class="mb-0 opacity-75">Manage all hotels in the system</p>
                         </div>
-                        <a href="{{ route('hotel-admin.hotels.create') }}" class="btn btn-light">
+                        <a href="{{ route('admin.hotels.create') }}" class="btn btn-light">
                             <i class="fas fa-plus me-2"></i>Add New Hotel
                         </a>
                     </div>
@@ -75,7 +75,7 @@
                             <i class="fas fa-building fa-4x text-muted mb-3"></i>
                             <h4 class="text-muted">No Hotels Found</h4>
                             <p class="text-muted">Add your first hotel to get started</p>
-                            <a href="{{ route('hotel-admin.hotels.create') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.hotels.create') }}" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Add New Hotel
                             </a>
                         </div>

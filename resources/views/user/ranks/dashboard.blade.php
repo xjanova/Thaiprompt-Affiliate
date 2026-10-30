@@ -36,9 +36,8 @@
     $nextLevel    = $nextRank?->level ?? null;
     $nextBadge    = $nextLevel ? ($rankBadges[$nextLevel] ?? '🏅') : null;
 
-    // ── ลิงก์บัตร VIP (เผื่อชื่อ route ต่างกันระหว่างเวอร์ชัน) ──
-    $idCardUrl = RouteFacade::has('user.ranks.id-card') ? route('user.ranks.id-card')
-               : (RouteFacade::has('user.virtual-id-card') ? route('user.virtual-id-card') : null);
+    // ── ลิงก์บัตร VIP ──
+    $idCardUrl = route('user.ranks.id-card');
 
     // ── สีไอคอนสถานะ (hex semantic) ────────────────────────────
     $bonusTypeIcons = [

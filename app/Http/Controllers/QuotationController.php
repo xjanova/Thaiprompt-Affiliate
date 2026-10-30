@@ -192,7 +192,7 @@ class QuotationController extends Controller
         $quotation->markAsConverted($order);
 
         return redirect()
-            ->route('checkout', $order)
+            ->route('orders.show', $order->id)
             ->with('success', 'สร้างคำสั่งซื้อเรียบร้อยแล้ว กรุณาดำเนินการชำระเงิน');
     }
 }

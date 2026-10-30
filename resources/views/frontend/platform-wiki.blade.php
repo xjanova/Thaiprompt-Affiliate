@@ -6174,7 +6174,7 @@ class Affiliate extends Model {
                 <p class="text-gray-700 dark:text-gray-300 mb-6">
                     ต้องการข้อมูลเชิงลึกเพิ่มเติม? อ่าน TPIX Whitepaper ฉบับเต็ม
                 </p>
-                <a href="{{ route('tpix.whitepaper') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
+                <a href="{{ route('tpix.whitepaper.index') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
                     ดู Whitepaper ฉบับเต็ม →
                 </a>
             </div>
