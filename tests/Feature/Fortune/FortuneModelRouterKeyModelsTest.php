@@ -69,6 +69,34 @@ class FortuneModelRouterKeyModelsTest extends TestCase
         $this->assertSame('gpt-6-luna', FortuneModelRouter::defaultModel());
     }
 
+    /**
+     * key ที่ pool ข้ามไป ต้องไม่กำหนดโมเดล — ไม่งั้นโมเดลของมันจะถูกส่งผ่าน key อื่นที่อาจคนละบัญชี
+     */
+    public function test_keys_the_pool_skips_do_not_pick_the_model(): void
+    {
+        $unroutable = [
+            'critical' => ['is_critical' => true, 'last_test_passed_at' => now()],
+            'untested' => ['last_test_passed_at' => null],
+            'paused' => ['disabled_until' => now()->addHour(), 'last_test_passed_at' => now()],
+        ];
+        $this->key(['purpose' => 'prediction', 'model' => 'gpt-6-luna', 'priority' => 10, 'last_test_passed_at' => now()]);
+
+        foreach ($unroutable as $label => $state) {
+            $skipped = $this->key($state + ['purpose' => 'prediction', 'model' => 'gpt-6-astra', 'priority' => 90]);
+
+            $this->assertSame('gpt-6-luna', FortuneModelRouter::defaultModel(), $label);
+
+            $skipped->delete();
+        }
+    }
+
+    public function test_active_key_beats_the_code_fallback_when_nothing_is_routable(): void
+    {
+        $this->key(['purpose' => 'sensitive', 'model' => 'gpt-6.1-sol', 'is_critical' => true, 'last_test_passed_at' => now()]);
+
+        $this->assertSame('gpt-6.1-sol', FortuneModelRouter::strongModel());
+    }
+
     public function test_black_magic_celtic_turn_overrides_with_the_key_model(): void
     {
         $this->key(['purpose' => 'sensitive', 'model' => 'gpt-6.1-sol']);

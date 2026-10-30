@@ -92,16 +92,19 @@ class FortuneModelRouter
      *
      * ⚠️ นับเฉพาะ provider openai เพราะปลายทางส่งเข้าเลน OpenAI (`['openai' => ...]`)
      *    และไม่ใช้ resolveModel() — key ที่ไม่ได้ตั้งโมเดลจะได้ตัวแรกของค่าย ซึ่งไม่ใช่ "ตัวแรง" ที่ตั้งใจ
+     * ⚠️ ดู key ที่ pool เลือกได้จริง (available) ก่อน — key ที่ critical/ยังไม่ผ่านเทส/ถูกพักชั่วคราว pool จะข้ามไป
+     *    ถ้าเอาโมเดลของตัวนั้นมาส่งผ่าน key อื่น อาจคนละบัญชีแล้วเจอ model_not_found ทั้งที่ลูกค้าจ่ายเงินแล้ว
+     *    ไม่มี key พร้อมเลยค่อยอ่านจาก key ที่เปิดอยู่ เพราะยังตรงกับที่แอดมินตั้งมากกว่าชื่อในโค้ด
      */
     protected static function modelFromKey(string $purpose, string $fallback): string
     {
         try {
-            $key = AiApiKey::query()
-                ->active()
+            $keys = AiApiKey::query()
                 ->forProvider('openai')
                 ->forPurpose($purpose)
-                ->orderByPriority()
-                ->first();
+                ->orderByPriority();
+
+            $key = (clone $keys)->available()->first() ?? $keys->active()->first();
 
             return $key?->model ?: $fallback;
         } catch (\Throwable $e) {
