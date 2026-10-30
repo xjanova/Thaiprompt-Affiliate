@@ -78,11 +78,30 @@ class FortunePageBanTest extends TestCase
     }
 
     /** ทดสอบคำสั่งนี้โดยตรง ไม่สร้างบริการของคำสั่งอื่นทั้งระบบ */
-    private function syncBans(bool $execute = false): void
+    private function syncBans(bool $execute = false, int $exitCode = 0): void
     {
         $command = new FortuneSyncPageBans;
         $command->setLaravel($this->app);
-        $this->assertSame(0, $command->run(new ArrayInput($execute ? ['--execute' => true] : []), new BufferedOutput));
+        $this->assertSame($exitCode, $command->run(new ArrayInput($execute ? ['--execute' => true] : []), new BufferedOutput));
+    }
+
+    /** สร้างบริการจริงของเพจหลัก เพื่อทดสอบการอ่านคำตอบดิบจาก Graph API */
+    private function realFacebookService(): FortuneBanService
+    {
+        Schema::create('fortune_telling_settings', function (Blueprint $table) {
+            $table->id();
+            $table->softDeletes();
+            $table->string('facebook_page_id');
+            $table->string('facebook_page_token');
+        });
+        DB::table('fortune_telling_settings')->insert(['facebook_page_id' => 'main', 'facebook_page_token' => 'main-token']);
+
+        return new FortuneBanService;
+    }
+
+    private function limitedBan(string $psid, ?int $pageId = 1): FortuneUserBan
+    {
+        return FortuneUserBan::create(['platform' => 'facebook', 'platform_user_id' => $psid, 'fortune_page_id' => $pageId]);
     }
 
     public function test_facebook_temporary_ban_blocks_page_and_unblocks_when_expired(): void
@@ -214,6 +233,119 @@ class FortunePageBanTest extends TestCase
         $missing = $service->ban('facebook', 'no-token');
         $this->assertFalse($missing->isFullyEnforced());
         Http::assertSentCount(2); // ห้ามใช้ token ของเพจหลักแทนสาขาที่ไม่ได้ตั้ง token
+    }
+
+    public function test_block_counts_as_done_when_facebook_answers_with_a_different_id(): void
+    {
+        // คำตอบจริงจาก production: คีย์เป็นคนละเลขกับ PSID ที่ส่งไป
+        Http::fake(['graph.facebook.com/*' => Http::response(['900000000000002' => true])]);
+
+        $ban = $this->realFacebookService()->ban('facebook', '900000000000001');
+
+        $this->assertSame('blocked', $ban->fresh()->page_block_status);
+        $this->assertNull($ban->fresh()->page_block_error);
+    }
+
+    public function test_block_stays_failed_when_facebook_answers_false(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['900000000000002' => false])]);
+
+        $ban = $this->realFacebookService()->ban('facebook', '900000000000001');
+
+        $this->assertSame('failed', $ban->fresh()->page_block_status);
+    }
+
+    public function test_unblock_counts_as_done_when_facebook_answers_with_a_different_id(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::sequence()
+            ->push(['900000000000002' => true])
+            ->push(['900000000000002' => true])]);
+        $service = $this->realFacebookService();
+        $ban = $service->ban('facebook', '900000000000001');
+
+        $this->assertTrue($service->unban('facebook', '900000000000001'));
+        $this->assertNull($ban->fresh());
+    }
+
+    public function test_page_limit_makes_one_attempt_for_the_whole_page_each_day(): void
+    {
+        $this->facebook->lastFetchError = 'HTTP 400 | code=368 | The action attempted has been deemed abusive';
+        $this->facebook->shouldReceive('blockPageUser')->twice()->andReturnFalse();
+        $first = $this->limitedBan('first');
+        $second = $this->limitedBan('second');
+        $third = $this->limitedBan('third');
+
+        $this->syncBans(true, 1);
+        foreach ([$first, $second, $third] as $ban) {
+            $this->assertTrue($ban->fresh()->isPageBlockLimited());
+            $this->assertNotNull($ban->fresh()->page_block_attempted_at);
+        }
+
+        // ครบ 15 นาทีของความล้มเหลวทั่วไปแล้ว แต่ code 368 ต้องยังพักอยู่
+        $this->travel(16)->minutes();
+        $this->syncBans(true);
+        $this->travel(23)->hours();
+        $this->syncBans(true);
+
+        $this->travel(1)->hours();
+        $this->syncBans(true, 1);
+    }
+
+    public function test_page_limit_recovers_for_every_held_ban_after_the_rest_period(): void
+    {
+        $this->facebook->lastFetchError = 'HTTP 400 | code=368 | The action attempted has been deemed abusive';
+        $this->facebook->shouldReceive('blockPageUser')->andReturn(false, true, true);
+        $first = $this->limitedBan('first');
+        $second = $this->limitedBan('second');
+
+        $this->syncBans(true, 1);
+        $this->travel(25)->hours();
+        $this->syncBans(true);
+
+        $this->assertSame('blocked', $first->fresh()->page_block_status);
+        $this->assertSame('blocked', $second->fresh()->page_block_status);
+        $this->assertNull($second->fresh()->page_block_error);
+    }
+
+    public function test_page_limit_holds_bans_without_a_page_record_together(): void
+    {
+        $this->facebook->lastFetchError = 'HTTP 400 | code=368 | The action attempted has been deemed abusive';
+        $this->facebook->shouldReceive('blockPageUser')->once()->andReturnFalse();
+        $this->limitedBan('first', null);
+        $second = $this->limitedBan('second', null);
+
+        $this->syncBans(true, 1);
+
+        $this->assertTrue($second->fresh()->isPageBlockLimited());
+    }
+
+    public function test_page_limit_does_not_hold_other_pages(): void
+    {
+        $this->facebook->lastFetchError = 'HTTP 400 | code=368 | The action attempted has been deemed abusive';
+        $this->facebook->shouldReceive('blockPageUser')->with('limited')->once()->andReturnFalse();
+        $this->facebook->shouldReceive('blockPageUser')->with('other')->once()->andReturnTrue();
+        $this->limitedBan('limited', 1);
+        $other = $this->limitedBan('other', 2);
+
+        $this->syncBans(true, 1);
+
+        $this->assertSame('blocked', $other->fresh()->page_block_status);
+    }
+
+    public function test_other_failures_keep_the_short_retry_and_never_hold_the_page(): void
+    {
+        $this->facebook->lastFetchError = 'HTTP 500 | code=1 | An unknown error has occurred.';
+        $this->facebook->shouldReceive('blockPageUser')->times(4)->andReturnFalse();
+        $first = $this->limitedBan('first');
+        $second = $this->limitedBan('second');
+
+        $this->syncBans(true, 1);
+        $this->assertSame('failed', $second->fresh()->page_block_status);
+        $this->travel(16)->minutes();
+        $this->facebook->lastFetchError = 'HTTP 400 | code=3680 | ไม่ใช่การจำกัดเพจ';
+        $this->syncBans(true, 1);
+
+        $this->assertFalse($first->fresh()->isPageBlockLimited());
     }
 
     public function test_api_exception_is_saved_as_failed_without_losing_bot_ban(): void

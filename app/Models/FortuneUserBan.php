@@ -26,6 +26,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class FortuneUserBan extends Model
 {
+    /** ข้อความใน page_block_error เมื่อ Facebook จำกัดการบล็อกของเพจ (code 368) */
+    public const PAGE_LIMITED_ERROR = 'code=368 ';
+
+    /** พักกี่ชั่วโมงเมื่อโดน code 368 — ยิงซ้ำถี่จะยิ่งถูกมองว่าเป็นการใช้งานผิดปกติ */
+    public const PAGE_LIMITED_RETRY_HOURS = 24;
+
     protected $table = 'fortune_user_bans';
 
     use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
@@ -58,6 +64,12 @@ class FortuneUserBan extends Model
     public function isFullyEnforced(): bool
     {
         return $this->platform !== 'facebook' || $this->page_block_status === 'blocked';
+    }
+
+    /** ตรวจว่าการบล็อกครั้งล่าสุดล้มเพราะ Facebook จำกัดเพจ ไม่ใช่ปัญหาของคนนี้ */
+    public function isPageBlockLimited(): bool
+    {
+        return str_contains((string) $this->page_block_error, self::PAGE_LIMITED_ERROR);
     }
 
     /**

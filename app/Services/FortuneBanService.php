@@ -315,6 +315,9 @@ class FortuneBanService
         $ban->forceFill($state);
         if ($this->hasPageBlockColumns()) {
             $ban->save();
+            if ($ban->isPageBlockLimited()) {
+                $this->holdPageBlockRetries($ban);
+            }
         } else {
             // webhook ยังเข้าระหว่างดีพลอยได้: บล็อกจริงและเก็บแบนเดิมก่อน รอ migration แล้วค่อย sync ผล
             $ban->syncOriginalAttributes(array_keys($state));
@@ -327,6 +330,29 @@ class FortuneBanService
         }
 
         return $ok;
+    }
+
+    /**
+     * Facebook จำกัดทั้งเพจ: พักแถวที่รอของเพจเดียวกันพร้อมกัน
+     *
+     * เก็บใน DB ไม่ใช่ cache เพราะทุก deploy ล้าง cache แล้วจะกลับไปยิงซ้ำ
+     * รอบถัดไปจึงมีแค่แถวแรกที่ลองจริง ที่เหลือรอผลแถวนั้น
+     */
+    protected function holdPageBlockRetries(FortuneUserBan $ban): void
+    {
+        FortuneUserBan::forPlatform('facebook')
+            ->where('fortune_page_id', $ban->fortune_page_id)
+            ->where(fn ($q) => $q->whereNull('page_block_status')
+                ->orWhereIn('page_block_status', ['pending', 'failed']))
+            ->update([
+                'page_block_error' => $ban->page_block_error,
+                'page_block_attempted_at' => now(),
+            ]);
+
+        Log::warning('FortuneBan: Facebook จำกัดการบล็อกของเพจ พักการลองใหม่', [
+            'fortune_page_id' => $ban->fortune_page_id,
+            'hours' => FortuneUserBan::PAGE_LIMITED_RETRY_HOURS,
+        ]);
     }
 
     protected function hasPageBlockColumns(): bool
