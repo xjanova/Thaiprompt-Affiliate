@@ -60,6 +60,24 @@ class SafeLogTest extends TestCase
     }
 
     /**
+     * 🔐 (2026-10-30) ค่ายทวนค่าที่กรอกกลับมาใน error 401 — ค่านั้นอาจเป็นรหัสผ่านที่เบราว์เซอร์เติมผิดช่อง
+     */
+    #[Test]
+    public function provider_echo_of_a_rejected_api_key_is_hidden(): void
+    {
+        $echo = 'ab**********yz';
+        $msg = 'Client error: `GET https://api.openai.com/v1/models` resulted in a `401 Unauthorized` response:'
+            ."\n{\"error\":{\"message\":\"Incorrect API key provided: {$echo}. You can find your API key at https://platform.openai.com/account/api-keys.\"}}";
+
+        $clean = SafeLog::redactSecrets($msg);
+
+        $this->assertStringNotContainsString($echo, $clean);
+        $this->assertStringContainsString('API key provided: [REDACTED]', $clean);
+        $this->assertStringContainsString('401 Unauthorized', $clean);
+        $this->assertSame($clean, SafeLog::redactSecrets($clean), 'เรียกซ้ำต้องได้ผลเท่าเดิม');
+    }
+
+    /**
      * debug_token = ส่งทั้ง input_token และ app access token (app_id|app_secret) ใน query — ตัวที่หลุดจริง 2026-09-27
      */
     #[Test]
