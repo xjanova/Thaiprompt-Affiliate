@@ -406,7 +406,7 @@ class VideoAutomationController extends Controller
                 'success' => true,
                 'message' => 'สร้างเทมเพลตเรียบร้อยแล้ว',
                 'data' => $template,
-                'redirect' => route('admin.video-automation.templates'),
+                'redirect' => route('admin.video-automation.templates.index'),
             ]);
 
         } catch (\Exception $e) {
@@ -899,8 +899,7 @@ class VideoAutomationController extends Controller
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('music_title', 'like', "%{$search}%")
-                    ->orWhere('music_artist', 'like', "%{$search}%");
+                    ->orWhere('music_title', 'like', "%{$search}%");
             });
         }
 
@@ -936,12 +935,12 @@ class VideoAutomationController extends Controller
             'total' => VideoAutoPublishHistory::count(),
             'published' => VideoAutoPublishHistory::where('status', 'published')->count(),
             'failed' => VideoAutoPublishHistory::where('status', 'failed')->count(),
-            'total_views' => VideoAutoPublishHistory::sum('views'),
-            'total_likes' => VideoAutoPublishHistory::sum('likes'),
+            'total_views' => VideoAutoPublishHistory::sum('views_count'),
+            'total_likes' => VideoAutoPublishHistory::sum('likes_count'),
         ];
 
         // สถิติแยกตาม platform
-        $platformStats = VideoAutoPublishHistory::selectRaw('platform, count(*) as count, sum(views) as views, sum(likes) as likes')
+        $platformStats = VideoAutoPublishHistory::selectRaw('platform, count(*) as count, sum(views_count) as views, sum(likes_count) as likes')
             ->where('status', 'published')
             ->groupBy('platform')
             ->get()
@@ -1082,10 +1081,10 @@ class VideoAutomationController extends Controller
             'published' => VideoAutoPublishHistory::where('status', 'published')->count(),
             'failed' => VideoAutoPublishHistory::where('status', 'failed')->count(),
             'pending' => VideoAutoPublishHistory::where('status', 'pending')->count(),
-            'total_views' => VideoAutoPublishHistory::sum('views'),
-            'total_likes' => VideoAutoPublishHistory::sum('likes'),
-            'total_comments' => VideoAutoPublishHistory::sum('comments'),
-            'total_shares' => VideoAutoPublishHistory::sum('shares'),
+            'total_views' => VideoAutoPublishHistory::sum('views_count'),
+            'total_likes' => VideoAutoPublishHistory::sum('likes_count'),
+            'total_comments' => VideoAutoPublishHistory::sum('comments_count'),
+            'total_shares' => VideoAutoPublishHistory::sum('shares_count'),
         ];
 
         // ประวัติล่าสุด
@@ -1096,7 +1095,7 @@ class VideoAutomationController extends Controller
             ->get();
 
         // สถิติรายวัน (7 วันล่าสุด)
-        $dailyStats = VideoAutoPublishHistory::selectRaw('DATE(published_at) as date, count(*) as count, sum(views) as views')
+        $dailyStats = VideoAutoPublishHistory::selectRaw('DATE(published_at) as date, count(*) as count, sum(views_count) as views')
             ->where('status', 'published')
             ->whereBetween('published_at', [now()->subDays(7), now()])
             ->groupBy('date')

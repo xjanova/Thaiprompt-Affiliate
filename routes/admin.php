@@ -3238,19 +3238,16 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
 Route::prefix('platform-revenue/video-automation')->name('video-automation.')->group(function () {
 
     // Dashboard
-    // ⚠️ บาง views ใช้ชื่อ 'index' บาง views ใช้ 'dashboard' — ลงทะเบียนทั้งสองชื่อ
+    // ⚠️ URI + method เดียวกันลงทะเบียนซ้ำไม่ได้ — ตัวหลังทับตัวแรกและชื่อตัวแรกหายไป
+    // หนึ่ง URI จึงมีได้ชื่อเดียว (ทั้งโมดูลใช้ 'dashboard')
     Route::get('/', [VideoAutomationController::class, 'dashboard'])
         ->name('dashboard');
-    Route::get('/', [VideoAutomationController::class, 'dashboard'])
-        ->name('index');
     Route::get('/stats', [VideoAutomationController::class, 'getDashboardStats'])
         ->name('stats');
 
     // Settings (API Keys, Credentials)
     Route::get('/settings', [VideoAutomationController::class, 'settings'])
         ->name('settings');
-    Route::post('/settings', [VideoAutomationController::class, 'saveSettings'])
-        ->name('settings.save');
     Route::post('/settings', [VideoAutomationController::class, 'saveSettings'])
         ->name('settings.update');
     Route::post('/settings/test/{apiType}', [VideoAutomationController::class, 'testApiConnection'])
@@ -3269,14 +3266,10 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
     // YouTube OAuth
     Route::get('/youtube/connect', [VideoAutomationController::class, 'connectYouTube'])
         ->name('youtube.connect');
-    Route::get('/youtube/connect', [VideoAutomationController::class, 'connectYouTube'])
-        ->name('youtube.auth');
     Route::get('/youtube/callback', [VideoAutomationController::class, 'youtubeCallback'])
         ->name('youtube.callback');
 
     // Templates (เทมเพลตสำหรับสร้างวีดีโอ)
-    Route::get('/templates', [VideoAutomationController::class, 'templates'])
-        ->name('templates');
     Route::get('/templates', [VideoAutomationController::class, 'templates'])
         ->name('templates.index');
     Route::get('/templates/create', [VideoAutomationController::class, 'createTemplate'])
@@ -3291,8 +3284,6 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
         ->name('templates.destroy');
 
     // Projects (โปรเจกต์สร้างวีดีโอ)
-    Route::get('/projects', [VideoAutomationController::class, 'projects'])
-        ->name('projects');
     Route::get('/projects', [VideoAutomationController::class, 'projects'])
         ->name('projects.index');
     Route::get('/projects/create', [VideoAutomationController::class, 'createProject'])
@@ -3311,8 +3302,6 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
         ->name('projects.destroy');
 
     // Jobs (งานที่รัน)
-    Route::get('/jobs', [VideoAutomationController::class, 'jobs'])
-        ->name('jobs');
     Route::get('/jobs', [VideoAutomationController::class, 'jobs'])
         ->name('jobs.index');
     Route::get('/jobs/{id}/logs', [VideoAutomationController::class, 'getJobLogs'])

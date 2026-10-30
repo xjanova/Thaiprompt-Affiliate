@@ -65,7 +65,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
             <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('admin.video-automation.index') }}"
+                <a href="{{ route('admin.video-automation.dashboard') }}"
                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -107,7 +107,7 @@
                 <select name="genre"
                         class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
-                    @foreach(\App\Models\VideoAutoTemplate::GENRES as $genre => $label)
+                    @foreach(\App\Models\VideoAutoTemplate::MUSIC_GENRES as $genre => $label)
                         <option value="{{ $genre }}" {{ request('genre') == $genre ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -211,7 +211,7 @@
                                 $genreClass = 'genre-' . ($template->music_genre ?? 'default');
                             @endphp
                             <span class="genre-badge {{ $genreClass }}">
-                                {{ \App\Models\VideoAutoTemplate::GENRES[$template->music_genre] ?? $template->music_genre }}
+                                {{ \App\Models\VideoAutoTemplate::MUSIC_GENRES[$template->music_genre] ?? $template->music_genre }}
                             </span>
 
                             @if($template->image_style)

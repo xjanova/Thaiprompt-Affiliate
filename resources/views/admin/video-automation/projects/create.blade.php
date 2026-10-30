@@ -195,7 +195,7 @@
 
                                 <div class="flex flex-wrap gap-2">
                                     <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs rounded-full">
-                                        {{ \App\Models\VideoAutoTemplate::GENRES[$template->music_genre] ?? $template->music_genre }}
+                                        {{ \App\Models\VideoAutoTemplate::MUSIC_GENRES[$template->music_genre] ?? $template->music_genre }}
                                     </span>
                                     <span class="px-2 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 text-xs rounded-full">
                                         {{ \App\Models\VideoAutoTemplate::IMAGE_STYLES[$template->image_style] ?? $template->image_style }}

@@ -210,7 +210,7 @@
 
     {{-- Quick Actions --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="{{ route('admin.video-automation.templates') }}"
+        <a href="{{ route('admin.video-automation.templates.index') }}"
            class="glass-fusion rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition group">
             <div class="text-center">
                 <div class="w-14 h-14 mx-auto rounded-xl va-gradient-purple text-white flex items-center justify-center mb-3 group-hover:scale-110 transition">
@@ -221,7 +221,7 @@
             </div>
         </a>
 
-        <a href="{{ route('admin.video-automation.projects') }}"
+        <a href="{{ route('admin.video-automation.projects.index') }}"
            class="glass-fusion rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition group">
             <div class="text-center">
                 <div class="w-14 h-14 mx-auto rounded-xl va-gradient-blue text-white flex items-center justify-center mb-3 group-hover:scale-110 transition">
@@ -273,7 +273,7 @@
                 <i class="fas fa-history mr-2 text-purple-500"></i>
                 โปรเจกต์ล่าสุด
             </h2>
-            <a href="{{ route('admin.video-automation.projects') }}"
+            <a href="{{ route('admin.video-automation.projects.index') }}"
                class="text-sm text-purple-600 dark:text-purple-400 hover:underline">
                 ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
             </a>

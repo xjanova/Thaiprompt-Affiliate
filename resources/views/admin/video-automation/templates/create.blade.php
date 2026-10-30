@@ -192,7 +192,7 @@
                             required
                             class="input-modern w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
                         <option value="">เลือกแนวเพลง</option>
-                        @foreach(\App\Models\VideoAutoTemplate::GENRES as $genre => $label)
+                        @foreach(\App\Models\VideoAutoTemplate::MUSIC_GENRES as $genre => $label)
                             <option value="{{ $genre }}" {{ old('music_genre') == $genre ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
@@ -206,7 +206,7 @@
                     <select name="music_mood"
                             class="input-modern w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
                         <option value="">เลือกอารมณ์</option>
-                        @foreach(\App\Models\VideoAutoTemplate::MOODS as $mood => $label)
+                        @foreach(\App\Models\VideoAutoTemplate::MUSIC_MOODS as $mood => $label)
                             <option value="{{ $mood }}" {{ old('music_mood') == $mood ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>

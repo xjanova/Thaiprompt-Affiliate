@@ -339,7 +339,7 @@
                 </div>
 
                 <div class="space-y-2 max-h-96 overflow-y-auto">
-                    @forelse($project->logs()->latest()->take(50)->get() as $log)
+                    @forelse($project->logs()->latest('logged_at')->take(50)->get() as $log)
                         <div class="log-entry log-{{ $log->level }}">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
@@ -373,7 +373,7 @@
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-gray-500 dark:text-gray-400">แนวเพลง</dt>
-                        <dd class="font-medium text-gray-900 dark:text-white">{{ \App\Models\VideoAutoTemplate::GENRES[$project->template?->music_genre] ?? '-' }}</dd>
+                        <dd class="font-medium text-gray-900 dark:text-white">{{ \App\Models\VideoAutoTemplate::MUSIC_GENRES[$project->template?->music_genre] ?? '-' }}</dd>
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-gray-500 dark:text-gray-400">สไตล์ภาพ</dt>

@@ -885,17 +885,17 @@ return [
             'badge' => 'NEW',
             'badge_color' => 'bg-gradient-to-r from-purple-600 to-pink-600',
             'submenu' => [
-                ['label' => '📊 Dashboard', 'route' => 'admin.platform-revenue.video-automation.dashboard', 'description' => 'ภาพรวมระบบ Video Automation'],
-                ['label' => '🎨 เทมเพลต', 'route' => 'admin.platform-revenue.video-automation.templates', 'description' => 'จัดการเทมเพลตวิดีโอ'],
-                ['label' => '📁 โปรเจกต์', 'route' => 'admin.platform-revenue.video-automation.projects', 'description' => 'สร้างและจัดการโปรเจกต์'],
-                ['label' => '⏰ Jobs', 'route' => 'admin.platform-revenue.video-automation.jobs', 'description' => 'ติดตามงานที่กำลังทำ'],
-                ['label' => '📅 Schedules', 'route' => 'admin.platform-revenue.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
+                ['label' => '📊 Dashboard', 'route' => 'admin.video-automation.dashboard', 'description' => 'ภาพรวมระบบ Video Automation'],
+                ['label' => '🎨 เทมเพลต', 'route' => 'admin.video-automation.templates.index', 'description' => 'จัดการเทมเพลตวิดีโอ'],
+                ['label' => '📁 โปรเจกต์', 'route' => 'admin.video-automation.projects.index', 'description' => 'สร้างและจัดการโปรเจกต์'],
+                ['label' => '⏰ Jobs', 'route' => 'admin.video-automation.jobs.index', 'description' => 'ติดตามงานที่กำลังทำ'],
+                ['label' => '📅 Schedules', 'route' => 'admin.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => '🌐 Platforms', 'route' => 'admin.platform-revenue.video-automation.platforms', 'description' => 'เชื่อมต่อ YouTube, Facebook, TikTok, Lemon8'],
-                ['label' => '📜 ประวัติการโพสต์', 'route' => 'admin.platform-revenue.video-automation.publish-history', 'description' => 'ดูประวัติการเผยแพร่วิดีโอ'],
+                ['label' => '🌐 Platforms', 'route' => 'admin.video-automation.platforms', 'description' => 'เชื่อมต่อ YouTube, Facebook, TikTok, Lemon8'],
+                ['label' => '📜 ประวัติการโพสต์', 'route' => 'admin.video-automation.publish-history', 'description' => 'ดูประวัติการเผยแพร่วิดีโอ'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.platform-revenue.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
-                ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.platform-revenue.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
+                ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
+                ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
             ],
         ],
 

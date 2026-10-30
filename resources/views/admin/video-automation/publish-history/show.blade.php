@@ -138,7 +138,7 @@
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                                 </svg>
                             @endif
-                            {{ $statuses[$history->status] ?? $history->status }}
+                            {{ $statuses[$history->status]['label'] ?? $history->status }}
                         </span>
                     </div>
 
@@ -215,19 +215,19 @@
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4">Engagement</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <div class="engagement-card bg-blue-50 dark:bg-blue-900/20">
-                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($history->views ?? 0) }}</p>
+                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($history->views_count ?? 0) }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">👁️ Views</p>
                     </div>
                     <div class="engagement-card bg-pink-50 dark:bg-pink-900/20">
-                        <p class="text-2xl font-bold text-pink-600 dark:text-pink-400">{{ number_format($history->likes ?? 0) }}</p>
+                        <p class="text-2xl font-bold text-pink-600 dark:text-pink-400">{{ number_format($history->likes_count ?? 0) }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">❤️ Likes</p>
                     </div>
                     <div class="engagement-card bg-green-50 dark:bg-green-900/20">
-                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ number_format($history->comments ?? 0) }}</p>
+                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ number_format($history->comments_count ?? 0) }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">💬 Comments</p>
                     </div>
                     <div class="engagement-card bg-purple-50 dark:bg-purple-900/20">
-                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($history->shares ?? 0) }}</p>
+                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($history->shares_count ?? 0) }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">🔄 Shares</p>
                     </div>
                 </div>
@@ -248,7 +248,7 @@
                 <div class="space-y-3">
                     <div>
                         <p class="text-sm text-gray-500 dark:text-gray-400">แพลตฟอร์ม</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $platforms[$history->platform] ?? $history->platform }}</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $platforms[$history->platform]['label'] ?? $history->platform }}</p>
                     </div>
                     @if($history->platform_post_id)
                         <div>

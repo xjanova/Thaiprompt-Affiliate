@@ -151,7 +151,7 @@
                     </svg>
                 </div>
                 <p class="font-bold text-gray-900 dark:text-white">{{ number_format($pStats['count'] ?? 0) }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $label }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $label['label'] }}</p>
             </div>
         @endforeach
     </div>
@@ -176,7 +176,7 @@
                         class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
                     @foreach($platforms as $key => $label)
-                        <option value="{{ $key }}" {{ request('platform') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $key }}" {{ request('platform') == $key ? 'selected' : '' }}>{{ $label['label'] }}</option>
                     @endforeach
                 </select>
             </div>
@@ -188,7 +188,7 @@
                         class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
                     @foreach($statuses as $key => $label)
-                        <option value="{{ $key }}" {{ request('status') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $key }}" {{ request('status') == $key ? 'selected' : '' }}>{{ $label['label'] }}</option>
                     @endforeach
                 </select>
             </div>
@@ -276,13 +276,13 @@
                                             </p>
                                         @endif
                                         <span class="status-badge status-{{ $history->status }} mt-1">
-                                            {{ $statuses[$history->status] ?? $history->status }}
+                                            {{ $statuses[$history->status]['label'] ?? $history->status }}
                                         </span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="platform-badge platform-{{ $history->platform }}">
-                                        {{ $platforms[$history->platform] ?? $history->platform }}
+                                        {{ $platforms[$history->platform]['label'] ?? $history->platform }}
                                     </span>
                                     @if($history->platform_url)
                                         <a href="{{ $history->platform_url }}"
@@ -296,15 +296,15 @@
                                     <div class="text-sm space-y-1">
                                         <p class="flex items-center gap-2">
                                             <span class="text-gray-500 dark:text-gray-400">👁️</span>
-                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->views ?? 0) }}</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->views_count ?? 0) }}</span>
                                         </p>
                                         <p class="flex items-center gap-2">
                                             <span class="text-gray-500 dark:text-gray-400">❤️</span>
-                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->likes ?? 0) }}</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->likes_count ?? 0) }}</span>
                                         </p>
                                         <p class="flex items-center gap-2">
                                             <span class="text-gray-500 dark:text-gray-400">💬</span>
-                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->comments ?? 0) }}</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">{{ number_format($history->comments_count ?? 0) }}</span>
                                         </p>
                                     </div>
                                 </td>

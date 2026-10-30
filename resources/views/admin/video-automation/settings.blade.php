@@ -82,7 +82,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
             <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('admin.video-automation.index') }}"
+                <a href="{{ route('admin.video-automation.dashboard') }}"
                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -450,7 +450,7 @@
                         </form>
                     </div>
                 @else
-                    <a href="{{ route('admin.video-automation.youtube.auth') }}"
+                    <a href="{{ route('admin.video-automation.youtube.connect') }}"
                        class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition {{ !$youtubeConfigured ? 'opacity-50 pointer-events-none' : '' }}">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
@@ -646,7 +646,7 @@
 
         {{-- Submit Button --}}
         <div class="flex justify-end gap-4">
-            <a href="{{ route('admin.video-automation.index') }}"
+            <a href="{{ route('admin.video-automation.dashboard') }}"
                class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                 ยกเลิก
             </a>
