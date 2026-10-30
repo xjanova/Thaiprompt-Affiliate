@@ -1806,8 +1806,9 @@ PROMPT;
             ?? ($this->settings->sensitive_model ?? 'gpt-4o');
 
         // 🛡️ Vision capability check — ถ้า model เก่า force fallback
-        //    OpenAI vision models: gpt-4o*, gpt-5*, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
-        if (! preg_match('/^(gpt-(4o|5|4-vision|4-turbo))/i', $model)) {
+        //    OpenAI vision models: gpt-4o*, gpt-5* ขึ้นไป, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
+        //    🐛 (2026-10-30) เดิมจับแค่เลข 5 → key ที่ตั้ง gpt-6 ถูกลดเป็น gpt-4o-mini เงียบๆ
+        if (! preg_match('/^(gpt-(4o|[5-9]|4-vision|4-turbo))/i', $model)) {
             // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
             $model = 'gpt-4o-mini';
         }
@@ -2629,6 +2630,13 @@ PROMPT;
         $lockedKey = $this->settings->getSensitivePoolKey();
         $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
 
+        // 🐛 (2026-10-30) ไม่เจอ key ของค่ายที่ตั้งไว้ → ลองทุกค่าย (กติกาเดียวกับ generateProResponse)
+        //   prod ตั้ง sensitive_provider=gemini แต่ key sensitive ที่เปิดอยู่เป็น OpenAI
+        //   ถ้าไม่ลองค่ายอื่น เปิดโหมด Sensitive แล้วจะตกไปแชทปกติทั้งที่มี key พร้อมใช้
+        if (! $sensitiveKey) {
+            $sensitiveKey = $poolService->acquireKeyAnyProvider('sensitive');
+        }
+
         if (! $sensitiveKey) {
             Log::info('FortuneAIService: ไม่มี sensitive key — caller ต้อง fallback ไป chat ปกติ', [
                 'provider' => $sensitiveProvider,
@@ -2638,10 +2646,8 @@ PROMPT;
             return null;
         }
 
-        // ถ้าใช้ locked key — sync provider ตาม key (กรณี admin เลือก key คนละ provider กับ sensitive_provider)
-        if ($lockedKey) {
-            $sensitiveProvider = $lockedKey->provider;
-        }
+        // sync provider ตาม key จริงเสมอ — locked key หรือ fallback ด้านบนอาจเป็นคนละค่ายกับ sensitive_provider
+        $sensitiveProvider = $sensitiveKey->provider ?: $sensitiveProvider;
 
         try {
             $apiKey = $sensitiveKey->api_key;
