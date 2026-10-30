@@ -154,6 +154,10 @@ final class SafeLog
 
             // 8) header Authorization ที่ถูก dump ออกมา
             '/\b(Bearer)\s+[A-Za-z0-9\-._~+\/]{16,}=*/i' => '$1 '.$mask,
+
+            // 9) provider ทวนค่าที่กรอกกลับมาใน error 401 เช่น "Incorrect API key provided: abc***xyz"
+            //    🔐 (2026-10-30) ค่าที่ทวนมาอาจเป็นรหัสผ่านที่เบราว์เซอร์เติมผิดช่อง ไม่ใช่แค่ key เสีย
+            '/(\bapi[ _-]?key(?: provided)?:\s*)'.$value.'/i' => '$1'.$mask,
         ];
     }
 }

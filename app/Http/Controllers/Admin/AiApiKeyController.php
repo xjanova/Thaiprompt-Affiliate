@@ -10,6 +10,7 @@ use App\Services\AiApiKeyHealthProbeService;
 use App\Services\AiApiKeyPoolService;
 use App\Support\AnthropicMessages;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -196,6 +197,24 @@ class AiApiKeyController extends Controller
             unset($validated['api_key']);
         }
 
+        // 🔐 (2026-10-30, owner) เทส key ใหม่ "ก่อน" บันทึก — เดิมบันทึกทับก่อนแล้วค่อยเทส
+        //   เคสจริง: เบราว์เซอร์เติมรหัสผ่านลงช่อง API Key ตอนแอดมินแก้โมเดล → key #37 กับ #23 โดนทับจนยิงไม่ได้
+        //   ถ้าค่ายปฏิเสธ key ใหม่ ให้คง key เดิมไว้ ส่วนการตั้งค่าอื่นยังบันทึกตามปกติ
+        $existing = AiApiKey::findOrFail($id);
+        $modelCheck = null;
+        $testResult = null;
+        if ($apiKeyChanged) {
+            $testResult = $modelCheck = $this->testCandidateKey($existing, $validated);
+            if ($testResult['rejected']) {
+                unset($validated['api_key']);
+            }
+        } elseif (array_key_exists('model', $validated) && ($validated['model'] ?: null) !== ($existing->model ?: null)) {
+            // 🔬 เปลี่ยนแค่โมเดลก็ต้องดูว่าบัญชีนี้มีโมเดลนั้นไหม เพราะ router อ่านโมเดลจาก key แล้ว
+            //   ใช้แค่คำเตือน — เทสไม่สำเร็จไม่ขวางการบันทึก และไม่แตะสถานะเทสของ key
+            $modelCheck = $this->testCandidateKey($existing, $validated);
+        }
+        $modelWarning = $modelCheck['model_warning'] ?? null;
+
         try {
             $key = $this->poolService->updateKey($id, $validated);
         } catch (QueryException $sqlErr) {
@@ -213,40 +232,86 @@ class AiApiKeyController extends Controller
             throw $sqlErr;
         }
 
-        // 🛡️ (2026-05-13) Re-test เมื่อ api_key เปลี่ยน (กัน key ใหม่ broken)
+        // 🛡️ (2026-05-13) บันทึกผลเทสเมื่อ api_key เปลี่ยน (กัน key ใหม่ broken)
         //   ถ้าแก้แค่ name/priority/purpose/limit → ไม่ต้อง re-test (เร็วกว่า)
-        $testResult = null;
-        if ($apiKeyChanged) {
-            try {
-                $result = $this->testApiKey($key);
-                $key->update([
+        if ($testResult !== null && $testResult['rejected']) {
+            // ไม่แตะสถานะเทสของ key เดิม — key นั้นยังใช้งานได้เหมือนก่อนกดบันทึก
+            return response()->json([
+                'success' => false,
+                'api_key_rejected' => true,
+                'message' => "⚠️ ไม่เปลี่ยน API Key เพราะผู้ให้บริการปฏิเสธค่าที่กรอก (HTTP {$testResult['status']}) "
+                    .'— key เดิมยังใช้งานอยู่ และบันทึกการตั้งค่าอื่นแล้ว กรุณาตรวจว่าเบราว์เซอร์ไม่ได้เติมรหัสผ่านลงช่องนี้',
+            ], 422);
+        }
+
+        if ($testResult !== null) {
+            $key->update($testResult['passed']
+                ? [
                     'last_test_passed_at' => now(),
                     'last_test_failed_at' => null,
-                    'last_test_message' => 'OK ('.($result['response_time_ms'] ?? '-').'ms) — auto-test after update',
-                ]);
-                $testResult = ['passed' => true];
-            } catch (\Throwable $testErr) {
-                $key->update([
+                    'last_test_message' => 'OK ('.($testResult['response_time_ms'] ?? '-').'ms) — auto-test after update',
+                ]
+                : [
                     'last_test_failed_at' => now(),
-                    'last_test_message' => mb_substr('Auto-test (update) failed: '.\App\Support\SafeLog::exceptionMessage($testErr), 0, 500),
+                    'last_test_message' => mb_substr('Auto-test (update) failed: '.$testResult['message'], 0, 500),
                 ]);
-                $testResult = ['passed' => false, 'message' => \App\Support\SafeLog::exceptionMessage($testErr)];
-            }
         }
+
+        $message = $apiKeyChanged
+            ? ($testResult['passed']
+                ? '✅ อัพเดท + เทสผ่าน — key พร้อมใช้'
+                : '⚠️ อัพเดทแล้ว แต่ key ใหม่เทสไม่ผ่าน ('.($testResult['message'] ?? 'unknown').') — กรุณาแก้แล้วทดสอบ')
+            : 'อัพเดท API Key สำเร็จ';
 
         return response()->json([
             'success' => true,
-            'message' => $apiKeyChanged
-                ? ($testResult['passed']
-                    ? '✅ อัพเดท + เทสผ่าน — key พร้อมใช้'
-                    : '⚠️ อัพเดทแล้ว แต่ key ใหม่เทสไม่ผ่าน ('.($testResult['message'] ?? 'unknown').') — กรุณาแก้แล้วทดสอบ')
-                : 'อัพเดท API Key สำเร็จ',
+            'warning' => ($testResult !== null && ! $testResult['passed']) || $modelWarning !== null,
+            'message' => $modelWarning !== null ? "{$message}\n⚠️ {$modelWarning}" : $message,
             'data' => [
                 'id' => $key->id,
                 'name' => $key->name,
                 'is_active' => $key->is_active,
             ],
         ]);
+    }
+
+    /**
+     * 🔐 เทส key ใหม่โดยยังไม่บันทึกลง DB
+     *
+     * rejected = ค่ายตอบชัดว่า key ใช้ไม่ได้ — 401 หรือ 400 ที่บ่นเรื่อง API key (Gemini, xAI ตอบแบบนี้)
+     * ⚠️ timeout / 5xx / 429 ไม่นับว่าปฏิเสธ — ค่ายล่มตอนกำลังเปลี่ยน key ที่รั่ว แอดมินต้องยังบันทึกได้
+     * ⚠️ 403 ก็ไม่นับ — key OpenAI แบบจำกัดสิทธิ์อาจอ่าน /models ไม่ได้ ทั้งที่ยิงงานจริงได้
+     *
+     * @param  array<string, mixed>  $validated  ค่าที่กำลังจะบันทึก (รวม api_key, model, base_url ใหม่)
+     * @return array{passed: bool, rejected: bool, status: int|null, message: string|null, response_time_ms: int|float|null, model_warning: string|null}
+     */
+    protected function testCandidateKey(AiApiKey $key, array $validated): array
+    {
+        try {
+            $result = $this->testApiKey($key->replicate()->fill($validated));
+
+            return [
+                'passed' => true,
+                'rejected' => false,
+                'status' => null,
+                'message' => null,
+                'response_time_ms' => $result['response_time_ms'] ?? null,
+                'model_warning' => $result['model_warning'] ?? null,
+            ];
+        } catch (\Throwable $testErr) {
+            $response = $testErr instanceof ClientException ? $testErr->getResponse() : null;
+            $status = $response?->getStatusCode();
+
+            return [
+                'passed' => false,
+                'rejected' => $status === 401
+                    || ($status === 400 && preg_match('/api[ _-]?key/i', (string) $response->getBody()) === 1),
+                'status' => $status,
+                'message' => \App\Support\SafeLog::exceptionMessage($testErr),
+                'response_time_ms' => null,
+                'model_warning' => null,
+            ];
+        }
     }
 
     /**

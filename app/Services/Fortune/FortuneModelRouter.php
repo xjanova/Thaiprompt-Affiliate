@@ -2,6 +2,7 @@
 
 namespace App\Services\Fortune;
 
+use App\Models\AiApiKey;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Support\Facades\Log;
@@ -18,13 +19,17 @@ use Illuminate\Support\Facades\Log;
  *
  * ทำไมต้องรวมไว้ที่เดียว: กฎ "คำถามยาก" มีกับดักซ่อนอยู่ (ดู isHardQuestion)
  * ถ้าปล่อยให้ Celtic กับ Deep 39 เขียนกันคนละชุด จะเพี้ยนคนละทางแน่นอน
+ *
+ * 🎛️ (2026-10-30, owner) ชื่อโมเดลตามที่ตั้งบน key ในหน้าแอดมินแล้ว ไม่ยึดชื่อในโค้ดอีก
+ *   เดิมเปลี่ยน key ไป gen 6 แล้ว เทิร์นคุณไสย์/คำถามยาก/คุยต่อ 39 ยังวิ่ง gpt-5.6 เงียบๆ
+ *   ตัวแรง = โมเดลของ key OpenAI purpose=sensitive · ตัวหลัก = โมเดลของ key OpenAI เลนทำนาย Deep
  */
 class FortuneModelRouter
 {
-    /** โมเดลตัวแรง — ใช้กับคุณไสย์ + คำถามยาก */
+    /** ค่าสำรองของโมเดลตัวแรง (คุณไสย์ + คำถามยาก) — ใช้เมื่อไม่มี key ให้อ่าน ปกติเรียกผ่าน strongModel() */
     public const MODEL_STRONG = 'gpt-5.6-sol';
 
-    /** โมเดลหลัก — ถูกและพอสำหรับคำถามทั่วไป */
+    /** ค่าสำรองของโมเดลหลัก — ใช้เมื่อไม่มี key ให้อ่าน ปกติเรียกผ่าน defaultModel() */
     public const MODEL_DEFAULT = 'gpt-5.6-luna';
 
     /** สั้นกว่านี้ = ทัก/ตอบรับ ไม่ใช่คำถามยาก → ข้าม detector ไม่ต้องเสียค่าตรวจ */
@@ -51,9 +56,9 @@ class FortuneModelRouter
      */
     public function celticOverrides(FortuneReading $reading, ?string $userQuestion = null): ?array
     {
-        $model = $this->pickModel($reading, $userQuestion, 'celtic');
-
-        return $model === self::MODEL_STRONG ? ['openai' => self::MODEL_STRONG] : null;
+        return $this->isStrongTurn($reading, $userQuestion, 'celtic')
+            ? ['openai' => self::strongModel()]
+            : null;
     }
 
     /**
@@ -61,23 +66,72 @@ class FortuneModelRouter
      */
     public function proSessionModel(FortuneReading $reading, ?string $userQuestion = null): string
     {
-        return $this->pickModel($reading, $userQuestion, 'deep');
+        return $this->isStrongTurn($reading, $userQuestion, 'deep')
+            ? self::strongModel()
+            : self::defaultModel();
     }
 
     /**
-     * ตรรกะกลาง — เลือกโมเดลของเทิร์นนี้
+     * 💪 โมเดลตัวแรง — ตามที่ตั้งบน key OpenAI purpose=sensitive
      */
-    protected function pickModel(FortuneReading $reading, ?string $userQuestion, string $context): string
+    public static function strongModel(): string
+    {
+        return self::modelFromKey('sensitive', self::MODEL_STRONG);
+    }
+
+    /**
+     * 🌙 โมเดลหลัก — ตามที่ตั้งบน key OpenAI เลนทำนาย Deep
+     */
+    public static function defaultModel(): string
+    {
+        return self::modelFromKey('prediction_deep', self::MODEL_DEFAULT);
+    }
+
+    /**
+     * อ่านโมเดลจาก key ที่ priority สูงสุดของเลนนั้น
+     *
+     * ⚠️ นับเฉพาะ provider openai เพราะปลายทางส่งเข้าเลน OpenAI (`['openai' => ...]`)
+     *    และไม่ใช้ resolveModel() — key ที่ไม่ได้ตั้งโมเดลจะได้ตัวแรกของค่าย ซึ่งไม่ใช่ "ตัวแรง" ที่ตั้งใจ
+     * ⚠️ ดู key ที่ pool เลือกได้จริง (available) ก่อน — key ที่ critical/ยังไม่ผ่านเทส/ถูกพักชั่วคราว pool จะข้ามไป
+     *    ถ้าเอาโมเดลของตัวนั้นมาส่งผ่าน key อื่น อาจคนละบัญชีแล้วเจอ model_not_found ทั้งที่ลูกค้าจ่ายเงินแล้ว
+     *    ไม่มี key พร้อมเลยค่อยอ่านจาก key ที่เปิดอยู่ เพราะยังตรงกับที่แอดมินตั้งมากกว่าชื่อในโค้ด
+     */
+    protected static function modelFromKey(string $purpose, string $fallback): string
+    {
+        try {
+            $keys = AiApiKey::query()
+                ->forProvider('openai')
+                ->forPurpose($purpose)
+                ->orderByPriority();
+
+            $key = (clone $keys)->available()->first() ?? $keys->active()->first();
+
+            return $key?->model ?: $fallback;
+        } catch (\Throwable $e) {
+            // non-blocking — อ่าน key ไม่ได้ ก็ใช้ค่าสำรอง (ลูกค้าต้องได้คำตอบเสมอ)
+            Log::warning('FortuneModelRouter: อ่านโมเดลจาก key ไม่สำเร็จ (ใช้ค่าสำรอง)', [
+                'purpose' => $purpose,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $fallback;
+        }
+    }
+
+    /**
+     * ตรรกะกลาง — เทิร์นนี้ต้องใช้โมเดลตัวแรงไหม
+     */
+    protected function isStrongTurn(FortuneReading $reading, ?string $userQuestion, string $context): bool
     {
         try {
             // 1) 🪬 โหมดดูคุณไสย์ → sol เสมอ (เฉพาะ Celtic — Deep ไม่มีโหมดนี้)
             if ($context === 'celtic' && app(\App\Services\CelticCrossService::class)->isBlackMagicModeForced($reading)) {
-                return self::MODEL_STRONG;
+                return true;
             }
 
             // 2) 🧠 คำถามยาก → sol เฉพาะเทิร์นนี้
             if ($this->isHardQuestion($reading, $userQuestion, $context)) {
-                return self::MODEL_STRONG;
+                return true;
             }
         } catch (\Throwable $e) {
             // non-blocking — ตัดสินใจไม่ได้ ก็ใช้โมเดลปกติ (ลูกค้าต้องได้คำตอบเสมอ)
@@ -88,7 +142,7 @@ class FortuneModelRouter
             ]);
         }
 
-        return self::MODEL_DEFAULT;
+        return false;
     }
 
     /**
@@ -145,7 +199,8 @@ class FortuneModelRouter
             $guard->recordUse($platform, $uid, 0);
         }
 
-        Log::info('FortuneModelRouter: คำถามยาก → ยกระดับเป็น '.self::MODEL_STRONG, [
+        Log::info('FortuneModelRouter: คำถามยาก → ยกระดับเป็นโมเดลตัวแรง', [
+            'model' => self::strongModel(),
             'reading_id' => $reading->id,
             'context' => $context,
             'mood_level' => $mood,
