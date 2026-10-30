@@ -196,120 +196,6 @@ php artisan crypto:test-connections --detail
 🎉 Cryptocurrency system is ready for use
 ```
 
-### 3. Price Charts & Comparison 📊
-
-**Files:**
-- `app/Http/Controllers/CryptoPriceChartController.php`
-- `resources/views/crypto/price-charts/index.blade.php`
-
-กราฟราคาและการเปรียบเทียบแบบเรียลไทม์:
-
-**Features:**
-- 📈 กราฟราคาแบบ Real-time (Chart.js)
-- 🔄 เปรียบเทียบ 1-5 สกุลเงินพร้อมกัน
-- ⏰ ช่วงเวลา: 1H, 24H, 7D, 30D, 90D, 1Y
-- 📊 สถิติ: High, Low, Average, Change %
-- 🎨 สีแยกตามสกุลเงิน
-- 💰 Top Gainers & Losers (24h)
-- 🌐 Market Overview (Total Market Cap, Volume)
-
-**API Endpoints:**
-
-```javascript
-// Get chart data
-GET /api/crypto/chart/{currency}?period=24h
-
-// Compare multiple currencies
-GET /api/crypto/compare?currencies=1,2,3&period=24h
-
-// Market overview
-GET /api/crypto/market-overview
-
-// Real-time prices
-GET /api/crypto/realtime-prices?currencies=1,2,3
-```
-
-**หน้าเว็บ:**
-```
-https://yoursite.com/crypto/charts
-```
-
-**Screenshots:**
-```
-┌─────────────────────────────────────────────────┐
-│  📈 Cryptocurrency Price Charts                 │
-│─────────────────────────────────────────────────│
-│  Total Market Cap: ฿5.2T  │  24h Vol: ฿850B    │
-│─────────────────────────────────────────────────│
-│                                                 │
-│  Currency: [ETH ▼]  Period: [1H][24H][7D][30D]│
-│                                                 │
-│  Current: ฿125,678  High: ฿127,890  Low: ฿123,456│
-│                                                 │
-│  [Interactive Chart.js Graph]                   │
-│                                                 │
-│─────────────────────────────────────────────────│
-│  Compare Currencies                             │
-│  [✓] BTC  [✓] ETH  [ ] BNB  [ ] MATIC          │
-│                                                 │
-│  [Comparison Chart showing % change]            │
-│                                                 │
-│─────────────────────────────────────────────────│
-│  Top Gainers (24h)    │   Top Losers (24h)     │
-│  1. SOL  +15.23%      │   1. ADA  -8.45%       │
-│  2. LINK +12.67%      │   2. DOT  -5.23%       │
-│  3. AVAX +10.34%      │   3. ALGO -4.12%       │
-└─────────────────────────────────────────────────┘
-```
-
-**Frontend Integration:**
-
-```javascript
-// Alpine.js Components included in blade file:
-
-// 1. Market Overview
-function marketOverview() {
-    // Auto-refresh every minute
-    // Shows total market cap, volume, active currencies
-}
-
-// 2. Price Chart
-function priceChart() {
-    // Interactive Chart.js line chart
-    // Multiple time periods
-    // Real-time updates
-}
-
-// 3. Comparison Chart
-function comparisonChart() {
-    // Multi-currency comparison
-    // Normalized % change
-    // Color-coded per currency
-}
-
-// 4. Market Movers
-function marketMovers() {
-    // Top 5 gainers/losers
-    // Auto-refresh
-}
-```
-
----
-
-## 📝 Routes ใหม่
-
-**Web Routes:**
-```php
-// Price Charts Page
-GET /crypto/charts
-
-// API Routes (JSON)
-GET /api/crypto/chart/{currency}?period=24h
-GET /api/crypto/compare?currencies=1,2,3&period=24h
-GET /api/crypto/market-overview
-GET /api/crypto/realtime-prices?currencies=1,2,3
-```
-
 ---
 
 ## 🔧 Service Provider Updates
@@ -330,14 +216,8 @@ $indexer = app(BlockchainIndexerService::class);     // ใช้งานได
 ## 🎨 Frontend Libraries
 
 **Required:**
-- Chart.js 4.4.0 (สำหรับกราฟ)
 - Alpine.js (มีอยู่แล้วใน project)
 - Tailwind CSS (มีอยู่แล้วใน project)
-
-**CDN (รวมไว้ใน blade file แล้ว):**
-```html
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-```
 
 ---
 
@@ -379,13 +259,6 @@ php artisan crypto:test-connections --network=ethereum
 
 ```bash
 php artisan crypto:health-check
-```
-
-### 4. ดูกราฟราคา
-
-เปิดเว็บบราวเซอร์:
-```
-http://localhost/crypto/charts
 ```
 
 ---
@@ -509,8 +382,7 @@ console.log('Explorer URL:', result.explorer_url);
 2. **Indexer Integration** - ใช้ Etherscan API ได้จริง
 3. **Price Feeds** - ดึงราคาได้จริง
 4. **Client-Side Signing** - ปลอดภัยกว่า server-side
-5. **Charts & Comparison** - แสดงผลด้วย Chart.js
-6. **Health Monitoring** - ทดสอบระบบได้
+5. **Health Monitoring** - ทดสอบระบบได้
 
 ### ⚠️ ข้อจำกัดปัจจุบัน
 
@@ -555,13 +427,10 @@ php artisan crypto:process-withdrawals --continuous
 **New Files:**
 - `app/Services/Crypto/ClientSideTransactionService.php` - Client-side transaction handling
 - `app/Console/Commands/TestCryptoConnections.php` - Connection testing command
-- `app/Http/Controllers/CryptoPriceChartController.php` - Price charts controller
-- `resources/views/crypto/price-charts/index.blade.php` - Price charts view
 - `CRYPTO_LIBRARIES_AND_FEATURES.md` - This documentation
 
 **Modified Files:**
 - `app/Providers/CryptoServiceProvider.php` - Added new services
-- `routes/web.php` - Added price chart routes
 
 ---
 
