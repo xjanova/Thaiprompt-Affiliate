@@ -656,6 +656,26 @@ class TpixDeploymentService
     }
 
     /**
+     * เหตุผลที่ Wizard ยังรับเงินหรือ Deploy ไม่ได้ (null = พร้อม)
+     *
+     * ต้องเช็กก่อนให้ผู้ใช้โอน เพราะเงินที่โอนบนเชนแล้วเรียกคืนไม่ได้
+     */
+    public function deploymentBlockedReason(): ?string
+    {
+        if (! config('tpix-pricing.wizard_enabled')) {
+            return 'ระบบ Deploy เหรียญยังไม่เปิดใช้งาน จึงยังไม่รับชำระเงิน';
+        }
+
+        $wallet = (string) config('tpix-pricing.service_fee_wallet');
+
+        if (! $this->blockchainService->isValidAddress($wallet) || trim(substr($wallet, 2), '0') === '') {
+            return 'ยังไม่ได้ตั้งกระเป๋ารับค่าบริการ จึงยังไม่รับชำระเงิน';
+        }
+
+        return null;
+    }
+
+    /**
      * คำนวณ estimated gas สำหรับ deployment
      */
     public function estimateDeploymentCost(TpixConfiguration $config): array

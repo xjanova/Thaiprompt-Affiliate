@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\TpixConfiguration;
 use App\Services\TPIX\TpixDeploymentService;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * TPIX Deployment Controller
@@ -395,7 +397,7 @@ class TpixDeploymentController extends Controller
     /**
      * แสดงหน้ายืนยันการชำระเงิน
      */
-    public function showPaymentConfirmation(string $slug): View
+    public function showPaymentConfirmation(string $slug): View|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
@@ -410,7 +412,9 @@ class TpixDeploymentController extends Controller
         $pricingService = app(\App\Services\TPIX\TpixPricingService::class);
         $pricing = $pricingService->calculateTotalPrice($config);
 
-        return view('admin.tpix.deployment.payment-confirmation', compact('config', 'pricing'));
+        $blockedReason = $this->deploymentService->deploymentBlockedReason();
+
+        return view('admin.tpix.deployment.payment-confirmation', compact('config', 'pricing', 'blockedReason'));
     }
 
     /**
@@ -421,6 +425,10 @@ class TpixDeploymentController extends Controller
     public function processPayment(Request $request, string $slug)
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        if ($blockedReason = $this->deploymentService->deploymentBlockedReason()) {
+            return response()->json(['success' => false, 'message' => $blockedReason], 409);
+        }
 
         $validated = $request->validate([
             'wallet_address' => 'required|string|size:42|starts_with:0x',
@@ -634,19 +642,25 @@ class TpixDeploymentController extends Controller
         // ประมาณค่า gas
         $estimation = $this->deploymentService->estimateDeploymentCost($config);
 
-        return view('admin.tpix.deployment.steps.step5', compact('config', 'estimation'));
+        $blockedReason = $this->deploymentService->deploymentBlockedReason();
+
+        return view('admin.tpix.deployment.steps.step5', compact('config', 'estimation', 'blockedReason'));
     }
 
     /**
      * Deploy Contract
      */
-    public function deployContract(Request $request, string $slug): RedirectResponse
+    public function deployContract(Request $request, string $slug): JsonResponse|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
+        if ($blockedReason = $this->deploymentService->deploymentBlockedReason()) {
+            return $this->actionResponse($request, false, $blockedReason);
+        }
+
         try {
             if ($config->isDeployed()) {
-                return back()->with('warning', 'Contract ถูก deploy ไปแล้ว');
+                return $this->actionResponse($request, false, 'Contract ถูก deploy ไปแล้ว');
             }
 
             // Deploy contract
@@ -655,46 +669,46 @@ class TpixDeploymentController extends Controller
             if ($result['success']) {
                 $config->nextStep();
 
-                return back()->with('success', 'Deploy Contract สำเร็จ! Contract Address: '.$result['contract_address']);
+                return $this->actionResponse($request, true, 'Deploy Contract สำเร็จ! Contract Address: '.$result['contract_address']);
             }
 
-            return back()->with('error', 'Deploy ล้มเหลว');
-        } catch (Exception $e) {
+            return $this->actionResponse($request, false, 'Deploy ล้มเหลว');
+        } catch (Throwable $e) {
             Log::error('Failed to deploy contract', [
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Deploy ล้มเหลว: '.$e->getMessage());
+            return $this->actionResponse($request, false, 'Deploy ล้มเหลว กรุณาตรวจสอบ log ของระบบ');
         }
     }
 
     /**
      * Verify Contract
      */
-    public function verifyContract(string $slug): RedirectResponse
+    public function verifyContract(Request $request, string $slug): JsonResponse|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
         try {
             if (! $config->isDeployed()) {
-                return back()->with('error', 'กรุณา Deploy Contract ก่อน');
+                return $this->actionResponse($request, false, 'กรุณา Deploy Contract ก่อน');
             }
 
             $result = $this->deploymentService->verifyContract($config);
 
             if ($result['success']) {
-                return back()->with('success', 'Verify Contract สำเร็จ!');
+                return $this->actionResponse($request, true, 'Verify Contract สำเร็จ!');
             }
 
-            return back()->with('warning', $result['message']);
+            return $this->actionResponse($request, false, $result['message']);
         } catch (Exception $e) {
             Log::error('Failed to verify contract', [
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Verify ล้มเหลว: '.$e->getMessage());
+            return $this->actionResponse($request, false, 'Verify ล้มเหลว กรุณาตรวจสอบ log ของระบบ');
         }
     }
 
@@ -715,7 +729,7 @@ class TpixDeploymentController extends Controller
     /**
      * สร้าง Liquidity Pool
      */
-    public function createLiquidityPool(Request $request, string $slug): RedirectResponse
+    public function createLiquidityPool(Request $request, string $slug): JsonResponse|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
@@ -727,7 +741,7 @@ class TpixDeploymentController extends Controller
 
         try {
             if (! $config->isDeployed()) {
-                return back()->with('error', 'กรุณา Deploy Contract ก่อน');
+                return $this->actionResponse($request, false, 'กรุณา Deploy Contract ก่อน');
             }
 
             $result = $this->deploymentService->createLiquidityPool(
@@ -737,17 +751,17 @@ class TpixDeploymentController extends Controller
             );
 
             if ($result['success']) {
-                return back()->with('success', 'สร้าง Liquidity Pool สำเร็จ!');
+                return $this->actionResponse($request, true, 'สร้าง Liquidity Pool สำเร็จ!');
             }
 
-            return back()->with('error', 'สร้าง Pool ล้มเหลว');
+            return $this->actionResponse($request, false, 'สร้าง Pool ล้มเหลว');
         } catch (Exception $e) {
             Log::error('Failed to create liquidity pool', [
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'สร้าง Pool ล้มเหลว: '.$e->getMessage());
+            return $this->actionResponse($request, false, 'สร้าง Pool ล้มเหลว กรุณาตรวจสอบ log ของระบบ');
         }
     }
 
@@ -797,65 +811,92 @@ class TpixDeploymentController extends Controller
     /**
      * ส่งไปยัง CoinMarketCap
      */
-    public function submitToCMC(string $slug): RedirectResponse
+    public function submitToCMC(Request $request, string $slug): JsonResponse|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        if (! $config->isDeployed()) {
+            return $this->actionResponse($request, false, 'กรุณา Deploy Contract ก่อน');
+        }
 
         try {
             $result = $this->deploymentService->submitToCoinMarketCap($config);
 
             if ($result['success']) {
-                return back()->with('success', 'ส่งข้อมูลไปยัง CoinMarketCap สำเร็จ!');
+                return $this->actionResponse($request, true, 'ส่งข้อมูลไปยัง CoinMarketCap สำเร็จ!');
             }
 
-            return back()->with('error', $result['message']);
+            return $this->actionResponse($request, false, $result['message']);
         } catch (Exception $e) {
             Log::error('Failed to submit to CMC', [
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'ส่งข้อมูลล้มเหลว: '.$e->getMessage());
+            return $this->actionResponse($request, false, 'ส่งข้อมูลล้มเหลว กรุณาตรวจสอบ log ของระบบ');
         }
     }
 
     /**
      * ส่งไปยัง CoinGecko
      */
-    public function submitToCoinGecko(string $slug): RedirectResponse
+    public function submitToCoinGecko(Request $request, string $slug): JsonResponse|RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        if (! $config->isDeployed()) {
+            return $this->actionResponse($request, false, 'กรุณา Deploy Contract ก่อน');
+        }
 
         try {
             $result = $this->deploymentService->submitToCoinGecko($config);
 
             if ($result['success']) {
-                return back()->with('success', 'ส่งข้อมูลไปยัง CoinGecko สำเร็จ!');
+                return $this->actionResponse($request, true, 'ส่งข้อมูลไปยัง CoinGecko สำเร็จ!');
             }
 
-            return back()->with('error', $result['message']);
+            return $this->actionResponse($request, false, $result['message']);
         } catch (Exception $e) {
             Log::error('Failed to submit to CoinGecko', [
                 'config_id' => $config->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'ส่งข้อมูลล้มเหลว: '.$e->getMessage());
+            return $this->actionResponse($request, false, 'ส่งข้อมูลล้มเหลว กรุณาตรวจสอบ log ของระบบ');
         }
     }
 
     /**
      * เสร็จสิ้นกระบวนการ
      */
-    public function complete(string $slug): RedirectResponse
+    public function complete(Request $request, string $slug): RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
+        $validated = $request->validate([
+            'marketing_checklist' => 'nullable|array',
+            'marketing_checklist.*' => 'string|in:press_release,social_announcement,community_campaign,influencer_outreach,listing_sites',
+        ]);
+
+        // ต้อง Deploy จริงก่อน ไม่งั้นรายการจะขึ้น listed ทั้งที่ไม่มี contract
+        if (! $config->isDeployed()) {
+            return redirect()
+                ->route('admin.tpix.deployment.step5', $slug)
+                ->with('error', 'กรุณา Deploy Contract ก่อนจบขั้นตอน');
+        }
+
         try {
+            $alreadyListed = $config->status === 'listed';
+
             $config->status = 'listed';
+            $config->marketing_materials = array_merge($config->marketing_materials ?? [], [
+                'checklist' => $validated['marketing_checklist'] ?? [],
+            ]);
             $config->save();
 
-            $config->addDeploymentLog('deployment_completed');
+            if (! $alreadyListed) {
+                $config->addDeploymentLog('deployment_completed');
+            }
 
             return redirect()
                 ->route('admin.tpix.deployment.index')
@@ -873,6 +914,18 @@ class TpixDeploymentController extends Controller
     // =====================================
     // Utilities
     // =====================================
+
+    /**
+     * ตอบผลของปุ่มใน Wizard: หน้า Wizard เรียกผ่าน fetch จึงต้องได้ JSON ส่วนฟอร์มปกติได้ redirect
+     */
+    protected function actionResponse(Request $request, bool $success, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $success, 'message' => $message], $success ? 200 : 422);
+        }
+
+        return back()->with($success ? 'success' : 'error', $message);
+    }
 
     /**
      * ลบ configuration

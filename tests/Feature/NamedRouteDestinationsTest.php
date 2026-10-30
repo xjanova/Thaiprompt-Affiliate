@@ -19,6 +19,7 @@ use App\Models\TpixConfiguration;
 use App\Models\TPIXStake;
 use App\Models\TPIXToken;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Notifications\TPIX\AddressFrozenNotification;
 use App\Notifications\TPIX\StakeUnlockedNotification;
 use App\Notifications\TPIX\TokenRejectedNotification;
@@ -155,7 +156,9 @@ class NamedRouteDestinationsTest extends TestCase
     public function test_anti_abuse_dashboard_with_a_pending_penalty_renders_and_charges(): void
     {
         $admin = $this->admin();
-        $penalty = $this->makePenalty(User::factory()->create());
+        $customer = User::factory()->create();
+        Wallet::factory()->create(['user_id' => $customer->id, 'balance' => 500]);
+        $penalty = $this->makePenalty($customer);
 
         $this->actingAs($admin)->get(route('admin.anti-abuse.dashboard'))
             ->assertOk()
@@ -211,12 +214,15 @@ class NamedRouteDestinationsTest extends TestCase
         $admin = $this->admin();
         $config = $this->makeTpixConfig($admin, 5);
 
-        $this->mock(TpixDeploymentService::class)->shouldReceive('estimateDeploymentCost')->andReturn([
-            'gas_price_gwei' => 7.5,
-            'estimated_gas' => 2500000,
-            'estimated_cost_tpix' => 0.01875,
-            'estimated_cost_formatted' => '0.01875000 TPIX',
-        ]);
+        $this->mock(TpixDeploymentService::class, function ($mock) {
+            $mock->shouldReceive('deploymentBlockedReason')->andReturn(null);
+            $mock->shouldReceive('estimateDeploymentCost')->andReturn([
+                'gas_price_gwei' => 7.5,
+                'estimated_gas' => 2500000,
+                'estimated_cost_tpix' => 0.01875,
+                'estimated_cost_formatted' => '0.01875000 TPIX',
+            ]);
+        });
 
         $this->actingAs($admin)->get(route('admin.tpix.deployment.step5', $config->slug))
             ->assertOk()
@@ -233,7 +239,10 @@ class NamedRouteDestinationsTest extends TestCase
         $admin = $this->admin();
         $config = $this->makeTpixConfig($admin, 5);
 
-        $this->mock(TpixDeploymentService::class)->shouldReceive('estimateDeploymentCost')->andReturn(['error' => 'RPC down']);
+        $this->mock(TpixDeploymentService::class, function ($mock) {
+            $mock->shouldReceive('deploymentBlockedReason')->andReturn(null);
+            $mock->shouldReceive('estimateDeploymentCost')->andReturn(['error' => 'RPC down']);
+        });
 
         $this->actingAs($admin)->get(route('admin.tpix.deployment.step5', $config->slug))
             ->assertOk()
@@ -249,6 +258,11 @@ class NamedRouteDestinationsTest extends TestCase
     {
         $admin = $this->admin();
         $config = $this->makeTpixConfig($admin, 7);
+        $config->update([
+            'contract_address' => '0x'.str_repeat('a', 40),
+            'deploy_tx_hash' => '0x'.str_repeat('b', 64),
+            'deployed_at' => now(),
+        ]);
 
         $this->actingAs($admin);
         $this->get(route('admin.tpix.deployment.step6', $config->slug))->assertOk()->assertDontSee('addLiquidity');

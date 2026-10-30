@@ -6,7 +6,7 @@
 @section('title', 'ข้อร้องเรียน #' . $dispute->dispute_number)
 
 @section('content')
-<div class="space-y-6" x-data="{ showResolveModal: false }">
+<div class="space-y-6" x-data="{ showResolveModal: {{ $errors->any() ? 'true' : 'false' }}, resolution: @js(old('resolution', '')), submitting: false }">
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -225,7 +225,7 @@
                 @if($dispute->isOpen())
                     <form action="{{ route('admin.anti-abuse.disputes.status', $dispute) }}" method="POST">
                         @csrf
-                        <select name="status" onchange="this.form.submit()"
+                        <select name="status" onchange="if (this.value) this.form.submit()"
                                 class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="">-- เปลี่ยนสถานะ --</option>
                             <option value="investigating">กำลังสอบสวน</option>
@@ -325,43 +325,50 @@
                     ตัดสินข้อร้องเรียน
                 </h3>
 
-                <form action="{{ route('admin.anti-abuse.disputes.status', $dispute) }}" method="POST">
+                <form action="{{ route('admin.anti-abuse.disputes.resolve', $dispute) }}" method="POST" @submit="submitting = true">
                     @csrf
+
+                    @if($errors->any())
+                        <div class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-sm text-red-700 dark:text-red-300">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
 
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ผลการตัดสิน</label>
-                            <select name="status" required
+                            <select name="resolution" required x-model="resolution"
                                     class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option value="">-- เลือกผลการตัดสิน --</option>
-                                <option value="resolved_favor_reporter">ตัดสินให้ผู้ร้องเรียน (ผู้ถูกร้องผิด)</option>
-                                <option value="resolved_favor_accused">ตัดสินให้ผู้ถูกร้อง (ผู้ร้องกล่าวเท็จ)</option>
-                                <option value="resolved_mutual">ยอมความ/ไกล่เกลี่ย</option>
+                                <option value="favor_reporter">ตัดสินให้ผู้ร้องเรียน (ผู้ถูกร้องผิด)</option>
+                                <option value="favor_accused">ตัดสินให้ผู้ถูกร้อง (ผู้ร้องกล่าวเท็จ)</option>
+                                <option value="mutual">ยอมความ/ไกล่เกลี่ย</option>
                                 <option value="dismissed">ยกฟ้อง (หลักฐานไม่เพียงพอ)</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หมายเหตุ</label>
-                            <textarea name="resolution_notes" rows="3"
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เหตุผลการตัดสิน</label>
+                            <textarea name="resolution_notes" rows="3" required maxlength="2000"
                                       class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                      placeholder="บันทึกเหตุผลการตัดสิน..."></textarea>
+                                      placeholder="บันทึกเหตุผลการตัดสิน...">{{ old('resolution_notes') }}</textarea>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ยอดคืนเงิน (฿)</label>
-                                <input type="number" name="refund_amount" step="0.01" min="0" value="0"
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">บันทึกยอดเท่านั้น ต้องคืนเงินแยกต่างหาก</p>
+                                <input type="number" name="refund_amount" step="0.01" min="0" value="{{ old('refund_amount', 0) }}"
                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </div>
-                            <div>
+                            <div x-show="resolution === 'favor_reporter'">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ค่าปรับ (฿)</label>
-                                <input type="number" name="penalty_amount" step="0.01" min="0" value="0"
+                                <input type="number" name="penalty_amount" step="0.01" min="0" value="{{ old('penalty_amount', 0) }}"
                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2" x-show="resolution === 'favor_reporter'">
                             <input type="checkbox" name="resulted_in_ban" value="1" id="resulted_in_ban"
                                    class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500">
                             <label for="resulted_in_ban" class="text-sm text-gray-700 dark:text-gray-300">
@@ -375,8 +382,8 @@
                                 class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                             ยกเลิก
                         </button>
-                        <button type="submit"
-                                class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                        <button type="submit" :disabled="submitting"
+                                class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors">
                             <i class="fas fa-gavel mr-2"></i>
                             ยืนยันการตัดสิน
                         </button>
