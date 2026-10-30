@@ -12,6 +12,8 @@ use App\Models\UserBlock;
 use App\Models\UserTrustScore;
 use App\Services\AntiAbuseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AntiAbuseController - Admin Panel
@@ -174,36 +176,46 @@ class AntiAbuseController extends Controller
     }
 
     /**
-     * อัพเดทสถานะข้อร้องเรียน
+     * ทำงานกับข้อร้องเรียนที่ยังเปิดอยู่เท่านั้น
+     *
+     * ล็อกแถวไว้จนจบ กันกดสองครั้งหรือแอดมินสองคนตัดสินพร้อมกันแล้วได้ค่าปรับซ้ำ
+     */
+    private function whileDisputeOpen(ServiceBookingDispute $dispute, callable $work): bool
+    {
+        return DB::transaction(function () use ($dispute, $work) {
+            $locked = ServiceBookingDispute::whereKey($dispute->id)->lockForUpdate()->firstOrFail();
+
+            if (! $locked->isOpen()) {
+                return false;
+            }
+
+            $work($locked);
+
+            return true;
+        });
+    }
+
+    /**
+     * เปลี่ยนสถานะระหว่างสอบสวน
+     *
+     * ไม่แตะยอดเงินและไม่ปิดเคส การตัดสินต้องผ่าน resolveDispute เท่านั้น
      */
     public function updateDisputeStatus(Request $request, ServiceBookingDispute $dispute)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,investigating,awaiting_response,resolved_favor_reporter,resolved_favor_accused,resolved_mutual,dismissed,escalated',
-            'resolution_notes' => 'nullable|string|max:2000',
-            'refund_amount' => 'nullable|numeric|min:0',
-            'penalty_amount' => 'nullable|numeric|min:0',
-            'resulted_in_ban' => 'nullable|boolean',
+            'status' => 'required|in:pending,investigating,awaiting_response',
         ]);
 
-        $dispute->update([
-            'status' => $validated['status'],
-            'resolution_notes' => $validated['resolution_notes'] ?? $dispute->resolution_notes,
-            'refund_amount' => $validated['refund_amount'] ?? 0,
-            'penalty_amount' => $validated['penalty_amount'] ?? 0,
-            'resulted_in_ban' => $validated['resulted_in_ban'] ?? false,
-            'handled_by' => auth()->id(),
-            'resolved_at' => in_array($validated['status'], ['resolved_favor_reporter', 'resolved_favor_accused', 'resolved_mutual', 'dismissed']) ? now() : null,
-        ]);
-
-        // ถ้าตัดสินแล้ว ให้อัพเดท Trust Score
-        if (in_array($validated['status'], ['resolved_favor_reporter', 'resolved_favor_accused'])) {
-            $this->handleDisputeResolution($dispute, $validated);
-        }
+        $updated = $this->whileDisputeOpen($dispute, function (ServiceBookingDispute $locked) use ($validated) {
+            $locked->update([
+                'status' => $validated['status'],
+                'handled_by' => auth()->id(),
+            ]);
+        });
 
         return redirect()
             ->route('admin.anti-abuse.disputes.show', $dispute)
-            ->with('success', 'อัพเดทสถานะเรียบร้อยแล้ว');
+            ->with($updated ? 'success' : 'error', $updated ? 'อัพเดทสถานะเรียบร้อยแล้ว' : 'ข้อร้องเรียนนี้ถูกตัดสินไปแล้ว');
     }
 
     /**
@@ -217,6 +229,9 @@ class AntiAbuseController extends Controller
             'refund_amount' => 'nullable|numeric|min:0',
             'penalty_amount' => 'nullable|numeric|min:0',
             'resulted_in_ban' => 'nullable|boolean',
+        ], [
+            'resolution.required' => 'กรุณาเลือกผลการตัดสิน',
+            'resolution_notes.required' => 'กรุณาบันทึกเหตุผลการตัดสิน',
         ]);
 
         $statusMap = [
@@ -226,26 +241,34 @@ class AntiAbuseController extends Controller
             'dismissed' => 'dismissed',
         ];
 
-        $dispute->update([
-            'status' => $statusMap[$validated['resolution']],
-            'resolution_notes' => $validated['resolution_notes'],
-            'refund_amount' => $validated['refund_amount'] ?? 0,
-            'penalty_amount' => $validated['penalty_amount'] ?? 0,
-            'resulted_in_ban' => $validated['resulted_in_ban'] ?? false,
-            'handled_by' => auth()->id(),
-            'resolved_at' => now(),
-        ]);
-
-        // จัดการผลการตัดสิน
-        if (in_array($validated['resolution'], ['favor_reporter', 'favor_accused'])) {
-            $this->handleDisputeResolution($dispute, array_merge($validated, [
-                'status' => $statusMap[$validated['resolution']],
-            ]));
+        // ค่าปรับและการแบนเกิดจริงเฉพาะเมื่อผู้ถูกร้องแพ้ ผลอื่นจึงบันทึกเป็น 0 ให้ตรงกับที่เกิดขึ้น
+        if ($validated['resolution'] !== 'favor_reporter') {
+            $validated['penalty_amount'] = 0;
+            $validated['resulted_in_ban'] = false;
         }
+
+        $resolved = $this->whileDisputeOpen($dispute, function (ServiceBookingDispute $locked) use ($validated, $statusMap) {
+            $locked->update([
+                'status' => $statusMap[$validated['resolution']],
+                'resolution_notes' => $validated['resolution_notes'],
+                'refund_amount' => $validated['refund_amount'] ?? 0,
+                'penalty_amount' => $validated['penalty_amount'] ?? 0,
+                'resulted_in_ban' => $validated['resulted_in_ban'] ?? false,
+                'handled_by' => auth()->id(),
+                'resolved_at' => now(),
+            ]);
+
+            // จัดการผลการตัดสิน
+            if (in_array($validated['resolution'], ['favor_reporter', 'favor_accused'])) {
+                $this->handleDisputeResolution($locked, array_merge($validated, [
+                    'status' => $statusMap[$validated['resolution']],
+                ]));
+            }
+        });
 
         return redirect()
             ->route('admin.anti-abuse.disputes.show', $dispute)
-            ->with('success', 'ตัดสินข้อร้องเรียนเรียบร้อยแล้ว');
+            ->with($resolved ? 'success' : 'error', $resolved ? 'ตัดสินข้อร้องเรียนเรียบร้อยแล้ว' : 'ข้อร้องเรียนนี้ถูกตัดสินไปแล้ว');
     }
 
     /**
@@ -550,40 +573,26 @@ class AntiAbuseController extends Controller
     }
 
     /**
-     * อัพเดทสถานะ Penalty
-     */
-    public function updatePenaltyStatus(Request $request, ServiceBookingPenalty $penalty)
-    {
-        $validated = $request->validate([
-            'action' => 'required|in:charge,waive',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        if ($validated['action'] === 'charge') {
-            $penalty->markAsCharged('admin_manual', 'ADMIN-'.auth()->id().'-'.now()->timestamp);
-            $message = 'บันทึกการหักค่าปรับเรียบร้อยแล้ว';
-        } else {
-            $penalty->waive($validated['notes'] ?? 'Admin ยกเว้น');
-            $message = 'ยกเว้นค่าปรับเรียบร้อยแล้ว';
-        }
-
-        return redirect()
-            ->route('admin.anti-abuse.penalties')
-            ->with('success', $message);
-    }
-
-    /**
-     * หักค่าปรับ
+     * หักค่าปรับจากกระเป๋าเงินของผู้ถูกปรับ
      */
     public function chargePenalty(ServiceBookingPenalty $penalty)
     {
-        if ($penalty->status !== 'pending') {
+        try {
+            $this->antiAbuseService->chargePenalty($penalty);
+        } catch (\DomainException $e) {
             return redirect()
                 ->route('admin.anti-abuse.penalties')
-                ->with('error', 'ค่าปรับนี้ไม่สามารถหักได้ (สถานะ: '.$penalty->status.')');
-        }
+                ->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Failed to charge penalty', [
+                'penalty_id' => $penalty->id,
+                'error' => $e->getMessage(),
+            ]);
 
-        $penalty->markAsCharged('admin_manual', 'ADMIN-'.auth()->id().'-'.now()->timestamp);
+            return redirect()
+                ->route('admin.anti-abuse.penalties')
+                ->with('error', 'หักค่าปรับไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
 
         // บันทึก Log
         activity()
@@ -594,7 +603,7 @@ class AntiAbuseController extends Controller
 
         return redirect()
             ->route('admin.anti-abuse.penalties')
-            ->with('success', 'หักค่าปรับ ฿'.number_format($penalty->penalty_amount).' เรียบร้อยแล้ว');
+            ->with('success', 'หักค่าปรับ ฿'.number_format($penalty->penalty_amount, 2).' จากกระเป๋าเงินเรียบร้อยแล้ว');
     }
 
     /**

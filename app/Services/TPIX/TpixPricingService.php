@@ -264,14 +264,12 @@ class TpixPricingService
      */
     public function verifyPayment(string $txHash): array
     {
-        // TODO: ตรวจสอบ transaction จริงบน blockchain
-        // ตอนนี้ใช้ mock data
+        // ยังไม่มีการตรวจธุรกรรมบนเชน จึงตอบว่ายังไม่ยืนยันเสมอ ห้ามปล่อยผ่านจาก hash ที่ผู้ใช้ส่งมา
         return [
-            'verified' => true,
+            'verified' => false,
             'transaction_hash' => $txHash,
-            'status' => 'confirmed',
-            'confirmations' => 12,
-            'timestamp' => now()->subMinutes(5)->toIso8601String(),
+            'status' => 'unavailable',
+            'confirmations' => 0,
         ];
     }
 

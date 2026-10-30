@@ -21,6 +21,7 @@
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
+                          'Accept': 'application/json',
                           'X-CSRF-TOKEN': '{{ csrf_token() }}'
                       }
                   });
@@ -50,6 +51,7 @@
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
+                          'Accept': 'application/json',
                           'X-CSRF-TOKEN': '{{ csrf_token() }}'
                       }
                   });
@@ -397,31 +399,31 @@
             <div class="space-y-2 text-sm">
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="marketing_checklist[]" value="press_release"
-                           {{ in_array('press_release', old('marketing_checklist', $config->marketing_checklist ?? [])) ? 'checked' : '' }}
+                           {{ in_array('press_release', old('marketing_checklist', $config->marketing_materials['checklist'] ?? [])) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <span class="text-gray-700 dark:text-gray-300">เขียน Press Release/Blog Post</span>
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="marketing_checklist[]" value="social_announcement"
-                           {{ in_array('social_announcement', old('marketing_checklist', $config->marketing_checklist ?? [])) ? 'checked' : '' }}
+                           {{ in_array('social_announcement', old('marketing_checklist', $config->marketing_materials['checklist'] ?? [])) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <span class="text-gray-700 dark:text-gray-300">ประกาศบน Social Media ทุก Channel</span>
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="marketing_checklist[]" value="community_campaign"
-                           {{ in_array('community_campaign', old('marketing_checklist', $config->marketing_checklist ?? [])) ? 'checked' : '' }}
+                           {{ in_array('community_campaign', old('marketing_checklist', $config->marketing_materials['checklist'] ?? [])) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <span class="text-gray-700 dark:text-gray-300">จัด Community Campaign/Airdrop</span>
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="marketing_checklist[]" value="influencer_outreach"
-                           {{ in_array('influencer_outreach', old('marketing_checklist', $config->marketing_checklist ?? [])) ? 'checked' : '' }}
+                           {{ in_array('influencer_outreach', old('marketing_checklist', $config->marketing_materials['checklist'] ?? [])) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <span class="text-gray-700 dark:text-gray-300">ติดต่อ Crypto Influencers/Reviewers</span>
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="marketing_checklist[]" value="listing_sites"
-                           {{ in_array('listing_sites', old('marketing_checklist', $config->marketing_checklist ?? [])) ? 'checked' : '' }}
+                           {{ in_array('listing_sites', old('marketing_checklist', $config->marketing_materials['checklist'] ?? [])) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <span class="text-gray-700 dark:text-gray-300">List บน Token Listing Sites อื่นๆ</span>
                 </label>

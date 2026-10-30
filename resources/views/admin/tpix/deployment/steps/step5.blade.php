@@ -29,6 +29,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             });
@@ -60,6 +61,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             });
@@ -282,7 +284,12 @@
     @endif
 
     {{-- Deploy Button --}}
-    @if($config->status !== 'deployed')
+    @if($blockedReason)
+        <div class="p-6 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-xl mb-8">
+            <h4 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">ยังไม่สามารถ Deploy ได้</h4>
+            <p class="text-sm text-yellow-800 dark:text-yellow-200">{{ $blockedReason }}</p>
+        </div>
+    @elseif($config->status !== 'deployed')
         <div class="p-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-2xl mb-8">
             <div class="flex items-start gap-4 mb-6">
                 <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
