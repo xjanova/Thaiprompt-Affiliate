@@ -764,11 +764,13 @@ $threatTime = '03:00';
 $threatCustomCron = '';
 $threatDayOfWeek = 0;
 try {
-    $threatEnabled = (bool) \App\Models\Setting::get('threat_auto_update_enabled', 'boolean', true);
-    $threatFrequency = (string) \App\Models\Setting::get('threat_update_frequency', 'string', 'daily');
-    $threatTime = (string) \App\Models\Setting::get('threat_update_time', 'string', '03:00');
-    $threatCustomCron = (string) \App\Models\Setting::get('threat_update_cron', 'string', '');
-    $threatDayOfWeek = (int) \App\Models\Setting::get('threat_update_day', 'integer', 0);
+    // Setting::get รับแค่ (key, default) — ส่ง type เข้าไปด้วยจะได้คำว่า 'string' เป็นค่า default
+    // แล้ว dailyAt('string') กลายเป็น 00:00 ชนงานเที่ยงคืนทุกตัว
+    $threatEnabled = (bool) \App\Models\Setting::get('threat_auto_update_enabled', true);
+    $threatFrequency = (string) \App\Models\Setting::get('threat_update_frequency', 'daily');
+    $threatTime = (string) \App\Models\Setting::get('threat_update_time', '03:00');
+    $threatCustomCron = (string) \App\Models\Setting::get('threat_update_cron', '');
+    $threatDayOfWeek = (int) \App\Models\Setting::get('threat_update_day', 0);
 } catch (\Throwable $e) {
     // DB ไม่พร้อม (CI ก่อน migrate) → skip ลงทะเบียน schedule นี้
     $threatEnabled = false;

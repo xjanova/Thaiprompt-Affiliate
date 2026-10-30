@@ -3,12 +3,43 @@
 namespace App\Services;
 
 use App\Models\ThreatIp;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ThreatIntelligenceService
 {
+    /**
+     * จำนวน IP ต่อหนึ่งคำสั่ง upsert — ทั้งเพดานหน่วยความจำของงานนี้และขนาดของหนึ่ง transaction
+     */
+    protected const UPSERT_BATCH_SIZE = 1000;
+
+    /**
+     * จำนวนแถวต่อรอบที่ลบของหมดอายุ — ไม่ให้ DELETE ก้อนเดียวถือ lock ทั้งตารางหลายล้านแถว
+     */
+    protected const DELETE_BATCH_SIZE = 10000;
+
+    /**
+     * เวลาสูงสุดในการโหลดหนึ่งฟีด (วินาที)
+     *
+     * ฟีด proxies 41 MB ตอนเที่ยงคืนบน production เคยได้แค่ 14.6 MB ใน 30 วินาที
+     * (ราว 85 วินาทีต่อไฟล์) จึงเผื่อไว้สองเท่า
+     */
+    protected const FEED_TIMEOUT_SECONDS = 180;
+
+    /**
+     * รายงานความคืบหน้าทุกกี่ batch — ให้ TTL ของ progress ไม่หมดระหว่างบันทึกฟีดใหญ่
+     */
+    protected const PROGRESS_EVERY_BATCHES = 100;
+
+    /**
+     * อายุ cache ของสถิติ (วินาที) — ข้อมูลเปลี่ยนวันละครั้ง และ threat:update สร้าง cache ใหม่ให้ทุกรอบ
+     * จึงเผื่อให้อยู่ข้ามรอบรายวัน เพื่อไม่ให้หน้า admin ต้องนับหลายล้านแถวเอง
+     */
+    protected const STATS_CACHE_SECONDS = 93600;
+
     /**
      * Update threat intelligence from all sources
      */
@@ -103,8 +134,13 @@ class ThreatIntelligenceService
                 "กำลังดาวน์โหลด {$config['name']}... ({$currentList}/{$totalLists})"
             );
 
+            $feedPath = null;
+            $updated = 0;
+
             try {
-                $response = Http::timeout(30)->get($config['url']);
+                // โหลดลงไฟล์ก่อนแตะ DB: โหลดไม่ครบ = รายการเดิมอยู่ครบ และไม่ต้องถือฟีดทั้งก้อนในหน่วยความจำ
+                $feedPath = tempnam(sys_get_temp_dir(), 'firehol_');
+                $response = $this->downloadFeed($config['url'], $feedPath);
 
                 if ($response->successful()) {
                     $this->updateProgress(
@@ -112,12 +148,23 @@ class ThreatIntelligenceService
                         "กำลังประมวลผล {$config['name']}... ({$currentList}/{$totalLists})"
                     );
 
-                    $updated = $this->parseAndStoreFireholList(
-                        $response->body(),
-                        $config['type'],
-                        $config['confidence'],
-                        $name
-                    );
+                    // ไม่ครอบ transaction ทั้งลิสต์: ล้มกลางทาง = แถวที่ทำแล้วสดใหม่ ที่เหลือคงอายุเดิม
+                    // ไม่มีแถวหาย และรอบถัดไปเขียนทับต่อได้เลยเพราะ upsert ซ้ำได้
+                    $batches = 0;
+                    foreach ($this->readFeedBatches($feedPath) as $ips) {
+                        $updated += $this->storeThreatBatch($ips, $config['type'], $config['confidence'], 'firehol');
+
+                        if (++$batches % self::PROGRESS_EVERY_BATCHES === 0) {
+                            $this->updateProgress(
+                                $percentage,
+                                "กำลังบันทึก {$config['name']}... ".number_format($updated).' รายการ'
+                            );
+                        }
+                    }
+
+                    if ($updated === 0) {
+                        throw new \RuntimeException('ฟีดไม่มีรายการ IP ที่ใช้ได้');
+                    }
 
                     $results[$name] = [
                         'success' => true,
@@ -136,14 +183,24 @@ class ThreatIntelligenceService
                         'status' => $response->status(),
                     ]);
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // ข้อความ QueryException มี SQL พร้อม IP ทั้ง batch — ตัดให้สั้นก่อนลง log และส่งกลับหน้า admin
+                $error = Str::limit($e->getMessage(), 300);
+
+                // เก็บ updated ไว้ด้วย: ยอดนี้ถูกเขียนลง DB จริงก่อนล้ม
                 $results[$name] = [
-                    'error' => $e->getMessage(),
+                    'error' => $error,
+                    'updated' => $updated,
                 ];
 
                 Log::error("Error fetching Firehol {$name} list", [
-                    'error' => $e->getMessage(),
+                    'error' => $error,
+                    'updated' => $updated,
                 ]);
+            } finally {
+                if (is_string($feedPath) && file_exists($feedPath)) {
+                    unlink($feedPath);
+                }
             }
         }
 
@@ -151,44 +208,83 @@ class ThreatIntelligenceService
     }
 
     /**
-     * Parse and store Firehol list
+     * โหลดฟีดลงไฟล์โดยไม่ผ่านหน่วยความจำ
      */
-    protected function parseAndStoreFireholList(string $content, string $type, int $confidence, string $listName = ''): int
+    protected function downloadFeed(string $url, string $path): Response
     {
-        $lines = explode("\n", $content);
-        $updated = 0;
+        return Http::connectTimeout(15)
+            ->timeout(self::FEED_TIMEOUT_SECONDS)
+            ->sink($path)
+            ->get($url);
+    }
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+    /**
+     * อ่านไฟล์ฟีดทีละบรรทัดแล้วคืน IP/CIDR ที่ใช้ได้เป็นชุด ๆ
+     *
+     * fgets จำกัดความยาวบรรทัดไว้ ถ้าปลายทางส่งไฟล์ที่ไม่มีขึ้นบรรทัดมาจะได้ไม่อ่านทั้งก้อนเข้าหน่วยความจำ
+     *
+     * @return \Generator<int, array<int, string>>
+     */
+    protected function readFeedBatches(string $path): \Generator
+    {
+        $handle = fopen($path, 'r');
+        $batch = [];
 
-            // Skip comments and empty lines
-            if (empty($line) || str_starts_with($line, '#')) {
-                continue;
+        try {
+            while (($line = fgets($handle, 256)) !== false) {
+                $line = trim($line);
+
+                // ข้ามบรรทัดว่างและ comment
+                if ($line === '' || str_starts_with($line, '#') || ! $this->isValidIpOrCidr($line)) {
+                    continue;
+                }
+
+                // CIDR เก็บตามที่ฟีดส่งมา
+                $batch[] = $line;
+
+                if (count($batch) >= self::UPSERT_BATCH_SIZE) {
+                    yield $batch;
+                    $batch = [];
+                }
             }
 
-            // Parse IP or CIDR
-            if ($this->isValidIpOrCidr($line)) {
-                // For CIDR, store as is for now (we'll handle checking later)
-                $ip = $line;
-
-                ThreatIp::updateOrCreate(
-                    [
-                        'ip_address' => $ip,
-                        'source' => 'firehol',
-                    ],
-                    [
-                        'threat_type' => $type,
-                        'confidence_score' => $confidence,
-                        'last_seen' => now(),
-                        'expires_at' => now()->addDays(7), // Refresh weekly
-                    ]
-                );
-
-                $updated++;
+            if ($batch !== []) {
+                yield $batch;
             }
+        } finally {
+            fclose($handle);
         }
+    }
 
-        return $updated;
+    /**
+     * บันทึก IP หนึ่งชุดด้วยคำสั่งเดียว
+     *
+     * ต้องอาศัย unique index (ip_address, source) — ถ้าไม่มี MySQL จะ insert แถวซ้ำทุกรอบ
+     *
+     * @param  array<int, string>  $ips
+     * @return int จำนวน IP ที่บันทึก
+     */
+    protected function storeThreatBatch(array $ips, string $type, int $confidence, string $source): int
+    {
+        $lastSeen = now();
+        $expiresAt = $lastSeen->copy()->addDays(7); // Refresh weekly
+
+        $rows = array_map(fn (string $ip) => [
+            'ip_address' => $ip,
+            'source' => $source,
+            'threat_type' => $type,
+            'confidence_score' => $confidence,
+            'last_seen' => $lastSeen,
+            'expires_at' => $expiresAt,
+        ], $ips);
+
+        ThreatIp::upsert(
+            $rows,
+            ['ip_address', 'source'],
+            ['threat_type', 'confidence_score', 'last_seen', 'expires_at']
+        );
+
+        return count($rows);
     }
 
     /**
@@ -344,7 +440,7 @@ class ThreatIntelligenceService
      */
     public function getStatistics(): array
     {
-        return Cache::remember('threat_intelligence_stats', 3600, function () {
+        return Cache::remember('threat_intelligence_stats', self::STATS_CACHE_SECONDS, function () {
             return [
                 'total_threats' => ThreatIp::active()->count(),
                 'by_type' => ThreatIp::active()
@@ -368,6 +464,16 @@ class ThreatIntelligenceService
      */
     public function cleanExpired(): int
     {
-        return ThreatIp::where('expires_at', '<', now())->delete();
+        $deleted = 0;
+
+        do {
+            $batch = ThreatIp::where('expires_at', '<', now())
+                ->limit(self::DELETE_BATCH_SIZE)
+                ->delete();
+
+            $deleted += $batch;
+        } while ($batch === self::DELETE_BATCH_SIZE);
+
+        return $deleted;
     }
 }

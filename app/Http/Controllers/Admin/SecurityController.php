@@ -651,46 +651,35 @@ class SecurityController extends Controller
             $query->whereDate('last_seen', '<=', $request->date_to);
         }
 
-        // Sorting
-        $sortBy = $request->input('sort_by', 'last_seen');
+        // Sorting — ค่าเริ่มต้นใช้ id: last_seen ไม่มี index เดี่ยว ต้องเรียงทั้งตารางหลายล้านแถวทุกครั้งที่เปิดหน้า
+        $sortBy = $request->input('sort_by', 'id');
         $sortOrder = $request->input('sort_order', 'desc');
 
-        $allowedSortFields = ['ip_address', 'threat_type', 'source', 'confidence_score', 'last_seen', 'expires_at'];
+        $allowedSortFields = ['id', 'ip_address', 'threat_type', 'source', 'confidence_score', 'last_seen', 'expires_at'];
         if (in_array($sortBy, $allowedSortFields)) {
             $query->orderBy($sortBy, $sortOrder);
         }
 
-        // Get recent threats with pagination
-        $recentThreats = $query->paginate($request->input('per_page', 20))
+        // Get recent threats with pagination — จำกัดตามตัวเลือกในหน้า กันการโหลดทั้งตารางลงหน่วยความจำ
+        $perPage = max(1, min((int) $request->input('per_page', 20), 100));
+        $recentThreats = $query->paginate($perPage)
             ->appends($request->except('page'));
 
-        // Get threat distribution
-        $threatsByType = ThreatIp::active()
-            ->selectRaw('threat_type, COUNT(*) as count')
-            ->groupBy('threat_type')
-            ->orderBy('count', 'desc')
-            ->get();
+        // สรุปตามประเภท/แหล่งใช้ stats ที่ cache ไว้ — GROUP BY บน 2.9 ล้านแถวตัวละ 10 วินาทีขึ้นไป
+        $threatsByType = collect($stats['by_type'])
+            ->map(fn ($count, $type) => (object) ['threat_type' => $type, 'count' => $count])
+            ->sortByDesc('count')
+            ->values();
 
-        $threatsBySource = ThreatIp::active()
-            ->selectRaw('source, COUNT(*) as count')
-            ->groupBy('source')
-            ->orderBy('count', 'desc')
-            ->get();
+        $threatsBySource = collect($stats['by_source'])
+            ->map(fn ($count, $source) => (object) ['source' => $source, 'count' => $count])
+            ->sortByDesc('count')
+            ->values();
 
         // Get unique values for filters
-        $threatTypes = ThreatIp::active()
-            ->distinct()
-            ->pluck('threat_type')
-            ->filter()
-            ->sort()
-            ->values();
+        $threatTypes = collect($stats['by_type'])->keys()->sort()->values();
 
-        $sources = ThreatIp::active()
-            ->distinct()
-            ->pluck('source')
-            ->filter()
-            ->sort()
-            ->values();
+        $sources = collect($stats['by_source'])->keys()->sort()->values();
 
         return view('admin.security.threat-intelligence', compact(
             'stats',
