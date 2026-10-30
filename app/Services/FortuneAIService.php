@@ -1806,8 +1806,9 @@ PROMPT;
             ?? ($this->settings->sensitive_model ?? 'gpt-4o');
 
         // 🛡️ Vision capability check — ถ้า model เก่า force fallback
-        //    OpenAI vision models: gpt-4o*, gpt-5*, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
-        if (! preg_match('/^(gpt-(4o|5|4-vision|4-turbo))/i', $model)) {
+        //    OpenAI vision models: gpt-4o*, gpt-5* ขึ้นไป, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
+        //    🐛 (2026-10-30) เดิมจับแค่เลข 5 → key ที่ตั้ง gpt-6 ถูกลดเป็น gpt-4o-mini เงียบๆ
+        if (! preg_match('/^(gpt-(4o|[5-9]|4-vision|4-turbo))/i', $model)) {
             // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
             $model = 'gpt-4o-mini';
         }
@@ -2629,6 +2630,13 @@ PROMPT;
         $lockedKey = $this->settings->getSensitivePoolKey();
         $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
 
+        // 🐛 (2026-10-30) ไม่เจอ key ของค่ายที่ตั้งไว้ → ลองทุกค่าย (กติกาเดียวกับ generateProResponse)
+        //   prod ตั้ง sensitive_provider=gemini แต่ key sensitive ที่เปิดอยู่เป็น OpenAI
+        //   ถ้าไม่ลองค่ายอื่น เปิดโหมด Sensitive แล้วจะตกไปแชทปกติทั้งที่มี key พร้อมใช้
+        if (! $sensitiveKey) {
+            $sensitiveKey = $poolService->acquireKeyAnyProvider('sensitive');
+        }
+
         if (! $sensitiveKey) {
             Log::info('FortuneAIService: ไม่มี sensitive key — caller ต้อง fallback ไป chat ปกติ', [
                 'provider' => $sensitiveProvider,
@@ -2638,10 +2646,8 @@ PROMPT;
             return null;
         }
 
-        // ถ้าใช้ locked key — sync provider ตาม key (กรณี admin เลือก key คนละ provider กับ sensitive_provider)
-        if ($lockedKey) {
-            $sensitiveProvider = $lockedKey->provider;
-        }
+        // sync provider ตาม key จริงเสมอ — locked key หรือ fallback ด้านบนอาจเป็นคนละค่ายกับ sensitive_provider
+        $sensitiveProvider = $sensitiveKey->provider ?: $sensitiveProvider;
 
         try {
             $apiKey = $sensitiveKey->api_key;
@@ -2937,17 +2943,35 @@ PROMPT;
 
             $startTime = microtime(true);
 
-            $result = match ($sensitiveProvider) {
+            $callPro = fn (string $model): array => match ($sensitiveProvider) {
                 'gemini' => empty($history)
-                    ? $this->callChatGemini($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
-                    : $this->callChatGeminiWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatGemini($prompt, $systemPromptWithName, $apiKey, $model, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $config, $history),
                 'anthropic' => empty($history)
-                    ? $this->callChatAnthropic($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
-                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatAnthropic($prompt, $systemPromptWithName, $apiKey, $model, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $config, $history),
                 default => empty($history)
-                    ? $this->callChatOpenAICompatible($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config)
-                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+                    ? $this->callChatOpenAICompatible($prompt, $systemPromptWithName, $apiKey, $model, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $sensitiveProvider, $config, $history),
             };
+
+            try {
+                $result = $callPro($resolvedModel);
+            } catch (Exception $e) {
+                // 🛟 (2026-10-30) โมเดลที่ router เลือกอ่านมาจาก key คนละเลน ถ้า key นี้อยู่คนละบัญชีอาจเรียกไม่ได้
+                //   ลูกค้าจ่ายแล้วต้องได้คำตอบ และห้ามนับเป็น error ของ key เพราะตัว key ไม่ได้เสีย
+                $ownModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
+                if (! $modelOverride || $ownModel === $resolvedModel || ! $this->isModelUnavailableError($e->getMessage())) {
+                    throw $e;
+                }
+
+                Log::warning("FortuneAIService: Pro {$requestType} — key เรียกโมเดลที่ router เลือกไม่ได้ ถอยไปใช้โมเดลของ key", [
+                    'override_model' => $resolvedModel,
+                    'own_model' => $ownModel,
+                ]);
+                $resolvedModel = $ownModel;
+                $result = $callPro($resolvedModel);
+            }
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -5197,6 +5221,8 @@ PROMPT;
             foreach ($allKeys as $i => $keyInfo) {
                 $kp = $keyInfo['provider'] ?? null;
                 if ($kp !== null && ! empty($modelOverrides[$kp])) {
+                    // 🛟 จำโมเดลของ key ไว้ — override อาจมาจาก key อื่น ถ้า key นี้เรียกไม่ได้จะถอยมาใช้ตัวนี้
+                    $allKeys[$i]['own_model'] = $keyInfo['model'];
                     $allKeys[$i]['model'] = $modelOverrides[$kp];
                 }
             }
@@ -5246,10 +5272,7 @@ PROMPT;
                 $totalKeys = count($allKeys);
                 Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel} (elapsed={$elapsedSec}s)");
 
-                $result = $this->callProviderDirect(
-                    $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config,
-                    $keyInfo['base_url'] ?? null
-                );
+                $result = $this->callPoolKeyWithOwnModelFallback($keyInfo, $prompt, $config);
 
                 // สำเร็จ! — บันทึก usage + release in-flight
                 $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -5410,6 +5433,59 @@ PROMPT;
             'errors' => $errors,
         ]);
         throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." keys): {$errorSummary}");
+    }
+
+    /**
+     * 🛟 (2026-10-30) ยิง key ใน pool ถ้า key เรียกโมเดลที่ override มาไม่ได้ ให้ถอยไปใช้โมเดลของ key เอง
+     *
+     * FortuneModelRouter อ่านโมเดลจาก key หนึ่งแล้วส่งผ่าน key อีกเลน ถ้าอยู่คนละบัญชีจะเจอ model_not_found
+     * ลูกค้าจ่ายแล้วต้องได้คำตอบ และต้องไม่นับเป็น error ของ key เพราะครบ 3 ครั้ง key ดีๆ จะถูกปิด
+     *
+     * @param  array  $keyInfo  ข้อมูล key จาก pool — ถ้าถอย จะอัปเดต model ให้ caller บันทึกตามจริง
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า
+     * @return array ผลลัพธ์
+     */
+    protected function callPoolKeyWithOwnModelFallback(array &$keyInfo, string $prompt, array $config): array
+    {
+        $call = fn (string $model): array => $this->callProviderDirect(
+            $keyInfo['provider'], $keyInfo['api_key'], $model, $prompt, $config,
+            $keyInfo['base_url'] ?? null
+        );
+
+        try {
+            return $call($keyInfo['model']);
+        } catch (Exception $e) {
+            $ownModel = $keyInfo['own_model'] ?? null;
+            if (empty($ownModel) || $ownModel === $keyInfo['model'] || ! $this->isModelUnavailableError($e->getMessage())) {
+                throw $e;
+            }
+
+            Log::warning('FortuneAI: key เรียกโมเดลที่ override มาไม่ได้ — ถอยไปใช้โมเดลของ key', [
+                'key' => $keyInfo['name'] ?? '?',
+                'override_model' => $keyInfo['model'],
+                'own_model' => $ownModel,
+            ]);
+            $keyInfo['model'] = $ownModel;
+
+            return $call($ownModel);
+        }
+    }
+
+    /**
+     * 🛟 (2026-10-30) error นี้แปลว่า "key นี้เรียกโมเดลนี้ไม่ได้" ไม่ใช่ key เสีย
+     *
+     * ข้อความจริงจาก OpenAI:
+     *   - The model `x` does not exist or you do not have access to it.
+     *   - The requested model 'x' does not exist.
+     *   - Project `p` does not have access to model `x`
+     *
+     * ⚠️ ต้องดูจากข้อความ เพราะ callOpenAiResponses ห่อ RequestException เป็น Exception ธรรมดา
+     *    และ Laravel ตัดเนื้อ response ที่ 120 ตัวอักษร รหัส model_not_found จึงอาจหลุดไปแล้ว
+     */
+    protected function isModelUnavailableError(string $errorMessage): bool
+    {
+        return preg_match('/model_not_found|\bmodel\b.{0,80}\bdoes not exist|does not have access to (?:the )?model/i', $errorMessage) === 1;
     }
 
     /**
