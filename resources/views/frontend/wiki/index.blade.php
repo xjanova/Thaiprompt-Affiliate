@@ -70,7 +70,6 @@
             { id: 'accounting', icon: '📊', label: 'ระบบบัญชี', color: 'from-emerald-600 to-teal-600' },
             { id: 'software', icon: '💻', label: 'Software Sales', color: 'from-indigo-600 to-violet-600' },
             { id: 'vendor', icon: '🏪', label: 'Vendor Management', color: 'from-pink-600 to-rose-600' },
-            { id: 'academy', icon: '🎓', label: 'Academy & Learning', color: 'from-teal-600 to-cyan-600' },
             { id: 'security', icon: '🔒', label: 'Security & Compliance', color: 'from-red-700 to-rose-700' },
             { id: 'support', icon: '🎫', label: 'Support Center', color: 'from-blue-500 to-cyan-500' },
             { id: 'investor', icon: '📈', label: 'Investor Guide', color: 'from-emerald-600 to-green-600', highlight: true },

@@ -1069,58 +1069,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Instructor Menu Items
-    |--------------------------------------------------------------------------
-    |
-    | เมนูสำหรับ Instructor Dashboard (ผู้สอน)
-    | แสดงเมื่อ user มี role = 'instructor' หรือเป็นเจ้าของคอร์ส
-    |
-    */
-
-    'instructor' => [
-        [
-            'id' => 'dashboard',
-            'label' => 'แดชบอร์ด',
-            'icon' => '📊',
-            'route' => 'admin.instructor.dashboard',
-            'order' => 0,
-            'permissions' => [],
-        ],
-
-        [
-            'id' => 'courses',
-            'label' => 'คอร์สของฉัน',
-            'icon' => '📚',
-            'route' => null,
-            'order' => 1,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => '📋 รายการคอร์ส', 'route' => 'admin.instructor.courses.index', 'description' => 'คอร์สทั้งหมดของฉัน'],
-                ['label' => '➕ สร้างคอร์สใหม่', 'route' => 'admin.instructor.courses.create', 'description' => 'เพิ่มคอร์สเรียนใหม่'],
-            ],
-        ],
-
-        [
-            'id' => 'earnings',
-            'label' => 'รายได้',
-            'icon' => '💰',
-            'route' => 'admin.instructor.earnings',
-            'order' => 2,
-            'permissions' => [],
-        ],
-
-        [
-            'id' => 'profile',
-            'label' => 'โปรไฟล์',
-            'icon' => '👤',
-            'route' => 'user.profile',
-            'order' => 3,
-            'permissions' => [],
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Provider Menu Items
     |--------------------------------------------------------------------------
     |

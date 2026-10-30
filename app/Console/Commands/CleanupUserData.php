@@ -66,11 +66,7 @@ class CleanupUserData extends Command
         'vendor_public_products',
         'vendor_store_reviews',
 
-        // Learning/Academy
-        'user_article_progress',
-        'quiz_attempts',
-        'quiz_answers',
-        'certificates',
+        // Learning (ตาราง Academy เดิมถูกลบแล้ว 2026-10-13)
         'course_enrollments',
 
         // LINE Integration

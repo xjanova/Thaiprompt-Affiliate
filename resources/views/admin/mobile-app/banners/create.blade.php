@@ -174,7 +174,6 @@
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/wallet</code>
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/referral</code>
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/services</code>
-                        <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/academy</code>
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/support</code>
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/tpix</code>
                         <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/stores</code>

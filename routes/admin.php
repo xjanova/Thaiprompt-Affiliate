@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\AcademySettingsController;
 use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
 use App\Http\Controllers\Admin\Accounting\ContactController;
 use App\Http\Controllers\Admin\Accounting\ExpenseController;
@@ -21,13 +20,9 @@ use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AntiAbuseController;
 use App\Http\Controllers\Admin\ArrowXThemeController;
-use App\Http\Controllers\Admin\ArticleManagementController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
-use App\Http\Controllers\Admin\CategoryManagementController;
-use App\Http\Controllers\Admin\CertificateController;
-use App\Http\Controllers\Admin\CertificateManagementController;
 use App\Http\Controllers\Admin\ClassicXSettingsController;
 use App\Http\Controllers\Admin\CloudflareController;
 use App\Http\Controllers\Admin\CoinShopController;
@@ -107,7 +102,6 @@ use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\LazadaImportController;
-use App\Http\Controllers\Admin\LearningCenterController;
 use App\Http\Controllers\Admin\LeaveController;
 use App\Http\Controllers\Admin\LineBotAiController;
 use App\Http\Controllers\Admin\LineBotKeywordAnalyticsController;
@@ -155,8 +149,6 @@ use App\Http\Controllers\Admin\PosDashboardController;
 use App\Http\Controllers\Admin\PosDeviceController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\PosTransactionController;
-use App\Http\Controllers\Admin\QuizController;
-use App\Http\Controllers\Admin\QuizManagementController;
 use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\RecruitTemplateController;
 use App\Http\Controllers\Admin\RiderController;
@@ -201,7 +193,6 @@ use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\WindowsUiController;
 use App\Http\Controllers\Admin\WithdrawalController;
-use App\Http\Controllers\Instructor\InstructorDashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\DevMode;
 use Illuminate\Support\Facades\Route;
@@ -1127,90 +1118,6 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::post('/settings', [TwoFactorSettingsController::class, 'update'])->name('settings.update');
 });
 
-// Learning Center - User View
-Route::prefix('learning-center')->name('learning-center.')->group(function () {
-    Route::get('/', [LearningCenterController::class, 'index'])->name('index');
-    Route::get('/category/{slug}', [LearningCenterController::class, 'category'])->name('category');
-    Route::get('/article/{slug}', [LearningCenterController::class, 'article'])->name('article');
-    Route::post('/article/{slug}/complete', [LearningCenterController::class, 'complete'])->name('article.complete');
-    Route::post('/article/{slug}/progress', [LearningCenterController::class, 'updateProgress'])->name('article.progress');
-    Route::get('/article/{slug}/check-access', [LearningCenterController::class, 'checkAccess'])->name('article.check-access');
-    Route::get('/my-stats', [LearningCenterController::class, 'getMyStats'])->name('my-stats');
-});
-
-// Instructor Dashboard - For Course Instructors (แยกจาก Admin)
-Route::prefix('instructor')->name('instructor.')->group(function () {
-    // Dashboard หลัก
-    Route::get('/', [InstructorDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('index');
-
-    // จัดการคอร์ส
-    Route::prefix('courses')->name('courses.')->group(function () {
-        Route::get('/', [InstructorDashboardController::class, 'courses'])->name('index');
-        Route::get('/create', [InstructorDashboardController::class, 'createCourse'])->name('create');
-        Route::post('/', [InstructorDashboardController::class, 'storeCourse'])->name('store');
-        Route::get('/{article}/edit', [InstructorDashboardController::class, 'editCourse'])->name('edit');
-        Route::put('/{article}', [InstructorDashboardController::class, 'updateCourse'])->name('update');
-        Route::get('/{article}/stats', [InstructorDashboardController::class, 'courseStats'])->name('stats');
-        Route::get('/{article}/quiz', [InstructorDashboardController::class, 'manageQuiz'])->name('quiz');
-        Route::post('/{article}/submit-approval', [InstructorDashboardController::class, 'submitForApproval'])->name('submit-approval');
-        Route::post('/{article}/issue-certificate/{user}', [InstructorDashboardController::class, 'issueCertificate'])->name('issue-certificate');
-    });
-
-    // รายได้และสถิติ
-    Route::get('/earnings', [InstructorDashboardController::class, 'earnings'])->name('earnings');
-});
-
-// Quiz - Student View
-Route::prefix('quiz')->name('quiz.')->group(function () {
-    Route::get('/{id}', [QuizController::class, 'show'])->name('show');
-    Route::post('/{id}/submit', [QuizController::class, 'submit'])->name('submit');
-    Route::get('/results/{attemptId}', [QuizController::class, 'results'])->name('results');
-    Route::get('/article/{articleSlug}', [QuizController::class, 'index'])->name('index');
-});
-
-// Quiz Management - Instructor/Admin
-Route::prefix('quiz-management')->name('quiz-management.')->group(function () {
-    Route::get('/', [QuizManagementController::class, 'index'])->name('index');
-    Route::get('/create', [QuizManagementController::class, 'create'])->name('create');
-    Route::post('/', [QuizManagementController::class, 'store'])->name('store');
-    Route::get('/{id}', [QuizManagementController::class, 'show'])->name('show');
-    Route::get('/{id}/edit', [QuizManagementController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [QuizManagementController::class, 'update'])->name('update');
-    Route::delete('/{id}', [QuizManagementController::class, 'destroy'])->name('destroy');
-    Route::get('/{id}/attempts', [QuizManagementController::class, 'attempts'])->name('attempts');
-});
-
-// Certificates - User Certificates
-Route::prefix('certificates')->name('certificates.')->group(function () {
-    Route::get('/', [CertificateController::class, 'index'])->name('index');
-    Route::post('/generate/{articleId}', [CertificateController::class, 'generate'])->name('generate');
-    Route::get('/{id}', [CertificateController::class, 'show'])->name('show');
-    Route::get('/{id}/download', [CertificateController::class, 'download'])->name('download');
-});
-
-// Article Management - Admin Only
-Route::prefix('articles')->name('articles.')->group(function () {
-    Route::get('/', [ArticleManagementController::class, 'index'])->name('index');
-    Route::get('/create', [ArticleManagementController::class, 'create'])->name('create');
-    Route::post('/', [ArticleManagementController::class, 'store'])->name('store');
-    Route::get('/{article}/edit', [ArticleManagementController::class, 'edit'])->name('edit');
-    Route::put('/{article}', [ArticleManagementController::class, 'update'])->name('update');
-    Route::delete('/{article}', [ArticleManagementController::class, 'destroy'])->name('destroy');
-    Route::get('/{article}/permissions', [ArticleManagementController::class, 'permissions'])->name('permissions');
-    Route::put('/{article}/permissions', [ArticleManagementController::class, 'updatePermissions'])->name('permissions.update');
-});
-
-// Category Management - Admin Only
-Route::prefix('categories')->name('categories.')->group(function () {
-    Route::get('/', [CategoryManagementController::class, 'index'])->name('index');
-    Route::get('/create', [CategoryManagementController::class, 'create'])->name('create');
-    Route::post('/', [CategoryManagementController::class, 'store'])->name('store');
-    Route::get('/{category}/edit', [CategoryManagementController::class, 'edit'])->name('edit');
-    Route::put('/{category}', [CategoryManagementController::class, 'update'])->name('update');
-    Route::delete('/{category}', [CategoryManagementController::class, 'destroy'])->name('destroy');
-    Route::post('/reorder', [CategoryManagementController::class, 'reorder'])->name('reorder');
-});
 
 // AI Provider Management
 Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
@@ -1529,49 +1436,6 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/calculator', function () {
         return view('admin.mlm.calculator');
     })->name('calculator');
-});
-
-// Academy System
-Route::prefix('academy')->name('academy.')->group(function () {
-    // Academy Settings
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [AcademySettingsController::class, 'index'])->name('index');
-        Route::post('/basic', [AcademySettingsController::class, 'updateBasic'])->name('update-basic');
-        Route::post('/certificate', [AcademySettingsController::class, 'updateCertificate'])->name('update-certificate');
-        Route::post('/email', [AcademySettingsController::class, 'updateEmail'])->name('update-email');
-        Route::post('/course', [AcademySettingsController::class, 'updateCourse'])->name('update-course');
-        Route::post('/instructor', [AcademySettingsController::class, 'updateInstructor'])->name('update-instructor');
-        Route::post('/toggle-active', [AcademySettingsController::class, 'toggleActive'])->name('toggle-active');
-
-        // File Uploads
-        Route::post('/upload-logo', [AcademySettingsController::class, 'uploadLogo'])->name('upload-logo');
-        Route::post('/upload-certificate-background', [AcademySettingsController::class, 'uploadCertificateBackground'])->name('upload-certificate-background');
-        Route::post('/upload-certificate-template', [AcademySettingsController::class, 'uploadCertificateTemplate'])->name('upload-certificate-template');
-
-        // Signatures
-        Route::post('/add-signature', [AcademySettingsController::class, 'addSignature'])->name('add-signature');
-        Route::delete('/remove-signature/{index}', [AcademySettingsController::class, 'removeSignature'])->name('remove-signature');
-    });
-
-    // Certificate Management (Admin)
-    Route::prefix('certificates')->name('certificates.')->group(function () {
-        Route::get('/', [CertificateManagementController::class, 'index'])->name('index');
-        Route::get('/create', [CertificateManagementController::class, 'create'])->name('create');
-        Route::post('/', [CertificateManagementController::class, 'store'])->name('store');
-        Route::get('/{id}', [CertificateManagementController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [CertificateManagementController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [CertificateManagementController::class, 'update'])->name('update');
-        Route::post('/{id}/revoke', [CertificateManagementController::class, 'revoke'])->name('revoke');
-        Route::post('/{id}/restore', [CertificateManagementController::class, 'restore'])->name('restore');
-        Route::delete('/{id}', [CertificateManagementController::class, 'destroy'])->name('destroy');
-        Route::post('/bulk-generate', [CertificateManagementController::class, 'bulkGenerate'])->name('bulk-generate');
-        Route::get('/export/csv', [CertificateManagementController::class, 'export'])->name('export');
-    });
-
-    // Courses alias (redirects to certificates)
-    Route::prefix('courses')->name('courses.')->group(function () {
-        Route::get('/', [CertificateManagementController::class, 'index'])->name('index');
-    });
 });
 
 // HRM (Human Resource Management) System
