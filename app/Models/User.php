@@ -683,66 +683,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Accounting System Relationships
-     */
-
-    /**
-     * Get accounting settings for the user
-     */
-    public function accountingSettings()
-    {
-        return $this->hasOne(\App\Models\AccountingSetting::class);
-    }
-
-    /**
-     * Get accounting companies for the user
-     */
-    public function accountingCompanies()
-    {
-        return $this->hasMany(\App\Models\AccountingCompany::class);
-    }
-
-    /**
-     * Get accounting contacts for the user
-     */
-    public function accountingContacts()
-    {
-        return $this->hasMany(\App\Models\AccountingContact::class);
-    }
-
-    /**
-     * Get accounting products for the user
-     */
-    public function accountingProducts()
-    {
-        return $this->hasMany(\App\Models\AccountingProduct::class);
-    }
-
-    /**
-     * Get accounting invoices for the user
-     */
-    public function accountingInvoices()
-    {
-        return $this->hasMany(\App\Models\AccountingInvoice::class);
-    }
-
-    /**
-     * Get accounting expenses for the user
-     */
-    public function accountingExpenses()
-    {
-        return $this->hasMany(\App\Models\AccountingExpense::class);
-    }
-
-    /**
-     * Get FlowAccount connection for the user
-     */
-    public function flowAccountConnection()
-    {
-        return $this->hasOne(\App\Models\AccountingFlowaccountConnection::class);
-    }
-
-    /**
      * Check if user has KYC verified
      *
      * ตรวจสอบจาก kyc_status หรือ KycVerification record
@@ -1112,42 +1052,6 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\MarketplaceCommission::class);
     }
 
-    // =========================================
-    // Forum Relationships - ความสัมพันธ์กับฟอรั่ม
-    // =========================================
-
-    /**
-     * กระทู้ฟอรั่มที่ user สร้าง
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function forumThreads()
-    {
-        return $this->hasMany(\App\Models\ForumThread::class);
-    }
-
-    /**
-     * โพสต์ฟอรั่มที่ user เขียน
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function forumPosts()
-    {
-        return $this->hasMany(\App\Models\ForumPost::class);
-    }
-
-    /**
-     * ถ้วยรางวัลฟอรั่มที่ user ได้รับ
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function forumTrophies()
-    {
-        return $this->belongsToMany(\App\Models\ForumTrophy::class, 'user_forum_trophies')
-            ->withPivot('awarded_at', 'awarded_by')
-            ->withTimestamps();
-    }
-
     /**
      * Get active MLM membership for a specific plan
      */
@@ -1352,46 +1256,6 @@ class User extends Authenticatable
     public function scopeVerified($query)
     {
         return $query->whereNotNull('email_verified_at');
-    }
-
-    /**
-     * Game System Relationships
-     */
-
-    /**
-     * Get user's game progress
-     */
-    public function gameProgress()
-    {
-        return $this->hasMany(UserGameProgress::class);
-    }
-
-    /**
-     * Get user's game skins
-     */
-    public function gameSkins()
-    {
-        return $this->belongsToMany(GameSkin::class, 'user_game_skins', 'user_id', 'skin_id')
-            ->withTimestamps()
-            ->withPivot(['purchase_price', 'purchased_at']);
-    }
-
-    /**
-     * Get user's game achievements
-     */
-    public function achievements()
-    {
-        return $this->belongsToMany(GameAchievement::class, 'user_achievements', 'user_id', 'achievement_id')
-            ->withTimestamps()
-            ->withPivot('unlocked_at');
-    }
-
-    /**
-     * Get user's game transactions
-     */
-    public function gameTransactions()
-    {
-        return $this->hasMany(GameTransaction::class);
     }
 
     /**

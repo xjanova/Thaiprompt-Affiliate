@@ -60,8 +60,8 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 dark:text-white">{{ $offer->start_date->format('d/m/Y') }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">ถึง {{ $offer->end_date->format('d/m/Y') }}</div>
+                                <div class="text-sm text-gray-900 dark:text-white">{{ $offer->valid_from->format('d/m/Y') }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">ถึง {{ $offer->valid_until->format('d/m/Y') }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-2">

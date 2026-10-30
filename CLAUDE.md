@@ -157,11 +157,11 @@ php artisan serve
 - 📖 อ่าน `.claude/LINE_MESSAGING_RULES.md` ก่อนแตะโค้ดส่งข้อความ LINE
 
 **MENU EDITING:**
-- ❌ ห้ามแก้ `resources/views/components/arrow-x/sidebar-v3.blade.php` เพื่อเพิ่ม/ลบ/ย้าย menu items
+- ❌ ห้ามเพิ่มเมนูแบบ hardcode ใน Blade
 - ✅ Edit menus only at `config/menus.php` → Run `php artisan config:clear` after
 - 📖 อ่าน `.claude/MENU_RULES.md` ก่อนแก้เมนู
 
-The hardcoded menu in `sidebar-v3.blade.php` is in `@else` (DEAD CODE) — `$useMenuService = true` ทำให้ branch ไม่ถูก render. Real menu = `MenuService::getMenuForRole()` → `config/menus.php`.
+เมนูจริงมาจาก `MenuService::getMenuForRole()` → `config/menus.php` ที่เดียว (ลบเมนู hardcode ใน `sidebar-v3.blade.php` ออกแล้ว)
 
 ---
 

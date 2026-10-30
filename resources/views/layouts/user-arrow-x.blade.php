@@ -13,11 +13,7 @@
         $appName = $siteSetting->app_name ?: ($siteSetting->site_name ?: config('app.name'));
         $appIcon = $siteSetting->app_icon_url;
 
-        // Favicon ดึงจาก ThemeSetting ก่อน ถ้าไม่มีใช้จาก SiteSetting
-        $themeSetting = \App\Models\ThemeSetting::active();
-        $faviconPath = $themeSetting && $themeSetting->favicon_path
-            ? asset('storage/' . $themeSetting->favicon_path)
-            : $siteSetting->favicon_url;
+        $faviconPath = $siteSetting->favicon_url;
     @endphp
     <meta name="apple-mobile-web-app-title" content="{{ $appName }}">
     <meta name="theme-color" content="#8B5CF6">
@@ -164,8 +160,6 @@
         </main>
     </div>
 
-    {{-- Theme Customizer --}}
-    <x-arrow-x.theme-customizer />
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-24 right-4 z-[90] space-y-2 max-w-md"

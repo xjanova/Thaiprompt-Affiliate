@@ -50,9 +50,9 @@
             <div>
                 <h4>บริษัท &amp; นโยบาย</h4>
                 <ul>
-                    <li><a href="{{ $rfRoute('page.show', 'about-us') }}">เกี่ยวกับเรา</a></li>
-                    <li><a href="{{ $rfRoute('page.show', 'contact') }}">ติดต่อเรา</a></li>
-                    <li><a href="{{ $rfRoute('page.show', 'faq') }}">คำถามที่พบบ่อย</a></li>
+                    <li><a href="{{ $rfRoute('about') }}">เกี่ยวกับเรา</a></li>
+                    <li><a href="{{ $rfRoute('contact') }}">ติดต่อเรา</a></li>
+                    <li><a href="{{ $rfRoute('faq') }}">คำถามที่พบบ่อย</a></li>
                     <li><a href="{{ $rfRoute('wiki.index') }}">วิกิแพลตฟอร์ม</a></li>
                     <li><a href="{{ $rfRoute('terms-of-service.html') }}">ข้อกำหนดการใช้งาน</a></li>
                     <li><a href="{{ $rfRoute('privacy-policy.html') }}">นโยบายความเป็นส่วนตัว</a></li>

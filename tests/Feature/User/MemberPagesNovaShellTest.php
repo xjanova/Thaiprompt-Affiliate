@@ -39,7 +39,6 @@ class MemberPagesNovaShellTest extends TestCase
         'user/star-upgrade', 'user/store-rating/history', 'user/team-transfer/approvals/list',
         'user/tokens/my/balances', 'user/tokens/my/portfolio', 'user/tokens/my/tokens', 'user/tokens/referrals/my-codes',
         'user/tpix/deposit', 'user/tpix/send', 'user/tpix/transactions', 'user/tpix/wallet', 'user/tpix/withdrawal',
-        'user/video-missions/list',
     ];
 
     public function test_every_member_page_renders_in_the_nova_shell(): void

@@ -115,84 +115,6 @@
         </div>
     </div>
 
-    {{-- ======== แท็บ: โปรโมชั่น ======== --}}
-    <div x-show="activeSettingsTab === 'promotions'" x-transition class="space-y-6">
-        {{-- ปุ่มสร้างโปรโมชั่น --}}
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                <i class="fas fa-gift text-pink-500 mr-2"></i>โปรโมชั่น
-            </h3>
-            <button @click="showPromoModal = true; resetPromoForm()"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-medium text-sm transition">
-                <i class="fas fa-plus"></i> สร้างโปรโมชั่น
-            </button>
-        </div>
-
-        {{-- รายการโปรโมชั่น --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-700/50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ชื่อ</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ประเภท</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">มูลค่า</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">โค้ด</th>
-                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ใช้ไป</th>
-                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">สถานะ</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        <template x-for="promo in promotionsList" :key="promo.id">
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-                                <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-900 dark:text-white text-sm" x-text="promo.name"></div>
-                                    <div class="text-xs text-gray-400" x-text="promo.applies_to === 'all' ? 'ทั้งหมด' : (promo.applies_to === 'image' ? 'ภาพ' : 'วิดีโอ')"></div>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" x-text="promoTypeLabel(promo.type)"></td>
-                                <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white" x-text="promoValueLabel(promo)"></td>
-                                <td class="px-4 py-3">
-                                    <template x-if="promo.code">
-                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-mono rounded" x-text="promo.code"></span>
-                                    </template>
-                                    <template x-if="!promo.code">
-                                        <span class="text-xs text-gray-400">อัตโนมัติ</span>
-                                    </template>
-                                </td>
-                                <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-300">
-                                    <span x-text="promo.used_count"></span>
-                                    <span class="text-gray-400" x-text="promo.max_uses ? '/' + promo.max_uses : ''"></span>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <span :class="promo.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'"
-                                        class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
-                                        x-text="promo.is_active ? 'เปิด' : 'ปิด'"></span>
-                                </td>
-                                <td class="px-4 py-3 text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <button @click="editPromotion(promo)"
-                                            class="w-8 h-8 flex items-center justify-center text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
-                                            <i class="fas fa-edit text-xs"></i>
-                                        </button>
-                                        <button @click="deletePromotion(promo)"
-                                            class="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
-                                            <i class="fas fa-trash text-xs"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-            <div x-show="promotionsList.length === 0" class="text-center py-12 text-gray-400">
-                <i class="fas fa-gift text-3xl mb-3"></i>
-                <p class="text-sm">ยังไม่มีโปรโมชั่น</p>
-            </div>
-        </div>
-    </div>
-
     {{-- ======== แท็บ: ตั้งค่าทั่วไป ======== --}}
     <div x-show="activeSettingsTab === 'general'" x-transition class="space-y-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
@@ -292,113 +214,6 @@
         </div>
     </div>
 
-    {{-- ===== Modal สร้าง/แก้ไขโปรโมชั่น ===== --}}
-    <div x-show="showPromoModal" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showPromoModal = false"></div>
-        <div class="relative w-full max-w-xl max-h-[85vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-            @click.stop>
-            <div class="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="editingPromo ? 'แก้ไขโปรโมชั่น' : 'สร้างโปรโมชั่นใหม่'"></h3>
-                <button @click="showPromoModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
-            </div>
-
-            <div class="p-5 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อโปรโมชั่น *</label>
-                    <input type="text" x-model="promoForm.name" required
-                        class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="เช่น: ส่วนลด 50% สำหรับปีใหม่">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท *</label>
-                        <select x-model="promoForm.type"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="discount_percent">ส่วนลด (%)</option>
-                            <option value="discount_fixed">ส่วนลด (บาท)</option>
-                            <option value="free_credits">เครดิตฟรี</option>
-                            <option value="bonus_credits">เครดิตโบนัส</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">มูลค่า *</label>
-                        <input type="number" x-model.number="promoForm.value" step="0.01" min="0"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            :placeholder="promoForm.type === 'discount_percent' ? 'เช่น 50 (%)' : 'จำนวนเงิน/เครดิต'">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โค้ด (ถ้ามี)</label>
-                        <input type="text" x-model="promoForm.code"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="เช่น AIGEN50">
-                        <p class="text-xs text-gray-400 mt-1">เว้นว่างจะเป็นโปรโมชั่นอัตโนมัติ</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ใช้กับ</label>
-                        <select x-model="promoForm.applies_to"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="all">ทั้งหมด</option>
-                            <option value="image">ภาพเท่านั้น</option>
-                            <option value="video">วิดีโอเท่านั้น</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำกัดจำนวนครั้ง</label>
-                        <input type="number" x-model.number="promoForm.max_uses" min="1"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="ไม่จำกัด">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำกัดต่อผู้ใช้</label>
-                        <input type="number" x-model.number="promoForm.max_uses_per_user" min="1"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="ไม่จำกัด">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วันเริ่มต้น</label>
-                        <input type="datetime-local" x-model="promoForm.starts_at"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วันหมดอายุ</label>
-                        <input type="datetime-local" x-model="promoForm.expires_at"
-                            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between py-2">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" x-model="promoForm.is_active" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700">
-                <button @click="showPromoModal = false" class="px-5 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition">ยกเลิก</button>
-                <button @click="savePromotion()" :disabled="savingPromo"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50">
-                    <i :class="savingPromo ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
-                    <span x-text="savingPromo ? 'กำลังบันทึก...' : 'บันทึก'"></span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     {{-- Toast --}}
     <div x-show="toast.show" x-cloak
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
@@ -430,14 +245,10 @@ function aiGenSettings() {
     return {
         activeSettingsTab: 'wallet',
         saving: false,
-        savingPromo: false,
-        showPromoModal: false,
-        editingPromo: null,
         toast: { show: false, message: '', type: 'info' },
 
         settingsTabs: [
             { id: 'wallet', label: 'Wallet & ราคา', icon: 'fas fa-wallet' },
-            { id: 'promotions', label: 'โปรโมชั่น', icon: 'fas fa-gift' },
             { id: 'general', label: 'ทั่วไป', icon: 'fas fa-sliders-h' }
         ],
 
@@ -466,14 +277,6 @@ function aiGenSettings() {
                 wallet_cost_per_video: {{ $provider->wallet_cost_per_video ?? 'null' }}
             },
             @endforeach
-        },
-
-        promotionsList: @json($promotions ?? []),
-
-        promoForm: {
-            name: '', type: 'discount_percent', value: 0, code: '',
-            applies_to: 'all', max_uses: null, max_uses_per_user: null,
-            starts_at: '', expires_at: '', is_active: true
         },
 
         init() {
@@ -519,82 +322,6 @@ function aiGenSettings() {
                 this.showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
             } finally {
                 this.saving = false;
-            }
-        },
-
-        // ===== โปรโมชั่น =====
-        resetPromoForm() {
-            this.editingPromo = null;
-            this.promoForm = {
-                name: '', type: 'discount_percent', value: 0, code: '',
-                applies_to: 'all', max_uses: null, max_uses_per_user: null,
-                starts_at: '', expires_at: '', is_active: true
-            };
-        },
-
-        editPromotion(promo) {
-            this.editingPromo = promo;
-            this.promoForm = { ...promo };
-            this.showPromoModal = true;
-        },
-
-        async savePromotion() {
-            this.savingPromo = true;
-            try {
-                const url = this.editingPromo
-                    ? '{{ url("admin/ai-gen/promotions") }}/' + this.editingPromo.id
-                    : '{{ route("admin.ai-gen.promotions.store") }}';
-                const method = this.editingPromo ? 'PUT' : 'POST';
-
-                const res = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-                    },
-                    body: JSON.stringify(this.promoForm)
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    this.showPromoModal = false;
-                    this.showToast(this.editingPromo ? 'อัพเดทโปรโมชั่นสำเร็จ' : 'สร้างโปรโมชั่นสำเร็จ', 'success');
-                    // อัพเดทรายการ
-                    if (this.editingPromo) {
-                        const idx = this.promotionsList.findIndex(p => p.id === this.editingPromo.id);
-                        if (idx !== -1) this.promotionsList[idx] = data.data;
-                    } else {
-                        this.promotionsList.unshift(data.data);
-                    }
-                } else {
-                    this.showToast(data.error || 'บันทึกไม่สำเร็จ', 'error');
-                }
-            } catch (e) {
-                this.showToast('เกิดข้อผิดพลาด', 'error');
-            } finally {
-                this.savingPromo = false;
-            }
-        },
-
-        async deletePromotion(promo) {
-            if (!confirm('ต้องการลบโปรโมชั่น "' + promo.name + '" หรือไม่?')) return;
-            try {
-                const res = await fetch('{{ url("admin/ai-gen/promotions") }}/' + promo.id, {
-                    method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-                    }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.promotionsList = this.promotionsList.filter(p => p.id !== promo.id);
-                    this.showToast('ลบโปรโมชั่นสำเร็จ', 'success');
-                }
-            } catch (e) {
-                this.showToast('ลบไม่สำเร็จ', 'error');
             }
         },
 
@@ -644,14 +371,6 @@ function aiGenSettings() {
         },
 
         // Helpers
-        promoTypeLabel(type) {
-            return { 'discount_percent': 'ส่วนลด %', 'discount_fixed': 'ส่วนลดบาท', 'free_credits': 'เครดิตฟรี', 'bonus_credits': 'โบนัส' }[type] || type;
-        },
-        promoValueLabel(promo) {
-            if (promo.type === 'discount_percent') return promo.value + '%';
-            if (promo.type === 'discount_fixed') return '฿' + Number(promo.value).toLocaleString();
-            return promo.value + ' เครดิต';
-        },
         showToast(message, type = 'info') {
             this.toast = { show: true, message, type };
             setTimeout(() => { this.toast.show = false; }, 4000);

@@ -9,10 +9,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ยกเลิกการชำระเงิน - แม่หมอจันทรา</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'media' };
-    </script>
+    @vite('resources/css/app.css')
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-yellow-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">

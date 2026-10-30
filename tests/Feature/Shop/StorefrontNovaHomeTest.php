@@ -19,7 +19,6 @@ use Tests\TestCase;
  * - หน้าแรก (/ และ storefront.index ที่ยังไม่ค้นหา/เลือกหมวด) = ฮีโร่กลางคืน + การ์ดบริการ 8 ใบ
  *   + ดีลเด็ด + หมวดหมู่ภาพชุดใหม่ + มาสคอต — แต่รายการสินค้าทั้งหมด (#products) ของเดิมต้องยังอยู่
  * - หน้าค้นหา/หมวด ยังเป็นธีม V4 เดิม (แถบหัว V4 ไม่มีฮีโร่)
- * - ปิดได้ด้วย config shop.nova_home=false → กลับไปหน้าแรก V4 เดิมทันที
  */
 #[Group('shop')]
 class StorefrontNovaHomeTest extends TestCase
@@ -120,29 +119,7 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringNotContainsString('tp-ph-desk', $html, 'ไม่ซ้อนแถบหัว V4');
     }
 
-    public function test_public_pages_fall_back_to_v4_when_nova_public_is_off(): void
-    {
-        config(['shop.nova_public' => false]);
-
-        $html = $this->get(route('storefront.index', ['search' => 'ทดสอบ']))->assertOk()->getContent();
-
-        $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดโนวาหน้าสาธารณะ = แถบหัว V4');
-        $this->assertStringNotContainsString('theme-nova/nova.css', $html);
-        $this->assertStringNotContainsString('nv-body', $html);
-    }
-
-    public function test_nova_home_can_be_switched_off(): void
-    {
-        config(['shop.nova_home' => false, 'shop.nova_public' => false]);
-
-        $html = $this->get('/')->assertOk()->getContent();
-
-        $this->assertStringNotContainsString('id="nv-hero"', $html);
-        $this->assertStringNotContainsString('theme-nova/nova.css', $html);
-        $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดธีมใหม่ทั้งหมดแล้วต้องกลับไปแถบหัว V4');
-    }
-
-    public function test_contact_and_guide_pages_use_nova_and_fall_back_when_off(): void
+    public function test_contact_and_guide_pages_use_nova(): void
     {
         $contact = $this->get('/contact')->assertOk()->getContent();
         $this->assertStringContainsString('nv-page-hero', $contact);
@@ -158,11 +135,6 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('nv-hero-band', $doc);
         $this->assertStringNotContainsString('from-emerald-900 via-green-900 to-teal-900', $doc);
 
-        config(['shop.nova_public' => false]);
-        $contactOff = $this->get('/contact')->assertOk()->getContent();
-        $this->assertStringNotContainsString('nv-page-hero', $contactOff);
-        $this->assertStringContainsString('mailto:'.\App\Support\ContactInfo::supportEmail(), $contactOff, 'ปิดธีมแล้วช่องทางอีเมลต้องยังอยู่');
-        $this->assertStringContainsString('from-green-600 to-emerald-600', $this->get('/how-to-register')->assertOk()->getContent());
     }
 
     public function test_public_hotel_pages_use_the_nova_shell(): void

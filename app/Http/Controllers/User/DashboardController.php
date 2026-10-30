@@ -526,7 +526,7 @@ class DashboardController extends Controller
                 'icon' => '🤖',
                 'title' => 'AI Bot',
                 'subtitle' => 'LINE Bot, Chatbot, Automation',
-                'route' => route('user.ai-gen.index'),
+                'route' => route('chatbot.index'),
                 'gradient_start' => '#EC4899',
                 'gradient_end' => '#BE185D',
                 'badge' => 'NEW',
@@ -540,17 +540,6 @@ class DashboardController extends Controller
                 'route' => '#',
                 'gradient_start' => '#14B8A6',
                 'gradient_end' => '#0D9488',
-                'badge' => 'เร็วๆ นี้',
-            ],
-            // 8. Gaming & Rewards
-            [
-                'id' => 'gaming',
-                'icon' => '🎮',
-                'title' => 'Gaming & Rewards',
-                'subtitle' => 'เกม, Quest, Achievement',
-                'route' => '#',
-                'gradient_start' => '#F97316',
-                'gradient_end' => '#EA580C',
                 'badge' => 'เร็วๆ นี้',
             ],
         ];

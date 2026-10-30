@@ -561,7 +561,7 @@
             updateUrl: '',
             editing: { show: false, id: null, message: '', category: '', mode: 'all', hour_from: '', hour_to: '', is_active: true },
 
-            // รับเป็นก้อนเดียว (@js($editPayload)) — เพิ่มฟิลด์ใหม่แล้วไม่ต้องแก้ลำดับอาร์กิวเมนต์
+            // รับเป็นก้อนเดียว — เพิ่มฟิลด์ใหม่แล้วไม่ต้องแก้ลำดับอาร์กิวเมนต์
             openEdit(data) {
                 this.editing = {
                     show: true,

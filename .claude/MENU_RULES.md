@@ -13,29 +13,14 @@
 
 ## 📐 สถาปัตยกรรมระบบเมนู
 
-### ระบบเมนูมี 2 ส่วน (ต้องรู้ทั้ง 2!)
+### เมนูมีที่เดียว: `config/menus.php`
 
-```
-┌─────────────────────────────────────────────────────┐
-│           sidebar-v3.blade.php                       │
-│                                                      │
-│  @if($useMenuService)   ← ✅ ระบบหลัก (ใช้จริง!)   │
-│      @foreach($menus)                                │
-│          // โหลดจาก config/menus.php                 │
-│          // ผ่าน MenuService                         │
-│      @endforeach                                     │
-│  @else                  ← ❌ Fallback (ไม่ถูกเรียก!) │
-│      // เมนู hardcode ใน blade                       │
-│      // ไม่แสดง! เพราะ $useMenuService = true เสมอ  │
-│  @endif                                              │
-└─────────────────────────────────────────────────────┘
-```
+เมนู hardcode ใน `sidebar-v3.blade.php` ถูกลบออกแล้ว ทุกเมนูมาจาก `MenuService::getMenuForRole()` เท่านั้น
 
-### ระบบที่ 1: Config-Based (ระบบหลัก ✅)
+### Config-Based
 
 **ไฟล์:** `config/menus.php`
 **ใช้โดย:** ทั้ง Admin + User + Seller
-**สถานะ:** `$useMenuService = true` (เปิดเสมอ)
 
 **Flow:**
 ```
@@ -69,15 +54,6 @@ return [
     'provider' => [ /* ... */ ],
 ];
 ```
-
-### ระบบที่ 2: Hardcode ใน Blade (Legacy Fallback ❌)
-
-**ไฟล์:** `resources/views/components/arrow-x/sidebar-v3.blade.php`
-**ใช้เมื่อ:** `$useMenuService = false` เท่านั้น (ปัจจุบันไม่เคยเกิด)
-**ตำแหน่ง:** อยู่ใน `@else` block (line 185+)
-
-> ⚠️ **เมนูที่เพิ่มในส่วน `@else` จะไม่แสดงเลย!**
-> เพราะ `$useMenuService` ถูกตั้งเป็น `true` เสมอ (line 40)
 
 ---
 

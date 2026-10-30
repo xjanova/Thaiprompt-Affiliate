@@ -82,7 +82,7 @@
         @else
             <div class="text-center py-6 text-gray-500 dark:text-gray-400">
                 <p>ยังไม่มีอุปกรณ์ SMS Checker ที่ active</p>
-                <a href="{{ route('admin.smschecker.create-device') }}"
+                <a href="{{ route('admin.smschecker.device-create') }}"
                    class="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-1 inline-block">
                     + สร้างอุปกรณ์ใหม่
                 </a>

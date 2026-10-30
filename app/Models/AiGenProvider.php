@@ -41,22 +41,6 @@ class AiGenProvider extends Model
     }
 
     /**
-     * Get the usage logs for this provider.
-     */
-    public function usageLogs(): HasMany
-    {
-        return $this->hasMany(AiGenUsageLog::class, 'provider_id');
-    }
-
-    /**
-     * Get the generations for this provider.
-     */
-    public function generations(): HasMany
-    {
-        return $this->hasMany(AiGenGeneration::class, 'provider_id');
-    }
-
-    /**
      * Get a config value by key.
      */
     public function getConfig(string $key, $default = null)

@@ -25,10 +25,7 @@
         $tpSite = \App\Models\SiteSetting::getSetting();
         $tpAppName = $tpSite->app_name ?: ($tpSite->site_name ?: config('app.name'));
         $tpAppIcon = $tpSite->app_icon_url;
-        $tpTheme = \App\Models\ThemeSetting::active();
-        $tpFavicon = $tpTheme && $tpTheme->favicon_path
-            ? asset('storage/'.$tpTheme->favicon_path)
-            : ($tpSite->favicon_url ?: asset('images/brand/favicon.ico'));
+        $tpFavicon = $tpSite->favicon_url ?: asset('images/brand/favicon.ico');
 
         // เมนูสมาชิกดึงครั้งเดียว แล้วส่งให้ทั้งเมนูข้างและช่องค้นหาในแถบบน
         $nvmMenus = app(\App\Services\MenuService::class)->getMenuForRole('user', auth()->user());

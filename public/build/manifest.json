@@ -1,26 +1,18 @@
 {
-  "_animations-CH_iu5NA.js": {
-    "file": "assets/animations-CH_iu5NA.js",
-    "name": "animations"
-  },
-  "_charts-BR_H7_9u.js": {
-    "file": "assets/charts-BR_H7_9u.js",
-    "name": "charts"
-  },
-  "_crypto-Cy2q59CV.js": {
-    "file": "assets/crypto-Cy2q59CV.js",
-    "name": "crypto"
-  },
   "_module.esm-iQWME055.js": {
     "file": "assets/module.esm-iQWME055.js",
     "name": "module.esm"
+  },
+  "_pusher-BMDC-VYJ.js": {
+    "file": "assets/pusher-BMDC-VYJ.js",
+    "name": "pusher"
   },
   "_threejs-CuOWkSyT.js": {
     "file": "assets/threejs-CuOWkSyT.js",
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CDDPFwdD.css",
+    "file": "assets/app-vfigS0-p.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -30,12 +22,12 @@
     "isEntry": true
   },
   "resources/css/theme-v4.css": {
-    "file": "assets/theme-v4-B3lw6fU9.css",
+    "file": "assets/theme-v4-CVga4emY.css",
     "src": "resources/css/theme-v4.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CQKupPTe.js",
+    "file": "assets/app-Bu64Sq41.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -43,31 +35,23 @@
       "_module.esm-iQWME055.js"
     ]
   },
-  "resources/js/crypto/app.js": {
-    "file": "assets/app-CkfBqTdi.js",
-    "name": "app",
-    "src": "resources/js/crypto/app.js",
-    "isEntry": true,
-    "imports": [
-      "_crypto-Cy2q59CV.js",
-      "_charts-BR_H7_9u.js",
-      "_animations-CH_iu5NA.js"
-    ]
-  },
   "resources/js/echo-setup.js": {
-    "file": "assets/echo-setup-DvBw-Ab1.js",
+    "file": "assets/echo-setup-1GDG0REj.js",
     "name": "echo-setup",
     "src": "resources/js/echo-setup.js",
     "isEntry": true,
     "imports": [
-      "_crypto-Cy2q59CV.js"
+      "_pusher-BMDC-VYJ.js"
     ]
   },
-  "resources/js/mlm-genealogy-premium.js": {
-    "file": "assets/mlm-genealogy-premium-ejiG2vH9.js",
-    "name": "mlm-genealogy-premium",
-    "src": "resources/js/mlm-genealogy-premium.js",
-    "isEntry": true
+  "resources/js/echo.js": {
+    "file": "assets/echo-H7-MItBm.js",
+    "name": "echo",
+    "src": "resources/js/echo.js",
+    "isEntry": true,
+    "imports": [
+      "_pusher-BMDC-VYJ.js"
+    ]
   },
   "resources/js/mlm-genealogy-v3.js": {
     "file": "assets/mlm-genealogy-v3-BiF61naR.js",
@@ -81,24 +65,6 @@
     "src": "resources/js/pos/app.js",
     "isEntry": true
   },
-  "resources/js/pos/database.js": {
-    "file": "assets/database-l0sNRNKZ.js",
-    "name": "database",
-    "src": "resources/js/pos/database.js",
-    "isEntry": true
-  },
-  "resources/js/pos/hardware.js": {
-    "file": "assets/hardware-l0sNRNKZ.js",
-    "name": "hardware",
-    "src": "resources/js/pos/hardware.js",
-    "isEntry": true
-  },
-  "resources/js/pos/sync.js": {
-    "file": "assets/sync-l0sNRNKZ.js",
-    "name": "sync",
-    "src": "resources/js/pos/sync.js",
-    "isEntry": true
-  },
   "resources/js/service-worker-register.js": {
     "file": "assets/service-worker-register-BwGUv1ul.js",
     "name": "service-worker-register",
@@ -106,7 +72,7 @@
     "isEntry": true
   },
   "resources/js/taladsod/app.js": {
-    "file": "assets/app-HM2k2OzE.js",
+    "file": "assets/app-BzlAQHFO.js",
     "name": "app",
     "src": "resources/js/taladsod/app.js",
     "isEntry": true,
@@ -115,7 +81,7 @@
     ]
   },
   "resources/js/wealth-guide-pro.js": {
-    "file": "assets/wealth-guide-pro-DAgfehBD.js",
+    "file": "assets/wealth-guide-pro-DgH_50X7.js",
     "name": "wealth-guide-pro",
     "src": "resources/js/wealth-guide-pro.js",
     "isEntry": true,

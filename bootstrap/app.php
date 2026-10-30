@@ -19,8 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
             // Provider routes (Service Booking)
             Route::middleware('web')->group(base_path('routes/provider.php'));
 
-            // Forum routes (Community Forum System)
-            Route::middleware('web')->group(base_path('routes/forum.php'));
 
             // Fresh Market routes (ตลาดสดไทยพร๊อม)
             Route::middleware('web')->group(base_path('routes/taladsod.php'));
@@ -73,7 +71,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackRequestMetrics::class, // Track request/response metrics
             \App\Http\Middleware\TrackPageView::class, // Track page views for analytics
             \App\Http\Middleware\CheckMaintenanceMode::class, // Maintenance mode check
-            // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
             // 🔒 (2026-09-25) บัญชีที่ถูกระงับ (users.blocked_at) → ออกจากระบบทันทีทุกหน้า
             \App\Http\Middleware\EnsureAccountActive::class,
         ]);
@@ -108,7 +105,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'crypto.wallet.exists' => \App\Http\Middleware\EnsureCryptoWalletExists::class,
             'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
             // API Access Control middleware
-            'api.access' => \App\Http\Middleware\ApiAccessControl::class,
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
             // Provider LINE connection middleware
