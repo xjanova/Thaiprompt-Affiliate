@@ -975,6 +975,12 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
 
         $cleaned = self::stripInternalContextTags($response);
 
+        // 🤫 (2026-10-30) ตัวลอกแท็กกิน [SKIP] ไปด้วย ผู้เรียกจะเห็นแค่ข้อความว่าง — จดไว้ให้แยกจาก AI ตอบว่างจริง
+        //   ห้ามแก้โดยใส่ SKIP ใน whitelist ของตัวลอกแท็ก: ผู้เรียกอื่นจะส่ง [SKIP] ถึงลูกค้าตรง ๆ
+        if (trim($cleaned) === '' && preg_match('/\[\s*SKIP\s*\]/i', $response)) {
+            $result['chose_silence'] = true;
+        }
+
         // 🛡 (2026-05-26) Hallucinated reading guard — block AI ที่แกล้งเปิดไพ่ใน chat mode
         //   Trigger ONLY when mode === 'chat' — กันกระทบ Celtic/Deep legitimate predictions
         //   (Celtic/Deep ผ่าน path เดียวกัน แต่ caller pass mode='unknown' default → ไม่ block)

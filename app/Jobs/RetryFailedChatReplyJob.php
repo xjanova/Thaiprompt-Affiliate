@@ -87,6 +87,8 @@ class RetryFailedChatReplyJob implements ShouldQueue
             }
 
             if ($result === null || empty($result['message'])) {
+                $recovery->putBack($this->platform, $this->userId, $pending, $this->attempt);
+
                 return;
             }
 
@@ -94,12 +96,16 @@ class RetryFailedChatReplyJob implements ShouldQueue
 
             if ($sent) {
                 $recovery->markAnswered($pending, (string) $result['message']);
+            } else {
+                $recovery->putBack($this->platform, $this->userId, $pending, $this->attempt);
             }
         } catch (\Throwable $e) {
             Log::error('RetryFailedChatReplyJob: exception', [
                 'user_id' => $this->userId,
                 'error' => SafeLog::exceptionMessage($e),
             ]);
+
+            $recovery->putBack($this->platform, $this->userId, $pending, $this->attempt);
         }
     }
 }

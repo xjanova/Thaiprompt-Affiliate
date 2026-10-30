@@ -82,13 +82,34 @@ class ChatReplyRecovery
 
         $id = $this->remember($platform, $userId, $turn);
         $this->sendHold($platform, $userId);
+        $this->scheduleRetry($platform, $userId, $id, $attempt);
+    }
 
-        RetryFailedChatReplyJob::dispatch($platform, $userId, $id, $attempt + 1)
-            ->delay(now()->addSeconds(self::RETRY_DELAYS[$attempt]));
+    /**
+     * คืนคำถามที่หยิบไปแล้วแต่ยังไม่ถึงมือลูกค้า — ไม่ส่งอะไรถึงลูกค้า เพราะทางนี้รวมเคสที่ตั้งใจเงียบ
+     *
+     * ได้ id ใหม่และ retry ใหม่เสมอ เพราะ retry เดิมอาจจบไปแล้วตอนคำถามถูกหยิบอยู่ · ตัวเดิมที่ยังคิวอยู่ id จะไม่ตรง
+     * ครบรอบแล้วหรือเป็น LINE: เก็บไว้ตอบรวมตอนลูกค้าทักรอบถัดไป
+     * แอดมินเทคโอเวอร์อยู่ไม่คืน: เจ้าของสั่งไม่ให้ตอบรวบตอนจบเทคโอเวอร์ คำถามยังอยู่ในรายการรอแอดมิน
+     *
+     * @param  int  $attempt  รอบที่ล้มไปแล้ว (0 = รอบแรกจาก ProcessBufferedChatMessageJob)
+     */
+    public function putBack(string $platform, string $userId, array $pending, int $attempt = 0): void
+    {
+        if (TakeoverSendGuard::userIsTakenOver($platform, $userId)) {
+            return;
+        }
+
+        $id = $this->remember($platform, $userId, $pending);
+
+        if ($platform !== 'line' && $attempt < count(self::RETRY_DELAYS)) {
+            $this->scheduleRetry($platform, $userId, $id, $attempt);
+        }
     }
 
     /**
      * หยิบคำถามค้างออกมาตอบ — มีผู้ชนะคนเดียว
+     * ผู้ชนะต้องคืนด้วย putBack() ถ้าคำตอบไม่ถึงลูกค้า ไม่งั้นคำถามหาย
      *
      * @param  string|null  $id  ใส่เมื่อเป็น retry job: id ไม่ตรง = คำถามนี้ถูกตอบหรือถูกรวมไปแล้ว
      * @return array|null null = ไม่มีของให้ทำ
@@ -198,6 +219,12 @@ class ChatReplyRecovery
         ], self::PENDING_TTL_SECONDS);
 
         return $id;
+    }
+
+    protected function scheduleRetry(string $platform, string $userId, string $id, int $attempt): void
+    {
+        RetryFailedChatReplyJob::dispatch($platform, $userId, $id, $attempt + 1)
+            ->delay(now()->addSeconds(self::RETRY_DELAYS[$attempt]));
     }
 
     protected function sendHold(string $platform, string $userId): void

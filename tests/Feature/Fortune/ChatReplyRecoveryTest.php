@@ -15,6 +15,7 @@ use App\Services\Fortune\MessageBuffer;
 use App\Services\Fortune\ReplyTokenVault;
 use App\Services\Fortune\TakeoverSendGuard;
 use App\Services\FortuneAIService;
+use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use App\Services\LineAlertService;
 use Exception;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Group;
+use RuntimeException;
 use Tests\Concerns\BuildsAdminAppWorld;
 use Tests\TestCase;
 
@@ -50,6 +52,17 @@ class ChatReplyRecoveryTest extends TestCase
     private const LINE_UID = 'U1234567890abcdef1234567890abcdef';
 
     private const QUESTION = 'แม่หมอคะ อยากถามเรื่องความรักค่ะ';
+
+    private const AI_ANSWER = 'แม่หมอดูให้แล้วค่ะ ความรักกำลังไปได้สวยนะคะ';
+
+    /** สิ่งที่ AI ตอบ — ใส่ [SKIP] เมื่อต้องการให้เทิร์นนี้เงียบ */
+    private string $aiReply = self::AI_ANSWER;
+
+    /** ให้ Telegram ส่งไม่สำเร็จ */
+    private bool $telegramDown = false;
+
+    /** เรียกตอน AI กำลังตอบ — จำลองเรื่องที่เกิดระหว่างเทิร์น */
+    private ?\Closure $whileAiAnswers = null;
 
     /** คีย์ไหน timeout บ้าง — คีย์ที่ไม่อยู่ในนี้ตอบสำเร็จ */
     private array $timeoutKeys = [];
@@ -110,10 +123,18 @@ class ChatReplyRecoveryTest extends TestCase
                     throw new ConnectionException('cURL error 28: Operation timed out after 8001 milliseconds');
                 }
 
+                if ($this->whileAiAnswers !== null) {
+                    ($this->whileAiAnswers)();
+                }
+
                 return Http::response([
-                    'candidates' => [['content' => ['parts' => [['text' => 'แม่หมอดูให้แล้วค่ะ ความรักกำลังไปได้สวยนะคะ']]]]],
+                    'candidates' => [['content' => ['parts' => [['text' => $this->aiReply]]]]],
                     'usageMetadata' => ['totalTokenCount' => 42],
                 ], 200);
+            }
+
+            if ($this->telegramDown && str_contains($r->url(), 'api.telegram.org')) {
+                return Http::response(['ok' => false, 'description' => 'Bad Gateway'], 502);
             }
 
             return Http::response(['ok' => true, 'result' => ['message_id' => 1]], 200);
@@ -189,6 +210,30 @@ class ChatReplyRecoveryTest extends TestCase
         return FortuneSavedQuestion::query()->latest('id')->firstOrFail();
     }
 
+    /** ลูกค้า Telegram มีคำถามค้างจากรอบที่ทุกคีย์ล้ม แล้ว AI กลับมาปกติ @return string id ของคำถามค้าง */
+    private function leaveAPendingQuestion(): string
+    {
+        $this->allKeysTimeOut();
+        $this->runFlush('telegram', self::TG_UID);
+        $this->timeoutKeys = [];
+
+        return $this->pending('telegram', self::TG_UID)['id'];
+    }
+
+    private function startTakeover(): void
+    {
+        $this->makeReading([
+            'facebook_user_id' => self::TG_UID,
+            'platform_user_id' => self::TG_UID,
+            'platform' => 'telegram',
+            'conversation_status' => FortuneReading::STATUS_TIER_CHOICE,
+            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
+            'admin_takeover_started_at' => now()->subMinute(),
+            'admin_takeover_until' => now()->addMinutes(20),
+        ]);
+        TakeoverSendGuard::endMemoScope();
+    }
+
     // ============================================================
     // ลองคีย์อื่นในงบเวลา
     // ============================================================
@@ -202,7 +247,7 @@ class ChatReplyRecoveryTest extends TestCase
 
         $this->assertCount(3, $this->aiCalls, 'ล้ม 2 คีย์แล้วต้องไปถึงคีย์ที่ 3');
         $this->assertCount(3, array_unique($this->aiCalls), 'ห้ามลองคีย์ที่เพิ่งล้มซ้ำ');
-        $this->assertSame(['แม่หมอดูให้แล้วค่ะ ความรักกำลังไปได้สวยนะคะ'], $this->telegramTexts());
+        $this->assertSame([self::AI_ANSWER], $this->telegramTexts());
         Queue::assertNotPushed(RetryFailedChatReplyJob::class);
         $this->assertSame(0, FortuneSavedQuestion::count(), 'ตอบได้แล้วไม่ต้องรบกวนแอดมิน');
     }
@@ -523,17 +568,7 @@ class ChatReplyRecoveryTest extends TestCase
         $this->allKeysTimeOut();
         $this->runFlush('telegram', self::TG_UID);
         $id = $this->pending('telegram', self::TG_UID)['id'];
-
-        $this->makeReading([
-            'facebook_user_id' => self::TG_UID,
-            'platform_user_id' => self::TG_UID,
-            'platform' => 'telegram',
-            'conversation_status' => FortuneReading::STATUS_TIER_CHOICE,
-            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
-            'admin_takeover_started_at' => now()->subMinute(),
-            'admin_takeover_until' => now()->addMinutes(20),
-        ]);
-        TakeoverSendGuard::endMemoScope();
+        $this->startTakeover();
 
         $this->timeoutKeys = [];
         $this->aiCalls = [];
@@ -580,6 +615,157 @@ class ChatReplyRecoveryTest extends TestCase
 
         $this->assertSame([], $this->telegramTexts());
         Queue::assertNotPushed(RetryFailedChatReplyJob::class);
+    }
+
+    public function test_ai_choosing_silence_is_not_a_failure(): void
+    {
+        Queue::fake();
+        $this->aiReply = '[SKIP]';
+
+        $this->runFlush('telegram', self::TG_UID, 'ค่ะ');
+
+        // ตัวลอกแท็กกิน [SKIP] จนว่าง ถ้านับเป็น AI ล้ม ลูกค้าที่แค่รับคำจะได้กล่องแจ้งทุกครั้ง
+        $this->assertSame([], $this->telegramTexts());
+        Queue::assertNotPushed(RetryFailedChatReplyJob::class);
+        $this->assertSame(0, FortuneSavedQuestion::count(), 'ไม่ใช่คำถามที่แอดมินต้องตอบ');
+        $this->assertNull($this->pending('telegram', self::TG_UID));
+    }
+
+    public function test_truly_empty_ai_reply_still_counts_as_a_failure(): void
+    {
+        Queue::fake();
+        $this->aiReply = '[TURN 5]';
+
+        $this->runFlush('telegram', self::TG_UID);
+
+        $this->assertCount(1, $this->telegramTexts());
+        $this->assertStringContainsString('รอสักครู่', $this->telegramTexts()[0]);
+        Queue::assertPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->attempt === 1);
+    }
+
+    // ============================================================
+    // หยิบคำถามค้างไปแล้วแต่ตอบไม่ถึงลูกค้า — คำถามต้องไม่หาย
+    // ============================================================
+
+    public function test_silent_new_message_keeps_the_pending_question(): void
+    {
+        Queue::fake();
+        $oldId = $this->leaveAPendingQuestion();
+        $this->aiReply = '[SKIP]';
+
+        $this->runFlush('telegram', self::TG_UID, 'ค่ะ');
+
+        $pending = $this->pending('telegram', self::TG_UID);
+        $this->assertSame(self::QUESTION, $pending['text'], 'ข้อความที่ตั้งใจเงียบไม่ต้องตามไปด้วย');
+        $this->assertNotSame($oldId, $pending['id']);
+        Queue::assertPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->pendingId === $pending['id'] && $job->attempt === 1);
+
+        // retry ตัวเดิมที่ยังคิวอยู่ต้องไม่ตอบ ตัวใหม่ตอบครั้งเดียว
+        $this->aiReply = self::AI_ANSWER;
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $oldId, 1))->handle();
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $pending['id'], 1))->handle();
+
+        $this->assertCount(2, $this->telegramTexts(), 'กล่องแจ้ง 1 + คำตอบ 1');
+        $this->assertTrue($this->savedQuestion()->is_replied);
+    }
+
+    public function test_silent_retry_tries_again_and_stops_after_the_last_round(): void
+    {
+        Queue::fake();
+        $id = $this->leaveAPendingQuestion();
+        $this->aiReply = '[SKIP]';
+
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $id, 1))->handle();
+
+        $nextId = $this->pending('telegram', self::TG_UID)['id'];
+        Queue::assertPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->pendingId === $nextId && $job->attempt === 2);
+
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $nextId, 2))->handle();
+
+        Queue::assertNotPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->attempt > 2);
+        $this->assertSame(self::QUESTION, $this->pending('telegram', self::TG_UID)['text'], 'เก็บไว้ตอบรวมตอนลูกค้าทักรอบถัดไป');
+        $this->assertCount(1, $this->telegramTexts(), 'เคสเงียบต้องไม่มีกล่องเพิ่ม');
+    }
+
+    public function test_failed_delivery_in_retry_keeps_the_question(): void
+    {
+        Queue::fake();
+        $id = $this->leaveAPendingQuestion();
+        $this->telegramDown = true;
+
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $id, 1))->handle();
+
+        $this->assertSame(self::QUESTION, $this->pending('telegram', self::TG_UID)['text']);
+        Queue::assertPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->attempt === 2);
+        $this->assertFalse($this->savedQuestion()->is_replied, 'ส่งไม่ถึงต้องไม่ปิดรายการรอแอดมิน');
+    }
+
+    public function test_failed_delivery_of_a_merged_answer_keeps_both_messages(): void
+    {
+        Queue::fake();
+        $this->leaveAPendingQuestion();
+        $this->telegramDown = true;
+
+        $this->runFlush('telegram', self::TG_UID, 'แล้วเรื่องงานล่ะคะ');
+
+        $pending = $this->pending('telegram', self::TG_UID);
+        $this->assertStringContainsString(self::QUESTION, $pending['text']);
+        $this->assertStringContainsString('แล้วเรื่องงานล่ะคะ', $pending['text']);
+        $this->assertSame([$this->savedQuestion()->id], $pending['saved_question_ids']);
+        $this->assertFalse($this->savedQuestion()->is_replied);
+    }
+
+    public function test_exception_in_retry_keeps_the_question(): void
+    {
+        Queue::fake();
+        $id = $this->leaveAPendingQuestion();
+        $this->mock(FortuneChannelManager::class, fn ($m) => $m->shouldReceive('sendResponse')->andThrow(new RuntimeException('boom')));
+
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $id, 1))->handle();
+
+        $this->assertSame(self::QUESTION, $this->pending('telegram', self::TG_UID)['text']);
+        Queue::assertPushed(RetryFailedChatReplyJob::class, fn ($job) => $job->attempt === 2);
+    }
+
+    public function test_exception_in_the_chat_job_keeps_the_pending_question(): void
+    {
+        Queue::fake();
+        $this->leaveAPendingQuestion();
+        $this->mock(FortuneChannelManager::class, fn ($m) => $m->shouldReceive('sendResponse')->andThrow(new RuntimeException('boom')));
+
+        $this->runFlush('telegram', self::TG_UID, 'แล้วเรื่องงานล่ะคะ');
+
+        $this->assertSame(self::QUESTION, $this->pending('telegram', self::TG_UID)['text']);
+    }
+
+    public function test_takeover_during_delivery_does_not_put_the_question_back(): void
+    {
+        Queue::fake();
+        $id = $this->leaveAPendingQuestion();
+        $this->whileAiAnswers = fn () => $this->startTakeover();
+
+        (new RetryFailedChatReplyJob('telegram', self::TG_UID, $id, 1))->handle();
+
+        $this->assertNull($this->pending('telegram', self::TG_UID), 'เจ้าของสั่งไม่ให้ตอบรวบตอนจบเทคโอเวอร์');
+        Queue::assertPushed(RetryFailedChatReplyJob::class, 1);
+        $this->assertCount(1, $this->telegramTexts());
+    }
+
+    public function test_line_silence_keeps_the_question_without_a_retry_job(): void
+    {
+        Queue::fake();
+        $this->allKeysTimeOut();
+        ReplyTokenVault::remember('line', self::LINE_UID, 'rt-first');
+        $this->runFlush('line', self::LINE_UID);
+
+        $this->timeoutKeys = [];
+        $this->aiReply = '[SKIP]';
+        ReplyTokenVault::remember('line', self::LINE_UID, 'rt-second');
+        $this->runFlush('line', self::LINE_UID, 'ค่ะ');
+
+        $this->assertSame(self::QUESTION, $this->pending('line', self::LINE_UID)['text']);
+        Queue::assertNotPushed(RetryFailedChatReplyJob::class);
+        $this->assertNoLinePush();
     }
 
     // ============================================================

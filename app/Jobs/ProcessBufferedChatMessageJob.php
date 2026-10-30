@@ -83,6 +83,9 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             'combined_preview' => mb_substr($combined, 0, 120),
         ]);
 
+        $recovery = app(ChatReplyRecovery::class);
+        $carried = null;
+
         try {
             $settings = FortuneTellingSetting::getSettings();
             $service = new FortuneConversationService($settings);
@@ -103,7 +106,7 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
 
             // 🌙 (2026-10-30) มีคำถามที่ค้างจากรอบ AI ตอบไม่ทัน → ตอบรวมในรอบนี้ทีเดียว
             //   claim แล้ว retry job ของก้อนนั้นจะไม่ทำงาน ลูกค้าจึงไม่ได้คำตอบซ้ำ
-            $recovery = app(ChatReplyRecovery::class);
+            //   ทางออกไหนที่คำตอบไม่ถึงลูกค้าต้อง putBack ไม่งั้นคำถามหาย
             $count = (int) ($flushed['count'] ?? 1);
             $carried = $recovery->claim($this->platform, $this->userId);
             if ($carried !== null && $recovery->adminAlreadyAnswered($carried)) {
@@ -144,6 +147,11 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
                     'user_id' => $this->userId,
                 ]);
 
+                // เงียบได้เฉพาะข้อความรอบนี้ — คำถามที่ค้างยังไม่มีใครตอบ
+                if ($carried !== null) {
+                    $recovery->putBack($this->platform, $this->userId, $carried);
+                }
+
                 return;
             }
 
@@ -160,12 +168,19 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
 
             if ($sent && $carried !== null) {
                 $recovery->markAnswered($carried, (string) $result['message']);
+            } elseif ($carried !== null) {
+                // คำตอบนี้ตอบทั้งคำถามค้างและข้อความรอบนี้ — ส่งไม่ถึงก็ต้องเก็บไว้ทั้งก้อน
+                $recovery->putBack($this->platform, $this->userId, ['text' => $combined, 'count' => $count] + $carried);
             }
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedChatMessageJob: exception', [
                 'user_id' => $this->userId,
                 'error' => $e->getMessage(),
             ]);
+
+            if ($carried !== null) {
+                $recovery->putBack($this->platform, $this->userId, $carried);
+            }
         }
     }
 

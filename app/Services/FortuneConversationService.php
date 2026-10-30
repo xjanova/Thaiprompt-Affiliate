@@ -24142,7 +24142,8 @@ PROMPT;
 
             if (empty($responseText)) {
                 // 🌙 (2026-10-30) เส้น job ไม่มี fallback ปลายทาง — ตอบว่างคือ AI ล้ม ไม่ใช่ตั้งใจเงียบ
-                if ($bypassBuffer) {
+                //   ยกเว้น AI ตอบ [SKIP] (จังหวะเงียบ) ซึ่ง sanitizeChatResult ลอกจนว่างแล้วจดไว้ใน chose_silence
+                if ($bypassBuffer && empty($result['chose_silence'])) {
                     throw new \Exception('AI Chat ตอบกลับว่าง');
                 }
 
