@@ -692,7 +692,10 @@ class SecurityController extends Controller
     }
 
     /**
-     * Update threat intelligence manually
+     * สั่งอัปเดต threat intelligence จากหน้า admin
+     *
+     * งานจริงใช้เวลาราว 16 นาที รันใน web request ไม่ได้ จึงตั้งธงให้ scheduler รันเบื้องหลัง
+     * response แค่บอกว่ารับคำสั่งแล้ว ความคืบหน้าดูจาก getThreatUpdateProgress
      *
      * ⚠️ CRITICAL: การอัปเดต threat intelligence มีผลกระทบต่อความปลอดภัย
      */
@@ -701,32 +704,15 @@ class SecurityController extends Controller
         // ✅ ตรวจสอบสิทธิ์ในการอัปเดต threat intelligence
         $this->authorize('manage-settings');
 
-        // If this is an AJAX request, run in foreground and return JSON
+        $message = $service->requestBackgroundUpdate()
+            ? 'รับคำสั่งแล้ว ระบบจะเริ่มอัปเดตเบื้องหลังภายใน 1 นาที'
+            : 'กำลังอัปเดต Threat Intelligence อยู่แล้ว';
+
         if ($request->ajax()) {
-            try {
-                $results = $service->updateAllSources();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ",
-                    'results' => $results,
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
-                ], 500);
-            }
+            return response()->json(['success' => true, 'message' => $message]);
         }
 
-        // For regular requests, redirect with message
-        try {
-            $results = $service->updateAllSources();
-
-            return back()->with('success', "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ");
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: '.$e->getMessage()]);
-        }
+        return back()->with('success', $message);
     }
 
     /**

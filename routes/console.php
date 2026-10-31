@@ -776,12 +776,15 @@ try {
     $threatEnabled = false;
 }
 
+// ทุก event ของ threat:update ใช้ mutex เดียวกัน — รอบตั้งเวลากับปุ่มใน admin ห้ามรันซ้อนกัน
+$scheduleThreatUpdate = fn () => Schedule::command('threat:update')
+    ->createMutexNameUsing('framework/schedule-threat-update')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->runInBackground();
+
 if ($threatEnabled) {
-    $threatCmd = Schedule::command('threat:update')
-        ->withoutOverlapping(60)
-        ->onOneServer()
-        ->name('threat-update')
-        ->runInBackground();
+    $threatCmd = $scheduleThreatUpdate()->name('threat-update');
 
     switch ($threatFrequency) {
         case 'hourly':
@@ -802,6 +805,14 @@ if ($threatEnabled) {
             $threatCmd->dailyAt($threatTime);
     }
 }
+
+// ปุ่มอัปเดตในหน้า admin: controller ตั้งธงไว้ แล้ว event นี้รับไปรันเบื้องหลังในนาทีถัดไป
+// เข้า queue ไม่ได้ เพราะ worker มี --timeout=120 และ retry_after=90 แต่งานนี้ใช้เวลาราว 16 นาที
+// อยู่นอก if ด้านบน เพราะแอดมินต้องกดเองได้แม้ปิด auto update
+$scheduleThreatUpdate()
+    ->name('threat-update-manual')
+    ->everyMinute()
+    ->when(fn () => app(\App\Services\ThreatIntelligenceService::class)->takeBackgroundUpdateRequest());
 
 // ════════════════════════════════════════════════════════════════
 // 🌸 (2026-08-04) ความจำบทสนทนาของน้อง Eve — เพดานเก็บ 7 วัน

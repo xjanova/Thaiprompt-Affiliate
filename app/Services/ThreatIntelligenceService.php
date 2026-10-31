@@ -41,6 +41,16 @@ class ThreatIntelligenceService
     protected const STATS_CACHE_SECONDS = 93600;
 
     /**
+     * ธงว่าแอดมินกดอัปเดตจากหน้าเว็บ รอ scheduler มารับไปรัน
+     */
+    protected const UPDATE_REQUEST_KEY = 'threat_update_requested';
+
+    /**
+     * อายุของ progress และธง (วินาที) — ถ้าไม่มีใครมารับงาน ทั้งคู่หายพร้อมกันแล้วกดใหม่ได้
+     */
+    protected const PROGRESS_TTL_SECONDS = 300;
+
+    /**
      * Update threat intelligence from all sources
      */
     public function updateAllSources(): array
@@ -76,7 +86,37 @@ class ThreatIntelligenceService
             'message' => $message,
             'details' => $details,
             'updated_at' => now()->toIso8601String(),
-        ], 300); // Keep for 5 minutes
+        ], self::PROGRESS_TTL_SECONDS);
+    }
+
+    /**
+     * ขอให้ scheduler รันอัปเดตเบื้องหลัง
+     *
+     * @return bool false = มีงานรออยู่หรือกำลังรันอยู่แล้ว กดซ้ำจึงไม่เกิดงานซ้อน
+     */
+    public function requestBackgroundUpdate(): bool
+    {
+        $progress = $this->getProgress();
+
+        if ($progress !== null && $progress['percentage'] < 100) {
+            return false;
+        }
+
+        if (! Cache::add(self::UPDATE_REQUEST_KEY, true, self::PROGRESS_TTL_SECONDS)) {
+            return false;
+        }
+
+        $this->updateProgress(0, 'รอเริ่มอัปเดตเบื้องหลัง... (ไม่เกิน 1 นาที)');
+
+        return true;
+    }
+
+    /**
+     * scheduler รับธงไปรัน — ลบทันทีเพื่อให้กดหนึ่งครั้งได้งานหนึ่งรอบ
+     */
+    public function takeBackgroundUpdateRequest(): bool
+    {
+        return (bool) Cache::pull(self::UPDATE_REQUEST_KEY);
     }
 
     /**

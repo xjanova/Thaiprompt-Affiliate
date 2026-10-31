@@ -570,9 +570,9 @@ document.addEventListener('DOMContentLoaded', function() {
         progressDiv.classList.remove('hidden');
 
         // Reset progress
-        updateProgress(0, 'เริ่มต้นการอัปเดต...');
+        updateProgress(0, 'กำลังส่งคำสั่งอัปเดต...');
 
-        // Start the update via AJAX
+        // งานจริงรันเบื้องหลังหลายนาที response แค่บอกว่ารับคำสั่งแล้ว ต้อง poll จนจบ
         fetch('{{ route('admin.security.threat-intelligence.update') }}', {
             method: 'POST',
             headers: {
@@ -584,11 +584,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateProgress(100, data.message);
-                setTimeout(() => {
-                    // Reload page to show updated stats
-                    window.location.reload();
-                }, 2000);
+                updateProgress(0, data.message);
+                startPolling();
             } else {
                 showError(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
             }
@@ -597,9 +594,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Update error:', error);
             showError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         });
-
-        // Start polling for progress
-        startPolling();
     });
 
     function startPolling() {
@@ -621,12 +615,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (data.percentage === 100) {
                     updateProgress(100, data.message);
                     stopPolling();
+                    setTimeout(() => {
+                        // Reload page to show updated stats
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    // progress หมดอายุแล้ว = งานไม่ได้เริ่มหรือหยุดกลางทาง
+                    showError('ไม่พบงานอัปเดตที่กำลังทำงาน กรุณาลองใหม่อีกครั้ง');
                 }
             })
             .catch(error => {
                 console.error('Polling error:', error);
             });
-        }, 1000); // Poll every second
+        }, 3000);
     }
 
     function stopPolling() {
