@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Models\FortuneTellingSetting;
 use App\Models\FreshMarketSetting;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
@@ -12,11 +13,15 @@ use Tests\TestCase;
  */
 class SecurityScanCommandTest extends TestCase
 {
+    // การไล่ route สร้าง controller ทุกตัว และ constructor ของ webhook จะสร้างแถว settings ว่างถ้ายังไม่มี
+    // ต้องอยู่ใน transaction ไม่งั้นแถวนั้นค้างเป็น first() ให้เทสต์อื่นทั้งชุด
+    use RefreshDatabase;
+
     private const LOCAL_ONLY = ['--skip-http' => true, '--skip-ports' => true, '--skip-deps' => true, '--json' => true];
 
     /**
-     * การไล่ route สร้าง controller ทุกตัว และ constructor ของ webhook จำ settings ไว้ใน static memo
-     * ถ้าไม่ล้าง เทสต์ถัดไปจะได้ settings ว่างจากรอบนี้ แทนแถวที่เพิ่งสร้าง
+     * constructor ตัวเดียวกันจำ settings ไว้ใน static memo ซึ่ง rollback ไม่ล้างให้
+     * ถ้าไม่ล้างเอง เทสต์ถัดไปจะได้แถวที่ถูก rollback ไปแล้ว
      */
     protected function tearDown(): void
     {
