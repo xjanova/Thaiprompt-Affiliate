@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Console;
 
+use App\Models\FortuneTellingSetting;
+use App\Models\FreshMarketSetting;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
@@ -11,6 +13,18 @@ use Tests\TestCase;
 class SecurityScanCommandTest extends TestCase
 {
     private const LOCAL_ONLY = ['--skip-http' => true, '--skip-ports' => true, '--skip-deps' => true, '--json' => true];
+
+    /**
+     * การไล่ route สร้าง controller ทุกตัว และ constructor ของ webhook จำ settings ไว้ใน static memo
+     * ถ้าไม่ล้าง เทสต์ถัดไปจะได้ settings ว่างจากรอบนี้ แทนแถวที่เพิ่งสร้าง
+     */
+    protected function tearDown(): void
+    {
+        FortuneTellingSetting::clearSettingsCache();
+        FreshMarketSetting::clearCache();
+
+        parent::tearDown();
+    }
 
     private function scan(): array
     {
