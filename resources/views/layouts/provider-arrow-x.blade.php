@@ -16,14 +16,11 @@
 
     {{-- Favicon --}}
     @php
-        $themeSetting = \App\Models\ThemeSetting::active();
-        $faviconPath = $themeSetting && $themeSetting->favicon_path
-            ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('images/brand/favicon.ico');
+        $faviconPath = asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,8 +122,6 @@
         </main>
     </div>
 
-    {{-- Theme Customizer --}}
-    <x-arrow-x.theme-customizer />
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-24 right-4 z-[90] space-y-2 max-w-md"

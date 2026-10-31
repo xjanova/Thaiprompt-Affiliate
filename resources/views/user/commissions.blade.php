@@ -1,117 +1,119 @@
-@extends('layouts.user-v4')
+{{--
+    คอมมิชชั่นของฉัน — รวมจากระบบ MLM และ Marketplace (ธีมโนวาเต็ม)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'คอมมิชชั่น')
 
 @php
-    use Illuminate\Support\Str;
-
-    // ── ป้ายประเภทคอมมิชชั่น ───────────────────────────────────
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
     $typeLabels = [
-        'direct' => 'Direct', 'unilevel_direct' => 'Unilevel Direct', 'unilevel_indirect' => 'Unilevel Indirect',
-        'binary_pair' => 'Binary Pair', 'binary_matching' => 'Binary Matching', 'sponsor_bonus' => 'Sponsor Bonus',
-        'rank_bonus' => 'Rank Bonus', 'leadership_bonus' => 'Leadership Bonus', 'matching_bonus' => 'Matching Bonus',
-        'pool_bonus' => 'Pool Bonus', 'mlm_unilevel' => 'MLM Unilevel', 'mlm_binary' => 'MLM Binary', 'bonus' => 'Bonus',
+        'direct' => 'แนะนำตรง', 'direct_referral' => 'แนะนำตรง', 'unilevel_rollup' => 'Unilevel ส่งต่อ', 'unilevel_direct' => 'Unilevel ตรง', 'unilevel_indirect' => 'Unilevel ทางอ้อม',
+        'binary_pair' => 'Binary จับคู่', 'binary_matching' => 'Binary Matching', 'sponsor_bonus' => 'โบนัสผู้แนะนำ',
+        'rank_bonus' => 'โบนัสตำแหน่ง', 'leadership_bonus' => 'โบนัสผู้นำ', 'matching_bonus' => 'Matching Bonus',
+        'pool_bonus' => 'โบนัสกองกลาง', 'mlm_unilevel' => 'MLM Unilevel', 'mlm_binary' => 'MLM Binary', 'bonus' => 'โบนัส',
     ];
-
-    // ── สถิติ 4 ใบ (นับจำนวน) ──────────────────────────────────
-    $cards = [
-        ['label' => 'ทั้งหมด',       'en' => 'Total',    'val' => $stats['total'] ?? 0,    'color' => 'var(--deep1)',  'soft' => 'color-mix(in srgb, var(--accent1) 16%, transparent)', 'icon' => '📊'],
-        ['label' => 'รอดำเนินการ',   'en' => 'Pending',  'val' => $stats['pending'] ?? 0,  'color' => '#e0a52e',       'soft' => 'rgba(224,165,46,.16)',  'icon' => '⏳'],
-        ['label' => 'อนุมัติแล้ว',   'en' => 'Approved', 'val' => $stats['approved'] ?? 0, 'color' => '#5aa07e',       'soft' => 'rgba(90,160,126,.16)',  'icon' => '✅'],
-        ['label' => 'จ่ายแล้ว',      'en' => 'Paid',     'val' => $stats['paid'] ?? 0,     'color' => '#5689b8',       'soft' => 'rgba(86,137,184,.16)',  'icon' => '💰'],
+    $statusMeta = [
+        'pending' => ['รอดำเนินการ', 'warn'],
+        'approved' => ['อนุมัติแล้ว', 'ok'],
+        'paid' => ['จ่ายแล้ว', 'gold'],
+        'cancelled' => ['ยกเลิก', 'bad'],
+        'rejected' => ['ปฏิเสธ', 'bad'],
+        'clawback' => ['เรียกคืน', 'bad'],
     ];
+    $earned = (float) ($stats['amount_earned'] ?? 0);
+    [$eInt, $eDec] = explode('.', number_format($earned, 2));
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── หัวข้อ ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
-        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
-        <x-art.hero-art image="usr-commissions" />
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">คอมมิชชั่นของฉัน</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ประวัติคอมมิชชั่นจากทุกระบบ (MLM และ Marketplace)</div>
+<section class="nvm-ph" aria-labelledby="nvm-cm-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.home'))
+                <a class="nvm-ph__back" href="{{ route('user.home') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>หน้าหลัก</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Commissions</div>
+            <h1 id="nvm-cm-h">คอมมิชชั่นของฉัน</h1>
+            <p class="nvm-ph__lead">รายได้จากการแนะนำและยอดขาย รวมทุกระบบ (MLM และ Marketplace)</p>
+            <div class="nvm-bal">
+                <small>ได้รับแล้ว (อนุมัติ + จ่ายแล้ว)</small>
+                <b class="nvm-foil nvm-num">฿{{ $eInt }}<span>.{{ $eDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
-        @foreach($cards as $c)
-            <div class="tp-card" style="padding:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <div style="min-width:0;">
-                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $c['label'] }}</div>
-                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $c['en'] }}</div>
-                    </div>
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:{{ $c['soft'] }};">{{ $c['icon'] }}</span>
-                </div>
-                <div class="tp-num" style="font-size:30px; font-weight:800; margin-top:10px; color:{{ $c['color'] }};">{{ number_format($c['val']) }}</div>
-            </div>
-        @endforeach
+<div class="nvm-kpis">
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">ทั้งหมด <span class="nvm-kpi__en nvm-latin">Total</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format($stats['total'] ?? 0) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip">รายการ</span></div>
     </div>
-
-    {{-- ── ตารางคอมมิชชั่น ──────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        @if($commissions->count() > 0)
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
-                            @foreach(['วันที่','แหล่งที่มา','ประเภท','จำนวน','%','สถานะ','หมายเหตุ'] as $h)
-                                <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $h }}</th>
-                            @endforeach
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($commissions as $commission)
-                            @php
-                                $st = $commission->status;
-                                $stMap = [
-                                    'pending'   => ['รอดำเนินการ', '#e0a52e', 'fa-clock'],
-                                    'approved'  => ['อนุมัติแล้ว', '#5aa07e', 'fa-check'],
-                                    'paid'      => ['จ่ายแล้ว',     '#5689b8', 'fa-check-double'],
-                                    'cancelled' => ['ยกเลิก',       'var(--ink2)', 'fa-ban'],
-                                ];
-                                $stInfo = $stMap[$st] ?? ['ปฏิเสธ', '#d9534f', 'fa-xmark'];
-                            @endphp
-                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; color:var(--ink);">{{ \Carbon\Carbon::parse($commission->created_at)->format('d/m/Y H:i') }}</td>
-                                <td style="padding:12px 16px; white-space:nowrap;">
-                                    @if($commission->source === 'mlm')
-                                        <span class="tp-pill" style="color:var(--deep1); background:color-mix(in srgb, var(--accent1) 16%, transparent);"><i class="fas fa-network-wired" style="font-size:10px;"></i> MLM</span>
-                                    @else
-                                        <span class="tp-pill" style="color:#5689b8; background:rgba(86,137,184,.16);"><i class="fas fa-store" style="font-size:10px;"></i> Marketplace</span>
-                                    @endif
-                                </td>
-                                <td style="padding:12px 16px; color:var(--ink2);">
-                                    <span class="tp-pill tp-pill-soft" style="font-size:10.5px;">{{ $typeLabels[$commission->type] ?? ucfirst(str_replace('_', ' ', (string) $commission->type)) }}</span>
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; font-weight:700; color:var(--ink);">฿{{ number_format($commission->amount, 2) }}</td>
-                                <td class="tp-num" style="padding:12px 16px; color:var(--ink2);">{{ $commission->percentage ? $commission->percentage . '%' : '-' }}</td>
-                                <td style="padding:12px 16px; white-space:nowrap;">
-                                    <span class="tp-pill" style="color:#fff; background:{{ $stInfo[1] }};"><i class="fas {{ $stInfo[2] }}" style="font-size:10px;"></i> {{ $stInfo[0] }}</span>
-                                </td>
-                                <td style="padding:12px 16px; color:var(--ink2); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $commission->notes ?? '-' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                {{ $commissions->links() }}
-            </div>
-        @else
-            <div style="text-align:center; padding:56px 20px;">
-                <div style="font-size:52px; opacity:.5;">📭</div>
-                <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีคอมมิชชั่น</div>
-                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เมื่อมีคอมมิชชั่นเข้ามาจะแสดงที่นี่</div>
-            </div>
-        @endif
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">รอดำเนินการ <span class="nvm-kpi__en nvm-latin">Pending</span></div>
+        <div class="nvm-kpi__val nvm-num">฿{{ number_format($stats['amount_pending'] ?? 0, 2) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--warn">{{ number_format($stats['pending'] ?? 0) }} รายการ</span></div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/gift.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">อนุมัติแล้ว <span class="nvm-kpi__en nvm-latin">Approved</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format($stats['approved'] ?? 0) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--ok">รอโอนเข้ากระเป๋า</span></div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/wallet/deposit.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">จ่ายแล้ว <span class="nvm-kpi__en nvm-latin">Paid</span></div>
+        <div class="nvm-kpi__val nvm-num">฿{{ number_format($stats['amount_paid'] ?? 0, 2) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--gold">{{ number_format($stats['paid'] ?? 0) }} รายการ</span></div>
     </div>
 </div>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-cml-h">
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">History</small><h2 id="nvm-cml-h">ประวัติคอมมิชชั่น</h2></div>
+        @if($nvR('user.wallet.index'))
+            <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>กระเป๋าเงิน</a>
+        @endif
+    </div>
+    @if($commissions->count())
+        <ul class="nvm-txs">
+            @foreach($commissions as $commission)
+                @php
+                    [$stText, $stTone] = $statusMeta[$commission->status] ?? [$commission->status, 'info'];
+                    $isMlm = $commission->source === 'mlm';
+                    $type = $typeLabels[$commission->type] ?? ucfirst(str_replace('_', ' ', (string) $commission->type));
+                    $void = in_array($commission->status, ['cancelled', 'rejected', 'clawback'], true);
+                @endphp
+                <li class="nvm-tx">
+                    <span class="nvm-tx__ic {{ $void ? '' : 'is-in' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $isMlm ? 'users' : 'store' }}"/></svg></span>
+                    <div class="nvm-tx__t">
+                        <b>{{ $type }}</b>
+                        <small class="nvm-num">{{ \Carbon\Carbon::parse($commission->created_at)->format('d/m/Y H:i') }} · {{ $isMlm ? 'MLM' : 'Marketplace' }}@if($commission->percentage) · {{ rtrim(rtrim(number_format((float) $commission->percentage, 2), '0'), '.') }}%@endif</small>
+                        @if($commission->notes)<small>{{ \Illuminate\Support\Str::limit($commission->notes, 90) }}</small>@endif
+                    </div>
+                    <div class="nvm-tx__r">
+                        <span class="nvm-tx__amt nvm-num {{ $void ? 'is-void' : 'is-in' }}">+฿{{ number_format((float) $commission->amount, 2) }}</span>
+                        <span class="nvm-chip nvm-chip--{{ $stTone }}">{{ $stText }}</span>
+                    </div>
+                </li>
+            @endforeach
+        </ul>
+        @if($commissions->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $commissions->links() }}</div>
+        @endif
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีคอมมิชชั่น</b>
+            แนะนำเพื่อนหรือขายสินค้า รายได้จะแสดงที่นี่
+            @if($nvR('user.mlm.team'))
+                <br><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.mlm.team') }}"><svg class="nvm-ico"><use href="#nvm-i-users"/></svg>ดูทีมของฉัน</a>
+            @endif
+        </div>
+    @endif
+</section>
 @endsection

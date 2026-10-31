@@ -79,7 +79,7 @@
                 <select x-model="form.model" class="tp-input" style="width:100%;">
                     <option value="">-- ใช้ค่า default ของ provider --</option>
                     @foreach($modelsByProvider[$key->provider] as $m)
-                        <option value="{{ $m }}" {{ $key->model === $m ? 'selected' : '' }}>{{ $m }}</option>
+                        <option value="{{ $m }}" {{ $key->model === $m ? 'selected' : '' }}>{{ $modelLabels[$key->provider][$m] ?? $m }}</option>
                     @endforeach
                 </select>
                 <p class="tp-muted" style="margin:6px 0 0;font-size:.78rem;">
@@ -93,7 +93,10 @@
                 <label class="tp-muted" style="display:block;font-size:.82rem;font-weight:700;margin-bottom:6px;">
                     Custom Base URL <span class="tp-muted" style="font-weight:400;font-size:.75rem;">(เลือกใช้)</span>
                 </label>
+                {{-- 🔐 ช่องนี้อยู่ติดก่อนช่อง API Key เบราว์เซอร์จึงเดาว่าเป็นช่องอีเมล — readonly จนกว่าจะคลิก กันเติมอัตโนมัติตอนเปิดหน้า --}}
                 <input type="url" x-model="form.base_url"
+                       autocomplete="off" data-lpignore="true" data-1p-ignore
+                       readonly @focus="$el.readOnly = false"
                        placeholder="{{ $defaultBaseUrls[$key->provider] ?? 'https://api.example.com/v1' }}"
                        class="tp-input" style="width:100%;font-size:.85rem;">
                 <p class="tp-muted" style="margin:6px 0 0;font-size:.78rem;">
@@ -105,7 +108,10 @@
             <div>
                 <label class="tp-muted" style="display:block;font-size:.82rem;font-weight:700;margin-bottom:6px;">API Key</label>
                 <div style="position:relative;">
+                    {{-- 🔐 new-password + readonly จนกว่าจะคลิก กันเบราว์เซอร์เติมรหัสผ่านลงช่องนี้ตอนแก้ฟิลด์อื่น --}}
                     <input :type="showApiKey ? 'text' : 'password'" x-model="form.api_key"
+                           autocomplete="new-password" data-lpignore="true" data-1p-ignore
+                           readonly @focus="$el.readOnly = false"
                            placeholder="ปล่อยว่างถ้าไม่ต้องการเปลี่ยน"
                            class="tp-input" style="width:100%;padding-right:42px;font-size:.85rem;">
                     <button type="button" @click="showApiKey = !showApiKey"
@@ -295,6 +301,11 @@ function editApiKey() {
                 return;
             }
 
+            // 🔐 เขียนทับ key ที่ใช้งานอยู่ — ต้องให้แอดมินเห็นก่อนเสมอ เผื่อเบราว์เซอร์เติมค่าลงช่องนี้เอง
+            if (this.form.api_key && !confirm('กำลังเปลี่ยน API Key ของรายการนี้\nถ้าไม่ได้ตั้งใจเปลี่ยน ให้กดยกเลิกแล้วล้างช่อง API Key ก่อนบันทึก')) {
+                return;
+            }
+
             this.submitting = true;
             try {
                 const response = await fetch('{{ route('admin.ai-api-keys.update', $key->id) }}', {
@@ -308,9 +319,15 @@ function editApiKey() {
                 const data = await response.json();
 
                 if (data.success) {
+                    if (data.warning) {
+                        alert(data.message);
+                    }
                     window.location.href = '{{ route('admin.ai-api-keys.provider', $key->provider) }}';
                 } else {
                     alert(data.message || 'เกิดข้อผิดพลาด');
+                    if (data.api_key_rejected) {
+                        this.form.api_key = '';
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);

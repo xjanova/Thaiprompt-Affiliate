@@ -59,7 +59,7 @@
                 <select x-model="form.model" class="tp-input" style="width:100%;">
                     <option value="">-- ใช้ค่า default ของ provider --</option>
                     <template x-for="m in availableModels" :key="m">
-                        <option :value="m" x-text="m"></option>
+                        <option :value="m" x-text="(modelLabels[form.provider] || {})[m] || m"></option>
                     </template>
                 </select>
                 <p class="tp-muted" style="margin-top:6px;font-size:.76rem;">
@@ -74,7 +74,10 @@
                     Custom Base URL
                     <span class="tp-muted" style="font-weight:400;font-size:.72rem;">(เลือกใช้ — ปล่อยว่างเพื่อใช้ default)</span>
                 </label>
+                {{-- 🔐 ช่องนี้อยู่ติดก่อนช่อง API Key เบราว์เซอร์จึงเดาว่าเป็นช่องอีเมล — readonly จนกว่าจะคลิก กันเติมอัตโนมัติตอนเปิดหน้า --}}
                 <input type="url" x-model="form.base_url"
+                       autocomplete="off" data-lpignore="true" data-1p-ignore
+                       readonly @focus="$el.readOnly = false"
                        :placeholder="defaultBaseUrl || 'https://api.example.com/v1'"
                        class="tp-input" style="width:100%;font-family:monospace;font-size:.82rem;">
                 <p class="tp-muted" style="margin-top:6px;font-size:.76rem;">
@@ -90,6 +93,8 @@
                 </label>
                 <div style="position:relative;">
                     <input :type="showApiKey ? 'text' : 'password'" x-model="form.api_key" required
+                           autocomplete="new-password" data-lpignore="true" data-1p-ignore
+                           readonly @focus="$el.readOnly = false"
                            placeholder="sk-xxxx... หรือ gsk_xxxx..."
                            class="tp-input" style="width:100%;padding-right:42px;font-family:monospace;font-size:.82rem;">
                     {{-- ปุ่มตา: แสดง/ซ่อน api key --}}
@@ -200,6 +205,7 @@ function createApiKey() {
         submitting: false,
         // 🎯 (2026-05-01) provider → models map (cascading dropdown)
         modelsByProvider: @json($modelsByProvider),
+        modelLabels: @json($modelLabels),
         defaultBaseUrls: @json($defaultBaseUrls),
         availableModels: [],
         defaultBaseUrl: '',

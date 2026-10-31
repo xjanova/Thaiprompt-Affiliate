@@ -883,7 +883,8 @@ class FortuneTellingSetting extends Model
         // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
-        'chat_ai_model' => 'llama-3.3-70b-versatile',
+        // 🔄 (2026-10-30) Groq ปิด Llama สำหรับ free/dev tier → gpt-oss-120b
+        'chat_ai_model' => 'openai/gpt-oss-120b',
         // 🧠 Discovery Chat — ปิดเป็น default (2026-04-29: user feedback ว่าไม่เวิร์ค)
         //   จะใช้ tier menu (39฿ vs 99฿ Celtic) แทน — admin เปิดได้ใน settings ถ้าอยากลอง
         'enable_discovery_chat' => false,
@@ -1060,8 +1061,8 @@ class FortuneTellingSetting extends Model
         'sensitive_provider' => 'gemini',
         'sensitive_model' => 'gemini-3.1-pro-preview',
         'sensitive_classifier_provider' => 'groq',
-        // 🎯 (2026-05-24) เปลี่ยน default 8b → 3.3-70b — TPM 6000 → 12000 ลด 413
-        'sensitive_classifier_model' => 'llama-3.3-70b-versatile',
+        // 🔄 (2026-10-30) Groq ปิด Llama สำหรับ free/dev tier → gpt-oss-20b (เร็ว, ถูก, พอสำหรับจัดหมวด)
+        'sensitive_classifier_model' => 'openai/gpt-oss-20b',
         'sensitive_max_per_user_daily' => 5,
         'sensitive_max_total_daily_thb' => 200.00,
         'sensitive_max_tokens_per_call' => 2000,
@@ -1833,11 +1834,9 @@ TXT;
 
         return match ($provider) {
             'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
-            'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
-            'groq' => 'llama-3.3-70b-versatile',
-            'deepseek' => 'deepseek-chat',
-            'typhoon' => 'typhoon-v2-70b-instruct',
-            'grok' => 'grok-2-latest',
+            // 🔄 (2026-10-30) รุ่นที่ปิดแล้ว → default ของ Pool (AiApiKey::MODELS_BY_PROVIDER)
+            'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-sonnet-5.5'),
+            'groq', 'deepseek', 'typhoon', 'grok' => AiApiKey::defaultModelFor($provider),
             'openai' => 'gpt-4o',
             'anthropic' => 'claude-sonnet-4-5',
             default => 'gemini-2.5-flash',
@@ -2985,11 +2984,9 @@ PROMPT;
             //   และฉลาดกว่า (AA index 52 vs ~41) — verified live บน /v1/responses key prod
             'openai' => 'gpt-5.6-luna',
             'gemini' => 'gemini-3.1-flash-lite',
-            'groq' => 'llama-3.3-70b-versatile',
-            'grok' => 'grok-3',
+            // 🔄 (2026-10-30) Llama / grok-3 / deepseek-chat / typhoon-v2 ปิดแล้ว → default ของ Pool
+            'groq', 'grok', 'deepseek', 'typhoon' => AiApiKey::defaultModelFor($provider),
             'openrouter' => 'openai/gpt-4o-mini',
-            'deepseek' => 'deepseek-chat',
-            'typhoon' => 'typhoon-v2-70b-instruct',
             'anthropic' => 'claude-haiku-4-5-20251001',
             default => $this->chat_ai_model ?: 'gpt-5.6-luna',
         };

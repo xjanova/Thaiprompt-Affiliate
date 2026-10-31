@@ -6,7 +6,6 @@ use App\Models\CarbonCredit;
 use App\Models\User;
 use App\Notifications\FoodPassport\CarbonCreditIssuedNotification;
 use App\Notifications\FoodPassport\CarbonCreditRetiredNotification;
-use App\Notifications\FoodPassport\CarbonCreditTradedNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

@@ -209,7 +209,7 @@ class TarotInterpretController extends Controller
                 userContext: 'jw_tarot:'.$profile['key'],
                 purpose: $profile['purpose'],
                 // 🪬 คุณไสย์ → โมเดลตัวแรงทุกครั้ง (นโยบายเดียวกับบอท — FortuneModelRouter)
-                modelOverrides: $profile['strong_model'] ? ['openai' => FortuneModelRouter::MODEL_STRONG] : null,
+                modelOverrides: $profile['strong_model'] ? ['openai' => FortuneModelRouter::strongModel()] : null,
             );
         } catch (\Throwable $e) {
             Log::warning('Juntra tarot profile reading failed', ['profile' => $profile['key'], 'err' => $e->getMessage()]);

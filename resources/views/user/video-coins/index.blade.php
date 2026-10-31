@@ -8,8 +8,6 @@
 
     // ── ปุ่มเมนูด่วน 4 ใบ (ป้าย / ป้ายย่อย / route / ไอคอน) ──────
     $vcActions = [
-        ['ดูวิดีโอ', 'รับ Coins ฟรี', 'user.video-missions.index', 'fa-play'],
-        ['ร้านค้า',  'แลกของรางวัล',  'user.coin-shop.index',      'fa-store'],
         ['แลกเงิน',  'ถอนเงินบาท',    'user.video-coins.exchange', 'fa-exchange-alt'],
         ['ประวัติ',  'ดูธุรกรรม',     'user.video-coins.transactions', 'fa-history'],
     ];
@@ -28,9 +26,6 @@
                 <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">จัดการและใช้งาน Video Coins ของคุณ</div>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                <a href="{{ route('user.coin-shop.index') }}" class="tp-btn">
-                    <i class="fas fa-store"></i> ร้านค้า Coins
-                </a>
                 <a href="{{ route('user.video-coins.exchange') }}" class="tp-btn tp-btn-primary">
                     <i class="fas fa-exchange-alt"></i> แลกเงิน
                 </a>
@@ -144,9 +139,6 @@
                 <div style="font-size:46px; opacity:.5;">🪙</div>
                 <div style="font-weight:700; font-size:16px; margin-top:10px;">ยังไม่มีประวัติธุรกรรม</div>
                 <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เริ่มดูวิดีโอเพื่อรับ Coins ฟรี</div>
-                <a href="{{ route('user.video-missions.index') }}" class="tp-btn tp-btn-primary" style="margin-top:16px;">
-                    <i class="fas fa-play"></i> ดูวิดีโอรับ Coins
-                </a>
             </div>
         @endif
     </div>

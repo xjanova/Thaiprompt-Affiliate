@@ -1,336 +1,201 @@
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'ฝากเงิน')
 
+@php
+    // ฝากเงิน — ธีมโนวาเต็ม · กรอกยอดครั้งเดียวใช้ได้ทุกช่องทาง · โอนธนาคารขั้นต่ำ ฿100 (ยอดต่ำกว่านั้น SMS ธนาคารไม่แจ้ง)
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    [$balInt, $balDec] = explode('.', number_format((float) $wallet->balance, 2));
+    $gateways = array_filter($availableGateways ?? [], fn ($g) => ! empty($g['enabled']));
+    $gwArt = ['promptpay' => 'qr', 'bank_transfer' => 'bank', 'stripe' => 'card', 'paypal' => 'transfer'];
+    $bankMin = 100;
+
+    // เปิดฟอร์มเดิมค้างไว้เมื่อส่งไม่ผ่าน validation · มีช่องทางเดียวเลือกให้เลย
+    $initMethod = null;
+    if ($errors->has('slip') && isset($gateways['bank_transfer'])) {
+        $initMethod = 'bank_transfer';
+    } elseif ($errors->any() && isset($gateways['promptpay'])) {
+        $initMethod = 'promptpay';
+    } elseif (count($gateways) === 1) {
+        $initMethod = array_key_first($gateways);
+    }
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; padding-bottom:24px;">
 
-    {{-- ── ข้อความแจ้งเตือน Flash ──────────────────────────────── --}}
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
-            <span style="font-size:22px;">❌</span>
-            <p style="margin:0; font-size:13px; font-weight:600; color:#d9534f;">{{ session('error') }}</p>
-        </div>
-    @endif
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
-            <span style="font-size:22px;">✅</span>
-            <p style="margin:0; font-size:13px; font-weight:600; color:#5aa07e;">{{ session('success') }}</p>
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:flex-start; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
-            <span style="font-size:22px;">⚠️</span>
-            <ul style="margin:0; padding-left:18px; font-size:13px; color:#d9534f; list-style:disc;">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    {{-- ── Hero: หัวข้อ + ยอดเงินปัจจุบัน ──────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
-                @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
-                    <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-                @endif
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px;"><i class="fas fa-plus-circle" style="color:#fff;"></i></span>
-                <div style="flex:1; min-width:180px;">
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ฝากเงิน</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เติมเงินเข้ากระเป๋าของคุณ</div>
-                </div>
-            </div>
-
-            {{-- ยอดเงินปัจจุบัน --}}
-            <div style="margin-top:18px; padding:20px 22px; border-radius:18px; box-shadow:var(--inset);">
-                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินปัจจุบัน</div>
-                <div class="tp-num" style="font-size:clamp(32px,7vw,48px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
+<section class="nvm-ph" aria-labelledby="nvm-dep-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Top up</div>
+            <h1 id="nvm-dep-h">ฝากเงินเข้ากระเป๋า</h1>
+            <p class="nvm-ph__lead">เลือกช่องทางที่สะดวก พร้อมเพย์เข้าทันที · โอนธนาคารแนบสลิปรอตรวจไม่เกิน 24 ชม.</p>
+            <div class="nvm-bal">
+                <small>ยอดเงินปัจจุบัน</small>
+                <b class="nvm-foil nvm-num">฿{{ $balInt }}<span>.{{ $balDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/deposit.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── เลือกช่องทางการชำระเงิน ───────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:16px;">เลือกช่องทางการชำระเงิน</div>
-
-        {{-- ⚠️ แจ้งเตือน: ยอดต่ำกว่า 100 บาท ต้องใช้ PromptPay เท่านั้น --}}
-        <div id="low-amount-notice" style="display:none; margin-bottom:16px; padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-            <p style="margin:0; font-size:13px; color:#e0a52e; font-weight:500;">
-                ⚠️ <strong>ยอดเงินต่ำกว่า 100 บาท</strong> — กรุณาใช้ช่องทาง <strong>พร้อมเพย์</strong> เท่านั้น (โอนผ่านธนาคารไม่รองรับยอดต่ำกว่า 100 บาท เนื่องจากระบบ SMS แจ้งเตือนไม่ทำงาน)
-            </p>
+@if($errors->any())
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ทำรายการไม่สำเร็จ</b>
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
         </div>
+    </section>
+@endif
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
-            @foreach($availableGateways as $key => $gateway)
-                @if($gateway['enabled'])
-                    <div id="gateway-card-{{ $key }}"
-                         class="tp-card tp-card-hover"
-                         style="padding:16px; cursor:pointer; box-shadow:var(--inset-sm);"
-                         onclick="selectPaymentMethod('{{ $key }}')">
-                        <div style="display:flex; align-items:flex-start; gap:14px;">
-                            <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:24px; flex-shrink:0;">{{ $gateway['icon'] }}</span>
-                            <div style="flex:1; min-width:0;">
-                                <h3 style="margin:0; font-size:15px; font-weight:700; color:var(--ink);">{{ $gateway['name'] }}</h3>
-                                <p style="margin:4px 0 0; font-size:12.5px; color:var(--ink2);">{{ $gateway['description'] }}</p>
-
+<div class="nvm-split" x-data="nvmDeposit({ method: @js($initMethod), amount: @js((string) old('amount', '')), min: {{ $bankMin }}, scroll: @js($errors->any()) })" @pageshow.window="busy = false">
+    <div class="nvm-stack">
+        {{-- ── 1) เลือกช่องทาง ─────────────────────────────── --}}
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-gw-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Step 1</small><h2 id="nvm-gw-h">เลือกช่องทางการชำระเงิน</h2></div></div>
+            @if(count($gateways))
+                <div class="nvm-opts" role="radiogroup" aria-labelledby="nvm-gw-h">
+                    @foreach($gateways as $key => $gateway)
+                        <label class="nvm-opt" @if($key === 'bank_transfer') :class="{ 'is-off': low }" :title="low ? 'ยอดต่ำกว่า ฿{{ $bankMin }} กรุณาใช้พร้อมเพย์' : ''" @endif>
+                            <input type="radio" name="nvm_method" value="{{ $key }}" x-model="method" @change="reveal()" @if($key === 'bank_transfer') :disabled="low" @endif>
+                            <img src="{{ asset('images/nova/wallet/'.($gwArt[$key] ?? 'deposit').'.webp') }}" alt="" width="44" height="44" loading="lazy">
+                            <span>
+                                <b>{{ $gateway['name'] }}</b>
+                                <small>{{ $gateway['description'] }}</small>
                                 @if($key === 'promptpay')
-                                    <div style="margin-top:10px;">
-                                        <span class="tp-pill" style="color:#5aa07e; background:color-mix(in srgb, #5aa07e 16%, transparent);">⚡ ทันที</span>
-                                    </div>
+                                    <span class="nvm-chip nvm-chip--ok">เข้าทันที</span>
                                 @elseif($key === 'bank_transfer')
-                                    <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
-                                        <span class="tp-pill" style="color:#e0a52e; background:color-mix(in srgb, #e0a52e 16%, transparent);">⏰ รออนุมัติ</span>
-                                        {{-- แจ้งเตือนขั้นต่ำ 100 บาท --}}
-                                        <span class="tp-pill" style="color:#d9534f; background:color-mix(in srgb, #d9534f 16%, transparent);">ขั้นต่ำ ฿100</span>
-                                    </div>
+                                    <span class="nvm-chip nvm-chip--warn">รออนุมัติ</span> <span class="nvm-chip nvm-chip--bad">ขั้นต่ำ ฿{{ $bankMin }}</span>
                                 @endif
-                            </div>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="nvm-note is-bad" x-show="low" x-cloak>
+                    <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                    <span><b>ยอดต่ำกว่า ฿{{ $bankMin }}</b> — ใช้ได้เฉพาะพร้อมเพย์ (ระบบแจ้งเตือน SMS ธนาคารไม่รองรับยอดต่ำกว่านี้)</span>
+                </p>
+            @else
+                <div class="nvm-empty">
+                    <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                    <b>ยังไม่เปิดช่องทางฝากเงิน</b>
+                    กรุณาติดต่อฝ่ายสนับสนุน
+                </div>
+            @endif
+        </section>
+
+        {{-- ── 2) พร้อมเพย์ ───────────────────────────────── --}}
+        @isset($gateways['promptpay'])
+            <section class="nvm-card nvm-box" x-show="method === 'promptpay'" x-cloak x-ref="f_promptpay" aria-labelledby="nvm-pp-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Step 2 · PromptPay</small><h2 id="nvm-pp-h">ชำระผ่านพร้อมเพย์</h2></div></div>
+                <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" class="nvm-form" @submit="busy = true">
+                    @csrf
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="pp-amount">จำนวนเงิน (บาท) <em>*</em></label>
+                        <div class="nvm-amount"><span>฿</span><input id="pp-amount" type="number" name="amount" step="0.01" min="1" inputmode="decimal" required class="nvm-input @error('amount') is-bad @enderror" placeholder="0.00" x-model="amount"></div>
+                        <div class="nvm-picks">
+                            @foreach([100, 300, 500, 1000, 2000] as $preset)
+                                <button type="button" :class="{ 'is-on': Number(amount) === {{ $preset }} }" @click="amount = '{{ $preset }}'">฿{{ number_format($preset) }}</button>
+                            @endforeach
                         </div>
                     </div>
-                @endif
-            @endforeach
-        </div>
+                    <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg><span>กดยืนยันแล้วจะได้ QR Code สำหรับสแกนจ่ายจากแอปธนาคาร เงินเข้ากระเป๋าอัตโนมัติ</span></p>
+                    <div class="nvm-filter__btns">
+                        <button type="button" class="nvm-btn nvm-btn--line" @click="method = null">ยกเลิก</button>
+                        <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg><span x-text="busy ? 'กำลังสร้าง QR…' : 'สร้าง QR Code'">สร้าง QR Code</span></button>
+                    </div>
+                </form>
+            </section>
+        @endisset
+
+        {{-- ── 2) โอนผ่านธนาคาร ───────────────────────────── --}}
+        @isset($gateways['bank_transfer'])
+            <section class="nvm-card nvm-box" x-show="method === 'bank_transfer'" x-cloak x-ref="f_bank_transfer" aria-labelledby="nvm-bt-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Step 2 · Bank transfer</small><h2 id="nvm-bt-h">โอนผ่านธนาคาร + แนบสลิป</h2></div></div>
+                <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" class="nvm-form" @submit="submitBank($event)">
+                    @csrf
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="bt-amount">จำนวนเงิน (บาท) <em>*</em></label>
+                        <div class="nvm-amount"><span>฿</span><input id="bt-amount" type="number" name="amount" step="0.01" min="{{ $bankMin }}" inputmode="decimal" required class="nvm-input @error('amount') is-bad @enderror" placeholder="ขั้นต่ำ {{ $bankMin }}" x-model="amount"></div>
+                        <span class="nvm-help">ขั้นต่ำ ฿{{ $bankMin }}@isset($gateways['promptpay']) — ยอดน้อยกว่านี้ใช้<button type="button" class="nvm-link" @click="method = 'promptpay'; reveal()">พร้อมเพย์</button>แทน@endisset</span>
+                    </div>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="bt-slip">สลิปการโอนเงิน <em>*</em></label>
+                        <input id="bt-slip" type="file" name="slip" accept="image/*" required class="nvm-input nvm-file @error('slip') is-bad @enderror">
+                        <span class="nvm-help">ถ่ายหรือแคปให้เห็นยอดเงิน วันเวลา และเลขอ้างอิงชัดเจน</span>
+                    </div>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="bt-note">หมายเหตุ (ถ้ามี)</label>
+                        <textarea id="bt-note" name="note" rows="3" class="nvm-input" placeholder="เช่น โอนจากบัญชีชื่ออะไร">{{ old('note') }}</textarea>
+                    </div>
+                    <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><span>แอดมินตรวจสลิปและอนุมัติภายใน 24 ชั่วโมง ดูสถานะได้ที่ประวัติธุรกรรม</span></p>
+                    <div class="nvm-filter__btns">
+                        <button type="button" class="nvm-btn nvm-btn--line" @click="method = null">ยกเลิก</button>
+                        <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่ง…' : 'ส่งคำขอฝากเงิน'">ส่งคำขอฝากเงิน</span></button>
+                    </div>
+                </form>
+            </section>
+        @endisset
+
+        {{-- Stripe / PayPal ยังไม่เปิดใช้ (ตามระบบเดิม) --}}
+        @foreach(['stripe' => 'Stripe', 'paypal' => 'PayPal'] as $key => $label)
+            @isset($gateways[$key])
+                <section class="nvm-card nvm-alert nvm-alert--info" x-show="method === @js($key)" x-cloak x-ref="f_{{ $key }}">
+                    <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/'.$gwArt[$key].'.webp') }}" alt="" width="58" height="58" loading="lazy">
+                    <div class="nvm-alert__txt">
+                        <b>ชำระด้วย {{ $label }} — อยู่ระหว่างพัฒนา</b>
+                        <p>กรุณาเลือกช่องทางอื่นไปก่อน</p>
+                    </div>
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="method = null">กลับ</button>
+                </section>
+            @endisset
+        @endforeach
     </div>
 
-    {{-- ── ฟอร์มชำระเงินผ่าน พร้อมเพย์ ───────────────────────── --}}
-    <div id="promptpay-form" class="tp-card" style="padding:18px; display:none;">
-        <div class="tp-section-h" style="margin-bottom:16px;">💳 ชำระเงินผ่าน พร้อมเพย์</div>
-
-        <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" style="display:flex; flex-direction:column; gap:16px;">
-            @csrf
-            <div>
-                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
-                <input type="number"
-                       name="amount"
-                       step="0.01"
-                       min="1"
-                       required
-                       class="tp-input"
-                       placeholder="ระบุจำนวนเงิน">
-            </div>
-
-            <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-                <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
-                    <strong>หมายเหตุ:</strong> หลังจากกดยืนยัน คุณจะได้รับ QR Code สำหรับชำระเงิน
-                </p>
-            </div>
-
-            <div style="display:flex; gap:12px;">
-                <button type="button"
-                        onclick="hideAllForms()"
-                        class="tp-btn"
-                        style="flex:1;">
-                    ยกเลิก
-                </button>
-                <button type="submit"
-                        class="tp-btn tp-btn-primary"
-                        style="flex:1;">
-                    สร้าง QR Code
-                </button>
-            </div>
-        </form>
-    </div>
-
-    {{-- ── ฟอร์มโอนผ่านธนาคาร ────────────────────────────────── --}}
-    <div id="bank_transfer-form" class="tp-card" style="padding:18px; display:none;">
-        <div class="tp-section-h" style="margin-bottom:16px;">🏦 โอนผ่านธนาคาร</div>
-
-        {{-- ⚠️ แจ้งขั้นต่ำ 100 บาท --}}
-        <div style="margin-bottom:16px; padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-            <p style="margin:0; font-size:13px; color:#e0a52e;">
-                ⚠️ ขั้นต่ำ <strong>100 บาท</strong> — ยอดต่ำกว่า 100 บาท กรุณาใช้ <a href="javascript:selectPaymentMethod('promptpay')" style="color:var(--deep1); text-decoration:underline; font-weight:600;">พร้อมเพย์</a> แทน
-            </p>
-        </div>
-
-        <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:16px;">
-            @csrf
-            <div>
-                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จำนวนเงิน (บาท)</label>
-                <input type="number"
-                       name="amount"
-                       step="0.01"
-                       min="100"
-                       required
-                       class="tp-input"
-                       placeholder="ขั้นต่ำ 100 บาท">
-            </div>
-
-            <div>
-                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">อัพโหลดสลิปการโอนเงิน</label>
-                <input type="file"
-                       name="slip"
-                       accept="image/*"
-                       required
-                       class="tp-input">
-            </div>
-
-            <div>
-                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">หมายเหตุ (ถ้ามี)</label>
-                <textarea name="note"
-                          rows="3"
-                          class="tp-input"
-                          placeholder="หมายเหตุเพิ่มเติม"></textarea>
-            </div>
-
-            <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-                <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
-                    <strong>หมายเหตุ:</strong> หลังจากส่งคำขอ แอดมินจะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง
-                </p>
-            </div>
-
-            <div style="display:flex; gap:12px;">
-                <button type="button"
-                        onclick="hideAllForms()"
-                        class="tp-btn"
-                        style="flex:1;">
-                    ยกเลิก
-                </button>
-                <button type="submit"
-                        class="tp-btn tp-btn-primary"
-                        style="flex:1;">
-                    ส่งคำขอ
-                </button>
-            </div>
-        </form>
-    </div>
-
-    {{-- ── ฟอร์ม Stripe ──────────────────────────────────────── --}}
-    <div id="stripe-form" class="tp-card" style="padding:18px; display:none;">
-        <div class="tp-section-h" style="margin-bottom:16px;">💰 ชำระเงินด้วย Stripe</div>
-
-        <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-            <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
-                <strong>ข้อมูล:</strong> ระบบ Stripe กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
-            </p>
-        </div>
-
-        <button type="button"
-                onclick="hideAllForms()"
-                class="tp-btn"
-                style="width:100%; margin-top:16px;">
-            กลับ
-        </button>
-    </div>
-
-    {{-- ── ฟอร์ม PayPal ──────────────────────────────────────── --}}
-    <div id="paypal-form" class="tp-card" style="padding:18px; display:none;">
-        <div class="tp-section-h" style="margin-bottom:16px;">💵 ชำระเงินด้วย PayPal</div>
-
-        <div style="padding:14px 16px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-            <p style="margin:0; font-size:13px; color:var(--ink); font-weight:500;">
-                <strong>ข้อมูล:</strong> ระบบ PayPal กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
-            </p>
-        </div>
-
-        <button type="button"
-                onclick="hideAllForms()"
-                class="tp-btn"
-                style="width:100%; margin-top:16px;">
-            กลับ
-        </button>
-    </div>
-
-    {{-- ── คำแนะนำ ──────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <div class="tp-section-h" style="margin-bottom:14px;">📋 คำแนะนำ</div>
-            <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px;">
-                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
-                    <span style="color:#5aa07e;">✅</span>
-                    <span>ตรวจสอบจำนวนเงินให้ถูกต้องก่อนทำรายการ</span>
-                </li>
-                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
-                    <span style="color:#5aa07e;">✅</span>
-                    <span>สำหรับการโอนธนาคาร กรุณาอัพโหลดสลิปที่ชัดเจน</span>
-                </li>
-                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
-                    <span style="color:#5aa07e;">✅</span>
-                    <span>ระบบจะบันทึกรายการธุรกรรมทั้งหมดอัตโนมัติ</span>
-                </li>
-                <li style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--ink);">
-                    <span style="color:#5aa07e;">✅</span>
-                    <span>หากมีปัญหา กรุณาติดต่อฝ่ายสนับสนุน</span>
-                </li>
-            </ul>
-        </div>
-    </div>
+    {{-- ── คำแนะนำ ─────────────────────────────────────────── --}}
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tip-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Tips</small><h2 id="nvm-tip-h">ก่อนฝากเงิน</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ตรวจจำนวนเงินให้ถูกต้องก่อนกดยืนยัน</li>
+            <li>พร้อมเพย์: สแกน QR จากแอปธนาคาร ยอดเข้ากระเป๋าอัตโนมัติ</li>
+            <li>โอนธนาคาร: แนบสลิปที่ชัด เห็นยอดและเวลาโอน</li>
+            <li>ทุกรายการถูกบันทึกในประวัติธุรกรรม มีปัญหาติดต่อฝ่ายสนับสนุนได้เลย</li>
+        </ol>
+        @if($nvR('user.wallet.transactions'))
+            <a class="nvm-btn nvm-btn--line nvm-btn--block nvm-gap-t" href="{{ route('user.wallet.transactions') }}"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ดูประวัติธุรกรรม</a>
+        @endif
+    </aside>
 </div>
 
 @push('scripts')
 <script>
-/**
- * ค่าขั้นต่ำสำหรับโอนผ่านธนาคาร (SMS ไม่แจ้งเตือนถ้ายอดต่ำกว่านี้)
- */
-const BANK_TRANSFER_MIN_AMOUNT = 100;
-
-function selectPaymentMethod(method) {
-    hideAllForms();
-
-    const formId = method + '-form';
-    const formElement = document.getElementById(formId);
-
-    if (formElement) {
-        formElement.style.display = '';
-        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-function hideAllForms() {
-    document.querySelectorAll('[id$="-form"]').forEach(form => {
-        form.style.display = 'none';
+    // ฟอร์มฝากเงิน: ยอดเดียวใช้ทุกช่องทาง · ยอด < ขั้นต่ำ ปิดโอนธนาคาร · กันกดส่งซ้ำ
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmDeposit', function (o) {
+            return {
+                method: o.method,
+                amount: o.amount,
+                min: o.min,
+                busy: false,
+                get low() { var a = parseFloat(this.amount) || 0; return a > 0 && a < this.min; },
+                // ไม่สลับช่องทางให้อัตโนมัติตอนยอดต่ำ — พิมพ์ 150 ต้องผ่าน 1 กับ 15 ก่อน จะเด้งออกจากฟอร์มกลางคัน
+                // เลื่อนลงไปที่ฟอร์มเองเฉพาะตอนกลับมาจาก validation ไม่ผ่าน (เปิดหน้าปกติไม่กระตุกจอ)
+                init() { if (this.method && o.scroll) this.reveal(); },
+                reveal() { this.$nextTick(() => { var el = this.$refs['f_' + this.method]; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); },
+                submitBank(e) {
+                    if ((parseFloat(this.amount) || 0) < this.min) {
+                        e.preventDefault();
+                        window.showNotification('ยอดขั้นต่ำโอนผ่านธนาคาร ฿' + this.min + ' — ยอดน้อยกว่านี้ใช้พร้อมเพย์', 'error');
+                        return;
+                    }
+                    this.busy = true;
+                },
+            };
+        });
     });
-}
-
-/**
- * ✅ ตรวจสอบยอดเงินใน PromptPay form แบบ realtime
- * ถ้ายอดต่ำกว่า 100 → ซ่อน bank transfer card + แสดงข้อความแจ้ง
- * ถ้ายอด >= 100 → แสดง bank transfer card ปกติ
- */
-function checkAmountForBankTransfer(amount) {
-    const bankCard = document.getElementById('gateway-card-bank_transfer');
-    const notice = document.getElementById('low-amount-notice');
-
-    if (!bankCard || !notice) return;
-
-    if (amount > 0 && amount < BANK_TRANSFER_MIN_AMOUNT) {
-        // ยอดต่ำกว่า 100 → ซ่อน bank transfer + แจ้งเตือน
-        bankCard.style.opacity = '0.5';
-        bankCard.style.pointerEvents = 'none';
-        bankCard.title = 'ยอดต่ำกว่า 100 บาท กรุณาใช้พร้อมเพย์';
-        notice.style.display = '';
-    } else {
-        // ยอดปกติ → แสดง bank transfer
-        bankCard.style.opacity = '';
-        bankCard.style.pointerEvents = '';
-        bankCard.title = '';
-        notice.style.display = 'none';
-    }
-}
-
-// ฟังการพิมพ์จำนวนเงินในฟอร์ม PromptPay
-document.addEventListener('DOMContentLoaded', function() {
-    const promptPayAmountInput = document.querySelector('#promptpay-form input[name="amount"]');
-    if (promptPayAmountInput) {
-        promptPayAmountInput.addEventListener('input', function() {
-            checkAmountForBankTransfer(parseFloat(this.value) || 0);
-        });
-    }
-
-    // ฟังการพิมพ์จำนวนเงินในฟอร์ม Bank Transfer ด้วย (ป้องกัน submit ถ้า < 100)
-    const bankForm = document.querySelector('#bank_transfer-form form');
-    if (bankForm) {
-        bankForm.addEventListener('submit', function(e) {
-            const amount = parseFloat(bankForm.querySelector('input[name="amount"]').value) || 0;
-            if (amount < BANK_TRANSFER_MIN_AMOUNT) {
-                e.preventDefault();
-                alert('ยอดขั้นต่ำสำหรับโอนผ่านธนาคาร คือ ' + BANK_TRANSFER_MIN_AMOUNT + ' บาท\nกรุณาใช้ช่องทาง พร้อมเพย์ แทน');
-                return false;
-            }
-        });
-    }
-});
 </script>
 @endpush
 @endsection

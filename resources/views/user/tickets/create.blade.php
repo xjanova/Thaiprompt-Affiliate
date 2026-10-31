@@ -1,113 +1,115 @@
-@extends('layouts.user-v4')
+{{--
+    สร้างตั๋วช่วยเหลือใหม่ (ธีมโนวาเต็ม)
+    รับ category_id / subject (≤255) / description (≤5000) / priority (low|medium|high) — ตรงกับ TicketController::store
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'สร้าง Ticket ใหม่')
+@section('title', 'สร้างตั๋วช่วยเหลือ')
+
+@php
+    $nvArt = fn (string $name, string $fallback) => is_file(public_path("images/nova/account/{$name}.webp"))
+        ? asset("images/nova/account/{$name}.webp") : asset("images/nova/{$fallback}.webp");
+    $priorities = [
+        'low' => ['ไม่เร่งด่วน', 'สอบถามทั่วไป รอได้'],
+        'medium' => ['ปกติ', 'แนะนำสำหรับเรื่องส่วนใหญ่'],
+        'high' => ['เร่งด่วน', 'กระทบการใช้งาน/เงินในบัญชี'],
+    ];
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:900px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#5689b8;"><i class="fas fa-edit" style="color:#fff;"></i></span>
-                    <div>
-                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สร้าง Ticket ใหม่</h1>
-                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แจ้งปัญหาหรือขอความช่วยเหลือจากทีมงาน</div>
-                    </div>
-                </div>
-                <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fa-solid fa-arrow-left"></i> กลับ</a>
-            </div>
+<div class="nvm-stack" x-data="{ len: @js(mb_strlen((string) old('description', ''))), busy: false }" @pageshow.window="busy = false">
+
+<section class="nvm-ph" aria-labelledby="nvm-tkc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tickets.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ตั๋วของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">New ticket</div>
+            <h1 id="nvm-tkc-h">สร้างตั๋วช่วยเหลือ</h1>
+            <p class="nvm-ph__lead">เล่าปัญหาให้ละเอียด ทีมงานจะตอบกลับในตั๋วนี้ และแจ้งเตือนคุณเมื่อมีคำตอบ</p>
         </div>
+        <img class="nvm-ph__art" src="{{ $nvArt('support', 'deco/scroll') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ฟอร์ม ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;" x-data="{ cat: '{{ old('category_id') }}', pri: '{{ old('priority', 'medium') }}' }">
-        <form method="POST" action="{{ route('user.tickets.store') }}" style="display:flex; flex-direction:column; gap:22px;">
+@if($errors->any())
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ส่งตั๋วไม่สำเร็จ</b>
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+        </div>
+    </section>
+@endif
+
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tkf-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Details</small><h2 id="nvm-tkf-h">รายละเอียดตั๋ว</h2></div></div>
+        <form method="POST" action="{{ route('user.tickets.store') }}" class="nvm-form" @submit="busy = true">
             @csrf
 
-            {{-- หมวดหมู่ --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:12px;"><i class="fa-solid fa-folder" style="margin-right:6px;"></i>หมวดหมู่ *</label>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;">
-                    @foreach($categories as $category)
-                        <label style="cursor:pointer;">
-                            <input type="radio" name="category_id" value="{{ $category->id }}" x-model="cat" required style="position:absolute; opacity:0; pointer-events:none;">
-                            <div class="tp-card" style="padding:16px; text-align:center;"
-                                 :style="cat == '{{ $category->id }}' ? 'box-shadow:0 0 0 2px {{ $category->color }}, var(--raise);' : ''">
-                                <div style="width:64px; height:64px; margin:0 auto 10px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:28px; background:linear-gradient(135deg, {{ $category->color }}15, {{ $category->color }}30); color:{{ $category->color }}; border:2px solid {{ $category->color }}40;">
-                                    <i class="{{ $category->icon ?: 'fa-solid fa-folder' }}"></i>
-                                </div>
-                                <div style="font-weight:800; font-size:14px; color:var(--ink); margin-bottom:2px;">{{ $category->name }}</div>
-                                <div style="font-size:11px; color:var(--ink2);">{{ $category->description }}</div>
-                            </div>
-                        </label>
-                    @endforeach
-                </div>
-                @error('category_id')
-                    <p style="margin-top:8px; font-size:13px; color:#d9534f;"><i class="fa-solid fa-exclamation-circle" style="margin-right:4px;"></i>{{ $message }}</p>
-                @enderror
-                <p style="margin-top:10px; font-size:11px; color:var(--ink2);"><i class="fa-solid fa-lightbulb" style="color:#d9a441; margin-right:4px;"></i>เลือกหมวดหมู่ที่ตรงกับปัญหาของคุณมากที่สุดเพื่อให้ทีมงานสามารถช่วยเหลือได้อย่างรวดเร็ว</p>
-            </div>
-
-            {{-- หัวข้อ --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fa-solid fa-heading" style="margin-right:6px;"></i>หัวข้อ *</label>
-                <input type="text" name="subject" value="{{ old('subject') }}" required maxlength="255"
-                       placeholder="สรุปปัญหาหรือคำถามของคุณในหัวข้อสั้นๆ" class="tp-input">
-                @error('subject')<p style="margin-top:8px; font-size:13px; color:#d9534f;">{{ $message }}</p>@enderror
-            </div>
-
-            {{-- รายละเอียด --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fa-solid fa-align-left" style="margin-right:6px;"></i>รายละเอียด *</label>
-                <textarea name="description" required rows="8"
-                          placeholder="โปรดอธิบายปัญหาหรือคำถามของคุณให้ละเอียดที่สุด เพื่อให้เราสามารถช่วยเหลือคุณได้อย่างรวดเร็ว" class="tp-input" style="resize:vertical;">{{ old('description') }}</textarea>
-                @error('description')<p style="margin-top:8px; font-size:13px; color:#d9534f;">{{ $message }}</p>@enderror
-                <p style="margin-top:8px; font-size:11px; color:var(--ink2);"><i class="fa-solid fa-info-circle" style="margin-right:4px;"></i>ควรระบุ: ขั้นตอนที่ทำให้เกิดปัญหา, ข้อความ error (ถ้ามี), และสิ่งที่คุณคาดหวัง</p>
-            </div>
-
-            {{-- ความสำคัญ --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:12px;"><i class="fa-solid fa-exclamation-circle" style="margin-right:6px;"></i>ความสำคัญ</label>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
-                    @foreach(['low' => ['😌','ต่ำ','ไม่เร่งด่วน','#8a8a8a'], 'medium' => ['🤔','ปานกลาง','ปกติ (แนะนำ)','#5689b8'], 'high' => ['😰','สูง','เร่งด่วน','#e08a3c']] as $val => $p)
-                        <label style="cursor:pointer;">
-                            <input type="radio" name="priority" value="{{ $val }}" x-model="pri" style="position:absolute; opacity:0; pointer-events:none;">
-                            <div class="tp-card" style="padding:16px; text-align:center;"
-                                 :style="pri == '{{ $val }}' ? 'box-shadow:0 0 0 2px {{ $p[3] }}, var(--raise);' : ''">
-                                <div style="font-size:28px; margin-bottom:6px;">{{ $p[0] }}</div>
-                                <div style="font-weight:800; color:var(--ink);">{{ $p[1] }}</div>
-                                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $p[2] }}</div>
-                            </div>
-                        </label>
-                    @endforeach
-                </div>
-                @error('priority')<p style="margin-top:8px; font-size:13px; color:#d9534f;">{{ $message }}</p>@enderror
-            </div>
-
-            {{-- เคล็ดลับ --}}
-            <div class="tp-card" style="padding:18px; border-left:4px solid #5689b8;">
-                <div style="display:flex; gap:12px;">
-                    <i class="fa-solid fa-lightbulb" style="font-size:20px; color:#5689b8; margin-top:2px;"></i>
-                    <div>
-                        <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">เคล็ดลับสำหรับการสร้าง Ticket ที่ดี</div>
-                        <ul style="margin:0; padding:0; list-style:none; font-size:13px; color:var(--ink2); display:flex; flex-direction:column; gap:4px;">
-                            <li>• เลือกหมวดหมู่ที่ตรงกับปัญหาของคุณมากที่สุด</li>
-                            <li>• เขียนหัวข้อที่กระชับและชัดเจน</li>
-                            <li>• อธิบายรายละเอียดให้ละเอียดเพื่อให้ทีมงานช่วยเหลือได้เร็วขึ้น</li>
-                            <li>• หากเป็นปัญหาเทคนิค ควรระบุ browser, อุปกรณ์, และขั้นตอนการเกิดปัญหา</li>
-                        </ul>
+            <div class="nvm-field">
+                <span class="nvm-label" id="nvm-tkcat-lbl">เรื่องที่ต้องการติดต่อ <em>*</em></span>
+                @if($categories->isEmpty())
+                    <p class="nvm-err">ยังไม่มีหมวดหมู่ให้เลือก กรุณาติดต่อทีมงานผ่านช่องทางอื่นชั่วคราว</p>
+                @else
+                    <div class="nvm-opts" role="radiogroup" aria-labelledby="nvm-tkcat-lbl">
+                        @foreach($categories as $category)
+                            <label class="nvm-opt nvm-opt--cat" @if($category->color) style="--tk-c: {{ $category->color }}" @endif>
+                                <input type="radio" name="category_id" value="{{ $category->id }}" required @checked((string) old('category_id') === (string) $category->id)>
+                                <span class="nvm-opt__ic" aria-hidden="true"><i class="{{ $category->icon ?: 'fa-solid fa-folder' }}"></i></span>
+                                <span><b>{{ $category->name }}</b>@if($category->description)<small>{{ $category->description }}</small>@endif</span>
+                            </label>
+                        @endforeach
                     </div>
-                </div>
+                @endif
+                @error('category_id')<span class="nvm-err">{{ $message }}</span>@enderror
             </div>
 
-            {{-- ปุ่ม --}}
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-                <a href="{{ route('user.tickets.index') }}" class="tp-btn"><i class="fa-solid fa-times"></i> ยกเลิก</a>
-                <button type="submit" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-paper-plane"></i> สร้าง Ticket</button>
+            <div class="nvm-field">
+                <label class="nvm-label" for="tk-subject">หัวข้อ <em>*</em></label>
+                <input id="tk-subject" type="text" name="subject" required maxlength="255" class="nvm-input @error('subject') is-bad @enderror" value="{{ old('subject') }}" placeholder="เช่น ถอนเงินแล้วยังไม่เข้าบัญชี">
+                @error('subject')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="nvm-field">
+                <label class="nvm-label" for="tk-desc">รายละเอียด <em>*</em></label>
+                <textarea id="tk-desc" name="description" required maxlength="5000" rows="7" class="nvm-input nvm-textarea @error('description') is-bad @enderror" placeholder="เกิดอะไรขึ้น เมื่อไร ทำขั้นตอนไหนอยู่ และเห็นข้อความอะไรบนจอ" @input="len = $event.target.value.length">{{ old('description') }}</textarea>
+                <span class="nvm-help nvm-num"><span x-text="len.toLocaleString()">0</span> / 5,000 ตัวอักษร</span>
+                @error('description')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="nvm-field">
+                <span class="nvm-label" id="nvm-tkpri-lbl">ความเร่งด่วน</span>
+                <div class="nvm-opts nvm-opts--3" role="radiogroup" aria-labelledby="nvm-tkpri-lbl">
+                    @foreach($priorities as $val => [$label, $hint])
+                        <label class="nvm-opt">
+                            <input type="radio" name="priority" value="{{ $val }}" @checked(old('priority', 'medium') === $val)>
+                            <span><b>{{ $label }}</b><small>{{ $hint }}</small></span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('priority')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="nvm-filter__btns">
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.tickets.index') }}">ยกเลิก</a>
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy || @js($categories->isEmpty())"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่ง…' : 'ส่งตั๋ว'">ส่งตั๋ว</span></button>
             </div>
         </form>
-    </div>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tkt-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Tips</small><h2 id="nvm-tkt-h">ให้ทีมงานช่วยได้เร็วขึ้น</h2></div></div>
+        <ol class="nvm-steps">
+            <li>เลือกเรื่องให้ตรง ตั๋วจะถึงทีมที่ดูแลเรื่องนั้นโดยตรง</li>
+            <li>หัวข้อสั้นๆ บอกปัญหาในประโยคเดียว</li>
+            <li>เรื่องเงิน ให้ระบุเลขรายการ วันเวลา และยอดเงิน</li>
+            <li>ปัญหาการใช้งาน ให้บอกอุปกรณ์ เบราว์เซอร์/แอป และขั้นตอนที่ทำ</li>
+            <li>อย่าใส่รหัสผ่าน PIN หรือรหัส OTP ในตั๋ว ทีมงานไม่เคยขอข้อมูลเหล่านี้</li>
+        </ol>
+    </aside>
+</div>
+
 </div>
 @endsection

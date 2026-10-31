@@ -299,23 +299,23 @@ x-init="
     // 📡 ฟัง online/offline events
     window.addEventListener('online', () => {
         console.info('🌐 Connection restored');
-        this.isOnline = true;
-        this.loadNotifications(); // Sync เมื่อกลับมา online
+        isOnline = true;
+        loadNotifications(); // Sync เมื่อกลับมา online
 
         // Re-subscribe WebSocket ถ้าไม่ได้ใช้อยู่
-        if (!this.useWebSocket) {
-            setTimeout(() => this.subscribeToWebSocket(), 1000);
+        if (!useWebSocket) {
+            setTimeout(() => subscribeToWebSocket(), 1000);
         }
     });
 
     window.addEventListener('offline', () => {
         console.info('📴 Connection lost');
-        this.isOnline = false;
+        isOnline = false;
     });
 
     // Cleanup เมื่อ component ถูก destroy
     window.addEventListener('beforeunload', () => {
-        this.unsubscribeFromWebSocket();
+        unsubscribeFromWebSocket();
     });
 "
 @keydown.escape.window="if (open) closeDropdown()"

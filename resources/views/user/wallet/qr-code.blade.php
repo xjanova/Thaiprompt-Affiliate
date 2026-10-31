@@ -1,284 +1,173 @@
 {{--
-    QR Code สำหรับรับเงิน - Wallet QR Code Display (Theme V4 นวลทองคำ)
-    แสดง QR Code เพื่อให้ผู้อื่นสแกนโอนเงินมาได้
+    QR รับเงิน — ให้สมาชิกคนอื่นสแกนแล้วโอนเข้ากระเป๋าเรา (ธีมโนวาเต็ม)
+    ตั้งยอดที่ต้องการรับไว้ใน QR ได้ · ดาวน์โหลด/แชร์รูป QR · คัดลอก Wallet Address
 --}}
+@extends('layouts.user-nova')
 
-@extends('layouts.user-v4')
-
-@section('title', 'QR Code รับเงิน')
+@section('title', 'QR รับเงิน')
 
 @php
-    // ── ขั้นตอนการใช้งาน (สีตามลำดับ semantic hex) ──────────────
-    $qrSteps = [
-        ['1', '#5689b8', 'แสดง QR Code', 'ให้ผู้โอนเงินสแกน QR Code นี้'],
-        ['2', '#e0a52e', 'ผู้โอนกรอกจำนวนเงิน', 'หรือระบุจำนวนเงินไว้ใน QR'],
-        ['3', '#5aa07e', 'รับเงินทันที', 'เงินจะเข้ากระเป๋าเมื่อยืนยัน'],
-    ];
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $me = auth()->user();
+    // ตัวอักษรแรกของชื่อ (ข้ามสระหน้าภาษาไทย เช่น "เ" ใน "เพื่อน")
+    $initial = mb_substr(preg_replace('/^[เแโใไ]/u', '', (string) $me->name), 0, 1);
+    $feeText = $feePolicy['fee_amount'] <= 0
+        ? 'ฟรี ไม่มีค่าธรรมเนียม'
+        : ($feePolicy['fee_type'] === 'percentage'
+            ? number_format($feePolicy['fee_amount'], 2).'% ของยอดโอน'
+            : '฿'.number_format($feePolicy['fee_amount'], 2).' ต่อรายการ');
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;" x-data="qrCodeManager()">
 
-    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
-                @if(\Illuminate\Support\Facades\Route::has('user.wallet.index'))
-                    <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-                @endif
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-qrcode" style="color:#fff;"></i></span>
-                <div style="flex:1; min-width:200px;">
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">QR Code รับเงิน</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แสดง QR Code ให้คนอื่นสแกนเพื่อโอนเงินให้คุณ</div>
-                </div>
-            </div>
+<div class="nvm-stack" x-data="nvmQrReceive({
+        amount: @js($requestedAmount),
+        address: @js($wallet->wallet_address),
+        name: @js($me->name),
+    })">
 
-            {{-- ยอดเงินคงเหลือ --}}
-            <div style="margin-top:16px; padding:18px 20px; border-radius:18px; box-shadow:var(--inset);">
-                <div style="font-size:12.5px; color:var(--ink2);">ยอดเงินคงเหลือ</div>
-                <div class="tp-num" style="font-size:clamp(30px,6vw,46px); font-weight:800; line-height:1.1; margin-top:4px; color:var(--deep1);">฿{{ number_format($wallet->balance, 2) }}</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── QR Code Display ───────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div style="text-align:center;">
-            {{-- ข้อมูลผู้ใช้ --}}
-            <div style="margin-bottom:20px;">
-                <div class="tp-tile" style="width:74px; height:74px; border-radius:50%; font-size:30px; font-weight:800; margin:0 auto 12px; color:#fff;">
-                    {{ mb_substr(auth()->user()->name, 0, 1) }}
-                </div>
-                <h2 style="font-size:18px; font-weight:800; margin:0;">{{ auth()->user()->name }}</h2>
-                <div class="tp-num" style="font-size:12px; color:var(--ink2); margin-top:4px; word-break:break-all;">{{ $wallet->wallet_address }}</div>
-            </div>
-
-            {{-- กล่อง QR Code (พื้นขาวคงที่เพื่อให้สแกนได้เสมอ) --}}
-            <div style="display:inline-block; background:#fff; padding:20px; border-radius:18px; box-shadow:var(--inset); border:4px solid color-mix(in srgb, var(--accent1) 30%, transparent);">
-                <div id="qrcode" style="margin:0 auto;"></div>
-            </div>
-
-            {{-- ระบุจำนวนเงิน (ไม่บังคับ) --}}
-            <div style="margin-top:20px; max-width:280px; margin-left:auto; margin-right:auto; text-align:left;">
-                <label style="display:block; font-size:11.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">
-                    ระบุจำนวนเงินที่ต้องการรับ (ไม่บังคับ)
-                </label>
-                <div style="position:relative;">
-                    <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--ink2); font-weight:600;">฿</span>
-                    <input type="number"
-                           x-model="requestedAmount"
-                           @input="updateQrCode()"
-                           min="0"
-                           step="0.01"
-                           class="tp-input"
-                           style="padding-left:30px;"
-                           placeholder="0.00">
-                </div>
-            </div>
-
-            {{-- ปุ่มดำเนินการ --}}
-            <div style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                <button type="button" @click="downloadQr()" class="tp-btn tp-btn-primary">
-                    <i class="fas fa-download" style="margin-right:6px;"></i>ดาวน์โหลด QR
-                </button>
-                <button type="button" @click="shareQr()" class="tp-btn">
-                    <i class="fas fa-share-alt" style="margin-right:6px;"></i>แชร์ QR Code
-                </button>
-                <button type="button" @click="copyWalletAddress()" class="tp-btn">
-                    <i class="fas fa-copy" style="margin-right:6px;"></i>คัดลอก Address
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── ข้อมูลค่าธรรมเนียม ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-        <div class="tp-section-h" style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-info-circle" style="color:#e0a52e;"></i>ข้อมูลค่าธรรมเนียม
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink);">
-            @if($transferFee > 0)
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
-                    <span>ค่าธรรมเนียมการโอน:
-                        @if($transferFeeType === 'percentage')
-                            <span class="tp-num">{{ number_format($transferFee, 2) }}%</span> ต่อรายการ
-                        @else
-                            <span class="tp-num">฿{{ number_format($transferFee, 2) }}</span> ต่อรายการ
-                        @endif
-                    </span>
-                </div>
-            @else
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
-                    <span>ไม่มีค่าธรรมเนียมการโอน (ฟรี!)</span>
-                </div>
+<section class="nvm-ph" aria-labelledby="nvm-qr-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
             @endif
-            <div style="display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
-                <span>ยอดโอนขั้นต่ำ: <span class="tp-num">฿{{ number_format($minTransferAmount, 2) }}</span></span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-check-circle" style="color:#5aa07e;"></i>
-                <span>รับเงินทันทีหลังผู้โอนยืนยันรายการ</span>
-            </div>
+            <div class="nvm-eyebrow nvm-latin">Receive money</div>
+            <h1 id="nvm-qr-h">QR รับเงิน</h1>
+            <p class="nvm-ph__lead">ให้เพื่อนสมาชิกสแกน QR นี้ในหน้า "สแกนจ่าย" เงินจะเข้ากระเป๋าคุณทันที</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/qr.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── วิธีใช้งาน ─────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-lightbulb" style="color:#e0a52e;"></i>วิธีใช้งาน
+<div class="nvm-split">
+    <section class="nvm-card nvm-box nvm-qr" aria-label="QR Code รับเงินของฉัน">
+        <div class="nvm-qr__who">
+            <span class="nvm-avatar">{{ $initial }}</span>
+            <b>{{ $me->name }}</b>
+            <small class="nvm-num">{{ $wallet->wallet_address }}</small>
         </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;">
-            @foreach($qrSteps as [$no, $color, $title, $desc])
-                <div style="display:flex; align-items:flex-start; gap:11px; padding:14px; border-radius:14px; box-shadow:var(--inset-sm);">
-                    <span class="tp-tile" style="width:32px; height:32px; border-radius:50%; font-size:15px; font-weight:800; flex-shrink:0; color:#fff; background:{{ $color }};">{{ $no }}</span>
-                    <div style="min-width:0;">
-                        <div style="font-size:13px; font-weight:700;">{{ $title }}</div>
-                        <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $desc }}</div>
-                    </div>
-                </div>
-            @endforeach
+
+        <div class="nvm-qr__box">
+            <div x-ref="qr" role="img" aria-label="QR Code รับเงิน"></div>
+            <span class="nvm-qr__tag" x-show="amt > 0" x-cloak x-text="'รับ ฿' + fmt(amt)"></span>
         </div>
-    </div>
+
+        <div class="nvm-field nvm-qr__amt">
+            <label class="nvm-label" for="qr-amount">ตั้งยอดที่ต้องการรับ (ไม่บังคับ)</label>
+            <div class="nvm-amount"><span>฿</span><input id="qr-amount" type="number" min="0" step="0.01" inputmode="decimal" class="nvm-input" placeholder="0.00" x-model="amount" @input.debounce.300ms="draw()"></div>
+            <span class="nvm-help">เว้นว่างไว้ ผู้โอนจะกรอกยอดเอง</span>
+        </div>
+
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--gold" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>บันทึกรูป QR</button>
+            <button type="button" class="nvm-btn nvm-btn--line" @click="share()"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>แชร์</button>
+            <button type="button" class="nvm-btn nvm-btn--line" @click="nvmCopy(address, 'คัดลอก Wallet Address แล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก Address</button>
+        </div>
+    </section>
+
+    <aside class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-qrf-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Fees</small><h2 id="nvm-qrf-h">ค่าธรรมเนียม</h2></div></div>
+            <dl class="nvm-kv">
+                <dt>ผู้รับ (คุณ)</dt><dd>ได้เต็มจำนวน</dd>
+                <dt>ผู้โอนจ่าย</dt><dd>{{ $feeText }}</dd>
+                @if($feePolicy['fee_amount'] > 0 && $feePolicy['fee_min'] > 0)
+                    <dt>ขั้นต่ำค่าธรรมเนียม</dt><dd class="nvm-num">฿{{ number_format($feePolicy['fee_min'], 2) }}</dd>
+                @endif
+                @if($feePolicy['min_amount'] > 0)
+                    <dt>ยอดโอนขั้นต่ำ</dt><dd class="nvm-num">฿{{ number_format($feePolicy['min_amount'], 2) }}</dd>
+                @endif
+            </dl>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-qrs-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">How it works</small><h2 id="nvm-qrs-h">วิธีรับเงิน</h2></div></div>
+            <ol class="nvm-steps">
+                <li>เปิดหน้านี้ (ตั้งยอดไว้ด้วยก็ได้) แล้วยื่นให้ผู้โอนสแกน หรือส่งรูป QR ให้</li>
+                <li>ผู้โอนเปิด "สแกนจ่าย" ในกระเป๋าเงินของเขา แล้วตรวจชื่อคุณ</li>
+                <li>ยืนยันแล้ว เงินเข้ากระเป๋าคุณทันที ดูได้ที่ประวัติธุรกรรม</li>
+            </ol>
+            <div class="nvm-filter__btns nvm-gap-t">
+                @if($nvR('user.wallet.qr-transfer'))
+                    <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.wallet.qr-transfer') }}"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>สแกนจ่าย</a>
+                @endif
+                @if($nvR('user.wallet.transactions'))
+                    <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.wallet.transactions') }}"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ประวัติ</a>
+                @endif
+            </div>
+        </section>
+    </aside>
+</div>
+
 </div>
 
 @push('scripts')
-{{-- QRCode.js Library (qrcodejs - เหมือนกับหน้า recruit ที่ใช้งานได้) --}}
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-    function qrCodeManager() {
-        return {
-            requestedAmount: {{ $requestedAmount ?? 'null' }},
-            walletAddress: @json($wallet->wallet_address),
-            userName: @json(auth()->user()->name),
-            qrInstance: null,
-
-            init() {
-                this.generateQrCode();
-            },
-
-            generateQrCode() {
-                const qrData = {
-                    type: 'tpwallet_transfer',
-                    address: this.walletAddress,
-                    name: this.userName,
-                    amount: this.requestedAmount || null,
-                    timestamp: Date.now()
-                };
-
-                const container = document.getElementById('qrcode');
-                container.innerHTML = '';
-
-                // ใช้ qrcodejs library (API: new QRCode)
-                this.qrInstance = new QRCode(container, {
-                    text: JSON.stringify(qrData),
-                    width: 250,
-                    height: 250,
-                    colorDark: '#1e1b4b',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            },
-
-            updateQrCode() {
-                this.generateQrCode();
-            },
-
-            getQrCanvas() {
-                // qrcodejs สร้าง canvas หรือ img element ภายใน container
-                const container = document.getElementById('qrcode');
-                return container.querySelector('canvas') || container.querySelector('img');
-            },
-
-            downloadQr() {
-                const qrElement = this.getQrCanvas();
-                if (!qrElement) {
-                    this.notify('ไม่พบ QR Code', 'error');
-                    return;
-                }
-
-                const link = document.createElement('a');
-                link.download = `wallet-qr-${this.walletAddress}.png`;
-
-                if (qrElement.tagName === 'CANVAS') {
-                    link.href = qrElement.toDataURL('image/png');
-                } else {
-                    // ถ้าเป็น img element
-                    link.href = qrElement.src;
-                }
-                link.click();
-                this.notify('ดาวน์โหลด QR Code สำเร็จ!', 'success');
-            },
-
-            async shareQr() {
-                const qrElement = this.getQrCanvas();
-                if (!qrElement) {
-                    this.notify('ไม่พบ QR Code', 'error');
-                    return;
-                }
-
-                try {
-                    let blob;
-                    if (qrElement.tagName === 'CANVAS') {
-                        blob = await new Promise(resolve =>
-                            qrElement.toBlob(resolve, 'image/png')
-                        );
-                    } else {
-                        // ถ้าเป็น img element - fetch และ convert
-                        const response = await fetch(qrElement.src);
-                        blob = await response.blob();
+    // QR รับเงิน: payload {type, address, amount} — หน้าสแกนจ่ายอ่าน address/amount แล้วค้นชื่อจากเซิร์ฟเวอร์
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmQrReceive', function (o) {
+            return {
+                amount: o.amount ? String(o.amount) : '', address: o.address, name: o.name,
+                get amt() { var a = parseFloat(this.amount); return isNaN(a) || a <= 0 ? 0 : Math.round(a * 100) / 100; },
+                init() { this.draw(); },
+                draw() {
+                    var box = this.$refs.qr;
+                    if (typeof QRCode === 'undefined') { box.textContent = 'โหลดตัวสร้าง QR ไม่สำเร็จ — รีเฟรชหน้าอีกครั้ง'; return; }
+                    box.innerHTML = '';
+                    // 🐛 (2026-10-29) เดิมใส่ชื่อผู้ใช้ใน QR — qrcodejs นับความยาวอักษรไทย (3 ไบต์) ผิด
+                    //    → "code length overflow" สมาชิกชื่อไทยได้กรอบขาวว่าง สแกนไม่ได้
+                    //    หน้าสแกนจ่ายดึงชื่อจากเซิร์ฟเวอร์อยู่แล้ว จึงเหลือแค่ address + ยอด (ASCII ล้วน)
+                    try {
+                        new QRCode(box, {
+                            text: JSON.stringify({ type: 'tpwallet_transfer', address: this.address, amount: this.amt || null }),
+                            width: 464, height: 464, colorDark: '#0b1633', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M,
+                        });
+                    } catch (e) {
+                        box.textContent = 'สร้าง QR ไม่สำเร็จ — ใช้ปุ่มคัดลอก Address แทน';
                     }
-
-                    if (navigator.share && navigator.canShare) {
-                        const file = new File([blob], 'wallet-qr.png', { type: 'image/png' });
-                        const shareData = {
-                            title: 'โอนเงินให้ ' + this.userName,
-                            text: `สแกน QR Code นี้เพื่อโอนเงินให้ ${this.userName}\nWallet: ${this.walletAddress}`,
-                            files: [file]
-                        };
-
-                        if (navigator.canShare(shareData)) {
-                            await navigator.share(shareData);
-                            return;
+                },
+                canvas() { return this.$refs.qr.querySelector('canvas'); },
+                // วาด QR ลงการ์ดขาวพร้อมชื่อ/ยอด — รูปที่บันทึกไปส่งต่อแล้วผู้รับรู้ว่าของใคร
+                card() {
+                    var q = this.canvas(); if (! q) return null;
+                    var w = 560, c = document.createElement('canvas'); c.width = w; c.height = 720;
+                    var x = c.getContext('2d');
+                    x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, 720);
+                    x.fillStyle = '#0b1633'; x.fillRect(0, 0, w, 92);
+                    x.fillStyle = '#f5d27f'; x.font = 'bold 30px sans-serif'; x.textAlign = 'center';
+                    x.fillText('Thai Prompt · QR รับเงิน', w / 2, 58);
+                    x.drawImage(q, 48, 120, 464, 464);
+                    x.fillStyle = '#0b1633'; x.font = 'bold 28px sans-serif';
+                    x.fillText(this.name, w / 2, 632, w - 40);
+                    x.fillStyle = '#5b6274'; x.font = '20px sans-serif';
+                    x.fillText(this.amt ? 'ยอด ฿' + this.fmt(this.amt) + ' · ' + this.address : this.address, w / 2, 672, w - 40);
+                    return c;
+                },
+                download() {
+                    var c = this.card(); if (! c) { window.showNotification('ยังสร้าง QR ไม่เสร็จ ลองอีกครั้ง', 'error'); return; }
+                    var a = document.createElement('a');
+                    a.download = 'qr-receive-' + this.address + '.png'; a.href = c.toDataURL('image/png'); a.click();
+                    window.showNotification('บันทึกรูป QR แล้ว', 'success');
+                },
+                share() {
+                    var c = this.card(), self = this;
+                    if (! c) { window.showNotification('ยังสร้าง QR ไม่เสร็จ ลองอีกครั้ง', 'error'); return; }
+                    c.toBlob(function (blob) {
+                        var data = { title: 'โอนเงินให้ ' + self.name, text: 'สแกน QR นี้ในหน้า "สแกนจ่าย" เพื่อโอนเงินให้ ' + self.name, files: [new File([blob], 'qr-receive.png', { type: 'image/png' })] };
+                        if (navigator.canShare && navigator.canShare(data)) {
+                            navigator.share(data).catch(function () {});
+                        } else {
+                            // แชร์ไฟล์ไม่ได้ (เดสก์ท็อปส่วนใหญ่) → คัดลอก address แทน
+                            window.nvmCopy(self.address, 'เครื่องนี้แชร์รูปไม่ได้ — คัดลอก Wallet Address ให้แล้ว');
                         }
-                    }
-
-                    // Fallback: copy to clipboard
-                    await this.copyWalletAddress();
-                } catch (err) {
-                    console.error('Share failed:', err);
-                    this.copyWalletAddress();
-                }
-            },
-
-            async copyWalletAddress() {
-                try {
-                    await navigator.clipboard.writeText(this.walletAddress);
-                    this.notify('คัดลอก Wallet Address สำเร็จ!', 'success');
-                } catch (err) {
-                    // Fallback for older browsers
-                    const textArea = document.createElement('textarea');
-                    textArea.value = this.walletAddress;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    this.notify('คัดลอก Wallet Address สำเร็จ!', 'success');
-                }
-            },
-
-            notify(message, type = 'info') {
-                // ใช้ระบบ toast กลางของ Theme V4
-                if (window.showNotification) {
-                    window.showNotification(message, type);
-                } else {
-                    console.log('[' + type + '] ' + message);
-                }
-            }
-        }
-    }
+                    }, 'image/png');
+                },
+                fmt(n) { return (parseFloat(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+            };
+        });
+    });
 </script>
 @endpush
 @endsection

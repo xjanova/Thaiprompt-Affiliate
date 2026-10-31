@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\IntegrityService;
 use Illuminate\Console\Command;
 
 class IntegrityCheckCommand extends Command

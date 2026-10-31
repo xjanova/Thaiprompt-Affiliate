@@ -57,13 +57,23 @@ class AccountDeletionTest extends TestCase
         $this->assertNotSoftDeleted('users', ['id' => $user->id]);
     }
 
-    public function test_line_account_can_delete_without_password(): void
+    /**
+     * 🔒 (2026-10-29) เดิมบัญชี LINE ลบได้ด้วยการพิมพ์ "ลบบัญชี" อย่างเดียว (session ถูกขโมย = บัญชีหาย)
+     *    ตอนนี้ต้องมีหลักฐาน — ที่นี่ใช้รหัสผ่าน; รหัสทางอีเมล/2FA อยู่ที่ Tests\Feature\User\AccountTakeoverGuardsTest
+     */
+    public function test_line_account_needs_proof_and_its_line_id_is_cleared_on_delete(): void
     {
         [$user, $token] = $this->apiUser(['line_user_id' => 'U'.str_repeat('a', 32)]);
 
         $this->withToken($token)->deleteJson('/api/v1/account', ['confirm_text' => AccountDeletionService::CONFIRM_TEXT])
-            ->assertOk()
-            ->assertJsonPath('success', true);
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'EMAIL_CODE_REQUIRED');
+        $this->assertNotSoftDeleted('users', ['id' => $user->id]);
+
+        $this->withToken($token)->deleteJson('/api/v1/account', [
+            'confirm_text' => AccountDeletionService::CONFIRM_TEXT,
+            'password' => self::PASSWORD,
+        ])->assertOk()->assertJsonPath('success', true);
 
         $this->assertSoftDeleted('users', ['id' => $user->id]);
         $this->assertNull(DB::table('users')->where('id', $user->id)->value('line_user_id'));

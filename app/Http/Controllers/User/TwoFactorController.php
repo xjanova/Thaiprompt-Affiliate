@@ -34,8 +34,14 @@ class TwoFactorController extends Controller
      */
     public function enable(Request $request)
     {
+        // 🔒 เปิดอยู่แล้วแต่ส่งมาเปลี่ยนวิธี = เปลี่ยนการตั้งค่า 2FA → ต้องยืนยันรหัสปัจจุบันก่อน
+        if ($guard = $this->requireFreshVerification($request)) {
+            return $guard;
+        }
+
         $request->validate([
-            'preferred_method' => ['required', 'in:authenticator,sms,line,email'],
+            // 🐛 (2026-10-29) ตัด email ออก: OtpService ยังไม่มีช่องทางอีเมล (ส่งเข้า SMS ด้วยเบอร์ว่าง → TypeError 500)
+            'preferred_method' => ['required', 'in:authenticator,sms,line'],
             'code' => ['required_if:preferred_method,authenticator', 'nullable', 'string', 'size:6'],
         ]);
 
@@ -58,8 +64,10 @@ class TwoFactorController extends Controller
             return redirect()->back()->with('error', $result['message']);
         }
 
-        // แสดง recovery codes
-        return redirect()->route('user.two-factor.recovery-codes', ['codes' => json_encode($result['recovery_codes'])])
+        // แสดง recovery codes ครั้งเดียวผ่าน session flash
+        // 🔒 (2026-10-29) เดิมส่งรหัสใน ?codes= → ค้างในประวัติเบราว์เซอร์ log เซิร์ฟเวอร์ และตาราง page_views (TrackPageView เก็บ fullUrl)
+        return redirect()->route('user.two-factor.recovery-codes')
+            ->with('recovery_codes', $result['recovery_codes'])
             ->with('success', $result['message']);
     }
 
@@ -69,6 +77,14 @@ class TwoFactorController extends Controller
     public function generateAuthenticatorSetup()
     {
         $user = Auth::user();
+
+        // 🔒 (2026-10-29) เดิมสร้าง secret ใหม่ทับของที่ใช้งานอยู่ได้ทันที (GET) → ใครได้ session ไปก็ผูกแอปตัวเองแทน
+        //    หรือแค่ลิงก์จากเว็บอื่นก็ทำให้แอปของเจ้าของบัญชีใช้ไม่ได้ → ต้องปิด 2FA ก่อนตั้งใหม่
+        $settings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
+        if ($settings && $settings->enabled) {
+            return response()->json(['success' => false, 'message' => 'เปิดใช้ 2FA อยู่แล้ว ถ้าต้องการเปลี่ยนแอป ให้ปิด 2FA ก่อนแล้วตั้งค่าใหม่'], 409);
+        }
+
         $result = $this->twoFactorService->generateAuthenticatorSetup($user);
 
         return response()->json($result);
@@ -94,6 +110,11 @@ class TwoFactorController extends Controller
      */
     public function disable(Request $request)
     {
+        // 🔒 (2026-10-29) เดิมปิดได้ด้วยการกดปุ่มอย่างเดียว → ใครได้ session ไปก็ปิด 2FA แล้วถอน/โอนได้หมด
+        if ($guard = $this->requireFreshVerification($request)) {
+            return $guard;
+        }
+
         $user = Auth::user();
         $result = $this->twoFactorService->disable($user);
 
@@ -110,9 +131,14 @@ class TwoFactorController extends Controller
     public function verify(Request $request)
     {
         $action = $request->input('action', 'general');
-        $redirect = $request->input('redirect');
+        $redirect = $this->safeRedirect($request->input('redirect'));
 
-        return view('user.two-factor.verify', compact('action', 'redirect'));
+        // จำนวนวันที่ "จำอุปกรณ์นี้" ใช้ได้ — null = ผู้ดูแลปิดตัวเลือกนี้ (ไม่แสดงช่องติ๊กที่กดแล้วไม่มีผล)
+        $rememberDays = \App\Models\TwoFactorSetting::canRememberDevice()
+            ? (int) (\App\Models\TwoFactorSetting::getActive()->remember_device_days ?? 30)
+            : null;
+
+        return view('user.two-factor.verify', compact('action', 'redirect', 'rememberDays'));
     }
 
     /**
@@ -154,7 +180,7 @@ class TwoFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => $result['message'],
-            'redirect' => $request->input('redirect') ?? route('user.home'),
+            'redirect' => $this->safeRedirect($request->input('redirect')),
         ]);
     }
 
@@ -183,7 +209,7 @@ class TwoFactorController extends Controller
             'success' => true,
             'message' => $result['message'],
             'warning' => $result['warning'] ?? null,
-            'redirect' => $request->input('redirect') ?? route('user.home'),
+            'redirect' => $this->safeRedirect($request->input('redirect')),
         ]);
     }
 
@@ -192,9 +218,12 @@ class TwoFactorController extends Controller
      */
     public function showRecoveryCodes(Request $request)
     {
-        $codes = json_decode($request->input('codes', '[]'), true);
+        // รหัสมาจาก session flash เท่านั้น (แสดงครั้งเดียว) — ไม่รับจาก query string แล้ว
+        $codes = array_values(array_filter((array) session('recovery_codes', []), 'is_string'));
+        $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', Auth::id())->first();
+        $remaining = $userSettings && $userSettings->recovery_codes ? count($userSettings->recovery_codes) : 0;
 
-        return view('user.two-factor.recovery-codes', compact('codes'));
+        return view('user.two-factor.recovery-codes', compact('codes', 'remaining'));
     }
 
     /**
@@ -202,6 +231,10 @@ class TwoFactorController extends Controller
      */
     public function regenerateRecoveryCodes(Request $request)
     {
+        if ($guard = $this->requireFreshVerification($request)) {
+            return $guard;
+        }
+
         $user = Auth::user();
         $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
 
@@ -211,27 +244,26 @@ class TwoFactorController extends Controller
 
         $codes = $userSettings->generateRecoveryCodes();
 
-        return redirect()->route('two-factor.recovery-codes', ['codes' => json_encode($codes)])
+        // 🐛 (2026-10-29) เดิมเรียก route('two-factor.recovery-codes') ที่ไม่มีจริง → 500 หลังรหัสเก่าถูกล้างไปแล้ว
+        return redirect()->route('user.two-factor.recovery-codes')
+            ->with('recovery_codes', $codes)
             ->with('success', 'สร้างรหัสกู้คืนใหม่เรียบร้อยแล้ว');
     }
 
     /**
      * Remove trusted device
      */
-    public function removeTrustedDevice(Request $request)
+    public function removeTrustedDevice(Request $request, string $fingerprint)
     {
-        $request->validate([
-            'device_fingerprint' => ['required', 'string'],
-        ]);
-
+        // 🐛 (2026-10-29) route คือ DELETE /trusted-devices/{fingerprint} แต่เดิมไปอ่านจาก body (device_fingerprint) → ลบไม่ได้
         $user = Auth::user();
         $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
 
         if (! $userSettings) {
-            return response()->json(['success' => false, 'message' => 'User settings not found'], 404);
+            return response()->json(['success' => false, 'message' => 'ไม่พบการตั้งค่า 2FA'], 404);
         }
 
-        $userSettings->removeTrustedDevice($request->input('device_fingerprint'));
+        $userSettings->removeTrustedDevice($fingerprint);
 
         return response()->json(['success' => true, 'message' => 'อุปกรณ์ถูกลบออกเรียบร้อยแล้ว']);
     }
@@ -251,5 +283,52 @@ class TwoFactorController extends Controller
         $userSettings->removeAllTrustedDevices();
 
         return redirect()->back()->with('success', 'ลบอุปกรณ์ที่เชื่อถือทั้งหมดเรียบร้อยแล้ว');
+    }
+
+    /**
+     * การเปลี่ยนการตั้งค่า 2FA (ปิด / เปลี่ยนวิธี / สร้างรหัสกู้คืนใหม่) ต้องยืนยันรหัสปัจจุบันใน session นี้ก่อน
+     *
+     * คืน null = ผ่าน, คืน response = ส่งไปหน้ายืนยัน (action manage_2fa แล้วพากลับหน้าตั้งค่า)
+     */
+    private function requireFreshVerification(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse|null
+    {
+        $settings = \App\Models\TwoFactorUserSetting::where('user_id', Auth::id())->first();
+
+        if (! $settings || ! $settings->enabled || $this->twoFactorService->isVerified('manage_2fa')) {
+            return null;
+        }
+
+        $verifyUrl = route('user.two-factor.verify', ['action' => 'manage_2fa', 'redirect' => route('user.two-factor.setup')]);
+        $message = 'ยืนยันรหัส 2FA ปัจจุบันก่อนเปลี่ยนการตั้งค่า 2FA';
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => false, 'code' => 'TWO_FACTOR_REQUIRED', 'message' => $message, 'verify_url' => $verifyUrl], 403);
+        }
+
+        return redirect()->to($verifyUrl)->with('info', $message);
+    }
+
+    /**
+     * ปลายทางหลังยืนยัน 2FA — รับเฉพาะลิงก์ภายในเว็บนี้
+     *
+     * 🔒 (2026-10-29) เดิมส่ง ?redirect= ดิบกลับไปให้ JS ทำ window.location.href
+     *    → ลิงก์ ?redirect=javascript:... รันโค้ดหลังเหยื่อกรอกรหัส 2FA (XSS) หรือพาไปเว็บปลอม (open redirect)
+     */
+    private function safeRedirect(?string $url): string
+    {
+        $url = trim((string) $url);
+
+        // path ภายใน เช่น /user/wallet (กัน //evil.com และ /\evil.com ที่เบราว์เซอร์ตีความเป็นโดเมนอื่น)
+        if (preg_match('#^/(?![/\\\\])#', $url)) {
+            return $url;
+        }
+
+        // URL เต็มที่ host ตรงกับเว็บนี้เท่านั้น
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (in_array($scheme, ['http', 'https'], true) && parse_url($url, PHP_URL_HOST) === request()->getHost()) {
+            return $url;
+        }
+
+        return route('user.home');
     }
 }

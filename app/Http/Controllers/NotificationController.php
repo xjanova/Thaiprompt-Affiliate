@@ -17,13 +17,24 @@ class NotificationController extends Controller
     /**
      * Get user's unread notifications
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
-        $notifications = $this->notificationService->getAllNotifications($user, 20);
-        $unreadCount = $user->unread_notifications_count;
 
-        return view('notifications.index', compact('notifications', 'unreadCount'));
+        // ฝั่งผู้ขายใช้หน้าเดิม (เปลือกผู้ขาย) · ฝั่งสมาชิกใช้หน้าโนวาที่กรอง ยังไม่อ่าน/สำคัญ ได้
+        if ($request->routeIs('seller.*')) {
+            $notifications = $this->notificationService->getAllNotifications($user, 20);
+            $unreadCount = $user->unread_notifications_count;
+
+            return view('notifications.index', compact('notifications', 'unreadCount'));
+        }
+
+        $filter = in_array($request->query('filter'), ['unread', 'important'], true) ? $request->query('filter') : null;
+        $notifications = $this->notificationService->getAllNotifications($user, 20, $filter)->withQueryString();
+        $unreadCount = $user->unread_notifications_count;
+        $importantCount = $user->notifications()->active()->notExpired()->important()->count();
+
+        return view('user.notifications.index', compact('notifications', 'unreadCount', 'importantCount', 'filter'));
     }
 
     /**
@@ -144,6 +155,9 @@ class NotificationController extends Controller
             ->delete();
 
         if (request()->wantsJson()) {
+            // หน้าเว็บ reload หลังได้ JSON — เก็บข้อความไว้ให้ toast ของหน้าที่โหลดใหม่
+            session()->flash('success', "ลบการแจ้งเตือน {$count} รายการเรียบร้อยแล้ว");
+
             return response()->json([
                 'success' => true,
                 'count' => $count,
@@ -174,6 +188,9 @@ class NotificationController extends Controller
             ]);
 
         if (request()->wantsJson()) {
+            // หน้าเว็บ reload หลังได้ JSON — เก็บข้อความไว้ให้ toast ของหน้าที่โหลดใหม่
+            session()->flash('success', "ทำเครื่องหมายอ่าน {$count} รายการเรียบร้อยแล้ว");
+
             return response()->json([
                 'success' => true,
                 'count' => $count,

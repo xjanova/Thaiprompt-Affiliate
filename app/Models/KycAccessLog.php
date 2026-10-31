@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * บันทึกการเปิดดูรูป KYC ของแอดมิน (PDPA) — 1 แถวต่อการเปิดดู 1 รูป
  *
- * เขียนจาก Admin\KycController::image() เท่านั้น · ไม่มีหน้าแก้/ลบ
+ * เขียนจาก Admin\KycController::image() และแอปแอดมิน (EkycApprovalsController::image) เท่านั้น · ไม่มีหน้าแก้/ลบ
  * ไม่ผูก foreign key กับ kyc_verifications (แถว KYC ถูกลบตอนลบบัญชี แต่บันทึกนี้ต้องอยู่ต่อ)
  *
  * @property int $id
  * @property int $kyc_verification_id
  * @property int|null $subject_user_id เจ้าของข้อมูล
  * @property int|null $viewer_id แอดมินที่เปิดดู
- * @property string $kind card | card_face | best_frame
+ * @property string $kind card | card_face | best_frame (eKYC) · id_card | selfie (คำขอแบบเดิม)
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property \Carbon\Carbon|null $created_at

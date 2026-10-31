@@ -1,306 +1,525 @@
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'แดชบอร์ด')
 
 @php
-    use Illuminate\Support\Str;
-    use Illuminate\Support\Facades\Route as RouteFacade;
-
-    // ── ระดับ Rank + ป้ายเหรียญ ────────────────────────────────
-    $rankLevel  = $currentRank?->level ?? 1;
-    $rankBadges = [1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎', 5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐'];
-    $rankBadge  = $rankBadges[$rankLevel] ?? '🥉';
+    // ลิงก์ที่มี route จริงเท่านั้น (ไม่มี = null → ไม่แสดงปุ่มนั้น)
+    $nvR = fn (string $name, array $params = []) => \Illuminate\Support\Facades\Route::has($name) ? route($name, $params) : null;
+    // เงินบาท: มีสตางค์ค่อยแสดงทศนิยม
+    $baht = fn ($v) => '฿'.number_format((float) $v, ((int) round(((float) $v) * 100)) % 100 === 0 ? 0 : 2);
 
     $thMonth = now()->locale('th')->translatedFormat('F');
-    $thYear  = now()->year + 543;
+    $thYear = now()->year + 543;
 
-    // ── ลิงก์บัตร VIP (เผื่อชื่อ route ต่างกันระหว่างเวอร์ชัน) ──
-    $idCardUrl = RouteFacade::has('user.id-card') ? route('user.id-card')
-               : (RouteFacade::has('user.ranks.id-card') ? route('user.ranks.id-card') : null);
+    // ── ระดับสมาชิก ─────────────────────────────────────────
+    $rankLevel = (int) ($currentRank?->level ?? 0);
+    $rankTh = $currentRank ? ($currentRank->name_th ?: $currentRank->name) : null;
+    $rankEn = $currentRank ? strtoupper((string) $currentRank->name) : 'MEMBER';
+    $nextTh = $nextRank ? ($nextRank->name_th ?: $nextRank->name) : null;
+    $nextEn = $nextRank ? strtolower((string) $nextRank->name) : null;
+    // คะแนนถึงเกณฑ์ระดับถัดไปแล้ว (เช่นขั้นแรกตั้งไว้ 0 คะแนน) — อย่าโชว์ "ต้องการอีก 0 คะแนน" คู่กับวง 0%
+    $rankReached = $nextRank && (int) ($pointsNeeded ?? 0) <= 0;
+    $rankPct = $rankReached ? 100.0 : (float) min(100, max(0, $rankProgress ?? 0));
+    $ringC = 351.9; // 2πr ของวงแหวน r=56 (ตรงกับ stroke-dasharray ใน nova-member.css)
+    $ringOff = round($ringC * (1 - $rankPct / 100), 1);
 
-    // ── สถิติหลัก 4 ใบ (ตรงกับ DashboardController::index) ──────
+    // บัตร VIP เปิดตั้งแต่ระดับ 2 (เผื่อชื่อ route ต่างกันระหว่างเวอร์ชัน)
+    $idCardUrl = $nvR('user.id-card') ?? $nvR('user.ranks.id-card');
+    $hasVip = $idCardUrl && $rankLevel >= 2;
+    // เลขสมาชิกชุดเดียวกับบัตร ID เสมือน (users.member_number) — ไม่มีก็ไม่แสดง ห้ามแต่งเลขขึ้นเอง
+    $memberCode = $user->member_number ?: $mlmMember?->member_code;
+
+    // ── KYC ────────────────────────────────────────────────
+    $kyc = $kycStatus ?? 'not_submitted';
+
+    // ── รักษายอด ───────────────────────────────────────────
+    $rt = $retentionStatus;
+    $rtOn = $rt && ($rt['retention_enabled'] ?? true);
+    $rtStatus = $rt['status'] ?? 'inactive';
+    $rtReq = (float) ($rt['required_pv'] ?? 100);
+    $rtPv = (float) ($rt['monthly_pv'] ?? 0);
+    $rtPct = (float) min(100, max(0, $rt['pv_percentage'] ?? ($rtReq > 0 ? $rtPv / $rtReq * 100 : 0)));
+    $rtGraceLeft = max(0, (int) ($rt['grace_days'] ?? 7) - (int) ($rt['days_since_last_purchase'] ?? 0));
+    // inactive เพราะสถานะสมาชิก/คุณสมบัติ (ไม่ใช่เพราะ PV) — ห้ามบอกว่า "ขาดอีก N PV"
+    $rtMemberBlocked = $rtOn && (($rt['member_status'] ?? 'active') !== 'active' || ! ($rt['is_qualified'] ?? true));
+
+    // ── ข้อความใต้คำทักทาย ─────────────────────────────────
+    $growth = (float) ($commissionGrowth ?? 0);
+    if (($thisMonthCommission ?? 0) > 0 && $growth > 0) {
+        $lead = 'เดือนนี้รายได้โตขึ้น '.number_format($growth, 1).'% จากเดือนก่อน'.($nextTh && $rankPct >= 75 ? ' — อีกนิดเดียวก็ถึงระดับ'.$nextTh : '');
+    } elseif ($kyc !== 'approved' && ($stats['total_earnings'] ?? 0) <= 0) {
+        $lead = 'ยินดีต้อนรับสู่ Thai Prompt — เริ่มจากยืนยันตัวตน แล้วชวนเพื่อนคนแรกกัน';
+    } elseif ($nextTh && ! $rankReached) {
+        $lead = 'อีก '.number_format($pointsNeeded ?? 0).' คะแนนก็ถึงระดับ'.$nextTh;
+    } else {
+        $lead = 'ยินดีต้อนรับกลับ — ดูภาพรวมรายได้และทีมของคุณได้ที่นี่';
+    }
+
+    // ── กราฟรายได้ 12 เดือน (ส่งให้ Alpine วาด 6/12 เดือน) ───
+    $chartValues = array_map('floatval', $chartData['values'] ?? []);
+    $chartLabels = array_map(fn ($l) => explode(' ', (string) $l)[0], $chartData['labels'] ?? []);
+
+    // เส้นกราฟเล็กในการ์ดรายได้ — จากรายได้ 12 เดือนจริง (การ์ดอื่นไม่มีประวัติ จึงไม่วาดเส้นปลอม)
+    $spark = null;
+    if (count($chartValues) > 1 && array_sum($chartValues) > 0) {
+        $mx = max($chartValues);
+        $mn = min($chartValues);
+        $n = count($chartValues);
+        $pts = [];
+        foreach ($chartValues as $i => $v) {
+            $pts[] = [round($i * 120 / ($n - 1), 1), round(34 - (($v - $mn) / (($mx - $mn) ?: 1)) * 28 + 2, 1)];
+        }
+        $line = collect($pts)->map(fn ($p, $i) => ($i ? 'L' : 'M').$p[0].' '.$p[1])->implode('');
+        $spark = ['line' => $line, 'last' => end($pts)];
+    }
+
+    // ── การ์ดตัวเลข 4 ใบ ───────────────────────────────────
     $kpis = [
         [
-            'label' => 'ยอดเงินในกระเป๋า', 'en' => 'Wallet Balance',
-            'value' => '฿' . number_format($stats['wallet_balance'] ?? 0, 2),
-            'delta' => $stats['wallet_change'] ?? 0,
-            'href'  => route('user.wallet.index'),
-            'spark' => [28, 40, 34, 52, 46, 64, 58, 80, 100],
+            'label' => 'รายได้เดือนนี้', 'en' => 'This month', 'img' => 'deco/lotus.webp',
+            'value' => $baht($thisMonthCommission ?? 0), 'href' => $nvR('user.commissions'),
+            'delta' => ($thisMonthCommission ?? 0) > 0 || $growth != 0 ? $growth : null,
+            'note' => ($thisMonthCommission ?? 0) > 0 ? 'จากเดือนก่อน' : 'ยังไม่มีรายได้เดือนนี้',
+            'spark' => true,
         ],
         [
-            'label' => 'คอมมิชชั่นรอรับ', 'en' => 'Pending Commission',
-            'value' => '฿' . number_format($stats['pending_commission'] ?? 0, 2),
-            'delta' => $stats['commission_change'] ?? 0,
-            'href'  => route('user.commissions'),
-            'spark' => [22, 30, 44, 40, 58, 52, 70, 76, 92],
+            'label' => 'คอมมิชชั่นรอรับ', 'en' => 'Pending commission', 'img' => 'deco/coins.webp',
+            'value' => $baht($stats['pending_commission'] ?? 0), 'href' => $nvR('user.commissions'),
+            'badge' => ($approvedCommission ?? 0) > 0 ? 'อนุมัติแล้ว '.$baht($approvedCommission) : null,
+            'note' => ($stats['pending_commission'] ?? 0) > 0 ? 'รอระบบตรวจและอนุมัติ' : 'ไม่มีรายการรอรับ',
         ],
         [
-            'label' => 'ทีมทั้งหมด', 'en' => 'Total Referrals',
-            'value' => number_format($stats['total_referrals'] ?? 0),
-            'badge' => number_format($stats['active_referrals'] ?? 0) . ' ใช้งาน',
-            'href'  => route('user.mlm.team'),
-            'spark' => [40, 32, 46, 38, 52, 44, 58, 50, 64],
+            'label' => 'ทีมทั้งหมด', 'en' => 'Total referrals', 'img' => 'deco/elephant.webp',
+            'value' => number_format($stats['total_referrals'] ?? 0), 'href' => $nvR('user.mlm.team'),
+            'badge' => ($stats['total_referrals'] ?? 0) > 0 ? number_format($stats['active_referrals'] ?? 0).' ใช้งาน' : 'ยังไม่มีทีม',
+            'note' => ($thisMonthReferrals ?? 0) > 0 ? '+'.number_format($thisMonthReferrals).' คนเดือนนี้' : null,
         ],
         [
-            'label' => 'คะแนน Rank', 'en' => 'Rank Points',
-            'value' => number_format($stats['rank_points'] ?? 0),
-            'href'  => route('user.ranks.progress'),
-            'spark' => [18, 26, 30, 42, 48, 60, 72, 84, 100],
+            'label' => 'คะแนนระดับ', 'en' => 'Rank points', 'img' => 'deco/crystal.webp',
+            'value' => number_format($stats['rank_points'] ?? 0), 'href' => $nvR('user.ranks.progress'),
+            'note' => $rankReached ? 'ถึงเกณฑ์'.$nextTh.'แล้ว' : ($nextTh ? 'อีก '.number_format($pointsNeeded ?? 0).' ถึง'.$nextTh : ($currentRank ? 'ระดับสูงสุดแล้ว' : null)),
         ],
     ];
 
-    // ── กราฟแท่งรายได้ 12 เดือน (CSS — ไม่ใช้ Chart.js) ────────
-    $chartLabels = $chartData['labels'] ?? [];
-    $chartValues = $chartData['values'] ?? [];
-    $chartMax    = max(1, (float) (count($chartValues) ? max($chartValues) : 1));
-    $chartSum    = array_sum($chartValues);
+    // ── ปุ่มกระเป๋าเงิน ────────────────────────────────────
+    $walletActs = array_filter([
+        ['url' => $nvR('user.wallet.deposit'), 'label' => 'เติมเงิน', 'icon' => 'plus', 'navy' => false],
+        ['url' => $nvR('user.wallet.withdraw'), 'label' => 'ถอนเงิน', 'icon' => 'out', 'navy' => false],
+        ['url' => $nvR('user.wallet.transfer'), 'label' => 'โอนเงิน', 'icon' => 'send', 'navy' => true],
+        ['url' => $nvR('user.wallet.transactions'), 'label' => 'ประวัติ', 'icon' => 'history', 'navy' => true],
+    ], fn ($a) => $a['url']);
 
-    // ── เมนูด่วน (กรองเฉพาะ route ที่มีจริง) ────────────────────
-    $quickRaw = [
-        ['💰', 'เติมเงิน',   'user.wallet.deposit'],
-        ['🏧', 'ถอนเงิน',    'user.wallet.withdraw'],
-        ['🤝', 'เชิญเพื่อน', 'user.mlm.referral'],
-        ['📊', 'คอมมิชชั่น', 'user.commissions'],
-        ['🌳', 'ผังทีม',     'user.mlm.genealogy'],
-        ['👤', 'โปรไฟล์',    'user.profile'],
+    // ── บริการ (ภาพชุดเดียวกับหน้าแรก) ─────────────────────
+    $isSeller = $user->hasRole(['seller']);
+    $services = array_filter([
+        ['url' => $nvR('storefront.index') ?? url('/').'#products', 'img' => 'shop', 'icon' => 'bag', 'name' => 'ช้อปปิ้ง', 'en' => 'Shopping · Points', 'go' => 'เริ่มช้อป', 'tag' => 'ยอดนิยม'],
+        ['url' => $nvR('taladsod.home'), 'img' => 'market', 'icon' => 'basket', 'name' => 'ตลาดสด', 'en' => 'Fresh · Local', 'go' => 'เข้าตลาดสด'],
+        ['url' => $nvR('user.rider.dashboard'), 'img' => 'rider', 'icon' => 'scooter', 'name' => 'ไรเดอร์', 'en' => 'Rider · Daily', 'go' => 'งานวันนี้'],
+        ['url' => (string) config('services.juntra.url', 'https://xn--82c4af5bzdj.online'), 'img' => 'fortune', 'icon' => 'moonstar', 'name' => 'ดูดวง', 'en' => 'Tarot · Daily', 'go' => 'ดวงวันนี้', 'ext' => true],
+        $isSeller && $nvR('seller.dashboard')
+            ? ['url' => $nvR('seller.dashboard'), 'img' => 'store', 'icon' => 'store', 'name' => 'ร้านของฉัน', 'en' => 'Seller · Online', 'go' => 'จัดการร้าน']
+            : ['url' => $nvR('user.seller-apply.index'), 'img' => 'store', 'icon' => 'store', 'name' => 'เปิดร้าน', 'en' => 'Seller · Online', 'go' => 'สมัครเปิดร้าน'],
+        ['url' => $referralUrl ? $nvR('user.mlm.referral') : $nvR('user.mlm.dashboard'), 'img' => 'earn', 'icon' => 'gift', 'name' => 'ชวนเพื่อน', 'en' => 'Referral · Earn', 'go' => 'รับค่าแนะนำ', 'tag' => 'ได้เงิน'],
+    ], fn ($s) => ! empty($s['url']));
+
+    // ── กิจกรรมล่าสุด ──────────────────────────────────────
+    $typeLabels = [
+        'direct_referral' => 'ค่าแนะนำตรง', 'binary' => 'โบนัสจับคู่', 'binary_pair' => 'โบนัสจับคู่',
+        'unilevel' => 'โบนัสชั้น', 'unilevel_rollup' => 'โบนัสชั้น', 'pool_bonus' => 'โบนัสกองกลาง',
     ];
-    $quick = [];
-    foreach ($quickRaw as $q) {
-        if (RouteFacade::has($q[2])) {
-            $quick[] = [$q[0], $q[1], route($q[2])];
-        }
-    }
+    $actView = [
+        'paid' => ['cls' => 'paid', 'icon' => 'cash', 'title' => 'คอมมิชชั่นจ่ายเข้ากระเป๋าแล้ว'],
+        'approved' => ['cls' => 'ok', 'icon' => 'check', 'title' => 'คอมมิชชั่นได้รับอนุมัติ'],
+        'rejected' => ['cls' => 'no', 'icon' => 'x', 'title' => 'คอมมิชชั่นถูกปฏิเสธ'],
+        'cancelled' => ['cls' => 'no', 'icon' => 'x', 'title' => 'คอมมิชชั่นถูกยกเลิก'],
+    ];
+    $actWait = ['cls' => 'wait', 'icon' => 'clock', 'title' => 'คอมมิชชั่นรอดำเนินการ'];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── การ์ดต้อนรับ (Hero) ─────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
-        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
-        <x-art.hero-art image="usr-dashboard" />
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:22px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:28px;">{{ $rankBadge }}</span>
-            <div style="flex:1; min-width:200px;">
-                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">บัญชีของฉัน · MY ACCOUNT · {{ $thMonth }} {{ $thYear }}</div>
-                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">สวัสดี, {{ $user->name }} <span style="color:var(--deep1);">✳</span></h1>
-                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:9px;">
-                    @if($currentRank)
-                        <span class="tp-pill tp-pill-gold">{{ $rankBadge }} {{ $currentRank->name_th ?? $currentRank->name }}</span>
-                    @else
-                        <span class="tp-pill tp-pill-soft">สมาชิกใหม่</span>
-                    @endif
-                    @if(($kycStatus ?? null) === 'approved')
-                        <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-circle-check" style="font-size:10px;"></i> ยืนยันตัวตนแล้ว</span>
-                    @elseif(($kycStatus ?? null) === 'pending')
-                        <span class="tp-pill" style="color:#fff; background:#e0a52e;"><i class="fas fa-hourglass-half" style="font-size:10px;"></i> รอตรวจ KYC</span>
-                    @else
-                        <span class="tp-pill" style="color:#fff; background:#d9534f;"><i class="fas fa-id-card" style="font-size:10px;"></i> ยังไม่ยืนยันตัวตน</span>
-                    @endif
-                </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:9px;">
-                @if($idCardUrl && $rankLevel >= 2)
-                    <a href="{{ $idCardUrl }}" class="tp-btn"><i class="fas fa-id-card"></i> บัตร VIP</a>
+{{-- ── ฮีโร่ + บัตรสมาชิก ─────────────────────────────── --}}
+<section class="nvm-hero" aria-labelledby="nvm-hello">
+    <div class="nvm-hero__bg"></div>
+    <img class="nvm-hero__kanok" src="{{ asset('images/nova/brand/kanok-gold.webp') }}" alt="" aria-hidden="true">
+    <div class="nvm-hero__in">
+        <div>
+            <div class="nvm-eyebrow nvm-latin">My account · {{ $thMonth }} {{ $thYear }}</div>
+            <h1 id="nvm-hello">สวัสดี, <span class="nvm-foil">{{ $user->name }}</span></h1>
+            <p class="nvm-hero__lead">{{ $lead }}</p>
+            <div class="nvm-pills">
+                @if($rankTh)
+                    <span class="nvm-pill nvm-pill--gold"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ระดับ{{ $rankTh }}</span>
+                @else
+                    <span class="nvm-pill nvm-pill--glass">สมาชิกใหม่</span>
                 @endif
-                <a href="{{ route('user.wallet.index') }}" class="tp-btn tp-btn-primary"><i class="fas fa-wallet"></i> กระเป๋าเงิน</a>
+                @if($kyc === 'approved')
+                    <span class="nvm-pill nvm-pill--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ยืนยันตัวตนแล้ว</span>
+                @elseif($kyc === 'pending')
+                    <span class="nvm-pill nvm-pill--warn"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>รอตรวจเอกสาร</span>
+                @elseif($kyc === 'rejected')
+                    <span class="nvm-pill nvm-pill--bad"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยืนยันตัวตนไม่ผ่าน</span>
+                @else
+                    <span class="nvm-pill nvm-pill--warn"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยังไม่ยืนยันตัวตน</span>
+                @endif
+                @if($rtOn && $rtStatus === 'active')
+                    <span class="nvm-pill nvm-pill--glass">รักษายอดแล้ว</span>
+                @endif
+            </div>
+            <div class="nvm-hero__actions">
+                @if($nvR('user.wallet.index'))
+                    <a class="nvm-btn nvm-btn--gold" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>กระเป๋าเงิน</a>
+                @endif
+                @if($hasVip)
+                    <a class="nvm-btn nvm-btn--ghost" href="{{ $idCardUrl }}"><svg class="nvm-ico"><use href="#nvm-i-card"/></svg>บัตรสมาชิก VIP</a>
+                @endif
             </div>
         </div>
-    </div>
 
-    {{-- ── แจ้งเตือน KYC (ถ้ายังไม่ยืนยัน/ถูกปฏิเสธ) ─────────── --}}
-    @if($showKycAlert)
-    <div class="tp-card" style="padding:16px 18px; display:flex; flex-wrap:wrap; align-items:center; gap:14px;
-                box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-        <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:18px; background:#e0a52e;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
-        <div style="flex:1; min-width:200px;">
-            <div style="font-weight:700; font-size:14px;">ยืนยันตัวตนเพื่อปลดล็อกฟีเจอร์ทั้งหมด</div>
-            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">ทำ KYC เพื่อถอนเงินและใช้งานได้เต็มรูปแบบ</div>
-        </div>
-        <a href="{{ route('user.kyc.index') }}" class="tp-btn tp-btn-primary">ยืนยันตัวตนตอนนี้</a>
-    </div>
-    @endif
-
-    {{-- ── KPI 4 ใบ ─────────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
-        @foreach($kpis as $k)
-            <a href="{{ $k['href'] }}" class="tp-card tp-card-hover" style="display:block; padding:18px; text-decoration:none; color:inherit;">
-                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
-                    <div style="min-width:0;">
-                        <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $k['label'] }}</div>
-                        <div style="font-size:10px; color:var(--ink2); opacity:.8;">{{ $k['en'] }}</div>
-                    </div>
-                    @if(!empty($k['badge']))
-                        <span class="tp-pill tp-pill-soft" style="white-space:nowrap;">{{ $k['badge'] }}</span>
-                    @elseif(isset($k['delta']) && $k['delta'] != 0)
-                        <span class="tp-pill" style="white-space:nowrap; {{ $k['delta'] > 0 ? 'color:#4f9e7e; background:rgba(79,158,126,.14);' : 'color:#d9534f; background:rgba(217,83,79,.14);' }}">
-                            {{ $k['delta'] > 0 ? '↑' : '↓' }} {{ number_format(abs($k['delta']), 1) }}%
-                        </span>
-                    @endif
+        <div class="nvm-vipwrap">
+            <{{ $hasVip ? 'a' : 'div' }} @if($hasVip) href="{{ $idCardUrl }}" @endif class="nvm-vip" x-data="nvmTilt" @pointermove="move($event)" @pointerleave="reset()" aria-label="บัตรสมาชิก {{ $user->name }}">
+                <div class="nvm-vip__top">
+                    <span class="nvm-vip__brand nvm-latin"><img src="{{ asset('images/brand/thaiprompt-mark.webp') }}" alt="" width="24" height="24">Thai Prompt</span>
+                    <span class="nvm-vip__type nvm-latin">{{ $rankLevel >= 2 ? 'VIP Member' : 'Member' }}</span>
                 </div>
-                <div class="tp-num" style="font-size:28px; font-weight:800; margin:10px 0 12px; letter-spacing:.4px;">{{ $k['value'] }}</div>
-                <div class="tp-spark">
-                    @foreach($k['spark'] as $i => $h)
-                        <i style="height:{{ $h }}%; animation-delay:{{ $i * 0.05 }}s;"></i>
+                <div class="nvm-vip__chip"></div>
+                <div class="nvm-vip__name">{{ $user->name }}</div>
+                @if($memberCode)<div class="nvm-vip__id nvm-num">{{ $memberCode }}</div>@endif
+                <div class="nvm-vip__rank">
+                    <div class="nvm-vip__medal">
+                        <img src="{{ asset('images/nova/brand/tabbar-kanok-medallion.webp') }}" alt="">
+                        <span>{{ $rankLevel ?: '★' }}</span>
+                    </div>
+                    <b class="nvm-foil">{{ $rankEn }}</b>
+                </div>
+            </{{ $hasVip ? 'a' : 'div' }}>
+        </div>
+    </div>
+</section>
+
+{{-- ── กระเป๋าเงิน (ซ้อนขอบล่างฮีโร่) ───────────────────── --}}
+<section class="nvm-card nvm-wallet" aria-label="กระเป๋าเงิน">
+    <img class="nvm-wallet__icon" src="{{ asset('images/nova/icons/wallet.webp') }}" alt="" width="62" height="62">
+    <div>
+        <div class="nvm-wallet__lbl">ยอดเงินในกระเป๋า</div>
+        @php [$wInt, $wDec] = explode('.', number_format($walletBalance, 2)); @endphp
+        <div class="nvm-wallet__amt nvm-num">฿{{ $wInt }}<span>.{{ $wDec }}</span></div>
+        <div class="nvm-wallet__sub">คอมมิชชั่นรอรับ <b class="nvm-num">{{ $baht($stats['pending_commission'] ?? 0) }}</b> · รายได้สะสม <b class="nvm-num">{{ $baht($stats['total_earnings'] ?? 0) }}</b></div>
+    </div>
+    @if(count($walletActs))
+        <div class="nvm-wallet__acts">
+            @foreach($walletActs as $act)
+                <a class="nvm-wact {{ $act['navy'] ? 'nvm-wact--navy' : '' }}" href="{{ $act['url'] }}"><span><svg class="nvm-ico"><use href="#nvm-i-{{ $act['icon'] }}"/></svg></span>{{ $act['label'] }}</a>
+            @endforeach
+        </div>
+    @endif
+</section>
+
+{{-- ── แจ้งเตือน KYC (ยังไม่ส่ง / ถูกปฏิเสธ) ─────────────── --}}
+@if($showKycAlert && $nvR('user.kyc.index'))
+    <section class="nvm-card nvm-kyc {{ $kyc === 'rejected' ? 'nvm-kyc--bad' : '' }} nvm-rv">
+        <span class="nvm-kyc__ic"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg></span>
+        <div class="nvm-kyc__txt">
+            @if($kyc === 'rejected')
+                <b>เอกสารยืนยันตัวตนไม่ผ่าน กรุณาส่งใหม่</b>
+                <p>ดูเหตุผลและส่งเอกสารใหม่ได้ที่หน้ายืนยันตัวตน เพื่อปลดล็อกการถอนเงิน</p>
+            @else
+                <b>ยืนยันตัวตนเพื่อปลดล็อกการถอนเงิน</b>
+                <p>ถ่ายบัตรประชาชน + เซลฟี่ ใช้เวลาไม่กี่นาที แล้วใช้งานได้เต็มรูปแบบ</p>
+            @endif
+        </div>
+        <a class="nvm-btn nvm-btn--gold" href="{{ route('user.kyc.index') }}">{{ $kyc === 'rejected' ? 'ส่งเอกสารใหม่' : 'ยืนยันตัวตนตอนนี้' }}</a>
+    </section>
+@endif
+
+{{-- ── การ์ดตัวเลข 4 ใบ ─────────────────────────────────── --}}
+<section class="nvm-kpis" aria-label="สรุปตัวเลข">
+    @foreach($kpis as $k)
+        <{{ $k['href'] ? 'a' : 'div' }} @if($k['href']) href="{{ $k['href'] }}" @endif class="nvm-card nvm-kpi nvm-rv">
+            <img class="nvm-kpi__img" src="{{ asset('images/nova/'.$k['img']) }}" alt="" width="78" height="78">
+            <div class="nvm-kpi__lbl">{{ $k['label'] }}</div>
+            <div class="nvm-kpi__en nvm-latin">{{ $k['en'] }}</div>
+            <div class="nvm-kpi__val nvm-num">{{ $k['value'] }}</div>
+            <div class="nvm-kpi__foot">
+                @if(! empty($k['badge']))
+                    <span class="nvm-delta nvm-delta--mute">{{ $k['badge'] }}</span>
+                @elseif(isset($k['delta']) && $k['delta'] != 0)
+                    <span class="nvm-delta {{ $k['delta'] > 0 ? 'nvm-delta--up' : 'nvm-delta--down' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $k['delta'] > 0 ? 'up' : 'down' }}"/></svg>{{ number_format(abs($k['delta']), 1) }}%</span>
+                @endif
+                @if(! empty($k['note']))<small>{{ $k['note'] }}</small>@endif
+            </div>
+            @if(! empty($k['spark']) && $spark)
+                <svg class="nvm-spark" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="{{ $spark['line'] }}L120 38L0 38Z" fill="url(#nvm-spark-fill)"/>
+                    <path d="{{ $spark['line'] }}" fill="none" stroke="#d4a64a" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+                    <circle cx="{{ $spark['last'][0] }}" cy="{{ $spark['last'][1] }}" r="3" fill="#f0c96a" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                </svg>
+            @endif
+        </{{ $k['href'] ? 'a' : 'div' }}>
+    @endforeach
+</section>
+
+{{-- ── กราฟรายได้ + ระดับสมาชิก ─────────────────────────── --}}
+<div class="nvm-row2">
+    <section class="nvm-card nvm-chart nvm-rv" aria-labelledby="nvm-chart-h"
+             x-data="nvmChart(@js($chartValues), @js($chartLabels))">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Earnings</small><h2 id="nvm-chart-h">รายได้รายเดือน</h2></div>
+            <div class="nvm-seg" role="group" aria-label="ช่วงเวลา">
+                <button type="button" :class="range === 6 ? 'is-on' : ''" :aria-pressed="range === 6" @click="range = 6">6 เดือน</button>
+                <button type="button" :class="range === 12 ? 'is-on' : ''" :aria-pressed="range === 12" @click="range = 12">12 เดือน</button>
+            </div>
+        </div>
+        <div class="nvm-chart__sum"><b class="nvm-num" x-text="money(sum)">{{ $baht(array_sum($chartValues)) }}</b><span x-text="'รวม ' + range + ' เดือนล่าสุด'">รวม 12 เดือนล่าสุด</span></div>
+        <div class="nvm-bars" x-show="sum > 0" @if(array_sum($chartValues) <= 0) x-cloak @endif>
+            <template x-for="(b, i) in bars" :key="range + '-' + i">
+                <div class="nvm-bar" :class="b.now ? 'is-now' : ''" :style="'--h:' + b.h + '%;--d:' + (i * 45) + 'ms'">
+                    <em x-text="money(b.v)"></em><i></i><span x-text="b.l"></span>
+                </div>
+            </template>
+        </div>
+        <div class="nvm-empty" x-show="sum <= 0" @if(array_sum($chartValues) > 0) x-cloak @endif>
+            <img src="{{ asset('images/nova/deco/lotus.webp') }}" alt="" width="86" height="86">
+            <b>ยังไม่มีรายได้ในช่วงนี้</b>
+            ชวนเพื่อนคนแรกหรือขายสินค้าชิ้นแรก แล้วกราฟจะเริ่มเติบโตที่นี่
+        </div>
+    </section>
+
+    <section class="nvm-card nvm-rank nvm-rv" aria-labelledby="nvm-rank-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Rank progress</small><h2 id="nvm-rank-h">ระดับสมาชิก</h2></div>
+            @if($nvR('user.ranks.dashboard'))
+                <a href="{{ route('user.ranks.dashboard') }}">สิทธิ์ทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+            @endif
+        </div>
+        @if($currentRank || $nextRank)
+            <div class="nvm-medal">
+                <img src="{{ asset('images/nova/brand/tabbar-kanok-medallion.webp') }}" alt="">
+                <svg viewBox="0 0 128 128" aria-hidden="true"><circle class="trk" cx="64" cy="64" r="56"/><circle class="val" cx="64" cy="64" r="56" style="--off: {{ $ringOff }}"/></svg>
+                <div class="nvm-medal__txt">
+                    <b class="nvm-num">{{ $nextRank ? number_format($rankPct, 0).'%' : '★' }}</b>
+                    <small class="nvm-latin">{{ $nextEn ? 'to '.$nextEn : 'max rank' }}</small>
+                </div>
+            </div>
+            <div class="nvm-rank__name">
+                {{ $rankTh ?? 'สมาชิกใหม่' }}
+                @if($nextTh)<svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg> {{ $nextTh }}@endif
+            </div>
+            <div class="nvm-rank__need">
+                @if($rankReached)
+                    คะแนนถึงเกณฑ์ระดับ{{ $nextTh }}แล้ว
+                @elseif($nextTh)
+                    ต้องการอีก <b class="nvm-num">{{ number_format($pointsNeeded ?? 0) }}</b> คะแนน
+                @else
+                    คุณอยู่ระดับสูงสุดแล้ว ยินดีด้วย!
+                @endif
+            </div>
+            @if($rankLadder->count() > 1)
+                <div class="nvm-ladder" aria-hidden="true">
+                    @foreach($rankLadder as $step)
+                        <i class="{{ (int) $step->level < $rankLevel ? 'done' : ((int) $step->level === $rankLevel ? 'now' : '') }}"></i>
                     @endforeach
+                </div>
+            @endif
+            @if($hasVip)
+                <a class="nvm-btn nvm-btn--line" href="{{ $idCardUrl }}"><svg class="nvm-ico"><use href="#nvm-i-card"/></svg>ดูบัตรสมาชิก VIP</a>
+            @elseif($nvR('user.ranks.progress'))
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.ranks.progress') }}"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ดูวิธีเลื่อนระดับ</a>
+            @endif
+        @else
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="86" height="86">
+                <b>ระบบระดับสมาชิกยังไม่เปิดใช้งาน</b>
+                เมื่อเปิดแล้ว ความคืบหน้าของคุณจะแสดงที่นี่
+            </div>
+        @endif
+    </section>
+</div>
+
+{{-- ── บริการ ──────────────────────────────────────────── --}}
+@if(count($services))
+<section class="nvm-rv" aria-labelledby="nvm-svc-h">
+    <div class="nvm-crest"><img src="{{ asset('images/nova/brand/tabbar-kanok-arch.webp') }}" alt="" aria-hidden="true"></div>
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">Services</small><h2 id="nvm-svc-h">บริการของคุณ</h2></div>
+        @if($nvR('user.home'))
+            <a href="{{ route('user.home') }}">ทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+        @endif
+    </div>
+    <div class="nvm-svc">
+        @foreach($services as $s)
+            <a href="{{ $s['url'] }}" @if(! empty($s['ext'])) target="_blank" rel="noopener" @endif>
+                @if(! empty($s['tag']))<span class="nvm-svc__tag">{{ $s['tag'] }}</span>@endif
+                <div class="nvm-svc__img"><img src="{{ asset('images/nova/svc/'.$s['img'].'.webp') }}" alt="" width="320" height="200" loading="lazy"></div>
+                <div class="nvm-svc__body">
+                    <span class="nvm-svc__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $s['icon'] }}"/></svg></span>
+                    <b>{{ $s['name'] }}</b>
+                    <small class="nvm-latin">{{ $s['en'] }}</small>
+                    <span class="nvm-svc__go">{{ $s['go'] }}<svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg></span>
                 </div>
             </a>
         @endforeach
     </div>
+</section>
+@endif
 
-    {{-- ── กราฟรายได้ 12 เดือน (CSS bars) ───────────────────── --}}
-    <div class="tp-card" style="padding:20px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
-            <div>
-                <div style="font-weight:700; font-size:15px;">รายได้ · รายเดือน</div>
-                <div style="font-size:11px; color:var(--ink2);">Earnings — 12 เดือนล่าสุด</div>
+{{-- ── รักษายอด / กิจกรรม / ชวนเพื่อน ───────────────────── --}}
+<div class="nvm-row3">
+    <section class="nvm-card nvm-box nvm-rv" aria-labelledby="nvm-pv-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Retention</small><h2 id="nvm-pv-h">สถานะรักษายอด</h2></div></div>
+        @if(! $rt)
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="86" height="86">
+                <b>ยังไม่ได้เข้าร่วมแผนสมาชิก</b>
+                เข้าร่วมแผนเพื่อเริ่มสะสม PV และรับคอมมิชชั่นจากทีม
             </div>
-            <span class="tp-pill tp-pill-gold tp-num">฿{{ number_format($chartSum, 0) }}</span>
-        </div>
-        @if(count($chartValues) > 0 && $chartSum > 0)
-        <div class="tp-bars">
-            @foreach($chartValues as $i => $val)
-                <div class="col" title="{{ $chartLabels[$i] ?? '' }}: ฿{{ number_format($val, 2) }}">
-                    <div class="stack" style="height:100%;">
-                        <span class="bar a" style="height:{{ max(3, round(($val / $chartMax) * 100)) }}%;"></span>
-                    </div>
-                    <span class="lbl">{{ Str::limit($chartLabels[$i] ?? '', 6, '') }}</span>
-                </div>
-            @endforeach
-        </div>
+            @if($nvR('user.mlm.dashboard'))
+                <a class="nvm-btn nvm-btn--line nvm-btn--block" href="{{ route('user.mlm.dashboard') }}">ดูแผนสมาชิก</a>
+            @endif
+        @elseif(! $rtOn)
+            @if($rtStatus === 'active')
+                <div class="nvm-status"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><div>ไม่ต้องรักษายอดเดือนนี้<small>รับคอมมิชชั่นได้ตามปกติ</small></div></div>
+            @else
+                <div class="nvm-status is-bad"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><div>บัญชีสมาชิกยังไม่เปิดใช้งาน<small>ติดต่อทีมงานเพื่อเปิดใช้งาน</small></div></div>
+            @endif
         @else
-            <div style="text-align:center; color:var(--ink2); padding:46px 0; font-size:13px;">ยังไม่มีรายได้ในช่วง 12 เดือนที่ผ่านมา</div>
-        @endif
-    </div>
-
-    {{-- ── เมนูด่วน ──────────────────────────────────────────── --}}
-    @if(count($quick) > 0)
-    <div>
-        <div class="tp-section-h" style="margin-bottom:12px;">⚡ เมนูด่วน</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
-            @foreach($quick as [$emoji, $label, $href])
-                <a href="{{ $href }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; text-decoration:none; color:inherit;">
-                    <span class="tp-tile" style="width:44px; height:44px; border-radius:14px; font-size:20px;">{{ $emoji }}</span>
-                    <span style="font-size:12.5px; font-weight:600; text-align:center;">{{ $label }}</span>
-                </a>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
-    {{-- ── 3 คอลัมน์: รักษายอด / ความคืบหน้า Rank / กิจกรรม ─── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
-
-        {{-- สถานะรักษายอด (Volume Retention) --}}
-        @if($retentionStatus && $mlmMember)
-        <div class="tp-card" style="padding:18px;">
-            <div class="tp-section-h" style="margin-bottom:14px;">💓 สถานะรักษายอด</div>
-            @if(!($retentionStatus['retention_enabled'] ?? true))
-                <div style="text-align:center; padding:18px; border-radius:14px; box-shadow:var(--inset-sm);">
-                    <div style="font-size:13px; color:var(--ink2);">ระบบรักษายอดปิดอยู่</div>
-                    <div style="color:#4f9e7e; font-weight:700; margin-top:4px;">Active ทุกคน</div>
-                </div>
+            @if($rtMemberBlocked)
+                <div class="nvm-status is-bad"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><div>บัญชียังไม่ผ่านเงื่อนไขสมาชิก<small>ยังรับคอมมิชชั่นไม่ได้</small></div></div>
+            @elseif($rtStatus === 'active')
+                <div class="nvm-status"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><div>รักษายอดสำเร็จ<small>รับคอมมิชชั่นได้ครบเดือนนี้</small></div></div>
+            @elseif($rtStatus === 'grace_period')
+                <div class="nvm-status is-warn"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><div>อยู่ในช่วงผ่อนผัน<small>เหลืออีก {{ $rtGraceLeft }} วัน</small></div></div>
             @else
-                @php
-                    $rtStatus = $retentionStatus['status'] ?? 'inactive';
-                    $rtText   = match($rtStatus) { 'active' => 'รักษายอดสำเร็จ', 'grace_period' => 'อยู่ในช่วงผ่อนผัน', default => 'ยังไม่ถึงเกณฑ์' };
-                    $rtEmoji  = match($rtStatus) { 'active' => '✅', 'grace_period' => '⏳', default => '⚠️' };
-                    $rtColor  = match($retentionStatus['color'] ?? 'gray') { 'green' => '#5aa07e', 'yellow' => '#e0a52e', 'red' => '#d9534f', default => 'var(--ink2)' };
-                    $pvPct    = min(100, (float) ($retentionStatus['pv_percentage'] ?? 0));
-                @endphp
-                <div style="text-align:center; margin-bottom:14px;">
-                    <span class="tp-pill" style="color:#fff; background:{{ $rtColor }}; font-size:12px; padding:5px 12px;">{{ $rtEmoji }} {{ $rtText }}</span>
-                </div>
-                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:7px;">
-                    <span style="color:var(--ink2);">PV เดือนนี้</span>
-                    <span class="tp-num" style="font-weight:700;">{{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}</span>
-                </div>
-                <div style="height:12px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
-                    <div style="height:100%; width:{{ $pvPct }}%; border-radius:20px; background:linear-gradient(90deg, {{ $rtColor }}, color-mix(in srgb, {{ $rtColor }} 60%, #fff)); transition:width .5s ease;"></div>
-                </div>
-                @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
-                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-top:9px;">
-                        <span style="color:var(--ink2);">ต้องการเพิ่ม</span>
-                        <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($retentionStatus['remaining_pv'], 0) }} PV</span>
-                    </div>
-                @endif
-                @if($retentionStatus['in_grace_period'] ?? false)
-                    <div style="margin-top:12px; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#e0a52e;">
-                        <i class="fas fa-clock"></i> ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน
-                    </div>
-                @elseif($rtStatus === 'inactive')
-                    <div style="margin-top:12px; padding:10px 12px; border-radius:12px; box-shadow:var(--inset-sm); font-size:12px; color:#d9534f;">
-                        <i class="fas fa-triangle-exclamation"></i> <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
-                    </div>
-                @endif
+                <div class="nvm-status is-bad"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><div>ยังไม่ถึงเกณฑ์<small>ขาดอีก {{ number_format(max(0, $rt['remaining_pv'] ?? ($rtReq - $rtPv))) }} PV</small></div></div>
             @endif
-        </div>
-        @endif
-
-        {{-- ความคืบหน้า Rank --}}
-        @if($currentRank || $nextRank)
-        <div class="tp-card" style="padding:18px;">
-            <div class="tp-section-h" style="margin-bottom:14px;">{{ $rankBadge }} ความคืบหน้า Rank</div>
-            @if($currentRank)
-                <div style="padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm); margin-bottom:14px;">
-                    <div style="font-size:11.5px; color:var(--ink2);">Rank ปัจจุบัน</div>
-                    <div style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; margin-top:3px;">
-                        <span style="font-size:20px;">{{ $rankBadge }}</span> {{ $currentRank->name_th ?? $currentRank->name }}
-                        @if($rankLevel >= 8)<span class="tp-pill tp-pill-soft" style="font-size:9px;">ตำนาน</span>@endif
-                    </div>
-                </div>
-            @endif
-            @if($nextRank)
-                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:7px;">
-                    <span style="color:var(--ink2);"><i class="fas fa-arrow-up" style="color:#4f9e7e;"></i> ถัดไป: {{ $nextRank->name_th ?? $nextRank->name }}</span>
-                    <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($rankProgress, 1) }}%</span>
-                </div>
-                <div style="height:14px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
-                    <div style="height:100%; width:{{ min(100, $rankProgress) }}%; border-radius:20px; background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
-                </div>
-                <div style="font-size:11.5px; color:var(--ink2); margin-top:8px;"><i class="fas fa-circle-info"></i> ต้องการอีก <span class="tp-num" style="font-weight:700;">{{ number_format($pointsNeeded) }}</span> คะแนน</div>
-            @else
-                <div style="text-align:center; padding:24px 0;">
-                    <div style="font-size:46px;">👑</div>
-                    <div style="font-weight:700; margin-top:6px;">คุณอยู่ที่ Rank สูงสุดแล้ว!</div>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">ยินดีด้วย คุณคือสุดยอดสมาชิก</div>
-                </div>
-            @endif
-            @if($idCardUrl && $rankLevel >= 2)
-                <a href="{{ $idCardUrl }}" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; margin-top:14px;"><i class="fas fa-id-card"></i> ดูบัตรประจำตัว VIP</a>
-            @endif
-        </div>
-        @endif
-
-        {{-- กิจกรรมล่าสุด --}}
-        <div class="tp-card" style="padding:18px;">
-            <div class="tp-section-h" style="margin-bottom:14px;">🔔 กิจกรรมล่าสุด</div>
-            <div style="display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto;">
-                @forelse($recentActivities as $activity)
-                    @php
-                        $st = $activity['status'] ?? 'pending';
-                        $stColor = $st === 'approved' ? '#5aa07e' : ($st === 'paid' ? 'var(--accent1)' : ($st === 'rejected' ? '#d9534f' : '#e0a52e'));
-                        $stIcon  = $st === 'approved' ? 'fa-circle-check' : ($st === 'paid' ? 'fa-money-bill-wave' : ($st === 'rejected' ? 'fa-circle-xmark' : 'fa-clock'));
-                        $stTitle = match($st) { 'approved' => 'คอมมิชชั่นได้รับอนุมัติ', 'paid' => 'คอมมิชชั่นจ่ายแล้ว', 'rejected' => 'คอมมิชชั่นถูกปฏิเสธ', default => 'คอมมิชชั่นรอดำเนินการ' };
-                    @endphp
-                    <div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:13px; box-shadow:var(--inset-sm);">
-                        <span class="tp-tile" style="width:34px; height:34px; border-radius:10px; font-size:14px; background:{{ $stColor }};"><i class="fas {{ $stIcon }}" style="color:#fff;"></i></span>
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $stTitle }}</div>
-                            <div class="tp-num" style="font-size:12px; color:var(--deep1); font-weight:700;">฿{{ number_format($activity['amount'] ?? 0, 2) }}</div>
-                        </div>
-                        <span style="font-size:10.5px; color:var(--ink2); white-space:nowrap;">{{ optional($activity['created_at'])->diffForHumans() }}</span>
-                    </div>
-                @empty
-                    <div style="text-align:center; color:var(--ink2); padding:30px 0; font-size:13px;">
-                        <div style="font-size:38px; opacity:.5;">📭</div>
-                        ยังไม่มีกิจกรรม
-                    </div>
-                @endforelse
+            <div class="nvm-meter">
+                <div class="nvm-meter__row"><span>PV เดือนนี้</span><b class="nvm-num">{{ number_format($rtPv) }} / {{ number_format($rtReq) }} PV</b></div>
+                <div class="nvm-meter__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($rtPct) }}" aria-label="PV เดือนนี้"><i style="width: {{ $rtPct }}%"></i></div>
+                <div class="nvm-meter__ticks"><span>0</span><span>{{ number_format($rtReq / 2) }}</span><span>เกณฑ์ {{ number_format($rtReq) }}</span></div>
             </div>
-        </div>
-    </div>
+            @if($rtStatus === 'inactive' && ! $rtMemberBlocked)
+                <div class="nvm-note is-bad"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span>PV ไม่ถึงเกณฑ์ — คอมมิชชั่นจะถูกระงับจนกว่าจะซื้อสินค้าให้ครบ</span></div>
+            @else
+                <div class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span>ซื้อสินค้าให้ครบ {{ number_format($rtReq) }} PV ต่อเดือนเพื่อรักษาสิทธิ์รับคอมมิชชั่น</span></div>
+            @endif
+        @endif
+    </section>
 
+    <section class="nvm-card nvm-box nvm-rv" aria-labelledby="nvm-act-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Activity</small><h2 id="nvm-act-h">กิจกรรมล่าสุด</h2></div>
+            @if($nvR('user.commissions') && count($recentActivities))
+                <a href="{{ route('user.commissions') }}">ดูทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+            @endif
+        </div>
+        <div class="nvm-acts">
+            {{-- 6 รายการพอดีการ์ด ไม่ต้องเลื่อนในกล่อง — ที่เหลือกด "ดูทั้งหมด" --}}
+            @forelse($recentActivities->take(6) as $a)
+                @php
+                    $av = $actView[$a['status'] ?? ''] ?? $actWait;
+                    $aType = $typeLabels[$a['commission_type'] ?? ''] ?? 'คอมมิชชั่น';
+                @endphp
+                <div class="nvm-act">
+                    <span class="nvm-act__ic {{ $av['cls'] }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $av['icon'] }}"/></svg></span>
+                    <div class="nvm-act__t">
+                        <b>{{ $av['title'] }}</b>
+                        <small>{{ $aType }}@if($a['created_at']) · {{ $a['created_at']->locale('th')->diffForHumans() }}@endif</small>
+                    </div>
+                    <span class="nvm-act__amt nvm-num {{ $av['cls'] === 'no' ? 'no' : '' }}">{{ $av['cls'] === 'no' ? '' : '+' }}{{ $baht($a['amount'] ?? 0) }}</span>
+                </div>
+            @empty
+                <div class="nvm-empty">
+                    <img src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="86" height="86">
+                    <b>ยังไม่มีความเคลื่อนไหว</b>
+                    เมื่อเพื่อนที่คุณชวนซื้อสินค้า คอมมิชชั่นจะมาแสดงที่นี่
+                </div>
+            @endforelse
+        </div>
+    </section>
+
+    <section class="nvm-card nvm-box nvm-refer nvm-rv" aria-labelledby="nvm-ref-h">
+        <img class="nvm-refer__coins" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" aria-hidden="true">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Invite &amp; earn</small><h2 id="nvm-ref-h">ชวนเพื่อน รับค่าแนะนำ</h2></div></div>
+        @if($referralUrl)
+            <p>เพื่อนสมัครผ่านลิงก์ของคุณ รับคอมมิชชั่นทุกครั้งที่เพื่อนซื้อสินค้า</p>
+            <div class="nvm-refer__code" x-data="nvmCopy(@js($referralUrl))">
+                <code x-ref="link">{{ preg_replace('#^https?://#', '', $referralUrl) }}</code>
+                <button class="nvm-btn nvm-btn--gold nvm-btn--sm" type="button" @click="copy()"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
+            </div>
+            <div class="nvm-refer__share">
+                <a href="https://social-plugins.line.me/lineit/share?url={{ urlencode($referralUrl) }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-line"/></svg>LINE</a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($referralUrl) }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-fb"/></svg>Facebook</a>
+                @if($nvR('user.mlm.referral'))
+                    <a href="{{ route('user.mlm.referral') }}"><svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>QR</a>
+                @endif
+            </div>
+        @else
+            <p>เข้าร่วมแผนสมาชิกเพื่อรับลิงก์ชวนเพื่อนของคุณเอง แล้วรับคอมมิชชั่นทุกครั้งที่เพื่อนซื้อสินค้า</p>
+            @if($nvR('user.mlm.dashboard'))
+                <a class="nvm-btn nvm-btn--gold nvm-btn--block" href="{{ route('user.mlm.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-gift"/></svg>เข้าร่วมแผนสมาชิก</a>
+            @endif
+        @endif
+        <div class="nvm-refer__stat">
+            <div><b class="nvm-num">{{ number_format($thisMonthReferrals ?? 0) }}</b>สมัครเดือนนี้</div>
+            <div><b class="nvm-num">{{ number_format($activeReferrals ?? 0) }}</b>ใช้งานอยู่</div>
+            <div><b class="nvm-num">{{ number_format($totalReferrals ?? 0) }}</b>ทีมทั้งหมด</div>
+        </div>
+    </section>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    const baht = n => '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 });
+
+    // กราฟแท่งรายได้ — สลับ 6/12 เดือน (เดือนล่าสุดเป็นแท่งทอง)
+    Alpine.data('nvmChart', (values, labels) => ({
+        range: 12,
+        money: baht,
+        get slice() { return values.slice(-this.range); },
+        get sum() { return this.slice.reduce((a, b) => a + b, 0); },
+        get bars() {
+            const vals = this.slice, lbls = labels.slice(-this.range), mx = Math.max(1, ...vals);
+            return vals.map((v, i) => ({ v, l: lbls[i] || '', h: (Math.max(3, v / mx * 100) * 0.78).toFixed(1), now: i === vals.length - 1 }));
+        },
+    }));
+
+    // คัดลอกลิงก์ชวนเพื่อน — คลิปบอร์ดใช้ไม่ได้ (http/สิทธิ์) ก็เลือกข้อความให้กดคัดลอกเอง
+    Alpine.data('nvmCopy', (link) => ({
+        async copy() {
+            try {
+                await navigator.clipboard.writeText(link);
+                window.showNotification('คัดลอกลิงก์ชวนเพื่อนแล้ว', 'success');
+            } catch (e) {
+                const r = document.createRange();
+                r.selectNodeContents(this.$refs.link);
+                const s = window.getSelection();
+                s.removeAllRanges();
+                s.addRange(r);
+                window.showNotification('คัดลอกอัตโนมัติไม่ได้ — กดค้างที่ลิงก์เพื่อคัดลอกเอง', 'info');
+            }
+        },
+    }));
+
+    // บัตรสมาชิกเอียงตามเมาส์ — ปิดเองบนจอสัมผัส/ผู้ใช้ที่ลดการเคลื่อนไหว
+    const tiltOk = matchMedia('(hover: hover)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    Alpine.data('nvmTilt', () => ({
+        move(e) {
+            if (!tiltOk) return;
+            const el = this.$el, r = el.getBoundingClientRect();
+            const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+            el.style.transition = 'transform .1s';
+            el.style.transform = `rotateY(${x * 16}deg) rotateX(${-y * 12}deg) translateZ(6px)`;
+            el.style.setProperty('--shine', (x * 120) + '%');
+        },
+        reset() {
+            const el = this.$el;
+            el.style.transition = '';
+            el.style.transform = '';
+            el.style.setProperty('--shine', '-60%');
+        },
+    }));
+});
+</script>
+@endpush

@@ -433,18 +433,21 @@ class WithdrawalService
      */
     public function getWithdrawalStatistics(User $user): array
     {
-        $requests = WithdrawalRequest::where('user_id', $user->id);
+        // 🐛 (2026-10-29) เดิมใช้ builder ตัวเดียวต่อ scope ไปเรื่อย ๆ — scope ไปเติม where
+        //    ลง builder เดิม (completed แล้ว pending แล้ว ...) ตัวเลขหลังตัวแรกเลยเป็น 0 หมด
+        //    ตอนนี้เริ่ม query ใหม่ทุกตัว
+        $requests = fn () => WithdrawalRequest::where('user_id', $user->id);
 
         return [
-            'total_requested' => $requests->sum('amount'),
-            'total_completed' => $requests->completed()->sum('net_amount'),
-            'total_pending' => $requests->pending()->sum('amount'),
-            'total_fees' => $requests->completed()->sum('fee'),
-            'total_tax' => $requests->completed()->sum('tax'),
-            'count_pending' => $requests->pending()->count(),
-            'count_approved' => $requests->approved()->count(),
-            'count_completed' => $requests->completed()->count(),
-            'count_rejected' => $requests->rejected()->count(),
+            'total_requested' => $requests()->sum('amount'),
+            'total_completed' => $requests()->completed()->sum('net_amount'),
+            'total_pending' => $requests()->pending()->sum('amount'),
+            'total_fees' => $requests()->completed()->sum('fee'),
+            'total_tax' => $requests()->completed()->sum('tax'),
+            'count_pending' => $requests()->pending()->count(),
+            'count_approved' => $requests()->approved()->count(),
+            'count_completed' => $requests()->completed()->count(),
+            'count_rejected' => $requests()->rejected()->count(),
         ];
     }
 }

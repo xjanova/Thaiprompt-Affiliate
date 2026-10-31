@@ -29,14 +29,11 @@
 
     {{-- Favicon (ใช้ Theme Setting) --}}
     @php
-        $themeSetting = \App\Models\ThemeSetting::active();
-        $faviconPath = $themeSetting && $themeSetting->favicon_path
-            ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('images/brand/favicon.ico');
+        $faviconPath = asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -410,9 +407,9 @@
                 <div>
                     <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-3">บริษัท</h4>
                     <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                        <li><a href="{{ route('page.show', 'about-us') }}" class="hover:text-indigo-600 transition">เกี่ยวกับเรา</a></li>
-                        <li><a href="{{ route('page.show', 'contact') }}" class="hover:text-indigo-600 transition">ติดต่อเรา</a></li>
-                        <li><a href="{{ route('page.show', 'faq') }}" class="hover:text-indigo-600 transition">คำถามที่พบบ่อย</a></li>
+                        <li><a href="{{ route('about') }}" class="hover:text-indigo-600 transition">เกี่ยวกับเรา</a></li>
+                        <li><a href="{{ route('contact') }}" class="hover:text-indigo-600 transition">ติดต่อเรา</a></li>
+                        <li><a href="{{ route('faq') }}" class="hover:text-indigo-600 transition">คำถามที่พบบ่อย</a></li>
                         <li><a href="{{ route('wiki.index') }}" class="hover:text-indigo-600 transition">วิกิแพลตฟอร์ม</a></li>
                     </ul>
                 </div>

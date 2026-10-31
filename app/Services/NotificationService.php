@@ -461,6 +461,46 @@ class NotificationService
     }
 
     /**
+     * แจ้งทีมงานเมื่อลูกค้าตอบกลับตั๋ว
+     *
+     * 🐛 (2026-10-29) เดิมไม่มีใครได้แจ้งเตือนเลย (TicketService::notifyAdmins แค่เขียน log) → ลูกค้าตอบแล้วเงียบ
+     * - มีผู้รับผิดชอบ → แจ้งคนนั้นคนเดียว · ยังไม่มี → แอดมิน/ทีมซัพพอร์ต (ชุดเดียวกับตั๋วใหม่)
+     * - คนที่ยังมีแจ้งเตือนของตั๋วนี้ที่ยังไม่อ่าน → ไม่ส่งซ้ำ (ลูกค้าตอบรัวๆ ไม่ท่วมกล่อง/push)
+     */
+    public function notifyStaffTicketReply($ticket, $reply): void
+    {
+        $recipients = $ticket->assigned_to
+            ? User::whereKey($ticket->assigned_to)->whereNull('blocked_at')->get()
+            : $this->adminRecipients(['manage_tickets'], ['moderator']);
+
+        foreach ($recipients as $staff) {
+            if ($staff->id === $reply->user_id) {
+                continue;
+            }
+
+            $alreadyUnread = Notification::where('user_id', $staff->id)
+                ->where('notifiable_type', get_class($ticket))
+                ->where('notifiable_id', $ticket->id)
+                ->where('is_read', false)
+                ->exists();
+            if ($alreadyUnread) {
+                continue;
+            }
+
+            $this->createForModel(
+                $staff,
+                $ticket,
+                'ticket',
+                'ลูกค้าตอบกลับตั๋ว',
+                "#{$ticket->ticket_number} {$ticket->subject}: ".\Illuminate\Support\Str::limit((string) $reply->message, 80),
+                ['ticket_number' => $ticket->ticket_number, 'subject' => $ticket->subject],
+                route('admin.tickets.show', $ticket->id),
+                'ดูและตอบ'
+            );
+        }
+    }
+
+    /**
      * Notify admin about unassigned high priority ticket
      */
     public function notifyAdminUnassignedTicket($ticket): void
@@ -697,12 +737,16 @@ class NotificationService
 
     /**
      * Get user's all notifications
+     *
+     * @param  string|null  $filter  'unread' = ยังไม่อ่าน, 'important' = สำคัญ, null = ทั้งหมด
      */
-    public function getAllNotifications(User $user, int $perPage = 20)
+    public function getAllNotifications(User $user, int $perPage = 20, ?string $filter = null)
     {
         return $user->notifications()
             ->active()
             ->notExpired()
+            ->when($filter === 'unread', fn ($q) => $q->unread())
+            ->when($filter === 'important', fn ($q) => $q->important())
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }

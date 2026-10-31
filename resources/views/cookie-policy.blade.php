@@ -3,7 +3,7 @@
 @section('title', 'นโยบายคุกกี้ · ไทยพร๊อมท์')
 
 @section('content')
-{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+{{-- แถบหัว/ท้ายสาธารณะ — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
 <x-theme-v4.public-header />
 <div style="padding:40px 0 60px;">
     <div class="container mx-auto px-4 max-w-4xl">

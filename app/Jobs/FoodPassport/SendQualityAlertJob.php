@@ -4,7 +4,6 @@ namespace App\Jobs\FoodPassport;
 
 use App\Models\QualityCheckpoint;
 use App\Models\User;
-use App\Notifications\FoodPassport\QualityCheckFailedNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

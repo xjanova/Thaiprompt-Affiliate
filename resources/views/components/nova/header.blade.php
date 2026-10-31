@@ -3,7 +3,7 @@
  |   หน้าแรก (solid=false): โปร่งบนฉากกลางคืน แล้วกลายเป็นกระจกกรมท่าเมื่อเลื่อน (nova.js ใส่ is-solid)
  |   หน้าอื่น (solid=true): กรมท่าทึบติดขอบบน (sticky อยู่ในกระแสหน้า ไม่ลอยทับเนื้อหา) + โหลด nova.css เอง
  | ข้อมูล/ลิงก์ชุดเดียวกับ x-theme-v4.public-header (ตะกร้า · บัญชี · เมนูเปิดร้าน · ค้นหา+แนะนำสินค้า)
- | x-theme-v4.public-header ส่งต่อมาที่นี่เมื่อเปิด config shop.nova_public — props จึงรับชุดเดียวกับของ V4
+ | x-theme-v4.public-header ส่งต่อมาที่นี่ — props จึงรับชุดเดียวกับของ V4
  |
  | props:
  |   active            string|null  home|shop|official|stores|taladsod|rider|merchant|fortune|cart|orders

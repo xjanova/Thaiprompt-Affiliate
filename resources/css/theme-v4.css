@@ -4,12 +4,11 @@
  * ============================================================================
  * ระบบธีมเดียวของหลังบ้าน TP-Affiliate (เริ่ม v4.0.0)
  *
- * โทน "ดินเหนียวนุ่ม" (neumorphic) + ทองคำ — light/dark, พื้นหลังลาวา,
- * ปรับแต่งสดด้วย Theme Studio (palette / surface tone / variant / lava / glass)
+ * โทน "ดินเหนียวนุ่ม" (neumorphic) + ทองคำ — light/dark, พื้นหลังลาวา
  *
  * หลักการ: ทุกอย่างขับด้วย CSS variables บน :root
- *   - applyTheme() (ใน layout) เขียนตัวแปรทับเป็น inline style ตอนปรับแต่ง
- *   - คลาส .tp-* ด้านล่าง = อ้าง var() ทั้งหมด → เปลี่ยนธีมแล้วทุกหน้าเปลี่ยนตาม
+ *   - html.dark = โหมดมืด · html.tp-brand = สีแบรนด์ของหน้าสาธารณะ
+ *   - คลาส .tp-* ด้านล่าง = อ้าง var() ทั้งหมด
  *
  * ⚠️ อย่าฮาร์ดโค้ดสีในหน้า — ใช้ var(--accent1) / .tp-card / .tp-btn ฯลฯ เสมอ
  * ============================================================================
@@ -33,7 +32,6 @@
 
 /* ---------------------------------------------------------------------------
  * 2) ตัวแปรเริ่มต้น (light / ทองคำ / Clay / lava 45 / speed 50 / glass 0)
- *    JS applyTheme() จะเขียนทับตัวแปรเหล่านี้เมื่อผู้ใช้ปรับแต่ง
  * ------------------------------------------------------------------------- */
 :root {
   /* base neutrals (light) */
@@ -80,6 +78,36 @@
   --tp-font-num:'Sora','Anuphan', sans-serif;
 }
 
+/* โหมดมืด */
+html.dark {
+  --bg:    #1d1912;
+  --surf:  #272118;
+  --sd:    #100d08;
+  --sl:    #352b1d;
+  --ink:   #ece3d2;
+  --ink2:  #a89c84;
+  --a1soft: #3a2f16;
+  --a2soft: #372917;
+  --raise:  2px 2px 5px var(--sd), -2px -2px 5px var(--sl), inset 0 1px 1.5px rgba(255,255,255,.10), inset 0 -1px 1.5px rgba(0,0,0,.25);
+  --lava-op:  0.315;
+  --lava-op2: 0.248;
+}
+
+/* หน้าสาธารณะ: สีแบรนด์ตามโลโก้ (น้ำเงินรอยัล + ทอง) */
+html.tp-brand {
+  --accent1: #2a5cc0;
+  --accent2: #e8a31f;
+  --deep1:   #1e4596;
+  --deep2:   #bd8016;
+  --a1soft:  #dde6f8;
+  --a2soft:  #f8ead0;
+  --lava-op:  0.272;
+  --lava-op2: 0.204;
+  --lava-d1:  19.4s;
+  --lava-d2:  23.9s;
+  --lava-d3:  28.4s;
+}
+
 /* ---------------------------------------------------------------------------
  * 3) Scrollbar + smooth scroll
  * ------------------------------------------------------------------------- */
@@ -97,12 +125,13 @@
  * ------------------------------------------------------------------------- */
 .tp-root {
   min-height:100vh;
-  background: var(--bg);
+  background: radial-gradient(1200px 700px at 82% -8%, var(--a1soft) 0%, transparent 52%), var(--bg);
   font-family: var(--tp-font);
   color: var(--ink);
   -webkit-font-smoothing:antialiased;
   transition: background .4s ease, color .4s ease;
 }
+.dark .tp-root { background: radial-gradient(1200px 700px at 80% -5%, var(--a2soft) 0%, transparent 55%), var(--bg); }
 .tp-num { font-family: var(--tp-font-num); }
 .tp-muted { color: var(--ink2); }
 

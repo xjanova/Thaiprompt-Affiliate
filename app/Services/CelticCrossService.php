@@ -2439,6 +2439,9 @@ class CelticCrossService
             .\App\Services\FortuneAIService::CUSTOMER_ADDRESS_DIRECTIVE
             ."━━━━━━━━━━━━━━━━━\n"
             .\App\Services\FortuneAIService::FIERCE_TONE_DIRECTIVE
+            ."━━━━━━━━━━━━━━━━━\n"
+            // 🗣️ (2026-10-29, owner) คำตอบรับแบบคนจริง — ต้องตามหลัง FIERCE_TONE
+            .\App\Services\FortuneAIService::HUMAN_BACKCHANNEL_DIRECTIVE
             ."━━━━━━━━━━━━━━━━━\n\n";
     }
 

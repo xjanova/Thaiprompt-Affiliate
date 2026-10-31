@@ -1,0 +1,100 @@
+/* ============================================================================
+ * Nova × V4 bridge — หน้าสมาชิกที่ยังเขียนด้วยคลาส tp-* (ธีม V4) แต่วิ่งในเปลือกโนวา
+ * ----------------------------------------------------------------------------
+ * โหลดเฉพาะหน้าที่ @extends('layouts.user-v4') (เลย์เอาต์นั้นส่ง nvmV4Bridge=true ให้ user-nova)
+ * → <html class="nvm-v4"> + theme-v4.css (คลาส tp-*) + ไฟล์นี้ทับตัวแปรสีให้เป็นโนวา
+ *
+ * หลักการ: หน้าเดิมอ้างตัวแปร --ink / --ink2 / --surf / --accent1 / --inset-sm ... เป็นพัน ๆ จุด
+ * (ทั้งในคลาสและ style inline) → เปลี่ยนค่าตัวแปรที่เดียว ทุกหน้าได้สีงาช้าง/กรมท่า/ทองทันที
+ * โหมดมืดใช้ตัวแปร --nvm-* ที่สลับเองตาม html.dark อยู่แล้ว (nova-member.css)
+ * หน้าไหนออกแบบใหม่เป็นโนวาเต็มแล้ว ให้ย้ายไป @extends('layouts.user-nova') แล้วไม่ต้องพึ่งไฟล์นี้
+ * ========================================================================== */
+
+html.nvm-v4 {
+    /* พื้น/ผิว/ตัวอักษร */
+    --bg: var(--nvm-bg);
+    --surf: var(--nvm-paper-2);
+    --sd: rgba(148, 103, 20, .2);
+    --sl: rgba(255, 255, 255, .75);
+    --ink: var(--nvm-ink);
+    --ink2: var(--nvm-ink-3);
+
+    /* ทอง */
+    --accent1: #d4a64a;
+    --accent2: #b8862b;
+    --deep1: #946714;
+    --deep2: #7d560f;
+    --a1soft: #f6ecd2;
+    --a2soft: #f3e6cb;
+    --on-accent: #241804;
+
+    /* การ์ดแบบโนวา: กระดาษงาช้าง ขอบทองบาง เงานุ่ม (แทนดินปั้นนูน) */
+    --card-bg: var(--nvm-paper);
+    --card-blur: none;
+    --card-border: 1px solid var(--nvm-line);
+    --card-radius: 20px;
+    --card-shadow: var(--nvm-shadow);
+    --card-shadow-sm: 0 1px 2px rgba(20, 26, 43, .05), 0 6px 16px -10px rgba(20, 26, 43, .18);
+    --card-shadow-hover: var(--nvm-shadow-lg);
+    --raise: inset 0 0 0 1px var(--nvm-line-2), 0 1px 2px rgba(20, 26, 43, .06);
+    --inset: inset 0 0 0 1px var(--nvm-line-2), inset 0 1px 2px rgba(20, 26, 43, .05);
+    --inset-sm: inset 0 0 0 1px var(--nvm-line);
+    --bar-shadow: none;
+
+    /* ฟอนต์: ตัวเลขใหญ่ใช้ Trirong ชุดเดียวกับแดชบอร์ด */
+    --tp-font: var(--nvm-font-ui);
+    --tp-font-num: var(--nvm-font-display);
+}
+
+html.nvm-v4.dark {
+    --sd: rgba(0, 0, 0, .45);
+    --sl: rgba(245, 210, 127, .06);
+    --accent1: #f0c96a;
+    --accent2: #d4a64a;
+    --deep1: #f0c96a;
+    --deep2: #e0b75a;
+    --a1soft: rgba(240, 201, 106, .14);
+    --a2soft: rgba(212, 166, 74, .12);
+    --card-shadow-sm: 0 1px 0 rgba(245, 210, 127, .05) inset, 0 8px 20px -12px rgba(0, 0, 0, .7);
+    --raise: inset 0 0 0 1px var(--nvm-line-2), 0 2px 6px rgba(0, 0, 0, .35);
+    --inset: inset 0 0 0 1px var(--nvm-line-2), inset 0 1px 3px rgba(0, 0, 0, .35);
+}
+
+/* ---------- เปลือก ---------- */
+/* หน้า V4 จัดระยะห่างเอง (space-y / margin) — ไม่ใช้ flex gap ของ nvm-main__in */
+.nvm-v4 .nvm-main__in { display: block; max-width: 1320px; }
+/* modal ของหน้า V4 ส่วนใหญ่เป็น z-50 → แถบล่างมือถือต้องอยู่ใต้ ไม่งั้นทับปุ่มยืนยันท้าย modal */
+.nvm-v4 .nvm-tabbar { z-index: 45; }
+
+/* ---------- คอมโพเนนต์ tp-* โทนโนวา ---------- */
+.nvm-v4 .tp-btn, .nvm-v4 .tp-icon-btn { background: var(--nvm-paper); color: var(--nvm-ink); border-radius: 12px; }
+.nvm-v4 .tp-btn:hover, .nvm-v4 .tp-icon-btn:hover { box-shadow: inset 0 0 0 1px var(--nv-gold-500), 0 6px 14px -10px rgba(148, 103, 20, .6); filter: none; }
+.nvm-v4 .tp-btn:active, .nvm-v4 .tp-icon-btn:active { box-shadow: inset 0 0 0 1px var(--nv-gold-500); }
+.nvm-v4 .tp-btn-primary {
+    color: var(--on-accent);
+    background: var(--nv-btn-gold);
+    text-shadow: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 10px 20px -12px rgba(184, 134, 43, .85);
+}
+.nvm-v4 .tp-btn-primary:hover { filter: brightness(1.04); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 14px 26px -12px rgba(184, 134, 43, .95); }
+
+/* tile ไอคอน: กรมท่าขอบทอง ไอคอนทอง (เดิมทองพื้นเต็มตัวอักษรขาว) */
+.nvm-v4 .tp-tile {
+    color: var(--nv-gold-300);
+    background: linear-gradient(160deg, var(--nv-navy-700), var(--nv-navy-900));
+    box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .35), 0 6px 14px -8px rgba(7, 13, 32, .55);
+    text-shadow: none;
+}
+
+.nvm-v4 .tp-input, .nvm-v4 .tp-well { background: var(--nvm-paper); }
+.nvm-v4 .tp-input { transition: box-shadow .15s; }
+.nvm-v4 .tp-input:focus { box-shadow: inset 0 0 0 1.5px var(--nv-gold-500), 0 0 0 4px rgba(212, 166, 74, .16); }
+
+.nvm-v4 .tp-pill-gold { color: var(--on-accent); background: var(--nv-btn-gold); }
+.nvm-v4 .tp-pill-soft { color: var(--nvm-gold-ink); background: rgba(212, 166, 74, .14); }
+.nvm-v4 .tp-section-h { font-family: var(--nvm-font-display); font-size: 17px; letter-spacing: .1px; }
+.nvm-v4 .tp-divider { background: var(--nvm-line); }
+.nvm-v4 .tp-card-hover:hover { border-color: var(--nvm-line-2); }
+
+/* ตัวเลือกภาษา/สวิตช์บางหน้าอ้าง --surf เป็นพื้นราง → ให้เห็นเส้นขอบบนกระดาษ */
+.nvm-v4 .tp-range { background: var(--nvm-track); }

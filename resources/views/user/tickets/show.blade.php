@@ -1,135 +1,137 @@
-@extends('layouts.user-v4')
+{{--
+    รายละเอียดตั๋ว + บทสนทนากับทีมงาน (ธีมโนวาเต็ม)
+    - ตอบกลับได้ทุกสถานะยกเว้น "ปิด" (ตอบตั๋วที่แก้ไขแล้ว = เปิดใหม่ — TicketService::addReply)
+    - ลูกค้ากดปิดตั๋วเองได้ (ต้องกดยืนยันอีกครั้ง)
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'Ticket #' . $ticket->ticket_number)
+@section('title', 'ตั๋ว #'.$ticket->ticket_number)
+
+@php
+    $nvArt = fn (string $name, string $fallback) => is_file(public_path("images/nova/account/{$name}.webp"))
+        ? asset("images/nova/account/{$name}.webp") : asset("images/nova/{$fallback}.webp");
+    $isClosed = $ticket->status === 'closed';
+    $stTone = match ($ticket->status) {
+        'open' => 'glass',
+        'in_progress', 'waiting_customer' => 'warn',
+        'resolved' => 'ok',
+        default => 'glass',
+    };
+    $statusNote = match ($ticket->status) {
+        'waiting_customer' => ['', 'ทีมงานรอข้อมูลจากคุณ', 'ตอบกลับด้านล่างเพื่อให้ทีมงานช่วยต่อได้', 'wallet/hourglass'],
+        'in_progress' => ['nvm-alert--info', 'ทีมงานกำลังดำเนินการ', 'กำลังตรวจสอบและแก้ไขปัญหาของคุณ'.($ticket->assignedTo ? ' โดย '.$ticket->assignedTo->name : ''), 'deco/lamp'],
+        'resolved' => ['nvm-alert--ok', 'ตั๋วนี้แก้ไขแล้ว', 'ถ้ายังมีปัญหา ตอบกลับด้านล่างได้เลย ระบบจะเปิดตั๋วให้ใหม่', 'deco/lotus'],
+        'closed' => ['nvm-alert--info', 'ตั๋วนี้ปิดแล้ว', 'ถ้ายังต้องการความช่วยเหลือ สร้างตั๋วใหม่ได้ทุกเมื่อ', 'deco/lotus'],
+        default => null,
+    };
+    $initial = fn ($name) => mb_strtoupper(mb_substr(trim((string) $name) ?: '?', 0, 1));
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:1000px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    @php
-        $stColor = match($ticket->status) {
-            'open' => '#5689b8', 'in_progress' => '#d9a441',
-            'waiting_customer' => '#7c5cbf', 'resolved' => '#5aa07e',
-            default => '#8a8a8a',
-        };
-    @endphp
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 18%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px;">
-                <div style="flex:1; min-width:220px;">
-                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0 0 10px;">{{ $ticket->subject }}</h1>
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
-                        <span style="font-family:monospace; font-size:12px; box-shadow:var(--inset-sm); padding:3px 10px; border-radius:8px; color:var(--ink);">{{ $ticket->ticket_number }}</span>
-                        @if($ticket->category)
-                            <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:8px; font-size:12px; background:{{ $ticket->category->color }}20; color:{{ $ticket->category->color }};">
-                                @if($ticket->category->icon)<i class="{{ $ticket->category->icon }}" style="margin-right:5px;"></i>@endif{{ $ticket->category->name }}
-                            </span>
-                        @endif
-                        <span style="display:inline-flex; padding:3px 10px; border-radius:8px; font-size:12px; font-weight:600; color:{{ $stColor }}; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">{{ $ticket->status_label }}</span>
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    @if(!$ticket->isClosed())
-                        <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิด Ticket นี้?')">
-                            @csrf
-                            <button type="submit" class="tp-btn tp-btn-sm"><i class="fa-solid fa-times-circle"></i> ปิด Ticket</button>
-                        </form>
-                    @endif
-                    <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fa-solid fa-arrow-left"></i> กลับ</a>
-                </div>
+<section class="nvm-ph" aria-labelledby="nvm-tks-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tickets.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ตั๋วของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Ticket #{{ $ticket->ticket_number }}</div>
+            <h1 id="nvm-tks-h">{{ $ticket->subject }}</h1>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--{{ $stTone }}">{{ $ticket->status_label }}</span>
+                @if($ticket->category)
+                    <span class="nvm-pill nvm-pill--glass"><i class="{{ $ticket->category->icon ?: 'fa-solid fa-folder' }}" aria-hidden="true"></i>{{ $ticket->category->name }}</span>
+                @endif
+                <span class="nvm-pill nvm-pill--glass">ความเร่งด่วน: {{ $ticket->priority_label }}</span>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ $nvArt('chat', 'deco/scroll') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── สถานะ ─────────────────────────────────────────────── --}}
-    @if($ticket->status == 'resolved')
-        <div class="tp-card" style="padding:20px; border-left:4px solid #5aa07e;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <i class="fa-solid fa-check-circle" style="font-size:32px; color:#5aa07e;"></i>
-                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">Ticket นี้ได้รับการแก้ไขแล้ว</div><div style="font-size:13px; color:var(--ink2);">หากคุณยังมีปัญหา สามารถตอบกลับเพื่อเปิด Ticket ใหม่อีกครั้ง</div></div>
-            </div>
-        </div>
-    @elseif($ticket->status == 'waiting_customer')
-        <div class="tp-card" style="padding:20px; border-left:4px solid #7c5cbf;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <i class="fa-solid fa-hourglass-half" style="font-size:32px; color:#7c5cbf;"></i>
-                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">รอข้อมูลเพิ่มเติมจากคุณ</div><div style="font-size:13px; color:var(--ink2);">ทีมงานกำลังรอคำตอบหรือข้อมูลเพิ่มเติมจากคุณ</div></div>
-            </div>
-        </div>
-    @elseif($ticket->status == 'in_progress')
-        <div class="tp-card" style="padding:20px; border-left:4px solid #d9a441;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <i class="fa-solid fa-spinner fa-spin" style="font-size:32px; color:#d9a441;"></i>
-                <div><div style="font-weight:800; color:var(--ink); margin-bottom:2px;">กำลังดำเนินการ</div><div style="font-size:13px; color:var(--ink2);">ทีมงานกำลังตรวจสอบและแก้ไขปัญหาของคุณ @if($ticket->assignedTo) โดย {{ $ticket->assignedTo->name }} @endif</div></div>
-            </div>
-        </div>
-    @endif
+@if($statusNote)
+    <section class="nvm-card nvm-alert {{ $statusNote[0] }}">
+        <img class="nvm-alert__img" src="{{ asset('images/nova/'.$statusNote[3].'.webp') }}" alt="" width="56" height="56" loading="lazy">
+        <div class="nvm-alert__txt"><b>{{ $statusNote[1] }}</b><p>{{ $statusNote[2] }}</p></div>
+        @if($isClosed)
+            <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.tickets.create') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>สร้างตั๋วใหม่</a>
+        @endif
+    </section>
+@endif
 
-    {{-- ── บทสนทนา ───────────────────────────────────────────── --}}
-    <div style="display:flex; flex-direction:column; gap:14px;">
-        {{-- ข้อความแรก --}}
-        <div class="tp-card" style="padding:20px;">
-            <div style="display:flex; gap:14px; align-items:flex-start;">
-                <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($ticket->user->name, 0, 1) }}</div>
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-                        <div style="font-weight:800; color:var(--ink);">{{ $ticket->user->name }} <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span></div>
-                        <span style="font-size:12px; color:var(--ink2);">{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
+<div class="nvm-split">
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-tkth-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Conversation</small><h2 id="nvm-tkth-h">บทสนทนา</h2></div></div>
+            <ol class="nvm-thread">
+                <li class="nvm-msg is-me">
+                    <span class="nvm-msg__av" aria-hidden="true">{{ $initial($ticket->user?->name) }}</span>
+                    <div class="nvm-msg__body">
+                        <div class="nvm-msg__who"><b>คุณ</b><time class="nvm-num" datetime="{{ $ticket->created_at->toIso8601String() }}">{{ $ticket->created_at->format('d/m/Y H:i') }}</time></div>
+                        <p>{{ $ticket->description }}</p>
                     </div>
-                    <div style="border-radius:10px; box-shadow:var(--inset-sm); padding:14px;">
-                        <p style="color:var(--ink); white-space:pre-wrap; margin:0;">{{ $ticket->description }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ตอบกลับ --}}
-        @foreach($ticket->publicReplies as $reply)
-            @php $staff = $reply->isFromStaff(); $accent = $staff ? '#7c5cbf' : '#5689b8'; @endphp
-            <div class="tp-card" style="padding:20px;">
-                <div style="display:flex; gap:14px; align-items:flex-start;">
-                    <div style="flex-shrink:0; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, {{ $accent }}, {{ $staff ? '#c05a8f' : '#7c5cbf' }}); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">{{ substr($reply->user->name, 0, 1) }}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-                            <div style="font-weight:800; color:var(--ink);">
-                                {{ $reply->user->name }}
-                                @if($staff)
-                                    <span style="margin-left:6px; display:inline-flex; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#7c5cbf; background:color-mix(in srgb, #7c5cbf 16%, transparent);"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>ทีมงาน</span>
-                                @else
-                                    <span style="font-size:12px; font-weight:400; color:var(--ink2);">(คุณ)</span>
-                                @endif
+                </li>
+                @foreach($ticket->publicReplies as $reply)
+                    {{-- ไม่ใช่เจ้าของตั๋ว = ทีมงาน (isFromStaff ดูแค่ role admin/moderator — ทีมงานที่ได้สิทธิ์ผ่าน permission จะกลายเป็น "คุณ") --}}
+                    @php $staff = $reply->user_id !== $ticket->user_id; @endphp
+                    <li class="nvm-msg {{ $staff ? 'is-staff' : 'is-me' }}">
+                        <span class="nvm-msg__av" aria-hidden="true">{{ $staff ? 'ท' : $initial($reply->user?->name) }}</span>
+                        <div class="nvm-msg__body">
+                            <div class="nvm-msg__who">
+                                <b>{{ $staff ? ($reply->user?->name ?? 'ทีมงาน') : 'คุณ' }}</b>
+                                @if($staff)<span class="nvm-chip nvm-chip--gold">ทีมงาน</span>@endif
+                                <time class="nvm-num" datetime="{{ $reply->created_at->toIso8601String() }}">{{ $reply->created_at->format('d/m/Y H:i') }}</time>
                             </div>
-                            <span style="font-size:12px; color:var(--ink2);">{{ $reply->created_at->format('d/m/Y H:i') }}</span>
+                            <p>{{ $reply->message }}</p>
                         </div>
-                        <div style="border-radius:10px; padding:14px; background:color-mix(in srgb, {{ $accent }} 8%, transparent); box-shadow:var(--inset-sm);">
-                            <p style="color:var(--ink); white-space:pre-wrap; margin:0;">{{ $reply->message }}</p>
-                        </div>
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+
+        @unless($isClosed)
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-tkr-h" x-data="{ len: @js(mb_strlen((string) old('message', ''))), busy: false }" @pageshow.window="busy = false">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Reply</small><h2 id="nvm-tkr-h">{{ $ticket->status === 'resolved' ? 'ยังมีปัญหาอยู่? ตอบกลับ' : 'ตอบกลับทีมงาน' }}</h2></div></div>
+                <form method="POST" action="{{ route('user.tickets.reply', $ticket->id) }}" class="nvm-form" @submit="busy = true">
+                    @csrf
+                    <div class="nvm-field">
+                        <label class="nvm-sr" for="tk-msg">ข้อความ</label>
+                        <textarea id="tk-msg" name="message" required maxlength="5000" rows="4" class="nvm-input nvm-textarea @error('message') is-bad @enderror" placeholder="พิมพ์ข้อความถึงทีมงาน…" @input="len = $event.target.value.length">{{ old('message') }}</textarea>
+                        <span class="nvm-help nvm-num"><span x-text="len.toLocaleString()">0</span> / 5,000 ตัวอักษร · ห้ามใส่รหัสผ่าน PIN หรือ OTP</span>
+                        @error('message')<span class="nvm-err">{{ $message }}</span>@enderror
                     </div>
-                </div>
-            </div>
-        @endforeach
+                    <div class="nvm-filter__btns">
+                        <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่ง…' : 'ส่งข้อความ'">ส่งข้อความ</span></button>
+                    </div>
+                </form>
+            </section>
+        @endunless
     </div>
 
-    {{-- ── ฟอร์มตอบกลับ ──────────────────────────────────────── --}}
-    @if(!$ticket->isClosed())
-        <div class="tp-card" style="padding:20px;">
-            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fa-solid fa-reply" style="margin-right:6px;"></i>ตอบกลับ</div>
-            <form method="POST" action="{{ route('user.tickets.reply', $ticket->id) }}">
-                @csrf
-                <textarea name="message" rows="4" required class="tp-input" style="resize:vertical; margin-bottom:12px;" placeholder="พิมพ์ข้อความของคุณที่นี่..."></textarea>
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-                    <p style="font-size:13px; color:var(--ink2); margin:0;"><i class="fa-solid fa-info-circle" style="margin-right:4px;"></i>ทีมงานจะตอบกลับโดยเร็วที่สุด</p>
-                    <button type="submit" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-paper-plane"></i> ส่งข้อความ</button>
-                </div>
-            </form>
-        </div>
-    @else
-        <div class="tp-card" style="padding:32px; text-align:center;">
-            <i class="fa-solid fa-lock" style="font-size:44px; color:var(--ink2); opacity:.5; margin-bottom:16px;"></i>
-            <h3 style="font-size:19px; font-weight:800; color:var(--ink); margin:0 0 8px;">Ticket นี้ถูกปิดแล้ว</h3>
-            <p style="color:var(--ink2); margin:0 0 20px;">หากคุณต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้าง Ticket ใหม่</p>
-            <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-primary" style="background:#5689b8; border-color:#5689b8;"><i class="fa-solid fa-plus"></i> สร้าง Ticket ใหม่</a>
-        </div>
-    @endif
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tki-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Ticket info</small><h2 id="nvm-tki-h">ข้อมูลตั๋ว</h2></div></div>
+        <dl class="nvm-kv">
+            <dt>เลขที่ตั๋ว</dt><dd class="nvm-num">#{{ $ticket->ticket_number }}</dd>
+            <dt>สถานะ</dt><dd>{{ $ticket->status_label }}</dd>
+            @if($ticket->category)<dt>เรื่อง</dt><dd>{{ $ticket->category->name }}</dd>@endif
+            <dt>ความเร่งด่วน</dt><dd>{{ $ticket->priority_label }}</dd>
+            <dt>สร้างเมื่อ</dt><dd class="nvm-num">{{ $ticket->created_at->format('d/m/Y H:i') }}</dd>
+            @if($ticket->last_reply_at)<dt>ตอบล่าสุด</dt><dd>{{ $ticket->last_reply_at->diffForHumans() }}</dd>@endif
+            @if($ticket->assignedTo)<dt>ผู้ดูแล</dt><dd>{{ $ticket->assignedTo->name }}</dd>@endif
+        </dl>
+
+        @unless($isClosed)
+            {{-- ปิดตั๋วต้องกดยืนยันอีกครั้ง --}}
+            <div class="nvm-gap-t" x-data="{ ask: false, busy: false }" @pageshow.window="busy = false">
+                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" x-show="! ask" @click="ask = true"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ปัญหาหมดแล้ว ปิดตั๋ว</button>
+                <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" class="nvm-confirm" x-show="ask" x-cloak @submit="busy = true">
+                    @csrf
+                    <p>ปิดตั๋วนี้? ปิดแล้วจะตอบกลับต่อไม่ได้ ต้องสร้างตั๋วใหม่</p>
+                    <div class="nvm-filter__btns">
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="ask = false" :disabled="busy">ไม่ใช่</button>
+                        <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--sm" :disabled="busy" x-text="busy ? 'กำลังปิด…' : 'ยืนยันปิดตั๋ว'">ยืนยันปิดตั๋ว</button>
+                    </div>
+                </form>
+            </div>
+        @endunless
+    </aside>
 </div>
 @endsection

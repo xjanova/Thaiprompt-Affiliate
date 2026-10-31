@@ -5,7 +5,9 @@ namespace App\Http\Controllers\User;
 use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
 use App\Rules\NotReservedEmailDomain;
+use App\Services\AccountEmailChangeService;
 use App\Services\ImageUploadService;
+use App\Support\AccountEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -33,7 +35,10 @@ class DashboardController extends Controller
         // 2. สถิติ Wallet
         // ===============================================
 
-        $walletBalance = $user->wallet_balance ?? 0;
+        // ⚠️ ยอดจริงอยู่ที่ตาราง wallets — users ไม่มีคอลัมน์ wallet_balance
+        //    (เดิมอ่าน $user->wallet_balance ได้ null ตลอด → ยอดเงินขึ้น ฿0 ให้ทุกคน)
+        //    ไม่สร้างกระเป๋าให้ตอนเปิดหน้า — ยังไม่มีก็แสดง 0 ไปก่อน
+        $walletBalance = (float) ($user->wallet?->balance ?? 0);
 
         // ===============================================
         // 3. สถิติ Commission (MLM)
@@ -61,9 +66,11 @@ class DashboardController extends Controller
             ->sum('commission_amount') ?? 0;
 
         // คอมมิชชั่นเดือนที่แล้ว
+        // ⚠️ ต้อง subMonthNoOverflow — วันที่ 31 (หรือ 29-31 มี.ค.) subMonth ธรรมดาจะล้นกลับมาเป็นเดือนนี้
+        //    แล้ว % เติบโตจะเทียบเดือนนี้กับตัวเอง
         $lastMonthCommission = $user->mlmCommissions()
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+            ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount') ?? 0;
 
@@ -100,8 +107,8 @@ class DashboardController extends Controller
                 ->count();
 
             $lastMonthReferrals = $mlmMember->directReferrals()
-                ->whereYear('created_at', now()->subMonth()->year)
-                ->whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+                ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
                 ->count();
         }
 
@@ -161,12 +168,19 @@ class DashboardController extends Controller
             }
         }
 
+        // ขั้นระดับทั้งหมด — ใช้วาดแถบขั้นบนการ์ดระดับสมาชิก
+        $rankLadder = \App\Models\Rank::where('is_active', true)
+            ->orderBy('level', 'asc')
+            ->get(['id', 'level', 'name', 'name_th']);
+
         // ===============================================
         // 6. กิจกรรมล่าสุด (Recent Activity)
         // ===============================================
 
+        // ⚠️ MlmCommission ไม่มี relation ชื่อ mlmMember (มีแค่ member / fromMember)
+        //    เดิม ->with('mlmMember.user') ทำให้หน้านี้ 500 ทันทีที่ผู้ใช้มีคอมมิชชั่นสักรายการ
+        //    รายการนี้ไม่ได้ใช้ข้อมูล relation เลย จึงไม่ต้อง eager load
         $recentActivities = $user->mlmCommissions()
-            ->with('mlmMember.user')
             ->latest()
             ->limit(10)
             ->get()
@@ -188,7 +202,7 @@ class DashboardController extends Controller
         $chartValues = [];
 
         // ดึงข้อมูลคอมมิชชัน 12 เดือนในคำสั่งเดียว (แทน 12 queries)
-        $startDate = now()->subMonths(11)->startOfMonth();
+        $startDate = now()->startOfMonth()->subMonths(11);
         $monthlyCommissions = $user->mlmCommissions()
             ->where('created_at', '>=', $startDate)
             ->whereIn('status', ['approved', 'paid'])
@@ -198,7 +212,8 @@ class DashboardController extends Controller
             ->keyBy(fn ($item) => $item->year.'-'.$item->month);
 
         for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            // ⚠️ ต้องถอยจากวันที่ 1 — วันที่ 29-31 ถ้า subMonths ตรงๆ เดือนสั้นจะล้นไปเดือนถัดไป (ก.พ. หาย มี.ค. ซ้ำ)
+            $date = now()->startOfMonth()->subMonths($i);
             $key = $date->year.'-'.$date->month;
             $monthName = $date->locale('th')->translatedFormat('M Y');
 
@@ -241,7 +256,7 @@ class DashboardController extends Controller
         // ===============================================
 
         $recentCommissions = $user->mlmCommissions()
-            ->with('mlmMember.user')
+            ->with('fromMember.user')
             ->latest()
             ->limit(5)
             ->get();
@@ -296,6 +311,15 @@ class DashboardController extends Controller
             : null;
 
         // ===============================================
+        // 13. ลิงก์ชวนเพื่อน (ชุดเดียวกับ MlmDashboardController::referral)
+        // ===============================================
+
+        // หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA — อ่าน ?ref= เป็น member_code เพื่อผูกผู้แนะนำ
+        $referralUrl = ($mlmMember && $mlmMember->member_code && \Illuminate\Support\Facades\Route::has('line.registration.register'))
+            ? route('line.registration.register', ['ref' => $mlmMember->member_code])
+            : null;
+
+        // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
         // ===============================================
 
@@ -319,12 +343,15 @@ class DashboardController extends Controller
             'totalReferrals',
             'activeReferrals',
             'referralsGrowth',
+            'thisMonthReferrals',
+            'referralUrl',
 
             // Rank
             'currentRank',
             'nextRank',
             'rankProgress',
             'pointsNeeded',
+            'rankLadder',
 
             // Activities
             'recentActivities',
@@ -358,7 +385,10 @@ class DashboardController extends Controller
         // ===============================================
         // 1. ข้อมูล Wallet
         // ===============================================
-        $walletBalance = $user->wallet_balance ?? 0;
+        // ⚠️ ยอดจริงอยู่ที่ตาราง wallets — users ไม่มีคอลัมน์ wallet_balance
+        //    (เดิมอ่าน $user->wallet_balance ได้ null ตลอด → ยอดเงินขึ้น ฿0 ให้ทุกคน)
+        //    ไม่สร้างกระเป๋าให้ตอนเปิดหน้า — ยังไม่มีก็แสดง 0 ไปก่อน
+        $walletBalance = (float) ($user->wallet?->balance ?? 0);
 
         // คำนวณ wallet growth (เทียบกับเดือนที่แล้ว)
         $thisMonthEarnings = $user->mlmCommissions()
@@ -368,8 +398,8 @@ class DashboardController extends Controller
             ->sum('commission_amount') ?? 0;
 
         $lastMonthEarnings = $user->mlmCommissions()
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereYear('created_at', now()->subMonthNoOverflow()->year)
+            ->whereMonth('created_at', now()->subMonthNoOverflow()->month)
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount') ?? 0;
 
@@ -496,7 +526,7 @@ class DashboardController extends Controller
                 'icon' => '🤖',
                 'title' => 'AI Bot',
                 'subtitle' => 'LINE Bot, Chatbot, Automation',
-                'route' => route('user.ai-gen.index'),
+                'route' => route('chatbot.index'),
                 'gradient_start' => '#EC4899',
                 'gradient_end' => '#BE185D',
                 'badge' => 'NEW',
@@ -512,17 +542,6 @@ class DashboardController extends Controller
                 'gradient_end' => '#0D9488',
                 'badge' => 'เร็วๆ นี้',
             ],
-            // 8. Gaming & Rewards
-            [
-                'id' => 'gaming',
-                'icon' => '🎮',
-                'title' => 'Gaming & Rewards',
-                'subtitle' => 'เกม, Quest, Achievement',
-                'route' => '#',
-                'gradient_start' => '#F97316',
-                'gradient_end' => '#EA580C',
-                'badge' => 'เร็วๆ นี้',
-            ],
         ];
     }
 
@@ -531,11 +550,16 @@ class DashboardController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function profile()
+    public function profile(AccountEmailChangeService $emailChange)
     {
         $user = Auth::user();
 
-        return view('user.profile', compact('user'));
+        // วิธียืนยันเมื่อเปลี่ยนอีเมล (รหัสผ่าน/รหัสทางอีเมลเดิม หรือ รหัสทางอีเมลใหม่) — ฟอร์มแสดงช่องตามนี้
+        $emailChangeMode = $emailChange->mode($user);
+        $emailIsReal = AccountEmail::isDeliverable($user->email);
+        $currentEmailMasked = $emailIsReal ? AccountEmail::mask((string) $user->email) : null;
+
+        return view('user.profile', compact('user', 'emailChangeMode', 'emailIsReal', 'currentEmailMasked'));
     }
 
     /**
@@ -543,14 +567,26 @@ class DashboardController extends Controller
      *
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function updateProfile(Request $request, ImageUploadService $imageUploadService)
+    public function updateProfile(Request $request, ImageUploadService $imageUploadService, AccountEmailChangeService $emailChange)
     {
         $user = Auth::user();
+
+        // 🔒 (2026-10-29) เปลี่ยนอีเมล = ต้องยืนยันตัวตน (ดู AccountEmailChangeService)
+        $oldEmail = (string) $user->email;
+        $emailMode = $emailChange->mode($user);
+        $emailChanging = $emailChange->isChange($user, $request->input('email'));
+
+        $emailRules = ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id];
+        // กันตั้งอีเมลโดเมนสงวน/อีเมลระบบเฉพาะตอนเปลี่ยน — บัญชี LINE/FB ที่ระบบตั้งอีเมลให้ ต้องแก้ชื่อ/เบอร์ได้โดยไม่ถูกบังคับเปลี่ยนอีเมล
+        if ($emailChanging) {
+            $emailRules[] = new NotReservedEmailDomain;
+            $emailRules[] = AccountEmail::deliverableRule();
+        }
 
         $rules = [
             // ข้อมูลส่วนตัว
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
+            'email' => $emailRules,
             'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],
@@ -564,61 +600,62 @@ class DashboardController extends Controller
 
             // รูปโปรไฟล์ (จะแปลงเป็น WebP อัตโนมัติ)
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
-
-            // รหัสผ่าน (ถ้ามีการเปลี่ยน)
-            'current_password' => ['nullable', 'string'],
-            'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ];
+
+        // 🔒 (2026-10-29) เดิมรับ current_password/new_password ในฟอร์มนี้ด้วย → เปลี่ยนรหัสผ่านผ่าน PUT /profile
+        //    ได้โดยไม่ผ่าน turnstile:password_change + two-factor:password_change ที่ route update-password ตั้งไว้
+        //    และถ้ากรอกรหัสใหม่แต่ไม่กรอกรหัสเดิม ระบบเงียบ ลูกค้านึกว่าเปลี่ยนแล้ว → ตอนนี้เปลี่ยนรหัสผ่านได้ทางเดียว
+        if ($request->filled('new_password')) {
+            return back()->withInput($request->except(['current_password', 'new_password', 'new_password_confirmation']))
+                ->with('error', 'เปลี่ยนรหัสผ่านที่การ์ด "เปลี่ยนรหัสผ่าน" แยกต่างหาก ข้อมูลโปรไฟล์ยังไม่ถูกบันทึก');
+        }
 
         $validated = $request->validate($rules);
 
-        // Handle profile picture upload
-        if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                $imageUploadService->deleteImage($user->profile_picture);
-            }
+        // ตรวจก่อนอัปโหลดรูป — ไม่ผ่านแล้วต้องไม่มีอะไรเปลี่ยน (รวมถึงรูปเดิมที่จะถูกลบหลังอัปโหลดใหม่)
+        if ($emailChanging) {
+            $error = $emailChange->confirmationError($user, $validated['email'], $request->input('email_password'), $request->input('email_code'));
 
-            // Upload new profile picture with WebP conversion
-            // Use 'avatars' directory, max 800x800 for avatar, quality 90
-            $validated['profile_picture'] = $imageUploadService->uploadImage(
-                $request->file('profile_picture'),
-                'avatars',
-                800,
-                800,
-                90
-            );
+            if ($error !== null) {
+                return back()->withInput($request->except(['email_password', 'email_code']))
+                    ->withErrors([$error['field'] => $error['message']]);
+            }
+        } else {
+            // ต่างแค่ตัวพิมพ์เล็ก/ใหญ่ = กล่องเดิม → เก็บค่าเดิมไว้ตรงตัว
+            $validated['email'] = $oldEmail;
         }
 
-        // Don't update phone if it hasn't changed, or if it changed, require verification
-        if (isset($validated['phone']) && $validated['phone'] !== $user->phone) {
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // อัปโหลดรูปใหม่ก่อน (WebP, สูงสุด 800x800, quality 90) แล้วค่อยลบรูปเดิม
+            // 🐛 (2026-10-29) เดิมลบรูปเดิมก่อน → ถ้าอัปโหลดใหม่พัง ลูกค้าเสียรูปโปรไฟล์ไปเลย
+            $oldPicture = $user->profile_picture;
+            try {
+                $validated['profile_picture'] = $imageUploadService->uploadImage(
+                    $request->file('profile_picture'),
+                    'avatars',
+                    800,
+                    800,
+                    90
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Profile picture upload failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+                return back()->withInput()->with('error', 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ ลองใช้รูปอื่นหรือลดขนาดไฟล์ แล้วบันทึกอีกครั้ง');
+            }
+
+            if ($oldPicture && $oldPicture !== $validated['profile_picture']) {
+                $imageUploadService->deleteImage($oldPicture);
+            }
+        }
+
+        // เบอร์เปลี่ยน (รวมถึงลบเบอร์ทิ้ง) → ต้องยืนยันเบอร์ใหม่
+        // 🐛 (2026-10-29) เดิมใช้ isset() → ลบเบอร์ (null) แล้วสถานะ "ยืนยันแล้ว" ยังค้างอยู่
+        if (array_key_exists('phone', $validated) && $validated['phone'] !== $user->phone) {
             // Phone changed - reset verification status
             $validated['phone_verified'] = false;
             $validated['phone_verified_at'] = null;
         }
-
-        // Handle password change
-        if ($request->filled('current_password') && $request->filled('new_password')) {
-            // Check if current password is correct
-            if (! Hash::check($request->current_password, $user->password)) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
-            }
-
-            // Check if new password is same as current password
-            if (Hash::check($request->new_password, $user->password)) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม');
-            }
-
-            // Update password
-            $validated['password'] = Hash::make($request->new_password);
-        }
-
-        // Remove password fields from validated array if not changing password
-        unset($validated['current_password'], $validated['new_password']);
 
         // ⚠️ SECURITY: ป้องกันไม่ให้แก้ไข ID Card fields ผ่าน profile update
         // ID Card fields สามารถแก้ไขได้โดย Admin เท่านั้น (ผ่าน Support Ticket)
@@ -641,8 +678,63 @@ class DashboardController extends Controller
 
         $user->update($validated);
 
+        if ($emailChanging) {
+            $emailChange->completeChange($user, $oldEmail, $emailMode);
+
+            return redirect()->route('user.profile')->with('success', $emailMode === AccountEmailChangeService::MODE_PASSWORD
+                ? 'อัปเดตโปรไฟล์เรียบร้อยแล้ว เราส่งลิงก์ยืนยันไปที่อีเมลใหม่ (กรุณากดยืนยันภายใน 24 ชั่วโมง) และแจ้งเตือนไปที่อีเมลเดิมแล้ว'
+                : 'อัปเดตโปรไฟล์และยืนยันอีเมลใหม่เรียบร้อยแล้ว');
+        }
+
         return redirect()->route('user.profile')
             ->with('success', 'อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+    }
+
+    /**
+     * ส่งรหัส 6 หลักสำหรับเปลี่ยนอีเมล (route: user.profile.email.send-code — เรียกด้วย fetch จากหน้าโปรไฟล์)
+     *
+     * บัญชีที่มีอีเมลจริง → ส่งไปอีเมลเดิม ; บัญชีอีเมลระบบ (LINE/FB) → ส่งไปอีเมลใหม่
+     */
+    public function sendEmailChangeCode(Request $request, AccountEmailChangeService $emailChange)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'new_email' => ['bail', 'required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain, AccountEmail::deliverableRule()],
+        ], [], ['new_email' => 'อีเมลใหม่']);
+
+        if (! $emailChange->isChange($user, $request->input('new_email'))) {
+            return response()->json(['success' => false, 'message' => 'อีเมลใหม่ต้องไม่ซ้ำกับอีเมลปัจจุบัน'], 422);
+        }
+
+        $result = $emailChange->sendCode($user, (string) $request->input('new_email'));
+        $sent = (bool) ($result['success'] ?? false);
+
+        return response()->json([
+            'success' => $sent,
+            'message' => $result['message'] ?? 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่',
+            'retry_after' => $result['retry_after'] ?? null,
+        ], $sent ? 200 : (isset($result['retry_after']) ? 429 : 503));
+    }
+
+    /**
+     * ส่งลิงก์ยืนยันอีเมลอีกครั้ง (route: user.profile.email.resend-verification)
+     */
+    public function resendEmailVerification(AccountEmailChangeService $emailChange)
+    {
+        $user = Auth::user();
+
+        if ($user->email_verified_at) {
+            return back()->with('success', 'อีเมลนี้ยืนยันแล้ว');
+        }
+
+        if (! AccountEmail::isDeliverable($user->email)) {
+            return back()->with('error', 'บัญชีนี้ยังไม่มีอีเมลจริง กรุณาเปลี่ยนเป็นอีเมลของคุณก่อน');
+        }
+
+        return $emailChange->sendVerificationLink($user)
+            ? back()->with('success', 'ส่งลิงก์ยืนยันไปที่ '.AccountEmail::mask((string) $user->email).' แล้ว')
+            : back()->with('error', 'ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้งในภายหลัง');
     }
 
     /**
@@ -708,6 +800,13 @@ class DashboardController extends Controller
                 + $marketplaceStats->clone()->where('status', 'approved')->count(),
             'paid' => $mlmStats->clone()->where('status', 'paid')->count()
                 + $marketplaceStats->clone()->where('status', 'paid')->count(),
+            // ยอดเงิน (เดิมมีแค่จำนวนรายการ ลูกค้าไม่รู้ว่าได้เท่าไร)
+            'amount_earned' => (float) $mlmStats->clone()->whereIn('status', ['approved', 'paid'])->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->whereIn('status', ['approved', 'paid'])->sum('net_commission'),
+            'amount_pending' => (float) $mlmStats->clone()->where('status', 'pending')->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->where('status', 'pending')->sum('net_commission'),
+            'amount_paid' => (float) $mlmStats->clone()->where('status', 'paid')->sum('commission_amount')
+                + (float) $marketplaceStats->clone()->where('status', 'paid')->sum('net_commission'),
         ];
 
         return view('user.commissions', compact('commissions', 'stats'));

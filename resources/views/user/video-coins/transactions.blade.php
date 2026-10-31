@@ -136,11 +136,6 @@
                 <div style="font-size:52px; opacity:.5;">📭</div>
                 <div style="font-weight:700; font-size:17px; margin-top:10px;">ไม่พบประวัติธุรกรรม</div>
                 <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เริ่มดูวิดีโอเพื่อรับ Video Coins กันเลย</div>
-                @if(\Illuminate\Support\Facades\Route::has('user.video-missions.index'))
-                    <div style="margin-top:18px;">
-                        <a href="{{ route('user.video-missions.index') }}" class="tp-btn tp-btn-primary"><i class="fas fa-play"></i> ดูวิดีโอรับ Coins</a>
-                    </div>
-                @endif
             </div>
         @endif
     </div>

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\KycVerification;
 use App\Models\User;
+use App\Services\Kyc\KycDocumentStorage;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -131,7 +132,7 @@ class KycVerificationSeeder extends Seeder
     }
 
     /**
-     * สร้าง "ไฟล์รูปตัวอย่างจริง" ลง public disk แล้วคืนพาธที่เก็บในฐานข้อมูล
+     * สร้าง "ไฟล์รูปตัวอย่างจริง" ลง private disk (เหมือนรูป KYC จริง) แล้วคืนพาธที่เก็บในฐานข้อมูล
      *
      * ⚠️ ทำไมต้องสร้างไฟล์จริง:
      * ของเดิม seeder ใส่พาธมั่วๆ ('kyc/idcard_23.jpg') โดยไม่เคยสร้างไฟล์เลย
@@ -140,14 +141,14 @@ class KycVerificationSeeder extends Seeder
      *
      * @param  int  $userId  User ID เจ้าของรูป
      * @param  string  $type  ประเภทรูป เช่น 'idcard', 'selfie', 'selfie_rejected'
-     * @return string พาธ relative กับ storage/app/public (เก็บลงคอลัมน์ *_image)
+     * @return string พาธบน private disk (เก็บลงคอลัมน์ *_image) — เปิดดูผ่าน route ที่ตรวจสิทธิ์
      */
     private function makePlaceholderImage(int $userId, string $type): string
     {
-        $path = 'kyc/demo/'.$type.'_'.$userId.'.png';
+        $path = KycDocumentStorage::ROOT.'/demo/'.$type.'_'.$userId.'.png';
 
         // มีไฟล์อยู่แล้วก็ใช้ซ้ำ (idempotent — รัน seeder หลายรอบได้)
-        if (Storage::disk('public')->exists($path)) {
+        if (Storage::disk(KycDocumentStorage::DISK)->exists($path)) {
             return $path;
         }
 
@@ -176,7 +177,7 @@ class KycVerificationSeeder extends Seeder
         $contents = ob_get_clean();
         imagedestroy($image);
 
-        Storage::disk('public')->put($path, $contents);
+        Storage::disk(KycDocumentStorage::DISK)->put($path, $contents);
 
         return $path;
     }

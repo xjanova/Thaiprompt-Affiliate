@@ -183,8 +183,16 @@ class AiApiKeyHealthProbeService
 
         // 🎯 ใช้ /models endpoint สำหรับ OpenAI-compatible providers
         //    Gemini มี endpoint แตกต่าง: /models + header x-goog-api-key (ไม่ใส่ ?key= ใน URL)
-        //    Anthropic ไม่มี GET /models — ต้อง POST /messages (ข้าม — admin ตรวจเอง)
+        //    🤖 (2026-10-30) Anthropic มี GET /v1/models แล้ว (x-api-key + anthropic-version) — ฟรี ไม่กิน token
         return match ($key->provider) {
+            'anthropic' => [
+                'url' => "{$baseUrl}/models",
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => \App\Support\AnthropicMessages::API_VERSION,
+                ],
+            ],
             'openai', 'grok', 'groq', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'xiaomi' => [
                 'url' => "{$baseUrl}/models",
                 'headers' => [

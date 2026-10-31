@@ -49,7 +49,7 @@ class HotelSpecialOfferController extends Controller
         $stats = [
             'total' => HotelSpecialOffer::count(),
             'active' => HotelSpecialOffer::where('is_active', true)->count(),
-            'expired' => HotelSpecialOffer::where('valid_to', '<', now())->count(),
+            'expired' => HotelSpecialOffer::where('valid_until', '<', now())->count(),
         ];
 
         return view('admin.hotels.special-offers.index', compact('offers', 'hotels', 'stats'));
@@ -79,12 +79,11 @@ class HotelSpecialOfferController extends Controller
             'discount_value' => 'required_if:discount_type,percentage,fixed|numeric|min:0',
             'free_nights' => 'required_if:discount_type,free_nights|integer|min:1',
             'valid_from' => 'required|date',
-            'valid_to' => 'required|date|after:valid_from',
+            'valid_until' => 'required|date|after:valid_from',
             'applicable_days' => 'nullable|array',
             'min_nights' => 'nullable|integer|min:1',
             'min_amount' => 'nullable|numeric|min:0',
-            'max_uses' => 'nullable|integer|min:1',
-            'max_uses_per_user' => 'nullable|integer|min:1',
+            'max_usage' => 'nullable|integer|min:1',
             'room_type_ids' => 'nullable|array',
             'room_type_ids.*' => 'exists:room_types,id',
             'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
@@ -125,7 +124,7 @@ class HotelSpecialOfferController extends Controller
         $offer = HotelSpecialOffer::with('hotel')->findOrFail($id);
 
         $stats = [
-            'total_uses' => $offer->current_uses ?? 0,
+            'total_uses' => $offer->used_count ?? 0,
             'total_savings' => 0, // You can calculate this based on bookings
         ];
 
@@ -160,12 +159,11 @@ class HotelSpecialOfferController extends Controller
             'discount_value' => 'required_if:discount_type,percentage,fixed|numeric|min:0',
             'free_nights' => 'required_if:discount_type,free_nights|integer|min:1',
             'valid_from' => 'required|date',
-            'valid_to' => 'required|date|after:valid_from',
+            'valid_until' => 'required|date|after:valid_from',
             'applicable_days' => 'nullable|array',
             'min_nights' => 'nullable|integer|min:1',
             'min_amount' => 'nullable|numeric|min:0',
-            'max_uses' => 'nullable|integer|min:1',
-            'max_uses_per_user' => 'nullable|integer|min:1',
+            'max_usage' => 'nullable|integer|min:1',
             'room_type_ids' => 'nullable|array',
             'room_type_ids.*' => 'exists:room_types,id',
             'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',

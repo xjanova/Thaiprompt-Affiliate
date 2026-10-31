@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Page;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -99,6 +98,7 @@ class SitemapController extends Controller
         $staticPages = [
             ['url' => '/about', 'priority' => '0.8'],
             ['url' => '/contact', 'priority' => '0.8'],
+            ['url' => '/faq', 'priority' => '0.7'],
             ['url' => '/register', 'priority' => '0.9'],
         ];
 
@@ -108,23 +108,6 @@ class SitemapController extends Controller
                 'lastmod' => $now,
                 'changefreq' => 'weekly',
                 'priority' => $page['priority'],
-            ];
-        }
-
-        // Dynamic pages from CMS
-        //
-        // ⚠️ ตาราง `pages` ไม่มีคอลัมน์ `is_active` — ตัวจริงคือ `is_published`
-        // (ดู database/migrations/2025_01_29_000001_create_pages_table.php)
-        // ใช้ scope published() ตัวเดียวกับ Frontend\PageController เพื่อไม่ให้หลุดอีก
-        $cmsPages = Page::published()->get();
-        foreach ($cmsPages as $page) {
-            $urls[] = [
-                'loc' => url('/page/'.$page->slug),
-                // updated_at เป็น nullable — ถ้าว่างให้ fallback เป็นเวลาปัจจุบัน
-                // ไม่งั้น sitemap ทั้งไฟล์พังเพราะแถวเดียว
-                'lastmod' => $page->updated_at?->toAtomString() ?? $now,
-                'changefreq' => 'weekly',
-                'priority' => '0.7',
             ];
         }
 

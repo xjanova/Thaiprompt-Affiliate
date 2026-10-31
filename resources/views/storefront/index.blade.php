@@ -62,8 +62,7 @@
     $sfCoverService = app(\App\Services\CategoryImageService::class);
 
     // หน้าแรก (ยังไม่เลือกดูอะไร) = ธีม "โนวา" · หน้าค้นหา/หมวด ยังเป็นธีม V4
-    // ปิดกลับไปหน้าแรกแบบเดิมได้ด้วย SHOP_NOVA_HOME=false (config/shop.php) แล้ว config:cache
-    $sfNova = $browseMode === 'home' && (bool) config('shop.nova_home', true);
+    $sfNova = $browseMode === 'home';
     $sfNovaVer = static fn (string $p) => is_file(public_path($p)) ? filemtime(public_path($p)) : 1;
 @endphp
 
@@ -99,116 +98,6 @@
 <main style="flex:1; padding-bottom:40px;">
 
     {{-- ════════ HERO (เฉพาะหน้าแรกของร้านค้า — ธีม V4 เดิม เมื่อปิดธีมโนวา) ════════ --}}
-    @if($browseMode === 'home' && ! $sfNova)
-        <section class="sf-wrap" style="padding-top:22px;">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap:16px; align-items:stretch;">
-                {{-- แบนเนอร์หมุน --}}
-                <div style="grid-column:1 / -1; min-width:0;"
-                     x-data="{ i: 0, n: {{ count($banners) }}, t: null, sx: null,
-                               go(k) { this.i = (k + this.n) % this.n; },
-                               start() { this.stop(); if (this.n > 1) { this.t = setInterval(() => this.go(this.i + 1), 6000); } },
-                               stop() { clearInterval(this.t); this.t = null; },
-                               swipeEnd(x) { if (this.sx !== null && Math.abs(x - this.sx) > 40) { this.go(this.i + (x < this.sx ? 1 : -1)); } this.sx = null; this.start(); } }"
-                     x-init="start()" @mouseenter="stop()" @mouseleave="start()"
-                     @touchstart.passive="sx = $event.touches[0].clientX; stop()" @touchend="swipeEnd($event.changedTouches[0].clientX)">
-                    <div style="position:relative; overflow:hidden; border-radius:26px; min-height:clamp(220px, 34vw, 360px); box-shadow:var(--card-shadow); background:linear-gradient(135deg, var(--accent1), var(--accent2));">
-                        @foreach($banners as $bi => $banner)
-                            @php
-                                $bImg = \App\Services\Shop\ShopPresenter::imageUrl($banner['image'] ?? null);
-                                $bCta = $sfSafeUrl($banner['cta_url'] ?? null);
-                            @endphp
-                            <div x-show="i === {{ $bi }}" x-transition.opacity.duration.500ms @if($bi > 0) x-cloak @endif
-                                 style="position:absolute; inset:0; display:flex; align-items:center;">
-                                @if($bImg)
-                                    <img src="{{ $bImg }}" alt="" aria-hidden="true" @if($bi === 0) fetchpriority="high" @else loading="lazy" @endif
-                                         style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
-                                    <div aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(90deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.28) 55%, rgba(0,0,0,0) 100%);"></div>
-                                @else
-                                    <div aria-hidden="true" style="position:absolute; inset:0; background:radial-gradient(600px 300px at 85% 20%, rgba(255,255,255,.22), transparent 60%);"></div>
-                                @endif
-                                <div style="position:relative; z-index:1; padding:clamp(22px, 4vw, 46px); max-width:620px; color:var(--on-accent, #fff);">
-                                    @if(! empty($banner['badge']))
-                                        <span style="display:inline-flex; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:800; background:rgba(255,255,255,.22); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);">{{ $banner['badge'] }}</span>
-                                    @endif
-                                    <h1 style="margin:12px 0 8px; font-size:clamp(24px, 4.6vw, 42px); line-height:1.15; font-weight:800; letter-spacing:-.5px; text-shadow:0 2px 10px rgba(0,0,0,.25);">{{ $banner['title'] ?? '' }}</h1>
-                                    @if(! empty($banner['subtitle']))
-                                        <p style="margin:0 0 16px; font-size:clamp(13.5px, 1.8vw, 16px); line-height:1.6; opacity:.95;">{{ $banner['subtitle'] }}</p>
-                                    @endif
-                                    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-                                        @if($bCta)
-                                            <a href="{{ $bCta }}" class="sf-btn3d is-soft" style="color:var(--deep1);">{{ $banner['cta_text'] ?? 'ช้อปเลย' }} <i class="fas fa-arrow-right"></i></a>
-                                        @endif
-                                        @if(! empty($banner['highlight']))
-                                            <div>
-                                                <div class="tp-num" style="font-size:clamp(22px, 3.6vw, 32px); font-weight:800; line-height:1;">{{ $banner['highlight'] }}</div>
-                                                <div style="font-size:12px; opacity:.9;">{{ $banner['highlight_label'] ?? '' }}</div>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-
-                        @if(count($banners) > 1)
-                            <button type="button" @click="go(i - 1)" aria-label="แบนเนอร์ก่อนหน้า" class="tp-icon-btn sf-hide-sm" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); z-index:2; opacity:.9;"><i class="fas fa-chevron-left"></i></button>
-                            <button type="button" @click="go(i + 1)" aria-label="แบนเนอร์ถัดไป" class="tp-icon-btn sf-hide-sm" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); z-index:2; opacity:.9;"><i class="fas fa-chevron-right"></i></button>
-                            <div style="position:absolute; left:0; right:0; bottom:12px; z-index:2; display:flex; justify-content:center; gap:6px;">
-                                @foreach($banners as $bi => $banner)
-                                    <button type="button" @click="go({{ $bi }})" :aria-current="(i === {{ $bi }}).toString()" aria-label="แบนเนอร์ที่ {{ $bi + 1 }}"
-                                            :style="i === {{ $bi }} ? 'width:26px; background:var(--on-accent, #fff);' : 'width:10px; background:rgba(255,255,255,.55);'"
-                                            style="height:10px; border:0; border-radius:10px; cursor:pointer; transition:width .25s ease;"></button>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- การ์ดต้อนรับ / คูปอง / สถิติ --}}
-                <div class="tp-card" style="display:flex; flex-direction:column; gap:12px; justify-content:center;">
-                    @auth
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span class="tp-tile" style="width:48px; height:48px; border-radius:16px; font-size:20px;"><i class="fas fa-user"></i></span>
-                            <div style="min-width:0;">
-                                <div class="tp-muted" style="font-size:12px;">ยินดีต้อนรับกลับมา</div>
-                                <div style="font-weight:800; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ auth()->user()->name }}</div>
-                            </div>
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                            <a href="{{ route('orders.index') }}" class="tp-btn" style="text-decoration:none;"><i class="fas fa-receipt"></i> คำสั่งซื้อ</a>
-                            <a href="{{ route('cart.index') }}" class="tp-btn" style="text-decoration:none;"><i class="fas fa-cart-shopping"></i> ตะกร้า</a>
-                        </div>
-                    @else
-                        <div>
-                            <div style="font-weight:800; font-size:16px; color:var(--ink);">เข้าสู่ระบบเพื่อช้อปเต็มรูปแบบ</div>
-                            <p class="tp-muted" style="margin:4px 0 0; font-size:13px; line-height:1.6;">เก็บคูปอง ติดตามคำสั่งซื้อ และจ่ายด้วยกระเป๋าเงินได้ทันที</p>
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                            <a href="{{ route('login') }}" class="tp-btn" style="text-decoration:none;">เข้าสู่ระบบ</a>
-                            <a href="{{ route('register') }}" class="tp-btn tp-btn-primary" style="text-decoration:none;">สมัครฟรี</a>
-                        </div>
-                    @endauth
-                </div>
-                <a href="{{ auth()->check() ? route('user.coupons.available') : route('login') }}" class="tp-card tp-card-hover" style="text-decoration:none; display:flex; align-items:center; gap:14px;">
-                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px;"><i class="fas fa-ticket"></i></span>
-                    <span style="min-width:0;">
-                        <span style="display:block; font-weight:800; color:var(--ink);">คูปองส่วนลด</span>
-                        <span class="tp-muted" style="display:block; font-size:12.5px; margin-top:2px;">เก็บคูปองจากร้านค้าที่ร่วมรายการ แล้วใช้ตอนชำระเงิน</span>
-                    </span>
-                    <i class="fas fa-chevron-right tp-muted" style="margin-left:auto;"></i>
-                </a>
-                <div class="tp-card" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:center;">
-                    <div>
-                        <div class="tp-num" style="font-size:24px; font-weight:800; color:var(--deep1);">{{ number_format($stats['all'] ?? 0) }}</div>
-                        <div class="tp-muted" style="font-size:12px;">สินค้าพร้อมขาย</div>
-                    </div>
-                    <div>
-                        <div class="tp-num" style="font-size:24px; font-weight:800; color:var(--deep2);">{{ number_format($stats['stores'] ?? 0) }}</div>
-                        <div class="tp-muted" style="font-size:12px;">ร้านค้าคุณภาพ</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    @endif
 
     {{-- ════════ หัวหมวด (เมื่อเลือกดูหมวด) ════════ --}}
     @if($browseMode === 'browse' && $activeCategory)
@@ -265,72 +154,8 @@
     @endif
 
     {{-- ════════ FLASH DEALS (ดีลที่ยืนยันกับปลายทางแล้วเท่านั้น) — ธีมโนวามีแถบดีลของตัวเองใน nova/top ════════ --}}
-    @if($browseMode === 'home' && ! $sfNova && $flashDeals && $flashDeals->count() > 0)
-        <section class="sf-wrap sf-section">
-            <div class="tp-card" style="padding:clamp(16px, 2.6vw, 24px);"
-                 x-data="{ end: new Date({{ \Illuminate\Support\Js::from($flashDealEndTime ?? now()->addHours(3)->toIso8601String()) }}).getTime(), h: '00', m: '00', s: '00',
-                           tick() { const d = Math.max(0, this.end - Date.now()); this.h = String(Math.floor(d / 3600000)).padStart(2, '0'); this.m = String(Math.floor(d % 3600000 / 60000)).padStart(2, '0'); this.s = String(Math.floor(d % 60000 / 1000)).padStart(2, '0'); } }"
-                 x-init="tick(); setInterval(() => tick(), 1000)">
-                <div class="sf-section-h">
-                    <div>
-                        <div class="sf-kicker"><i class="fas fa-bolt"></i> FLASH DEALS</div>
-                        <h2 class="sf-title">ดีลเด็ด ราคายืนยันแล้ว</h2>
-                        <div class="tp-muted" style="font-size:12.5px; margin-top:4px;">
-                            ตรวจราคารอบถัดไปใน
-                            <span class="tp-num" style="font-weight:800; color:var(--deep1);"><span x-text="h"></span>:<span x-text="m"></span>:<span x-text="s"></span></span>
-                            @if($flashDealCheckedAt)
-                                · ตรวจล่าสุด {{ $flashDealCheckedAt->timezone('Asia/Bangkok')->format('H:i') }} น.
-                            @endif
-                        </div>
-                    </div>
-                    <a href="{{ route('storefront.index', ['deals' => 1, 'sort_by' => 'discount']) }}" class="sf-btn3d" style="min-height:44px;">ดูดีลทั้งหมด <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="sf-scroll" style="--sf-min:170px;">
-                    @foreach($flashDeals as $deal)
-                        <div style="width:176px; flex:none;">
-                            <x-theme-v4.product-card :product="$deal" :favorited="in_array((int) $deal->id, $sfFavIds, true)" />
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </section>
-    @endif
 
     {{-- ════════ หมวดหมู่ (หน้าแรก) — ธีมโนวาใช้การ์ดหมวดหมู่ในแถบกลางคืนแทน ════════ --}}
-    @if($browseMode === 'home' && ! $sfNova && $categories && $categories->count() > 0)
-        <section class="sf-wrap sf-section">
-            <div class="sf-section-h">
-                <div>
-                    <div class="sf-kicker">SHOP BY CATEGORY</div>
-                    <h2 class="sf-title">ช้อปตามหมวดหมู่</h2>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px;">
-                @foreach($categories->take(12) as $cat)
-                    @php
-                        $catCover = $sfCoverService->cover($cat);
-                        $catImg = $catCover['urls'][0] ?? null;
-                        $catIcon = $catCover['icon'] ?? 'fas fa-tags';
-                        $catCount = (int) ($cat->total_products_count ?? $cat->products_count ?? 0);
-                    @endphp
-                    <a href="{{ route('storefront.index', ['category' => $cat->slug]) }}" class="tp-card tp-card-hover" style="padding:14px 10px; text-decoration:none; display:flex; flex-direction:column; align-items:center; gap:9px; text-align:center;">
-                        <span style="width:62px; height:62px; border-radius:18px; overflow:hidden; display:grid; place-items:center; background:linear-gradient(135deg, var(--a1soft), var(--a2soft)); box-shadow:var(--inset-sm); color:var(--deep1); font-size:24px;">
-                            @if($catImg)
-                                <img src="{{ $catImg }}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <i class="{{ $catIcon }}" style="display:none;"></i>
-                            @else
-                                <i class="{{ $catIcon }}"></i>
-                            @endif
-                        </span>
-                        <span style="font-size:13px; font-weight:700; color:var(--ink); line-height:1.35;">{{ $cat->name }}</span>
-                        @if($catCount > 0)
-                            <span class="tp-muted tp-num" style="font-size:11px;">{{ number_format($catCount) }} รายการ</span>
-                        @endif
-                    </a>
-                @endforeach
-            </div>
-        </section>
-    @endif
 
     {{-- ════════ ร้านค้าแนะนำ ════════ --}}
     <section class="sf-wrap sf-section">
@@ -479,52 +304,6 @@
     </section>
 
     {{-- ════════ จุดเด่น + รับข่าวสาร (หน้าแรก V4 — ธีมโนวาใช้ส่วนสร้างรายได้/แถบแอปแทน) ════════ --}}
-    @if($browseMode === 'home' && ! $sfNova)
-        <section class="sf-wrap sf-section">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
-                @foreach([
-                    ['icon' => 'fa-truck-fast', 'title' => 'ส่งฟรีทั่วไทย', 'desc' => 'เมื่อซื้อครบ ฿'.number_format($sfFreeShip)],
-                    ['icon' => 'fa-motorcycle', 'title' => 'ส่งด่วนด้วยไรเดอร์', 'desc' => 'ร้านใกล้บ้าน ติดตามไรเดอร์ได้สด'],
-                    ['icon' => 'fa-shield-halved', 'title' => 'ชำระเงินปลอดภัย', 'desc' => 'กระเป๋าเงิน พร้อมเพย์ เก็บเงินปลายทาง'],
-                    ['icon' => 'fa-award', 'title' => 'ร้านค้าคุณภาพ', 'desc' => 'ร้านทางการและร้านที่ยืนยันตัวตนแล้ว'],
-                ] as $benefit)
-                    <div class="tp-card" style="display:flex; align-items:center; gap:14px;">
-                        <span class="tp-tile" style="width:50px; height:50px; border-radius:16px; font-size:20px;"><i class="fas {{ $benefit['icon'] }}"></i></span>
-                        <span>
-                            <span style="display:block; font-weight:800; color:var(--ink);">{{ $benefit['title'] }}</span>
-                            <span class="tp-muted" style="display:block; font-size:12.5px; margin-top:2px;">{{ $benefit['desc'] }}</span>
-                        </span>
-                    </div>
-                @endforeach
-            </div>
-        </section>
-
-        <section class="sf-wrap sf-section">
-            <div style="position:relative; overflow:hidden; padding:clamp(24px, 4vw, 40px); border-radius:28px; color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow:0 14px 40px rgba(0,0,0,.16);"
-                 x-data="{ email: '', msg: '',
-                           submit() {
-                               const e = (this.email || '').trim();
-                               if (!e) { this.msg = 'กรุณากรอกอีเมลของคุณ'; return; }
-                               if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { this.msg = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'; return; }
-                               this.msg = 'ขออภัย ระบบรับข่าวสารทางอีเมลยังไม่เปิดให้บริการ ระหว่างนี้ติดตามโปรโมชั่นได้ที่หน้าร้านค้าโดยตรง';
-                           } }">
-                @if(file_exists(public_path('images/art/newsletter-bg.webp')))
-                    <img src="{{ asset('images/art/newsletter-bg.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
-                         style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.3; mix-blend-mode:soft-light; pointer-events:none;">
-                @endif
-                <div style="position:relative; max-width:640px; margin:0 auto; text-align:center;">
-                    <h2 style="margin:0 0 8px; font-size:clamp(22px, 3.6vw, 30px); font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,.14);">รับข่าวสารและโปรโมชั่นพิเศษ</h2>
-                    <p style="margin:0 0 18px; opacity:.94;">สมัครรับข่าวสารเพื่อรับส่วนลดพิเศษก่อนใคร</p>
-                    <form @submit.prevent="submit()" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                        <label for="sf-newsletter" style="position:absolute; left:-9999px;">อีเมล</label>
-                        <input id="sf-newsletter" type="email" x-model="email" placeholder="กรอกอีเมลของคุณ" class="tp-input" style="flex:1 1 240px; max-width:360px; height:48px;">
-                        <button type="submit" class="sf-btn3d is-soft" style="color:var(--deep1);">สมัครรับข่าวสาร</button>
-                    </form>
-                    <p x-show="msg" x-cloak x-text="msg" role="status" aria-live="polite" style="margin:14px auto 0; max-width:520px; padding:10px 14px; border-radius:14px; font-size:13px; background:rgba(0,0,0,.18);"></p>
-                </div>
-            </div>
-        </section>
-    @endif
 </main>
 
 @if($sfNova)

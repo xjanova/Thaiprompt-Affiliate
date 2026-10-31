@@ -11,7 +11,7 @@ use App\Models\Slogan;
 use App\Models\VendorStore;
 use App\Models\WalletSetting;
 use App\Models\WithdrawalRequest;
-use App\Rules\NotReservedEmailDomain;
+use App\Services\AccountEmailChangeService;
 use App\Services\ImageUploadService;
 use App\Services\SellerPayoutService;
 use App\Services\WalletService;
@@ -215,9 +215,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
+        // 🔒 (2026-10-29) เดิมหน้านี้เปลี่ยนอีเมลได้ทันทีโดยไม่ยืนยันตัวตน = อีกทางยึดบัญชีด้วย session ที่ขโมยมา
+        //    การเปลี่ยนอีเมลทำได้ที่หน้าโปรไฟล์สมาชิกที่เดียว (AccountEmailChangeService)
+        if (app(AccountEmailChangeService::class)->isChange($user, $request->input('email'))) {
+            return back()->withInput($request->except(['current_password', 'new_password', 'new_password_confirmation']))
+                ->withErrors(['email' => 'เปลี่ยนอีเมลได้ที่หน้าโปรไฟล์สมาชิก (ต้องยืนยันตัวตนก่อน) ข้อมูลยังไม่ถูกบันทึก']);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
+            // อีเมลเปลี่ยนที่นี่ไม่ได้แล้ว (ด้านบน) — ไม่ต้องตรวจโดเมนสงวนกับอีเมลเดิมที่ระบบตั้งให้
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
             'current_password' => ['nullable', 'string'],
@@ -254,8 +262,8 @@ class DashboardController extends Controller
             $validated['password'] = Hash::make($request->new_password);
         }
 
-        // Remove password fields from validated array
-        unset($validated['current_password'], $validated['new_password']);
+        // Remove password fields from validated array (อีเมลคงค่าเดิมตรงตัว)
+        unset($validated['current_password'], $validated['new_password'], $validated['email']);
 
         $user->update($validated);
 

@@ -261,11 +261,11 @@
                     @endif
                 </div>
 
-                @if($kycVerification->idCardImageUrl())
+                @if($kycVerification->idCardImageUrl('admin'))
                     <div style="border-radius:12px; overflow:hidden; box-shadow:var(--inset-sm); cursor:pointer; background:var(--bg);"
-                         onclick="openImageModal('{{ $kycVerification->idCardImageUrl() }}')">
+                         onclick="openImageModal('{{ $kycVerification->idCardImageUrl('admin') }}')">
                         <div style="aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;">
-                            <img src="{{ $kycVerification->idCardImageUrl() }}" alt="ID Document"
+                            <img src="{{ $kycVerification->idCardImageUrl('admin') }}" alt="ID Document"
                                  style="max-width:100%; max-height:100%; object-fit:contain; display:block;">
                         </div>
                     </div>
@@ -288,11 +288,11 @@
                     @endif
                 </div>
 
-                @if($kycVerification->selfieImageUrl())
+                @if($kycVerification->selfieImageUrl('admin'))
                     <div style="border-radius:12px; overflow:hidden; box-shadow:var(--inset-sm); cursor:pointer; background:var(--bg);"
-                         onclick="openImageModal('{{ $kycVerification->selfieImageUrl() }}')">
+                         onclick="openImageModal('{{ $kycVerification->selfieImageUrl('admin') }}')">
                         <div style="aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;">
-                            <img src="{{ $kycVerification->selfieImageUrl() }}" alt="Selfie with ID Card"
+                            <img src="{{ $kycVerification->selfieImageUrl('admin') }}" alt="Selfie with ID Card"
                                  style="max-width:100%; max-height:100%; object-fit:contain; display:block;">
                         </div>
                     </div>
