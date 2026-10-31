@@ -1506,6 +1506,13 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
     Route::get('/transactions', [TPIXController::class, 'transactions'])->name('transactions');
     Route::get('/transactions/{id}', [TPIXController::class, 'transactionDetails'])->name('transactions.details');
 
+    // 🪙 (2026-10-31) คิวถอน TPIX — แอดมินโอนเหรียญเองแล้วบันทึก tx hash หรือปฏิเสธพร้อมคืนยอด
+    Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TpixWithdrawalAdminController::class, 'index'])->name('index');
+        Route::post('/{id}/confirm', [\App\Http\Controllers\Admin\TpixWithdrawalAdminController::class, 'confirm'])->whereNumber('id')->name('confirm');
+        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\TpixWithdrawalAdminController::class, 'reject'])->whereNumber('id')->name('reject');
+    });
+
     // Settings
     Route::get('/settings', [TPIXController::class, 'settings'])->name('settings');
     Route::put('/settings', [TPIXController::class, 'updateSettings'])->name('update-settings');

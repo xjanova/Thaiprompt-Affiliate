@@ -162,6 +162,12 @@
                         <span style="font-family:monospace;">{{ substr((string) $withdrawal->to_address, 0, 6) }}...{{ substr((string) $withdrawal->to_address, -4) }}</span>
                         · {{ $withdrawal->created_at->format('d/m/Y H:i') }}
                     </div>
+                    @if($withdrawal->status === 'cancelled' && $withdrawal->error_message)
+                        <div style="font-size:12px; color:var(--ink2); margin-top:4px; overflow-wrap:anywhere;">ระบบคืนยอดแล้ว · เหตุผล: {{ $withdrawal->error_message }}</div>
+                    @endif
+                    @if($withdrawal->tx_hash)
+                        <div style="font-size:12px; color:var(--ink2); margin-top:4px; font-family:monospace; overflow-wrap:anywhere;">tx {{ $withdrawal->tx_hash }}</div>
+                    @endif
                 </div>
                 <span class="tp-pill" style="background:color-mix(in srgb, {{ $statusColor }} 16%, transparent); color:{{ $statusColor }}; font-size:11.5px; font-weight:700;">{{ $statusLabel }}</span>
             </div>

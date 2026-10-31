@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendNotificationPush;
+use App\Models\CryptoTransaction;
 use App\Models\Notification;
 use App\Models\User;
 use Exception;
@@ -352,6 +353,29 @@ class NotificationService
                 'high',
                 true,
                 true, // Show immediately
+                '🔔',
+                'orange'
+            );
+        }
+    }
+
+    /**
+     * แจ้งแอดมินว่ามีคำขอถอน TPIX เข้าคิว ไม่มีตัวส่งเหรียญอัตโนมัติ ถ้าแอดมินไม่รู้รายการจะค้างอยู่เฉยๆ
+     */
+    public function notifyAdminTpixWithdrawal(CryptoTransaction $withdrawal): void
+    {
+        foreach ($this->adminRecipients(['approve_withdrawals']) as $admin) {
+            $this->create(
+                $admin,
+                'withdrawal',
+                'คำขอถอน TPIX ใหม่',
+                'มีคำขอถอน '.rtrim(rtrim((string) $withdrawal->amount, '0'), '.').' TPIX รอดำเนินการ',
+                ['crypto_transaction_id' => $withdrawal->id],
+                route('admin.tpix.withdrawals.index'),
+                'เปิดคิวถอน',
+                'high',
+                true,
+                true,
                 '🔔',
                 'orange'
             );

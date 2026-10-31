@@ -326,6 +326,7 @@ return [
                 ['label' => 'จัดการ Wallets', 'route' => 'admin.crypto.wallets', 'icon' => 'fas fa-wallet'],
                 ['label' => 'ธุรกรรม', 'route' => 'admin.crypto.transactions', 'icon' => 'fas fa-exchange-alt'],
                 ['label' => 'คำขอถอน', 'route' => 'admin.crypto.withdrawals', 'icon' => 'fas fa-arrow-circle-up'],
+                ['label' => 'คิวถอน TPIX', 'route' => 'admin.tpix.withdrawals.index', 'icon' => 'fas fa-coins', 'description' => 'บันทึก tx hash หลังโอนเหรียญ · ปฏิเสธพร้อมคืนยอด'],
                 ['label' => 'จัดการเหรียญ/สกุลเงิน', 'route' => 'admin.crypto.currencies', 'icon' => 'fas fa-coins'],
                 ['label' => 'ตั้งค่าคริปโต', 'route' => 'admin.crypto.settings', 'icon' => 'fas fa-sliders-h'],
             ],

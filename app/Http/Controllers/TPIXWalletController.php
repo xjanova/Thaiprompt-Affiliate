@@ -8,6 +8,7 @@ use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
 use App\Services\Crypto\CryptoWalletService;
 use App\Services\Crypto\TPIXBlockchainService;
+use App\Services\NotificationService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -259,7 +260,8 @@ class TPIXWalletController extends Controller
 
         try {
             // ตรวจยอดและหักยอดใน transaction เดียวกับล็อก — lockForUpdate นอก transaction ปล่อยล็อกทันที กดซ้อนกันจะถอนเกินยอดได้
-            $error = DB::transaction(function () use ($user, $tpixCurrency, $request, $amount, $fee, $totalRequired) {
+            $withdrawal = null;
+            $error = DB::transaction(function () use ($user, $tpixCurrency, $request, $amount, $fee, $totalRequired, &$withdrawal) {
                 // Get wallet
                 $wallet = CryptoWallet::where('user_id', $user->id)
                     ->where('currency_id', $tpixCurrency->id)
@@ -282,7 +284,7 @@ class TPIXWalletController extends Controller
                 $wallet->decrement('balance', $totalRequired);
 
                 // Create transaction
-                CryptoTransaction::create([
+                $withdrawal = CryptoTransaction::create([
                     'user_id' => $user->id,
                     'crypto_currency_id' => $tpixCurrency->id,
                     'crypto_wallet_id' => $wallet->id,
@@ -310,6 +312,16 @@ class TPIXWalletController extends Controller
 
         if ($error) {
             return back()->withInput()->with('error', $error);
+        }
+
+        // คำขอ commit แล้ว แจ้งแอดมินไม่สำเร็จต้องไม่ทำให้สมาชิกเห็นว่าถอนไม่ผ่าน
+        try {
+            app(NotificationService::class)->notifyAdminTpixWithdrawal($withdrawal);
+        } catch (Exception $e) {
+            Log::warning('TPIX withdrawal admin notification failed', [
+                'transaction_id' => $withdrawal->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return redirect()->route('user.tpix.wallet')
