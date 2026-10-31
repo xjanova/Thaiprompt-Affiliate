@@ -188,7 +188,7 @@ class TPIXWalletController extends Controller
 
         if (! $tpixCurrency || ! $tpixCurrency->withdrawal_enabled) {
             return redirect()->route('user.tpix.wallet')
-                ->with('error', 'TPIX withdrawals are currently disabled.');
+                ->with('error', 'ขณะนี้ปิดการถอน TPIX ชั่วคราว');
         }
 
         // Get wallet
@@ -198,7 +198,7 @@ class TPIXWalletController extends Controller
 
         if (! $wallet) {
             return redirect()->route('user.tpix.wallet')
-                ->with('error', 'Wallet not found.');
+                ->with('error', 'ไม่พบกระเป๋า TPIX กรุณาลองอีกครั้ง');
         }
 
         // Recent withdrawals
@@ -223,84 +223,97 @@ class TPIXWalletController extends Controller
     {
         $request->validate([
             'address' => 'required|string',
-            'amount' => 'required|numeric|min:0.0001',
+            'amount' => ['required', 'numeric', 'min:0.0001', 'regex:/^\d+(\.\d{1,8})?$/'],
+        ], [
+            'address.required' => 'กรุณากรอกที่อยู่ปลายทาง',
+            'amount.required' => 'กรุณากรอกจำนวนที่ต้องการถอน',
+            'amount.numeric' => 'จำนวนต้องเป็นตัวเลข',
+            'amount.min' => 'จำนวนต้องมากกว่า 0.0001 TPIX',
+            'amount.regex' => 'จำนวนต้องเป็นตัวเลขทศนิยมไม่เกิน 8 ตำแหน่ง',
         ]);
 
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
         if (! $tpixCurrency || ! $tpixCurrency->withdrawal_enabled) {
-            return back()->with('error', 'TPIX withdrawals are currently disabled.');
+            return back()->withInput()->with('error', 'ขณะนี้ปิดการถอน TPIX ชั่วคราว');
         }
 
         // Validate address
         if (! $this->tpixService->isValidAddress($request->address)) {
-            return back()->with('error', 'Invalid TPIX address.');
+            return back()->withInput()->with('error', 'ที่อยู่ปลายทางไม่ถูกต้อง ต้องขึ้นต้นด้วย 0x ตามด้วยอักขระ 40 ตัว');
         }
 
-        // Get wallet
-        $wallet = CryptoWallet::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $wallet) {
-            return back()->with('error', 'Wallet not found.');
-        }
-
-        $amount = $request->amount;
-        $fee = $tpixCurrency->withdrawal_fee;
-        $totalRequired = $amount + $fee;
+        $amount = (string) $request->amount;
+        $fee = (string) $tpixCurrency->withdrawal_fee;
+        $totalRequired = bcadd($amount, $fee, 18);
 
         // Validate amount
-        if ($amount < $tpixCurrency->min_withdrawal) {
-            return back()->with('error', 'Minimum withdrawal amount is '.$tpixCurrency->min_withdrawal.' TPIX.');
+        if (bccomp($amount, (string) $tpixCurrency->min_withdrawal, 18) < 0) {
+            return back()->withInput()->with('error', 'ถอนขั้นต่ำ '.$tpixCurrency->min_withdrawal.' TPIX');
         }
 
-        if ($tpixCurrency->max_withdrawal && $amount > $tpixCurrency->max_withdrawal) {
-            return back()->with('error', 'Maximum withdrawal amount is '.$tpixCurrency->max_withdrawal.' TPIX.');
-        }
-
-        if ($wallet->balance < $totalRequired) {
-            return back()->with('error', 'Insufficient balance. You need '.$totalRequired.' TPIX (including '.$fee.' TPIX fee).');
+        if ($tpixCurrency->max_withdrawal && bccomp($amount, (string) $tpixCurrency->max_withdrawal, 18) > 0) {
+            return back()->withInput()->with('error', 'ถอนได้สูงสุด '.$tpixCurrency->max_withdrawal.' TPIX ต่อครั้ง');
         }
 
         try {
-            DB::beginTransaction();
+            // ตรวจยอดและหักยอดใน transaction เดียวกับล็อก — lockForUpdate นอก transaction ปล่อยล็อกทันที กดซ้อนกันจะถอนเกินยอดได้
+            $error = DB::transaction(function () use ($user, $tpixCurrency, $request, $amount, $fee, $totalRequired) {
+                // Get wallet
+                $wallet = CryptoWallet::where('user_id', $user->id)
+                    ->where('currency_id', $tpixCurrency->id)
+                    ->lockForUpdate()
+                    ->first();
 
-            // Deduct from wallet
-            $wallet->decrement('balance', $totalRequired);
+                if (! $wallet) {
+                    return 'ไม่พบกระเป๋า TPIX กรุณาลองอีกครั้ง';
+                }
 
-            // Create transaction
-            $transaction = CryptoTransaction::create([
-                'user_id' => $user->id,
-                'crypto_currency_id' => $tpixCurrency->id,
-                'crypto_wallet_id' => $wallet->id,
-                'type' => 'withdrawal',
-                'amount' => $amount,
-                'fee' => $fee,
-                'from_address' => $wallet->address,
-                'to_address' => $request->address,
-                'status' => 'pending',
-                'confirmations' => 0,
-                'network' => 'tpix',
-            ]);
+                if (! $wallet->isActive()) {
+                    return 'กระเป๋า TPIX ของคุณถูกระงับการใช้งาน';
+                }
 
-            DB::commit();
+                if (bccomp((string) $wallet->balance, $totalRequired, 18) < 0) {
+                    return 'ยอดคงเหลือไม่พอ ต้องใช้ '.rtrim(rtrim($totalRequired, '0'), '.').' TPIX รวมค่าธรรมเนียม '.$fee.' TPIX';
+                }
 
-            return redirect()->route('user.tpix.wallet')
-                ->with('success', 'Withdrawal request submitted successfully! Your TPIX will be sent shortly.');
+                // Deduct from wallet
+                $wallet->decrement('balance', $totalRequired);
 
+                // Create transaction
+                CryptoTransaction::create([
+                    'user_id' => $user->id,
+                    'crypto_currency_id' => $tpixCurrency->id,
+                    'crypto_wallet_id' => $wallet->id,
+                    'type' => 'withdrawal',
+                    'amount' => $amount,
+                    'fee' => $fee,
+                    'from_address' => $wallet->address,
+                    'to_address' => $request->address,
+                    'status' => 'pending',
+                    'confirmations' => 0,
+                    'network' => 'tpix',
+                ]);
+
+                return null;
+            });
         } catch (Exception $e) {
-            DB::rollBack();
             Log::error('TPIX withdrawal error', [
                 'user_id' => $user->id,
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to process withdrawal: '.$e->getMessage());
+            return back()->withInput()->with('error', 'ส่งคำขอถอนไม่สำเร็จ กรุณาลองอีกครั้ง');
         }
+
+        if ($error) {
+            return back()->withInput()->with('error', $error);
+        }
+
+        return redirect()->route('user.tpix.wallet')
+            ->with('success', 'รับคำขอถอน TPIX แล้ว รายการอยู่ระหว่างรอดำเนินการ');
     }
 
     /**
