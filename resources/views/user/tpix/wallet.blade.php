@@ -19,16 +19,19 @@
                 <i class="fas fa-qrcode"></i> <span>แสดง QR Code</span>
             </button>
         </div>
-        <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
-            <div class="tp-card" style="padding:26px; box-shadow:var(--inset-sm); min-width:0;">
+        <div style="display:flex; flex-wrap:wrap; gap:16px;">
+            <div class="tp-card" style="flex:2 1 260px; padding:26px; box-shadow:var(--inset-sm); min-width:0;">
                 <div style="font-size:13px; color:var(--ink2); margin-bottom:8px;">ยอดคงเหลือทั้งหมด</div>
-                <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px;">
-                    <div id="totalBalance" class="tp-num" style="font-size:clamp(32px,6vw,46px); font-weight:800; color:var(--deep1); line-height:1;">0.00</div>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-bottom:8px;">
+                    <div id="totalBalance" class="tp-num" style="font-size:clamp(26px,6vw,46px); font-weight:800; color:var(--deep1); line-height:1.1; overflow-wrap:anywhere; min-width:0;">{{ number_format((float) $wallet->balance, 8) }}</div>
                     <div style="font-size:20px; color:var(--ink2);">TPIX</div>
                 </div>
-                <div style="font-size:13px; color:var(--ink2);">≈ $<span id="totalBalanceUSD">0.00</span> USD</div>
+                {{-- ไม่มีอัตราบาทล่าสุดให้ซ่อน ดีกว่าโชว์ 0 ข้างยอดจริง --}}
+                @if($tpixRate = $tpixCurrency->getCachedCurrentRate())
+                    <div style="font-size:13px; color:var(--ink2);">≈ ฿<span id="totalBalanceTHB">{{ number_format((float) $wallet->balance * (float) $tpixRate->rate_thb, 2) }}</span></div>
+                @endif
             </div>
-            <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm);">
+            <div class="tp-card" style="flex:1 1 200px; padding:18px; box-shadow:var(--inset-sm); min-width:0;">
                 <div style="font-size:12.5px; color:var(--ink2); margin-bottom:12px;">ดำเนินการด่วน</div>
                 <div style="display:flex; flex-direction:column; gap:9px;">
                     <a href="{{ route('user.tpix.send') }}" style="display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;"><i class="fas fa-paper-plane" style="width:18px; color:var(--accent1);"></i> ส่ง TPIX</a>

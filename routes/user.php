@@ -292,7 +292,7 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
     // Send TPIX (P2P transfer)
     Route::get('/send', [\App\Http\Controllers\TPIXWalletController::class, 'send'])->name('send');
     Route::post('/send', [\App\Http\Controllers\TPIXWalletController::class, 'processSend'])
-        ->middleware('two-factor:transfer')
+        ->middleware(['two-factor:transfer', 'throttle:10,1,tpix-send']) // จำกัดความถี่ กันไล่เดาอีเมลสมาชิก/ยิงซ้ำ
         ->name('send.process');
 });
 

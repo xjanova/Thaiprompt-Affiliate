@@ -11,8 +11,11 @@ use App\Services\Crypto\TPIXBlockchainService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * TPIX Wallet Controller (User Frontend)
@@ -134,7 +137,7 @@ class TPIXWalletController extends Controller
 
         if (! $tpixCurrency || ! $tpixCurrency->deposit_enabled) {
             return redirect()->route('user.tpix.wallet')
-                ->with('error', 'TPIX deposits are currently disabled.');
+                ->with('error', 'ขณะนี้ปิดการฝาก TPIX ชั่วคราว');
         }
 
         // Get or create wallet first
@@ -170,11 +173,16 @@ class TPIXWalletController extends Controller
             ->limit(10)
             ->get();
 
+        // generateAddressForCurrency แค่สุ่มเลข ไม่มี private key — แสดงให้โอนเข้าเหรียญจะกู้คืนไม่ได้
+        $canReceive = $this->tpixService->isValidAddress((string) $depositAddress->address)
+            && ($depositAddress->is_imported || $depositAddress->encrypted_private_key);
+
         return view('user.tpix.deposit', compact(
             'depositAddress',
             'wallet',
             'recentDeposits',
-            'tpixCurrency'
+            'tpixCurrency',
+            'canReceive'
         ));
     }
 
@@ -308,12 +316,23 @@ class TPIXWalletController extends Controller
      */
     public function transactions(Request $request)
     {
+        // วันที่ผิดรูปแบบส่งเข้า MySQL ตรงๆ จะเป็น error 1525 และหน้า 500
+        $request->validate([
+            'type' => 'nullable|string|max:20',
+            'status' => 'nullable|string|max:20',
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to' => 'nullable|date_format:Y-m-d',
+        ], [
+            'date_from.date_format' => 'วันที่เริ่มต้นไม่ถูกต้อง',
+            'date_to.date_format' => 'วันที่สิ้นสุดไม่ถูกต้อง',
+        ]);
+
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
         if (! $tpixCurrency) {
             return redirect()->route('user.dashboard')
-                ->with('error', 'TPIX is not available.');
+                ->with('error', 'ขณะนี้ยังไม่เปิดให้ใช้งาน TPIX');
         }
 
         $query = CryptoTransaction::where('user_id', $user->id)
@@ -358,7 +377,8 @@ class TPIXWalletController extends Controller
         if ($transaction->tx_hash) {
             try {
                 $blockchainData = $this->tpixService->getTransaction($transaction->tx_hash);
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
+                // ยอดเกิน 9.22 TPIX ทำ bcdiv ใน formatTransaction โยน ValueError ซึ่ง catch Exception ไม่ติด
                 Log::warning('Failed to fetch blockchain data', [
                     'tx_hash' => $transaction->tx_hash,
                     'error' => $e->getMessage(),
@@ -378,15 +398,18 @@ class TPIXWalletController extends Controller
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
         if (! $tpixCurrency) {
-            return redirect()->route('user.tpix.wallet')
-                ->with('error', 'TPIX is not available.');
+            return redirect()->route('user.dashboard')
+                ->with('error', 'ขณะนี้ยังไม่เปิดให้ใช้งาน TPIX');
         }
 
         $wallet = CryptoWallet::where('user_id', $user->id)
             ->where('currency_id', $tpixCurrency->id)
             ->first();
 
-        return view('user.tpix.send', compact('wallet', 'tpixCurrency'));
+        // โทเคนใช้ครั้งเดียวต่อฟอร์ม — กดยืนยันซ้ำหรือย้อนกลับแล้วส่งใหม่จะไม่โอนซ้ำ
+        $transferToken = (string) Str::uuid();
+
+        return view('user.tpix.send', compact('wallet', 'tpixCurrency', 'transferToken'));
     }
 
     /**
@@ -395,12 +418,23 @@ class TPIXWalletController extends Controller
     public function processSend(Request $request)
     {
         $request->validate([
-            'recipient' => 'required|string',
-            'amount' => 'required|numeric|min:0.0001',
+            'recipient' => 'required|string|max:255',
+            'amount' => ['required', 'numeric', 'min:0.0001', 'regex:/^\d+(\.\d{1,8})?$/'],
+            'transfer_token' => 'nullable|string|max:64',
+        ], [
+            'recipient.required' => 'กรุณากรอกอีเมลหรือที่อยู่กระเป๋าของผู้รับ',
+            'amount.required' => 'กรุณากรอกจำนวนที่ต้องการส่ง',
+            'amount.numeric' => 'จำนวนต้องเป็นตัวเลข',
+            'amount.min' => 'จำนวนต้องไม่น้อยกว่า 0.0001 TPIX',
+            'amount.regex' => 'จำนวนต้องเป็นตัวเลขทศนิยมไม่เกิน 8 ตำแหน่ง',
         ]);
 
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
+
+        if (! $tpixCurrency || ! $tpixCurrency->is_active) {
+            return back()->withInput()->with('error', 'ขณะนี้ยังไม่เปิดให้ส่ง TPIX');
+        }
 
         // Find recipient (by email or wallet address)
         $recipient = null;
@@ -415,28 +449,24 @@ class TPIXWalletController extends Controller
         }
 
         if (! $recipient) {
-            return back()->with('error', 'Recipient not found.');
+            return back()->withInput()->with('error', 'ไม่พบสมาชิกผู้รับ ถ้าจะส่งออกไปกระเป๋าภายนอกให้ใช้หน้าถอน');
         }
 
         if ($recipient->id === $user->id) {
-            return back()->with('error', 'You cannot send to yourself.');
+            return back()->withInput()->with('error', 'ส่งให้ตัวเองไม่ได้');
+        }
+
+        $tokenKey = $request->filled('transfer_token')
+            ? 'tpix-send:'.$user->id.':'.$request->transfer_token
+            : null;
+
+        if ($tokenKey && ! Cache::add($tokenKey, 1, now()->addMinutes(30))) {
+            return redirect()->route('user.tpix.transactions')
+                ->with('info', 'รายการนี้ถูกส่งไปแล้ว ตรวจสอบได้ในประวัติธุรกรรม');
         }
 
         try {
-            $result = $this->walletService->transfer(
-                $user,
-                $recipient,
-                $tpixCurrency,
-                $request->amount,
-                'TPIX transfer'
-            );
-
-            if ($result['success']) {
-                return redirect()->route('user.tpix.wallet')
-                    ->with('success', 'Successfully sent '.$request->amount.' TPIX to '.$recipient->name);
-            } else {
-                return back()->with('error', $result['message']);
-            }
+            $result = $this->walletService->transfer($user, $recipient, $tpixCurrency, (string) $request->amount);
         } catch (Exception $e) {
             Log::error('TPIX send error', [
                 'user_id' => $user->id,
@@ -444,7 +474,18 @@ class TPIXWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to send TPIX: '.$e->getMessage());
+            $result = ['success' => false, 'message' => 'ส่ง TPIX ไม่สำเร็จ กรุณาลองอีกครั้ง'];
         }
+
+        if ($result['success']) {
+            return redirect()->route('user.tpix.wallet')->with('success', $result['message']);
+        }
+
+        // ส่งไม่สำเร็จ → คืนโทเคนให้แก้ฟอร์มแล้วส่งใหม่ได้
+        if ($tokenKey) {
+            Cache::forget($tokenKey);
+        }
+
+        return back()->withInput()->with('error', $result['message']);
     }
 }

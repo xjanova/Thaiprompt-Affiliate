@@ -134,6 +134,25 @@ class CryptoTransaction extends Model
     }
 
     /**
+     * ชื่อประเภทรายการที่แสดงให้สมาชิกเห็น
+     */
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'deposit' => 'ฝาก',
+            'withdrawal' => 'ถอน',
+            'transfer_in' => 'รับจากสมาชิก',
+            'transfer_out' => 'ส่งให้สมาชิก',
+            'exchange_buy' => 'ซื้อเหรียญ',
+            'exchange_sell' => 'ขายเหรียญ',
+            'payment' => 'ชำระเงิน',
+            'refund' => 'คืนเงิน',
+            'gas_fee' => 'ค่าแก๊ส',
+            default => (string) $this->type,
+        };
+    }
+
+    /**
      * Check if transaction is pending
      */
     public function isPending(): bool
