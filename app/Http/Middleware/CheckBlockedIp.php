@@ -8,10 +8,28 @@ use App\Models\Setting;
 use App\Models\ThreatIp;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckBlockedIp
 {
+    /**
+     * threat_type ที่แต่ละ checkbox ในหน้าตั้งค่าคุม
+     *
+     * @var array<string, array<int, string>>
+     */
+    protected const BLOCK_TYPE_SETTINGS = [
+        'threat_block_proxy' => ['proxy'],
+        'threat_block_vpn' => ['vpn'],
+        'threat_block_tor' => ['tor'],
+        'threat_block_abuse' => ['abuse', 'spam', 'malware', 'scanner'],
+    ];
+
+    /**
+     * IP หนึ่งลง security_logs ได้ครั้งเดียวในช่วงนี้ (วินาที) — บอทยิงรัวต้องไม่กลายเป็นแถวใหม่ทุก request
+     */
+    protected const THREAT_LOG_INTERVAL_SECONDS = 600;
+
     /**
      * Handle an incoming request.
      *
@@ -58,24 +76,9 @@ class CheckBlockedIp
             }
 
             // Check Threat Intelligence if enabled
-            if ($this->shouldBlockThreatIp($ip)) {
-                $threatInfo = ThreatIp::getThreatInfo($ip);
-
-                // Log the blocked threat attempt
-                SecurityLog::logEvent(
-                    eventType: 'threat_ip_blocked',
-                    ipAddress: $ip,
-                    severity: 'high',
-                    description: "Threat IP blocked: {$threatInfo->threat_type} (confidence: {$threatInfo->confidence_score}%)",
-                    userAgent: $request->userAgent(),
-                    metadata: [
-                        'url' => $request->fullUrl(),
-                        'method' => $request->method(),
-                        'threat_type' => $threatInfo->threat_type,
-                        'threat_source' => $threatInfo->source,
-                        'confidence_score' => $threatInfo->confidence_score,
-                    ]
-                );
+            $threatInfo = $this->findBlockableThreat($request, $ip);
+            if ($threatInfo) {
+                $this->logThreatBlock($request, $ip, $threatInfo);
 
                 // Return 403 Forbidden
                 return response()->view('errors.blocked', [
@@ -95,39 +98,71 @@ class CheckBlockedIp
     }
 
     /**
-     * Check if IP should be blocked based on threat intelligence
+     * หาแถว threat ที่ต้องบล็อกตามการตั้งค่า — ไม่มีแถวใน settings = ปิด ไม่บล็อกใคร
      */
-    protected function shouldBlockThreatIp(string $ip): bool
+    protected function findBlockableThreat(Request $request, string $ip): ?ThreatIp
     {
-        // Check if threat intelligence is enabled
-        $enabled = Setting::get('threat_intelligence_enabled', 'boolean', false);
-        if (! $enabled) {
-            return false;
+        if (! Setting::get('threat_intelligence_enabled', false)) {
+            return null;
         }
 
-        // Get threat info
-        $threatInfo = ThreatIp::getThreatInfo($ip);
-        if (! $threatInfo) {
-            return false;
+        $types = [];
+        foreach (self::BLOCK_TYPE_SETTINGS as $setting => $settingTypes) {
+            if (Setting::get($setting, false)) {
+                array_push($types, ...$settingTypes);
+            }
         }
 
-        // Check confidence threshold
-        $threshold = Setting::get('threat_confidence_threshold', 'integer', 70);
-        if ($threatInfo->confidence_score < $threshold) {
-            return false;
+        if ($types === [] || $this->isServerToServerRequest($request)) {
+            return null;
         }
 
-        // Check if this threat type should be blocked
-        $blockTypes = [
-            'proxy' => Setting::get('threat_block_proxy', 'boolean', false),
-            'vpn' => Setting::get('threat_block_vpn', 'boolean', false),
-            'tor' => Setting::get('threat_block_tor', 'boolean', false),
-            'abuse' => Setting::get('threat_block_abuse', 'boolean', false),
-            'spam' => Setting::get('threat_block_abuse', 'boolean', false), // Use abuse setting for spam
-            'malware' => Setting::get('threat_block_abuse', 'boolean', false), // Use abuse setting for malware
-            'scanner' => Setting::get('threat_block_abuse', 'boolean', false), // Use abuse setting for scanner
-        ];
+        $threshold = (int) Setting::get('threat_confidence_threshold', ThreatIp::DEFAULT_CONFIDENCE_THRESHOLD);
 
-        return $blockTypes[$threatInfo->threat_type] ?? false;
+        return ThreatIp::getThreatInfo($ip, $threshold, $types);
+    }
+
+    /**
+     * webhook/callback จากระบบภายนอก — ใช้รายการเดียวกับ path ที่เข้าได้ช่วงปิดปรับปรุง
+     *
+     * ต้นทางเป็น IP ของ cloud ที่อาจติดฟีด และโดน 403 แล้วข้อความหายถาวรเพราะ LINE ไม่ส่งซ้ำ
+     * ยกเว้นเฉพาะ threat feed — IP ที่แอดมินบล็อกเองยังโดนบล็อกตามปกติ
+     */
+    protected function isServerToServerRequest(Request $request): bool
+    {
+        return $request->is(...app(PreventRequestsDuringMaintenance::class)->getExcludedPaths());
+    }
+
+    /**
+     * บันทึกการบล็อกลง security_logs ไม่เกินหนึ่งครั้งต่อ IP ต่อช่วงเวลา
+     *
+     * log พังต้องไม่ทำให้ IP ที่กำลังโดนบล็อกหลุดผ่าน เพราะ catch ใน handle() ปล่อยผ่านเสมอ
+     */
+    protected function logThreatBlock(Request $request, string $ip, ThreatIp $threatInfo): void
+    {
+        try {
+            if (! Cache::add("threat_block_logged:{$ip}", true, self::THREAT_LOG_INTERVAL_SECONDS)) {
+                return;
+            }
+
+            // ข้าม hook ของ SecurityLog: hook ถาม geolocation ภายนอกสองเจ้า เจ้าละ 5 วินาที
+            // request ที่กำลังปฏิเสธต้องไม่ถือ php-fpm worker ไว้ ไม่งั้นบอทหลาย IP ทำ pool เต็มได้
+            SecurityLog::withoutEvents(fn () => SecurityLog::logEvent(
+                eventType: 'threat_ip_blocked',
+                ipAddress: $ip,
+                severity: 'high',
+                description: "Threat IP blocked: {$threatInfo->threat_type} (confidence: {$threatInfo->confidence_score}%)",
+                userAgent: mb_substr((string) $request->userAgent(), 0, 255),
+                metadata: [
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'threat_type' => $threatInfo->threat_type,
+                    'threat_source' => $threatInfo->source,
+                    'confidence_score' => $threatInfo->confidence_score,
+                ]
+            ));
+        } catch (\Exception $e) {
+            \Log::warning('CheckBlockedIp could not log threat block: '.$e->getMessage());
+        }
     }
 }
