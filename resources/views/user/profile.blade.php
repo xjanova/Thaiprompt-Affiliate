@@ -173,6 +173,13 @@
                                     </a>
                                 @endif
 
+                                {{-- 🎓 ป้ายผ่านการอบรม (ห้องเรียน) ข้างป้ายยืนยันตัวตน — ยังไม่ผ่านบทบาทไหนเลย = ไม่แสดง --}}
+                                @if(Route::has('user.classroom.index'))
+                                    <a href="{{ route('user.classroom.index') }}" style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; text-decoration:none;" aria-label="ห้องเรียน">
+                                        <x-training-badge :user="$user" :size="20" label />
+                                    </a>
+                                @endif
+
                                 {{-- ป้ายสถานะการเชื่อมต่อ LINE --}}
                                 @if($user->line_user_id)
                                     <span class="tp-pill" style="color:#fff; background:#5aa07e; padding:7px 14px;">

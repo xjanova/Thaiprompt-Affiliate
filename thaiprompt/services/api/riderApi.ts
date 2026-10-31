@@ -339,6 +339,8 @@ export interface RiderJobBuyer {
   hearts_given: number;
   /** ผู้ซื้อยืนยันตัวตนแล้ว (ป้ายทอง) — ค่าดิบจาก server ใช้ isVerifiedFlag() ก่อนแสดง */
   verified?: boolean | number | string | null;
+  /** ตรา "ผ่านการอบรม" ของผู้ซื้อ (ห้องเรียน) ค่าดิบ — แปลงด้วย parseTrainingBadge ก่อนแสดง */
+  training_badge?: unknown;
 }
 
 export interface RiderJobDetail extends RiderJobSummary {

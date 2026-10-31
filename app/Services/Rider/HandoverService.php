@@ -14,6 +14,7 @@ use App\Models\RiderHeart;
 use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\Classroom\TrainingBadge;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\Ekyc\EkycService;
 use App\Services\FreshMarketService;
@@ -1911,6 +1912,8 @@ class HandoverService
             'photo_url' => $rider->user ? app(ProfilePhotoService::class)->urlFor($rider->user, $viewer) : null,
             // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
             'verified' => EkycService::badge($rider->user),
+            // 🎓 ป้าย "ผ่านการอบรมไรเดอร์" (ยังไม่ผ่าน = null)
+            'training_badge' => TrainingBadge::for((int) $rider->user_id, 'rider'),
             'vehicle_type' => $rider->vehicle_type,
             'vehicle_label' => $vehicleLabel !== '' ? $vehicleLabel : $rider->vehicle_type_text,
             'plate_masked' => self::maskPlate($rider->vehicle_plate),
@@ -1932,6 +1935,8 @@ class HandoverService
             'display_name' => self::shortName((string) $buyer->name),
             'photo_url' => app(ProfilePhotoService::class)->urlFor($buyer, $viewer),
             'verified' => EkycService::badge($buyer),
+            // 🎓 ป้าย "ผ่านการอบรมผู้ซื้อ" (ยังไม่ผ่าน = null)
+            'training_badge' => TrainingBadge::for($buyer, 'buyer'),
         ];
     }
 

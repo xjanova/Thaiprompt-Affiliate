@@ -162,6 +162,8 @@
                 @else
                     <span class="nvm-pill nvm-pill--warn"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยังไม่ยืนยันตัวตน</span>
                 @endif
+                {{-- 🎓 ป้ายผ่านการอบรม (ห้องเรียน) ข้างป้ายยืนยันตัวตน --}}
+                <x-training-badge :user="$user" :size="20" />
                 @if($rtOn && $rtStatus === 'active')
                     <span class="nvm-pill nvm-pill--glass">รักษายอดแล้ว</span>
                 @endif

@@ -743,7 +743,15 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const buyerCard = (
     <Card3D padding={spacing.md + 2} style={styles.block}>
       <View style={styles.buyerRow}>
-        <PersonAvatar uri={buyerPhoto} name={buyerName} size={60} ring="gold" verified={buyerVerified} />
+        <PersonAvatar
+          uri={buyerPhoto}
+          name={buyerName}
+          size={60}
+          ring="gold"
+          verified={buyerVerified}
+          training={buyer?.training_badge ?? job.buyer?.training_badge}
+          trainingRole="buyer"
+        />
         <View style={styles.flex}>
           <Text numberOfLines={1} style={[typography.h3, { color: colors.textStrong }]}>
             {buyerName}

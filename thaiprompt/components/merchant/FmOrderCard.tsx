@@ -14,6 +14,7 @@ import { Button3D, Card3D, Icon, Pill, PriceText, formatBaht, type IconName } fr
 import { callPhone, openHttpsLink } from '@/components/shop';
 import { fmImageUrl, type FmSellerAction, type FmSellerOrder } from '@/services/api/taladsodSellerApi';
 import { useTheme, radii, spacing, toneColors, typography } from '@/theme';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
 import {
   FM_STATUS_ICON,
   FM_STATUS_LABEL,
@@ -33,19 +34,29 @@ export interface FmOrderCardProps {
   now?: number;
 }
 
-/** แถวข้อมูลเล็ก: ไอคอนเส้น + ข้อความ (+ ปุ่มด้านขวา) · lines = 0 → ไม่จำกัดบรรทัด */
-const MetaRow: React.FC<{ icon: IconName; color: string; children: React.ReactNode; right?: React.ReactNode; lines?: number }> = ({
-  icon,
-  color,
-  children,
-  right,
-  lines = 1,
-}) => (
+/** แถวข้อมูลเล็ก: ไอคอนเส้น + ข้อความ (+ ตราต่อท้ายข้อความ) (+ ปุ่มด้านขวา) · lines = 0 → ไม่จำกัดบรรทัด */
+const MetaRow: React.FC<{
+  icon: IconName;
+  color: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+  lines?: number;
+  badge?: React.ReactNode;
+}> = ({ icon, color, children, right, lines = 1, badge }) => (
   <View style={styles.metaRow}>
     <Icon name={icon} size={16} color={color} style={styles.metaIcon} />
-    <Text style={[typography.bodySm, styles.flex, { color }]} numberOfLines={lines > 0 ? lines : undefined}>
-      {children}
-    </Text>
+    {badge ? (
+      <View style={[styles.flex, styles.badgeRow]}>
+        <Text style={[typography.bodySm, styles.shrink, { color }]} numberOfLines={lines > 0 ? lines : undefined}>
+          {children}
+        </Text>
+        {badge}
+      </View>
+    ) : (
+      <Text style={[typography.bodySm, styles.flex, { color }]} numberOfLines={lines > 0 ? lines : undefined}>
+        {children}
+      </Text>
+    )}
     {right}
   </View>
 );
@@ -162,6 +173,11 @@ export const FmOrderCard: React.FC<FmOrderCardProps> = ({ order, onAction, highl
               <MetaRow
                 icon="user"
                 color={colors.text}
+                badge={
+                  order.buyer.training_badge ? (
+                    <TrainingBadgeSeal value={order.buyer.training_badge} role="buyer" size={15} compact />
+                  ) : undefined
+                }
                 right={
                   order.buyer.phone ? (
                     <Button3D
@@ -293,6 +309,14 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  shrink: {
+    flexShrink: 1,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   center: {
     alignItems: 'center',

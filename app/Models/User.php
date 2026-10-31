@@ -691,6 +691,16 @@ class User extends Authenticatable
     }
 
     /**
+     * 🎓 ใบรับรอง "ผ่านการอบรม" ของห้องเรียน (สูงสุด 1 ใบต่อบทบาท seller/rider/buyer)
+     *
+     * eager-load ไว้ก่อน (with('classroomCertifications')) แล้ว TrainingBadge::for() จะไม่ยิง query เพิ่ม
+     */
+    public function classroomCertifications()
+    {
+        return $this->hasMany(ClassroomCertification::class);
+    }
+
+    /**
      * Check if user has KYC verified
      *
      * ตรวจสอบจาก kyc_status หรือ KycVerification record

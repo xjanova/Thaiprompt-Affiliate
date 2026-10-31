@@ -282,7 +282,7 @@ export default function EditProfileScreen() {
           <View style={styles.flexOne}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>โปรไฟล์ที่คนอื่นเห็น</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
-              ดูรูปและป้ายทอง "ยืนยันตัวตนแล้ว" ที่ไรเดอร์และร้านเห็น
+              ดูรูปและตรา "ยืนยันตัวตนแล้ว" ที่ไรเดอร์และร้านเห็น
             </Text>
           </View>
           <Icon name="caret-right" size={16} color={colors.textFaint} weight="bold" />

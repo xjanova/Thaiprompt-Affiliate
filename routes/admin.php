@@ -3078,3 +3078,8 @@ Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
     Route::post('/test-line', [FreshMarketController::class, 'sendTestLine'])->name('test-line.send');
     Route::post('/verify-line', [FreshMarketController::class, 'verifyLineConnection'])->name('verify-line');
 });
+
+// ========================================
+// 🎓 ห้องเรียน (2026-10-13) — คอร์ส/บทเรียน/คลังข้อสอบ/สถิติ (admin.classroom.*)
+// ========================================
+require __DIR__.'/admin_classroom.php';

@@ -25,6 +25,7 @@ import {
   type Pagination,
 } from './client';
 import { normalizeTpixPayment, normalizeTpixTag, type TpixPayment, type TpixPriceTag } from './tpixApi';
+import { parseTrainingBadge, type TrainingBadge } from '@/components/badges/trainingBadge';
 
 const BASE = '/fresh-market';
 
@@ -219,6 +220,8 @@ export interface FmShopDetail extends FmShopCard {
   is_owner: boolean;
   /** เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทอง) — คนละเรื่องกับ is_verified ของร้าน */
   owner_verified: boolean;
+  /** ตรา "ผ่านการอบรม" ของร้าน (ห้องเรียน · role seller) — server รุ่นเก่าไม่ส่ง/ยังไม่ผ่าน = null */
+  training_badge: TrainingBadge | null;
   listings: FmShopListing[];
 }
 
@@ -1003,6 +1006,10 @@ export interface RiderLocationInfo {
     vehicle_plate: string | null;
     phone: string | null;
     rating: number | null;
+    /** ไรเดอร์ยืนยันตัวตนแล้ว (server รุ่นเก่าไม่ส่ง = false) */
+    verified: boolean;
+    /** ตรา "ผ่านการอบรม" ของไรเดอร์ (ห้องเรียน) — ไม่มี/ยังไม่ผ่าน = null */
+    training_badge: TrainingBadge | null;
   } | null;
   rider_location: {
     latitude: number;
@@ -1071,6 +1078,8 @@ const normalizeRiderLocation = (raw: any, source: DeliverySource, orderId: numbe
             vehicle_plate: str(rider.vehicle_plate),
             phone: str(rider.phone),
             rating: nullableNum(rider.rating),
+            verified: bool(rider.verified),
+            training_badge: parseTrainingBadge(rider.training_badge, 'rider'),
           }
         : null,
     rider_location:
@@ -1261,6 +1270,7 @@ export const getShop = async (id: number): Promise<ApiResult<FmShopDetail>> =>
     location_poll_seconds: num(raw?.location_poll_seconds, 120),
     is_owner: bool(raw?.is_owner),
     owner_verified: bool(raw?.owner_verified),
+    training_badge: parseTrainingBadge(raw?.training_badge, 'seller'),
     listings: (Array.isArray(raw?.listings) ? raw.listings : []).map(normalizeShopListing).filter((l: FmShopListing) => l.id > 0),
   }));
 

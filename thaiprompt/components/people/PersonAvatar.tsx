@@ -4,7 +4,8 @@
  * - รูปจาก server เป็นรูปลายน้ำเสมอ (THAI PROMPT · VIEWER ...) — แอปแค่แสดง ห้ามบันทึกลงเครื่อง
  * - ไม่มีรูป/โหลดรูปไม่ขึ้น = อักษรแรกของชื่อ (ฟอนต์มีเชิง สีทอง) บนพื้นน้ำเงินกรมท่า หรือไอคอนคน
  * - online = จุดเขียวมุมขวาล่าง (ขอบสีการ์ด) · online={false} = จุดเทา · ไม่ส่ง = ไม่แสดงจุด
- * - verified = ป้ายทอง "ยืนยันตัวตนแล้ว" มุมขวาล่าง (มีจุดออนไลน์อยู่แล้ว → ย้ายไปมุมขวาบน)
+ * - verified = ตรา "ยืนยันตัวตนแล้ว" มุมขวาล่าง (มีจุดออนไลน์อยู่แล้ว → ย้ายไปมุมขวาบน)
+ * - training = ตรา "ผ่านการอบรม" (ห้องเรียน) มุมซ้ายของขอบเดียวกัน — ค่าดิบ training_badge จาก server
  *   รูปเป็นรูปอะไรก็ได้ที่ผู้ใช้เลือก ความน่าเชื่อถือดูจากป้ายนี้
  *
  * @example
@@ -19,6 +20,8 @@ import { Text } from '@/components/ui/Text';
 import { Icon } from '@/components/ui/Icon';
 import { useTheme, FONT } from '@/theme';
 import { VerifiedBadge } from './VerifiedBadge';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
+import type { TrainingRole } from '@/components/badges/trainingBadge';
 
 export interface PersonAvatarProps {
   uri?: string | null;
@@ -32,8 +35,15 @@ export interface PersonAvatarProps {
   online?: boolean;
   /** สีขอบของจุดออนไลน์ (ปกติ = สีการ์ดที่วางอยู่) */
   surfaceColor?: string;
-  /** ยืนยันตัวตนแล้ว (จาก server เท่านั้น) → ป้ายทองที่มุมรูป */
+  /** ยืนยันตัวตนแล้ว (จาก server เท่านั้น) → ตรายืนยันที่มุมรูป */
   verified?: boolean;
+  /**
+   * training_badge ดิบจาก payload (ห้องเรียน) → ตรา "ผ่านการอบรม" มุมซ้ายของขอบเดียวกับตรายืนยันตัวตน
+   * ไม่มี / ยังไม่ผ่าน = ไม่แสดง
+   */
+  training?: unknown;
+  /** บทบาทของคนในรูป (ใช้เมื่อ server ไม่ส่ง role ในตรา) */
+  trainingRole?: TrainingRole;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -48,7 +58,7 @@ export const initialOfName = (name: string | null | undefined): string | null =>
 };
 
 export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
-  ({ uri, name, size = 48, ring = 'gold', online, surfaceColor, verified = false, style }) => {
+  ({ uri, name, size = 48, ring = 'gold', online, surfaceColor, verified = false, training, trainingRole, style }) => {
     const { colors, gradients } = useTheme();
     const [failed, setFailed] = useState(false);
 
@@ -147,6 +157,17 @@ export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
             style={[styles.badge, online !== undefined ? styles.badgeTop : styles.badgeBottom]}
           />
         )}
+        {training !== undefined && training !== null && (
+          // ตราอบรมวางมุมซ้ายของขอบเดียวกับตรายืนยันตัวตน (มุมขวามีตรายืนยัน/จุดออนไลน์อยู่แล้ว) · compact = ไม่มีป้ายข้อความ
+          <TrainingBadgeSeal
+            value={training}
+            role={trainingRole}
+            size={badge}
+            compact
+            ringColor={surfaceColor ?? colors.card}
+            style={[styles.trainingBadge, online !== undefined ? styles.badgeTop : styles.badgeBottom]}
+          />
+        )}
       </View>
     );
   }
@@ -167,6 +188,10 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     right: -2,
+  },
+  trainingBadge: {
+    position: 'absolute',
+    left: -2,
   },
   badgeBottom: {
     bottom: -2,

@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '@/components/ui/Text';
 import { Button3D, Icon, LiveMap, Pill, resultHaptic, type LiveMapMarker } from '@/components/ui';
 import { callPhone } from '@/components/shop';
+import { TrustSeals } from '@/components/badges/TrustSeals';
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { getCurrentCoords } from '@/services/location';
 import {
@@ -283,6 +284,8 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
               <Text numberOfLines={1} style={[typography.bodyStrong, styles.name, { color: colors.textStrong }]}>
                 {rider.name || 'ไรเดอร์'}
               </Text>
+              {/* ตรายืนยันตัวตน + ตราผ่านการอบรม (server รุ่นเก่าไม่ส่ง = ไม่แสดง) */}
+              <TrustSeals verified={rider.verified} training={rider.training_badge} size={15} compact />
               {!!rider.rating && (
                 <View style={[styles.rating, { backgroundColor: colors.goldSoft }]}>
                   <Icon name="star" size={12} color={colors.gold} weight="fill" />

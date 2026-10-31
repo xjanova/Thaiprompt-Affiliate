@@ -168,6 +168,9 @@ class DatabaseSeeder extends Seeder
 
             // 23. Fortune Comment Reply
             FortuneCommentReplySeeder::class,       // 💬 คลังคำตอบคอมเมนต์ 100 ชุด (invite/blessing/thanks/emoji)
+
+            // 24. 🎓 ห้องเรียน (2026-10-13) — คอร์สผู้ขาย/ไรเดอร์/ผู้ซื้อ + คลังข้อสอบ (idempotent ไม่ทับที่แอดมินแก้)
+            ClassroomSeeder::class,
         ]);
 
         $this->command->info('');

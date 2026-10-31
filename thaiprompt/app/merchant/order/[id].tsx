@@ -57,6 +57,7 @@ import {
 import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { IconTile } from '@/components/merchant';
 import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
+import { TrainingBadgeSeal } from '@/components/badges/TrustSeals';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
@@ -73,15 +74,24 @@ const ACTION_SUCCESS: Record<SellerOrderAction, string> = {
 };
 
 /** แถวข้อมูลเล็ก: ไอคอนเส้น + ข้อความ */
-const MetaLine: React.FC<{ icon: IconName; color: string; children: React.ReactNode; variant?: 'bodySm' | 'caption' | 'micro' }> = ({
-  icon,
-  color,
-  children,
-  variant = 'caption',
-}) => (
+const MetaLine: React.FC<{
+  icon: IconName;
+  color: string;
+  children: React.ReactNode;
+  variant?: 'bodySm' | 'caption' | 'micro';
+  /** ตราต่อท้ายข้อความ (เช่น ตรา "ผ่านการอบรม" ของลูกค้า) */
+  badge?: React.ReactNode;
+}> = ({ icon, color, children, variant = 'caption', badge }) => (
   <View style={styles.metaLine}>
     <Icon name={icon} size={variant === 'bodySm' ? 16 : 14} color={color} style={styles.metaIcon} />
-    <Text style={[typography[variant], styles.flex, { color }]}>{children}</Text>
+    {badge ? (
+      <View style={[styles.flex, styles.metaBadgeRow]}>
+        <Text style={[typography[variant], styles.shrink, { color }]}>{children}</Text>
+        {badge}
+      </View>
+    ) : (
+      <Text style={[typography[variant], styles.flex, { color }]}>{children}</Text>
+    )}
   </View>
 );
 
@@ -390,7 +400,16 @@ export default function MerchantOrderDetailScreen() {
           />
         </View>
         <View style={[styles.meta, { borderTopColor: colors.divider }]}>
-          <MetaLine icon="user" color={colors.text} variant="bodySm">
+          <MetaLine
+            icon="user"
+            color={colors.text}
+            variant="bodySm"
+            badge={
+              detail.customer?.training_badge ? (
+                <TrainingBadgeSeal value={detail.customer.training_badge} role="buyer" size={15} />
+              ) : undefined
+            }
+          >
             {detail.customer?.name || 'ลูกค้า'}
           </MetaLine>
           <MetaLine icon={isRider ? 'moped' : 'package'} color={colors.textMuted}>
@@ -503,6 +522,7 @@ export default function MerchantOrderDetailScreen() {
                     {rider.rider.name || 'ไรเดอร์'}
                   </Text>
                   {isVerifiedFlag(rider.rider.verified) && <VerifiedBadge size={15} />}
+                  <TrainingBadgeSeal value={rider.rider.training_badge} role="rider" size={15} />
                 </View>
                 {!!rider.rider.vehicle_plate && (
                   <Text style={[typography.caption, { color: colors.textMuted }]}>ทะเบียน {rider.rider.vehicle_plate}</Text>
@@ -779,6 +799,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
+  },
+  metaBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   metaIcon: {
     marginTop: 2,
