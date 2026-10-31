@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
 use App\Models\LineRegistrationSession;
-
 use App\Models\User;
 use App\Services\LineService;
 use Illuminate\Http\JsonResponse;
@@ -183,7 +182,7 @@ class LineRegistrationController extends Controller
         ]);
 
         // Redirect ไปหน้าอัพเดทข้อมูล
-        return redirect()->route('user.profile.edit')
+        return redirect()->route('user.profile')
             ->with('success', '🎉 สมัครสมาชิกสำเร็จ! กรุณากรอกข้อมูลเพิ่มเติม');
     }
 

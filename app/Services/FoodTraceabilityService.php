@@ -239,7 +239,7 @@ class FoodTraceabilityService
     protected function generateQRCode(FoodProduct $product): void
     {
         try {
-            $url = route('food-passport.scan', $product->food_passport_id);
+            $url = route('api.food-passport.scan', $product->food_passport_id);
 
             // Generate QR code image
             $qrCode = QrCode::format('png')

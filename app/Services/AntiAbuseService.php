@@ -9,6 +9,7 @@ use App\Models\ServiceBookingPenalty;
 use App\Models\User;
 use App\Models\UserBlock;
 use App\Models\UserTrustScore;
+use App\Models\WalletTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -231,6 +232,58 @@ class AntiAbuseService
         }
 
         return $result;
+    }
+
+    /**
+     * หักค่าปรับจากกระเป๋าเงินของผู้ถูกปรับ
+     *
+     * ล็อกแถวค่าปรับไว้จนจบ กันกดซ้ำแล้วหักเงินสองรอบ
+     * หักไม่สำเร็จ = rollback ทั้งก้อน สถานะยังเป็น pending
+     *
+     * @throws \DomainException เมื่อหักไม่ได้ ข้อความแสดงให้แอดมินเห็นได้
+     */
+    public function chargePenalty(ServiceBookingPenalty $penalty): WalletTransaction
+    {
+        return DB::transaction(function () use ($penalty) {
+            $locked = ServiceBookingPenalty::whereKey($penalty->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'pending') {
+                throw new \DomainException('ค่าปรับนี้ไม่สามารถหักได้ (สถานะ: '.$locked->status.')');
+            }
+
+            $amount = (float) $locked->penalty_amount;
+            if ($amount <= 0) {
+                throw new \DomainException('ยอดค่าปรับไม่ถูกต้อง');
+            }
+
+            $owner = $locked->penalized_type === 'provider' ? $locked->provider?->user : $locked->user;
+            $wallet = $owner?->wallet;
+
+            if ($wallet === null) {
+                throw new \DomainException('ผู้ถูกปรับยังไม่มีกระเป๋าเงิน');
+            }
+
+            if (! $wallet->isActive()) {
+                throw new \DomainException('กระเป๋าเงินของผู้ถูกปรับถูกระงับอยู่');
+            }
+
+            if ((float) $wallet->balance < $amount) {
+                throw new \DomainException('ยอดเงินในกระเป๋าของผู้ถูกปรับไม่พอ');
+            }
+
+            $transaction = app(WalletService::class)->deductForService(
+                $wallet,
+                $amount,
+                'ค่าปรับ: '.$locked->getPenaltyTypeLabel(),
+                'service_booking_penalty',
+                $locked->id,
+                ['service_booking_id' => $locked->service_booking_id]
+            );
+
+            $locked->markAsCharged('wallet', (string) $transaction->id);
+
+            return $transaction;
+        });
     }
 
     /**

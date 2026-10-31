@@ -256,7 +256,7 @@
 
 {{-- Pool Details Modal --}}
 <div x-data="{ showModal: false, poolData: null }"
-     @show-pool-modal.window="showModal = true; poolData = $event.detail"
+     x-on:show-pool-modal.window="showModal = true; poolData = $event.detail"
      x-show="showModal"
      x-cloak
      class="fixed inset-0 z-50 overflow-y-auto"

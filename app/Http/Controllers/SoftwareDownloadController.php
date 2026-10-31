@@ -226,22 +226,4 @@ class SoftwareDownloadController extends Controller
             ]
         );
     }
-
-    /**
-     * แสดงหน้า Download History
-     *
-     * @return \Illuminate\View\View
-     */
-    public function history()
-    {
-        $downloads = SoftwareDownload::where('user_id', auth()->id())
-            ->with(['product', 'license'])
-            ->latest()
-            ->paginate(20);
-
-        return view('user.downloads.history', [
-            'downloads' => $downloads,
-            'pageTitle' => 'ประวัติการดาวน์โหลด',
-        ]);
-    }
 }

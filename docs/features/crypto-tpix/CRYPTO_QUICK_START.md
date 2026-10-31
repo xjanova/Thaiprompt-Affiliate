@@ -35,13 +35,6 @@ php artisan crypto:test-connections --detail
 php artisan crypto:health-check
 ```
 
-### 4. ดูกราฟราคา
-
-เปิดเว็บบราวเซอร์:
-```
-http://localhost/crypto/charts
-```
-
 ---
 
 ## 📱 ใช้งาน Withdrawal (Client-Side Signing)
@@ -112,39 +105,6 @@ console.log('🔍 Explorer:', result.explorer_url);
 
 ---
 
-## 📊 ใช้งาน Price Charts API
-
-```javascript
-// Get chart data
-fetch('/api/crypto/chart/1?period=24h')
-    .then(r => r.json())
-    .then(data => {
-        console.log('Current Price:', data.statistics.current);
-        console.log('24h Change:', data.statistics.change + '%');
-        console.log('Chart Data:', data.data);
-    });
-
-// Compare multiple currencies
-fetch('/api/crypto/compare?currencies=1,2,3&period=24h')
-    .then(r => r.json())
-    .then(data => {
-        data.currencies.forEach(currency => {
-            console.log(currency.code, ':', currency.data);
-        });
-    });
-
-// Market overview
-fetch('/api/crypto/market-overview')
-    .then(r => r.json())
-    .then(data => {
-        console.log('Total Market Cap:', data.overview.total_market_cap);
-        console.log('Top Gainers:', data.top_gainers);
-        console.log('Top Losers:', data.top_losers);
-    });
-```
-
----
-
 ## 🔧 Commands ที่มีให้ใช้
 
 ```bash
@@ -165,19 +125,6 @@ php artisan crypto:scan-deposits --continuous
 php artisan crypto:process-withdrawals
 php artisan crypto:process-withdrawals --continuous
 ```
-
----
-
-## 🎯 Routes ที่สำคัญ
-
-**Web:**
-- `/crypto/charts` - กราฟราคาและการเปรียบเทียบ
-
-**API:**
-- `GET /api/crypto/chart/{id}?period=24h` - ข้อมูลกราฟ
-- `GET /api/crypto/compare?currencies=1,2,3&period=24h` - เปรียบเทียบ
-- `GET /api/crypto/market-overview` - ภาพรวมตลาด
-- `GET /api/crypto/realtime-prices?currencies=1,2,3` - ราคาเรียลไทม์
 
 ---
 
@@ -238,7 +185,6 @@ sudo service redis status
 - ✅ ใช้งานได้จริง
 - ✅ ปลอดภัย (Client-Side Signing)
 - ✅ รองรับหลาย chain (Ethereum, BSC, Polygon)
-- ✅ มีกราฟและ analytics
 - ✅ พร้อม production
 
 **Next Steps:**

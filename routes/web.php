@@ -119,7 +119,6 @@ Route::get('/manifest.json', function () {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 })->name('manifest.json');
 
-
 // Prompt to Web Routes
 // ⚠️ Public Tool: Prompt-to-web generator ต้องถูก index โดย search engines
 Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
@@ -738,16 +737,12 @@ Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
     Route::match(['GET', 'HEAD'], '/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
     Route::post('/decode', [\App\Http\Controllers\QrBarcodeController::class, 'decode'])->name('decode');
-    Route::match(['GET', 'HEAD'], '/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
-    Route::match(['GET', 'HEAD'], '/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
     Route::match(['GET', 'HEAD'], '/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
     Route::match(['GET', 'HEAD'], '/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
         Route::post('/store', [\App\Http\Controllers\QrBarcodeController::class, 'store'])->name('store');
-        Route::get('/history', [\App\Http\Controllers\QrBarcodeController::class, 'history'])->name('history');
-        Route::get('/analytics', [\App\Http\Controllers\QrBarcodeController::class, 'analytics'])->name('analytics');
         Route::put('/update/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'destroy'])->name('destroy');
         Route::post('/favorite/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'toggleFavorite'])->name('favorite');
@@ -854,20 +849,6 @@ Route::match(['GET', 'HEAD'], '/software-warranty', function () {
 Route::match(['GET', 'HEAD'], '/facebook-app-review-demo', function () {
     return view('facebook-app-review-demo');
 })->name('facebook-app-review-demo');
-
-// Cryptocurrency Price Charts
-// ⚠️ Public Tool: Crypto charts ต้องถูก index โดย search engines
-Route::prefix('crypto')->name('crypto.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/charts', [\App\Http\Controllers\CryptoPriceChartController::class, 'index'])->name('charts');
-});
-
-// Cryptocurrency API Routes
-Route::prefix('api/crypto')->name('api.crypto.')->group(function () {
-    Route::get('/chart/{currency}', [\App\Http\Controllers\CryptoPriceChartController::class, 'getChartData'])->name('chart');
-    Route::get('/compare', [\App\Http\Controllers\CryptoPriceChartController::class, 'getComparisonData'])->name('compare');
-    Route::get('/market-overview', [\App\Http\Controllers\CryptoPriceChartController::class, 'getMarketOverview'])->name('market-overview');
-    Route::get('/realtime-prices', [\App\Http\Controllers\CryptoPriceChartController::class, 'getRealTimePrices'])->name('realtime-prices');
-});
 
 // ========================================
 // CHATBOT RENTAL SYSTEM ROUTES
@@ -1063,10 +1044,6 @@ Route::middleware(['auth'])->prefix('software')->name('software.')->group(functi
     // ดาวน์โหลดผ่าน product (ต้องมี license)
     Route::get('/download/{product}', [SoftwareDownloadController::class, 'download'])
         ->name('download');
-
-    // ประวัติการดาวน์โหลด
-    Route::get('/downloads/history', [SoftwareDownloadController::class, 'history'])
-        ->name('downloads.history');
 });
 
 // Public download route (ใช้ token - ไม่ต้อง auth)
@@ -1258,47 +1235,3 @@ Route::get('/fortune/track/fb-group/{psid}', [\App\Http\Controllers\Frontend\For
     ->name('fortune.track.fb-group')
     ->where('psid', '[A-Za-z0-9_-]+');
 
-// ========= THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =========
-// `throttle:60,1` caps a compromised or scripted admin account at 60
-// admin-panel requests/min — legitimate UI work never touches this
-// (saving one form = 1 req; even rapid typing is well under the cap).
-Route::middleware(['auth', 'role:admin,super_admin', 'throttle:60,1'])
-    ->prefix('admin/thaiapp')->name('admin.thaiapp.')
-    ->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'hub'])->name('hub');
-
-        Route::get('/nong-ying', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'nongYing'])->name('nong-ying');
-        Route::put('/nong-ying', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateNongYing'])->name('nong-ying.update');
-
-        Route::get('/ai-pool', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'aiPool'])->name('ai-pool');
-        Route::post('/ai-pool/keys', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeApiKey'])->name('ai-pool.keys.store');
-        Route::put('/ai-pool/keys/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateApiKey'])->name('ai-pool.keys.update');
-        Route::delete('/ai-pool/keys/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyApiKey'])->name('ai-pool.keys.destroy');
-
-        Route::get('/ai-models', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'aiModels'])->name('ai-models');
-        Route::post('/ai-models/{tier}/sync', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'syncModel'])->name('ai-models.sync');
-        Route::delete('/ai-models/{tier}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyModel'])->name('ai-models.destroy');
-
-        Route::get('/banners', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'banners'])->name('banners');
-        Route::post('/banners', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeBanner'])->name('banners.store');
-        Route::put('/banners/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateBanner'])->name('banners.update');
-        Route::delete('/banners/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyBanner'])->name('banners.destroy');
-
-        Route::get('/sliders', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'sliders'])->name('sliders');
-        Route::post('/sliders', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeSlider'])->name('sliders.store');
-        Route::put('/sliders/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateSlider'])->name('sliders.update');
-        Route::delete('/sliders/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroySlider'])->name('sliders.destroy');
-
-        Route::get('/menus', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'menus'])->name('menus');
-        Route::post('/menus', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeMenu'])->name('menus.store');
-        Route::put('/menus/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateMenu'])->name('menus.update');
-        Route::delete('/menus/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyMenu'])->name('menus.destroy');
-
-        Route::get('/config', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'config'])->name('config');
-        Route::post('/config', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeConfig'])->name('config.store');
-        Route::put('/config/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateConfig'])->name('config.update');
-        Route::delete('/config/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyConfig'])->name('config.destroy');
-
-        Route::get('/releases', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'releases'])->name('releases');
-    });
-// ======= END THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =======

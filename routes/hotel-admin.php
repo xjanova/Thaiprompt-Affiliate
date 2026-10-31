@@ -27,9 +27,6 @@ Route::middleware(['auth', 'hotel-admin'])->prefix('hotel-admin')->name('hotel-a
         Route::get('/', function () {
             return view('hotel-admin.bookings.index');
         })->name('index');
-        Route::get('/create', function () {
-            return view('hotel-admin.bookings.create');
-        })->name('create');
         Route::get('/{id}', function () {
             return view('hotel-admin.bookings.show');
         })->name('show');
@@ -40,9 +37,6 @@ Route::middleware(['auth', 'hotel-admin'])->prefix('hotel-admin')->name('hotel-a
         Route::get('/', function () {
             return view('hotel-admin.hotels.index');
         })->name('index');
-        Route::get('/create', function () {
-            return view('hotel-admin.hotels.create');
-        })->name('create');
         Route::get('/{id}', function () {
             return view('hotel-admin.hotels.show');
         })->name('show');

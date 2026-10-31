@@ -744,6 +744,14 @@ class ServiceBooking extends Model
     }
 
     /**
+     * สถานะเป็นภาษาไทย — ชื่อเมธอดที่หน้าการจองและหน้าข้อพิพาทเรียกใช้
+     */
+    public function getStatusLabel(): string
+    {
+        return $this->status_text;
+    }
+
+    /**
      * เวลานัดหมายในรูปแบบที่อ่านง่าย
      */
     public function getScheduledAtFormattedAttribute(): string

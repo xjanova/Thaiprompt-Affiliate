@@ -143,6 +143,14 @@ class FortuneCustomerPersona extends Model
     public const HARD_BLOCK_DURATION_HOURS = 168;
 
     /**
+     * 💳 (2026-10-31) จ่ายเงินภายในกี่วันจึงไม่ยืดเป็น hard block
+     *
+     * เคสจริง: ลูกค้าจ่ายมา 18 บิล บิลล่าสุดจ่ายก่อนโดนเงียบ 35 นาที แต่ silence_count สะสม
+     * เกินเกณฑ์จึงโดนเงียบ 7 วัน ทั้งที่ hard block ตั้งใจไว้กับคนปั่น free-chat โดยไม่จ่าย
+     */
+    public const HARD_BLOCK_PAID_GRACE_DAYS = 30;
+
+    /**
      * 🆕 (2026-05-30 Fix E) Adaptive free-chat cap สำหรับ "ผู้กระทำซ้ำ"
      *
      * ผู้ที่เคยถูกเงียบ (silence_count ≥ 1) หรือ time_waster_score สูง = time-waster ที่กลับมาทุกวัน
@@ -607,6 +615,20 @@ class FortuneCustomerPersona extends Model
         $this->save();
     }
 
+    /** มีบิลจ่ายสำเร็จในช่วงผ่อนผันหรือไม่ — เช็คไม่ได้ให้ถือว่าจ่ายแล้ว ห้ามเสี่ยงปิดปากคนจ่ายเงิน 7 วัน */
+    protected function hasRecentPaidReading(): bool
+    {
+        try {
+            return FortuneReading::hasPaidReadingWithinDays(
+                $this->platform_user_id,
+                $this->platform_user_id,
+                self::HARD_BLOCK_PAID_GRACE_DAYS
+            );
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
     /**
      * 💬 (2026-05-18) บันทึก "ลูกค้าตอบฟุ้งหลังบอทเสนอ" — increment failed_count
      *
@@ -637,7 +659,9 @@ class FortuneCustomerPersona extends Model
         $this->silence_count = (int) ($this->silence_count ?? 0) + 1;
 
         // โดน silence ครบ threshold (5 ครั้ง) → escalate เป็น hard block (ยืดเป็น 7 วัน)
-        $isHardBlock = $this->silence_count >= self::HARD_BLOCK_SILENCE_THRESHOLD;
+        // คนที่เพิ่งจ่ายเงินยังเงียบตามปกติได้ แต่ไม่ถูกยืดเป็น 7 วัน
+        $isHardBlock = $this->silence_count >= self::HARD_BLOCK_SILENCE_THRESHOLD
+            && ! $this->hasRecentPaidReading();
         $durationHours = $isHardBlock
             ? self::HARD_BLOCK_DURATION_HOURS   // ผู้กระทำซ้ำ → 7 วัน
             : self::SILENCE_DURATION_HOURS;     // ปกติ → 10 ชม.

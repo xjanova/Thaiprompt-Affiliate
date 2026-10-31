@@ -20,8 +20,11 @@ use Illuminate\Support\Facades\Storage;
 class ThaipromptRichMenuService
 {
     protected const WIDTH = 2500;
+
     protected const HEIGHT = 1686;
+
     protected const ROW_HEIGHT = 843;
+
     protected const COL_WIDTH = 833;
 
     protected const LINE_API = 'https://api.line.me/v2/bot';
@@ -31,16 +34,16 @@ class ThaipromptRichMenuService
     public function __construct()
     {
         // ใช้ LINE Channel Access Token ของ Thaiprompt OA หลัก
-        $this->channelAccessToken = config('services.line.channel_access_token', '');
+        $this->channelAccessToken = (string) config('services.line.channel_access_token');
     }
 
     /**
      * สร้าง Rich Menu + deploy ไป LINE API + ตั้งเป็น default
      *
-     * @param array|null $config Editor config (null = default)
-     * @param string|null $customImagePath Path ภาพ PNG ที่อัปโหลด
-     * @param array|null $customAreas Areas สำหรับ custom mode
-     * @param string $editorMode โหมด: 'config' หรือ 'custom'
+     * @param  array|null  $config  Editor config (null = default)
+     * @param  string|null  $customImagePath  Path ภาพ PNG ที่อัปโหลด
+     * @param  array|null  $customAreas  Areas สำหรับ custom mode
+     * @param  string  $editorMode  โหมด: 'config' หรือ 'custom'
      * @return array ผลลัพธ์ ['success', 'rich_menu_id', 'menu', 'error']
      */
     public function generateAndDeploy(?array $config = null, ?string $customImagePath = null, ?array $customAreas = null, string $editorMode = 'config'): array
@@ -73,14 +76,15 @@ class ThaipromptRichMenuService
             ];
 
             $richMenuId = $this->createRichMenu($richMenuData);
-            if (!$richMenuId) {
+            if (! $richMenuId) {
                 return ['success' => false, 'error' => 'สร้าง Rich Menu บน LINE ไม่สำเร็จ'];
             }
 
             // 3. อัปโหลดภาพ PNG
             $uploaded = $this->uploadRichMenuImage($richMenuId, $pngData);
-            if (!$uploaded) {
+            if (! $uploaded) {
                 $this->deleteRichMenu($richMenuId);
+
                 return ['success' => false, 'error' => 'อัปโหลดภาพ Rich Menu ไม่สำเร็จ'];
             }
 
@@ -229,18 +233,18 @@ class ThaipromptRichMenuService
         return [
             // Row 1
             ['bounds' => ['x' => 0, 'y' => 0, 'width' => self::COL_WIDTH, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'uri', 'label' => 'ตลาดสด', 'uri' => "{$appUrl}/taladsod"]],
+                'action' => ['type' => 'uri', 'label' => 'ตลาดสด', 'uri' => "{$appUrl}/taladsod"]],
             ['bounds' => ['x' => self::COL_WIDTH, 'y' => 0, 'width' => self::COL_WIDTH + 1, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'uri', 'label' => 'AI Bots', 'uri' => "{$appUrl}/ai-marketplace"]],
+                'action' => ['type' => 'uri', 'label' => 'AI Bots', 'uri' => "{$appUrl}/ai-marketplace"]],
             ['bounds' => ['x' => self::COL_WIDTH * 2 + 1, 'y' => 0, 'width' => self::COL_WIDTH, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'uri', 'label' => 'MLM', 'uri' => "{$appUrl}/user/affiliates"]],
+                'action' => ['type' => 'uri', 'label' => 'MLM', 'uri' => "{$appUrl}/user/affiliates"]],
             // Row 2
             ['bounds' => ['x' => 0, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'uri', 'label' => 'ดูดวง', 'uri' => "{$appUrl}/fortune"]],
+                'action' => ['type' => 'uri', 'label' => 'ดูดวง', 'uri' => "{$appUrl}/fortune"]],
             ['bounds' => ['x' => self::COL_WIDTH, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH + 1, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'uri', 'label' => 'แดชบอร์ด', 'uri' => "{$appUrl}/user/dashboard"]],
+                'action' => ['type' => 'uri', 'label' => 'แดชบอร์ด', 'uri' => "{$appUrl}/user/dashboard"]],
             ['bounds' => ['x' => self::COL_WIDTH * 2 + 1, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH, 'height' => self::ROW_HEIGHT],
-             'action' => ['type' => 'message', 'label' => 'ช่วยเหลือ', 'text' => 'ช่วยเหลือ']],
+                'action' => ['type' => 'message', 'label' => 'ช่วยเหลือ', 'text' => 'ช่วยเหลือ']],
         ];
     }
 
@@ -249,7 +253,7 @@ class ThaipromptRichMenuService
      */
     protected function getAreasFromConfig(?array $config): array
     {
-        if (!$config || empty($config['buttons'])) {
+        if (! $config || empty($config['buttons'])) {
             return $this->getDefaultAreas();
         }
 
@@ -295,9 +299,9 @@ class ThaipromptRichMenuService
 
         for ($y = 0; $y < self::HEIGHT; $y++) {
             $ratio = $y / self::HEIGHT;
-            $r = (int)($bgStart[0] + ($bgEnd[0] - $bgStart[0]) * $ratio);
-            $g = (int)($bgStart[1] + ($bgEnd[1] - $bgStart[1]) * $ratio);
-            $b = (int)($bgStart[2] + ($bgEnd[2] - $bgStart[2]) * $ratio);
+            $r = (int) ($bgStart[0] + ($bgEnd[0] - $bgStart[0]) * $ratio);
+            $g = (int) ($bgStart[1] + ($bgEnd[1] - $bgStart[1]) * $ratio);
+            $b = (int) ($bgStart[2] + ($bgEnd[2] - $bgStart[2]) * $ratio);
             $color = imagecolorallocate($img, $r, $g, $b);
             imageline($img, 0, $y, self::WIDTH, $y, $color);
         }
@@ -337,7 +341,7 @@ class ThaipromptRichMenuService
             $this->drawCenteredText($img, $fontSize, $centerX, $centerY - 40, $button['label'] ?? '', $textColor, $fontPath);
 
             // Subtitle
-            if (!empty($button['subtitle'])) {
+            if (! empty($button['subtitle'])) {
                 $subSize = $button['subtitle_size'] ?? 28;
                 $subColor = $this->allocateColor($img, $button['subtitle_color'] ?? '#94A3B8');
                 $this->drawCenteredText($img, $subSize, $centerX, $centerY + 60, $button['subtitle'], $subColor, $fontPath);
@@ -345,7 +349,7 @@ class ThaipromptRichMenuService
         }
 
         // Branding text (ด้านล่างกลาง)
-        if (!empty($config['theme']['branding_text'])) {
+        if (! empty($config['theme']['branding_text'])) {
             $brandColor = $this->allocateColor($img, $config['theme']['branding_color'] ?? '#60A5FA');
             $this->drawCenteredText($img, 20, self::WIDTH / 2, self::HEIGHT - 15, $config['theme']['branding_text'], $brandColor, $fontPath);
         }
@@ -364,7 +368,7 @@ class ThaipromptRichMenuService
      */
     protected function saveImageToStorage(string $pngData): string
     {
-        $filename = 'rich-menus/thaiprompt-main-' . now()->format('Ymd-His') . '.png';
+        $filename = 'rich-menus/thaiprompt-main-'.now()->format('Ymd-His').'.png';
         Storage::disk('public')->put($filename, $pngData);
 
         return $filename;
@@ -397,17 +401,21 @@ class ThaipromptRichMenuService
      */
     protected function drawCenteredText($img, int $size, float $centerX, float $centerY, string $text, $color, string $fontPath): void
     {
-        if (empty($text)) return;
+        if (empty($text)) {
+            return;
+        }
 
         $bbox = imagettfbbox($size, 0, $fontPath, $text);
-        if ($bbox === false) return;
+        if ($bbox === false) {
+            return;
+        }
 
         $textWidth = abs($bbox[2] - $bbox[0]);
         $textHeight = abs($bbox[7] - $bbox[1]);
         $x = $centerX - $textWidth / 2;
         $y = $centerY + $textHeight / 2;
 
-        imagettftext($img, $size, 0, (int)$x, (int)$y, $color, $fontPath, $text);
+        imagettftext($img, $size, 0, (int) $x, (int) $y, $color, $fontPath, $text);
     }
 
     /**
@@ -416,6 +424,7 @@ class ThaipromptRichMenuService
     protected function hexToRgb(string $hex): array
     {
         $hex = ltrim($hex, '#');
+
         return [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
     }
 
@@ -444,7 +453,7 @@ class ThaipromptRichMenuService
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(10)
                 ->connectTimeout(5)
-                ->post(self::LINE_API . '/richmenu', $data);
+                ->post(self::LINE_API.'/richmenu', $data);
 
             if ($response->successful()) {
                 return $response->json('richMenuId');
@@ -458,6 +467,7 @@ class ThaipromptRichMenuService
             return null;
         } catch (\Throwable $e) {
             Log::error('ThaipromptRichMenu: Exception สร้าง Rich Menu', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -487,6 +497,7 @@ class ThaipromptRichMenuService
             return false;
         } catch (\Throwable $e) {
             Log::error('ThaipromptRichMenu: Exception อัปโหลดภาพ', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -500,11 +511,12 @@ class ThaipromptRichMenuService
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(10)
                 ->connectTimeout(5)
-                ->post(self::LINE_API . "/user/all/richmenu/{$richMenuId}");
+                ->post(self::LINE_API."/user/all/richmenu/{$richMenuId}");
 
             return $response->successful();
         } catch (\Throwable $e) {
             Log::error('ThaipromptRichMenu: Exception ตั้ง default', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -517,11 +529,12 @@ class ThaipromptRichMenuService
         try {
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(10)
-                ->delete(self::LINE_API . "/richmenu/{$richMenuId}");
+                ->delete(self::LINE_API."/richmenu/{$richMenuId}");
 
             return $response->successful();
         } catch (\Throwable $e) {
             Log::error('ThaipromptRichMenu: Exception ลบ Rich Menu', ['error' => $e->getMessage()]);
+
             return false;
         }
     }

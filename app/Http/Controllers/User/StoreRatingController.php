@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\View\View;
 
 /**
  * StoreRatingController
@@ -22,31 +21,6 @@ use Illuminate\View\View;
  */
 class StoreRatingController extends Controller
 {
-    /**
-     * แสดงฟอร์มให้คะแนนร้านค้า
-     */
-    public function create(VendorStore $store, Request $request): View
-    {
-        $user = $request->user();
-        $orderId = $request->get('order_id');
-
-        // ตรวจสอบว่าเคยให้คะแนนแล้วหรือยัง
-        $existingRating = StoreRating::where('user_id', $user->id)
-            ->where('store_id', $store->id)
-            ->where('order_id', $orderId)
-            ->first();
-
-        // ดึงข้อมูล order ถ้ามี
-        $order = $orderId ? Order::find($orderId) : null;
-
-        return view('user.store-rating.create', [
-            'store' => $store,
-            'order' => $order,
-            'existingRating' => $existingRating,
-            'pageTitle' => 'ให้คะแนนร้าน '.$store->name,
-        ]);
-    }
-
     /**
      * บันทึกคะแนนร้านค้า
      *
@@ -132,51 +106,7 @@ class StoreRatingController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('user.store-rating.history')
-            ->with('success', 'ให้คะแนนร้านค้าสำเร็จ');
-    }
-
-    /**
-     * แสดงประวัติการให้คะแนนของผู้ใช้
-     */
-    public function history(Request $request): View
-    {
-        $user = $request->user();
-
-        $ratings = StoreRating::where('user_id', $user->id)
-            ->with(['store', 'order'])
-            ->orderByDesc('created_at')
-            ->paginate(15);
-
-        return view('user.store-rating.history', [
-            'ratings' => $ratings,
-            'pageTitle' => 'ประวัติการให้คะแนนร้านค้า',
-        ]);
-    }
-
-    /**
-     * แสดงคะแนนของร้านค้า (สำหรับ public)
-     */
-    public function showStoreRatings(VendorStore $store): View
-    {
-        // ดึงสถิติ
-        $stats = StoreRating::getStoreStats($store->id);
-
-        // ดึงรีวิว
-        $ratings = StoreRating::where('store_id', $store->id)
-            ->approved()
-            ->with('user')
-            ->orderByHelpful()
-            ->orderByDesc('created_at')
-            ->paginate(15);
-
-        return view('user.store-rating.store', [
-            'store' => $store,
-            'stats' => $stats,
-            'ratings' => $ratings,
-            'pageTitle' => 'คะแนนร้าน '.$store->name,
-        ]);
+        return back()->with('success', 'ให้คะแนนร้านค้าสำเร็จ');
     }
 
     /**

@@ -3,10 +3,8 @@
 @section('step-content')
 <div x-data="{
     creatingPool: false,
-    addingLiquidity: false,
     poolCreated: {{ $config->dex_pool_address ? 'true' : 'false' }},
     poolResult: null,
-    liquidityResult: null,
 
     // Liquidity amounts
     tpixAmount: {{ old('tpix_amount', 1000) }},
@@ -41,6 +39,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({
@@ -67,45 +66,6 @@
             this.creatingPool = false;
         }
     },
-
-    async addLiquidity() {
-        if (!confirm('ต้องการเพิ่ม Liquidity หรือไม่?')) {
-            return;
-        }
-
-        this.addingLiquidity = true;
-        this.liquidityResult = null;
-
-        try {
-            const response = await fetch('{{ route('admin.tpix.deployment.step6.add-liquidity', $config->slug) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    tpix_amount: this.tpixAmount,
-                    token_amount: this.tokenAmount
-                })
-            });
-
-            const data = await response.json();
-            this.liquidityResult = data;
-
-            if (data.success) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        } catch (error) {
-            this.liquidityResult = {
-                success: false,
-                message: 'เกิดข้อผิดพลาด: ' + error.message
-            };
-        } finally {
-            this.addingLiquidity = false;
-        }
-    }
 }">
 
     {{-- Header --}}
@@ -318,35 +278,6 @@
                 <div>
                     <h4 class="font-semibold text-red-900 dark:text-red-100 mb-1">Pool สร้างล้มเหลว</h4>
                     <p class="text-sm text-red-800 dark:text-red-200" x-text="poolResult?.message"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Liquidity Result --}}
-    <div x-show="liquidityResult" class="mb-8">
-        <div x-show="liquidityResult?.success"
-             class="p-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-r-xl">
-            <div class="flex items-center gap-3">
-                <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                <div>
-                    <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1">เพิ่ม Liquidity สำเร็จ!</h4>
-                    <p class="text-sm text-green-800 dark:text-green-200" x-text="liquidityResult?.message"></p>
-                </div>
-            </div>
-        </div>
-
-        <div x-show="liquidityResult && !liquidityResult?.success"
-             class="p-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-r-xl">
-            <div class="flex items-center gap-3">
-                <svg class="w-6 h-6 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                </svg>
-                <div>
-                    <h4 class="font-semibold text-red-900 dark:text-red-100 mb-1">เพิ่ม Liquidity ล้มเหลว</h4>
-                    <p class="text-sm text-red-800 dark:text-red-200" x-text="liquidityResult?.message"></p>
                 </div>
             </div>
         </div>

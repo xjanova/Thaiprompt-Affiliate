@@ -34,31 +34,6 @@ class LineMessageAnalyticsController extends Controller
     }
 
     /**
-     * แสดง dashboard หลัก
-     *
-     * @return \Illuminate\View\View
-     */
-    public function dashboard(Request $request)
-    {
-        // ดึง period จาก request (default: week)
-        $period = $request->get('period', 'week');
-
-        // Validate period
-        if (! in_array($period, ['today', 'week', 'month', 'all'])) {
-            $period = 'week';
-        }
-
-        // ดึงข้อมูลสำหรับ dashboard
-        $data = $this->analyticsService->getDashboardSummary($period);
-
-        return view('admin.line-analytics.dashboard', [
-            'pageTitle' => 'LINE Message Analytics',
-            'period' => $period,
-            'data' => $data,
-        ]);
-    }
-
-    /**
      * API: ดึงสถิติภาพรวม
      */
     public function apiOverview(Request $request): JsonResponse

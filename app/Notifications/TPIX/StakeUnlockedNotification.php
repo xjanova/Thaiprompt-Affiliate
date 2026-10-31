@@ -37,7 +37,7 @@ class StakeUnlockedNotification extends Notification implements ShouldQueue
             ->line("Pool: {$pool->name}")
             ->line('จำนวน: '.number_format($this->stake->amount, 8))
             ->line('รางวัลรอรับ: '.number_format($rewards, 8))
-            ->action('Unstake เลย', route('user.tokens.staking'))
+            ->action('Unstake เลย', route('user.staking.index'))
             ->line('คุณสามารถ unstake และรับรางวัลได้แล้ว!');
     }
 

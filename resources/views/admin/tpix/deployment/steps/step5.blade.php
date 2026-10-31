@@ -1,24 +1,20 @@
 @extends('admin.tpix.deployment._wizard-layout')
 
 @section('step-content')
+@php
+    // ค่า gas คำนวณไว้แล้วใน TpixDeploymentController::step5 — คำนวณไม่ได้ให้เป็น null เพื่อให้ปุ่ม Deploy ปิดไว้
+    $estimatedGas = isset($estimation['estimated_gas']) ? [
+        'gas' => number_format($estimation['estimated_gas']),
+        'gasPrice' => number_format($estimation['gas_price_gwei'], 4).' Gwei',
+        'totalCost' => $estimation['estimated_cost_formatted'],
+    ] : null;
+@endphp
 <div x-data="{
     deploying: false,
     verifying: false,
     deploymentResult: null,
     verificationResult: null,
-    estimatedGas: null,
-
-    async estimateGas() {
-        try {
-            const response = await fetch('{{ route('admin.tpix.deployment.api.estimate-gas', $config->slug) }}');
-            const data = await response.json();
-            if (data.success) {
-                this.estimatedGas = data.data;
-            }
-        } catch (error) {
-            console.error('Error estimating gas:', error);
-        }
-    },
+    estimatedGas: @js($estimatedGas),
 
     async deployContract() {
         if (!confirm('ต้องการ Deploy Smart Contract หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) {
@@ -33,6 +29,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             });
@@ -64,6 +61,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             });
@@ -85,7 +83,7 @@
             this.verifying = false;
         }
     }
-}" x-init="estimateGas()">
+}">
 
     {{-- Header --}}
     <div class="mb-8">
@@ -176,8 +174,7 @@
         </div>
 
         <div x-show="!estimatedGas" class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">กำลังคำนวณค่า Gas...</p>
+            <p class="text-sm text-red-600 dark:text-red-400">คำนวณค่า Gas ไม่สำเร็จ กรุณาตรวจการเชื่อมต่อ RPC แล้วรีเฟรชหน้านี้</p>
         </div>
     </div>
 
@@ -287,7 +284,12 @@
     @endif
 
     {{-- Deploy Button --}}
-    @if($config->status !== 'deployed')
+    @if($blockedReason)
+        <div class="p-6 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-xl mb-8">
+            <h4 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">ยังไม่สามารถ Deploy ได้</h4>
+            <p class="text-sm text-yellow-800 dark:text-yellow-200">{{ $blockedReason }}</p>
+        </div>
+    @elseif($config->status !== 'deployed')
         <div class="p-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-2xl mb-8">
             <div class="flex items-start gap-4 mb-6">
                 <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">

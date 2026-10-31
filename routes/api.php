@@ -183,46 +183,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         // overridden by the legacy banner routes inside the protected v1
         // group below, so removing them is a no-op for live behavior — just
         // unbreaks `php artisan route:list`.
-
-        // Mobile app control plane (public; private keys filtered server-side)
-        Route::get('/config', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
-        Route::get('/flags', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'flags'])->name('api.v1.app.flags');
-        Route::get('/menus', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'menus'])->name('api.v1.app.menus');
-        Route::get('/sliders', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'sliders'])->name('api.v1.app.sliders');
-        Route::get('/promotions', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'promotions'])->name('api.v1.app.promotions');
-        Route::get('/latest-version', [\App\Http\Controllers\Api\V1\AppReleaseApiController::class, 'latest'])->name('api.v1.app.latest-version');
     });
-
-    // ========= THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =========
-    // App-facing AI endpoints called without user auth. Per-IP rate
-    // limited. These were previously hot-patched onto prod via tinker
-    // and got wiped by a `git reset --hard` during deploy — now tracked
-    // in git so they survive. See session_handoff_v1.0.21.
-    Route::get('/ai/nong-ying/persona',
-        [\App\Http\Controllers\Api\V1\NongYingController::class, 'persona'])
-        ->middleware('throttle:60,1,api-nongying-persona')
-        ->name('api.v1.ai.nong-ying.persona');
-
-    Route::get('/ai/nong-ying/knowledge',
-        [\App\Http\Controllers\Api\V1\NongYingController::class, 'knowledgeSearch'])
-        ->middleware('throttle:30,1,api-nongying-knowledge')
-        ->name('api.v1.ai.nong-ying.knowledge');
-
-    // On-device Gemma .task download proxy. Local-first: Nginx serves
-    // straight from public/ai-models/ when synced, else streams from HF
-    // with server-side HF_TOKEN. GET + HEAD both forwarded.
-    Route::match(['get', 'head'], '/ai/models/{tier}',
-        [\App\Http\Controllers\Api\AiModelProxyController::class, 'download'])
-        ->where('tier', 'gemma4_e2b|gemma4_e4b')
-        ->middleware('throttle:30,1,api-ai-model-download')
-        ->name('api.v1.ai.models.download');
-
-    // Metadata (size, modified, HF URL) — guardAdmin() inside controller.
-    Route::get('/ai/models/{tier}/info',
-        [\App\Http\Controllers\Api\AiModelAdminController::class, 'show'])
-        ->where('tier', 'gemma4_e2b|gemma4_e4b')
-        ->name('api.v1.ai.models.info');
-    // ======= END THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =======
 
     // 🔐 (2026-09-25) ไฟล์เอกสารไรเดอร์ของตัวเอง — เปิดได้เฉพาะ signed URL อายุ 30 นาที
     //    (สร้างจาก GET /rider/status และ /rider/documents เท่านั้น — ไฟล์อยู่บน private disk)
@@ -269,23 +230,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/account/delete/send-code', [\App\Http\Controllers\Api\V1\AccountController::class, 'sendDeletionCode'])
             ->middleware('throttle:3,10,api-account-delete-code')
             ->name('api.v1.account.delete.send-code');
-
-        // Mobile app analytics ingestion + AI fallback (protected + rate-limited)
-        Route::post('/events/batch', [\App\Http\Controllers\Api\V1\AnalyticsApiController::class, 'batch'])
-            ->middleware('throttle:60,1,api-events-batch')
-            ->name('api.v1.events.batch');
-        Route::post('/ai/chat', [\App\Http\Controllers\Api\V1\AiChatApiController::class, 'chat'])
-            ->middleware('throttle:20,1,api-ai-chat')
-            ->name('api.v1.ai.chat');
-        Route::post('/ai/tts', [\App\Http\Controllers\Api\V1\AiTtsApiController::class, 'speak'])
-            ->middleware('throttle:20,1,api-ai-tts')
-            ->name('api.v1.ai.tts');
-
-        // Admin-only model sync (gated by controller's guardAdmin()).
-        Route::post('/admin/ai/models/{tier}/sync',
-            [\App\Http\Controllers\Api\AiModelAdminController::class, 'sync'])
-            ->where('tier', 'gemma4_e2b|gemma4_e4b')
-            ->name('api.v1.admin.ai.models.sync');
 
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
@@ -756,14 +700,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         });
 
         // App Configuration (protected, legacy)
-        // The mobile app's NEW control plane lives in the public block above
-        // (`/v1/app/config`, `/v1/app/flags`, ...). The two `/config` routes
-        // collided — Laravel kept the LATER definition, which silently
-        // hijacked the new public endpoint and made it return 401. The new
-        // endpoint is canonical going forward, so the legacy `/config` and
-        // `/banners` shadows are removed here. The remaining theme/settings/
-        // features endpoints are kept in case any web admin tooling still
-        // hits them.
+        // คง theme/settings/features ไว้เผื่อเครื่องมือหลังบ้านบนเว็บยังเรียกอยู่
         Route::prefix('app')->group(function () {
             Route::get('/settings', [AppConfigController::class, 'settings']);
             Route::get('/theme', [AppConfigController::class, 'theme']);

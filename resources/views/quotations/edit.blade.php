@@ -45,7 +45,7 @@
         @endif
 
         <!-- Edit Form -->
-        <form action="{{ route('admin.quotations.update', $quotation) }}" method="POST" id="quotationForm" class="space-y-6">
+        <form action="{{ route('admin.software-quotations.update', $quotation) }}" method="POST" id="quotationForm" class="space-y-6">
             @csrf
             @method('PUT')
 

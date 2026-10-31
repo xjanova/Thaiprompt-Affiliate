@@ -308,7 +308,7 @@
 
 {{-- Token Select Modal --}}
 <div x-data="{ showModal: false, currentTarget: '' }"
-     @show-token-modal.window="showModal = true; currentTarget = $event.detail.target"
+     x-on:show-token-modal.window="showModal = true; currentTarget = $event.detail.target"
      x-show="showModal"
      x-cloak
      class="fixed inset-0 z-50 overflow-y-auto"

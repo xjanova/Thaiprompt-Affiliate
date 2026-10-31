@@ -6,6 +6,7 @@ use App\Http\Controllers\Pos\PosApiController;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Shop\Concerns\BuildsShopFixtures;
 use Tests\TestCase;
 
 /**
@@ -19,7 +20,7 @@ use Tests\TestCase;
  */
 class PosCustomerApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsShopFixtures, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -106,5 +107,62 @@ class PosCustomerApiTest extends TestCase
         $this->postJson('/pos/api/customers', ['name' => 'อีเมลซ้ำ', 'email' => 'shopper@example.com'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('email');
+    }
+
+    /**
+     * เส้นลูกค้าเคยล่มทุกครั้ง (member_code ไม่มีจริง) — ซ่อมแล้วห้ามกลายเป็นช่องดึงผู้ใช้ทั้งระบบ
+     * ผู้ขายเห็นเฉพาะคนที่เคยซื้อกับร้านตัวเอง ส่งรหัสร้านอื่นมาก็ไม่มีผล
+     */
+    public function test_a_seller_only_sees_customers_of_their_own_store(): void
+    {
+        [$seller, $store] = $this->makeSellerWithStore();
+        [, $otherStore] = $this->makeSellerWithStore();
+        $mine = $this->makeBuyer();
+        $theirs = $this->makeBuyer();
+        $this->makeOrder($mine, [], ['store_id' => $store->id]);
+        $this->makeOrder($theirs, [], ['store_id' => $otherStore->id]);
+
+        $paths = [
+            'customers/all',
+            'customers/search?q=',
+            'customers/updated?since=2000-01-01',
+            'customers/all?store_id='.$otherStore->id,
+        ];
+
+        foreach ($paths as $path) {
+            $ids = $this->actingAs($seller)->getJson('/pos/api/'.$path)->assertOk()->json('data.*.id');
+            $this->assertSame([$mine->id], $ids, $path);
+        }
+    }
+
+    public function test_a_seller_without_a_store_sees_no_customers(): void
+    {
+        $this->makeOrder($this->makeBuyer(), []);
+
+        $this->actingAs(User::factory()->create(['role' => 'seller']))
+            ->getJson('/pos/api/customers/all')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    /** PWA อ่านรูปจากคีย์ image/image_url แต่ตารางเก็บไว้ที่ main_image_url */
+    public function test_products_are_scoped_to_the_store_and_carry_the_image_keys(): void
+    {
+        [$seller, $store] = $this->makeSellerWithStore();
+        [$otherSeller, $otherStore] = $this->makeSellerWithStore();
+        $this->makeProduct($seller, $store, ['main_image_url' => 'https://cdn.test/a.webp']);
+        $this->makeProduct($otherSeller, $otherStore);
+
+        $this->actingAs($seller)
+            ->getJson('/pos/api/products/all')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.image', 'https://cdn.test/a.webp')
+            ->assertJsonPath('data.0.image_url', 'https://cdn.test/a.webp');
+    }
+
+    public function test_the_health_check_answers_without_login(): void
+    {
+        $this->getJson('/pos/api/health')->assertOk()->assertJsonPath('success', true);
     }
 }

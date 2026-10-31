@@ -35,7 +35,7 @@
 
             {{-- Export Button --}}
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.line-membership-signup.connections.export', request()->query()) }}"
+                <a href="{{ route('admin.line-connections.export', request()->query()) }}"
                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow transition">
                     <i class="fas fa-file-export mr-2"></i>
                     Export CSV
@@ -104,7 +104,7 @@
             </h2>
         </div>
         <div class="p-4">
-            <form method="GET" action="{{ route('admin.line-membership-signup.connections.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <form method="GET" action="{{ route('admin.line-connections.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {{-- Search --}}
                 <div class="lg:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ค้นหา</label>
@@ -151,7 +151,7 @@
                         <i class="fas fa-search mr-2"></i>
                         ค้นหา
                     </button>
-                    <a href="{{ route('admin.line-membership-signup.connections.index') }}"
+                    <a href="{{ route('admin.line-connections.index') }}"
                        class="inline-flex items-center px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition">
                         <i class="fas fa-times mr-2"></i>
                         ล้าง

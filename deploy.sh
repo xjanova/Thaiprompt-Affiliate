@@ -944,7 +944,12 @@ print_info "Removing untracked files and directories..."
 #                                    ทดสอบแล้วบน git 2.34.1 (prod) + 2.53: เก็บ 2 ไฟล์นี้ ลบ cache/sessions/views ตามเดิม
 #                                    (STEP 4.7 สร้างโฟลเดอร์คืน) · webhook ยังเข้าได้ — รายการยกเว้นอยู่ใน
 #                                    app/Http/Middleware/PreventRequestsDuringMaintenance.php · scheduler: ท้าย routes/console.php
-git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/kyc-private' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
+#   - 'storage/app/riders' + 'storage/app/rider_jobs' : (2026-10-29) เอกสารสมัครไรเดอร์ (บัตร/ใบขับขี่/ทะเบียนรถ/รูปหน้าตรง)
+#                                    และรูปหลักฐานส่งมอบ (ถึงจุดส่ง/รอผู้รับ) อยู่บน disk local — เดิมไม่อยู่ในรายการนี้ ⇒ ลบทุก deploy
+#                                    ของจริงย้ายออกนอก git tree ที่ STEP 4.5.2 (บรรทัดนี้กันรอบแรกที่ยังเป็นโฟลเดอร์จริง)
+#   ⚠️ โฟลเดอร์ private ใหม่ใต้ storage/app ต้องใส่ 3 ที่: -e บรรทัดนี้ · persist_private_storage_dir (STEP 4.5.2) · .gitignore
+#      tests/Unit/DeployPrivateStorageTest.php เช็คให้ครบทั้ง 3 ที่
+git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/kyc-private' -e 'storage/app/riders' -e 'storage/app/rider_jobs' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1014,6 +1019,11 @@ persist_private_storage_dir "storage/app/profile-photos" "$(dirname "$SCRIPT_DIR
 # 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิม (บัตร/คู่บัตร) ที่ย้ายออกจาก public disk — App\Services\Kyc\KycDocumentStorage
 #   เหตุผลเดียวกับ eKYC: ถ้าไม่ exclude + ย้ายออกนอก git tree → git clean -fdx ลบบัตรประชาชนลูกค้าทุก deploy
 persist_private_storage_dir "storage/app/kyc-private" "$(dirname "$SCRIPT_DIR")/kyc_private_data"
+# 🛵 (2026-10-29) เอกสารสมัครไรเดอร์ — App\Services\RiderAccountService::DOCUMENT_DISK → riders/{rider_id}/{type}/
+#   + รูปหลักฐานส่งมอบ — App\Services\Rider\HandoverService::PHOTO_DISK → rider_jobs/{job_id}/handover_{arrival|waited}/
+#   เดิมไม่อยู่ทั้งในรายการ -e และที่นี่ ⇒ git clean -fdx ลบทุก deploy (ตรวจ prod 2026-10-29: ยังไม่มีไรเดอร์ จึงยังไม่มีไฟล์หาย)
+persist_private_storage_dir "storage/app/riders" "$(dirname "$SCRIPT_DIR")/rider_data"
+persist_private_storage_dir "storage/app/rider_jobs" "$(dirname "$SCRIPT_DIR")/rider_job_data"
 
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
 print_substep "4.6" "Syncing .env with .env.example..."

@@ -111,11 +111,6 @@
                             </button>
                         </form>
 
-                        <a href="{{ route('admin.line-bot.broadcast.edit', $broadcast->id) }}"
-                           class="block w-full px-4 py-3 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-center font-semibold">
-                            <i class="fas fa-edit mr-2"></i>Edit Broadcast
-                        </a>
-
                         <form method="POST" action="{{ route('admin.line-bot.broadcast.destroy', $broadcast->id) }}"
                               onsubmit="return confirm('Delete this broadcast?')" class="w-full">
                             @csrf

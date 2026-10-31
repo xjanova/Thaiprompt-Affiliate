@@ -148,7 +148,7 @@ class FoodProduct extends Model
      */
     public function getPassportUrlAttribute(): string
     {
-        return route('food-passport.public.show', $this->food_passport_id);
+        return route('api.food-passport.products.show', $this->id);
     }
 
     /**
@@ -156,7 +156,7 @@ class FoodProduct extends Model
      */
     public function getQrScanUrlAttribute(): string
     {
-        return route('food-passport.scan', $this->food_passport_id);
+        return route('api.food-passport.scan', $this->food_passport_id);
     }
 
     /**

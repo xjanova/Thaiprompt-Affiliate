@@ -129,7 +129,6 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\SloganController;
 use App\Http\Controllers\Admin\SmsCheckerAdminController;
-use App\Http\Controllers\Admin\SmsGatewayAdminController;
 use App\Http\Controllers\Admin\StorefrontSettingsController;
 use App\Http\Controllers\Admin\SuperAdminHotelController;
 use App\Http\Controllers\Admin\TarotManagementController;
@@ -203,7 +202,6 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
         Route::get('/pages', [PageViewAnalyticsController::class, 'pages'])->name('pages');
         Route::get('/sources', [PageViewAnalyticsController::class, 'sources'])->name('sources');
         Route::get('/devices', [PageViewAnalyticsController::class, 'devices'])->name('devices');
-        Route::get('/geography', [PageViewAnalyticsController::class, 'geography'])->name('geography');
         Route::get('/export', [PageViewAnalyticsController::class, 'export'])->name('export');
         Route::get('/chart-data', [PageViewAnalyticsController::class, 'chartData'])->name('chart-data');
     });
@@ -654,7 +652,6 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::get('/', [EmailController::class, 'index'])->name('index');
     Route::get('/statistics', [EmailController::class, 'statistics'])->name('statistics');
 
-
     // Email Logs
     Route::get('/logs', [EmailController::class, 'logs'])->name('logs');
     Route::get('/logs/{log}', [EmailController::class, 'showLog'])->name('logs.show');
@@ -714,9 +711,6 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
 
 // LINE Message Analytics (Phase 2 - New Smart Analytics)
 Route::prefix('line-analytics')->name('line-analytics.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [LineMessageAnalyticsController::class, 'dashboard'])->name('dashboard');
-
     // API Endpoints
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/overview', [LineMessageAnalyticsController::class, 'apiOverview'])->name('overview');
@@ -895,7 +889,6 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::get('/settings', [TwoFactorSettingsController::class, 'index'])->name('settings');
     Route::post('/settings', [TwoFactorSettingsController::class, 'update'])->name('settings.update');
 });
-
 
 // AI Provider Management
 Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
@@ -2138,9 +2131,7 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
 // =========================================
 // ต่อจาก platform-revenue group (สำหรับ sub-modules ที่ต้องอยู่ใน namespace platform-revenue)
 // =========================================
-Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
-
-});
+Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {});
 
 /*
 |--------------------------------------------------------------------------
@@ -3038,27 +3029,6 @@ Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
 
     // Logs for specific key
     Route::get('/{id}/logs', [AiApiKeyController::class, 'logs'])->name('key.logs');
-});
-
-// ========================================
-// SMS GATEWAY MANAGEMENT
-// ========================================
-Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
-    // แพ็กเกจราคา
-    Route::get('/pricing', [SmsGatewayAdminController::class, 'pricing'])->name('pricing');
-    Route::post('/pricing', [SmsGatewayAdminController::class, 'storePricing'])->name('pricing.store');
-    Route::put('/pricing/{id}', [SmsGatewayAdminController::class, 'updatePricing'])->name('pricing.update');
-    Route::delete('/pricing/{id}', [SmsGatewayAdminController::class, 'deletePricing'])->name('pricing.delete');
-
-    // Subscriptions
-    Route::get('/subscriptions', [SmsGatewayAdminController::class, 'subscriptions'])->name('subscriptions');
-    Route::post('/subscriptions/{id}/toggle', [SmsGatewayAdminController::class, 'toggleSubscription'])->name('subscriptions.toggle');
-
-    // ร้านค้าที่ใช้ระบบ
-    Route::get('/stores', [SmsGatewayAdminController::class, 'stores'])->name('stores');
-
-    // สถิติรายได้
-    Route::get('/revenue', [SmsGatewayAdminController::class, 'revenue'])->name('revenue');
 });
 
 // ============================================

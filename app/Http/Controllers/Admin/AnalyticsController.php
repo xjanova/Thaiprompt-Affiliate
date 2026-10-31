@@ -347,6 +347,11 @@ class AnalyticsController extends Controller
     {
         $recommendations = [];
 
+        // ยังไม่เคยเก็บสถิติระบบ จึงยังไม่มีข้อแนะนำ
+        if (! $latest) {
+            return $recommendations;
+        }
+
         if ($latest->cpu_usage > 70) {
             $recommendations[] = [
                 'severity' => 'high',

@@ -25,8 +25,12 @@ class FortuneSyncPageBans extends Command
 
         $limit = max(1, min(500, (int) $this->option('limit')));
         // API ล้มเหลวต้องเว้นอย่างน้อย 15 นาที ป้องกันยิงซ้ำถี่เมื่อ token หมดอายุ
+        // Facebook จำกัดเพจ (code 368) ต้องพักนานกว่านั้น ยิงซ้ำจะยิ่งโดนนาน
         $due = fn ($query) => $query->whereNull('page_block_attempted_at')
-            ->orWhere('page_block_attempted_at', '<=', now()->subMinutes(15));
+            ->orWhere('page_block_attempted_at', '<=', now()->subHours(FortuneUserBan::PAGE_LIMITED_RETRY_HOURS))
+            ->orWhere(fn ($q) => $q->where('page_block_attempted_at', '<=', now()->subMinutes(15))
+                ->where(fn ($q) => $q->whereNull('page_block_error')
+                    ->orWhere('page_block_error', 'not like', '%'.FortuneUserBan::PAGE_LIMITED_ERROR.'%')));
 
         $release = FortuneUserBan::query()
             ->where(fn ($q) => $q->where('page_block_status', 'unblock_failed')
@@ -53,9 +57,17 @@ class FortuneSyncPageBans extends Command
                 $failed++;
             }
         }
+        // แถวแรกที่เจอ code 368 พักทั้งเพจแล้ว แถวที่เหลือของเพจนั้นห้ามยิงต่อในรอบนี้
+        $limitedPages = [];
         foreach ($block as $ban) {
+            if (isset($limitedPages[(int) $ban->fortune_page_id])) {
+                continue;
+            }
             if (! $service->syncPageBlock($ban)) {
                 $failed++;
+                if ($ban->isPageBlockLimited()) {
+                    $limitedPages[(int) $ban->fortune_page_id] = true;
+                }
             }
         }
 

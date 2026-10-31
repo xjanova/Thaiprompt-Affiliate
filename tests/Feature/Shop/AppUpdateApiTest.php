@@ -6,7 +6,6 @@ use App\Models\SiteSetting;
 use App\Services\AppDownloadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
@@ -174,65 +173,5 @@ class AppUpdateApiTest extends TestCase
 
         $this->artisan('app:publish-apk', ['path' => $this->fakeApk(), '--app-version' => '3.389.0', '--version-code' => '46', '--min-build' => 'x'])
             ->assertFailed();
-    }
-
-    /**
-     * แถวเก่าในตาราง app_releases (ลิงก์ GitHub Releases) — ห้ามหลุดออกไปถึงแอปเก่าอีก
-     */
-    private function seedGithubRelease(): void
-    {
-        DB::table('app_releases')->insert([
-            'version' => '1.0.24',
-            'build_number' => 10024,
-            'platform' => 'android',
-            'channel' => 'stable',
-            'release_notes_md' => 'see https://github.com/xjanova/thaipromptapp',
-            'apk_url' => 'https://github.com/xjanova/thaipromptapp/releases/download/v1.0.24/thaipromptapp-1.0.24.apk',
-            'published' => true,
-            'published_at' => now(),
-        ]);
-    }
-
-    public function test_legacy_latest_version_never_hands_out_github_links_when_nothing_is_published(): void
-    {
-        $this->seedGithubRelease();
-
-        $res = $this->getJson('/api/v1/app/latest-version?platform=android')
-            ->assertNotFound()
-            ->assertJsonPath('data', null);
-
-        $this->assertStringNotContainsStringIgnoringCase('github', $res->getContent());
-    }
-
-    public function test_legacy_latest_version_serves_the_apk_published_on_the_website(): void
-    {
-        $this->seedGithubRelease();
-        $source = $this->fakeApk();
-        $apk = app(AppDownloadService::class)->publish($source, '3.391.0', 48, ['จ่ายด้วยเหรียญ TPIX ได้แล้ว'], null);
-
-        $res = $this->getJson('/api/v1/app/latest-version?platform=android')->assertOk();
-        $res->assertHeader('Cache-Control', 'no-store, private')
-            ->assertJsonPath('data.latest_version', '3.391.0')
-            ->assertJsonPath('data.latest_build', 48)
-            ->assertJsonPath('data.min_supported_version', '1.0.0')
-            ->assertJsonPath('data.apk_size_bytes', filesize($source))
-            ->assertJsonPath('data.apk_sha256', hash_file('sha256', $source))
-            ->assertJsonPath(
-                'data.apk_url',
-                rtrim((string) config('app.url'), '/').'/storage/app-downloads/ThaiPrompt-APP-3.391.0.apk?h='.substr($apk['sha256'], 0, 12),
-            );
-
-        $this->assertStringContainsString('- จ่ายด้วยเหรียญ TPIX ได้แล้ว', $res->json('data.release_notes_md'));
-        $this->assertStringNotContainsStringIgnoringCase('github', $res->getContent());
-    }
-
-    public function test_legacy_latest_version_respects_the_admin_switch_and_ios(): void
-    {
-        app(AppDownloadService::class)->publish($this->fakeApk(), '3.391.0', 48, [], null);
-
-        $this->getJson('/api/v1/app/latest-version?platform=ios')->assertNotFound();
-
-        SiteSetting::getSetting()->update(['app_apk_enabled' => false]);
-        $this->getJson('/api/v1/app/latest-version?platform=android')->assertNotFound();
     }
 }

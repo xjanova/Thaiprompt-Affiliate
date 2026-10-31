@@ -277,6 +277,13 @@ class TeamTransferController extends Controller
     {
         $user = Auth::user();
 
+        // ตรวจสอบว่ามี MLM member หรือไม่
+        if (! $user->mlmMember) {
+            return redirect()
+                ->route('user.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
         // ดึงคำขอที่รอการอนุมัติ (ลูกทีมขอย้าย)
         $pendingApprovals = MlmTeamTransferRequest::where('old_unilevel_sponsor_id', $user->mlmMember->id)
             ->where('status', MlmTeamTransferRequest::STATUS_PENDING)

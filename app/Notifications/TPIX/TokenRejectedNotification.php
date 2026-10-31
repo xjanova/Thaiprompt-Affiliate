@@ -35,8 +35,8 @@ class TokenRejectedNotification extends Notification implements ShouldQueue
             ->greeting('สวัสดี '.$notifiable->name)
             ->line("Token {$this->token->name} ({$this->token->symbol}) ของคุณไม่ได้รับการอนุมัติ")
             ->line("เหตุผล: {$this->reason}")
-            ->line('คุณสามารถแก้ไขและส่งขออนุมัติใหม่ได้')
-            ->action('แก้ไข Token', route('user.tokens.edit', $this->token->id))
+            ->line('คุณสามารถดูรายละเอียด Token นี้ หรือสร้าง Token ใหม่ได้')
+            ->action('ดู Token', route('user.tokens.show', $this->token->id))
             ->line('หากมีคำถาม กรุณาติดต่อ Support');
     }
 

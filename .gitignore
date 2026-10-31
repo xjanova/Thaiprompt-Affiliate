@@ -50,6 +50,12 @@ storage/logs/*.log
 storage/app/kyc-private
 storage/app/kyc-temp
 storage/app/ekyc
+# 🛵 (2026-10-29) เอกสารสมัครไรเดอร์ + รูปหลักฐานส่งมอบ — เหตุผลเดียวกัน (symlink ออกนอก git tree บน prod)
+storage/app/riders
+storage/app/rider_jobs
+# รูปโปรไฟล์ถ่ายสด (ProfilePhotoService) — persist ตั้งแต่ 2026-10-04 แต่ตกหล่นจากตรงนี้
+#   ⇒ stash -u กวาด symlink ไปทุก deploy (stash บน prod 44 ก้อนมี storage/app/profile-photos)
+storage/app/profile-photos
 
 # Uploaded files (ป้องกันไฟล์อัปโหลดถูก track ใน git)
 storage/app/public/*

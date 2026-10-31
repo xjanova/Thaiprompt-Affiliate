@@ -305,7 +305,7 @@
                                     {{ Str::limit($reading->platform_user_id, 15) }}
                                 </td>
                                 <td style="padding:12px;">
-                                    @if($reading->is_deep_reading)
+                                    @if($reading->reading_type === 'deep')
                                         <span class="tp-pill tp-pill-soft" style="color:#b79ae8;font-size:12px;"><i class="fas fa-gem"></i> เชิงลึก</span>
                                     @else
                                         <span class="tp-pill tp-pill-soft" style="color:#5689b8;font-size:12px;"><i class="fas fa-star"></i> พื้นฐาน</span>

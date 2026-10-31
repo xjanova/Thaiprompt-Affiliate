@@ -495,6 +495,14 @@ class User extends Authenticatable
     }
 
     /**
+     * รายการขายหน้าร้านที่ผู้ใช้เป็นลูกค้า
+     */
+    public function posTransactions()
+    {
+        return $this->hasMany(PosTransaction::class, 'customer_id');
+    }
+
+    /**
      * Get all payment methods for the user
      */
     public function paymentMethods()
