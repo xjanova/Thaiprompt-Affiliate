@@ -167,16 +167,12 @@ class User extends Authenticatable
 
     /**
      * Get profile picture URL or default avatar
-     * Priority: LINE picture > Uploaded picture > Default avatar
+     * Priority: Uploaded picture > LINE picture > Default avatar
      */
     public function getProfilePictureUrlAttribute(): string
     {
-        // Priority 1: Use LINE profile picture if available
-        if ($this->line_picture_url) {
-            return $this->line_picture_url;
-        }
-
-        // Priority 2: Use uploaded profile picture with cache busting
+        // Priority 1: รูปที่อัปโหลดเอง (พร้อม cache busting)
+        // 🐛 (2026-10-31) เดิมเช็ค LINE ก่อน → สมาชิกที่ผูก LINE อัปโหลดรูปใหม่แล้วรูปไม่เปลี่ยน
         if ($this->profile_picture) {
             $path = $this->profile_picture;
 
@@ -195,6 +191,11 @@ class User extends Authenticatable
 
                 return asset($storagePath).'?v='.$timestamp;
             }
+        }
+
+        // Priority 2: รูปจาก LINE
+        if ($this->line_picture_url) {
+            return $this->line_picture_url;
         }
 
         // Priority 3: Return default avatar based on first letter of name

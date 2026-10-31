@@ -36,6 +36,7 @@
     - show-sub-district: แสดง/ซ่อน ตำบล (default: true)
     - country-field: ชื่อ field สำหรับประเทศ (ถ้าไม่ระบุ = ไทยเท่านั้น)
     - country-value: ค่าเริ่มต้นประเทศ (default: TH)
+    - required: บังคับกรอกทุกช่อง (default: true) — ส่ง :required="false" เมื่อที่อยู่เป็นข้อมูลไม่บังคับ
 --}}
 
 @props([
@@ -50,20 +51,22 @@
     'showSubDistrict' => true,
     'countryField' => '',
     'countryValue' => 'TH',
+    // false = ทุกช่องไม่บังคับ (เช่น ที่อยู่ออกใบเสร็จในหน้าโปรไฟล์ — ไม่ได้กรอกก็ต้องบันทึกชื่อ/เบอร์ได้)
+    'required' => true,
 ])
 
 <div x-data="thaiAddressPicker({
-        provinceField: '{{ $provinceField }}',
-        districtField: '{{ $districtField }}',
-        subDistrictField: '{{ $subDistrictField }}',
-        postalCodeField: '{{ $postalCodeField }}',
-        initialProvince: '{{ $provinceValue }}',
-        initialDistrict: '{{ $districtValue }}',
-        initialSubDistrict: '{{ $subDistrictValue }}',
-        initialPostalCode: '{{ $postalCodeValue }}',
+        provinceField: @js((string) $provinceField),
+        districtField: @js((string) $districtField),
+        subDistrictField: @js((string) $subDistrictField),
+        postalCodeField: @js((string) $postalCodeField),
+        initialProvince: @js((string) $provinceValue),
+        initialDistrict: @js((string) $districtValue),
+        initialSubDistrict: @js((string) $subDistrictValue),
+        initialPostalCode: @js((string) $postalCodeValue),
         showSubDistrict: {{ $showSubDistrict ? 'true' : 'false' }},
-        countryField: '{{ $countryField }}',
-        initialCountry: '{{ $countryValue }}',
+        countryField: @js((string) $countryField),
+        initialCountry: @js((string) $countryValue),
      })"
      x-init="init()"
      class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,7 +77,7 @@
         <label :for="'tap-country-' + _uid"
                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             <i class="fas fa-globe mr-1 text-blue-500"></i>
-            ประเทศ <span class="text-red-500">*</span>
+            ประเทศ @if($required)<span class="text-red-500">*</span>@endif
         </label>
         <select name="{{ $countryField }}"
                 :id="'tap-country-' + _uid"
@@ -87,7 +90,7 @@
                        focus:border-indigo-500 dark:focus:border-indigo-400
                        focus:ring-4 focus:ring-indigo-500/20
                        transition-all duration-200"
-                required>
+                @required($required)>
             <option value="TH">ประเทศไทย</option>
             <option value="US">United States</option>
             <option value="GB">United Kingdom</option>
@@ -111,7 +114,7 @@
         <div>
             <label :for="'tap-province-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                จังหวัด <span class="text-red-500">*</span>
+                จังหวัด @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <div class="relative">
                 <select :name="provinceField"
@@ -125,7 +128,7 @@
                                focus:border-indigo-500 dark:focus:border-indigo-400
                                focus:ring-4 focus:ring-indigo-500/20
                                transition-all duration-200"
-                        required>
+                        @required($required)>
                     <option value="">-- เลือกจังหวัด --</option>
                     <template x-for="province in provinces" :key="province.provinceCode">
                         <option :value="province.provinceNameTh"
@@ -157,7 +160,7 @@
         <div>
             <label :for="'tap-district-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                อำเภอ/เขต <span class="text-red-500">*</span>
+                อำเภอ/เขต @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <div class="relative">
                 <select :name="districtField"
@@ -173,7 +176,7 @@
                                focus:ring-4 focus:ring-indigo-500/20
                                disabled:opacity-50 disabled:cursor-not-allowed
                                transition-all duration-200"
-                        required>
+                        @required($required)>
                     <option value="">-- เลือกอำเภอ/เขต --</option>
                     <template x-for="district in districts" :key="district.districtCode">
                         <option :value="district.districtNameTh"
@@ -205,7 +208,7 @@
         <div>
             <label :for="'tap-subdistrict-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                ตำบล/แขวง <span class="text-red-500">*</span>
+                ตำบล/แขวง @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <div class="relative">
                 <select :name="subDistrictField"
@@ -221,7 +224,7 @@
                                focus:ring-4 focus:ring-indigo-500/20
                                disabled:opacity-50 disabled:cursor-not-allowed
                                transition-all duration-200"
-                        required>
+                        @required($required)>
                     <option value="">-- เลือกตำบล/แขวง --</option>
                     <template x-for="sub in subDistricts" :key="sub.subdistrictCode">
                         <option :value="sub.subdistrictNameTh"
@@ -253,7 +256,7 @@
         <div>
             <label :for="'tap-postal-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                รหัสไปรษณีย์ <span class="text-red-500">*</span>
+                รหัสไปรษณีย์ @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <div class="relative">
                 <input type="text"
@@ -270,7 +273,7 @@
                               cursor-default
                               transition-all duration-200"
                        placeholder="เลือกตำบลเพื่อเติมอัตโนมัติ"
-                       required>
+                       @required($required)>
                 <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <template x-if="postalCode">
                         <svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +293,7 @@
         <div>
             <label :for="'tap-province-manual-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                จังหวัด/รัฐ <span class="text-red-500">*</span>
+                จังหวัด/รัฐ @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <input type="text"
                    :name="provinceField"
@@ -304,7 +307,7 @@
                           focus:ring-4 focus:ring-indigo-500/20
                           transition-all duration-200"
                    placeholder="State / Province"
-                   required>
+                   @required($required)>
         </div>
     </template>
 
@@ -312,7 +315,7 @@
         <div>
             <label :for="'tap-district-manual-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                เมือง/อำเภอ <span class="text-red-500">*</span>
+                เมือง/อำเภอ @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <input type="text"
                    :name="districtField"
@@ -326,7 +329,7 @@
                           focus:ring-4 focus:ring-indigo-500/20
                           transition-all duration-200"
                    placeholder="City / District"
-                   required>
+                   @required($required)>
         </div>
     </template>
 
@@ -355,7 +358,7 @@
         <div>
             <label :for="'tap-postal-manual-' + _uid"
                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                รหัสไปรษณีย์ <span class="text-red-500">*</span>
+                รหัสไปรษณีย์ @if($required)<span class="text-red-500">*</span>@endif
             </label>
             <input type="text"
                    :name="postalCodeField"
@@ -369,7 +372,7 @@
                           focus:ring-4 focus:ring-indigo-500/20
                           transition-all duration-200"
                    placeholder="Postal / Zip Code"
-                   required>
+                   @required($required)>
         </div>
     </template>
 </div>

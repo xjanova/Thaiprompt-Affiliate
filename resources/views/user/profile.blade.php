@@ -1,718 +1,490 @@
-@extends('layouts.user-v4')
+{{--
+    จัดการโปรไฟล์ (ธีมโนวาเต็ม)
+    - ฟอร์มหลัก PUT user.profile.update (DashboardController::updateProfile) — ชื่อ/อีเมล/เบอร์/วันเกิด/เพศ/รูป/ที่อยู่ออกใบเสร็จ
+    - เปลี่ยนอีเมลต้องยืนยันตัวตน (AccountEmailChangeService) — ช่องยืนยันโผล่เมื่ออีเมลที่พิมพ์ต่างจากเดิม
+    - เปลี่ยนรหัสผ่านเป็นฟอร์มแยก POST user.profile.update-password (ผ่าน turnstile + 2FA ตาม route)
+    - ข้อมูลบัตรประชาชนอ่านอย่างเดียว (แก้ได้เฉพาะแอดมิน) เลขบัตรปิดบางส่วน
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'จัดการโปรไฟล์')
 
 @php
+    use App\Services\AccountEmailChangeService as EmailChange;
     use Illuminate\Support\Facades\Route as RouteFacade;
 
-    // ── สถานะ KYC → ป้ายสี (hex แทน dynamic tailwind) ──────────
+    $nvArt = fn (string $name, string $fallback) => is_file(public_path("images/nova/account/{$name}.webp"))
+        ? asset("images/nova/account/{$name}.webp") : asset("images/nova/{$fallback}.webp");
+
     $kycVerified = $user->isKycVerified();
-    $kycPending  = $user->isKycPending();
+    $kycPending = ! $kycVerified && $user->isKycPending();
 
     // 🔒 วิธียืนยันเมื่อเปลี่ยนอีเมล (ส่งมาจาก DashboardController::profile — คำนวณเองถ้าไม่ได้ส่งมา)
-    $emailChangeMode ??= app(\App\Services\AccountEmailChangeService::class)->mode($user);
+    $emailChangeMode ??= app(EmailChange::class)->mode($user);
     $emailIsReal ??= \App\Support\AccountEmail::isDeliverable($user->email);
     $currentEmailMasked ??= $emailIsReal ? \App\Support\AccountEmail::mask((string) $user->email) : null;
+    $pwMode = $emailChangeMode === EmailChange::MODE_PASSWORD;
 
     // Turnstile ของการเปลี่ยนรหัสผ่าน (route update-password ตรวจ point password_change)
     $pwTurnstile = config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.password_change');
 
-    // ตัวอักษรแรกของชื่อ (mb_ — ชื่อไทยใช้ substr จะได้ไบต์ครึ่งตัว)
-    $initial = mb_strtoupper(mb_substr(trim((string) $user->name) ?: 'U', 0, 1));
-    $fallbackAvatar = 'data:image/svg+xml;charset=utf-8,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#c8a24a"/><text x="100" y="128" font-size="92" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">'.e($initial).'</text></svg>');
+    // รูปโปรไฟล์: ยังไม่มีรูปจริง (accessor ส่ง ui-avatars มา) หรือรูปโหลดไม่ขึ้น → ใช้ภาพกรอบทองของธีมแทน
+    $avatarArt = $nvArt('profile', 'deco/lotus');
+    $avatarUrl = $user->profile_picture_url;
+    $hasPhoto = ! str_starts_with($avatarUrl, 'https://ui-avatars.com/');
+    $usesLinePhoto = $hasPhoto && $user->line_picture_url && $avatarUrl === $user->line_picture_url;
+    $pwErrorKeys = ['current_password', 'new_password', 'turnstile'];
+    $trainingBadges = array_values(array_filter(\App\Services\Classroom\TrainingBadge::allFor($user)));
+
+    // 🐛 (2026-10-29) date_of_birth cast เป็น date → ค่าเป็น "Y-m-d H:i:s" ซึ่ง input type=date ไม่รับ = ช่องว่าง
+    //    กดบันทึกเรื่องอื่น วันเกิดถูกล้างเป็น null ทุกครั้ง → ส่งเป็น Y-m-d เสมอ
+    $dob = old('date_of_birth', $user->date_of_birth?->format('Y-m-d'));
+    $gender = old('gender', $user->gender);
+    $genders = ['male' => 'ชาย', 'female' => 'หญิง', 'other' => 'อื่นๆ', 'prefer_not_to_say' => 'ไม่ระบุ'];
+
+    // ความครบถ้วนของโปรไฟล์ (ชวนกรอกให้ครบ — ไม่ได้บังคับ)
+    $checks = [
+        ['อีเมลจริงที่ยืนยันแล้ว', $emailIsReal && $user->email_verified_at, '#pf-email'],
+        ['เบอร์โทรศัพท์', filled($user->phone), '#pf-phone'],
+        ['วันเกิด', (bool) $user->date_of_birth, '#pf-dob'],
+        ['รูปโปรไฟล์', $hasPhoto, '#nvm-pf-avatar'],
+        ['ที่อยู่ออกใบเสร็จ', filled($user->address) && filled($user->state), '#pf-address'],
+        ['ยืนยันตัวตน (KYC)', $kycVerified, route('user.kyc.index')],
+    ];
+    $done = count(array_filter(array_column($checks, 1)));
+    $pct = (int) round($done / count($checks) * 100);
+
+    // 🔒 เลขบัตรปิดตรงกลาง — เจ้าของจำได้จากต้น/ท้าย คนแอบมองจอหรือ session ที่หลุดเห็นไม่ครบ
+    $idDigits = preg_replace('/\D/', '', (string) $user->id_card_number);
+    $idMasked = strlen($idDigits) === 13
+        ? $idDigits[0].'-'.substr($idDigits, 1, 1).'xxx-xxxxx-'.substr($idDigits, 10, 2).'-'.$idDigits[12]
+        : null;
+    $thDate = fn ($d) => $d ? \Carbon\Carbon::parse($d)->locale('th')->translatedFormat('j F Y') : null;
+    $idExpired = $user->id_card_expiry_date && \Carbon\Carbon::parse($user->id_card_expiry_date)->isPast();
 @endphp
 
 @section('content')
-{{--
-/**
- * จัดการโปรไฟล์ผู้ใช้ — Theme V4 "นวลทองคำ"
- *
- * หน้าจัดการโปรไฟล์ผู้ใช้พร้อม:
- * - อัปโหลด Avatar พร้อมพรีวิวสด (WebP)
- * - แก้ไขข้อมูลส่วนตัว / ติดต่อ / ที่อยู่ / ที่อยู่จัดส่ง
- * - เปลี่ยนรหัสผ่าน
- * - ปุ่มบันทึกลอย (Floating Save)
- *
- * @version 4.0.0
- * @theme Theme V4 (นวลทองคำ)
- */
---}}
 
-<div style="display:flex; flex-direction:column; gap:18px; padding-bottom:96px;" x-data="profileManager()" x-init="init()">
+{{-- ขอบเขต Alpine ครอบทั้งหน้า: ปุ่มเปลี่ยนรูปอยู่บนฮีโร่ แต่ส่งไปกับฟอร์มหลัก (input ผูก form="nvm-pf-form") --}}
+<div class="nvm-pf-page"
+     x-data="nvmProfile(@js($hasPhoto ? $avatarUrl : $avatarArt), @js($avatarArt), @js($errors->any() && ! $errors->hasAny($pwErrorKeys)))"
+     @pageshow.window="busy = false" @beforeunload.window="warnUnsaved($event)">
 
-    {{-- ── การ์ดหัวเรื่อง (Hero) ─────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden; position:relative;">
-        {{-- ภาพประกอบหัวเรื่อง (เจนเอง เก็บที่ public/images/art) --}}
-        <x-art.hero-art image="usr-profile" />
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px; padding:22px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:58px; height:58px; border-radius:18px; font-size:26px;"><i class="fas fa-user-circle" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">บัญชีของฉัน · MY PROFILE</div>
-                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">จัดการโปรไฟล์</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ</div>
-            </div>
+<section class="nvm-ph nvm-pf-hero" aria-labelledby="nvm-pf-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-pf-av" id="nvm-pf-avatar">
+            <label class="nvm-pf-av__pick">
+                <span class="nvm-pf-av__img {{ $hasPhoto ? '' : 'is-art' }}" :class="{ 'is-art': ! preview && current === fallback }">
+                    <img :src="preview || current" src="{{ $hasPhoto ? $avatarUrl : $avatarArt }}" alt="รูปโปรไฟล์ของ {{ $user->name }}" width="132" height="132" referrerpolicy="no-referrer" x-on:error="current = fallback">
+                </span>
+                <span class="nvm-pf-av__cam" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-camera"/></svg></span>
+                <span class="nvm-sr">เปลี่ยนรูปโปรไฟล์</span>
+                <input type="file" name="profile_picture" form="nvm-pf-form" class="nvm-sr" accept="image/jpeg,image/png,image/gif,image/webp" x-ref="avatar" @change="pickAvatar($event)">
+            </label>
+            <button type="button" class="nvm-pf-av__undo" x-show="preview" x-cloak @click="clearAvatar()">ใช้รูปเดิม</button>
+            <small x-show="! preview">{{ $usesLinePhoto ? 'รูปจาก LINE · แตะเพื่อเปลี่ยน' : 'แตะเพื่อเปลี่ยน · ไม่เกิน 5MB' }}</small>
         </div>
 
-        {{-- สถานะย่อย 3 ใบ: KYC / LINE / รหัสสมาชิก --}}
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; padding:16px 24px 20px;">
-            {{-- สถานะ KYC --}}
-            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">My profile</div>
+            <h1 id="nvm-pf-h">{{ $user->name }}</h1>
+            <p class="nvm-ph__lead">จัดการโปรไฟล์ ที่อยู่ออกใบเสร็จ และความปลอดภัยของบัญชี</p>
+            <div class="nvm-pills">
                 @if($kycVerified)
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5aa07e;"><i class="fas fa-shield-halved" style="color:#fff;"></i></span>
-                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#5aa07e;">ยืนยันแล้ว ✓</div></div>
+                    <a class="nvm-pill nvm-pill--ok" href="{{ route('user.kyc.index') }}"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ยืนยันตัวตนแล้ว</a>
                 @elseif($kycPending)
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#e0a52e;"><i class="fas fa-hourglass-half" style="color:#fff;"></i></span>
-                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#e0a52e;">รอตรวจสอบ</div></div>
+                    <a class="nvm-pill nvm-pill--warn" href="{{ route('user.kyc.index') }}"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>KYC รอตรวจสอบ</a>
                 @else
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#d9534f;"><i class="fas fa-triangle-exclamation" style="color:#fff;"></i></span>
-                    <div><div style="font-size:11px; color:var(--ink2);">สถานะ KYC</div><div style="font-size:14px; font-weight:700; color:#d9534f;">ยังไม่ยืนยัน</div></div>
+                    <a class="nvm-pill nvm-pill--bad" href="{{ route('user.kyc.index') }}"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยังไม่ยืนยันตัวตน</a>
                 @endif
-            </div>
-
-            {{-- สถานะการเชื่อมต่อ LINE --}}
-            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
+                {{-- 🎓 ป้ายผ่านการอบรม (ห้องเรียน) ข้างป้ายยืนยันตัวตน --}}
+                @if(RouteFacade::has('user.classroom.index'))
+                    @foreach($trainingBadges as $trainingBadge)
+                        <a class="nvm-pill nvm-pill--glass" href="{{ route('user.classroom.index') }}"><x-training-badge :badge="$trainingBadge" :size="17" label /></a>
+                    @endforeach
+                @endif
                 @if($user->line_user_id)
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5aa07e;">
-                        <svg style="width:20px; height:20px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
-                    </span>
-                    <div><div style="font-size:11px; color:var(--ink2);">LINE</div><div style="font-size:14px; font-weight:700; color:#5aa07e;">เชื่อมต่อแล้ว ✓</div></div>
-                @else
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:var(--ink2);">
-                        <svg style="width:20px; height:20px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
-                    </span>
-                    <div><div style="font-size:11px; color:var(--ink2);">LINE</div><div style="font-size:14px; font-weight:700;">ยังไม่เชื่อมต่อ</div></div>
+                    <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-line"/></svg>LINE: {{ $user->line_display_name ?: 'เชื่อมต่อแล้ว' }}</span>
+                @elseif(RouteFacade::has('line.link'))
+                    <a class="nvm-pill nvm-pill--glass" href="{{ route('line.link') }}"><svg class="nvm-ico"><use href="#nvm-i-line"/></svg>เชื่อมต่อ LINE</a>
                 @endif
             </div>
+            @if($user->member_number)
+                <div class="nvm-copy">
+                    <small class="nvm-latin">Member</small>
+                    <code>{{ $user->member_number }}</code>
+                    <button type="button" x-data @click="nvmCopy(@js((string) $user->member_number), 'คัดลอกรหัสสมาชิกแล้ว')" aria-label="คัดลอกรหัสสมาชิก"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg></button>
+                </div>
+            @endif
+        </div>
 
-            {{-- รหัสสมาชิก --}}
-            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm);">
-                <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:17px; background:#5689b8;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
-                <div><div style="font-size:11px; color:var(--ink2);">รหัสสมาชิก</div><div class="tp-num" style="font-size:14px; font-weight:700;">{{ $user->member_number ?? 'N/A' }}</div></div>
+        <div class="nvm-pf-gauge" role="img" aria-label="โปรไฟล์ครบ {{ $pct }} เปอร์เซ็นต์">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+                <defs>
+                    <linearGradient id="nvm-pf-gold" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#fff1c7"/><stop offset=".5" stop-color="#f0c96a"/><stop offset="1" stop-color="#b8862b"/>
+                    </linearGradient>
+                </defs>
+                <circle class="nvm-pf-gauge__track" cx="60" cy="60" r="52"/>
+                @if($pct > 0)
+                    <circle class="nvm-pf-gauge__val" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="{{ $pct }} 100"/>
+                @endif
+            </svg>
+            <div class="nvm-pf-gauge__txt">
+                <b class="nvm-foil nvm-num">{{ $pct }}<span>%</span></b>
+                <small>ครบ {{ $done }}/{{ count($checks) }}</small>
             </div>
         </div>
     </div>
+</section>
 
-    {{-- ── ข้อความแจ้งเตือน สำเร็จ/ผิดพลาด ───────────────────── --}}
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
-            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:#5aa07e;"><i class="fas fa-circle-check" style="color:#fff;"></i></span>
-            <div style="flex:1; font-size:13px; font-weight:600;">{{ session('success') }}</div>
+@if($errors->any() && ! $errors->hasAny($pwErrorKeys))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ยังไม่ได้บันทึก ตรวจข้อมูลอีกครั้ง</b>
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
         </div>
-    @endif
+    </section>
+@endif
 
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
-            <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:#d9534f;"><i class="fas fa-circle-exclamation" style="color:#fff;"></i></span>
-            <div style="flex:1; font-size:13px; font-weight:600;">{{ session('error') }}</div>
-        </div>
-    @endif
-
-    {{-- ── ฟอร์มโปรไฟล์หลัก ──────────────────────────────────── --}}
-    <form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data" x-ref="profileForm" @submit="formChanged = false">
+<div class="nvm-split">
+    <div class="nvm-stack">
+    {{-- ── ฟอร์มโปรไฟล์หลัก ───────────────────────────────────── --}}
+    <form id="nvm-pf-form" method="POST" action="{{ route('user.profile.update') }}" enctype="multipart/form-data" class="nvm-stack"
+          @input="dirty = true" @change="dirty = true" @submit="if (busy) { $event.preventDefault(); return; } busy = true">
         @csrf
         @method('PUT')
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; align-items:start;">
-            {{-- ── คอลัมน์ซ้าย: การ์ด Avatar ──────────────────── --}}
-            <div style="grid-column:span 1; position:sticky; top:18px;">
-                <div class="tp-card" style="padding:22px;">
-                    {{-- พรีวิว Avatar --}}
-                    <div style="text-align:center;">
-                        <div style="position:relative; display:inline-block;">
-                            <div style="position:relative; width:150px; height:150px; margin:0 auto 16px;">
-                                <div style="position:absolute; inset:0; border-radius:50%; box-shadow:var(--inset);"></div>
-                                <div style="position:relative; width:100%; height:100%; border-radius:50%; padding:4px; background:linear-gradient(135deg, var(--accent1), var(--accent2));">
-                                    <div style="width:100%; height:100%; border-radius:50%; padding:4px; background:var(--surf);">
-                                        {{-- รองรับ Alpine.js preview + fallback เมื่อรูปโหลดไม่ได้ --}}
-                                        <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
-                                             alt="{{ $user->name }}"
-                                             style="width:100%; height:100%; object-fit:cover; border-radius:50%;"
-                                             onerror="this.onerror=null; this.src={{ \Illuminate\Support\Js::from($fallbackAvatar) }};">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-pf-me-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Personal</small><h2 id="nvm-pf-me-h">ข้อมูลส่วนตัว</h2></div></div>
+
+                <div class="nvm-form">
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="pf-name">ชื่อ-นามสกุล <em>*</em></label>
+                        <input id="pf-name" type="text" name="name" required maxlength="255" autocomplete="name" class="nvm-input @error('name') is-bad @enderror" value="{{ old('name', $user->name) }}">
+                        @error('name')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+
+                    {{-- อีเมล — 🔒 เปลี่ยนอีเมลต้องยืนยันตัวตน (AccountEmailChangeService) ช่องยืนยันโผล่เมื่ออีเมลต่างจากเดิม --}}
+                    <div class="nvm-field"
+                         x-data="emailChangeBox({
+                             current: @js((string) $user->email),
+                             initial: @js((string) old('email', $user->email)),
+                             mode: @js($emailChangeMode),
+                             useCode: @js((bool) $errors->has('email_code') && $pwMode),
+                             sendUrl: @js(route('user.profile.email.send-code')),
+                         })">
+                        <label class="nvm-label" for="pf-email">อีเมล <em>*</em></label>
+                        <input id="pf-email" type="email" name="email" required maxlength="255" autocomplete="email" x-model="email" class="nvm-input @error('email') is-bad @enderror" value="{{ old('email', $user->email) }}">
+                        @error('email')<span class="nvm-err">{{ $message }}</span>@enderror
+
+                        {{-- สถานะยืนยันอีเมลปัจจุบัน (อีเมลระบบของบัญชี LINE/FB ไม่แสดง) --}}
+                        @if($emailIsReal && ! $user->email_verified_at)
+                            <span class="nvm-help nvm-pf-warn" x-show="! changed">
+                                อีเมลนี้ยังไม่ได้ยืนยัน
+                                <button type="submit" form="nvm-email-verify-form" class="nvm-link">ส่งลิงก์ยืนยันอีกครั้ง</button>
+                            </span>
+                        @elseif($emailIsReal)
+                            <span class="nvm-help" x-show="! changed"><span class="nvm-chip nvm-chip--ok">ยืนยันแล้ว</span></span>
+                        @else
+                            <span class="nvm-help" x-show="! changed">บัญชีนี้ยังใช้อีเมลที่ระบบตั้งให้ แนะนำให้เปลี่ยนเป็นอีเมลจริงของคุณ เพื่อใช้ยืนยันตัวตนและรับข่าวสาร</span>
+                        @endif
+
+                        {{-- ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล --}}
+                        <template x-if="changed">
+                            <div class="nvm-pf-verify">
+                                @if($pwMode)
+                                    <p><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>การเปลี่ยนอีเมลต้องยืนยันว่าเป็นเจ้าของบัญชี หลังบันทึก ระบบจะส่งลิงก์ยืนยันไปที่อีเมลใหม่ และแจ้งเตือนไปที่อีเมลเดิม</p>
+                                    <div class="nvm-field" x-show="! useCode">
+                                        <label class="nvm-label" for="pf-email-pw">รหัสผ่านปัจจุบัน <em>*</em></label>
+                                        <input id="pf-email-pw" type="password" name="email_password" :required="! useCode" :disabled="useCode" autocomplete="current-password" maxlength="255" placeholder="ใส่รหัสผ่านปัจจุบันเพื่อยืนยัน" class="nvm-input">
+                                        <button type="button" class="nvm-link nvm-pf-alt" @click="useCode = true">ไม่รู้รหัสผ่าน (สมัครด้วย Google/LINE/Facebook)? รับรหัสยืนยันทางอีเมลเดิม {{ $currentEmailMasked }}</button>
                                     </div>
-                                </div>
-                            </div>
-
-                            {{-- ปุ่มอัปโหลด --}}
-                            <label for="avatar-upload" class="tp-btn tp-btn-primary" style="display:flex; width:100%; justify-content:center; cursor:pointer;">
-                                <i class="fas fa-camera"></i> เปลี่ยนรูปโปรไฟล์
-                            </label>
-
-                            <input type="file"
-                                   id="avatar-upload"
-                                   name="profile_picture"
-                                   accept="image/jpeg,image/png,image/gif,image/webp"
-                                   style="display:none;"
-                                   @change="handleAvatarChange($event)">
-
-                            <p style="margin-top:10px; font-size:11px; color:var(--ink2); line-height:1.6;">
-                                JPG, PNG, GIF หรือ WebP<br>
-                                ขนาดไม่เกิน 5MB<br>
-                                <span style="color:var(--deep1); font-weight:700;">จะแปลงเป็น WebP อัตโนมัติ</span>
-                            </p>
-                        </div>
-
-                        {{-- ข้อมูลผู้ใช้ --}}
-                        <div style="margin-top:18px; padding-top:18px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                            <h3 style="font-size:16px; font-weight:700; margin:0;">{{ $user->name }}</h3>
-                            <p style="font-size:12.5px; color:var(--ink2); margin:4px 0 0;">{{ $user->email }}</p>
-
-                            {{-- ป้ายสถานะ KYC + LINE --}}
-                            <div style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:14px;">
-                                @if($kycVerified)
-                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#5aa07e; padding:7px 14px;">
-                                        <i class="fas fa-shield-halved"></i> ยืนยันตัวตนแล้ว <i class="fas fa-circle-check"></i>
-                                    </a>
-                                @elseif($kycPending)
-                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#e0a52e; padding:7px 14px;">
-                                        <i class="fas fa-hourglass-half"></i> รอตรวจสอบ KYC
-                                    </a>
                                 @else
-                                    <a href="{{ route('user.kyc.index') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#d9534f; padding:7px 14px;">
-                                        <i class="fas fa-triangle-exclamation"></i> ยังไม่ได้ยืนยันตัวตน
-                                    </a>
+                                    <p><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>บัญชีนี้สมัครผ่าน LINE/Facebook จึงยืนยันด้วยรหัส 6 หลักที่ส่งไปที่อีเมลใหม่ — กดส่งรหัส แล้วกรอกรหัสก่อนกดบันทึก</p>
                                 @endif
 
-                                {{-- 🎓 ป้ายผ่านการอบรม (ห้องเรียน) ข้างป้ายยืนยันตัวตน — ยังไม่ผ่านบทบาทไหนเลย = ไม่แสดง --}}
-                                @if(Route::has('user.classroom.index'))
-                                    <a href="{{ route('user.classroom.index') }}" style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; text-decoration:none;" aria-label="ห้องเรียน">
-                                        <x-training-badge :user="$user" :size="20" label />
-                                    </a>
-                                @endif
-
-                                {{-- ป้ายสถานะการเชื่อมต่อ LINE --}}
-                                @if($user->line_user_id)
-                                    <span class="tp-pill" style="color:#fff; background:#5aa07e; padding:7px 14px;">
-                                        <svg style="width:14px; height:14px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
-                                        LINE: {{ $user->line_display_name ?? 'เชื่อมต่อแล้ว' }} <i class="fas fa-circle-check"></i>
-                                    </span>
-                                @else
-                                    @if(RouteFacade::has('line.link'))
-                                    <a href="{{ route('line.link') }}" class="tp-pill" style="text-decoration:none; color:#fff; background:#00B900; padding:7px 14px;">
-                                        <svg style="width:14px; height:14px; color:#fff;" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/></svg>
-                                        เชื่อมต่อ LINE <i class="fas fa-up-right-from-square"></i>
-                                    </a>
-                                    @endif
-                                @endif
-                            </div>
-
-                            @if($user->member_number)
-                                <div style="margin-top:12px;">
-                                    <span class="tp-pill tp-pill-soft"><i class="fas fa-id-card"></i> {{ $user->member_number }}</span>
+                                <div class="nvm-field" x-show="mode !== 'password' || useCode">
+                                    <div class="nvm-filter__btns">
+                                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="sendCode()" :disabled="sending || cooldown > 0">
+                                            <svg class="nvm-ico"><use href="#nvm-i-send"/></svg>
+                                            <span x-text="sending ? 'กำลังส่ง…' : (cooldown > 0 ? ('ส่งใหม่ได้ใน ' + cooldown + ' วินาที') : (sent ? 'ส่งรหัสอีกครั้ง' : @js($pwMode ? 'ส่งรหัสไปที่อีเมลเดิม' : 'ส่งรหัสไปที่อีเมลใหม่')))">{{ $pwMode ? 'ส่งรหัสไปที่อีเมลเดิม' : 'ส่งรหัสไปที่อีเมลใหม่' }}</span>
+                                        </button>
+                                        @if($pwMode)
+                                            <button type="button" class="nvm-link" @click="useCode = false">ใช้รหัสผ่านแทน</button>
+                                        @endif
+                                    </div>
+                                    <span class="nvm-help" :class="noticeOk ? 'nvm-pf-ok' : 'nvm-err'" x-show="notice" x-text="notice" role="status"></span>
+                                    <input type="text" name="email_code" :required="mode !== 'password' || useCode" :disabled="mode === 'password' && ! useCode"
+                                           inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"
+                                           placeholder="รหัส 6 หลักจากอีเมล" title="กรอกรหัสตัวเลข 6 หลักที่ได้รับทางอีเมล"
+                                           class="nvm-input nvm-pin nvm-pf-code">
                                 </div>
+
+                                @foreach(['email_password', 'email_code'] as $field)
+                                    @error($field)<span class="nvm-err" role="alert">{{ $message }}</span>@enderror
+                                @endforeach
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="nvm-pf-2">
+                        <div class="nvm-field">
+                            <label class="nvm-label" for="pf-phone">เบอร์โทรศัพท์</label>
+                            <input id="pf-phone" type="tel" name="phone" inputmode="tel" autocomplete="tel" maxlength="13" placeholder="0812345678" class="nvm-input @error('phone') is-bad @enderror" value="{{ old('phone', $user->phone) }}">
+                            @if($user->phone && $user->phone_verified)
+                                <span class="nvm-help"><span class="nvm-chip nvm-chip--ok">ยืนยันเบอร์แล้ว</span> เปลี่ยนเบอร์แล้วต้องยืนยันใหม่</span>
                             @endif
+                            @error('phone')<span class="nvm-err">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="nvm-field">
+                            <label class="nvm-label" for="pf-dob">วันเกิด</label>
+                            <input id="pf-dob" type="date" name="date_of_birth" max="{{ now()->subDay()->format('Y-m-d') }}" autocomplete="bday" class="nvm-input @error('date_of_birth') is-bad @enderror" value="{{ $dob }}">
+                            @error('date_of_birth')<span class="nvm-err">{{ $message }}</span>@enderror
                         </div>
                     </div>
+
+                    <div class="nvm-field">
+                        <span class="nvm-label" id="pf-gender-lbl">เพศ</span>
+                        <div class="nvm-pf-seg" role="radiogroup" aria-labelledby="pf-gender-lbl">
+                            @foreach($genders as $val => $label)
+                                <label><input type="radio" name="gender" value="{{ $val }}" @checked($gender === $val)><span>{{ $label }}</span></label>
+                            @endforeach
+                        </div>
+                        @error('gender')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-pf-addr-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Billing address</small><h2 id="nvm-pf-addr-h">ที่อยู่ออกใบเสร็จ</h2></div></div>
+            <div class="nvm-form">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="pf-address">บ้านเลขที่ หมู่ ซอย ถนน</label>
+                    <textarea id="pf-address" name="address" rows="2" maxlength="500" autocomplete="street-address" placeholder="เช่น 99/1 หมู่ 3 ถ.มิตรภาพ" class="nvm-input @error('address') is-bad @enderror">{{ old('address', $user->address) }}</textarea>
+                    @error('address')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                {{-- ระบบเลือกที่อยู่ (จังหวัด → อำเภอ → รหัสไปรษณีย์) — ไม่บังคับ: ยังไม่กรอกก็บันทึกชื่อ/เบอร์ได้ --}}
+                <div class="nvm-addr">
+                    <x-thai-address-picker
+                        province-field="state"
+                        district-field="city"
+                        sub-district-field=""
+                        postal-code-field="postal_code"
+                        country-field="country"
+                        :country-value="old('country', $user->country ?? 'TH')"
+                        :province-value="old('state', $user->state ?? '')"
+                        :district-value="old('city', $user->city ?? '')"
+                        :sub-district-value="''"
+                        :postal-code-value="old('postal_code', $user->postal_code ?? '')"
+                        :show-sub-district="false"
+                        :required="false"
+                    />
+                </div>
+                @foreach(['city', 'state', 'postal_code', 'country'] as $field)
+                    @error($field)<span class="nvm-err">{{ $message }}</span>@enderror
+                @endforeach
+            </div>
+        </section>
+
+        {{-- แถบบันทึก (ติดล่างจอเมื่อมีการแก้ไข) --}}
+        <div class="nvm-card nvm-pf-save" :class="dirty ? 'is-dirty' : ''">
+            <span class="nvm-help" x-show="dirty" x-cloak><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>มีการเปลี่ยนแปลงที่ยังไม่บันทึก</span>
+            <span class="nvm-help" x-show="! dirty">แก้ไขข้อมูลด้านบน แล้วกดบันทึก</span>
+            <div class="nvm-filter__btns">
+                <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.profile') }}" x-show="dirty" x-cloak @click="dirty = false">ยกเลิก</a>
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="busy ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'">บันทึกโปรไฟล์</span></button>
+            </div>
+        </div>
+    </form>
+
+    {{-- เปลี่ยนรหัสผ่าน — 🔒 ฟอร์มแยกจากโปรไฟล์ ผ่าน turnstile + 2FA (password_change) ตาม route --}}
+    @php $pwErrors = collect($pwErrorKeys)->flatMap(fn ($k) => $errors->get($k)); @endphp
+    <section class="nvm-card nvm-box" id="nvm-pf-pw" aria-labelledby="nvm-pf-pw-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Password</small><h2 id="nvm-pf-pw-h">เปลี่ยนรหัสผ่าน</h2></div></div>
+        @if($pwErrors->isNotEmpty())
+            {{-- กลับมาจากบันทึกจะอยู่บนสุดของหน้า เลื่อนมาให้เห็นข้อผิดพลาด --}}
+            <div id="nvm-pw-errors" class="nvm-pf-errs" role="alert" x-init="$el.scrollIntoView({ block: 'center' })">
+                @foreach($pwErrors as $msg)<span class="nvm-err">{{ $msg }}</span>@endforeach
+            </div>
+        @endif
+        <form id="nvm-pw-form" method="POST" action="{{ route('user.profile.update-password') }}" class="nvm-form" x-data="{ show: false, sending: false }" @submit="if (sending) { $event.preventDefault(); return; } sending = true" @pageshow.window="sending = false">
+            @csrf
+            <div class="nvm-field">
+                <label class="nvm-label" for="pw-current">รหัสผ่านปัจจุบัน</label>
+                <input id="pw-current" :type="show ? 'text' : 'password'" type="password" name="current_password" required autocomplete="current-password" class="nvm-input">
+            </div>
+            <div class="nvm-pf-2">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="pw-new">รหัสผ่านใหม่</label>
+                    <input id="pw-new" :type="show ? 'text' : 'password'" type="password" name="new_password" required minlength="8" autocomplete="new-password" class="nvm-input">
+                    <span class="nvm-help">อย่างน้อย 8 ตัว มีตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข</span>
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="pw-confirm">ยืนยันรหัสผ่านใหม่</label>
+                    <input id="pw-confirm" :type="show ? 'text' : 'password'" type="password" name="new_password_confirmation" required minlength="8" autocomplete="new-password" class="nvm-input">
                 </div>
             </div>
-
-            {{-- ── คอลัมน์ขวา: ฟอร์มข้อมูลโปรไฟล์ ─────────────── --}}
-            <div style="grid-column:span 1; display:flex; flex-direction:column; gap:18px;">
-
-                {{-- ข้อมูลส่วนตัว --}}
-                <div class="tp-card" style="padding:20px;">
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5689b8;"><i class="fas fa-user" style="color:#fff;"></i></span>
-                        <h2 style="font-size:17px; font-weight:700; margin:0;">ข้อมูลส่วนตัว</h2>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
-                        {{-- ชื่อ-นามสกุล --}}
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-signature" style="color:var(--deep1);"></i> ชื่อ-นามสกุล <span style="color:#d9534f;">*</span>
-                            </label>
-                            <input type="text"
-                                   name="name"
-                                   value="{{ old('name', $user->name) }}"
-                                   required
-                                   class="tp-input"
-                                   style="width:100%;"
-                                   @input="formChanged = true">
-                            @error('name')
-                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- อีเมล — 🔒 เปลี่ยนอีเมลต้องยืนยันตัวตน (AccountEmailChangeService) ช่องยืนยันโผล่เมื่ออีเมลต่างจากเดิม --}}
-                        <div style="grid-column:1 / -1;"
-                             x-data="emailChangeBox({
-                                 current: @js((string) $user->email),
-                                 initial: @js((string) old('email', $user->email)),
-                                 mode: @js($emailChangeMode),
-                                 useCode: @js((bool) $errors->has('email_code') && $emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD),
-                                 sendUrl: @js(route('user.profile.email.send-code')),
-                                 csrf: @js(csrf_token()),
-                             })">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-envelope" style="color:var(--deep1);"></i> อีเมล <span style="color:#d9534f;">*</span>
-                            </label>
-                            <input type="email"
-                                   name="email"
-                                   x-model="email"
-                                   value="{{ old('email', $user->email) }}"
-                                   required
-                                   class="tp-input"
-                                   style="width:100%;"
-                                   @input="formChanged = true">
-                            @error('email')
-                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
-                            @enderror
-
-                            {{-- สถานะยืนยันอีเมลปัจจุบัน (อีเมลระบบของบัญชี LINE/FB ไม่แสดง) --}}
-                            @if($emailIsReal && ! $user->email_verified_at)
-                                <p x-show="!changed" style="margin-top:6px; font-size:12px; color:#b7791f;">
-                                    <i class="fas fa-circle-exclamation"></i> อีเมลนี้ยังไม่ได้ยืนยัน
-                                    <button type="submit" form="nvm-email-verify-form" style="background:none; border:0; padding:0; color:var(--deep1); font-weight:700; cursor:pointer; text-decoration:underline;">ส่งลิงก์ยืนยันอีกครั้ง</button>
-                                </p>
-                            @elseif(! $emailIsReal)
-                                <p x-show="!changed" style="margin-top:6px; font-size:12px; color:var(--ink2);">
-                                    <i class="fas fa-circle-info"></i> บัญชีนี้ยังใช้อีเมลที่ระบบตั้งให้ แนะนำให้เปลี่ยนเป็นอีเมลจริงของคุณ เพื่อใช้ยืนยันตัวตนและรับข่าวสาร
-                                </p>
-                            @endif
-
-                            {{-- ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล --}}
-                            <template x-if="changed">
-                                <div style="margin-top:10px; padding:14px 16px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid var(--deep1); display:flex; flex-direction:column; gap:10px;">
-                                    @if($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD)
-                                        <p style="margin:0; font-size:12.5px; color:var(--ink); line-height:1.7;">
-                                            <i class="fas fa-shield-halved" style="color:var(--deep1);"></i>
-                                            การเปลี่ยนอีเมลต้องยืนยันว่าเป็นเจ้าของบัญชี หลังบันทึก ระบบจะส่งลิงก์ยืนยันไปที่อีเมลใหม่ และแจ้งเตือนไปที่อีเมลเดิม
-                                        </p>
-
-                                        <div x-show="!useCode">
-                                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                                <i class="fas fa-lock" style="color:#d9534f;"></i> รหัสผ่านปัจจุบัน <span style="color:#d9534f;">*</span>
-                                            </label>
-                                            <input type="password" name="email_password" :required="!useCode" :disabled="useCode"
-                                                   autocomplete="current-password" maxlength="255"
-                                                   placeholder="ใส่รหัสผ่านปัจจุบันเพื่อยืนยัน"
-                                                   class="tp-input" style="width:100%;">
-                                            <button type="button" @click="useCode = true" style="margin-top:6px; background:none; border:0; padding:0; font-size:12px; color:var(--deep1); cursor:pointer; text-decoration:underline;">
-                                                ไม่รู้รหัสผ่าน (สมัครด้วย Google/LINE/Facebook)? รับรหัสยืนยันทางอีเมลเดิม {{ $currentEmailMasked }}
-                                            </button>
-                                        </div>
-                                    @else
-                                        <p style="margin:0; font-size:12.5px; color:var(--ink); line-height:1.7;">
-                                            <i class="fas fa-shield-halved" style="color:var(--deep1);"></i>
-                                            บัญชีนี้สมัครผ่าน LINE/Facebook จึงยืนยันด้วยรหัส 6 หลักที่ส่งไปที่อีเมลใหม่ — กดส่งรหัส แล้วกรอกรหัสก่อนกดบันทึก
-                                        </p>
-                                    @endif
-
-                                    <div x-show="mode !== 'password' || useCode" style="display:flex; flex-direction:column; gap:8px;">
-                                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                                            <button type="button" class="tp-btn" style="min-height:44px;" @click="sendCode()" :disabled="sending || cooldown > 0">
-                                                <i class="fas fa-paper-plane"></i>
-                                                <span x-text="sending ? 'กำลังส่ง...' : (cooldown > 0 ? ('ส่งใหม่ได้ใน ' + cooldown + ' วินาที') : (sent ? 'ส่งรหัสอีกครั้ง' : @js($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD ? 'ส่งรหัสไปที่อีเมลเดิม' : 'ส่งรหัสไปที่อีเมลใหม่')))"></span>
-                                            </button>
-                                            @if($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD)
-                                                <button type="button" @click="useCode = false" style="background:none; border:0; padding:0; font-size:12px; color:var(--deep1); cursor:pointer; text-decoration:underline;">ใช้รหัสผ่านแทน</button>
-                                            @endif
-                                        </div>
-                                        <p x-show="notice" x-text="notice" :style="'margin:0; font-size:12px; color:' + (noticeOk ? '#3c8a64' : '#d9534f')"></p>
-                                        <input type="text" name="email_code" :required="mode !== 'password' || useCode" :disabled="mode === 'password' && !useCode"
-                                               inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"
-                                               placeholder="รหัส 6 หลักจากอีเมล" title="กรอกรหัสตัวเลข 6 หลักที่ได้รับทางอีเมล"
-                                               class="tp-input tp-num" style="width:100%; max-width:220px; letter-spacing:4px;">
-                                    </div>
-
-                                    @foreach(['email_password', 'email_code'] as $field)
-                                        @error($field)
-                                            <p role="alert" style="margin:0; font-size:12px; color:#d9534f;"><i class="fas fa-circle-exclamation"></i> {{ $message }}</p>
-                                        @enderror
-                                    @endforeach
-                                </div>
-                            </template>
-                        </div>
-
-                        {{-- เบอร์โทรศัพท์ --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-phone" style="color:var(--deep1);"></i> เบอร์โทรศัพท์
-                            </label>
-                            <input type="tel"
-                                   name="phone"
-                                   value="{{ old('phone', $user->phone) }}"
-                                   placeholder="0812345678"
-                                   class="tp-input"
-                                   style="width:100%;"
-                                   @input="formChanged = true">
-                            @error('phone')
-                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- วันเกิด --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-cake-candles" style="color:var(--deep1);"></i> วันเกิด
-                            </label>
-                            <input type="date"
-                                   name="date_of_birth"
-                                   value="{{ old('date_of_birth', $user->date_of_birth) }}"
-                                   class="tp-input"
-                                   style="width:100%;"
-                                   @input="formChanged = true">
-                            @error('date_of_birth')
-                                <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- เพศ --}}
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-venus-mars" style="color:var(--deep1);"></i> เพศ
-                            </label>
-                            <select name="gender"
-                                    class="tp-input"
-                                    style="width:100%;"
-                                    @change="formChanged = true">
-                                <option value="">เลือกเพศ</option>
-                                <option value="male" {{ old('gender', $user->gender) === 'male' ? 'selected' : '' }}>ชาย</option>
-                                <option value="female" {{ old('gender', $user->gender) === 'female' ? 'selected' : '' }}>หญิง</option>
-                                <option value="other" {{ old('gender', $user->gender) === 'other' ? 'selected' : '' }}>อื่นๆ</option>
-                                <option value="prefer_not_to_say" {{ old('gender', $user->gender) === 'prefer_not_to_say' ? 'selected' : '' }}>ไม่ระบุ</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- ที่อยู่ (สำหรับออกใบเสร็จ) --}}
-                <div class="tp-card" style="padding:20px;">
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5aa07e;"><i class="fas fa-map-marker-alt" style="color:#fff;"></i></span>
-                        <h2 style="font-size:17px; font-weight:700; margin:0;">ที่อยู่ (สำหรับออกใบเสร็จ)</h2>
-                    </div>
-
-                    <div style="display:flex; flex-direction:column; gap:14px;">
-                        {{-- ที่อยู่ --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-home" style="color:#5aa07e;"></i> ที่อยู่
-                            </label>
-                            <textarea name="address"
-                                      rows="2"
-                                      placeholder="บ้านเลขที่ ถนน"
-                                      class="tp-input"
-                                      style="width:100%; resize:none;"
-                                      @input="formChanged = true">{{ old('address', $user->address) }}</textarea>
-                        </div>
-
-                        {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
-                        <x-thai-address-picker
-                            province-field="state"
-                            district-field="city"
-                            sub-district-field=""
-                            postal-code-field="postal_code"
-                            country-field="country"
-                            :country-value="old('country', $user->country ?? 'TH')"
-                            :province-value="old('state', $user->state ?? '')"
-                            :district-value="old('city', $user->city ?? '')"
-                            :sub-district-value="''"
-                            :postal-code-value="old('postal_code', $user->postal_code ?? '')"
-                            :show-sub-district="false"
-                        />
-                    </div>
-                </div>
-
-                {{-- ที่อยู่จัดส่ง — ลิงก์ไปหน้าจัดการที่อยู่จัดส่ง --}}
-                <div class="tp-card" style="padding:20px;">
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#e0a52e;"><i class="fas fa-shipping-fast" style="color:#fff;"></i></span>
-                        <h2 style="font-size:17px; font-weight:700; margin:0;">ที่อยู่จัดส่ง</h2>
-                    </div>
-
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:16px 18px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-                        <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:19px; background:#e0a52e;"><i class="fas fa-map-marker-alt" style="color:#fff;"></i></span>
-                        <div style="flex:1; min-width:200px;">
-                            <p style="font-size:13px; color:var(--ink2); margin:0 0 10px;">
-                                จัดการที่อยู่จัดส่งทั้งหมดได้ที่หน้าที่อยู่จัดส่ง เพิ่ม แก้ไข ลบ และตั้งค่าที่อยู่เริ่มต้นได้ในที่เดียว
-                            </p>
-                            @if(RouteFacade::has('shipping-addresses.index'))
-                            <a href="{{ route('shipping-addresses.index') }}" class="tp-btn tp-btn-primary tp-btn-sm">
-                                <i class="fas fa-up-right-from-square"></i> จัดการที่อยู่จัดส่ง
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                {{-- ข้อมูลบัตรประชาชน (อ่านอย่างเดียว) — แสดงเมื่อ KYC ผ่านแล้ว --}}
-                @if($kycVerified && $user->id_card_number)
-                <div class="tp-card" style="padding:20px; border:1px solid color-mix(in srgb, #5aa07e 35%, transparent);">
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#5aa07e;"><i class="fas fa-id-card" style="color:#fff;"></i></span>
-                            <h2 style="font-size:17px; font-weight:700; margin:0;">ข้อมูลบัตรประชาชน</h2>
-                        </div>
-                        <span class="tp-pill" style="color:#fff; background:#5aa07e;"><i class="fas fa-shield-halved"></i> ยืนยันตัวตนแล้ว</span>
-                    </div>
-
-                    {{-- คำเตือน: ไม่สามารถแก้ไขได้ --}}
-                    <div style="margin-bottom:16px; padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e; font-size:12.5px; color:#e0a52e;">
-                        <i class="fas fa-lock"></i>
-                        ข้อมูลบัตรประชาชนไม่สามารถแก้ไขได้ หากต้องการแก้ไขกรุณาติดต่อทีมงานผ่านระบบ Support Ticket
-                    </div>
-
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
-                        {{-- เลขบัตรประชาชน --}}
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-fingerprint" style="color:#5aa07e;"></i> เลขบัตรประชาชน
-                            </label>
-                            <div class="tp-num" style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ substr($user->id_card_number, 0, 1) }}-{{ substr($user->id_card_number, 1, 4) }}-{{ substr($user->id_card_number, 5, 5) }}-{{ substr($user->id_card_number, 10, 2) }}-{{ substr($user->id_card_number, 12, 1) }}
-                            </div>
-                        </div>
-
-                        {{-- ชื่อภาษาไทย --}}
-                        @if($user->thai_first_name || $user->thai_last_name)
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-user" style="color:#5aa07e;"></i> ชื่อ-นามสกุล (ภาษาไทย)
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ $user->thai_first_name }} {{ $user->thai_last_name }}
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- ชื่อภาษาอังกฤษ --}}
-                        @if($user->english_first_name || $user->english_last_name)
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-globe" style="color:#5aa07e;"></i> ชื่อ-นามสกุล (ภาษาอังกฤษ)
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ $user->english_first_name }} {{ $user->english_last_name }}
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- วันเกิด (จากบัตร) --}}
-                        @if($user->id_card_birth_date)
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-cake-candles" style="color:#5aa07e;"></i> วันเกิด (จากบัตร)
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ \Carbon\Carbon::parse($user->id_card_birth_date)->locale('th')->translatedFormat('j F Y') }}
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- ศาสนา --}}
-                        @if($user->id_card_religion)
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-pray" style="color:#5aa07e;"></i> ศาสนา
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ $user->id_card_religion }}
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- วันออกบัตร --}}
-                        @if($user->id_card_issue_date)
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-calendar-plus" style="color:#5aa07e;"></i> วันออกบัตร
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ \Carbon\Carbon::parse($user->id_card_issue_date)->locale('th')->translatedFormat('j F Y') }}
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- วันหมดอายุ --}}
-                        @if($user->id_card_expiry_date)
-                        @php $idExpired = \Carbon\Carbon::parse($user->id_card_expiry_date)->isPast(); @endphp
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-calendar-times" style="color:#5aa07e;"></i> วันหมดอายุ
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:{{ $idExpired ? '#d9534f' : 'var(--ink2)' }};">
-                                {{ \Carbon\Carbon::parse($user->id_card_expiry_date)->locale('th')->translatedFormat('j F Y') }}
-                                @if($idExpired)
-                                    <span style="margin-left:8px; color:#d9534f; font-size:12px;">(หมดอายุแล้ว)</span>
-                                @endif
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- ที่อยู่ตามบัตร --}}
-                        @if($user->id_card_address)
-                        <div style="grid-column:1 / -1;">
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-map-marker-alt" style="color:#5aa07e;"></i> ที่อยู่ตามบัตร
-                            </label>
-                            <div style="padding:11px 14px; border-radius:12px; box-shadow:var(--inset-sm); color:var(--ink2);">
-                                {{ $user->id_card_address }}
-                            </div>
-                        </div>
-                        @endif
-                    </div>
-                </div>
+            <label class="nvm-check"><input type="checkbox" x-model="show"> แสดงรหัสผ่าน</label>
+            @if($pwTurnstile)
+                <div class="cf-turnstile nvm-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="{{ config('turnstile.theme') }}" data-size="{{ config('turnstile.size') }}"></div>
+            @endif
+            <div class="nvm-pf-pwfoot">
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="sending"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg><span x-text="sending ? 'กำลังเปลี่ยน…' : 'เปลี่ยนรหัสผ่าน'">เปลี่ยนรหัสผ่าน</span></button>
+                @if(RouteFacade::has('password.request'))
+                    <p class="nvm-help">สมัครด้วย LINE/Google และไม่เคยตั้งรหัสผ่าน? ใช้<a class="nvm-link" href="{{ route('password.request') }}">ลืมรหัสผ่าน</a>เพื่อตั้งรหัสใหม่</p>
                 @endif
-
-                {{-- เปลี่ยนรหัสผ่าน --}}
-                <div class="tp-card" style="padding:20px;">
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-                        <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:16px; background:#d9534f;"><i class="fas fa-key" style="color:#fff;"></i></span>
-                        <h2 style="font-size:17px; font-weight:700; margin:0;">เปลี่ยนรหัสผ่าน</h2>
-                    </div>
-
-                    {{-- 🐛 (2026-10-29) เดิมไม่แสดง error ของฟอร์มนี้เลย — รหัสอ่อน/ยืนยันไม่ตรง หน้าแค่โหลดใหม่เงียบๆ --}}
-                    @php $pwErrors = collect(['current_password', 'new_password', 'turnstile'])->flatMap(fn ($k) => $errors->get($k)); @endphp
-                    @if($pwErrors->isNotEmpty())
-                        <div id="nvm-pw-errors" role="alert" style="margin-bottom:14px; padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f; font-size:12.5px; color:#d9534f;">
-                            @foreach($pwErrors as $msg)<div><i class="fas fa-circle-exclamation"></i> {{ $msg }}</div>@endforeach
-                        </div>
-                    @endif
-
-                    <div style="display:flex; flex-direction:column; gap:14px;">
-                        {{-- รหัสผ่านปัจจุบัน --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-lock" style="color:#d9534f;"></i> รหัสผ่านปัจจุบัน
-                            </label>
-                            <div style="position:relative;" x-data="{ showPassword: false }">
-                                <input :type="showPassword ? 'text' : 'password'"
-                                       name="current_password"
-                                       form="nvm-pw-form" required autocomplete="current-password"
-                                       placeholder="ใส่รหัสผ่านปัจจุบัน"
-                                       class="tp-input"
-                                       style="width:100%; padding-right:44px;">
-                                <button type="button"
-                                        @click="showPassword = !showPassword"
-                                        class="tp-icon-btn"
-                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
-                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        {{-- รหัสผ่านใหม่ --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-key" style="color:#d9534f;"></i> รหัสผ่านใหม่
-                            </label>
-                            <div style="position:relative;" x-data="{ showPassword: false }">
-                                <input :type="showPassword ? 'text' : 'password'"
-                                       name="new_password"
-                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
-                                       placeholder="ใส่รหัสผ่านใหม่"
-                                       class="tp-input"
-                                       style="width:100%; padding-right:44px;">
-                                <button type="button"
-                                        @click="showPassword = !showPassword"
-                                        class="tp-icon-btn"
-                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
-                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        {{-- ยืนยันรหัสผ่านใหม่ --}}
-                        <div>
-                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
-                                <i class="fas fa-circle-check" style="color:#d9534f;"></i> ยืนยันรหัสผ่านใหม่
-                            </label>
-                            <div style="position:relative;" x-data="{ showPassword: false }">
-                                <input :type="showPassword ? 'text' : 'password'"
-                                       name="new_password_confirmation"
-                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
-                                       placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง"
-                                       class="tp-input"
-                                       style="width:100%; padding-right:44px;">
-                                <button type="button"
-                                        @click="showPassword = !showPassword"
-                                        class="tp-icon-btn"
-                                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%);">
-                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div style="padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8; font-size:12.5px; color:#5689b8;">
-                            <i class="fas fa-circle-info"></i>
-                            รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
-                        </div>
-
-                        @if($pwTurnstile)
-                            {{-- widget อยู่ในฟอร์มโปรไฟล์ทาง DOM → ปิดช่องอัตโนมัติแล้วส่ง token เข้าฟอร์มรหัสผ่านทาง callback --}}
-                            <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="{{ config('turnstile.theme') }}" data-size="{{ config('turnstile.size') }}" data-response-field="false" data-callback="nvmPwTurnstile" data-expired-callback="nvmPwTurnstileReset"></div>
-                            <input type="hidden" id="nvm-pw-ts" name="cf-turnstile-response" form="nvm-pw-form">
-                        @endif
-
-                        <button type="submit" form="nvm-pw-form" class="tp-btn tp-btn-primary" style="align-self:flex-start;">
-                            <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
-                        </button>
-                    </div>
-                </div>
             </div>
-        </div>
-    </form>
-
-    {{-- 🔒 ฟอร์มเปลี่ยนรหัสผ่านแยกจากฟอร์มโปรไฟล์ — ผ่าน turnstile + 2FA (password_change) ตาม route --}}
-    <form id="nvm-pw-form" method="POST" action="{{ route('user.profile.update-password') }}">
-        @csrf
-    </form>
-
-    {{-- ส่งลิงก์ยืนยันอีเมลซ้ำ (ปุ่มอยู่ใต้ช่องอีเมล — ฟอร์มแยกจากฟอร์มโปรไฟล์) --}}
-    <form id="nvm-email-verify-form" method="POST" action="{{ route('user.profile.email.resend-verification') }}">
-        @csrf
-    </form>
-
-    {{-- ── ปุ่มบันทึกลอย (Floating Save) ──────────────────────── --}}
-    <div x-show="formChanged"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-4"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 translate-y-4"
-         style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:50; display:none;">
-        <div class="tp-card" style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:999px;">
-            <button type="button"
-                    @click="$refs.profileForm.submit()"
-                    class="tp-btn tp-btn-primary"
-                    style="border-radius:999px; padding:12px 24px; font-size:15px;">
-                <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
-            </button>
-            <button type="button"
-                    @click="formChanged = false; window.location.reload()"
-                    class="tp-btn"
-                    style="border-radius:999px; padding:12px 18px;">
-                <i class="fas fa-times"></i> ยกเลิก
-            </button>
-        </div>
+        </form>
+    </section>
     </div>
+
+    <aside class="nvm-stack">
+        {{-- สิ่งที่ยังขาด (ครบแล้วไม่ต้องแสดง — วงแหวนบนฮีโร่บอกอยู่แล้ว) --}}
+        @if($done < count($checks))
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-pf-done-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Checklist</small><h2 id="nvm-pf-done-h">เติมโปรไฟล์ให้ครบ</h2></div></div>
+                <ul class="nvm-pf-list">
+                    @foreach($checks as [$label, $ok, $href])
+                        <li class="{{ $ok ? 'is-ok' : '' }}">
+                            @if($ok)
+                                <span><i><svg class="nvm-ico"><use href="#nvm-i-check"/></svg></i>{{ $label }}</span>
+                            @else
+                                <a href="{{ $href }}"><i></i>{{ $label }}<svg class="nvm-ico" aria-hidden="true"><use href="#nvm-i-chev"/></svg></a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
+        {{-- ยืนยันตัวตน --}}
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-pf-kyc-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">Identity</small><h2 id="nvm-pf-kyc-h">ข้อมูลบัตรประชาชน</h2></div>
+                <a href="{{ route('user.kyc.index') }}">KYC<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+            </div>
+            @if($kycVerified && $idMasked)
+                <dl class="nvm-kv">
+                    <dt>เลขบัตร</dt><dd class="nvm-num">{{ $idMasked }}</dd>
+                    @if($user->thai_first_name || $user->thai_last_name)<dt>ชื่อ (ไทย)</dt><dd>{{ trim($user->thai_first_name.' '.$user->thai_last_name) }}</dd>@endif
+                    @if($user->english_first_name || $user->english_last_name)<dt>ชื่อ (อังกฤษ)</dt><dd>{{ trim($user->english_first_name.' '.$user->english_last_name) }}</dd>@endif
+                    @if($user->id_card_birth_date)<dt>วันเกิด</dt><dd>{{ $thDate($user->id_card_birth_date) }}</dd>@endif
+                    @if($user->id_card_expiry_date)<dt>บัตรหมดอายุ</dt><dd class="{{ $idExpired ? 'nvm-pf-bad' : '' }}">{{ $thDate($user->id_card_expiry_date) }}@if($idExpired) (หมดอายุแล้ว)@endif</dd>@endif
+                </dl>
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg><span>ข้อมูลจากบัตรแก้เองไม่ได้ ถ้าไม่ถูกต้องให้ติดต่อทีมงานผ่าน<a class="nvm-link" href="{{ route('user.tickets.create') }}">ตั๋วช่วยเหลือ</a></span></p>
+            @elseif($kycVerified)
+                <p class="nvm-desc">ยืนยันตัวตนเรียบร้อยแล้ว ใช้งานถอนเงินและทุกฟีเจอร์ได้เต็มที่</p>
+            @elseif($kycPending)
+                <p class="nvm-desc">ทีมงานกำลังตรวจเอกสารของคุณ ปกติใช้เวลา 1-3 วันทำการ</p>
+                <a class="nvm-btn nvm-btn--line nvm-btn--sm nvm-gap-t" href="{{ route('user.kyc.index') }}">ดูสถานะ</a>
+            @else
+                <img class="nvm-pf-kyc-art" src="{{ $nvArt('idcard', 'deco/scroll') }}" alt="" width="96" height="96" loading="lazy">
+                <p class="nvm-desc">ยืนยันตัวตนด้วยบัตรประชาชน เพื่อถอนเงินและใช้งานได้ครบทุกฟีเจอร์</p>
+                <a class="nvm-btn nvm-btn--gold nvm-btn--sm nvm-gap-t" href="{{ route('user.kyc.create') }}"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>เริ่มยืนยันตัวตน</a>
+            @endif
+        </section>
+
+        {{-- ลิงก์ที่เกี่ยวข้อง --}}
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-pf-more-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">More settings</small><h2 id="nvm-pf-more-h">ตั้งค่าอื่นๆ</h2></div></div>
+            <div class="nvm-txs">
+                @if(RouteFacade::has('shipping-addresses.index'))
+                    <a class="nvm-tx nvm-pf-go" href="{{ route('shipping-addresses.index') }}">
+                        <span class="nvm-tx__ic" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg></span>
+                        <span class="nvm-tx__t"><b>ที่อยู่จัดส่ง</b><small>เพิ่ม แก้ไข และตั้งค่าที่อยู่เริ่มต้น</small></span>
+                        <svg class="nvm-ico" aria-hidden="true"><use href="#nvm-i-chev"/></svg>
+                    </a>
+                @endif
+                <a class="nvm-tx nvm-pf-go" href="{{ route('user.two-factor.setup') }}">
+                    <span class="nvm-tx__ic" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg></span>
+                    <span class="nvm-tx__t"><b>ความปลอดภัย 2 ชั้น (2FA)</b><small>ยืนยันด้วยรหัสจากแอปก่อนถอน/โอนเงิน</small></span>
+                    <svg class="nvm-ico" aria-hidden="true"><use href="#nvm-i-chev"/></svg>
+                </a>
+                <a class="nvm-tx nvm-pf-go" href="{{ route('user.email.preferences') }}">
+                    <span class="nvm-tx__ic" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-bell"/></svg></span>
+                    <span class="nvm-tx__t"><b>การแจ้งเตือนทางอีเมล</b><small>เลือกเรื่องที่อยากรับทางอีเมล</small></span>
+                    <svg class="nvm-ico" aria-hidden="true"><use href="#nvm-i-chev"/></svg>
+                </a>
+                @if(RouteFacade::has('account.delete'))
+                    <a class="nvm-tx nvm-pf-go nvm-pf-go--bad" href="{{ route('account.delete') }}">
+                        <span class="nvm-tx__ic" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg></span>
+                        <span class="nvm-tx__t"><b>ลบบัญชี</b><small>ลบข้อมูลส่วนตัวและปิดบัญชีถาวร</small></span>
+                        <svg class="nvm-ico" aria-hidden="true"><use href="#nvm-i-chev"/></svg>
+                    </a>
+                @endif
+            </div>
+        </section>
+    </aside>
 </div>
+
+{{-- ส่งลิงก์ยืนยันอีเมลซ้ำ (ปุ่มอยู่ใต้ช่องอีเมล — ฟอร์มแยกจากฟอร์มโปรไฟล์) --}}
+<form id="nvm-email-verify-form" method="POST" action="{{ route('user.profile.email.resend-verification') }}">
+    @csrf
+</form>
+
+</div>
+@endsection
 
 @push('scripts')
 @if($pwTurnstile)
-<script>
-    // token Turnstile → ช่องในฟอร์มเปลี่ยนรหัสผ่าน
-    window.nvmPwTurnstile = (token) => { document.getElementById('nvm-pw-ts').value = token; };
-    window.nvmPwTurnstileReset = () => { document.getElementById('nvm-pw-ts').value = ''; };
-</script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endif
 <script>
-/**
- * 🔒 ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล — โผล่เมื่ออีเมลที่พิมพ์ต่างจากอีเมลปัจจุบัน
- *
- * mode 'password'       : รหัสผ่านปัจจุบัน หรือ (useCode) รหัส 6 หลักที่ส่งไปอีเมลเดิม
- * mode 'new_email_code' : รหัส 6 หลักที่ส่งไปอีเมลใหม่ (บัญชี LINE/Facebook ที่ระบบตั้งอีเมลให้)
- */
-function emailChangeBox(cfg) {
-    return {
+document.addEventListener('alpine:init', () => {
+    /**
+     * ฟอร์มโปรไฟล์ — พรีวิวรูป + เตือนก่อนออกจากหน้าเมื่อยังไม่บันทึก
+     */
+    window.Alpine.data('nvmProfile', (current, fallback, hasUnsaved) => ({
+        current: current || fallback,
+        fallback,
+        preview: null,
+        dirty: !! hasUnsaved,
+        busy: false,
+
+        pickAvatar(e) {
+            const file = e.target.files[0];
+            if (! file) return;
+            if (! ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+                window.showNotification('เลือกได้เฉพาะรูป JPG PNG GIF หรือ WebP', 'error');
+                return this.clearAvatar();
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                window.showNotification('รูปใหญ่เกิน 5MB ลองย่อรูปหรือเลือกรูปอื่น', 'error');
+                return this.clearAvatar();
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => { this.preview = ev.target.result; };
+            reader.readAsDataURL(file);
+            this.dirty = true;
+        },
+
+        clearAvatar() {
+            this.preview = null;
+            this.$refs.avatar.value = '';
+        },
+
+        // ออกจากหน้า (ปิดแท็บ/กดลิงก์) ทั้งที่ยังไม่บันทึก → เบราว์เซอร์ถามก่อน
+        warnUnsaved(e) {
+            if (this.dirty && ! this.busy) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        },
+    }));
+
+    /**
+     * 🔒 ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล — โผล่เมื่ออีเมลที่พิมพ์ต่างจากอีเมลปัจจุบัน
+     *
+     * mode 'password'       : รหัสผ่านปัจจุบัน หรือ (useCode) รหัส 6 หลักที่ส่งไปอีเมลเดิม
+     * mode 'new_email_code' : รหัส 6 หลักที่ส่งไปอีเมลใหม่ (บัญชี LINE/Facebook ที่ระบบตั้งอีเมลให้)
+     */
+    window.Alpine.data('emailChangeBox', (cfg) => ({
         email: cfg.initial || '',
         current: cfg.current || '',
         mode: cfg.mode,
-        useCode: !!cfg.useCode,
+        useCode: !! cfg.useCode,
         sending: false,
         sent: false,
         notice: '',
@@ -754,7 +526,7 @@ function emailChangeBox(cfg) {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': cfg.csrf,
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({ new_email: this.email.trim() }),
@@ -787,75 +559,7 @@ function emailChangeBox(cfg) {
                 this.sending = false;
             }
         },
-    };
-}
-
-/**
- * Profile Manager - Alpine.js Component
- */
-function profileManager() {
-    return {
-        avatarPreview: null,
-        formChanged: false,
-
-        init() {
-            // Track form changes
-            const form = this.$refs.profileForm;
-            if (form) {
-                const inputs = form.querySelectorAll('input, select, textarea');
-                inputs.forEach(input => {
-                    // ช่องรหัสผ่านเป็นของฟอร์มแยก (form="nvm-pw-form") — ไม่นับเป็นการแก้โปรไฟล์
-                    if (input.form !== form) return;
-                    input.addEventListener('input', () => {
-                        this.formChanged = true;
-                    });
-                });
-            }
-        },
-
-        /**
-         * Handle Avatar Upload and Preview
-         */
-        handleAvatarChange(event) {
-            const file = event.target.files[0];
-
-            if (!file) {
-                return;
-            }
-
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-                alert('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, GIF, WebP) เท่านั้น');
-                event.target.value = '';
-                return;
-            }
-
-            // Validate file size (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
-                event.target.value = '';
-                return;
-            }
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.avatarPreview = e.target.result;
-                this.formChanged = true;
-            };
-            reader.readAsDataURL(file);
-        },
-
-        /**
-         * Show notification
-         */
-        showNotification(message, type = 'success') {
-            // Simple alert for now (can be enhanced with toast notification)
-            alert(message);
-        }
-    };
-}
+    }));
+});
 </script>
 @endpush
-@endsection
