@@ -38,7 +38,7 @@
         if (!document.getElementById('turnstile-script')) {
             const script = document.createElement('script');
             script.id = 'turnstile-script';
-            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad';
+            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);

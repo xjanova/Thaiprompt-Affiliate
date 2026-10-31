@@ -56,6 +56,9 @@ return [
         'password_change' => env('CLOUDFLARE_TURNSTILE_PASSWORD_CHANGE', true),
         'profile_update' => env('CLOUDFLARE_TURNSTILE_PROFILE_UPDATE', true),
         'withdrawal_request' => env('CLOUDFLARE_TURNSTILE_WITHDRAWAL', true),
+        // ถอนคริปโต/TPIX ใช้สวิตช์เดียวกับถอนเงินบาท — ชื่อ point ที่ route ใช้ต้องมีครบที่นี่ ไม่งั้น middleware จะข้ามการตรวจเงียบๆ
+        'crypto_withdrawal' => env('CLOUDFLARE_TURNSTILE_WITHDRAWAL', true),
+        'tpix_withdrawal' => env('CLOUDFLARE_TURNSTILE_WITHDRAWAL', true),
         'affiliate_application' => env('CLOUDFLARE_TURNSTILE_AFFILIATE_APP', true),
         'checkout' => env('CLOUDFLARE_TURNSTILE_CHECKOUT', true),
         'review' => env('CLOUDFLARE_TURNSTILE_REVIEW', true),

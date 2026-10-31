@@ -160,6 +160,9 @@
                 <span style="font-size:13px; color:var(--ink2);">ฉันยืนยันว่าได้ตรวจสอบที่อยู่ปลายทางและเครือข่ายแล้ว และเข้าใจว่าการส่งไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</span>
             </label>
 
+            {{-- route ตรวจ turnstile:crypto_withdrawal --}}
+            <x-turnstile point="crypto_withdrawal" />
+
             <button type="submit" class="tp-btn" style="width:100%; padding:15px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none; cursor:pointer;">ส่งคำขอถอนเงิน</button>
         </form>
     </div>

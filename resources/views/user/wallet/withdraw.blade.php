@@ -10,7 +10,7 @@
     $maxAmount = min((float) $wallet->balance, (float) $feePolicy['max_amount']);
     // ยอดคงเหลือไม่ถึงขั้นต่ำ → ฟอร์มยังโชว์แต่กดส่งไม่ได้ พร้อมบอกเหตุผล
     $canWithdraw = $maxAmount >= $minAmount;
-    $turnstile = config('turnstile.enabled') && config('turnstile.points.withdrawal_request');
+    $turnstile = config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.withdrawal_request');
     $last4 = fn ($no) => substr(preg_replace('/[^0-9A-Za-z]/', '', (string) $no), -4);
     $pct = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
     // ส่งไม่ผ่านแล้วกลับมา → เลือกบัญชีเดิม ไม่งั้นใช้บัญชีค่าเริ่มต้น
