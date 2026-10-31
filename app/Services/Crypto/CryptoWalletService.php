@@ -5,10 +5,12 @@ namespace App\Services\Crypto;
 use App\Models\CryptoAddress;
 use App\Models\CryptoCurrency;
 use App\Models\CryptoDepositAddress;
+use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CryptoWalletService
 {
@@ -217,6 +219,82 @@ class CryptoWalletService
         }
 
         return $balances;
+    }
+
+    /**
+     * โอนเหรียญระหว่างสมาชิกภายในระบบ (ย้ายยอดในฐานข้อมูล ไม่ได้ส่งขึ้นเชน)
+     *
+     * @param  string  $amount  จำนวนเหรียญเป็นสตริงทศนิยม — ห้ามส่ง float ยอด 18 ตำแหน่งจะปัดเศษผิด
+     * @return array{success: bool, message: string}
+     */
+    public function transfer(User $sender, User $recipient, CryptoCurrency $currency, string $amount): array
+    {
+        // ผู้รับที่ยังไม่เคยเปิดกระเป๋าต้องมีแถวให้ล็อกก่อนเข้า transaction
+        CryptoWallet::firstOrCreate(
+            ['user_id' => $recipient->id, 'currency_id' => $currency->id],
+            ['balance' => 0, 'status' => 'active', 'wallet_type' => 'custodial']
+        );
+
+        return DB::transaction(function () use ($sender, $recipient, $currency, $amount) {
+            // ล็อกสองแถวในคำสั่งเดียวเรียงตาม id — A โอนหา B พร้อม B โอนหา A จะได้ไม่ deadlock
+            $wallets = CryptoWallet::whereIn('user_id', [$sender->id, $recipient->id])
+                ->where('currency_id', $currency->id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->unique('user_id')
+                ->keyBy('user_id');
+
+            $fromWallet = $wallets->get($sender->id);
+            $toWallet = $wallets->get($recipient->id);
+
+            if (! $fromWallet || ! $fromWallet->isActive()) {
+                return ['success' => false, 'message' => 'กระเป๋าของคุณถูกระงับการใช้งาน ทำรายการไม่ได้'];
+            }
+
+            if (! $toWallet || ! $toWallet->isActive()) {
+                return ['success' => false, 'message' => 'กระเป๋าของผู้รับยังรับเหรียญไม่ได้'];
+            }
+
+            if (bccomp((string) $fromWallet->balance, $amount, 18) < 0) {
+                return ['success' => false, 'message' => 'ยอดคงเหลือไม่พอ'];
+            }
+
+            $fromWallet->decrement('balance', $amount);
+            $toWallet->increment('balance', $amount);
+
+            // สองขาอ้างรหัสเดียวกัน ตามคู่รายการได้เมื่อต้องตรวจสอบย้อนหลัง
+            $transferRef = (string) Str::uuid();
+            $legs = [
+                [$sender, $fromWallet, 'transfer_out', 'ส่งให้ '.$recipient->name, $recipient],
+                [$recipient, $toWallet, 'transfer_in', 'รับจาก '.$sender->name, $sender],
+            ];
+
+            foreach ($legs as [$owner, $wallet, $type, $description, $counterparty]) {
+                CryptoTransaction::create([
+                    'user_id' => $owner->id,
+                    'crypto_currency_id' => $currency->id,
+                    'crypto_wallet_id' => $wallet->id,
+                    'type' => $type,
+                    'amount' => $amount,
+                    'fee' => 0,
+                    'from_address' => $fromWallet->address,
+                    'to_address' => $toWallet->address,
+                    'network' => $currency->network,
+                    'status' => 'completed',
+                    'confirmations_required' => 0,
+                    'completed_at' => now(),
+                    'description' => $description,
+                    'metadata' => [
+                        'internal_transfer' => true,
+                        'transfer_ref' => $transferRef,
+                        'counterparty_user_id' => $counterparty->id,
+                    ],
+                ]);
+            }
+
+            return ['success' => true, 'message' => 'ส่ง '.$amount.' '.$currency->code.' ให้ '.$recipient->name.' สำเร็จ'];
+        });
     }
 
     /**
