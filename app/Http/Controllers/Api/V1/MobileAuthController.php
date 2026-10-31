@@ -250,7 +250,8 @@ class MobileAuthController extends Controller
                         'referral_code' => $user->referral_code,
                         'rank_id' => $user->rank_id,
                         'rank_name' => $user->rank?->name,
-                        'wallet_balance' => $user->wallet_balance ?? 0,
+                        // ยอดจริงอยู่ที่ตาราง wallets (users ไม่มีคอลัมน์ wallet_balance)
+                        'wallet_balance' => (float) ($user->wallet?->balance ?? 0),
                         'line_user_id' => $user->line_user_id,
                         'line_display_name' => $user->line_display_name,
                         'is_verified' => $user->is_verified ?? false,
