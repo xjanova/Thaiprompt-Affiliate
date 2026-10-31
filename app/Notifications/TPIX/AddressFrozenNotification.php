@@ -41,7 +41,7 @@ class AddressFrozenNotification extends Notification implements ShouldQueue
             ->line("ที่อยู่: {$this->address}")
             ->line("เหตุผล: {$this->reason}")
             ->line('กรุณาติดต่อ Support หากคุณคิดว่านี่เป็นความผิดพลาด')
-            ->action('ติดต่อ Support', route('support'));
+            ->action('ติดต่อ Support', route('contact'));
     }
 
     public function toArray($notifiable): array

@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Affiliate;
 use App\Models\AiBotProfile;
-use App\Models\Commission;
 use App\Models\CryptoTransaction;
 use App\Models\HotelBooking;
+use App\Models\MlmMember;
 use App\Models\Order;
 use App\Models\PosTransaction;
 use App\Models\Product;
@@ -465,10 +464,10 @@ class UnifiedReportService
         $paidCommissions = 0;
         $pendingCommissions = 0;
 
-        if (class_exists(\App\Models\Affiliate::class)) {
-            $totalAffiliates = Affiliate::count();
-            $newAffiliates = Affiliate::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
-            $activeAffiliates = Affiliate::where('status', 'active')->count();
+        if (class_exists(\App\Models\MlmMember::class)) {
+            $totalAffiliates = MlmMember::count();
+            $newAffiliates = MlmMember::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
+            $activeAffiliates = MlmMember::where('status', 'active')->count();
         }
 
         if (class_exists(\App\Models\Commission::class)) {
@@ -726,7 +725,7 @@ class UnifiedReportService
         }
 
         return DB::table('users')
-            ->join('ranks', 'users.rank_id', '=', 'ranks.id')
+            ->join('ranks', 'users.current_rank_id', '=', 'ranks.id')
             ->select('ranks.name', DB::raw('COUNT(*) as count'))
             ->groupBy('ranks.id', 'ranks.name')
             ->orderBy('count', 'desc')
@@ -759,13 +758,18 @@ class UnifiedReportService
      */
     protected function getTopRecruiters(array $dates, int $limit = 10): array
     {
-        return User::withCount(['referrals' => function ($query) use ($dates) {
-            $query->whereBetween('created_at', [$dates['start'], $dates['end']]);
-        }])
+        return DB::table('mlm_members as recruits')
+            ->join('mlm_members as sponsors', 'recruits.unilevel_sponsor_id', '=', 'sponsors.id')
+            ->join('users', 'sponsors.user_id', '=', 'users.id')
+            ->whereNull('recruits.deleted_at')
+            ->whereBetween('recruits.created_at', [$dates['start'], $dates['end']])
+            ->select('users.id', 'users.name', 'users.email', DB::raw('COUNT(*) as referrals_count'))
+            ->groupBy('users.id', 'users.name', 'users.email')
             ->orderByDesc('referrals_count')
             ->limit($limit)
-            ->get(['id', 'name', 'email', 'referrals_count'])
-            ->toArray();
+            ->get()
+            ->map(fn ($row) => (array) $row)
+            ->all();
     }
 
     /**
@@ -789,10 +793,11 @@ class UnifiedReportService
      */
     protected function getLevelAnalysis(): array
     {
-        return DB::table('affiliates')
-            ->select('level', DB::raw('COUNT(*) as count'))
-            ->groupBy('level')
-            ->orderBy('level')
+        return DB::table('mlm_members')
+            ->whereNull('deleted_at')
+            ->select('unilevel_level as level', DB::raw('COUNT(*) as count'))
+            ->groupBy('unilevel_level')
+            ->orderBy('unilevel_level')
             ->get()
             ->toArray();
     }
@@ -802,15 +807,15 @@ class UnifiedReportService
      */
     protected function getMlmGrowthRate(array $dates): array
     {
-        if (! class_exists(\App\Models\Affiliate::class)) {
+        if (! class_exists(\App\Models\MlmMember::class)) {
             return ['growth_rate' => 0, 'previous_period' => 0, 'current_period' => 0];
         }
 
         $periodLength = $dates['start']->diffInDays($dates['end']);
         $previousStart = $dates['start']->copy()->subDays($periodLength);
 
-        $previousCount = Affiliate::whereBetween('created_at', [$previousStart, $dates['start']])->count();
-        $currentCount = Affiliate::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
+        $previousCount = MlmMember::whereBetween('created_at', [$previousStart, $dates['start']])->count();
+        $currentCount = MlmMember::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
 
         $growthRate = $previousCount > 0 ? (($currentCount - $previousCount) / $previousCount) * 100 : 0;
 
@@ -1131,8 +1136,8 @@ class UnifiedReportService
         }
 
         return PosTransaction::whereBetween('created_at', [$dates['start'], $dates['end']])
-            ->select('device_id', DB::raw('SUM(total_amount) as total'))
-            ->groupBy('device_id')
+            ->select('pos_device_id as device_id', DB::raw('SUM(total_amount) as total'))
+            ->groupBy('pos_device_id')
             ->get()
             ->toArray();
     }
@@ -1208,9 +1213,9 @@ class UnifiedReportService
         $leftEmployees = 0;
 
         if (class_exists(\App\Models\Employee::class)) {
-            $totalEmployees = \App\Models\Employee::where('status', 'active')->count();
+            $totalEmployees = \App\Models\Employee::where('employment_status', 'active')->count();
             $newEmployees = \App\Models\Employee::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
-            $leftEmployees = \App\Models\Employee::whereBetween('terminated_at', [$dates['start'], $dates['end']])->count();
+            $leftEmployees = \App\Models\Employee::whereBetween('termination_date', [$dates['start'], $dates['end']])->count();
         }
 
         return [
@@ -1232,7 +1237,7 @@ class UnifiedReportService
 
         return DB::table('employees')
             ->join('departments', 'employees.department_id', '=', 'departments.id')
-            ->where('employees.status', 'active')
+            ->where('employees.employment_status', 'active')
             ->select('departments.name', DB::raw('COUNT(*) as count'))
             ->groupBy('departments.id', 'departments.name')
             ->get()

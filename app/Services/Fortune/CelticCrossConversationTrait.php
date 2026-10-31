@@ -1545,23 +1545,7 @@ trait CelticCrossConversationTrait
 
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — ห้ามถือเป็น "พร้อม" สุ่มไพ่
         if (! $isExplicitPick && $this->looksLikeFortuneRestartRequest($messageText)) {
-            $picked = $reading->getCelticPickedCount();
-            $next = $reading->getNextCelticPosition() ?? 11;
-            $canShuffle = $reading->canShuffleCelticAgain();
-            $shuffleLine = $canShuffle
-                ? "🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่ใหม่ (ได้ครั้งเดียว — ยังไม่จ่ายซ้ำ)\n"
-                : "🔄 สับใหม่ใช้ครบโควต้า 1 ครั้งแล้ว — เปิดไพ่ต่อได้เลยค่ะ\n";
-
-            return [
-                'action' => 'celtic_restart_hint',
-                'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีอยู่แล้วนะคะ\n\n"
-                    ."🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
-                    ."──────────────────────\n"
-                    ."👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
-                    // 🔒 (2026-09-16) เลิกชวน "พิมพ์ยกเลิก" — จ่ายแล้วกลางการทำนาย คำนี้ไม่มีผลอยู่แล้ว (Hard Guard)
-                    .rtrim($shuffleLine),
-                'reading' => $reading,
-            ];
+            return $this->buildCelticRestartHintResponse($reading);
         }
 
         // chitchat → ย้ำขั้นตอน (ข้ามได้ถ้า explicit pick keyword)
@@ -5593,6 +5577,70 @@ trait CelticCrossConversationTrait
             'message' => $message,
             'reading' => $reading,
             'tarot_image_url' => $lastImage,  // ส่งรูปใบล่าสุดให้ลูกค้าดูซ้ำ
+        ];
+    }
+
+    /**
+     * 🔄 กล่อง "อยู่ในรอบเปิดไพ่อยู่แล้ว" — ตอบตอนลูกค้าพิมพ์/กด "ดูดวง" ระหว่างเปิดไพ่
+     *   action celtic_restart_hint → ChannelManager แนบปุ่ม "🃏 เปิดไพ่ใบที่ N" ให้ทั้ง FB/LINE
+     */
+    protected function buildCelticRestartHintResponse(FortuneReading $reading): array
+    {
+        $picked = $reading->getCelticPickedCount();
+        $next = $reading->getNextCelticPosition() ?? 11;
+        $shuffleLine = $reading->canShuffleCelticAgain()
+            ? "🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่ใหม่ (ได้ครั้งเดียว — ยังไม่จ่ายซ้ำ)\n"
+            : "🔄 สับใหม่ใช้ครบโควต้า 1 ครั้งแล้ว — เปิดไพ่ต่อได้เลยค่ะ\n";
+
+        return [
+            'action' => 'celtic_restart_hint',
+            'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีอยู่แล้วนะคะ\n\n"
+                ."🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
+                ."──────────────────────\n"
+                ."👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
+                // 🔒 (2026-09-16) เลิกชวน "พิมพ์ยกเลิก" — จ่ายแล้วกลางการทำนาย คำนี้ไม่มีผลอยู่แล้ว (Hard Guard)
+                .rtrim($shuffleLine),
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🧭 (2026-10-24) บอกลูกค้าว่า "ตอนนี้แม่หมอรออะไรจากลูกอยู่" — ใช้แทนการเงียบใส่
+     *
+     * เคสจริง reading 14367 (2026-10-24): บอทถามเวลาเกิด → ลูกค้ากด "ดูดวง" → Hard Guard
+     *   silent_skip → ลูกค้าไม่รู้ว่าบอทรออะไร นั่งรอ 22 นาทีกว่าจะพิมพ์เวลาเกิดเอง
+     *   ⇒ interrupt keyword ช่วงรอ input ต้องตอบเตือนขั้นปัจจุบัน (reply ฟรี) — ไม่แตะ state ไม่สร้างบิล
+     *
+     * @return array action: celtic_restart_hint (ขั้นเปิดไพ่) | celtic_step_reminder (ขั้นอื่น)
+     *               quick_replies รูปแบบ ['title','text'] เหมือน celtic_ask_birthtime
+     */
+    public function buildCelticStepReminder(FortuneReading $reading): array
+    {
+        if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PICKING) {
+            return $this->buildCelticRestartHintResponse($reading);
+        }
+
+        $quickReplies = [];
+        if ($reading->getConversationState('celtic_birthtime_pending')) {
+            $step = "🕛 ตอนนี้แม่หมอรอ *เวลาเกิด* (และจังหวัดเกิด) ของลูกอยู่ค่ะ\n"
+                ."📝 พิมพ์มาได้เลย เช่น *ตี 5 เชียงใหม่* / *06:30 กรุงเทพ*\n"
+                .'   จำไม่ได้ก็กด *ไม่ทราบ* ได้เลยค่ะ';
+            // ปุ่มเดียวกับกล่องถามเวลาเกิด (celtic_ask_birthtime) — ข้อความเดียวกันจบขั้นได้ทันที
+            $quickReplies[] = ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'];
+        } elseif ($reading->getConversationState('celtic_birthdate_pending')) {
+            $step = "🎂 ตอนนี้แม่หมอรอ *วันเดือนปีเกิด* ของลูกอยู่ค่ะ\n"
+                ."📝 พิมพ์มาได้เลย เช่น *29/01/2516*\n"
+                .'   (ไม่สะดวกบอก พิมพ์ว่า *ข้าม* แม่หมอจะดูจากไพ่ให้ค่ะ)';
+        } else {
+            $step = "💬 ไพ่ครบแล้ว ตอนนี้แม่หมอรอ *คำถาม* ของลูกอยู่ค่ะ\n"
+                .'📝 พิมพ์เรื่องที่อยากรู้มาได้เลย เช่น การงาน ความรัก การเงิน';
+        }
+
+        return [
+            'action' => 'celtic_step_reminder',
+            'message' => "🌙 ลูกอยู่ในรอบดูดวงที่จ่ายแล้วนะคะ ไม่ต้องเริ่มใหม่ค่ะ\n\n".$step,
+            'reading' => $reading,
+            'quick_replies' => $quickReplies,
         ];
     }
 

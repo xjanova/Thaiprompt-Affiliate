@@ -242,7 +242,10 @@ describe('"ไว้ทีหลัง" — เลื่อนเฉพาะเ
 describe('จังหวะตรวจอัตโนมัติ / หน้าที่ห้ามเด้ง', () => {
   const NOW = 1_800_000_000_000;
 
-  it('ตรวจใหม่เมื่อห่างจากครั้งที่สำเร็จเกิน 6 ชม. · พลาดล่าสุดไม่ถึง 15 นาที = รอก่อน', () => {
+  it('ตรวจใหม่เมื่อห่างจากครั้งที่สำเร็จเกิน 30 นาที · พลาดล่าสุดไม่ถึง 15 นาที = รอก่อน', () => {
+    // แอปค้างเบื้องหลังต้องเห็นเวอร์ชันที่เพิ่งปล่อยภายในชั่วโมง (เดิม 6 ชม. = owner ไม่เห็นอัปเดต)
+    expect(AUTO_CHECK_INTERVAL_MS).toBeLessThanOrEqual(60 * 60 * 1000);
+    expect(shouldAutoCheck(NOW, NOW - 31 * 60 * 1000, NOW - 31 * 60 * 1000)).toBe(true);
     expect(shouldAutoCheck(NOW, 0, 0)).toBe(true);
     expect(shouldAutoCheck(NOW, NOW - AUTO_CHECK_INTERVAL_MS + 1000, NOW - AUTO_CHECK_INTERVAL_MS + 1000)).toBe(false);
     expect(shouldAutoCheck(NOW, NOW - AUTO_CHECK_INTERVAL_MS, NOW - AUTO_CHECK_INTERVAL_MS)).toBe(true);

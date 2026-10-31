@@ -1,8 +1,9 @@
 {{--
  | ลบบัญชี (PLAY-05) — หน้าสาธารณะ ใช้เป็น "Delete account URL" ใน Google Play Console
- | ตัวแปร: $user|null, $blockers (array{code,message}[]), $requiresPassword (bool), $confirmText ('ลบบัญชี'),
- |         $supportEmail, $deletedRef|null
- | ฟอร์ม POST → route('account.delete.destroy') ช่อง confirm_text, password
+ | ตัวแปร: $user|null, $blockers (array{code,message}[]), $confirmMethod (password|email_code|two_factor|add_email|null),
+ |         $canUseEmailCode (bool), $emailMasked|null, $confirmText ('ลบบัญชี'), $supportEmail, $deletedRef|null
+ | ฟอร์ม POST → route('account.delete.destroy') ช่อง confirm_text + password | email_code | two_factor_code
+ | 🔒 (2026-10-29) ทุกบัญชีต้องยืนยันตัวตนก่อนลบ (เดิมบัญชี LINE/FB กดลบได้ทันที) — ดู AccountDeletionService::confirmationMethod
  --}}
 @extends('layouts.frontend-v4')
 
@@ -10,7 +11,7 @@
 @section('meta_description', 'วิธีลบบัญชีไทยพร๊อมท์ และข้อมูลที่จะถูกลบเมื่อลบบัญชี')
 
 @section('content')
-{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+{{-- แถบหัว/ท้ายสาธารณะ — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
 <x-theme-v4.public-header />
 <div style="max-width:820px; width:100%; margin:0 auto; padding:40px 16px 60px; display:flex; flex-direction:column; gap:18px;">
 
@@ -100,10 +101,37 @@
                         @endforeach
                     </ul>
                 </div>
+            @elseif($confirmMethod === \App\Services\AccountDeletionService::METHOD_ADD_EMAIL)
+                {{-- ไม่มีอีเมลจริงและไม่ได้เปิด 2FA → ยังยืนยันตัวตนไม่ได้ ต้องเพิ่มอีเมลก่อน --}}
+                <div style="padding:14px 16px; border-radius:12px; background:color-mix(in srgb, #e08a3c 14%, transparent); color:var(--ink); font-size:13.5px; line-height:1.75;">
+                    <div style="font-weight:700; margin-bottom:6px;">ต้องเพิ่มอีเมลจริงก่อนลบบัญชี</div>
+                    บัญชีนี้สมัครผ่าน LINE/Facebook และยังไม่มีอีเมลจริงไว้ยืนยันตัวตน
+                    เพื่อไม่ให้ผู้อื่นที่เข้าถึงเครื่องของคุณลบบัญชีได้ กรุณาเพิ่มอีเมลของคุณที่หน้าโปรไฟล์
+                    แล้วกลับมาที่หน้านี้ ระบบจะส่งรหัสยืนยันการลบไปที่อีเมลนั้น
+                    <div style="margin-top:6px;">หรือติดต่อทีมงานที่ <a href="mailto:{{ $supportEmail }}" style="color:var(--deep1);">{{ $supportEmail }}</a></div>
+                </div>
+                <div style="margin-top:14px;">
+                    <a href="{{ route('user.profile') }}" class="tp-btn tp-btn-primary" style="text-decoration:none; min-height:44px;">
+                        <i class="fas fa-envelope"></i> <span>ไปเพิ่มอีเมลที่หน้าโปรไฟล์</span>
+                    </a>
+                </div>
             @else
+                @php
+                    // ส่งฟอร์มแล้วผิด → เปิดวิธีเดิมที่ลูกค้าเลือกค้างไว้ (ไม่เด้งกลับไปวิธีหลัก)
+                    $initialProof = match (true) {
+                        $errors->has('email_code') && $canUseEmailCode => \App\Services\AccountDeletionService::METHOD_EMAIL_CODE,
+                        $errors->has('password') => \App\Services\AccountDeletionService::METHOD_PASSWORD,
+                        default => $confirmMethod,
+                    };
+                @endphp
                 <form method="POST" action="{{ route('account.delete.destroy') }}"
                       style="display:flex; flex-direction:column; gap:14px;"
-                      x-data="{ typed: '', busy: false }"
+                      x-data="accountDeleteForm({
+                          proof: @js($initialProof),
+                          typed: @js((string) old('confirm_text', '')),
+                          sendUrl: @js(route('account.delete.send-code')),
+                          csrf: @js(csrf_token()),
+                      })"
                       @submit="if (!confirm(@js('ยืนยันลบบัญชีถาวร? การลบย้อนกลับไม่ได้'))) { $event.preventDefault(); return; } busy = true">
                     @csrf
 
@@ -122,12 +150,50 @@
                         <input type="text" name="confirm_text" class="tp-input" x-model="typed" autocomplete="off" required maxlength="50">
                     </label>
 
-                    <label style="display:flex; flex-direction:column; gap:6px;">
-                        <span style="font-size:13px; font-weight:600; color:var(--ink);">
-                            รหัสผ่าน {{ $requiresPassword ? '*' : '(ไม่บังคับสำหรับบัญชีที่สมัครผ่าน LINE/Facebook)' }}
-                        </span>
-                        <input type="password" name="password" class="tp-input" autocomplete="current-password" {{ $requiresPassword ? 'required' : '' }} maxlength="255">
-                    </label>
+                    {{-- 🔒 ยืนยันตัวตน: รหัสผ่าน / รหัสทางอีเมล / รหัส 2FA (แสดงทีละแบบ ช่องที่ซ่อนถูก disable ไม่ส่งไปด้วย) --}}
+                    <div style="padding:14px 16px; border-radius:12px; box-shadow:var(--inset-sm); display:flex; flex-direction:column; gap:10px;">
+                        <div style="font-size:13px; font-weight:700; color:var(--ink);"><i class="fas fa-shield-halved" style="color:var(--deep1);"></i> ยืนยันว่าเป็นเจ้าของบัญชี</div>
+
+                        <label x-show="proof === 'password'" style="display:flex; flex-direction:column; gap:6px;">
+                            <span style="font-size:13px; font-weight:600; color:var(--ink);">รหัสผ่าน *</span>
+                            <input type="password" name="password" class="tp-input" autocomplete="current-password" maxlength="255"
+                                   :required="proof === 'password'" :disabled="proof !== 'password'">
+                        </label>
+
+                        @if($canUseEmailCode)
+                            <div x-show="proof === 'email_code'" style="display:flex; flex-direction:column; gap:8px;">
+                                <span style="font-size:13px; color:var(--ink2); line-height:1.6;">กดส่งรหัส 6 หลักไปที่อีเมล <strong style="color:var(--ink);">{{ $emailMasked }}</strong> แล้วกรอกรหัสที่ได้รับ (หมดอายุใน 10 นาที)</span>
+                                <div>
+                                    <button type="button" class="tp-btn" style="min-height:44px;" @click="sendCode()" :disabled="sending || cooldown > 0">
+                                        <i class="fas fa-paper-plane"></i>
+                                        <span x-text="sending ? 'กำลังส่ง...' : (cooldown > 0 ? ('ส่งใหม่ได้ใน ' + cooldown + ' วินาที') : (sent ? 'ส่งรหัสอีกครั้ง' : 'ส่งรหัสไปที่อีเมล'))"></span>
+                                    </button>
+                                </div>
+                                <p x-show="notice" x-text="notice" :style="'margin:0; font-size:12.5px; color:' + (noticeOk ? '#3c8a64' : '#b43c38')"></p>
+                                <input type="text" name="email_code" class="tp-input tp-num" inputmode="numeric" autocomplete="one-time-code"
+                                       maxlength="6" pattern="[0-9]{6}" title="กรอกรหัสตัวเลข 6 หลักที่ได้รับทางอีเมล" placeholder="รหัส 6 หลักจากอีเมล"
+                                       style="max-width:220px; letter-spacing:4px;"
+                                       :required="proof === 'email_code'" :disabled="proof !== 'email_code'">
+                            </div>
+                        @endif
+
+                        @if($confirmMethod === \App\Services\AccountDeletionService::METHOD_TWO_FACTOR)
+                            <label x-show="proof === 'two_factor'" style="display:flex; flex-direction:column; gap:6px;">
+                                <span style="font-size:13px; font-weight:600; color:var(--ink);">รหัส 6 หลักจากแอป Authenticator (หรือรหัสกู้คืน) *</span>
+                                <input type="text" name="two_factor_code" class="tp-input tp-num" autocomplete="one-time-code" maxlength="50"
+                                       style="max-width:260px; letter-spacing:2px;"
+                                       :required="proof === 'two_factor'" :disabled="proof !== 'two_factor'">
+                            </label>
+                        @endif
+
+                        {{-- สลับวิธี: บัญชีที่มีอีเมลจริงใช้ได้ทั้งรหัสผ่านและรหัสทางอีเมล --}}
+                        @if($canUseEmailCode)
+                            <div style="font-size:12.5px;">
+                                <button type="button" x-show="proof !== 'email_code'" @click="proof = 'email_code'" style="background:none; border:0; padding:0; color:var(--deep1); cursor:pointer; text-decoration:underline;">ไม่รู้รหัสผ่าน (สมัครด้วย Google/LINE/Facebook)? ยืนยันด้วยรหัสทางอีเมลแทน</button>
+                                <button type="button" x-show="proof === 'email_code'" @click="proof = 'password'" style="background:none; border:0; padding:0; color:var(--deep1); cursor:pointer; text-decoration:underline;">ยืนยันด้วยรหัสผ่านแทน</button>
+                            </div>
+                        @endif
+                    </div>
 
                     <div>
                         <button type="submit" class="tp-btn" style="min-height:44px; background:#d9534f; border-color:#d9534f; color:#fff;"
@@ -155,3 +221,75 @@
 </div>
 <x-theme-v4.public-footer />
 @endsection
+
+@push('scripts')
+<script>
+/**
+ * ฟอร์มลบบัญชี — สลับวิธียืนยันตัวตน + ส่งรหัสทางอีเมล (กันกดซ้ำ/นับถอยหลังก่อนขอใหม่)
+ */
+function accountDeleteForm(cfg) {
+    return {
+        typed: cfg.typed || '',
+        busy: false,
+        proof: cfg.proof,
+        sending: false,
+        sent: false,
+        notice: '',
+        noticeOk: true,
+        cooldown: 0,
+        timer: null,
+
+        destroy() {
+            clearInterval(this.timer);
+        },
+
+        startCooldown(seconds) {
+            clearInterval(this.timer);
+            this.cooldown = Math.max(1, parseInt(seconds, 10) || 60);
+            this.timer = setInterval(() => {
+                this.cooldown--;
+                if (this.cooldown <= 0) { clearInterval(this.timer); this.cooldown = 0; }
+            }, 1000);
+        },
+
+        async sendCode() {
+            if (this.sending || this.cooldown > 0) return;
+            this.sending = true;
+            this.notice = '';
+
+            try {
+                const res = await fetch(cfg.sendUrl, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': cfg.csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.success) {
+                    this.sent = true;
+                    this.noticeOk = true;
+                    this.notice = data.message;
+                    this.startCooldown(60);
+                    return;
+                }
+
+                this.noticeOk = false;
+                if (res.status === 419) {
+                    this.notice = 'หน้านี้เปิดค้างนานเกินไป กรุณารีเฟรชหน้าแล้วลองใหม่';
+                } else if (res.status === 429 && data.success === undefined) {
+                    // ชน throttle ของ route (ข้อความเดิมเป็นภาษาอังกฤษ)
+                    this.notice = 'ขอรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่';
+                } else {
+                    this.notice = data.message || 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่';
+                }
+                if (data.retry_after) this.startCooldown(data.retry_after);
+            } catch (e) {
+                this.noticeOk = false;
+                this.notice = 'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+            } finally {
+                this.sending = false;
+            }
+        },
+    };
+}
+</script>
+@endpush

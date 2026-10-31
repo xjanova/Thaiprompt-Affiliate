@@ -98,6 +98,30 @@ class ReplyTokenVault
     }
 
     /**
+     * ⏱️ (2026-10-30) ดูเวลาที่เหลือของ token โดยไม่หยิบออก — ให้ job คำนวณงบ AI ให้ทันหน้าต่าง reply
+     *
+     * @return int|null วินาทีที่ยังยืมได้ · null = ไม่มี token / หมดอายุแล้ว
+     */
+    public static function secondsLeft(string $platform, string $userId): ?int
+    {
+        try {
+            $data = Cache::get(self::key($platform, $userId));
+
+            if (! is_array($data) || empty($data['token'])) {
+                return null;
+            }
+
+            $left = self::MAX_AGE_SECONDS - (now()->timestamp - (int) ($data['at'] ?? 0));
+
+            return $left > 0 ? $left : null;
+        } catch (\Throwable $e) {
+            Log::debug('ReplyTokenVault: secondsLeft fail (non-blocking)', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
      * ทิ้ง token (เรียกเมื่อเทิร์น webhook ใช้ token นั้นไปเองแล้ว)
      */
     public static function forget(string $platform, string $userId): void

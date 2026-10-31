@@ -24,7 +24,7 @@
 
 {{-- Hero Section --}}
 {{-- ธีมโนวา: แถบหัวเอกสารกรมท่า+กนกทองชุดเดียวกันทุกหน้า / ปิดธีม = สีประจำหน้าเดิม --}}
-<section class="relative py-20 lg:py-32 {{ config('shop.nova_public', true) ? 'nv-hero-band' : 'bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900' }} overflow-hidden">
+<section class="relative py-20 lg:py-32 nv-hero-band overflow-hidden">
     {{-- Background Pattern --}}
     <div class="absolute inset-0 opacity-10">
         <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 50px 50px;"></div>

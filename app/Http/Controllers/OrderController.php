@@ -199,7 +199,7 @@ class OrderController extends Controller
         }
 
         // Create review
-        ProductReview::create([
+        $review = ProductReview::create([
             'product_id' => $item->product_id,
             'user_id' => auth()->id(),
             'order_item_id' => $item->id,
@@ -213,6 +213,9 @@ class OrderController extends Controller
 
         // Update product rating
         $item->product->updateRating();
+
+        // 🔔 แจ้งผู้ขาย (push เข้าแอป)
+        app(\App\Services\SellerReviewNotifier::class)->productReview($review);
 
         return redirect()->route('orders.show', $orderId)
             ->with('success', 'ขอบคุณสำหรับรีวิวของคุณ');

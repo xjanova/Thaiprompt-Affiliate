@@ -125,7 +125,7 @@
                 <div>
                     <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;">รหัสสมาชิก:</label>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="memberCode" value="{{ $mlmMember->member_code }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:20px; font-weight:800; text-align:center;">
+                        <input type="text" id="memberCode" value="{{ $mlmMember?->member_code }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:20px; font-weight:800; text-align:center;">
                         <button @click="copyUrl('memberCode')" class="tp-btn" style="background:#c05a8f; border-color:#c05a8f; color:#fff;"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
@@ -148,7 +148,7 @@
 function recruitPageManager() {
     return {
         recruitUrl: '{{ $recruitUrl }}',
-        memberCode: '{{ $mlmMember->member_code }}',
+        memberCode: '{{ $mlmMember?->member_code }}',
         qrcode: null,
 
         init() {

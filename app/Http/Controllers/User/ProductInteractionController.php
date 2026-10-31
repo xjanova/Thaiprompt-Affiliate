@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductFavorite;
 use App\Models\ProductLike;
-use App\Models\ProductView;
 use App\Models\StoreFollower;
 use App\Models\VendorStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 /**
  * ProductInteractionController
@@ -23,64 +21,6 @@ use Illuminate\View\View;
  */
 class ProductInteractionController extends Controller
 {
-    /**
-     * แสดงหน้ารายการโปรด (Wishlist)
-     */
-    public function wishlist(Request $request): View
-    {
-        $user = $request->user();
-        $collection = $request->get('collection');
-
-        $query = ProductFavorite::where('user_id', $user->id)
-            ->with(['product.images', 'product.seller']);
-
-        if ($collection) {
-            $query->where('collection_name', $collection);
-        }
-
-        $favorites = $query->latest()->paginate(20);
-        $collections = ProductFavorite::getCollections($user->id);
-
-        return view('user.wishlist.index', [
-            'favorites' => $favorites,
-            'collections' => $collections,
-            'currentCollection' => $collection,
-            'pageTitle' => 'รายการโปรด',
-        ]);
-    }
-
-    /**
-     * แสดงสินค้าที่ดูล่าสุด
-     */
-    public function recentlyViewed(Request $request): View
-    {
-        $user = $request->user();
-        $products = ProductView::getRecentlyViewed($user->id, 50);
-
-        return view('user.products.recently-viewed', [
-            'products' => $products,
-            'pageTitle' => 'สินค้าที่ดูล่าสุด',
-        ]);
-    }
-
-    /**
-     * แสดงร้านค้าที่ติดตาม
-     */
-    public function followingStores(Request $request): View
-    {
-        $user = $request->user();
-
-        $following = StoreFollower::where('user_id', $user->id)
-            ->with('store')
-            ->latest()
-            ->paginate(20);
-
-        return view('user.stores.following', [
-            'following' => $following,
-            'pageTitle' => 'ร้านค้าที่ติดตาม',
-        ]);
-    }
-
     /**
      * Toggle ถูกใจสินค้า
      */

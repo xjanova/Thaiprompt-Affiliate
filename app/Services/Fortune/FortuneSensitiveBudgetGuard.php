@@ -146,6 +146,12 @@ class FortuneSensitiveBudgetGuard
     {
         $usdPerMillion = match (true) {
             str_contains($model, 'opus') => 15.0,
+            // 🆕 (2026-10-30) GPT-6 family — เดิมไม่มีแขนของตัวเอง ตกไป default $2/M
+            //   luna แพงเกินจริง 5 เท่า (guard trip เร็ว) · sol ถูกเกินจริงเกือบ 4 เท่า (guard ปล่อยเกินงบ)
+            str_contains($model, 'gpt-6-luna') => 0.38,     // $0.10/$0.50 → 0.3×0.10 + 0.7×0.50
+            str_contains($model, 'gpt-6.1-terra') => 3.8,   // $1/$5
+            str_contains($model, 'gpt-6.1-sol'), str_contains($model, 'gpt-6-sol') => 7.6,  // $2/$10
+            str_contains($model, 'gpt-6-astra') => 38.0,    // $10/$50
             // 🆕 (2026-08-17) GPT-5.6 family ต้องมาก่อน nano/mini/gpt-5 ทุกตัว —
             //   ไม่งั้น 'gpt-5.6-luna' ไม่เข้า nano/mini แล้วตกไปโดน str_contains('gpt-5') = $5/M
             //   ทั้งที่ของจริง blended ~$0.90/M (แพงเกินจริง 5.6 เท่า → budget guard trip เร็วเกินเหตุ)

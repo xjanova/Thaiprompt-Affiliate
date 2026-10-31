@@ -9,8 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * FortuneUserBan Model
  *
- * เก็บข้อมูล user ที่ถูกแบน — บอทจะไม่คุย/ตอบ user ที่มี record นี้
- * (แอดมินยังคุยได้ผ่าน Page Inbox / admin panel ตามปกติ)
+ * เก็บข้อมูลผู้ถูกแบนและผลการบล็อกจากเพจ Facebook จริง
  *
  * @property int $id
  * @property string $platform 'facebook' หรือ 'line'
@@ -27,6 +26,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class FortuneUserBan extends Model
 {
+    /** ข้อความใน page_block_error เมื่อ Facebook จำกัดการบล็อกของเพจ (code 368) */
+    public const PAGE_LIMITED_ERROR = 'code=368 ';
+
+    /** พักกี่ชั่วโมงเมื่อโดน code 368 — ยิงซ้ำถี่จะยิ่งถูกมองว่าเป็นการใช้งานผิดปกติ */
+    public const PAGE_LIMITED_RETRY_HOURS = 24;
+
     protected $table = 'fortune_user_bans';
 
     use \App\Models\Concerns\BelongsToFortunePage;   // 🏬 (2026-08-10) ระบบสาขา
@@ -42,6 +47,9 @@ class FortuneUserBan extends Model
         'last_notified_at',
         'notify_count',
         'attempt_count',
+        'page_block_status',
+        'page_block_error',
+        'page_block_attempted_at',
     ];
 
     protected $casts = [
@@ -49,7 +57,20 @@ class FortuneUserBan extends Model
         'last_notified_at' => 'datetime',
         'notify_count' => 'integer',
         'attempt_count' => 'integer',
+        'page_block_attempted_at' => 'datetime',
     ];
+
+    /** ตรวจว่าแบนครบแล้ว รวมการบล็อกบนเพจสำหรับ Facebook */
+    public function isFullyEnforced(): bool
+    {
+        return $this->platform !== 'facebook' || $this->page_block_status === 'blocked';
+    }
+
+    /** ตรวจว่าการบล็อกครั้งล่าสุดล้มเพราะ Facebook จำกัดเพจ ไม่ใช่ปัญหาของคนนี้ */
+    public function isPageBlockLimited(): bool
+    {
+        return str_contains((string) $this->page_block_error, self::PAGE_LIMITED_ERROR);
+    }
 
     /**
      * แอดมินที่กดแบน
@@ -107,19 +128,19 @@ class FortuneUserBan extends Model
 
         $parts = [];
         if ($diff->days > 0) {
-            $parts[] = $diff->days . ' วัน';
+            $parts[] = $diff->days.' วัน';
         }
         if ($diff->h > 0) {
-            $parts[] = $diff->h . ' ชั่วโมง';
+            $parts[] = $diff->h.' ชั่วโมง';
         }
         if (empty($parts) && $diff->i > 0) {
-            $parts[] = $diff->i . ' นาที';
+            $parts[] = $diff->i.' นาที';
         }
         if (empty($parts)) {
             return 'น้อยกว่า 1 นาที';
         }
 
-        return 'อีก ' . implode(' ', $parts);
+        return 'อีก '.implode(' ', $parts);
     }
 
     /**

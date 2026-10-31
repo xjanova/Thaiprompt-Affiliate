@@ -7,6 +7,7 @@ use App\Models\KycAccessLog;
 use App\Models\KycVerification;
 use App\Services\Ekyc\EkycException;
 use App\Services\Ekyc\EkycService;
+use App\Services\Kyc\KycDocumentStorage;
 use App\Services\KycAutoCheckService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -144,14 +145,27 @@ class KycController extends Controller
 
     /**
      * 🪪 รูปของ eKYC (ถอดรหัส) — แอดมินเท่านั้น · บันทึกการเปิดดูทุกครั้ง (PDPA)
+     * 🔒 (2026-10-29) + รูปของคำขอแบบเดิม (id_card | selfie) จาก private disk — บันทึกการเปิดดูเหมือนกัน
      *
-     * @param  string  $kind  card | card_face | best_frame
+     * @param  string  $kind  card | card_face | best_frame (eKYC) · id_card | selfie (แบบเดิม)
      */
     public function image(Request $request, KycVerification $kycVerification, string $kind): Response
     {
         $this->authorize('viewImages', $kycVerification);
 
-        if (! $kycVerification->isEkyc() || ! in_array($kind, ['card', 'card_face', 'best_frame'], true)) {
+        if (! $kycVerification->isEkyc()) {
+            if (! array_key_exists($kind, KycDocumentStorage::KINDS)) {
+                abort(404);
+            }
+
+            // ไม่มีไฟล์ = 404 ก่อนบันทึก (ไม่นับเป็นการเปิดดู)
+            $response = app(KycDocumentStorage::class)->response($kycVerification, $kind);
+            KycAccessLog::record($kycVerification, $request->user(), $kind, $request);
+
+            return $response;
+        }
+
+        if (! in_array($kind, ['card', 'card_face', 'best_frame'], true)) {
             abort(404);
         }
 

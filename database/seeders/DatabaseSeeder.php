@@ -24,14 +24,10 @@ class DatabaseSeeder extends Seeder
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             SiteSettingSeeder::class,           // 🆕 ตั้งค่าเว็บไซต์ (ชื่อ, โลโก้, SEO, Social)
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
-            ArrowXThemeSeeder::class,           // ✅ Arrow X Theme System (V3) - Default theme data
-            ThemePresetSeeder::class,           // ✅ Theme Presets (Classic, Modern Blue, Dark Professional, etc.)
 
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
-            WindowsUiSeeder::class,             // Windows UI Settings (Colors, Themes, RGB - NO menu items)
             AppControlSectionSeeder::class,     // UI Control Sections (Navigation Bar, Tab Bar, Header, FAB)
             ComponentSettingSeeder::class,      // UI Component Settings (Buttons, Inputs, Cards, Text)
-            ApiEndpointSeeder::class,           // API Endpoints Configuration (Users, Products, Orders, Analytics, etc.)
 
             // 2. User & Demo Data
             AdminUsersSeeder::class,            // 👑 สร้าง Super Admin, Admin, Manager
@@ -40,13 +36,9 @@ class DatabaseSeeder extends Seeder
             KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
 
             // 3. Content & Pages
-            DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
             SloganSeeder::class,                // 🆕 คำขวัญ/คำคม 200+ คำ สำหรับ Dashboard
-            HomepageManagerSeeder::class,       // 🏠 Homepage Manager - Sections, Elements, Templates
             StoreBannerSeeder::class,           // 🎨 Store Banners - Slides สำหรับ Storefront Homepage
-            // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
-            // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
@@ -76,7 +68,6 @@ class DatabaseSeeder extends Seeder
             FortuneSystemVoiceClipSeeder::class,  // 🎧 คลังเสียงระบบ (ข้อความกลาง: กล่องกระตุ้น/กติกา/วันเกิด/เตือนจ่าย ฯลฯ)
 
             // 5. AI & Integrations
-            AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama via Together AI)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
 
@@ -128,8 +119,6 @@ class DatabaseSeeder extends Seeder
 
             // 10. Accounting System
             ChartOfAccountsSeeder::class,       // ผังบัญชี (Chart of Accounts)
-            AccountingPermissionsSeeder::class, // สิทธิ์การใช้งานระบบบัญชี
-            AccountingDemoSeeder::class,        // ข้อมูลทดสอบสำหรับระบบบัญชี
 
             // 11. HRM System
             HrmSeeder::class,                   // ระบบ HR Management
@@ -139,25 +128,13 @@ class DatabaseSeeder extends Seeder
             TarotCelticPositionMeaningsSeeder::class, // 🔮 คำทำนายไพ่ Celtic Cross 7,800 entries (78 ใบ × 10 ตำแหน่ง × 2 ทิศ × 5 หมวด)
             ProvinceSeeder::class,              // ข้อมูลจังหวัดไทย 77 จังหวัด พร้อมพิกัด GPS
             HotelSeeder::class,                 // ระบบจองโรงแรม
-            InvestmentPlanSeeder::class,        // แพลนการลงทุน
-            TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
-            VideoMissionSystemSeeder::class,    // 🆕 ระบบภารกิจดูคลิปรับรางวัล (Video Missions, Rank Limits, Anti-Cheat)
-            VideoMissionYouTubeSeeder::class,   // 🎬 นำเข้าวิดีโอจากช่อง YouTube (@Metal-XProject)
-            CoinShopSeeder::class,              // 🛒 ระบบร้านค้า Coins (Coin Shop Products)
-            GameSeeder::class,                  // ระบบเกม (Game System)
-            GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
-            GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)
-            MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
             TicketSlaSeeder::class,             // SLA Policies สำหรับ Ticket System (เป้าหมายเวลาตอบกลับและแก้ไข)
 
             // 14. Bot Automation System
-            BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
-            BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
-            VideoAutomationSeeder::class,       // 🎬 Video Automation System (Templates, Settings สำหรับ Suno AI + Freepik + YouTube)
             AiContentWriterSeeder::class,       // 🖊️ AI Content Writer System (Settings, Templates สำหรับสร้าง Content)
 
             // 15. Service Booking System
@@ -175,12 +152,7 @@ class DatabaseSeeder extends Seeder
             LabelTemplateSeeder::class,         // 🆕 เทมเพลตฉลากเริ่มต้น (ป้ายราคา, ฉลากจัดส่ง, Food Passport, ฉลากเปล่า)
             PosLabelTemplateSeeder::class,      // 🆕 POS Label Templates (Product Label, Shipping Label for POS)
 
-            // 18. Community Forum System
-            ForumCategorySeeder::class,         // 🆕 หมวดหมู่ฟอรั่ม (MLM, E-commerce, AI, Crypto, Help, etc.)
-            ForumTrophySeeder::class,           // 🆕 โทรฟี่ฟอรั่ม (Positive/Negative badges, ติดชื่อตลอด)
 
-            // 19. Menu Management System
-            MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
 
             // 20. Mobile App System
             MobileBannerSeeder::class,          // 📱 Mobile App Banners (3 ตัวอย่าง: Welcome, Promo, News)
@@ -194,12 +166,7 @@ class DatabaseSeeder extends Seeder
             // 22. Fresh Market System (ตลาดสดไทยพร๊อม)
             FreshMarketSeeder::class,               // 🏪 ตลาดสดไทยพร๊อม (Settings + 8 หมวดหมู่สินค้า)
 
-            // 23. Mobile App Config & Feature Flags (2026-08-10)
-            //     ⚠️ 2 ตัวนี้ตกหล่นมานาน — SeederVerificationTest จับได้ แต่ CI ตั้ง
-            //     continue-on-error ไว้เลยไม่มีใครเห็น (ฝ่าฝืน RULE #1 ใน CLAUDE.md)
-            //     ทั้งคู่ idempotent (upsert) รันซ้ำได้ปลอดภัย
-            AppConfigSeeder::class,                 // ⚙️ remote config ของแอป Flutter (กัน fallback cache-only)
-            FeatureFlagSeeder::class,               // 🚩 feature flags — ทุกตัว default OFF
+            // 23. Fortune Comment Reply
             FortuneCommentReplySeeder::class,       // 💬 คลังคำตอบคอมเมนต์ 100 ชุด (invite/blessing/thanks/emoji)
 
             // 24. 🎓 ห้องเรียน (2026-10-13) — คอร์สผู้ขาย/ไรเดอร์/ผู้ซื้อ + คลังข้อสอบ (idempotent ไม่ทับที่แอดมินแก้)

@@ -11,23 +11,6 @@ return [
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Menu Database Overrides
-    |--------------------------------------------------------------------------
-    |
-    | V3.2 Menu System:
-    | - เมนูปกติ: ดึงจาก config/menus.php เสมอ (Hardcoded - ง่ายต่อการพัฒนา)
-    | - เมนู Pin: ใช้ localStorage (จัดการฝั่ง frontend)
-    | - Database: ใช้สำหรับ Override เท่านั้น (Admin ปรับแต่งผ่าน UI)
-    |
-    | MENU_USE_DB_OVERRIDES:
-    | - true: Admin สามารถซ่อน/เรียงลำดับ/ปรับแต่งเมนูผ่านตาราง menu_items
-    | - false: ใช้ config โดยตรง (Default - เหมาะสำหรับ Development)
-    |
-    */
-    'menu_use_db_overrides' => env('MENU_USE_DB_OVERRIDES', false),
-
     'force_https' => env('FORCE_HTTPS', false),
     'ffmpeg_path' => env('FFMPEG_PATH', 'ffmpeg'),
 
@@ -98,7 +81,6 @@ return [
         App\Providers\AuthServiceProvider::class, // Food Passport Authorization Policies
         App\Providers\EventServiceProvider::class, // Food Passport Events & Listeners
         App\Providers\StorageLinkServiceProvider::class, // Auto-fix storage symlink
-        // App\Providers\ThemeServiceProvider::class, // Theme System v2 - Disabled in favor of simple dark mode
         App\Providers\CryptoServiceProvider::class, // Crypto Payment Gateway Services
     ],
 

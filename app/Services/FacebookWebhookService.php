@@ -3607,9 +3607,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 return false;
             }
 
-            // ผลลัพธ์ที่เป็นไปได้: {"<psid>": true} หรือ {"success": true}
             $json = $resp->json();
-            $ok = ($json[$psid] ?? null) !== false; // HTTP 200 = ถือว่าสำเร็จ (บาง format ไม่มี key)
+            $ok = $this->pageBlockConfirmed($json);
+            if (! $ok) {
+                $this->lastFetchError = 'Facebook ไม่ยืนยันการบล็อกผู้ใช้';
+            }
 
             Log::info('🚫 blockPageUser', ['psid' => $psid, 'ok' => $ok, 'resp' => $json]);
 
@@ -3648,19 +3650,39 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             ]);
 
             if (! $resp->successful()) {
-                $this->lastFetchError = 'HTTP '.$resp->status().' | '.($resp->json('error.message') ?? 'unknown');
+                $this->lastFetchError = 'HTTP '.$resp->status().' | code='.$resp->json('error.code')
+                    .' | '.($resp->json('error.message') ?? 'unknown');
 
                 return false;
             }
 
-            Log::info('✨ unblockPageUser', ['psid' => $psid, 'resp' => $resp->json()]);
+            $json = $resp->json();
+            $ok = $this->pageBlockConfirmed($json);
+            if (! $ok) {
+                $this->lastFetchError = 'Facebook ไม่ยืนยันการปลดบล็อกผู้ใช้';
+            }
 
-            return true;
+            Log::info('✨ unblockPageUser', ['psid' => $psid, 'ok' => $ok, 'resp' => $json]);
+
+            return $ok;
         } catch (Exception $e) {
             $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
 
             return false;
         }
+    }
+
+    /**
+     * อ่านผล Graph API ของ /{page-id}/blocked
+     *
+     * 🩹 (2026-10-31) Facebook ตอบ {"<id>": true} โดย <id> เป็นคนละเลขกับ PSID ที่เราส่งไป
+     *   โค้ดเดิมเทียบคีย์กับ PSID จึงถือว่าล้มทั้งที่บล็อกสำเร็จ แล้วลองซ้ำ 2,203 ครั้งใน 9 ชม.
+     *   จนเพจโดน code 368 ⇒ ดูแค่ว่าในคำตอบมีค่า true หรือไม่ ห้ามอิงคีย์
+     */
+    private function pageBlockConfirmed(mixed $json): bool
+    {
+        return $json === true
+            || (is_array($json) && ! isset($json['error']) && in_array(true, $json, true));
     }
 
     /**

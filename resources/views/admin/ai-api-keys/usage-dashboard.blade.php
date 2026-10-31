@@ -193,6 +193,17 @@
                 <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Failed Requests (ล้มเหลว / error)</div>
             </div>
         </div>
+        {{-- 💰 (2026-10-30) ค่าใช้จ่ายรวมโดยประมาณ --}}
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px;" title="ประมาณจาก input/output tokens × ราคาทางการของโมเดล (ไม่รวมส่วนลด cache / batch)">
+            <div style="width:46px; height:46px; border-radius:14px; font-size:20px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; background:#e0a52e; box-shadow:var(--raise);">
+                <i class="fas fa-sack-dollar"></i>
+            </div>
+            <div>
+                <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">≈ $<span x-text="formatUsd(summary?.total_cost_usd || 0)"></span></div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ค่าใช้จ่ายโดยประมาณ (USD)</div>
+                <div x-show="summary?.cost_partial" style="font-size:11px; color:#b3622e; margin-top:2px;">+ บางโมเดลไม่ทราบราคา (ยอดจริงสูงกว่า)</div>
+            </div>
+        </div>
     </div>
 
     {{-- ===== กราฟเส้น Token Usage รายวัน (เก็บ Chart.js + canvas เดิม) ===== --}}
@@ -247,10 +258,11 @@
                         <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Output</th>
                         <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Requests</th>
                         <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;">Failed</th>
+                        <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; text-align:right;" title="input/output tokens × ราคาโมเดล (USD)">ค่าใช้จ่าย (USD)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <template x-for="row in breakdown" :key="row.key_id">
+                    <template x-for="row in breakdown" :key="row.key_id + '|' + row.model">
                         <tr style="box-shadow:var(--inset-sm);">
                             <td style="padding:11px 16px; font-size:13px; font-weight:600; color:var(--ink);" x-text="row.name"></td>
                             <td style="padding:11px 16px; font-size:13px; color:var(--ink2);" x-text="row.model"></td>
@@ -262,6 +274,9 @@
                             <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; color:var(--ink2);" x-text="formatNumber(row.output_tokens)"></td>
                             <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; color:var(--ink);" x-text="formatNumber(row.requests)"></td>
                             <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace;" :style="row.failed > 0 ? 'color:#d9534f;' : 'color:var(--ink2);'" x-text="formatNumber(row.failed)"></td>
+                            {{-- 💰 null = โมเดลนี้ไม่อยู่ในตารางราคา --}}
+                            <td style="padding:11px 16px; font-size:13px; text-align:right; font-family:ui-monospace,monospace; font-weight:700; color:var(--ink);"
+                                x-text="row.cost_usd === null ? 'ไม่ทราบราคา' : '$' + formatUsd(row.cost_usd)"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -560,6 +575,12 @@ function aiUsageDashboard() {
 
         formatNumber(n) {
             return Number(n || 0).toLocaleString();
+        },
+
+        // 💰 USD — ยอดเล็กกว่า $1 แสดง 4 ตำแหน่ง (ค่าใช้จ่ายต่อคีย์มักเป็นเศษเซนต์)
+        formatUsd(n) {
+            const v = Number(n || 0);
+            return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 });
         },
     };
 }

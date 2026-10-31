@@ -1,336 +1,144 @@
-@extends('layouts.user-v4')
+{{--
+    การแจ้งเตือนทางอีเมล (ธีมโนวาเต็ม)
+    - ฟอร์มหลักส่งทุกสวิตช์ — EmailPreferenceController::update อ่านด้วย boolean() (ไม่ติ๊ก = ปิด)
+    - สวิตช์หลักปิด = ไม่ส่งอีเมลเลยทุกหมวด (EmailPreference::canReceive) แต่สวิตช์ย่อยยังจำค่าไว้
+      จึงใช้ inert ไม่ใช่ disabled (disabled ไม่ถูกส่งไปกับฟอร์ม = กลายเป็นปิดทุกหมวด)
+    - ปุ่มเปิด/ปิดทั้งหมด เป็นฟอร์มแยก → controller ตอบ back() + flash
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'การตั้งค่าอีเมล')
+@section('title', 'การแจ้งเตือนทางอีเมล')
 
 @php
-    use Illuminate\Support\Facades\Route as RouteFacade;
-
-    // ── หมวดอีเมลแจ้งเตือน (ตรงกับ field ใน EmailPreferenceController::update) ──
-    // [ชื่อ field, อิโมจิ, สีไอคอน (hex), หัวข้อ, คำอธิบาย, ค่าตั้งต้น]
-    $emailCategories = [
-        [
-            'name'    => 'security_alerts',
-            'emoji'   => '🔐',
-            'color'   => '#d9534f',
-            'title'   => 'แจ้งเตือนความปลอดภัย',
-            'desc'    => 'การเข้าสู่ระบบ, เปลี่ยนรหัสผ่าน, เปลี่ยนการตั้งค่าสำคัญ',
-            'default' => true,
-            'note'    => 'แนะนำให้เปิด: เพื่อความปลอดภัยของบัญชีคุณ',
-        ],
-        [
-            'name'    => 'commission_notifications',
-            'emoji'   => '💰',
-            'color'   => '#5aa07e',
-            'title'   => 'แจ้งเตือนค่าคอมมิชชั่น',
-            'desc'    => 'การรับค่าคอมมิชชั่น, โบนัส, รายได้',
-            'default' => true,
-        ],
-        [
-            'name'    => 'withdrawal_notifications',
-            'emoji'   => '🏦',
-            'color'   => '#5689b8',
-            'title'   => 'แจ้งเตือนการถอนเงิน',
-            'desc'    => 'สถานะการถอนเงิน, ยืนยันการโอน',
-            'default' => true,
-        ],
-        [
-            'name'    => 'system_announcements',
-            'emoji'   => '📢',
-            'color'   => '#8a6fb0',
-            'title'   => 'ประกาศระบบ',
-            'desc'    => 'ข่าวสารสำคัญ, การปรับปรุงระบบ, กิจกรรมพิเศษ',
-            'default' => true,
-        ],
-        [
-            'name'    => 'weekly_reports',
-            'emoji'   => '📊',
-            'color'   => '#5d6cb0',
-            'title'   => 'รายงานประจำสัปดาห์',
-            'desc'    => 'สรุปรายได้, สถิติการขาย, ยอดคอมมิชชั่น',
-            'default' => true,
-        ],
-        [
-            'name'    => 'marketing_emails',
-            'emoji'   => '🎯',
-            'color'   => '#e0a52e',
-            'title'   => 'อีเมลการตลาด',
-            'desc'    => 'โปรโมชั่น, ข้อเสนอพิเศษ, เคล็ดลับการขาย',
-            'default' => false,
-        ],
+    $nvArt = fn (string $name, string $fallback) => is_file(public_path("images/nova/account/{$name}.webp"))
+        ? asset("images/nova/account/{$name}.webp") : asset("images/nova/{$fallback}.webp");
+    // [field, ไอคอน FontAwesome, สี, หัวข้อ, คำอธิบาย, ค่าตั้งต้น]
+    $cats = [
+        ['security_alerts', 'fa-shield-halved', '#e0675f', 'ความปลอดภัยบัญชี', 'เข้าสู่ระบบจากเครื่องใหม่ เปลี่ยนรหัสผ่าน เปลี่ยนการตั้งค่าสำคัญ', true],
+        ['commission_notifications', 'fa-coins', '#3fae7d', 'ค่าคอมมิชชั่นและรายได้', 'ได้รับคอมมิชชั่น โบนัส และรายได้เข้ากระเป๋า', true],
+        ['withdrawal_notifications', 'fa-building-columns', '#4a86c5', 'การถอนเงิน', 'สถานะคำขอถอน และยืนยันเมื่อโอนเข้าบัญชีแล้ว', true],
+        ['system_announcements', 'fa-bullhorn', '#8a6fb0', 'ประกาศจากระบบ', 'ข่าวสำคัญ การปรับปรุงระบบ และกิจกรรมพิเศษ', true],
+        ['weekly_reports', 'fa-chart-column', '#5d6cb0', 'สรุปรายสัปดาห์', 'ยอดรายได้ สถิติการขาย และคอมมิชชั่นประจำสัปดาห์', true],
+        ['marketing_emails', 'fa-tags', '#d49a2a', 'โปรโมชั่นและข้อเสนอ', 'ส่วนลด ข้อเสนอพิเศษ และเคล็ดลับการขาย', false],
     ];
-
-    $prefLang = old('preferred_language', $preference->preferred_language ?? 'th');
+    $state = ['all_emails' => (bool) old('all_emails', $preference->all_emails ?? true)];
+    foreach ($cats as [$field, , , , , $default]) {
+        $state[$field] = (bool) old($field, $preference->{$field} ?? $default);
+    }
+    $lang = old('preferred_language', $preference->preferred_language ?? 'th');
+    $onCount = collect($cats)->filter(fn ($c) => $state[$c[0]])->count();
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; padding-bottom:24px;">
 
-    {{-- ── การ์ดหัวเรื่อง (Hero) ─────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:56px; height:56px; border-radius:17px; font-size:26px;"><i class="fas fa-envelope-open" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">การตั้งค่าอีเมล · EMAIL PREFERENCES</div>
-                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">การตั้งค่าอีเมล</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">จัดการการรับอีเมลแจ้งเตือนและข่าวสาร</div>
+<section class="nvm-ph" aria-labelledby="nvm-ep-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">Email preferences</div>
+            <h1 id="nvm-ep-h">การแจ้งเตือนทางอีเมล</h1>
+            <p class="nvm-ph__lead">เลือกเรื่องที่อยากรู้ทางอีเมล ส่งไปที่ <b class="nvm-ep-mail">{{ auth()->user()->email }}</b></p>
+            <div class="nvm-bal">
+                <small>{{ $state['all_emails'] ? 'เปิดรับอยู่' : 'ปิดรับอีเมลทั้งหมด' }}</small>
+                <b class="nvm-foil nvm-num">{{ $state['all_emails'] ? $onCount : 0 }}<span> / {{ count($cats) }} หมวด</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ $nvArt('mail', 'deco/bell') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    <form action="{{ route('user.email.preferences.update') }}" method="POST" style="display:flex; flex-direction:column; gap:18px;">
+@if(! $state['all_emails'])
+    <section class="nvm-card nvm-alert nvm-alert--bad">
+        <img class="nvm-alert__img" src="{{ asset('images/nova/deco/bell.webp') }}" alt="" width="56" height="56" loading="lazy">
+        <div class="nvm-alert__txt">
+            <b>ตอนนี้ปิดรับอีเมลทุกเรื่อง</b>
+            <p>รวมถึงแจ้งเตือนความปลอดภัย — ถ้ามีคนเข้าบัญชีจากเครื่องอื่น คุณจะไม่ได้รับอีเมลแจ้ง</p>
+        </div>
+        <form method="POST" action="{{ route('user.email.preferences.enable-all') }}" x-data="{ busy: false }" @submit="busy = true">
+            @csrf
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--sm" :disabled="busy">เปิดรับทั้งหมด</button>
+        </form>
+    </section>
+@endif
+
+<div class="nvm-split" x-data="{ s: @js($state), init0: @js($state), lang: @js($lang), lang0: @js($lang), busy: false,
+        get dirty() { return this.lang !== this.lang0 || Object.keys(this.s).some(k => this.s[k] !== this.init0[k]); } }"
+     @pageshow.window="busy = false">
+    <form id="nvm-ep-form" method="POST" action="{{ route('user.email.preferences.update') }}" class="nvm-card nvm-box" aria-labelledby="nvm-ep-list-h" @submit="busy = true">
         @csrf
         @method('PUT')
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Topics</small><h2 id="nvm-ep-list-h">เรื่องที่ส่งทางอีเมล</h2></div></div>
 
-        {{-- ── สวิตช์หลัก: การแจ้งเตือนทั้งหมด ──────────────────── --}}
-        <div class="tp-card" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-                <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:22px;">🔔</span>
-                <div>
-                    <h2 style="font-size:17px; font-weight:800; margin:0;">การแจ้งเตือนทั้งหมด</h2>
-                    <p style="font-size:12.5px; color:var(--ink2); margin:2px 0 0;">เปิด/ปิดการรับอีเมลทั้งหมด</p>
-                </div>
-            </div>
-            <label class="tp-switch">
-                <input type="checkbox"
-                       name="all_emails"
-                       value="1"
-                       {{ old('all_emails', $preference->all_emails ?? true) ? 'checked' : '' }}
-                       onchange="toggleAllEmails(this)">
-                <span class="tp-switch-track"></span>
-            </label>
-        </div>
+        <label class="nvm-pref nvm-pref--master">
+            <span class="nvm-pref__ic" aria-hidden="true"><i class="fa-solid fa-envelope-open-text"></i></span>
+            <span class="nvm-pref__t"><b>รับอีเมลจากเรา</b><small>ปิดสวิตช์นี้ = ไม่ส่งอีเมลเลยทุกหมวด (หมวดด้านล่างยังจำที่เลือกไว้)</small></span>
+            <span class="nvm-sw"><input type="checkbox" name="all_emails" value="1" x-model="s.all_emails" @checked($state['all_emails'])><i aria-hidden="true"></i></span>
+        </label>
 
-        {{-- ── หมวดอีเมลแต่ละประเภท ──────────────────────────── --}}
-        <div id="emailCategories" style="display:flex; flex-direction:column; gap:14px; transition:opacity .25s;">
-            @foreach($emailCategories as $cat)
-                <div class="tp-card" style="display:flex; align-items:flex-start; gap:14px;">
-                    <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:22px; flex-shrink:0; background:{{ $cat['color'] }};">{{ $cat['emoji'] }}</span>
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
-                            <div>
-                                <h3 style="font-size:15.5px; font-weight:800; margin:0;">{{ $cat['title'] }}</h3>
-                                <p style="font-size:12.5px; color:var(--ink2); margin:3px 0 0;">{{ $cat['desc'] }}</p>
-                            </div>
-                            <label class="tp-switch tp-switch-sm" style="flex-shrink:0;">
-                                <input type="checkbox"
-                                       name="{{ $cat['name'] }}"
-                                       value="1"
-                                       {{ old($cat['name'], $preference->{$cat['name']} ?? $cat['default']) ? 'checked' : '' }}
-                                       class="email-toggle">
-                                <span class="tp-switch-track" style="--sw-on:{{ $cat['color'] }};"></span>
-                            </label>
-                        </div>
-                        @if(!empty($cat['note']))
-                            <div style="margin-top:12px; padding:10px 12px; border-radius:12px; font-size:12.5px;
-                                        box-shadow:var(--inset-sm); border-left:3px solid {{ $cat['color'] }};">
-                                <span style="font-weight:700; color:{{ $cat['color'] }};">แนะนำให้เปิด:</span>
-                                <span style="color:var(--ink2);">เพื่อความปลอดภัยของบัญชีคุณ</span>
-                            </div>
+        <div class="nvm-prefs" :class="s.all_emails ? '' : 'is-muted'" :inert="! s.all_emails">
+            @foreach($cats as [$field, $icon, $color, $title, $desc])
+                <label class="nvm-pref" style="--pc: {{ $color }}">
+                    <span class="nvm-pref__ic" aria-hidden="true"><i class="fa-solid {{ $icon }}"></i></span>
+                    <span class="nvm-pref__t">
+                        <b>{{ $title }}@if($field === 'security_alerts')<span class="nvm-chip nvm-chip--ok">แนะนำให้เปิด</span>@endif</b>
+                        <small>{{ $desc }}</small>
+                        @if($field === 'security_alerts')
+                            <small class="nvm-err" x-show="! s.security_alerts" x-cloak>ปิดแล้ว จะไม่รู้ตัวถ้ามีคนพยายามเข้าบัญชีคุณ</small>
                         @endif
-                    </div>
-                </div>
+                    </span>
+                    <span class="nvm-sw"><input type="checkbox" name="{{ $field }}" value="1" x-model="s.{{ $field }}" @checked($state[$field])><i aria-hidden="true"></i></span>
+                </label>
             @endforeach
         </div>
 
-        {{-- ── ภาษาที่ต้องการ ────────────────────────────────── --}}
-        <div class="tp-card">
-            <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
-                <span class="tp-tile" style="width:48px; height:48px; border-radius:15px; font-size:22px; background:#c97a96;">🌐</span>
-                <div>
-                    <h2 style="font-size:17px; font-weight:800; margin:0;">ภาษาที่ต้องการ</h2>
-                    <p style="font-size:12.5px; color:var(--ink2); margin:2px 0 0;">เลือกภาษาสำหรับอีเมลที่ได้รับ</p>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
-                {{-- ภาษาไทย --}}
-                <label class="tp-lang-opt {{ $prefLang === 'th' ? 'is-active' : '' }}" style="position:relative; cursor:pointer; display:block; padding:16px; border-radius:16px; box-shadow:var(--inset-sm);">
-                    <input type="radio" name="preferred_language" value="th" {{ $prefLang === 'th' ? 'checked' : '' }}
-                           onchange="syncLangActive(this)" style="position:absolute; opacity:0; width:0; height:0;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="font-size:30px;">🇹🇭</span>
-                        <div>
-                            <div style="font-weight:800; font-size:15px;">ภาษาไทย</div>
-                            <div style="font-size:12px; color:var(--ink2);">Thai Language</div>
-                        </div>
-                    </div>
-                    <span class="tp-lang-check" style="position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; background:var(--deep1); align-items:center; justify-content:center;">
-                        <i class="fas fa-check" style="color:#fff; font-size:11px;"></i>
-                    </span>
-                </label>
-
-                {{-- English --}}
-                <label class="tp-lang-opt {{ $prefLang === 'en' ? 'is-active' : '' }}" style="position:relative; cursor:pointer; display:block; padding:16px; border-radius:16px; box-shadow:var(--inset-sm);">
-                    <input type="radio" name="preferred_language" value="en" {{ $prefLang === 'en' ? 'checked' : '' }}
-                           onchange="syncLangActive(this)" style="position:absolute; opacity:0; width:0; height:0;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="font-size:30px;">🇬🇧</span>
-                        <div>
-                            <div style="font-weight:800; font-size:15px;">English</div>
-                            <div style="font-size:12px; color:var(--ink2);">English Language</div>
-                        </div>
-                    </div>
-                    <span class="tp-lang-check" style="position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; background:var(--deep1); align-items:center; justify-content:center;">
-                        <i class="fas fa-check" style="color:#fff; font-size:11px;"></i>
-                    </span>
-                </label>
-            </div>
-        </div>
-
-        {{-- ── ปุ่มจัดการ ─────────────────────────────────────── --}}
-        <div style="display:flex; flex-wrap:wrap; gap:12px;">
-            <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; min-width:200px; justify-content:center; font-size:15px; padding:14px 20px;">
-                <i class="fas fa-floppy-disk"></i> บันทึกการตั้งค่า
-            </button>
-            <button type="button" onclick="disableAll()" class="tp-btn" style="justify-content:center; padding:14px 20px; color:#fff; background:#d9534f; border-color:transparent;">
-                <i class="fas fa-xmark"></i> ปิดทั้งหมด
-            </button>
-            <button type="button" onclick="enableAll()" class="tp-btn" style="justify-content:center; padding:14px 20px; color:#fff; background:#5aa07e; border-color:transparent;">
-                <i class="fas fa-check"></i> เปิดทั้งหมด
-            </button>
+        <div class="nvm-ep-save">
+            <span class="nvm-help" x-show="dirty" x-cloak><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>มีการเปลี่ยนแปลงที่ยังไม่บันทึก</span>
+            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="busy ? 'กำลังบันทึก…' : 'บันทึกการตั้งค่า'">บันทึกการตั้งค่า</span></button>
         </div>
     </form>
 
-    {{-- ── กล่องข้อมูล ───────────────────────────────────────── --}}
-    <div class="tp-card" style="display:flex; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid var(--deep1);">
-        <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:18px; flex-shrink:0;">💡</span>
-        <div style="flex:1; min-width:0;">
-            <h3 style="font-weight:800; font-size:15px; margin:0 0 8px;">เกี่ยวกับการตั้งค่าอีเมล</h3>
-            <ul style="font-size:12.5px; color:var(--ink2); margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px;">
-                <li>คุณสามารถเปลี่ยนการตั้งค่าได้ทุกเมื่อ</li>
-                <li>การแจ้งเตือนความปลอดภัยแนะนำให้เปิดไว้เสมอ</li>
-                <li>อีเมลสำคัญจะถูกส่งไปยังอีเมลที่ลงทะเบียนไว้: <strong style="color:var(--ink);">{{ auth()->user()->email }}</strong></li>
-                <li>การตั้งค่าจะมีผลทันทีหลังบันทึก</li>
-            </ul>
-        </div>
-    </div>
+    <aside class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-ep-lang-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Language</small><h2 id="nvm-ep-lang-h">ภาษาของอีเมล</h2></div></div>
+            <div class="nvm-opts nvm-opts--2" role="radiogroup" aria-labelledby="nvm-ep-lang-h">
+                @foreach(['th' => ['🇹🇭', 'ภาษาไทย', 'Thai'], 'en' => ['🇬🇧', 'English', 'อังกฤษ']] as $code => [$flag, $name, $sub])
+                    <label class="nvm-opt">
+                        {{-- อยู่นอก <form> จึงผูกกับฟอร์มหลักด้วย form="" --}}
+                        <input type="radio" name="preferred_language" value="{{ $code }}" form="nvm-ep-form" x-model="lang" @checked($lang === $code)>
+                        <span class="nvm-ep-flag" aria-hidden="true">{{ $flag }}</span>
+                        <span><b>{{ $name }}</b><small>{{ $sub }}</small></span>
+                    </label>
+                @endforeach
+            </div>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>เปลี่ยนภาษาแล้วกด "บันทึกการตั้งค่า" ด้วย</p>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-ep-bulk-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Quick actions</small><h2 id="nvm-ep-bulk-h">ตั้งค่าแบบด่วน</h2></div></div>
+            <div class="nvm-stack">
+                <form method="POST" action="{{ route('user.email.preferences.enable-all') }}" x-data="{ busy: false }" @submit="busy = true">
+                    @csrf
+                    <button type="submit" class="nvm-btn nvm-btn--line nvm-btn--sm nvm-w-full" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>เปิดรับทุกหมวด</button>
+                </form>
+                @if($state['all_emails'])
+                    <div x-data="{ ask: false, busy: false }" @pageshow.window="busy = false">
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm nvm-w-full" x-show="! ask" @click="ask = true"><svg class="nvm-ico"><use href="#nvm-i-close"/></svg>หยุดรับอีเมลทั้งหมด</button>
+                        <form method="POST" action="{{ route('user.email.preferences.disable-all') }}" class="nvm-confirm" x-show="ask" x-cloak @submit="busy = true">
+                            @csrf
+                            <p>หยุดทุกหมวด รวมถึงแจ้งเตือนความปลอดภัย? เปิดกลับได้ทุกเมื่อ และหมวดที่เลือกไว้จะกลับมาเหมือนเดิม</p>
+                            <div class="nvm-filter__btns">
+                                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="ask = false" :disabled="busy">ยกเลิก</button>
+                                <button type="submit" class="nvm-btn nvm-btn--bad nvm-btn--sm" :disabled="busy" x-text="busy ? 'กำลังบันทึก…' : 'ยืนยัน หยุดทั้งหมด'">ยืนยัน หยุดทั้งหมด</button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
+            </div>
+            <ol class="nvm-steps nvm-gap-t">
+                <li>ปิดอีเมลแล้ว ยังเห็นแจ้งเตือนทุกเรื่องในหน้า "แจ้งเตือน" ของเว็บและแอป</li>
+                <li>อีเมลแท้จากเราไม่เคยขอรหัสผ่าน PIN หรือรหัส OTP</li>
+            </ol>
+            <a class="nvm-btn nvm-btn--line nvm-btn--sm nvm-gap-t" href="{{ route('user.notifications.index') }}"><svg class="nvm-ico"><use href="#nvm-i-bell"/></svg>ดูแจ้งเตือนทั้งหมด</a>
+        </section>
+    </aside>
 </div>
-
-@push('scripts')
-<script>
-// ── เปิด/ปิดทุกหมวดเมื่อสลับสวิตช์หลัก ──────────────────────
-function toggleAllEmails(checkbox) {
-    const emailToggles = document.querySelectorAll('.email-toggle');
-    const emailCategories = document.getElementById('emailCategories');
-
-    if (checkbox.checked) {
-        emailCategories.style.opacity = '';
-        emailCategories.style.pointerEvents = '';
-    } else {
-        emailCategories.style.opacity = '0.5';
-        emailCategories.style.pointerEvents = 'none';
-        emailToggles.forEach(function (toggle) {
-            toggle.checked = false;
-        });
-    }
-}
-
-// ── ไฮไลต์ตัวเลือกภาษาที่เลือก ─────────────────────────────
-function syncLangActive(radio) {
-    document.querySelectorAll('input[name="preferred_language"]').forEach(function (el) {
-        const card = el.closest('.tp-lang-opt');
-        if (card) card.classList.toggle('is-active', el.checked);
-    });
-}
-
-// ── ปิดการรับอีเมลทั้งหมด (AJAX) ──────────────────────────
-async function disableAll() {
-    if (!confirm('คุณแน่ใจหรือไม่ที่จะปิดการรับอีเมลทั้งหมด?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('{{ route("user.email.preferences.disable-all") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            }
-        });
-
-        if (response.ok) {
-            location.reload();
-        } else {
-            window.showNotification ? window.showNotification('เกิดข้อผิดพลาด', 'error') : alert('เกิดข้อผิดพลาด');
-        }
-    } catch (error) {
-        window.showNotification ? window.showNotification('เกิดข้อผิดพลาด', 'error') : alert('เกิดข้อผิดพลาด');
-    }
-}
-
-// ── เปิดการรับอีเมลทั้งหมด (AJAX) ──────────────────────────
-async function enableAll() {
-    try {
-        const response = await fetch('{{ route("user.email.preferences.enable-all") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            }
-        });
-
-        if (response.ok) {
-            location.reload();
-        } else {
-            window.showNotification ? window.showNotification('เกิดข้อผิดพลาด', 'error') : alert('เกิดข้อผิดพลาด');
-        }
-    } catch (error) {
-        window.showNotification ? window.showNotification('เกิดข้อผิดพลาด', 'error') : alert('เกิดข้อผิดพลาด');
-    }
-}
-
-// ── แสดง toast จาก session (success / error) ───────────────
-@if(session('success'))
-    document.addEventListener('DOMContentLoaded', function () {
-        if (window.showNotification) window.showNotification(@json(session('success')), 'success');
-    });
-@endif
-@if(session('error'))
-    document.addEventListener('DOMContentLoaded', function () {
-        if (window.showNotification) window.showNotification(@json(session('error')), 'error');
-    });
-@endif
-
-// ── ตั้งค่าสถานะเริ่มต้นเมื่อโหลดหน้า ──────────────────────
-document.addEventListener('DOMContentLoaded', function () {
-    const allEmailsCheckbox = document.querySelector('input[name="all_emails"]');
-    if (allEmailsCheckbox && !allEmailsCheckbox.checked) {
-        toggleAllEmails(allEmailsCheckbox);
-    }
-});
-</script>
-<style>
-/* ── สวิตช์เปิด/ปิด (Theme V4) ─────────────────────────── */
-.tp-switch { position:relative; display:inline-flex; cursor:pointer; flex-shrink:0; }
-.tp-switch input { position:absolute; opacity:0; width:0; height:0; }
-.tp-switch .tp-switch-track {
-    width:52px; height:30px; border-radius:30px; position:relative;
-    background:color-mix(in srgb, var(--ink2) 28%, transparent);
-    box-shadow:var(--inset-sm); transition:background .2s;
-}
-.tp-switch .tp-switch-track::after {
-    content:""; position:absolute; top:3px; left:3px; width:24px; height:24px;
-    border-radius:50%; background:var(--surf);
-    box-shadow:0 1px 4px rgba(0,0,0,.25); transition:transform .2s;
-}
-.tp-switch input:checked + .tp-switch-track {
-    background:var(--sw-on, linear-gradient(90deg, var(--accent1), var(--accent2)));
-}
-.tp-switch input:checked + .tp-switch-track::after { transform:translateX(22px); }
-.tp-switch input:focus-visible + .tp-switch-track { outline:2px solid var(--deep1); outline-offset:2px; }
-
-.tp-switch-sm .tp-switch-track { width:46px; height:26px; }
-.tp-switch-sm .tp-switch-track::after { width:20px; height:20px; top:3px; left:3px; }
-.tp-switch-sm input:checked + .tp-switch-track::after { transform:translateX(20px); }
-
-/* ── ตัวเลือกภาษา (radio card) ─────────────────────────── */
-.tp-lang-opt { transition:box-shadow .2s, background .2s; }
-.tp-lang-opt .tp-lang-check { display:none; }
-.tp-lang-opt.is-active {
-    box-shadow:0 0 0 2px var(--deep1) inset, var(--inset-sm);
-    background:color-mix(in srgb, var(--accent1) 12%, transparent);
-}
-.tp-lang-opt.is-active .tp-lang-check { display:flex; }
-</style>
-@endpush
 @endsection

@@ -56,7 +56,11 @@
                 </div>
                 <div>
                     <label for="email" class="sv4-label">อีเมล <span class="req">*</span></label>
-                    <input type="email" name="email" id="email" required maxlength="255" class="tp-input" value="{{ old('email', $user->email) }}">
+                    {{-- 🔒 เปลี่ยนอีเมลต้องยืนยันตัวตน — ทำได้ที่หน้าโปรไฟล์สมาชิกเท่านั้น --}}
+                    <input type="email" name="email" id="email" required maxlength="255" class="tp-input" value="{{ $user->email }}" readonly aria-describedby="email-change-hint">
+                    <div id="email-change-hint" style="margin-top:4px; font-size:12px; color:var(--ink2);">
+                        เปลี่ยนอีเมลได้ที่ <a href="{{ route('user.profile') }}" style="color:var(--deep1);">หน้าโปรไฟล์สมาชิก</a> (ต้องยืนยันตัวตนก่อน)
+                    </div>
                     @error('email')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
                 <div>

@@ -1429,18 +1429,8 @@ class FortuneSettingsController extends Controller
                 ->get();
 
             // 🆕 (2026-05-13) เพิ่ม openai/anthropic/xiaomi — user report "playground ทดสอบคีย์ไม่ได้"
-            $defaultModels = [
-                'gemini' => 'gemini-2.5-flash',
-                'groq' => 'llama-3.3-70b-versatile',
-                'grok' => 'grok-2-latest',
-                'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
-                'openrouter' => 'anthropic/claude-3-haiku',
-                'deepseek' => 'deepseek-chat',
-                'typhoon' => 'typhoon-v2-70b-instruct',
-                'openai' => 'gpt-4o-mini',
-                'anthropic' => 'claude-haiku-4-5',
-                'xiaomi' => 'mimo-v2.5-pro',
-            ];
+            // 🔄 (2026-10-30) ใช้ default ของ Pool — รายการเดิมชี้โมเดลที่ค่ายปิดแล้วหลายตัว
+            $defaultModels = array_map(fn (array $models) => $models[0], AiApiKey::MODELS_BY_PROVIDER);
 
             foreach ($poolKeys as $poolKey) {
                 // 🎯 (2026-05-06) ใช้ resolveModel() แทน metadata['model'] โดยตรง
@@ -1492,7 +1482,7 @@ class FortuneSettingsController extends Controller
         try {
             $globalKeys = [
                 'gemini' => ['key_field' => 'gemini_api_key', 'model_field' => 'gemini_model', 'default_model' => 'gemini-2.5-flash'],
-                'openrouter' => ['key_field' => 'claude_api_key', 'model_field' => 'claude_model', 'default_model' => 'anthropic/claude-3-haiku'],
+                'openrouter' => ['key_field' => 'claude_api_key', 'model_field' => 'claude_model', 'default_model' => 'anthropic/claude-haiku-5.5'],
             ];
 
             foreach ($globalKeys as $provider => $config) {

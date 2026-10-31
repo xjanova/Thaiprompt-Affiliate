@@ -10,6 +10,8 @@ class TPIXSwap extends Model
 {
     use HasFactory;
 
+    protected $table = 'tpix_swaps';
+
     protected $fillable = [
         'user_id',
         'pool_id',

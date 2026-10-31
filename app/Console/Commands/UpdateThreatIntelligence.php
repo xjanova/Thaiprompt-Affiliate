@@ -35,7 +35,8 @@ class UpdateThreatIntelligence extends Command
                 $this->info("Updating from {$source}...");
 
                 $results = match ($source) {
-                    'firehol' => ['firehol' => $service->updateFromFirehol()],
+                    // firehol คือแหล่งเดียวของ updateAllSources และต้องการ total_* ด้านล่าง
+                    'firehol' => $service->updateAllSources(),
                     default => throw new \InvalidArgumentException("Unknown source: {$source}"),
                 };
             } else {
@@ -74,7 +75,8 @@ class UpdateThreatIntelligence extends Command
             $this->info("Total active threats: {$stats['total_threats']}");
             $this->info("High confidence threats: {$stats['high_confidence']}");
 
-            return Command::SUCCESS;
+            // ลิสต์ไหนล้ม exit code ต้องบอก scheduler ไม่งั้นข้อมูลค้างโดยไม่มีใครรู้
+            return $results['total_errors'] > 0 ? Command::FAILURE : Command::SUCCESS;
 
         } catch (\Exception $e) {
             $this->error('Error updating threat intelligence: '.$e->getMessage());

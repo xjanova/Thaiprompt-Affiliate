@@ -182,8 +182,8 @@
                             </div>
                         @endif
 
-                        {{-- แอดมินตอบ (ถ้าตอบแล้ว) --}}
-                        @if($q->is_replied)
+                        {{-- แอดมินตอบ (ถ้าตอบแล้ว) · แถวที่ AI ตอบตามหลังไม่มี admin_reply — คำตอบอยู่ในกล่อง "AI ตอบ" ด้านบน --}}
+                        @if($q->is_replied && $q->admin_reply)
                             <div class="tp-inset-sm" style="padding:12px 14px; border-radius:12px; border-left:3px solid #5aa07e;">
                                 <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px;">
                                     <span style="font-size:11px; font-weight:700; color:#5aa07e; letter-spacing:.3px;">

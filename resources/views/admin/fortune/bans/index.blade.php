@@ -34,7 +34,7 @@
                 ระบบคุก 🚫
             </h1>
             <p class="tp-muted" style="font-size:13px; margin:6px 0 0; max-width:560px;">
-                แบน user ไม่ให้บอทคุยด้วย (สแปม, ก่อกวน) — แอดมินยังคุยผ่าน Page Inbox / LINE OA ได้ตามปกติ
+                แบนผู้ก่อกวน — Facebook บล็อกจากเพจจริง ส่วน LINE และ Telegram ระงับการตอบของบอท
             </p>
         </div>
         <div style="display:flex; align-items:center; gap:9px;">
@@ -317,6 +317,14 @@
 
                                 {{-- สถานะ --}}
                                 <td style="padding:14px 16px; vertical-align:top;">
+                                    @if($ban->platform === 'facebook')
+                                        <div class="mb-2 text-sm {{ $ban->isFullyEnforced() ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400' }}">
+                                            {{ $ban->page_block_status === 'unblock_failed' ? '⚠️ รอปลดบล็อกจากเพจ' : ($ban->isFullyEnforced() ? '✅ บล็อกจากเพจแล้ว' : '⚠️ ยังไม่ยืนยันการบล็อกจากเพจ') }}
+                                        </div>
+                                        @if($ban->page_block_error)
+                                            <div class="mb-2 break-words text-xs text-amber-700 dark:text-amber-400">{{ $ban->page_block_error }}</div>
+                                        @endif
+                                    @endif
                                     @if($ban->isPermanent())
                                         <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:700;">🔒 ถาวร</span>
                                     @elseif($ban->isActive())

@@ -82,51 +82,6 @@ class TokenController extends Controller
     }
 
     /**
-     * My Tokens (Created by user)
-     */
-    public function myTokens()
-    {
-        $user = Auth::user();
-
-        $tokens = TPIXToken::where('creator_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        // Statistics
-        $stats = [
-            'total_tokens' => $tokens->total(),
-            'deployed_tokens' => TPIXToken::where('creator_id', $user->id)
-                ->whereIn('status', ['deployed', 'verified', 'active'])
-                ->count(),
-            'total_holders' => TPIXToken::where('creator_id', $user->id)
-                ->sum('holders_count'),
-        ];
-
-        return view('user.tokens.my-tokens', compact('tokens', 'stats'));
-    }
-
-    /**
-     * My Token Balances (Holdings)
-     */
-    public function myBalances()
-    {
-        $user = Auth::user();
-
-        $balances = TPIXTokenBalance::with('token')
-            ->where('user_id', $user->id)
-            ->where('balance', '>', 0)
-            ->orderBy('balance', 'desc')
-            ->paginate(20);
-
-        // Calculate total portfolio value in TPIX
-        $totalValueTpix = $balances->sum(function ($balance) {
-            return bcmul($balance->balance, $balance->token->current_price_tpix ?? '0', 8);
-        });
-
-        return view('user.tokens.balances', compact('balances', 'totalValueTpix'));
-    }
-
-    /**
      * Token Details
      */
     public function show($id)
@@ -200,7 +155,7 @@ class TokenController extends Controller
         try {
             $token = $this->tokenFactory->createToken(Auth::user(), $request->all());
 
-            return redirect()->route('user.tokens.my-tokens')
+            return redirect()->route('user.tokens.index')
                 ->with('success', 'Token created successfully! You can now deploy it to the blockchain.');
         } catch (\Exception $e) {
             return redirect()->back()

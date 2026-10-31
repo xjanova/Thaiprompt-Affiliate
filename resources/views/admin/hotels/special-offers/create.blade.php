@@ -212,12 +212,12 @@
                                     </div>
 
                                     <div>
-                                        <label for="valid_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <label for="valid_until" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             วันที่สิ้นสุด <span class="text-red-500">*</span>
                                         </label>
-                                        <input type="date" id="valid_to" name="valid_to" value="{{ old('valid_to') }}" required
+                                        <input type="date" id="valid_until" name="valid_until" value="{{ old('valid_until') }}" required
                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition">
-                                        @error('valid_to')
+                                        @error('valid_until')
                                             <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                                         @enderror
                                     </div>
@@ -250,30 +250,18 @@
                         <div x-show="activeTab === 'limits'" x-transition x-cloak>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label for="max_uses" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <label for="max_usage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         จำนวนครั้งที่ใช้ได้ทั้งหมด
                                     </label>
-                                    <input type="number" id="max_uses" name="max_uses" value="{{ old('max_uses') }}"
+                                    <input type="number" id="max_usage" name="max_usage" value="{{ old('max_usage') }}"
                                            min="1" placeholder="ไม่จำกัด"
                                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition">
-                                    @error('max_uses')
+                                    @error('max_usage')
                                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                                     @enderror
                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">เว้นว่างหากไม่จำกัด</p>
                                 </div>
 
-                                <div>
-                                    <label for="max_uses_per_user" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        จำนวนครั้งที่ใช้ได้ต่อผู้ใช้
-                                    </label>
-                                    <input type="number" id="max_uses_per_user" name="max_uses_per_user" value="{{ old('max_uses_per_user') }}"
-                                           min="1" placeholder="ไม่จำกัด"
-                                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition">
-                                    @error('max_uses_per_user')
-                                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                                    @enderror
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">เว้นว่างหากไม่จำกัด</p>
-                                </div>
                             </div>
                         </div>
                     </div>

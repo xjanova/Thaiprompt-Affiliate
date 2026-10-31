@@ -1,227 +1,141 @@
-@extends('layouts.user-v4')
+{{--
+    เติมเงิน ขั้น 2: เลือกช่องทางชำระ (ธีมโนวาเต็ม) — รายการมีอายุ (expired_at) นับถอยหลังบนจอ
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ชำระเงินเติมเงิน')
+@section('title', 'เลือกช่องทางชำระ')
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    // รูปประกอบตามรหัสเกตเวย์
+    $artFor = function (string $code) {
+        $c = strtolower($code);
+
+        return match (true) {
+            str_contains($c, 'promptpay'), str_contains($c, 'qr') => 'qr',
+            str_contains($c, 'bank') => 'bank',
+            str_contains($c, 'card'), str_contains($c, 'stripe'), str_contains($c, 'omise') => 'card',
+            str_contains($c, 'true') || str_contains($c, 'wallet') => 'phone',
+            default => 'deposit',
+        };
+    };
+    // ช่องทางสำรองเมื่อแอดมินยังไม่ตั้งเกตเวย์ (ต้องตรงกับที่ processTopupPayment ยอมรับ)
+    $options = $paymentGateways->map(fn ($g) => [
+        'code' => $g->code,
+        'name' => $g->name,
+        'desc' => $g->description,
+        'fees' => is_array($g->fees) ? $g->fees : [],
+    ])->values()->all();
+    if (! count($options)) {
+        $options = [
+            ['code' => 'promptpay', 'name' => 'พร้อมเพย์ (PromptPay)', 'desc' => 'สแกน QR จากแอปธนาคาร เข้าอัตโนมัติ', 'fees' => []],
+            ['code' => 'bank_transfer', 'name' => 'โอนผ่านธนาคาร', 'desc' => 'โอนแล้วรอตรวจสอบ', 'fees' => []],
+        ];
+    }
+    $picked = old('payment_method', count($options) === 1 ? $options[0]['code'] : null);
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── Hero: เลือกวิธีชำระเงิน ─────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <a href="{{ route('user.wallet.topup') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-hand-holding-usd" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">เลือกวิธีชำระเงิน</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">เลือกช่องทางการชำระเงินที่สะดวกสำหรับคุณ</div>
+<section class="nvm-ph" aria-labelledby="nvm-tp-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.topup'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.topup') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>เปลี่ยนยอด</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Step 2 of 2</div>
+            <h1 id="nvm-tp-h">เลือกช่องทางชำระ</h1>
+            <p class="nvm-ph__lead">รหัสรายการ <span class="nvm-num">{{ $transaction->transaction_id }}</span></p>
+            <div class="nvm-bal">
+                <small>ยอดเติมเงิน</small>
+                @php [$aInt, $aDec] = explode('.', number_format((float) $transaction->amount, 2)); @endphp
+                <b class="nvm-foil nvm-num">฿{{ $aInt }}<span>.{{ $aDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/card.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ข้อมูลรายการ ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
-            <div style="min-width:0;">
-                <div style="font-size:11.5px; font-weight:600; color:var(--ink2);">รหัสรายการ</div>
-                <div class="tp-num" style="font-size:17px; font-weight:800; margin-top:2px;">{{ $transaction->transaction_id }}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:11.5px; font-weight:600; color:var(--ink2);">จำนวนเงินที่ต้องชำระ</div>
-                <div class="tp-num" style="font-size:clamp(26px,5vw,34px); font-weight:800; line-height:1.1; margin-top:2px; color:var(--deep1);">฿{{ number_format($transaction->amount, 2) }}</div>
-            </div>
+@if($errors->any())
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ชำระเงินไม่สำเร็จ</b>
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
         </div>
+    </section>
+@endif
 
-        {{-- นับเวลาถอยหลัง --}}
-        <div style="margin-top:16px; padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e; display:flex; align-items:center; gap:12px;">
-            <span style="font-size:24px;">⏰</span>
-            <div>
-                <div style="font-size:12px; color:var(--ink2);">กรุณาชำระเงินภายใน</div>
-                <div class="tp-num" id="countdown" style="font-size:17px; font-weight:800; color:#e0a52e;">
-                    {{ $transaction->expired_at ? $transaction->expired_at->diffForHumans() : '30 นาที' }}
-                </div>
-            </div>
+<div class="nvm-split" x-data="nvmTopupPay({ method: @js($picked), expires: @js(optional($transaction->expired_at)->toIso8601String()) })">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tpm-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Payment method</small><h2 id="nvm-tpm-h">ช่องทางที่เปิดให้บริการ</h2></div>
+            <span class="nvm-chip" :class="left > 300 ? 'nvm-chip--warn' : 'nvm-chip--bad'" x-show="expires" x-cloak>
+                <svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><span x-text="left > 0 ? 'เหลือ ' + clock : 'หมดเวลาแล้ว'"></span>
+            </span>
         </div>
-    </div>
-
-    {{-- ── เลือกช่องทางชำระเงิน ──────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:16px;">เลือกช่องทางชำระเงิน</div>
-
-        <form action="{{ route('user.wallet.topup.payment.process', $transaction->transaction_id) }}" method="POST" id="payment-form">
+        <form method="POST" action="{{ route('user.wallet.topup.payment.process', $transaction->transaction_id) }}" class="nvm-form" @submit="if (! method || left === 0) { $event.preventDefault(); return; } busy = true" @pageshow.window="busy = false">
             @csrf
-
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                @forelse($paymentGateways as $gateway)
-                    <label class="payment-option" style="display:block; cursor:pointer;">
-                        <input type="radio"
-                               name="payment_method"
-                               value="{{ $gateway->code }}"
-                               class="peer"
-                               style="position:absolute; opacity:0; pointer-events:none;"
-                               required>
-                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
-                            <div style="display:flex; align-items:center; gap:14px;">
-                                <div style="font-size:28px; line-height:1;" >{{ $gateway->icon ?? '💳' }}</div>
-                                <div style="flex:1; min-width:0;">
-                                    <div style="font-weight:700; font-size:14px;">{{ $gateway->name }}</div>
-                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">{{ $gateway->description }}</div>
-                                    @if($gateway->fees && isset($gateway->fees['deposit_fee_amount']) && $gateway->fees['deposit_fee_amount'] > 0)
-                                        <div style="font-size:11px; color:#e0a52e; margin-top:3px;">
-                                            ค่าธรรมเนียม: {{ $gateway->fees['deposit_fee_type'] === 'percentage' ? $gateway->fees['deposit_fee_amount'] . '%' : '฿' . number_format($gateway->fees['deposit_fee_amount'], 2) }}
-                                        </div>
-                                    @else
-                                        <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
-                                    @endif
-                                </div>
-                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
-                                </span>
-                            </div>
-                        </div>
+            <div class="nvm-opts" role="radiogroup" aria-labelledby="nvm-tpm-h">
+                @foreach($options as $opt)
+                    @php
+                        $feeAmt = (float) ($opt['fees']['deposit_fee_amount'] ?? 0);
+                        $feeType = $opt['fees']['deposit_fee_type'] ?? 'fixed';
+                    @endphp
+                    <label class="nvm-opt">
+                        <input type="radio" name="payment_method" value="{{ $opt['code'] }}" x-model="method" required>
+                        <img src="{{ asset('images/nova/wallet/'.$artFor($opt['code']).'.webp') }}" alt="" width="44" height="44" loading="lazy">
+                        <span>
+                            <b>{{ $opt['name'] }}</b>
+                            @if($opt['desc'])<small>{{ $opt['desc'] }}</small>@endif
+                            @if($feeAmt > 0)
+                                <span class="nvm-chip nvm-chip--warn">ค่าธรรมเนียม {{ $feeType === 'percentage' ? rtrim(rtrim(number_format($feeAmt, 2), '0'), '.').'%' : '฿'.number_format($feeAmt, 2) }}</span>
+                            @else
+                                <span class="nvm-chip nvm-chip--ok">ไม่มีค่าธรรมเนียม</span>
+                            @endif
+                        </span>
                     </label>
-                @empty
-                    {{-- ── ช่องทางสำรอง ── --}}
-                    <label class="payment-option" style="display:block; cursor:pointer;">
-                        <input type="radio" name="payment_method" value="promptpay" class="peer" style="position:absolute; opacity:0; pointer-events:none;" required>
-                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
-                            <div style="display:flex; align-items:center; gap:14px;">
-                                <div style="font-size:28px; line-height:1;">💳</div>
-                                <div style="flex:1; min-width:0;">
-                                    <div style="font-weight:700; font-size:14px;">พร้อมเพย์ (PromptPay)</div>
-                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">ชำระเงินผ่าน QR Code พร้อมเพย์</div>
-                                    <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
-                                </div>
-                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </label>
-
-                    <label class="payment-option" style="display:block; cursor:pointer;">
-                        <input type="radio" name="payment_method" value="bank_transfer" class="peer" style="position:absolute; opacity:0; pointer-events:none;">
-                        <div class="po-box" style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm); transition:all .15s;">
-                            <div style="display:flex; align-items:center; gap:14px;">
-                                <div style="font-size:28px; line-height:1;">🏦</div>
-                                <div style="flex:1; min-width:0;">
-                                    <div style="font-weight:700; font-size:14px;">โอนผ่านธนาคาร</div>
-                                    <div style="font-size:12px; color:var(--ink2); margin-top:1px;">โอนเงินผ่านธนาคารและอัพโหลดสลิป</div>
-                                    <div style="font-size:11px; color:#5aa07e; margin-top:3px;">ไม่มีค่าธรรมเนียม</div>
-                                </div>
-                                <span class="po-check" style="width:24px; height:24px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                    <i class="fas fa-check" style="font-size:11px; color:#fff; opacity:0;"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </label>
-                @endforelse
+                @endforeach
             </div>
-
-            {{-- ปุ่มยืนยัน --}}
-            <button type="submit" id="submit-btn" disabled
-                    class="tp-btn tp-btn-primary"
-                    style="width:100%; margin-top:18px; padding:14px 20px; font-size:15px; font-weight:800;">
-                <span id="btn-text">กรุณาเลือกวิธีชำระเงิน</span>
-                <span id="btn-loading" style="display:none;">
-                    <i class="fas fa-circle-notch fa-spin" style="margin-right:6px;"></i>กำลังดำเนินการ...
-                </span>
+            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="! method || busy || left === 0">
+                <svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>
+                <span x-text="busy ? 'กำลังดำเนินการ…' : (left === 0 ? 'รายการหมดอายุ' : (method ? 'ชำระเงิน ฿{{ number_format((float) $transaction->amount, 2) }}' : 'เลือกช่องทางก่อน'))">ชำระเงิน</span>
             </button>
+            <p class="nvm-note is-bad" x-show="left === 0" x-cloak>
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>รายการนี้หมดอายุแล้ว @if($nvR('user.wallet.topup'))<a class="nvm-link" href="{{ route('user.wallet.topup') }}">สร้างรายการใหม่</a>@endif</span>
+            </p>
         </form>
-    </div>
+    </section>
 
-    {{-- ── ความปลอดภัย ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-        <span class="tp-tile" style="width:44px; height:44px; border-radius:13px; font-size:20px; background:color-mix(in srgb, #5689b8 18%, transparent);"><i class="fas fa-lock" style="color:#5689b8;"></i></span>
-        <div>
-            <div style="font-weight:700; font-size:15px; margin-bottom:6px;">ความปลอดภัย</div>
-            <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); display:flex; flex-direction:column; gap:4px; list-style:disc;">
-                <li>ข้อมูลการชำระเงินของคุณถูกเข้ารหัสและปลอดภัย</li>
-                <li>เงินจะเข้า Wallet ทันทีหลังชำระเงินสำเร็จ</li>
-                <li>หากมีปัญหา สามารถติดต่อทีมงานได้ตลอด 24 ชั่วโมง</li>
-            </ul>
-        </div>
-    </div>
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tps-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Safe &amp; sound</small><h2 id="nvm-tps-h">ความปลอดภัย</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ชำระผ่านช่องทางของธนาคาร/ผู้ให้บริการโดยตรง เว็บไม่เก็บข้อมูลบัตร</li>
+            <li>ยอดเข้ากระเป๋าอัตโนมัติเมื่อระบบยืนยันการชำระ</li>
+            <li>มีปัญหา แจ้งฝ่ายสนับสนุนพร้อมรหัส <span class="nvm-num">{{ $transaction->transaction_id }}</span></li>
+        </ol>
+    </aside>
 </div>
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('payment-form');
-    const submitBtn = document.getElementById('submit-btn');
-    const btnText = document.getElementById('btn-text');
-    const btnLoading = document.getElementById('btn-loading');
-    const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
-    const amountText = @json('฿' . number_format($transaction->amount, 2));
-
-    // อัพเดทสไตล์การ์ดที่ถูกเลือก (แทน peer-checked ของ tailwind)
-    function refreshSelection() {
-        paymentOptions.forEach(function(opt) {
-            const label = opt.closest('.payment-option');
-            if (!label) return;
-            const box = label.querySelector('.po-box');
-            const check = label.querySelector('.po-check');
-            const checkIcon = check ? check.querySelector('i') : null;
-            if (opt.checked) {
-                if (box) {
-                    box.style.boxShadow = 'none';
-                    box.style.background = 'color-mix(in srgb, var(--accent1) 16%, transparent)';
-                    box.style.outline = '2px solid var(--accent1)';
-                }
-                if (check) check.style.background = 'var(--accent2)';
-                if (checkIcon) checkIcon.style.opacity = '1';
-            } else {
-                if (box) {
-                    box.style.boxShadow = 'var(--inset-sm)';
-                    box.style.background = 'transparent';
-                    box.style.outline = 'none';
-                }
-                if (check) check.style.background = 'transparent';
-                if (checkIcon) checkIcon.style.opacity = '0';
-            }
-        });
-    }
-
-    // เปิดปุ่มเมื่อเลือกวิธีชำระเงิน
-    paymentOptions.forEach(function(option) {
-        option.addEventListener('change', function() {
-            submitBtn.disabled = false;
-            btnText.textContent = 'ดำเนินการชำระเงิน ' + amountText;
-            refreshSelection();
+    // นับถอยหลังอายุรายการ — หมดเวลาแล้วปิดปุ่มชำระ
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmTopupPay', function (o) {
+            return {
+                method: o.method, expires: o.expires, busy: false, left: null, timer: null,
+                get clock() { var m = Math.floor(this.left / 60), s = this.left % 60; return m + ':' + String(s).padStart(2, '0') + ' นาที'; },
+                init() {
+                    if (! this.expires) return;
+                    var end = new Date(this.expires).getTime(), self = this;
+                    var tick = function () { self.left = Math.max(0, Math.round((end - Date.now()) / 1000)); if (self.left === 0) clearInterval(self.timer); };
+                    tick(); this.timer = setInterval(tick, 1000);
+                },
+                destroy() { clearInterval(this.timer); },
+            };
         });
     });
-
-    // แสดง loading เมื่อ submit
-    form.addEventListener('submit', function() {
-        submitBtn.disabled = true;
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'inline';
-    });
-
-    // นับเวลาถอยหลัง
-    @if($transaction->expired_at)
-    const expiredAt = new Date(@json($transaction->expired_at->toIso8601String()));
-    const countdownEl = document.getElementById('countdown');
-
-    function updateCountdown() {
-        const now = new Date();
-        const diff = expiredAt - now;
-
-        if (diff <= 0) {
-            countdownEl.textContent = 'หมดเวลาแล้ว';
-            countdownEl.style.color = '#d9534f';
-            submitBtn.disabled = true;
-            return;
-        }
-
-        const minutes = Math.floor(diff / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-        countdownEl.textContent = minutes + ' นาที ' + seconds + ' วินาที';
-    }
-
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-    @endif
-});
 </script>
 @endpush
 @endsection

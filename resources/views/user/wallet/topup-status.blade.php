@@ -1,138 +1,130 @@
-@extends('layouts.user-v4')
+{{--
+    สถานะรายการเติมเงิน (ธีมโนวาเต็ม) — รอ/กำลังตรวจ ระบบเช็คซ้ำให้อัตโนมัติจนสำเร็จหรือหมดอายุ
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'สถานะการเติมเงิน')
 
 @php
-    // ── แมปสถานะ → สี/ไอคอน/ข้อความ (ใช้ hex แทน dynamic tailwind ใน V4) ──
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
     $st = $transaction->status;
-    $statusMap = [
-        'completed'  => ['#5aa07e', '✅', 'ชำระเงินสำเร็จ!'],
-        'processing' => ['#5689b8', '⏳', 'กำลังดำเนินการ...'],
-        'pending'    => ['#e0a52e', '⏳', 'รอการชำระเงิน'],
-        'failed'     => ['#d9534f', '❌', 'การชำระเงินล้มเหลว'],
-        'cancelled'  => ['var(--ink2)', '🚫', 'ยกเลิกแล้ว'],
+    $expired = ! $transaction->isCompleted() && $transaction->isExpired();
+    $meta = [
+        'completed' => ['ชำระเงินสำเร็จ', 'ok', 'deposit', 'เงินเข้ากระเป๋าเรียบร้อยแล้ว'],
+        'processing' => ['กำลังตรวจสอบการชำระ', 'info', 'hourglass', 'ระบบกำลังยืนยันยอด หน้านี้อัปเดตเองเมื่อเสร็จ'],
+        'pending' => ['รอการชำระเงิน', 'warn', 'hourglass', 'ยังไม่ได้รับการชำระสำหรับรายการนี้'],
+        'failed' => ['ชำระเงินไม่สำเร็จ', 'bad', 'empty', 'รายการนี้ไม่สำเร็จ ลองสร้างรายการใหม่'],
+        'cancelled' => ['ยกเลิกแล้ว', 'bad', 'empty', 'รายการนี้ถูกยกเลิก'],
     ];
-    [$stColor, $stEmoji, $stLabel] = $statusMap[$st] ?? ['var(--ink2)', '❓', $st];
-
-    // ── ป้ายวิธีชำระเงิน ──
-    $payMethodMap = [
-        'promptpay'     => '💳 พร้อมเพย์',
-        'bank_transfer' => '🏦 โอนธนาคาร',
-        'credit_card'   => '💳 บัตรเครดิต',
-    ];
-    $payMethodLabel = $payMethodMap[$transaction->payment_method] ?? $transaction->payment_method;
+    [$label, $tone, $art, $lead] = $meta[$st] ?? [$st, 'info', 'hourglass', ''];
+    if ($expired && in_array($st, ['pending', 'processing'], true)) {
+        [$label, $tone, $art, $lead] = ['รายการหมดอายุ', 'bad', 'empty', 'เลยเวลาชำระแล้ว หากโอนไปแล้วแจ้งฝ่ายสนับสนุนพร้อมรหัสรายการ'];
+    }
+    $methodLabels = ['promptpay' => 'พร้อมเพย์', 'bank_transfer' => 'โอนธนาคาร', 'credit_card' => 'บัตรเครดิต', 'pending' => 'ยังไม่เลือก'];
+    $payAmount = (float) $transaction->amount;
+    $creditAmount = (float) data_get($transaction->metadata, 'original_amount', $payAmount);
+    $live = in_array($st, ['pending', 'processing'], true) && ! $expired;
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:760px; margin:0 auto;">
 
-    {{-- ── Hero ──────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-chart-line" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สถานะการเติมเงิน</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ตรวจสอบสถานะรายการเติมเงินของคุณ</div>
+<section class="nvm-ph" aria-labelledby="nvm-ts-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Top up status</div>
+            <h1 id="nvm-ts-h">{{ $label }}</h1>
+            <p class="nvm-ph__lead">{{ $lead }}</p>
+            <div class="nvm-bal">
+                <small>ยอดเข้ากระเป๋า</small>
+                @php [$cInt, $cDec] = explode('.', number_format($creditAmount, 2)); @endphp
+                <b class="nvm-foil nvm-num">฿{{ $cInt }}<span>.{{ $cDec }}</span></b>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/'.$art.'.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── การ์ดสถานะธุรกรรม ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div style="text-align:center;">
-            {{-- ไอคอนสถานะ --}}
-            <div style="margin-bottom:18px;">
-                <div style="width:96px; height:96px; margin:0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center;
-                            font-size:46px; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">
-                    @if($st === 'processing')
-                        <i class="fas fa-circle-notch fa-spin" style="color:{{ $stColor }}; font-size:42px;"></i>
-                    @else
-                        {{ $stEmoji }}
-                    @endif
-                </div>
-                <h2 style="margin:16px 0 0; font-size:24px; font-weight:800; color:{{ $stColor }};">{{ $stLabel }}</h2>
-            </div>
-
-            {{-- รายละเอียดธุรกรรม --}}
-            <div style="max-width:440px; margin:0 auto; display:flex; flex-direction:column; gap:12px; text-align:left;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm);">
-                    <span style="font-size:12.5px; color:var(--ink2);">รหัสรายการ</span>
-                    <span class="tp-num" style="font-weight:800; color:var(--ink);">{{ $transaction->transaction_id }}</span>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm);">
-                    <span style="font-size:12.5px; color:var(--ink2);">จำนวนเงิน</span>
-                    <span class="tp-num" style="font-size:24px; font-weight:800; color:#5aa07e;">฿{{ number_format($transaction->amount, 2) }}</span>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm);">
-                    <span style="font-size:12.5px; color:var(--ink2);">วิธีชำระเงิน</span>
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">{{ $payMethodLabel }}</span>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm);">
-                    <span style="font-size:12.5px; color:var(--ink2);">สร้างเมื่อ</span>
-                    <span class="tp-num" style="font-size:13px; color:var(--ink);">{{ $transaction->created_at->format('d/m/Y H:i:s') }}</span>
-                </div>
-
-                @if($transaction->paid_at)
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
-                    <span style="font-size:12.5px; color:#5aa07e;">ชำระเงินเมื่อ</span>
-                    <span class="tp-num" style="font-size:13px; font-weight:600; color:#5aa07e;">{{ $transaction->paid_at->format('d/m/Y H:i:s') }}</span>
-                </div>
-                @endif
-
-                @if($transaction->expired_at && !$transaction->isCompleted())
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-                    <span style="font-size:12.5px; color:#e0a52e;">หมดอายุเมื่อ</span>
-                    <span class="tp-num" style="font-size:13px; font-weight:600; color:#e0a52e;" id="expiry-time">{{ $transaction->expired_at->format('d/m/Y H:i:s') }}</span>
-                </div>
-                @endif
-            </div>
-
-            {{-- ปุ่มดำเนินการ --}}
-            <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:12px; justify-content:center;">
-                @if($transaction->status === 'pending' && !$transaction->isExpired())
-                    <a href="{{ route('user.wallet.topup.payment', $transaction->transaction_id) }}" class="tp-btn tp-btn-primary">💳 ดำเนินการชำระเงิน</a>
-                @endif
-
-                @if($transaction->status === 'completed')
-                    <a href="{{ route('user.wallet.index') }}" class="tp-btn tp-btn-primary">👛 ไปยัง Wallet</a>
-                @endif
-
-                @if(in_array($transaction->status, ['failed', 'cancelled']) || $transaction->isExpired())
-                    <a href="{{ route('user.wallet.topup') }}" class="tp-btn tp-btn-primary">🔄 สร้างรายการใหม่</a>
-                @endif
-
-                <a href="{{ route('user.wallet.index') }}" class="tp-btn">← กลับหน้าหลัก</a>
-            </div>
+<div class="nvm-split" @if($live) x-data="nvmTopupWatch(@js(route('user.wallet.topup.check', $transaction->transaction_id)), @js(optional($transaction->expired_at)->toIso8601String()))" @endif>
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tsd-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Details</small><h2 id="nvm-tsd-h">รายละเอียดรายการ</h2></div>
+            <span class="nvm-chip nvm-chip--{{ $tone }}">{{ $label }}</span>
         </div>
-    </div>
+        <dl class="nvm-kv">
+            <dt>รหัสรายการ</dt><dd class="nvm-num">{{ $transaction->transaction_id }}</dd>
+            <dt>ยอดที่ชำระ</dt><dd class="nvm-num">฿{{ number_format($payAmount, 2) }}</dd>
+            @if(abs($creditAmount - $payAmount) >= 0.005)
+                {{-- 🐛 (2026-10-29) เดิมโชว์แค่ยอดที่มีสตางค์จับคู่ (เช่น 500.37) แต่เข้ากระเป๋าจริง 500 ลูกค้าเข้าใจว่าเงินหาย --}}
+                <dt>สตางค์จับคู่อัตโนมัติ</dt><dd class="nvm-num">฿{{ number_format($payAmount - $creditAmount, 2) }}</dd>
+            @endif
+            <dt>ช่องทาง</dt><dd>{{ $methodLabels[$transaction->payment_method] ?? $transaction->payment_method }}</dd>
+            <dt>สร้างเมื่อ</dt><dd class="nvm-num">{{ $transaction->created_at->format('d/m/Y H:i') }}</dd>
+            @if($transaction->paid_at)
+                <dt>ชำระเมื่อ</dt><dd class="nvm-num">{{ $transaction->paid_at->format('d/m/Y H:i') }}</dd>
+            @elseif($transaction->expired_at)
+                <dt>หมดอายุ</dt><dd class="nvm-num">{{ $transaction->expired_at->format('d/m/Y H:i') }}</dd>
+            @endif
+            <dt class="nvm-kv__total">เข้ากระเป๋า</dt><dd class="nvm-num nvm-kv__total">฿{{ number_format($creditAmount, 2) }}</dd>
+        </dl>
+        @if($live)
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><span x-text="left !== null ? 'เช็คสถานะอัตโนมัติ · เหลือเวลา ' + clock : 'เช็คสถานะอัตโนมัติทุก 5 วินาที'">เช็คสถานะอัตโนมัติทุก 5 วินาที</span></p>
+        @endif
+        <div class="nvm-filter__btns nvm-gap-t">
+            @if($st === 'pending' && ! $expired && $nvR('user.wallet.topup.payment'))
+                <a class="nvm-btn nvm-btn--gold" href="{{ route('user.wallet.topup.payment', $transaction->transaction_id) }}"><svg class="nvm-ico"><use href="#nvm-i-card"/></svg>ชำระเงินต่อ</a>
+            @elseif(($expired || in_array($st, ['failed', 'cancelled'], true)) && $nvR('user.wallet.topup'))
+                <a class="nvm-btn nvm-btn--gold" href="{{ route('user.wallet.topup') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>สร้างรายการใหม่</a>
+            @endif
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>กระเป๋าเงิน</a>
+            @endif
+        </div>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tsh-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Need help?</small><h2 id="nvm-tsh-h">ยอดยังไม่เข้า?</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ตรวจว่าโอนยอดตรงทุกสตางค์ตามที่หน้าชำระแสดง</li>
+            <li>ระบบธนาคารอาจช้า 1–5 นาที หน้านี้อัปเดตเอง</li>
+            <li>เกิน 10 นาที แจ้งฝ่ายสนับสนุนพร้อมรหัส <span class="nvm-num">{{ $transaction->transaction_id }}</span> และสลิป</li>
+        </ol>
+    </aside>
 </div>
 
-@if(in_array($transaction->status, ['pending', 'processing']))
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ตรวจสอบสถานะอัตโนมัติสำหรับรายการที่ pending/processing
-    function checkStatus() {
-        fetch('{{ route("user.wallet.topup.check", $transaction->transaction_id) }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.data.is_completed) {
-                    // โหลดหน้าใหม่เพื่อแสดงผลสำเร็จ
-                    window.location.reload();
-                }
-            })
-            .catch(error => console.error('Status check error:', error));
-    }
-
-    // ตรวจสอบทุก 5 วินาที
-    setInterval(checkStatus, 5000);
-});
-</script>
-@endpush
+@if($live)
+    @push('scripts')
+    <script>
+        // เช็คซ้ำทุก 5 วินาที → สำเร็จหรือหมดอายุแล้วรีโหลดให้เห็นผล (หยุดเช็คทันที)
+        document.addEventListener('alpine:init', function () {
+            window.Alpine.data('nvmTopupWatch', function (url, expires) {
+                return {
+                    left: null, poll: null, timer: null, busy: false,
+                    get clock() { var m = Math.floor(this.left / 60), s = this.left % 60; return m + ':' + String(s).padStart(2, '0') + ' นาที'; },
+                    init() {
+                        var self = this;
+                        if (expires) {
+                            var end = new Date(expires).getTime();
+                            var tick = function () { self.left = Math.max(0, Math.round((end - Date.now()) / 1000)); };
+                            tick(); this.timer = setInterval(tick, 1000);
+                        }
+                        this.poll = setInterval(function () {
+                            if (self.busy || document.hidden) return;
+                            self.busy = true;
+                            fetch(url, { headers: { 'Accept': 'application/json' } })
+                                .then(function (r) { return r.json(); })
+                                .then(function (j) { if (j.success && j.data && (j.data.is_completed || j.data.is_expired)) { self.destroy(); window.location.reload(); } })
+                                .catch(function () {})
+                                .finally(function () { self.busy = false; });
+                        }, 5000);
+                    },
+                    destroy() { clearInterval(this.poll); clearInterval(this.timer); },
+                };
+            });
+        });
+    </script>
+    @endpush
 @endif
 @endsection

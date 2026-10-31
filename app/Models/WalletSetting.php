@@ -185,7 +185,14 @@ class WalletSetting extends Model
      */
     public static function calculateTransferFee(float $amount): float
     {
-        $fee = static::get('transfer_fee_amount', 0);
+        // 🐛 (2026-10-29) เดิมคืน transfer_fee_amount ตรง ๆ ไม่ดู fee_type/min/max
+        //    แต่หน้า QR คำนวณแบบเต็ม → ตั้งเป็น % เมื่อไหร่ หน้าจอโชว์ค่าหนึ่ง หักจริงอีกค่า
+        //    ตอนนี้ทุกจุด (โอนปกติ/QR/หน้าแอดมิน) ใช้สูตรเดียวกันที่นี่
+        $feeAmount = (float) static::get('transfer_fee_amount', 0);
+        $fee = static::get('transfer_fee_type', 'fixed') === 'percentage'
+            ? $amount * $feeAmount / 100
+            : $feeAmount;
+        $fee = max((float) static::get('transfer_fee_min', 0), min((float) static::get('transfer_fee_max', 999999), $fee));
 
         return round($fee, 2);
     }

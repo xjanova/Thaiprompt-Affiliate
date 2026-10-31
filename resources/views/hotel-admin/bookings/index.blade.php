@@ -15,9 +15,6 @@
                             <h2 class="mb-2"><i class="fas fa-calendar-check me-2"></i>Booking Management</h2>
                             <p class="mb-0 opacity-75">View and manage all hotel bookings</p>
                         </div>
-                        <a href="{{ route('hotel-admin.bookings.create') }}" class="btn btn-light">
-                            <i class="fas fa-plus me-2"></i>New Booking
-                        </a>
                     </div>
                 </div>
             </div>
@@ -88,10 +85,7 @@
                                 <tr>
                                     <td colspan="9" class="text-center py-5">
                                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                        <p class="text-muted">No bookings found. Create your first booking to get started.</p>
-                                        <a href="{{ route('hotel-admin.bookings.create') }}" class="btn btn-primary">
-                                            <i class="fas fa-plus me-2"></i>Create Booking
-                                        </a>
+                                        <p class="text-muted">No bookings found.</p>
                                     </td>
                                 </tr>
                             </tbody>

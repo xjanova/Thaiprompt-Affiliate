@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FortuneTellingSetting;
 use App\Models\LineRichMenu;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -31,6 +32,12 @@ class FortuneRichMenuService
 
     /** 🌐 เว็บจันทรา (จันทรา.online = xn--82c4af5bzdj.online) — ปลายทางปุ่ม เว็บไซต์/โหลดแอพ/วิดีโอแผน */
     protected const JUNTRA_BASE_URL = 'https://xn--82c4af5bzdj.online';
+
+    /** ชื่อแถวเมนูหลักใน line_rich_menus */
+    public const MAIN_MENU_NAME = 'fortune-telling-bot';
+
+    /** 🔮 (2026-10-24) ชื่อแถวเมนูช่วงทำนาย (ไม่มีปุ่มดูดวง) — ดู ensurePredictingMenu() */
+    public const PREDICTING_MENU_NAME = 'fortune-telling-bot-predicting';
 
     protected FortuneTellingSetting $settings;
 
@@ -570,6 +577,156 @@ class FortuneRichMenuService
     public function getRichMenuAreas(): array
     {
         return $this->getAreasFromConfig($this->getDefaultEditorConfig());
+    }
+
+    /**
+     * 🔮 (2026-10-24) เมนูช่วงทำนาย — หน้าตาเดียวกับเมนูหลัก แต่ปุ่ม "ดูดวง" กลายเป็น "กำลังทำนาย"
+     *
+     * owner: "เอาไอ้ปุ่ม ดูดวง ในระหว่างทำนายออกไปเลย มัน งง" (เคส reading 14367 กดดูดวงกลางขั้นถามเวลาเกิด)
+     * ปุ่มแทนที่ส่งข้อความ FortunePredictionMenu::STEP_REQUEST_TEXT → Hard Guard ตอบว่าตอนนี้รออะไรอยู่
+     *
+     * สร้างครั้งเดียวต่อเมนูหลัก 1 ตัว (ผูกด้วย editor_config.parent_rich_menu_id)
+     * admin deploy เมนูหลักใหม่ → ตัวนี้สร้างใหม่เองตอนมีคนต้องใช้ครั้งแรก
+     *
+     * @return string|null rich menu id / null = ใช้เมนูช่วงทำนายไม่ได้ (โหมดภาพอัปโหลดเอง · ไม่มีปุ่มดูดวง · LINE ล้ม)
+     */
+    public function ensurePredictingMenu(): ?string
+    {
+        $main = LineRichMenu::where('name', self::MAIN_MENU_NAME)
+            ->where('is_active', true)
+            ->latest('id')
+            ->first();
+
+        // ภาพอัปโหลดเอง (custom) วาดใหม่ไม่ได้ — สลับไปก็ยังเห็นคำว่า "ดูดวง" บนภาพ ⇒ ไม่สลับ
+        if (! $main || $main->editor_mode !== 'config') {
+            return null;
+        }
+
+        $current = $this->findPredictingMenuFor($main->rich_menu_id);
+        if ($current !== null) {
+            return $current;
+        }
+
+        try {
+            return Cache::lock('fortune:predicting-menu:build', 120)->block(60, function () use ($main) {
+                // อีก worker อาจสร้างเสร็จระหว่างรอ lock
+                return $this->findPredictingMenuFor($main->rich_menu_id)
+                    ?? $this->buildPredictingMenu($main);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('FortuneRichMenu: สร้างเมนูช่วงทำนายไม่สำเร็จ', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * config เมนูช่วงทำนาย = config เมนูหลัก โดยเปลี่ยนปุ่มที่ส่ง "ดูดวง" เป็นปุ่ม "กำลังทำนาย"
+     *
+     * @return array|null null = เมนูหลักไม่มีปุ่มดูดวง (ไม่มีอะไรต้องซ่อน)
+     */
+    public function buildPredictingEditorConfig(array $mainConfig): ?array
+    {
+        $buttons = $mainConfig['buttons'] ?? [];
+        $replaced = false;
+
+        foreach ($buttons as $i => $btn) {
+            $isFortuneStart = ($btn['action_type'] ?? null) === 'message'
+                && trim((string) ($btn['action_data'] ?? '')) === 'ดูดวง';
+            if (! $isFortuneStart) {
+                continue;
+            }
+
+            $buttons[$i] = array_merge($btn, [
+                'label' => 'กำลังทำนาย',
+                'subtitle' => 'แตะดูว่าแม่หมอรออะไร',
+                // คำยาวกว่า "ดูดวง" 2 เท่า — ลดขนาดกันล้นช่อง 833px
+                'font_size' => min((int) ($btn['font_size'] ?? 80), 80),
+                'icon' => 'crystal_ball',
+                'action_type' => 'message',
+                'action_data' => \App\Services\Fortune\FortunePredictionMenu::STEP_REQUEST_TEXT,
+                'display_text' => '',
+            ]);
+            $replaced = true;
+        }
+
+        if (! $replaced) {
+            return null;
+        }
+
+        $mainConfig['buttons'] = $buttons;
+
+        return $mainConfig;
+    }
+
+    protected function findPredictingMenuFor(string $parentRichMenuId): ?string
+    {
+        $menu = LineRichMenu::where('name', self::PREDICTING_MENU_NAME)
+            ->where('is_active', true)
+            ->latest('id')
+            ->first();
+
+        return $menu && ($menu->editor_config['parent_rich_menu_id'] ?? null) === $parentRichMenuId
+            ? $menu->rich_menu_id
+            : null;
+    }
+
+    protected function buildPredictingMenu(LineRichMenu $main): ?string
+    {
+        $config = $this->buildPredictingEditorConfig($main->editor_config ?: $this->getDefaultEditorConfig());
+        if ($config === null) {
+            return null;
+        }
+
+        $pngData = $this->generateImageFromConfig($config);
+        if (empty($pngData)) {
+            return null;
+        }
+        $areas = $this->getAreasFromConfig($config);
+
+        $richMenuId = $this->lineService->createRichMenu([
+            'size' => ['width' => self::WIDTH, 'height' => self::HEIGHT],
+            'selected' => true,
+            'name' => 'หมอจันทรา - เมนูช่วงทำนาย',
+            'chatBarText' => $main->chat_bar_text ?: '🔮 เมนูดูดวง',
+            'areas' => $areas,
+        ]);
+        if (! $richMenuId) {
+            return null;
+        }
+
+        if (! $this->lineService->uploadRichMenuImage($richMenuId, $pngData)) {
+            $this->lineService->deleteRichMenu($richMenuId);
+
+            return null;
+        }
+
+        // ⚠️ ไม่ setDefaultRichMenu — เมนูนี้ผูกรายคนเฉพาะคนที่กำลังทำนายเท่านั้น
+        LineRichMenu::where('name', self::PREDICTING_MENU_NAME)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        LineRichMenu::create([
+            'rich_menu_id' => $richMenuId,
+            'name' => self::PREDICTING_MENU_NAME,
+            'description' => 'เมนูช่วงทำนาย (ไม่มีปุ่มดูดวง) — ผูกรายคนอัตโนมัติ',
+            'size' => 'full',
+            'selected' => true,
+            'chat_bar_text' => $main->chat_bar_text ?: '🔮 เมนูดูดวง',
+            'areas' => $areas,
+            'editor_config' => $config + ['parent_rich_menu_id' => $main->rich_menu_id],
+            'editor_mode' => 'config',
+            'image_path' => $this->saveImageToStorage($pngData),
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+
+        Log::info('FortuneRichMenu: สร้างเมนูช่วงทำนายสำเร็จ', [
+            'rich_menu_id' => $richMenuId,
+            'parent_rich_menu_id' => $main->rich_menu_id,
+        ]);
+
+        return $richMenuId;
     }
 
     // === Private Helper Methods ===

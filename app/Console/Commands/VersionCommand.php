@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\VersionService;
 use Illuminate\Console\Command;
 
 class VersionCommand extends Command

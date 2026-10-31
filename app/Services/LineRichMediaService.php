@@ -2,27 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
 /**
  * LINE Rich Media Service
  *
  * Handles rich media content for LINE OA
  * - Image carousels
- * - QR code generation
  * - Image templates
  * - Video messages
  * - Location sharing
  */
 class LineRichMediaService
 {
-    private const QR_CODE_SIZE = 300;
-
-    private const QR_CODE_PATH = 'qrcodes/line';
-
     /**
      * Create image carousel for sponsor benefits
      */
@@ -64,118 +54,6 @@ class LineRichMediaService
                             'type' => 'message',
                             'label' => 'โบนัส',
                             'text' => 'โบนัสพิเศษ',
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * Create referral QR code for sponsor
-     */
-    public function createReferralQrCode(User $sponsor): array
-    {
-        $referralUrl = route('line.signup.invite', [
-            'sponsor_id' => $sponsor->id,
-            'ref' => Str::random(8),
-        ]);
-
-        // Generate QR code
-        $qrCodePath = $this->generateQrCode($referralUrl, "sponsor_{$sponsor->id}");
-
-        return [
-            'type' => 'flex',
-            'altText' => 'QR Code สำหรับแชร์',
-            'contents' => [
-                'type' => 'bubble',
-                'size' => 'mega',
-                'header' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'contents' => [
-                        [
-                            'type' => 'text',
-                            'text' => 'แชร์ QR Code ของคุณ',
-                            'weight' => 'bold',
-                            'size' => 'lg',
-                            'color' => '#FFFFFF',
-                        ],
-                    ],
-                    'backgroundColor' => '#FF6B6B',
-                    'paddingAll' => 'xl',
-                ],
-                'hero' => [
-                    'type' => 'image',
-                    'url' => Storage::url($qrCodePath),
-                    'size' => 'full',
-                    'aspectRatio' => '1:1',
-                    'aspectMode' => 'cover',
-                ],
-                'body' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'contents' => [
-                        [
-                            'type' => 'text',
-                            'text' => 'แชร์ให้เพื่อนสแกน QR Code นี้เพื่อสมัครเป็นสมาชิกในทีมของคุณ',
-                            'wrap' => true,
-                            'size' => 'sm',
-                            'color' => '#666666',
-                        ],
-                        [
-                            'type' => 'separator',
-                            'margin' => 'xl',
-                        ],
-                        [
-                            'type' => 'box',
-                            'layout' => 'vertical',
-                            'margin' => 'lg',
-                            'spacing' => 'sm',
-                            'contents' => [
-                                [
-                                    'type' => 'box',
-                                    'layout' => 'baseline',
-                                    'contents' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => '🔗',
-                                            'flex' => 0,
-                                        ],
-                                        [
-                                            'type' => 'text',
-                                            'text' => 'ลิงก์อ้างอิง',
-                                            'color' => '#999999',
-                                            'size' => 'sm',
-                                            'flex' => 2,
-                                        ],
-                                    ],
-                                ],
-                                [
-                                    'type' => 'text',
-                                    'text' => $referralUrl,
-                                    'size' => 'xs',
-                                    'color' => '#339AF0',
-                                    'wrap' => true,
-                                    'margin' => 'sm',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                'footer' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'contents' => [
-                        [
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => 'แชร์ลิงก์',
-                                'uri' => 'https://line.me/R/msg/text/?'.urlencode("มาร่วมเป็นทีมกับผมเลย! {$referralUrl}"),
-                            ],
-                            'color' => '#51CF66',
                         ],
                     ],
                 ],
@@ -440,30 +318,6 @@ class LineRichMediaService
                 'contents' => $bubbles,
             ],
         ];
-    }
-
-    /**
-     * Generate QR code and save to storage
-     */
-    private function generateQrCode(string $content, string $filename): string
-    {
-        $path = self::QR_CODE_PATH.'/'.$filename.'.png';
-        $fullPath = storage_path('app/public/'.$path);
-
-        // Create directory if it doesn't exist
-        $directory = dirname($fullPath);
-        if (! file_exists($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        // Generate QR code
-        QrCode::format('png')
-            ->size(self::QR_CODE_SIZE)
-            ->margin(2)
-            ->errorCorrection('H')
-            ->generate($content, $fullPath);
-
-        return $path;
     }
 
     /**

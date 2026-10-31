@@ -149,6 +149,12 @@
                         ← ย้อนกลับ
                     </button>
 
+                    {{-- ต้องซ่อนปุ่มตั้งแต่หน้านี้ เพราะ processPayment โอนเงินบนเชนก่อนแล้วค่อยบันทึกลงระบบ --}}
+                    @if($blockedReason)
+                        <div class="flex-1 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-xl text-sm text-yellow-800 dark:text-yellow-200">
+                            {{ $blockedReason }}
+                        </div>
+                    @else
                     <button @click="processPayment()"
                             :disabled="!canProceedPayment()"
                             class="flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
@@ -161,6 +167,7 @@
                             <span>กำลังประมวลผล...</span>
                         </span>
                     </button>
+                    @endif
                 </div>
 
                 {{-- Helper Text --}}
@@ -301,7 +308,7 @@ function paymentConfirmation(pricing, requiredAmount) {
 
                     // Redirect ไปหน้า Deploy หลัง 2 วินาที
                     setTimeout(() => {
-                        window.location.href = '{{ route("admin.tpix.deployment.step", [$config->slug, 5]) }}';
+                        window.location.href = '{{ route("admin.tpix.deployment.step5", $config->slug) }}';
                     }, 2000);
                 } else {
                     throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -320,7 +327,7 @@ function paymentConfirmation(pricing, requiredAmount) {
          */
         cancelPayment() {
             if (confirm('ยืนยันการยกเลิกการชำระเงิน?')) {
-                window.location.href = '{{ route("admin.tpix.deployment.step", [$config->slug, 4]) }}';
+                window.location.href = '{{ route("admin.tpix.deployment.step4", $config->slug) }}';
             }
         },
 

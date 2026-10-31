@@ -32,7 +32,7 @@
         ['emoji' => '🏍️', 'img' => 'svc-delivery', 'tag' => 'DELIVERY', 'th' => 'ไรเดอร์ & เดลิเวอรี่', 'desc' => 'ส่งอาหารและพัสดุทั่วเมือง ค่าส่งเป็นธรรม ติดตามเรียลไทม์', 'url' => '#services'],
         ['emoji' => '💰', 'img' => 'svc-wallet', 'tag' => 'WALLET', 'th' => 'กระเป๋าเงินดิจิทัล', 'desc' => 'จัดการเงิน เหรียญ TPX และปันผล จากแอปเดียว โปร่งใสบนเชน', 'url' => '#wallet'],
         ['emoji' => '📈', 'img' => 'svc-affiliate', 'tag' => 'AFFILIATE', 'th' => 'ปันผล & พันธมิตร', 'desc' => 'สร้างรายได้จากเครือข่าย ระบบคอมมิชชั่นโปร่งใส ตรวจสอบได้', 'url' => '#services'],
-        ['emoji' => '🤖', 'img' => 'svc-aibot', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => \Illuminate\Support\Facades\Route::has('marketplace.index') ? route('marketplace.index') : '#'],
+        ['emoji' => '🤖', 'img' => 'svc-aibot', 'tag' => 'AI BOT', 'th' => 'ตลาด AI Bot', 'desc' => 'เช่า/ขายบอท AI ช่วยงานขายและบริการลูกค้าอัตโนมัติ 24 ชม.', 'url' => route('chatbot.marketplace.index')],
         ['emoji' => '⛓️', 'img' => 'svc-blockchain', 'tag' => 'BLOCKCHAIN', 'th' => 'Blockchain ของเราเอง', 'desc' => 'ทุกธุรกรรมบันทึกบนเชน TPIX ตรวจสอบย้อนหลังได้ทุกขั้นตอน', 'url' => '#wallet'],
     ];
 

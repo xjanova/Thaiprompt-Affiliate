@@ -62,14 +62,10 @@ class ConfigCacheSafetyTest extends TestCase
     {
         $services = config('services');
 
-        foreach (['huggingface.token', 'github.token', 'github.webhook_secret', 'tavily.api_key',
-            'brave_search.api_key', 'gemini.api_key', 'openai.api_key', 'anthropic.model',
-            'nongying_chat.provider', 'google.tts_api_key', 'google.cloud_project_id'] as $key) {
+        foreach (['github.webhook_secret', 'tavily.api_key', 'brave_search.api_key', 'openai.api_key',
+            'anthropic.model', 'google.tts_api_key', 'google.cloud_project_id'] as $key) {
             $this->assertTrue(\Illuminate\Support\Arr::has($services, $key), "config('services.{$key}') หายไป");
         }
-
-        $this->assertNotEmpty(config('services.gemini.tts_model'));
-        $this->assertNotEmpty(config('services.nongying_chat.provider'));
 
         // ที่เก็บไฟล์เสียงคำทำนาย — FortuneVoiceStorageService::envDefaults() อ่านทั้งก้อน
         $expected = [

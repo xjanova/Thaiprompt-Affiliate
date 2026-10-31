@@ -181,7 +181,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วันที่สิ้นสุด:</label>
-                        <p class="text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($offer->valid_to)->format('d/m/Y') }}</p>
+                        <p class="text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($offer->valid_until)->format('d/m/Y') }}</p>
                     </div>
 
                     <div>
@@ -189,7 +189,7 @@
                         @php
                             $now = now();
                             $validFrom = \Carbon\Carbon::parse($offer->valid_from);
-                            $validTo = \Carbon\Carbon::parse($offer->valid_to);
+                            $validTo = \Carbon\Carbon::parse($offer->valid_until);
                         @endphp
                         <p>
                             @if($now->lt($validFrom))
@@ -279,10 +279,10 @@
                     <div>
                         <label class="block text-sm font-medium text-purple-100 mb-1">จำนวนครั้งที่ใช้:</label>
                         <p class="text-4xl font-bold">{{ number_format($stats['total_uses']) }}</p>
-                        @if($offer->max_uses)
-                            <p class="text-sm text-purple-100 mt-1">จาก {{ number_format($offer->max_uses) }} ครั้ง</p>
+                        @if($offer->max_usage)
+                            <p class="text-sm text-purple-100 mt-1">จาก {{ number_format($offer->max_usage) }} ครั้ง</p>
                             <div class="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
-                                <div class="h-full bg-white rounded-full" style="width: {{ min(($stats['total_uses'] / $offer->max_uses) * 100, 100) }}%"></div>
+                                <div class="h-full bg-white rounded-full" style="width: {{ min(($stats['total_uses'] / $offer->max_usage) * 100, 100) }}%"></div>
                             </div>
                         @endif
                     </div>
@@ -292,12 +292,6 @@
                         <p class="text-3xl font-bold">฿{{ number_format($stats['total_savings']) }}</p>
                     </div>
 
-                    @if($offer->max_uses_per_user)
-                        <div>
-                            <label class="block text-sm font-medium text-purple-100 mb-1">ใช้ได้ต่อคน:</label>
-                            <p class="text-xl font-semibold">{{ $offer->max_uses_per_user }} ครั้ง</p>
-                        </div>
-                    @endif
                 </div>
             </div>
 

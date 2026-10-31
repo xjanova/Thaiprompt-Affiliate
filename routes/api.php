@@ -1,20 +1,16 @@
 <?php
 
-use App\Http\Controllers\Api\AiGenController;
-use App\Http\Controllers\Api\AiGenPackageController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\CarbonCreditController;
 use App\Http\Controllers\Api\CertificationController;
 use App\Http\Controllers\Api\CoinExchangeController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\Api\FoodPassportController;
-use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\NFCCardApiController;
 use App\Http\Controllers\Api\NFCPairingApiController;
 use App\Http\Controllers\Api\QualityController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\TraceabilityController;
-use App\Http\Controllers\Api\TrendApiController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TranslateController;
@@ -23,7 +19,6 @@ use App\Http\Controllers\Api\VideoQuestController;
 use App\Http\Controllers\Api\VideoRewardController;
 use App\Http\Controllers\Api\VideoWatchController;
 use App\Http\Controllers\LineWebhookController;
-// SnakeGameSyncController ถูกลบแล้ว — multiplayer ย้ายไป Dedicated Game Server
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -188,46 +183,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         // overridden by the legacy banner routes inside the protected v1
         // group below, so removing them is a no-op for live behavior — just
         // unbreaks `php artisan route:list`.
-
-        // Mobile app control plane (public; private keys filtered server-side)
-        Route::get('/config', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
-        Route::get('/flags', [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'flags'])->name('api.v1.app.flags');
-        Route::get('/menus', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'menus'])->name('api.v1.app.menus');
-        Route::get('/sliders', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'sliders'])->name('api.v1.app.sliders');
-        Route::get('/promotions', [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'promotions'])->name('api.v1.app.promotions');
-        Route::get('/latest-version', [\App\Http\Controllers\Api\V1\AppReleaseApiController::class, 'latest'])->name('api.v1.app.latest-version');
     });
-
-    // ========= THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =========
-    // App-facing AI endpoints called without user auth. Per-IP rate
-    // limited. These were previously hot-patched onto prod via tinker
-    // and got wiped by a `git reset --hard` during deploy — now tracked
-    // in git so they survive. See session_handoff_v1.0.21.
-    Route::get('/ai/nong-ying/persona',
-        [\App\Http\Controllers\Api\V1\NongYingController::class, 'persona'])
-        ->middleware('throttle:60,1,api-nongying-persona')
-        ->name('api.v1.ai.nong-ying.persona');
-
-    Route::get('/ai/nong-ying/knowledge',
-        [\App\Http\Controllers\Api\V1\NongYingController::class, 'knowledgeSearch'])
-        ->middleware('throttle:30,1,api-nongying-knowledge')
-        ->name('api.v1.ai.nong-ying.knowledge');
-
-    // On-device Gemma .task download proxy. Local-first: Nginx serves
-    // straight from public/ai-models/ when synced, else streams from HF
-    // with server-side HF_TOKEN. GET + HEAD both forwarded.
-    Route::match(['get', 'head'], '/ai/models/{tier}',
-        [\App\Http\Controllers\Api\AiModelProxyController::class, 'download'])
-        ->where('tier', 'gemma4_e2b|gemma4_e4b')
-        ->middleware('throttle:30,1,api-ai-model-download')
-        ->name('api.v1.ai.models.download');
-
-    // Metadata (size, modified, HF URL) — guardAdmin() inside controller.
-    Route::get('/ai/models/{tier}/info',
-        [\App\Http\Controllers\Api\AiModelAdminController::class, 'show'])
-        ->where('tier', 'gemma4_e2b|gemma4_e4b')
-        ->name('api.v1.ai.models.info');
-    // ======= END THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =======
 
     // 🔐 (2026-09-25) ไฟล์เอกสารไรเดอร์ของตัวเอง — เปิดได้เฉพาะ signed URL อายุ 30 นาที
     //    (สร้างจาก GET /rider/status และ /rider/documents เท่านั้น — ไฟล์อยู่บน private disk)
@@ -236,6 +192,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         ->whereNumber('rider')
         ->where('type', 'id_card|driver_license|vehicle_registration|profile')
         ->name('api.v1.rider.documents.file');
+
+    // 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิมของตัวเอง (บัตร/คู่บัตร) — เปิดได้เฉพาะ signed URL อายุ 30 นาที
+    //    สร้างจาก POST /kyc/upload เท่านั้น (KycDocumentStorage::signedUrl) · ไฟล์อยู่บน private disk
+    Route::get('/kyc/image/{kycVerification}/{kind}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'kycImageFile'])
+        ->middleware(['signed', 'throttle:120,1,api-kyc-image'])
+        ->whereNumber('kycVerification')
+        ->whereIn('kind', array_keys(\App\Services\Kyc\KycDocumentStorage::KINDS))
+        ->name('api.v1.kyc.image');
 
     // 📸 (2026-10-04) ไรเดอร์รอบ 2: รูปโปรไฟล์พร้อมลายน้ำรหัสผู้ดู — เปิดได้เฉพาะ signed URL (~60 นาที)
     //    สร้างจาก ProfilePhotoService::urlFor() เท่านั้น · ไฟล์ต้นฉบับอยู่บน private disk ไม่มีทางเปิดตรง
@@ -262,23 +226,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/account/delete', [\App\Http\Controllers\Api\V1\AccountController::class, 'destroy'])
             ->middleware('throttle:5,1,api-account-delete')
             ->name('api.v1.account.delete');
-
-        // Mobile app analytics ingestion + AI fallback (protected + rate-limited)
-        Route::post('/events/batch', [\App\Http\Controllers\Api\V1\AnalyticsApiController::class, 'batch'])
-            ->middleware('throttle:60,1,api-events-batch')
-            ->name('api.v1.events.batch');
-        Route::post('/ai/chat', [\App\Http\Controllers\Api\V1\AiChatApiController::class, 'chat'])
-            ->middleware('throttle:20,1,api-ai-chat')
-            ->name('api.v1.ai.chat');
-        Route::post('/ai/tts', [\App\Http\Controllers\Api\V1\AiTtsApiController::class, 'speak'])
-            ->middleware('throttle:20,1,api-ai-tts')
-            ->name('api.v1.ai.tts');
-
-        // Admin-only model sync (gated by controller's guardAdmin()).
-        Route::post('/admin/ai/models/{tier}/sync',
-            [\App\Http\Controllers\Api\AiModelAdminController::class, 'sync'])
-            ->where('tier', 'gemma4_e2b|gemma4_e4b')
-            ->name('api.v1.admin.ai.models.sync');
+        // 🔒 (2026-10-29) รหัสยืนยันการลบทางอีเมล (บัญชีที่ไม่รู้รหัสผ่าน)
+        Route::post('/account/delete/send-code', [\App\Http\Controllers\Api\V1\AccountController::class, 'sendDeletionCode'])
+            ->middleware('throttle:3,10,api-account-delete-code')
+            ->name('api.v1.account.delete.send-code');
 
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
@@ -695,19 +646,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/promotions/request', [RankController::class, 'requestPromotion']);
         });
 
-        // Investments & Staking
-        Route::prefix('investments')->group(function () {
-            Route::get('/plans', [InvestmentController::class, 'plans']);
-            Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan']);
-            Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI']);
-            Route::post('/invest', [InvestmentController::class, 'store']);
-            Route::get('/summary', [InvestmentController::class, 'summary']);
-            Route::get('/positions', [InvestmentController::class, 'positions']);
-            Route::get('/positions/{position}', [InvestmentController::class, 'showPosition']);
-            Route::post('/positions/{position}/withdraw', [InvestmentController::class, 'withdraw']);
-            Route::get('/distributions', [InvestmentController::class, 'distributions']);
-        });
-
         // Crypto Wallet API
         Route::prefix('crypto')->group(function () {
             Route::post('/verify-signature', [CryptoWalletApiController::class, 'verifySignature']);
@@ -762,14 +700,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         });
 
         // App Configuration (protected, legacy)
-        // The mobile app's NEW control plane lives in the public block above
-        // (`/v1/app/config`, `/v1/app/flags`, ...). The two `/config` routes
-        // collided — Laravel kept the LATER definition, which silently
-        // hijacked the new public endpoint and made it return 401. The new
-        // endpoint is canonical going forward, so the legacy `/config` and
-        // `/banners` shadows are removed here. The remaining theme/settings/
-        // features endpoints are kept in case any web admin tooling still
-        // hits them.
+        // คง theme/settings/features ไว้เผื่อเครื่องมือหลังบ้านบนเว็บยังเรียกอยู่
         Route::prefix('app')->group(function () {
             Route::get('/settings', [AppConfigController::class, 'settings']);
             Route::get('/theme', [AppConfigController::class, 'theme']);
@@ -777,25 +708,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/control-sections', [AppConfigController::class, 'controlSections']);
             Route::get('/component-settings', [AppConfigController::class, 'componentSettings']);
             Route::get('/features', [AppConfigController::class, 'features']);
-        });
-
-        // AI Gen - Image & Video Generation
-        Route::prefix('ai-gen')->group(function () {
-            // Dashboard & User Info
-            Route::get('/dashboard', [AiGenController::class, 'dashboard']);
-
-            // Generation
-            Route::post('/generate', [AiGenController::class, 'generate']);
-            Route::get('/generations', [AiGenController::class, 'myGenerations']);
-            Route::get('/generations/{generationId}', [AiGenController::class, 'getGeneration']);
-            Route::get('/generations/{generationId}/status', [AiGenController::class, 'checkStatus']);
-            Route::post('/generations/{generationId}/favorite', [AiGenController::class, 'toggleFavorite']);
-            Route::delete('/generations/{generationId}', [AiGenController::class, 'deleteGeneration']);
-
-            // Packages
-            Route::get('/packages', [AiGenPackageController::class, 'index']);
-            Route::get('/packages/{packageId}', [AiGenPackageController::class, 'show']);
-            Route::post('/packages/{packageId}/purchase', [AiGenPackageController::class, 'purchase']);
         });
 
         // Video Reward System
@@ -828,28 +740,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/exchange/request', [CoinExchangeController::class, 'exchange']);
             Route::get('/exchange/history', [CoinExchangeController::class, 'history']);
             Route::get('/exchange/requests/{requestId}', [CoinExchangeController::class, 'show']);
-        });
-
-        // Viral Trend Detection API
-        Route::prefix('trends')->group(function () {
-            Route::get('/dashboard', [TrendApiController::class, 'dashboard']);
-            Route::get('/', [TrendApiController::class, 'index']);
-            Route::get('/{trend}', [TrendApiController::class, 'show']);
-            Route::post('/{trend}/generate-content', [TrendApiController::class, 'generateContent']);
-
-            // Keywords
-            Route::get('/keywords/trending', [TrendApiController::class, 'trendingKeywords']);
-            Route::get('/keywords/emerging', [TrendApiController::class, 'emergingKeywords']);
-            Route::get('/keywords/{keyword}/related', [TrendApiController::class, 'relatedKeywords']);
-
-            // Sources
-            Route::get('/sources', [TrendApiController::class, 'sources']);
-            Route::post('/sources', [TrendApiController::class, 'createSource']);
-            Route::put('/sources/{source}', [TrendApiController::class, 'updateSource']);
-            Route::delete('/sources/{source}', [TrendApiController::class, 'deleteSource']);
-
-            // Analytics
-            Route::get('/analytics', [TrendApiController::class, 'analytics']);
         });
 
         // LINE OA Signup Analytics API ถูกลบแล้ว (ใช้ LINE Message Analytics แทน)
@@ -1001,58 +891,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
 // Public Crypto Wallet API (no auth required)
 Route::post('/crypto/generate-nonce', [CryptoWalletApiController::class, 'generateNonce']);
-
-/*
-|--------------------------------------------------------------------------
-| Bot Automation API Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('v1/bot-automation')->middleware('auth:sanctum')->name('api.bot-automation.')->group(function () {
-    // Automations
-    Route::apiResource('automations', \App\Http\Controllers\Api\BotAutomationApiController::class);
-    Route::post('automations/{automation}/execute', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'execute'])->name('automations.execute');
-    Route::get('automations/{automation}/statistics', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'statistics'])->name('automations.statistics');
-
-    // Marketplace
-    Route::get('marketplace', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'marketplace'])->name('marketplace');
-    Route::get('marketplace/{listing}', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'show'])->name('marketplace.show');
-    Route::post('marketplace/{listing}/subscribe', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'subscribe'])->name('marketplace.subscribe');
-    Route::post('marketplace/{listing}/review', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'review'])->name('marketplace.review');
-
-    // Platform Connections
-    Route::get('platforms', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'index'])->name('platforms.index');
-    Route::get('platforms/available', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'available'])->name('platforms.available');
-    Route::post('platforms/connect', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'connect'])->name('platforms.connect');
-    Route::delete('platforms/{connection}', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'disconnect'])->name('platforms.disconnect');
-
-    // Templates
-    Route::apiResource('templates', \App\Http\Controllers\Api\BotTemplateApiController::class);
-    Route::post('templates/{template}/duplicate', [\App\Http\Controllers\Api\BotTemplateApiController::class, 'duplicate'])->name('templates.duplicate');
-
-    // Support
-    Route::get('support/conversations', [\App\Http\Controllers\Api\BotSupportApiController::class, 'conversations'])->name('support.conversations');
-    Route::get('support/conversations/{conversation}', [\App\Http\Controllers\Api\BotSupportApiController::class, 'show'])->name('support.show');
-    Route::post('support/conversations/{conversation}/messages', [\App\Http\Controllers\Api\BotSupportApiController::class, 'sendMessage'])->name('support.send');
-
-    // Sales
-    Route::get('sales/conversations', [\App\Http\Controllers\Api\BotSalesApiController::class, 'conversations'])->name('sales.conversations');
-    Route::get('sales/conversations/{conversation}', [\App\Http\Controllers\Api\BotSalesApiController::class, 'show'])->name('sales.show');
-    Route::post('sales/conversations/{conversation}/recommend', [\App\Http\Controllers\Api\BotSalesApiController::class, 'recommend'])->name('sales.recommend');
-
-    // Analytics
-    Route::get('analytics/overview', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'overview'])->name('analytics.overview');
-    Route::get('analytics/posts', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'posts'])->name('analytics.posts');
-    Route::get('analytics/platforms', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'platforms'])->name('analytics.platforms');
-});
-
-// Bot Automation Webhooks (no auth)
-Route::prefix('webhook/bot')->name('api.webhook.bot.')->group(function () {
-    Route::post('facebook', [\App\Http\Controllers\Api\BotWebhookController::class, 'facebook'])->name('facebook');
-    Route::post('instagram', [\App\Http\Controllers\Api\BotWebhookController::class, 'instagram'])->name('instagram');
-    Route::post('twitter', [\App\Http\Controllers\Api\BotWebhookController::class, 'twitter'])->name('twitter');
-    Route::post('tiktok', [\App\Http\Controllers\Api\BotWebhookController::class, 'tiktok'])->name('tiktok');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -1536,243 +1374,6 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| Snake.io Multiplayer Game API
-|--------------------------------------------------------------------------
-*/
-// ✅ Snake.io Game API - เฉพาะ save score + wallet + skin (multiplayer ย้ายไป Dedicated Server แล้ว)
-Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
-    $controller = \App\Http\Controllers\SnakeGameController::class;
-
-    // บันทึกคะแนน (ต้อง auth และมี wallet เพียงพอ)
-    Route::post('/save-score', [$controller, 'saveScore'])
-        ->name('save-score');
-
-    // ตรวจสอบ wallet
-    Route::get('/check-wallet', [$controller, 'checkWallet'])
-        ->name('check-wallet');
-
-    // บันทึก skin preference (สำหรับสมาชิก)
-    Route::post('/save-skin-preference', [$controller, 'saveSkinPreference'])
-        ->middleware('auth:web')
-        ->name('save-skin-preference');
-
-    // ดึง skin preference (สำหรับสมาชิก)
-    Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
-        ->middleware('auth:web')
-        ->name('get-skin-preference');
-});
-
-// ✅ 8 Ball Pool Game API - wallet, betting, save result
-Route::middleware(['web'])->prefix('games/8ball-pool')->name('api.games.8ball-pool.')->group(function () {
-    $controller = \App\Http\Controllers\PoolGameController::class;
-
-    Route::get('/check-wallet', [$controller, 'checkWallet'])->name('check-wallet');
-    Route::post('/place-bet', [$controller, 'placeBet'])->middleware('auth:web')->name('place-bet');
-    Route::post('/settle-match', [$controller, 'settleMatch'])->middleware('auth:web')->name('settle-match');
-    Route::post('/save-result', [$controller, 'saveResult'])->middleware('auth:web')->name('save-result');
-});
-
-// ✅ Game Configuration API - ดึงค่า config จาก database
-Route::get('/games/config', function () {
-    try {
-        // ดึงค่า config ทั้งหมดของเกมจากทุกกลุ่ม
-        $groups = [
-            'snake_io_server',
-            'snake_io_world',
-            'snake_io_movement',
-            'snake_io_camera',
-            'snake_io_scoring',
-            'snake_io_food',
-            'snake_io_bots',
-            'snake_io_powerups',
-            'snake_io_powerup_magnet',
-            'snake_io_powerup_speed',
-            'snake_io_powerup_multiplier',
-            'snake_io_powerup_zoom',
-            'snake_io_music',
-        ];
-
-        $allConfig = [];
-
-        // ✅ ตรวจสอบว่าตาราง game_settings มีอยู่จริง
-        if (\Illuminate\Support\Facades\Schema::hasTable('game_settings')) {
-            foreach ($groups as $group) {
-                $groupConfig = \App\Models\GameSetting::getGroup($group);
-                // ✅ FIX: Collection ต้องแปลงเป็น array ก่อน array_merge (PHP 8.3 TypeError)
-                $configArray = $groupConfig instanceof \Illuminate\Support\Collection
-                    ? $groupConfig->toArray()
-                    : (array) $groupConfig;
-                $allConfig = array_merge($allConfig, $configArray);
-            }
-        }
-
-        // จัดรูปแบบ response ให้เป็น camelCase และจัดกลุ่ม
-        return response()->json([
-            'success' => true,
-            'data' => [
-                // Server Configuration
-                'server' => [
-                    'ip' => $allConfig['snake_io_server_ip'] ?? '123.253.62.250',
-                    'port' => (int) ($allConfig['snake_io_server_port'] ?? 8080),
-                    'enabled' => filter_var($allConfig['snake_io_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                    'max_players_per_room' => (int) ($allConfig['snake_io_max_players_per_room'] ?? 30),
-                ],
-
-                // World Settings
-                'world' => [
-                    'size' => (int) ($allConfig['world_size'] ?? 200),
-                    'initial_snake_length' => (int) ($allConfig['initial_snake_length'] ?? 5),
-                    'segment_size' => (float) ($allConfig['segment_size'] ?? 0.5),
-                    'collision_distance' => (float) ($allConfig['collision_distance'] ?? 0.6),
-                ],
-
-                // Movement Settings
-                'movement' => [
-                    'speed' => (float) ($allConfig['movement_speed'] ?? 0.15),
-                    'boost_speed' => (float) ($allConfig['boost_speed'] ?? 0.3),
-                    'turn_speed' => (float) ($allConfig['turn_speed'] ?? 0.05),
-                ],
-
-                // Camera Settings
-                'camera' => [
-                    'initial_distance' => (int) ($allConfig['camera_initial_distance'] ?? 15),
-                    'zoomed_out_distance' => (int) ($allConfig['camera_zoomed_out_distance'] ?? 50),
-                    'zoom_speed' => (float) ($allConfig['camera_zoom_speed'] ?? 0.05),
-                ],
-
-                // Scoring System
-                'scoring' => [
-                    'food_value' => (int) ($allConfig['food_value'] ?? 1),
-                    'points_per_growth' => (int) ($allConfig['points_per_growth'] ?? 10),
-                    'score_multiplier_base' => (int) ($allConfig['score_multiplier_base'] ?? 1),
-                    'save_score_enabled' => filter_var($allConfig['save_score_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                ],
-
-                // Food Settings
-                'food' => [
-                    'count' => (int) ($allConfig['food_count'] ?? 100),
-                    'spawn_rate' => (float) ($allConfig['food_spawn_rate'] ?? 0.5),
-                    'lifetime' => (int) ($allConfig['food_lifetime'] ?? 0),
-                    'value_min' => (int) ($allConfig['food_value_min'] ?? 1),
-                    'value_max' => (int) ($allConfig['food_value_max'] ?? 1),
-                ],
-
-                // Bot Settings
-                'bots' => [
-                    'count' => (int) ($allConfig['bot_count'] ?? 30),
-                    'max_spawn_per_frame' => (int) ($allConfig['bot_max_spawn_per_frame'] ?? 2),
-                    'intelligence_level' => (int) ($allConfig['bot_intelligence_level'] ?? 5),
-                ],
-
-                // Powerups - General
-                'powerups' => [
-                    'max_count' => (int) ($allConfig['powerup_max_count'] ?? 4),
-                    'spawn_rate' => (float) ($allConfig['powerup_spawn_rate'] ?? 0.02),
-                    'global_lifetime' => (int) ($allConfig['powerup_global_lifetime'] ?? 30000),
-
-                    // Magnet
-                    'magnet' => [
-                        'enabled' => filter_var($allConfig['magnet_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                        'duration' => (int) ($allConfig['magnet_duration'] ?? 10000),
-                        'spawn_chance' => (float) ($allConfig['magnet_spawn_chance'] ?? 0.25),
-                        'lifetime' => (int) ($allConfig['magnet_lifetime'] ?? 30000),
-                        'range' => (int) ($allConfig['magnet_range'] ?? 10),
-                    ],
-
-                    // Speed Boost
-                    'speed' => [
-                        'enabled' => filter_var($allConfig['speed_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                        'duration' => (int) ($allConfig['speed_duration'] ?? 10000),
-                        'spawn_chance' => (float) ($allConfig['speed_spawn_chance'] ?? 0.25),
-                        'lifetime' => (int) ($allConfig['speed_lifetime'] ?? 30000),
-                        'multiplier' => (float) ($allConfig['speed_multiplier'] ?? 2),
-                    ],
-
-                    // Score Multiplier
-                    'multiplier' => [
-                        'enabled' => filter_var($allConfig['multiplier_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                        'duration' => (int) ($allConfig['multiplier_duration'] ?? 10000),
-                        'spawn_chance' => (float) ($allConfig['multiplier_spawn_chance'] ?? 0.25),
-                        'lifetime' => (int) ($allConfig['multiplier_lifetime'] ?? 30000),
-                        'value' => (int) ($allConfig['multiplier_value'] ?? 2),
-                    ],
-
-                    // Zoom Out
-                    'zoom' => [
-                        'enabled' => filter_var($allConfig['zoom_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                        'duration' => (int) ($allConfig['zoom_duration'] ?? 15000),
-                        'spawn_chance' => (float) ($allConfig['zoom_spawn_chance'] ?? 0.25),
-                        'lifetime' => (int) ($allConfig['zoom_lifetime'] ?? 30000),
-                        'distance' => (int) ($allConfig['zoom_distance'] ?? 50),
-                    ],
-                ],
-
-                // Music & Sound Settings
-                // ✅ FIX: ป้องกัน double-encoded JSON สำหรับ tracks
-                'music' => [
-                    'enabled' => filter_var($allConfig['music_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                    'default_volume' => (float) ($allConfig['music_default_volume'] ?? 0.5),
-                    'title_tracks' => (function () use ($allConfig) {
-                        $raw = $allConfig['music_title_tracks'] ?? '[]';
-                        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
-                        // ถ้า decode แล้วได้ string อีก = double-encoded
-                        if (is_string($decoded)) {
-                            $decoded = json_decode($decoded, true);
-                        }
-
-                        return is_array($decoded) ? $decoded : [];
-                    })(),
-                    'gameplay_tracks' => (function () use ($allConfig) {
-                        $raw = $allConfig['music_gameplay_tracks'] ?? '[]';
-                        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
-                        if (is_string($decoded)) {
-                            $decoded = json_decode($decoded, true);
-                        }
-
-                        return is_array($decoded) ? $decoded : [];
-                    })(),
-                    'sfx_enabled' => filter_var($allConfig['sfx_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                    'sfx_default_volume' => (float) ($allConfig['sfx_default_volume'] ?? 0.7),
-                ],
-            ],
-        ]);
-
-    } catch (\Exception $e) {
-        // ✅ ถ้า database ไม่พร้อม ส่งค่า default กลับเป็น JSON (ไม่ใช่ HTML error)
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'server' => [
-                    'ip' => '123.253.62.250',
-                    'port' => 8080,
-                    'enabled' => true,
-                    'max_players_per_room' => 30,
-                ],
-                'world' => ['size' => 200, 'initial_snake_length' => 5, 'segment_size' => 0.5, 'collision_distance' => 0.6],
-                'movement' => ['speed' => 0.15, 'boost_speed' => 0.3, 'turn_speed' => 0.05],
-                'camera' => ['initial_distance' => 15, 'zoomed_out_distance' => 50, 'zoom_speed' => 0.05],
-                'scoring' => ['food_value' => 1, 'points_per_growth' => 10, 'score_multiplier_base' => 1, 'save_score_enabled' => true],
-                'food' => ['count' => 100, 'spawn_rate' => 0.5, 'lifetime' => 0, 'value_min' => 1, 'value_max' => 1],
-                'bots' => ['count' => 30, 'max_spawn_per_frame' => 2, 'intelligence_level' => 5],
-                'powerups' => [
-                    'max_count' => 4, 'spawn_rate' => 0.02, 'global_lifetime' => 30000,
-                    'magnet' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'range' => 10],
-                    'speed' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'multiplier' => 2],
-                    'multiplier' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'value' => 2],
-                    'zoom' => ['enabled' => true, 'duration' => 15000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'distance' => 50],
-                ],
-                'music' => ['enabled' => true, 'default_volume' => 0.5, 'title_tracks' => [], 'gameplay_tracks' => [], 'sfx_enabled' => true, 'sfx_default_volume' => 0.7],
-            ],
-            'fallback' => true,
-            'error' => $e->getMessage(),
-        ]);
-    }
-})->name('api.games.config');
-
-// ✅ Admin Snake.io API ถูกย้ายไปที่ Dedicated Game Server (C# WPF) แล้ว
-// ✅ Snake Sync API ถูกย้ายไปที่ Dedicated Game Server (C# WebSocket) แล้ว
 
 // ============================================
 // Google Maps API (V1)

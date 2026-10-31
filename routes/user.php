@@ -5,7 +5,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\User\CryptoExchangeController;
 use App\Http\Controllers\User\CryptoWalletController;
 use App\Http\Controllers\User\DashboardController;
-use App\Http\Controllers\User\InvestmentController;
 use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\MarketplaceController;
 use App\Http\Controllers\User\NFCCardController;
@@ -56,6 +55,13 @@ Route::get('/profile', [DashboardController::class, 'profile'])->name('profile')
 Route::put('/profile', [DashboardController::class, 'updateProfile'])
     ->middleware('two-factor:profile_change')
     ->name('profile.update');
+// 🔒 (2026-10-29) เปลี่ยนอีเมลต้องยืนยันตัวตน — ส่งรหัส 6 หลัก (อีเมลเดิมหรืออีเมลใหม่ตามชนิดบัญชี) + ส่งลิงก์ยืนยันซ้ำ
+Route::post('/profile/email/send-code', [DashboardController::class, 'sendEmailChangeCode'])
+    ->middleware('throttle:5,10,profile-email-code')
+    ->name('profile.email.send-code');
+Route::post('/profile/email/resend-verification', [DashboardController::class, 'resendEmailVerification'])
+    ->middleware('throttle:3,10,profile-email-verify')
+    ->name('profile.email.resend-verification');
 Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])
     ->middleware(['turnstile:password_change', 'two-factor:password_change'])
     ->name('profile.update-password');
@@ -87,6 +93,11 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/create', [KycController::class, 'create'])->name('create');
     Route::post('/', [KycController::class, 'store'])->name('store');
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
+    // 🔒 (2026-10-29) รูปบัตร/รูปคู่บัตรของตัวเอง — เดิมเปิดตรงจาก /storage/… ได้ทุกคน · ตอนนี้เจ้าของเท่านั้น (คนอื่น = 404)
+    Route::get('/{kycVerification}/image/{kind}', [KycController::class, 'image'])
+        ->whereIn('kind', array_keys(\App\Services\Kyc\KycDocumentStorage::KINDS))
+        ->middleware('throttle:120,1,user-kyc-image')
+        ->name('image');
 });
 
 // 🏪 (2026-09-25) สมัครเปิดร้านค้า (SELLER-07) — ยื่นคำขอ → แอดมินอนุมัติที่ admin.seller-applications.*
@@ -130,7 +141,7 @@ Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid:soft')->g
     // Transfer Routes
     Route::get('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/transfer', [WalletController::class, 'submitTransfer'])
-        ->middleware('two-factor:transfer')
+        ->middleware(['two-factor:transfer', 'throttle:10,1']) // จำกัดความถี่ กันเดา PIN/ยิงซ้ำ (หน้า QR จำกัด 5/นาที)
         ->name('transfer.submit');
 
     // QR Code Transfer Routes (พร้อมระบบป้องกัน)
@@ -296,9 +307,6 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
 
     // My Tokens (Creator View)
-    Route::get('/my/tokens', [\App\Http\Controllers\User\TokenController::class, 'myTokens'])->name('my-tokens');
-    Route::get('/my/balances', [\App\Http\Controllers\User\TokenController::class, 'myBalances'])->name('my-balances');
-    Route::get('/my/portfolio', [\App\Http\Controllers\User\TokenController::class, 'portfolio'])->name('portfolio');
 
     // Create Token
     Route::get('/create', [\App\Http\Controllers\User\TokenController::class, 'create'])->name('create');
@@ -321,7 +329,6 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::get('/referrals', [\App\Http\Controllers\User\TokenController::class, 'referrals'])->name('referrals');
     Route::post('/referrals/use', [\App\Http\Controllers\User\TokenController::class, 'useReferralCode'])->name('referrals.use');
     Route::post('/referrals/verify', [\App\Http\Controllers\User\TokenController::class, 'verifyReferralCode'])->name('referrals.verify');
-    Route::get('/referrals/my-codes', [\App\Http\Controllers\User\TokenController::class, 'myReferralCodes'])->name('referrals.my-codes');
 
     // Token Transactions History
     Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
@@ -461,9 +468,6 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
 // Product & Store Interactions (User)
 Route::prefix('interactions')->name('interactions.')->group(function () {
     // รายการโปรด (Wishlist)
-    Route::get('/wishlist', [\App\Http\Controllers\User\ProductInteractionController::class, 'wishlist'])->name('wishlist');
-    Route::get('/recently-viewed', [\App\Http\Controllers\User\ProductInteractionController::class, 'recentlyViewed'])->name('recently-viewed');
-    Route::get('/following-stores', [\App\Http\Controllers\User\ProductInteractionController::class, 'followingStores'])->name('following-stores');
 
     // Product Interactions
     Route::post('/products/{product}/like', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleLike'])->name('products.like');
@@ -477,51 +481,25 @@ Route::prefix('interactions')->name('interactions.')->group(function () {
     Route::get('/stores/{store}/status', [\App\Http\Controllers\User\ProductInteractionController::class, 'getStoreStatus'])->name('stores.status');
 });
 
-// Coupon System (User)
-Route::prefix('coupons')->name('coupons.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\User\CouponController::class, 'index'])->name('index');
-    Route::get('/available', [\App\Http\Controllers\User\CouponController::class, 'available'])->name('available');
-    Route::post('/{coupon}/collect', [\App\Http\Controllers\User\CouponController::class, 'collect'])->name('collect');
-    Route::get('/history', [\App\Http\Controllers\User\CouponController::class, 'history'])->name('history');
-});
-
-// Premium Stores (User)
-Route::prefix('premium-stores')->name('premium-stores.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\User\PremiumStoreController::class, 'index'])->name('index');
-    Route::get('/{store}', [\App\Http\Controllers\User\PremiumStoreController::class, 'show'])->name('show');
-});
-
-// Investment & Staking System (User)
-Route::prefix('investments')->name('investments.')->group(function () {
-    Route::get('/', [InvestmentController::class, 'index'])->name('index');
-    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans');
-    Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan'])->name('plans.show');
-    Route::get('/history', [InvestmentController::class, 'history'])->name('history');
-    Route::post('/invest', [InvestmentController::class, 'store'])->name('store');
-    Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI'])->name('calculate-roi');
-
-    Route::get('/{position}', [InvestmentController::class, 'show'])->name('show');
-    Route::post('/{position}/withdraw', [InvestmentController::class, 'withdraw'])->name('withdraw');
-    Route::get('/{position}/distributions', [InvestmentController::class, 'distributions'])->name('distributions');
-});
-
 // Two-Factor Authentication Management
 Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::get('/setup', [TwoFactorController::class, 'setup'])->name('setup');
-    Route::post('/enable', [TwoFactorController::class, 'enable'])->name('enable');
-    Route::post('/disable', [TwoFactorController::class, 'disable'])->name('disable');
+    Route::post('/enable', [TwoFactorController::class, 'enable'])->middleware('throttle:10,1,2fa-manage')->name('enable');
+    Route::post('/disable', [TwoFactorController::class, 'disable'])->middleware('throttle:10,1,2fa-manage')->name('disable');
     Route::get('/verify', [TwoFactorController::class, 'verify'])->name('verify');
-    Route::post('/send-code', [TwoFactorController::class, 'sendCode'])->name('send-code');
-    Route::post('/verify-code', [TwoFactorController::class, 'verifyCode'])->name('verify-code');
-    Route::post('/verify-recovery-code', [TwoFactorController::class, 'verifyRecoveryCode'])->name('verify-recovery-code');
+    // 🔒 (2026-10-29) เดิมไม่จำกัด: ขอ OTP วนได้ไม่จบ (ค่า SMS + โควต้า LINE push 300/เดือน) — ตัวนับใน OtpVerification ไม่เคยเกิน 1 เพราะลบแถวเก่าทุกครั้ง
+    Route::post('/send-code', [TwoFactorController::class, 'sendCode'])->middleware(['throttle:3,1,2fa-send', 'throttle:10,60,2fa-send-hour'])->name('send-code');
+    // 🔒 เดาได้ 5 ครั้ง/นาที (ใช้ถังเดียวกับรหัสกู้คืน) — เดิมเดารหัส 6 หลักได้ไม่จำกัด
+    Route::post('/verify-code', [TwoFactorController::class, 'verifyCode'])->middleware('throttle:5,1,2fa-verify')->name('verify-code');
+    Route::post('/verify-recovery-code', [TwoFactorController::class, 'verifyRecoveryCode'])->middleware('throttle:5,1,2fa-verify')->name('verify-recovery-code');
     Route::get('/recovery-codes', [TwoFactorController::class, 'showRecoveryCodes'])->name('recovery-codes');
-    Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
+    Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->middleware('throttle:10,1,2fa-manage')->name('regenerate-recovery-codes');
     Route::delete('/trusted-devices/{fingerprint}', [TwoFactorController::class, 'removeTrustedDevice'])->name('remove-trusted-device');
     Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
 
     // Google Authenticator routes
-    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->name('generate-authenticator');
-    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->name('verify-authenticator-setup');
+    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->middleware('throttle:10,1,2fa-setup')->name('generate-authenticator');
+    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->middleware('throttle:10,1,2fa-setup')->name('verify-authenticator-setup');
 });
 
 // Redirect old user shop to main frontend shop
@@ -539,16 +517,9 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     // 🎫 (2026-10-06) ตั๋วใหม่ 1 ใบ = แจ้งเตือน + push ถึงทีมงานสูงสุด 50 คน → จำกัด 5 ใบ/10 นาทีต่อบัญชี (ถังแยกชื่อ ticket-store)
     Route::post('/', [TicketController::class, 'store'])->middleware('throttle:5,10,ticket-store')->name('store');
     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
-    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    // 🎫 (2026-10-29) ตอบกลับ 1 ครั้ง = แจ้งเตือนทีมงาน → จำกัด 10 ครั้ง/นาที
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->middleware('throttle:10,1,ticket-reply')->name('reply');
     Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');
-});
-
-// AI Gen System (User)
-Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\User\AiGenController::class, 'index'])->name('index');
-    Route::get('/packages', [\App\Http\Controllers\User\AiGenController::class, 'packages'])->name('packages');
-    Route::get('/my-creations', [\App\Http\Controllers\User\AiGenController::class, 'myCreations'])->name('my-creations');
-    Route::get('/explore', [\App\Http\Controllers\User\AiGenController::class, 'explore'])->name('explore');
 });
 
 // Recruit Page Management (User - เครื่องมือการตลาด)
@@ -608,26 +579,6 @@ Route::prefix('service-reviews')->name('service-reviews.')->group(function () {
 });
 
 // ============================================
-// Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)
-// ============================================
-Route::prefix('video-missions')->name('video-missions.')->group(function () {
-    // Main pages
-    Route::get('/', [\App\Http\Controllers\User\VideoMissionController::class, 'index'])->name('index');
-    Route::get('/list', [\App\Http\Controllers\User\VideoMissionController::class, 'missions'])->name('list');
-    Route::get('/history', [\App\Http\Controllers\User\VideoMissionController::class, 'history'])->name('history');
-
-    // Mission detail & watch
-    Route::get('/mission/{mission}', [\App\Http\Controllers\User\VideoMissionController::class, 'show'])->name('show');
-    Route::get('/mission/{mission}/watch', [\App\Http\Controllers\User\VideoMissionController::class, 'watch'])->name('watch');
-
-    // API endpoints for video watching
-    Route::post('/completion/{completion}/heartbeat', [\App\Http\Controllers\User\VideoMissionController::class, 'heartbeat'])->name('completion.heartbeat');
-    Route::post('/completion/{completion}/event', [\App\Http\Controllers\User\VideoMissionController::class, 'recordEvent'])->name('completion.event');
-    Route::post('/completion/{completion}/complete', [\App\Http\Controllers\User\VideoMissionController::class, 'complete'])->name('completion.complete');
-    Route::post('/completion/{completion}/cancel', [\App\Http\Controllers\User\VideoMissionController::class, 'cancel'])->name('completion.cancel');
-});
-
-// ============================================
 // Video Coins Routes (ระบบ Video Coins)
 // ============================================
 Route::prefix('video-coins')->name('video-coins.')->group(function () {
@@ -644,45 +595,6 @@ Route::prefix('video-coins')->name('video-coins.')->group(function () {
     Route::get('/exchange', [\App\Http\Controllers\User\VideoCoinController::class, 'exchange'])->name('exchange');
     Route::post('/exchange', [\App\Http\Controllers\User\VideoCoinController::class, 'submitExchange'])->name('exchange.submit');
 });
-
-// ============================================
-// Coin Shop Routes (ร้านค้า Coins)
-// ============================================
-Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
-    // หน้าร้านค้า
-    Route::get('/', [\App\Http\Controllers\User\CoinShopController::class, 'index'])->name('index');
-    Route::get('/product/{product}', [\App\Http\Controllers\User\CoinShopController::class, 'show'])->name('product');
-
-    // การซื้อสินค้า
-    Route::post('/product/{product}/purchase', [\App\Http\Controllers\User\CoinShopController::class, 'purchase'])->name('purchase');
-    Route::get('/purchase/{purchase}/success', [\App\Http\Controllers\User\CoinShopController::class, 'purchaseSuccess'])->name('purchase-success');
-
-    // ประวัติการซื้อ
-    Route::get('/my-purchases', [\App\Http\Controllers\User\CoinShopController::class, 'myPurchases'])->name('my-purchases');
-    Route::get('/purchase/{purchase}', [\App\Http\Controllers\User\CoinShopController::class, 'purchaseDetail'])->name('purchase-detail');
-
-    // ใช้งานสินค้า
-    Route::post('/purchase/{purchase}/use', [\App\Http\Controllers\User\CoinShopController::class, 'useItem'])->name('use-item');
-});
-
-// ============================================
-// Star Upgrade Routes (อัพเกรดดาวด้วย Coins)
-// ============================================
-Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
-    // หน้าหลัก - ดูดาวปัจจุบันและตัวเลือกอัพเกรด
-    Route::get('/', [\App\Http\Controllers\User\StarUpgradeController::class, 'index'])->name('index');
-
-    // ดำเนินการอัพเกรด
-    Route::post('/upgrade', [\App\Http\Controllers\User\StarUpgradeController::class, 'upgrade'])->name('upgrade');
-
-    // ประวัติการอัพเกรด
-    Route::get('/history', [\App\Http\Controllers\User\StarUpgradeController::class, 'history'])->name('history');
-
-    // API: ตรวจสอบการอัพเกรด
-    Route::post('/check', [\App\Http\Controllers\User\StarUpgradeController::class, 'checkUpgrade'])->name('check');
-});
-
-// 🗑️ (2026-10-13) Academy เดิม (user.academy.*) ถูกลบทั้งชุดตามคำสั่งเจ้าของ — ข้อมูลสำรองที่ backups/academy-legacy-*
 
 // ============================================
 // Rider System Routes (ระบบไรเดอร์)
@@ -738,15 +650,8 @@ Route::prefix('rider')->name('rider.')->controller(\App\Http\Controllers\User\Ri
 // STORE RATING - ให้คะแนนร้านค้า
 // ========================================
 Route::prefix('store-rating')->name('store-rating.')->group(function () {
-    // ประวัติการให้คะแนน
-    Route::get('/history', [\App\Http\Controllers\User\StoreRatingController::class, 'history'])->name('history');
-
     // ให้คะแนนร้านค้า
-    Route::get('/{store}/create', [\App\Http\Controllers\User\StoreRatingController::class, 'create'])->name('create');
     Route::post('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'store'])->name('store');
-
-    // ดูคะแนนร้านค้า (public)
-    Route::get('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'showStoreRatings'])->name('show');
 
     // ลบคะแนน
     Route::delete('/{rating}', [\App\Http\Controllers\User\StoreRatingController::class, 'destroy'])->name('destroy');

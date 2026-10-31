@@ -384,29 +384,6 @@ class SettingsController extends Controller
     }
 
     /**
-     * Update theme colors
-     */
-    public function updateTheme(Request $request)
-    {
-        $validated = $request->validate([
-            'theme_primary_start' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-            'theme_primary_end' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-            'theme_secondary_start' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-            'theme_secondary_end' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-            'theme_accent_start' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-            'theme_accent_end' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
-        ]);
-
-        foreach ($validated as $key => $value) {
-            if ($value !== null) {
-                Setting::set($key, $value, 'string', 'theme');
-            }
-        }
-
-        return back()->with('success', 'Theme colors updated successfully.');
-    }
-
-    /**
      * ตรวจสอบว่า storage symlink มีอยู่หรือไม่
      */
     protected function checkStorageLink(): bool

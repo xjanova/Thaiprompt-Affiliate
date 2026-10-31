@@ -203,17 +203,6 @@ return [
         'model' => env('AI_MODEL_OPENAI', 'gpt-4o-mini'),
     ],
 
-    'gemini' => [
-        'api_key' => env('GEMINI_API_KEY', ''),
-        'model' => env('AI_MODEL_GEMINI', 'gemini-2.5-flash'),
-        'tts_model' => env('AI_TTS_MODEL', 'gemini-2.5-flash-preview-tts'),
-    ],
-
-    // แชทน้องหญิงในแอพ (Api\V1\AiChatApiController) — gemini / claude / openai
-    'nongying_chat' => [
-        'provider' => env('AI_PROVIDER', 'gemini'),
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Web search (เครื่องมือค้นเว็บของ AI)
@@ -236,13 +225,11 @@ return [
     | GitHub
     |--------------------------------------------------------------------------
     |
-    | token: อ่าน release ของ repo (app:backfill-releases) — ว่างได้ถ้า repo เป็น public
     | webhook_secret: ตรวจลายเซ็น webhook — ว่าง = ปฏิเสธ webhook ทั้งหมด
     |
     */
 
     'github' => [
-        'token' => env('GITHUB_TOKEN', ''),
         'webhook_secret' => env('GITHUB_WEBHOOK_SECRET', ''),
     ],
 
@@ -262,19 +249,6 @@ return [
 
     'ipqualityscore' => [
         'api_key' => env('IPQUALITYSCORE_API_KEY', ''),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Huggingface
-    |--------------------------------------------------------------------------
-    |
-    | token ดาวน์โหลดโมเดล AI ของแอพ thaiapp — รับได้ 3 ชื่อ env ตามที่เคยใช้กันมา
-    |
-    */
-
-    'huggingface' => [
-        'token' => env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN') ?: '',
     ],
 
     'google_cloud' => [

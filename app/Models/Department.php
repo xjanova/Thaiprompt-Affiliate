@@ -94,14 +94,6 @@ class Department extends Model
     }
 
     /**
-     * Get all job postings for this department
-     */
-    public function jobPostings()
-    {
-        return $this->hasMany(JobPosting::class);
-    }
-
-    /**
      * Scope: ตามร้านค้า
      */
     public function scopeByStore($query, $storeId)

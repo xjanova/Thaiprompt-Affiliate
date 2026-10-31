@@ -8,6 +8,18 @@
     // ── สถานะ KYC → ป้ายสี (hex แทน dynamic tailwind) ──────────
     $kycVerified = $user->isKycVerified();
     $kycPending  = $user->isKycPending();
+
+    // 🔒 วิธียืนยันเมื่อเปลี่ยนอีเมล (ส่งมาจาก DashboardController::profile — คำนวณเองถ้าไม่ได้ส่งมา)
+    $emailChangeMode ??= app(\App\Services\AccountEmailChangeService::class)->mode($user);
+    $emailIsReal ??= \App\Support\AccountEmail::isDeliverable($user->email);
+    $currentEmailMasked ??= $emailIsReal ? \App\Support\AccountEmail::mask((string) $user->email) : null;
+
+    // Turnstile ของการเปลี่ยนรหัสผ่าน (route update-password ตรวจ point password_change)
+    $pwTurnstile = config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.password_change');
+
+    // ตัวอักษรแรกของชื่อ (mb_ — ชื่อไทยใช้ substr จะได้ไบต์ครึ่งตัว)
+    $initial = mb_strtoupper(mb_substr(trim((string) $user->name) ?: 'U', 0, 1));
+    $fallbackAvatar = 'data:image/svg+xml;charset=utf-8,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#c8a24a"/><text x="100" y="128" font-size="92" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">'.e($initial).'</text></svg>');
 @endphp
 
 @section('content')
@@ -116,7 +128,7 @@
                                         <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
                                              alt="{{ $user->name }}"
                                              style="width:100%; height:100%; object-fit:cover; border-radius:50%;"
-                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=c8a24a&color=fff&size=200';">
+                                             onerror="this.onerror=null; this.src={{ \Illuminate\Support\Js::from($fallbackAvatar) }};">
                                     </div>
                                 </div>
                             </div>
@@ -222,13 +234,22 @@
                             @enderror
                         </div>
 
-                        {{-- อีเมล --}}
-                        <div style="grid-column:1 / -1;">
+                        {{-- อีเมล — 🔒 เปลี่ยนอีเมลต้องยืนยันตัวตน (AccountEmailChangeService) ช่องยืนยันโผล่เมื่ออีเมลต่างจากเดิม --}}
+                        <div style="grid-column:1 / -1;"
+                             x-data="emailChangeBox({
+                                 current: @js((string) $user->email),
+                                 initial: @js((string) old('email', $user->email)),
+                                 mode: @js($emailChangeMode),
+                                 useCode: @js((bool) $errors->has('email_code') && $emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD),
+                                 sendUrl: @js(route('user.profile.email.send-code')),
+                                 csrf: @js(csrf_token()),
+                             })">
                             <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
                                 <i class="fas fa-envelope" style="color:var(--deep1);"></i> อีเมล <span style="color:#d9534f;">*</span>
                             </label>
                             <input type="email"
                                    name="email"
+                                   x-model="email"
                                    value="{{ old('email', $user->email) }}"
                                    required
                                    class="tp-input"
@@ -237,6 +258,71 @@
                             @error('email')
                                 <p style="margin-top:5px; font-size:12px; color:#d9534f;">{{ $message }}</p>
                             @enderror
+
+                            {{-- สถานะยืนยันอีเมลปัจจุบัน (อีเมลระบบของบัญชี LINE/FB ไม่แสดง) --}}
+                            @if($emailIsReal && ! $user->email_verified_at)
+                                <p x-show="!changed" style="margin-top:6px; font-size:12px; color:#b7791f;">
+                                    <i class="fas fa-circle-exclamation"></i> อีเมลนี้ยังไม่ได้ยืนยัน
+                                    <button type="submit" form="nvm-email-verify-form" style="background:none; border:0; padding:0; color:var(--deep1); font-weight:700; cursor:pointer; text-decoration:underline;">ส่งลิงก์ยืนยันอีกครั้ง</button>
+                                </p>
+                            @elseif(! $emailIsReal)
+                                <p x-show="!changed" style="margin-top:6px; font-size:12px; color:var(--ink2);">
+                                    <i class="fas fa-circle-info"></i> บัญชีนี้ยังใช้อีเมลที่ระบบตั้งให้ แนะนำให้เปลี่ยนเป็นอีเมลจริงของคุณ เพื่อใช้ยืนยันตัวตนและรับข่าวสาร
+                                </p>
+                            @endif
+
+                            {{-- ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล --}}
+                            <template x-if="changed">
+                                <div style="margin-top:10px; padding:14px 16px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid var(--deep1); display:flex; flex-direction:column; gap:10px;">
+                                    @if($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD)
+                                        <p style="margin:0; font-size:12.5px; color:var(--ink); line-height:1.7;">
+                                            <i class="fas fa-shield-halved" style="color:var(--deep1);"></i>
+                                            การเปลี่ยนอีเมลต้องยืนยันว่าเป็นเจ้าของบัญชี หลังบันทึก ระบบจะส่งลิงก์ยืนยันไปที่อีเมลใหม่ และแจ้งเตือนไปที่อีเมลเดิม
+                                        </p>
+
+                                        <div x-show="!useCode">
+                                            <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">
+                                                <i class="fas fa-lock" style="color:#d9534f;"></i> รหัสผ่านปัจจุบัน <span style="color:#d9534f;">*</span>
+                                            </label>
+                                            <input type="password" name="email_password" :required="!useCode" :disabled="useCode"
+                                                   autocomplete="current-password" maxlength="255"
+                                                   placeholder="ใส่รหัสผ่านปัจจุบันเพื่อยืนยัน"
+                                                   class="tp-input" style="width:100%;">
+                                            <button type="button" @click="useCode = true" style="margin-top:6px; background:none; border:0; padding:0; font-size:12px; color:var(--deep1); cursor:pointer; text-decoration:underline;">
+                                                ไม่รู้รหัสผ่าน (สมัครด้วย Google/LINE/Facebook)? รับรหัสยืนยันทางอีเมลเดิม {{ $currentEmailMasked }}
+                                            </button>
+                                        </div>
+                                    @else
+                                        <p style="margin:0; font-size:12.5px; color:var(--ink); line-height:1.7;">
+                                            <i class="fas fa-shield-halved" style="color:var(--deep1);"></i>
+                                            บัญชีนี้สมัครผ่าน LINE/Facebook จึงยืนยันด้วยรหัส 6 หลักที่ส่งไปที่อีเมลใหม่ — กดส่งรหัส แล้วกรอกรหัสก่อนกดบันทึก
+                                        </p>
+                                    @endif
+
+                                    <div x-show="mode !== 'password' || useCode" style="display:flex; flex-direction:column; gap:8px;">
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                            <button type="button" class="tp-btn" style="min-height:44px;" @click="sendCode()" :disabled="sending || cooldown > 0">
+                                                <i class="fas fa-paper-plane"></i>
+                                                <span x-text="sending ? 'กำลังส่ง...' : (cooldown > 0 ? ('ส่งใหม่ได้ใน ' + cooldown + ' วินาที') : (sent ? 'ส่งรหัสอีกครั้ง' : @js($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD ? 'ส่งรหัสไปที่อีเมลเดิม' : 'ส่งรหัสไปที่อีเมลใหม่')))"></span>
+                                            </button>
+                                            @if($emailChangeMode === \App\Services\AccountEmailChangeService::MODE_PASSWORD)
+                                                <button type="button" @click="useCode = false" style="background:none; border:0; padding:0; font-size:12px; color:var(--deep1); cursor:pointer; text-decoration:underline;">ใช้รหัสผ่านแทน</button>
+                                            @endif
+                                        </div>
+                                        <p x-show="notice" x-text="notice" :style="'margin:0; font-size:12px; color:' + (noticeOk ? '#3c8a64' : '#d9534f')"></p>
+                                        <input type="text" name="email_code" :required="mode !== 'password' || useCode" :disabled="mode === 'password' && !useCode"
+                                               inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"
+                                               placeholder="รหัส 6 หลักจากอีเมล" title="กรอกรหัสตัวเลข 6 หลักที่ได้รับทางอีเมล"
+                                               class="tp-input tp-num" style="width:100%; max-width:220px; letter-spacing:4px;">
+                                    </div>
+
+                                    @foreach(['email_password', 'email_code'] as $field)
+                                        @error($field)
+                                            <p role="alert" style="margin:0; font-size:12px; color:#d9534f;"><i class="fas fa-circle-exclamation"></i> {{ $message }}</p>
+                                        @enderror
+                                    @endforeach
+                                </div>
+                            </template>
                         </div>
 
                         {{-- เบอร์โทรศัพท์ --}}
@@ -477,6 +563,14 @@
                         <h2 style="font-size:17px; font-weight:700; margin:0;">เปลี่ยนรหัสผ่าน</h2>
                     </div>
 
+                    {{-- 🐛 (2026-10-29) เดิมไม่แสดง error ของฟอร์มนี้เลย — รหัสอ่อน/ยืนยันไม่ตรง หน้าแค่โหลดใหม่เงียบๆ --}}
+                    @php $pwErrors = collect(['current_password', 'new_password', 'turnstile'])->flatMap(fn ($k) => $errors->get($k)); @endphp
+                    @if($pwErrors->isNotEmpty())
+                        <div id="nvm-pw-errors" role="alert" style="margin-bottom:14px; padding:12px 14px; border-radius:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f; font-size:12.5px; color:#d9534f;">
+                            @foreach($pwErrors as $msg)<div><i class="fas fa-circle-exclamation"></i> {{ $msg }}</div>@endforeach
+                        </div>
+                    @endif
+
                     <div style="display:flex; flex-direction:column; gap:14px;">
                         {{-- รหัสผ่านปัจจุบัน --}}
                         <div>
@@ -486,7 +580,8 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="current_password"
-                                       placeholder="ใส่รหัสผ่านปัจจุบัน (ถ้าต้องการเปลี่ยน)"
+                                       form="nvm-pw-form" required autocomplete="current-password"
+                                       placeholder="ใส่รหัสผ่านปัจจุบัน"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
                                 <button type="button"
@@ -506,6 +601,7 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password"
+                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
                                        placeholder="ใส่รหัสผ่านใหม่"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
@@ -526,6 +622,7 @@
                             <div style="position:relative;" x-data="{ showPassword: false }">
                                 <input :type="showPassword ? 'text' : 'password'"
                                        name="new_password_confirmation"
+                                       form="nvm-pw-form" required minlength="8" autocomplete="new-password"
                                        placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง"
                                        class="tp-input"
                                        style="width:100%; padding-right:44px;">
@@ -542,10 +639,30 @@
                             <i class="fas fa-circle-info"></i>
                             รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
                         </div>
+
+                        @if($pwTurnstile)
+                            {{-- widget อยู่ในฟอร์มโปรไฟล์ทาง DOM → ปิดช่องอัตโนมัติแล้วส่ง token เข้าฟอร์มรหัสผ่านทาง callback --}}
+                            <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="{{ config('turnstile.theme') }}" data-size="{{ config('turnstile.size') }}" data-response-field="false" data-callback="nvmPwTurnstile" data-expired-callback="nvmPwTurnstileReset"></div>
+                            <input type="hidden" id="nvm-pw-ts" name="cf-turnstile-response" form="nvm-pw-form">
+                        @endif
+
+                        <button type="submit" form="nvm-pw-form" class="tp-btn tp-btn-primary" style="align-self:flex-start;">
+                            <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+    </form>
+
+    {{-- 🔒 ฟอร์มเปลี่ยนรหัสผ่านแยกจากฟอร์มโปรไฟล์ — ผ่าน turnstile + 2FA (password_change) ตาม route --}}
+    <form id="nvm-pw-form" method="POST" action="{{ route('user.profile.update-password') }}">
+        @csrf
+    </form>
+
+    {{-- ส่งลิงก์ยืนยันอีเมลซ้ำ (ปุ่มอยู่ใต้ช่องอีเมล — ฟอร์มแยกจากฟอร์มโปรไฟล์) --}}
+    <form id="nvm-email-verify-form" method="POST" action="{{ route('user.profile.email.resend-verification') }}">
+        @csrf
     </form>
 
     {{-- ── ปุ่มบันทึกลอย (Floating Save) ──────────────────────── --}}
@@ -575,7 +692,104 @@
 </div>
 
 @push('scripts')
+@if($pwTurnstile)
 <script>
+    // token Turnstile → ช่องในฟอร์มเปลี่ยนรหัสผ่าน
+    window.nvmPwTurnstile = (token) => { document.getElementById('nvm-pw-ts').value = token; };
+    window.nvmPwTurnstileReset = () => { document.getElementById('nvm-pw-ts').value = ''; };
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
+<script>
+/**
+ * 🔒 ช่องยืนยันตัวตนเมื่อเปลี่ยนอีเมล — โผล่เมื่ออีเมลที่พิมพ์ต่างจากอีเมลปัจจุบัน
+ *
+ * mode 'password'       : รหัสผ่านปัจจุบัน หรือ (useCode) รหัส 6 หลักที่ส่งไปอีเมลเดิม
+ * mode 'new_email_code' : รหัส 6 หลักที่ส่งไปอีเมลใหม่ (บัญชี LINE/Facebook ที่ระบบตั้งอีเมลให้)
+ */
+function emailChangeBox(cfg) {
+    return {
+        email: cfg.initial || '',
+        current: cfg.current || '',
+        mode: cfg.mode,
+        useCode: !!cfg.useCode,
+        sending: false,
+        sent: false,
+        notice: '',
+        noticeOk: true,
+        cooldown: 0,
+        timer: null,
+
+        get changed() {
+            const typed = this.email.trim().toLowerCase();
+            return typed !== '' && typed !== this.current.trim().toLowerCase();
+        },
+
+        init() {
+            // รหัสผูกกับอีเมลใหม่ที่ขอ — แก้อีเมลหลังส่งรหัสแล้ว ต้องขอรหัสใหม่
+            this.$watch('email', () => { this.sent = false; this.notice = ''; });
+        },
+
+        destroy() {
+            clearInterval(this.timer);
+        },
+
+        startCooldown(seconds) {
+            clearInterval(this.timer);
+            this.cooldown = Math.max(1, parseInt(seconds, 10) || 60);
+            this.timer = setInterval(() => {
+                this.cooldown--;
+                if (this.cooldown <= 0) { clearInterval(this.timer); this.cooldown = 0; }
+            }, 1000);
+        },
+
+        async sendCode() {
+            if (this.sending || this.cooldown > 0) return;
+            this.sending = true;
+            this.notice = '';
+
+            try {
+                const res = await fetch(cfg.sendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': cfg.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ new_email: this.email.trim() }),
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.success) {
+                    this.sent = true;
+                    this.noticeOk = true;
+                    this.notice = data.message;
+                    this.startCooldown(60);
+                    return;
+                }
+
+                this.noticeOk = false;
+                const firstError = data.errors ? Object.values(data.errors).flat()[0] : null;
+                if (res.status === 419) {
+                    this.notice = 'หน้านี้เปิดค้างนานเกินไป กรุณารีเฟรชหน้าแล้วลองใหม่';
+                } else if (res.status === 429 && data.success === undefined) {
+                    // ชน throttle ของ route (ข้อความเดิมเป็นภาษาอังกฤษ)
+                    this.notice = 'ขอรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่';
+                } else {
+                    this.notice = firstError || data.message || 'ส่งรหัสไม่สำเร็จ กรุณาลองใหม่';
+                }
+                if (data.retry_after) this.startCooldown(data.retry_after);
+            } catch (e) {
+                this.noticeOk = false;
+                this.notice = 'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+            } finally {
+                this.sending = false;
+            }
+        },
+    };
+}
+
 /**
  * Profile Manager - Alpine.js Component
  */
@@ -590,6 +804,8 @@ function profileManager() {
             if (form) {
                 const inputs = form.querySelectorAll('input, select, textarea');
                 inputs.forEach(input => {
+                    // ช่องรหัสผ่านเป็นของฟอร์มแยก (form="nvm-pw-form") — ไม่นับเป็นการแก้โปรไฟล์
+                    if (input.form !== form) return;
                     input.addEventListener('input', () => {
                         this.formChanged = true;
                     });

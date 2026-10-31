@@ -32,12 +32,6 @@ class AppServiceProvider extends ServiceProvider
         //    (เดิมสร้างใหม่ทุกข้อความ = แลก token ใหม่ทุก push · ส่งหลายเครื่องในงานเดียวช้าเกินจำเป็น)
         $this->app->singleton(\App\Services\Fcm\FcmHttpV1Client::class);
 
-        // Register InvestmentService as singleton
-        $this->app->singleton(\App\Services\InvestmentService::class);
-
-        // Register StakingService as singleton
-        $this->app->singleton(\App\Services\StakingService::class);
-
         // 🪙 (2026-10-13) ชำระด้วย TPIX — ตั้งค่า/ราคาจำในโปรเซสแบบมีอายุ (หน้ารายการสินค้าเรียกหลายสิบครั้ง)
         $this->app->singleton(\App\Services\TpixPay\TpixPaySettings::class);
         $this->app->singleton(\App\Services\TpixPay\TpixPriceService::class);

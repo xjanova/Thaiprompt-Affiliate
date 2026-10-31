@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\MenuItem;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -10,16 +9,15 @@ use Illuminate\Support\Facades\Schema;
  * Menu Service
  *
  * จัดการเมนูทั้งหมดในระบบ
- * - ดึงเมนูจาก Database (primary) หรือ config (fallback)
+ * - ดึงเมนูจาก config/menus.php เท่านั้น
  * - รวมเมนูจาก Feature Providers
- * - กรองตาม permissions และ role settings
+ * - กรองตาม permissions
  * - แปลง route names เป็น URLs
  *
  * @version 3.1.0
  *
  * @since 2025-11-15
  *
- * @updated 2025-12-04 - เพิ่มการดึงเมนูจาก Database และ Role Settings
  */
 class MenuService
 {
@@ -27,11 +25,6 @@ class MenuService
      * MenuRegistrar instance สำหรับรวบรวมเมนูจาก providers
      */
     protected $registrar;
-
-    /**
-     * Cache สำหรับเมนูที่ดึงมาแล้ว
-     */
-    protected static array $menuCache = [];
 
     /**
      * Constructor
@@ -46,7 +39,6 @@ class MenuService
      *
      * แนวทางใหม่ (V3.2):
      * - ใช้ config/menus.php เป็นหลักเสมอ (Hardcoded - ง่ายต่อการพัฒนา)
-     * - Database ใช้สำหรับ Override เท่านั้น (ซ่อน/เรียงลำดับ/ปรับแต่งผ่าน Admin UI)
      * - Pinned menus จัดการแยกทาง localStorage (frontend)
      *
      * @param  string  $role  Role ของผู้ใช้ (admin, seller, user)
@@ -70,227 +62,18 @@ class MenuService
         // 3. รวมเมนูทั้งหมด
         $allMenus = $this->mergeMenus($configMenus, $providerMenus);
 
-        // 4. Apply Database Overrides ถ้ามี (สำหรับ Admin customization)
-        // ตั้งค่าใน .env: MENU_USE_DB_OVERRIDES=true
-        if (config('app.menu_use_db_overrides', false)) {
-            $allMenus = $this->applyDatabaseOverrides($allMenus, $role, $user);
-        }
-
-        // 5. กรองตาม permissions
+        // 4. กรองตาม permissions
         if ($user) {
             $allMenus = $this->filterByPermissions($allMenus, $user);
         }
 
-        // 6. แปลง routes เป็น URLs
+        // 5. แปลง routes เป็น URLs
         $allMenus = $this->resolveRoutes($allMenus);
 
-        // 7. เรียงลำดับตาม order
+        // 6. เรียงลำดับตาม order
         $allMenus = $this->sortMenus($allMenus);
 
         return $allMenus;
-    }
-
-    /**
-     * Apply Database Overrides ลงบนเมนูจาก config
-     *
-     * ใช้สำหรับ Admin ปรับแต่งเมนูผ่าน UI เช่น:
-     * - ซ่อนเมนูบางรายการ
-     * - เปลี่ยนลำดับเมนู
-     * - เปลี่ยน label/icon
-     *
-     * @param  array  $menus  เมนูจาก config
-     * @param  string  $dashboardType  ประเภท dashboard
-     * @param  mixed  $user  User instance
-     * @return array เมนูที่ apply overrides แล้ว
-     */
-    protected function applyDatabaseOverrides(array $menus, string $dashboardType, $user = null): array
-    {
-        // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
-        if (! Schema::hasTable('menu_items')) {
-            return $menus;
-        }
-
-        // ดึง overrides จาก database
-        $overrides = MenuItem::forDashboard($dashboardType)
-            ->get()
-            ->keyBy('menu_key');
-
-        if ($overrides->isEmpty()) {
-            return $menus;
-        }
-
-        // Apply overrides
-        return array_map(function ($menu) use ($overrides) {
-            $menuKey = $menu['id'] ?? null;
-            if (! $menuKey || ! $overrides->has($menuKey)) {
-                return $menu;
-            }
-
-            $override = $overrides->get($menuKey);
-
-            // ซ่อนเมนูถ้า is_visible = false
-            if (! $override->is_visible || ! $override->is_active) {
-                $menu['hidden'] = true;
-            }
-
-            // Override order
-            if ($override->order !== null) {
-                $menu['order'] = $override->order;
-            }
-
-            // Override label/icon (ถ้ามีการตั้งค่า)
-            if ($override->label && $override->label !== $menu['label']) {
-                $menu['label'] = $override->label;
-            }
-            if ($override->icon && $override->icon !== $menu['icon']) {
-                $menu['icon'] = $override->icon;
-            }
-
-            return $menu;
-        }, $menus);
-
-        // กรองเมนูที่ถูกซ่อน
-        return array_filter($menus, fn ($m) => empty($m['hidden']));
-    }
-
-    /**
-     * ดึงเมนูจาก Database
-     *
-     * @param  string  $dashboardType  ประเภท dashboard (admin, seller, user)
-     * @param  mixed  $user  User instance (optional)
-     * @return array เมนูจาก database
-     */
-    protected function getMenusFromDatabase(string $dashboardType, $user = null): array
-    {
-        // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
-        if (! Schema::hasTable('menu_items')) {
-            return [];
-        }
-
-        // ตรวจสอบว่ามีข้อมูลในตารางหรือไม่
-        if (MenuItem::count() === 0) {
-            return [];
-        }
-
-        // Cache key
-        $roleId = $user && isset($user->role_id) ? $user->role_id : null;
-        $cacheKey = "{$dashboardType}_{$roleId}";
-
-        // ใช้ cache ถ้ามี
-        if (isset(self::$menuCache[$cacheKey])) {
-            return self::$menuCache[$cacheKey];
-        }
-
-        // ดึงเมนู top-level พร้อม children
-        $query = MenuItem::forDashboard($dashboardType)
-            ->active()
-            ->visible()
-            ->topLevel()
-            ->with(['children' => function ($q) {
-                $q->active()->visible()->orderBy('order');
-            }])
-            ->orderBy('order');
-
-        $menuItems = $query->get();
-
-        // แปลงเป็น array format เดิม
-        $menus = $menuItems->map(function ($item) use ($roleId) {
-            return $this->convertMenuItemToArray($item, $roleId);
-        })->toArray();
-
-        // กรองตาม Role Settings (ถ้ามี roleId)
-        if ($roleId) {
-            $menus = $this->filterByRoleSettings($menus, $roleId);
-        }
-
-        // Cache ผลลัพธ์
-        self::$menuCache[$cacheKey] = $menus;
-
-        return $menus;
-    }
-
-    /**
-     * แปลง MenuItem model เป็น array format
-     */
-    protected function convertMenuItemToArray(MenuItem $item, ?int $roleId = null): array
-    {
-        $menu = [
-            'id' => $item->menu_key,
-            'label' => $item->label,
-            'icon' => $item->icon,
-            'route' => $item->route,
-            'url' => $item->url,
-            'order' => $item->order,
-            'permissions' => $item->permissions ?? [],
-            'condition' => $item->condition,
-            'hide_if_kyc_verified' => $item->hide_if_kyc_verified,
-            'badge' => $item->badge,
-            'badge_color' => $item->badge_color,
-            'description' => $item->description,
-            '_db_id' => $item->id, // เก็บ ID จาก database ไว้ใช้ภายใน
-        ];
-
-        // เพิ่ม role setting ถ้ามี
-        if ($roleId) {
-            $roleSetting = $item->getSettingForRole($roleId);
-            if ($roleSetting) {
-                $menu['_role_visible'] = $roleSetting->is_visible;
-                $menu['_role_enabled'] = $roleSetting->is_enabled;
-                // ใช้ custom_order ถ้ามี
-                if ($roleSetting->custom_order !== null) {
-                    $menu['order'] = $roleSetting->custom_order;
-                }
-            }
-        }
-
-        // เพิ่ม submenu
-        if ($item->children && $item->children->count() > 0) {
-            $menu['submenu'] = $item->children->map(function ($child) use ($roleId) {
-                // ข้าม divider
-                if ($child->is_divider) {
-                    return [
-                        'id' => $child->menu_key,
-                        'label' => '---',
-                        'route' => null,
-                    ];
-                }
-
-                return $this->convertMenuItemToArray($child, $roleId);
-            })->toArray();
-        }
-
-        return $menu;
-    }
-
-    /**
-     * กรองเมนูตาม Role Settings
-     */
-    protected function filterByRoleSettings(array $menus, int $roleId): array
-    {
-        return array_filter($menus, function ($menu) use ($roleId) {
-            // ตรวจสอบ role visibility
-            if (isset($menu['_role_visible']) && ! $menu['_role_visible']) {
-                return false;
-            }
-            if (isset($menu['_role_enabled']) && ! $menu['_role_enabled']) {
-                return false;
-            }
-
-            // กรอง submenu ด้วย
-            if (! empty($menu['submenu'])) {
-                $menu['submenu'] = $this->filterByRoleSettings($menu['submenu'], $roleId);
-            }
-
-            return true;
-        });
-    }
-
-    /**
-     * Clear menu cache
-     */
-    public static function clearCache(): void
-    {
-        self::$menuCache = [];
     }
 
     /**

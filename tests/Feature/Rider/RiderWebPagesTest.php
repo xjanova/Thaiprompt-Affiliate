@@ -64,9 +64,10 @@ class RiderWebPagesTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'user']);
 
+        // (2026-10-29) หน้าสมาชิกวิ่งในเปลือกโนวาโหมดสะพานแล้ว (<html class="nvm-v4">) — ไม่มี tp-root ของเปลือก V4 เดิม
         $this->actingAs($user)->get(route('user.rider.register'))
             ->assertOk()
-            ->assertSee('tp-root', false)
+            ->assertSee('class="nvm-v4"', false)
             ->assertSee('tp-card', false)
             ->assertSee('name="pdpa_consent"', false)
             ->assertSee('name="id_card_number"', false)
@@ -157,7 +158,7 @@ class RiderWebPagesTest extends TestCase
         // (2026-10-13) รับงานในแอปเท่านั้น — เว็บเห็นงาน (อ่านอย่างเดียว) + แบนเนอร์ดาวน์โหลดแอป ไม่มีปุ่มรับงาน/สวิตช์เปิดรับงาน
         $this->actingAs($user)->get(route('user.rider.dashboard'))
             ->assertOk()
-            ->assertSee('tp-root', false)
+            ->assertSee('class="nvm-v4"', false)
             ->assertSee('rd-scope', false)
             ->assertSee('รายได้วันนี้')
             ->assertSee((string) $job->job_number)

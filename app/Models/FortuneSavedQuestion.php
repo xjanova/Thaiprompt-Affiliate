@@ -140,6 +140,23 @@ class FortuneSavedQuestion extends Model
     }
 
     /**
+     * 🌙 (2026-10-30) AI ตอบตามหลังได้แล้ว — ปิดรายการ แอดมินจะได้ไม่ตอบซ้ำ
+     *   เรียกหลังส่งถึงลูกค้าสำเร็จจริงเท่านั้น (is_sent_to_user ตั้งจากผลส่ง)
+     */
+    public function markAnsweredByAi(string $answer): self
+    {
+        $this->update([
+            'ai_response' => $answer,
+            'reason' => 'ai_recovered',
+            'replied_at' => now(),
+            'is_replied' => true,
+            'is_sent_to_user' => true,
+        ]);
+
+        return $this;
+    }
+
+    /**
      * Label สำหรับ reason
      */
     public function getReasonLabelAttribute(): string
@@ -147,6 +164,7 @@ class FortuneSavedQuestion extends Model
         return match ($this->reason) {
             'ai_cannot_answer' => 'AI ตอบไม่ได้',
             'ai_failed' => 'AI ล้มเหลว',
+            'ai_recovered' => 'AI ตอบตามหลังแล้ว',
             'fallback' => 'ไม่ match คำใดเลย',
             default => $this->reason,
         };

@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AddonService;
-use App\Services\LicenseService;
 use Illuminate\Console\Command;
 
 class AddonListCommand extends Command

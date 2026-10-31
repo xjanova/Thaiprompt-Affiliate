@@ -393,7 +393,7 @@ class Service extends Model
      */
     public function getUrl(): string
     {
-        return route('services.show', $this->slug);
+        return route('user.services.show', $this);
     }
 
     /**

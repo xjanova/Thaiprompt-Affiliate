@@ -12,6 +12,22 @@
     RewriteEngine On
 
     # ========================================
+    # 📲 ไฟล์ APK ของแอป (storage/app-downloads) — ส่งแบบดิบเสมอ (2026-10-16)
+    # ========================================
+    # เดิม mod_deflate บีบ APK เป็น gzip (ETag ลงท้าย -gzip) แล้ว Cloudflare เก็บตัว gzip ไว้
+    # → แอปขอแบบ identity ได้ไฟล์ที่ CF แตกสดแบบ chunked: ไม่มี Content-Length · Range ไม่ทำงาน (ได้ 200 แทน 206)
+    #   เน็ตหลุดต้องโหลดใหม่ทั้งไฟล์ + เครื่องแม่เปลือง CPU บีบไฟล์ zip ซ้ำ (APK บีบอยู่แล้ว ได้ขนาดเท่าเดิม)
+    # ลิงก์มี ?h=<sha256> ทุกครั้ง (AppDownloadService::fileUrl) = ไฟล์ไม่เปลี่ยนเนื้อหา → แคชได้ยาว
+    <IfModule mod_setenvif.c>
+        SetEnvIfNoCase Request_URI "\.apk$" no-gzip dont-vary
+    </IfModule>
+    <IfModule mod_headers.c>
+        <FilesMatch "\.apk$">
+            Header set Cache-Control "public, max-age=2592000, immutable"
+        </FilesMatch>
+    </IfModule>
+
+    # ========================================
     # CANONICAL HOST: thaiprompt.online → main.thaiprompt.online
     # ========================================
     # Cloudflare currently has a Page Rule that 301s the bare domain to

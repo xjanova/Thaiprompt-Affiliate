@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
+use App\Services\Kyc\KycDocumentStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -974,17 +975,22 @@ class MobileApiController extends Controller
             ], 422);
         }
 
+        $documents = app(KycDocumentStorage::class);
+        $idCardPath = null;
+        $selfiePath = null;
+
         try {
             DB::beginTransaction();
 
-            // สร้าง directory สำหรับเก็บไฟล์ KYC
-            $kycPath = 'kyc/'.$user->id;
+            // 🔒 (2026-10-29) เก็บบน private disk (kyc-private/{user_id}) — เดิมอยู่ public disk เปิดจาก /storage/… ได้ทุกคน
+            //    แอดมินดูผ่าน admin.kyc.image (ตรวจสิทธิ์ + บันทึกการเปิดดู)
+            $kycPath = $documents->directoryFor($user->id);
 
-            // อัพโหลดรูปบัตรประชาชน (ใช้ 'public' disk เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
-            $idCardPath = $request->file('id_card_image')->store($kycPath, 'public');
+            // อัพโหลดรูปบัตรประชาชน
+            $idCardPath = $request->file('id_card_image')->store($kycPath, KycDocumentStorage::DISK);
 
             // อัพโหลดรูปถ่ายคู่บัตร
-            $selfiePath = $request->file('selfie_image')->store($kycPath, 'public');
+            $selfiePath = $request->file('selfie_image')->store($kycPath, KycDocumentStorage::DISK);
 
             // สร้าง KYC verification record
             $kyc = \App\Models\KycVerification::create([
@@ -1013,6 +1019,9 @@ class MobileApiController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            // แถวไม่ถูกสร้าง → รูปที่เพิ่งเก็บเป็นไฟล์กำพร้า ลบทิ้ง
+            $documents->delete($idCardPath ?: null);
+            $documents->delete($selfiePath ?: null);
             \Log::error('KYC Submit Error', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
@@ -1056,13 +1065,17 @@ class MobileApiController extends Controller
         try {
             $type = $request->type;
 
+            $documents = app(KycDocumentStorage::class);
+
             // อัพโหลดรูปด้วย ImageUploadService (แปลง WebP + resize)
+            // 🔒 (2026-10-29) private disk — เดิม public disk เปิดจาก /storage/… ได้ทุกคน
             $imagePath = $imageUploadService->uploadImage(
                 $request->file('image'),
-                'kyc/'.$user->id,  // directory
+                $documents->directoryFor($user->id),  // directory
                 1600,                 // max width (KYC ต้องการความละเอียดสูง)
                 1600,                 // max height
-                95                    // quality (สูงเพื่อให้อ่าน ID card ชัดเจน)
+                95,                   // quality (สูงเพื่อให้อ่าน ID card ชัดเจน)
+                KycDocumentStorage::DISK
             );
 
             // หา or สร้าง KYC draft
@@ -1084,13 +1097,20 @@ class MobileApiController extends Controller
             } else {
                 // อัพเดท existing
                 $column = $type === 'id_card' ? 'id_card_image' : 'selfie_image';
+                $previousPath = $kyc->{$column};
                 $kyc->update([$column => $imagePath]);
+
+                // 🔒 รูปเดิมที่ถูกแทนที่ = สำเนาบัตรกำพร้า ลบทิ้ง (เดิมค้างบน public disk ถาวร)
+                //    เว้นไว้ถ้าแถวอื่นยังชี้ไฟล์เดียวกัน (ไฟล์เก่าบางไฟล์ใช้ร่วมกันหลายแถว)
+                if ($previousPath && $previousPath !== $imagePath) {
+                    $documents->deleteIfUnreferenced($previousPath, $kyc->id);
+                }
             }
 
-            // สร้าง URL สำหรับแสดงรูป
-            $imageUrl = \Storage::disk('public')->url($imagePath);
-            $idCardUrl = $kyc->id_card_image ? \Storage::disk('public')->url($kyc->id_card_image) : null;
-            $selfieUrl = $kyc->selfie_image ? \Storage::disk('public')->url($kyc->selfie_image) : null;
+            // สร้าง URL สำหรับแสดงรูป — 🔒 signed URL อายุสั้น (คีย์เดิม แอปไม่ต้องแก้) แทน /storage/… ที่ใครก็เปิดได้
+            $idCardUrl = $documents->signedUrl($kyc, 'id_card');
+            $selfieUrl = $documents->signedUrl($kyc, 'selfie');
+            $imageUrl = $type === 'id_card' ? $idCardUrl : $selfieUrl;
 
             return response()->json([
                 'success' => true,
@@ -1118,6 +1138,17 @@ class MobileApiController extends Controller
                 'message' => 'เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่',
             ], 500);
         }
+    }
+
+    /**
+     * 🔒 GET /api/v1/kyc/image/{kycVerification}/{kind} — รูปเอกสาร KYC แบบเดิมของตัวเอง (signed URL เท่านั้น)
+     *
+     * ลิงก์ออกให้เฉพาะเจ้าของใน POST /kyc/upload (อายุ 30 นาที) · ไม่ต้องแนบ token เพราะ <img> ในแอปแนบไม่ได้
+     * ลายเซ็นผิด/หมดอายุ = 403 จาก middleware signed · แถว eKYC / ไม่มีไฟล์ = 404
+     */
+    public function kycImageFile(\App\Models\KycVerification $kycVerification, string $kind)
+    {
+        return app(KycDocumentStorage::class)->response($kycVerification, $kind);
     }
 
     /**

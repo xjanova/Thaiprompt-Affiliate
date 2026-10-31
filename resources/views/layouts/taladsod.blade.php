@@ -457,8 +457,8 @@
                     &copy; {{ date('Y') }} ตลาดสดไทยพร๊อม สงวนลิขสิทธิ์ทุกประการ
                 </p>
                 <div class="flex items-center gap-4 text-sm text-gray-500">
-                    <a href="{{ route('page.show', ['slug' => 'privacy-policy']) }}" class="hover:text-green-400 transition-colors">นโยบายความเป็นส่วนตัว</a>
-                    <a href="{{ route('page.show', ['slug' => 'terms-of-service']) }}" class="hover:text-green-400 transition-colors">ข้อกำหนดการใช้งาน</a>
+                    <a href="{{ url('/privacy-policy') }}" class="hover:text-green-400 transition-colors">นโยบายความเป็นส่วนตัว</a>
+                    <a href="{{ url('/terms-of-service') }}" class="hover:text-green-400 transition-colors">ข้อกำหนดการใช้งาน</a>
                 </div>
             </div>
         </div>

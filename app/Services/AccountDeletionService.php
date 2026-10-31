@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Exceptions\AccountDeletionBlockedException;
+use App\Models\TwoFactorUserSetting;
 use App\Models\User;
+use App\Support\AccountEmail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -34,6 +37,20 @@ class AccountDeletionService
 
     /** ชื่อที่แสดงแทนผู้ใช้ที่ลบบัญชีแล้ว */
     public const ANONYMIZED_NAME = 'ผู้ใช้ที่ลบบัญชี';
+
+    /** วิธียืนยันตัวตนก่อนลบ (ดู confirmationMethod) */
+    public const METHOD_PASSWORD = 'password';
+
+    public const METHOD_EMAIL_CODE = 'email_code';
+
+    public const METHOD_TWO_FACTOR = 'two_factor';
+
+    public const METHOD_ADD_EMAIL = 'add_email';
+
+    /** ใส่รหัสผ่าน/รหัส 2FA ผิดได้กี่ครั้งต่อ 15 นาที (รหัสทางอีเมลมีตัวนับของ EmailOtpService เอง) */
+    private const MAX_PROOF_ATTEMPTS = 5;
+
+    private const PROOF_DECAY_SECONDS = 900;
 
     /** สถานะออเดอร์ร้านค้า (orders.status) ที่ยังไม่จบ ฝั่งผู้ซื้อ */
     private const BUYER_ACTIVE_ORDER_STATUSES = ['paid', 'processing', 'shipped'];
@@ -250,29 +267,78 @@ class AccountDeletionService
     }
 
     /**
-     * บัญชีนี้ต้องยืนยันด้วยรหัสผ่านก่อนลบหรือไม่
+     * บัญชีนี้ยืนยันตัวตนก่อนลบด้วยวิธีไหน (วิธีหลักที่หน้าจอ/แอปควรแสดง)
      *
-     * บัญชีที่สมัครผ่าน LINE/Facebook/บอท (อีเมลสังเคราะห์ @thaiprompt.local) ไม่เคยรู้รหัสผ่านของตัวเอง
-     * → ใช้การพิมพ์ "ลบบัญชี" ยืนยันแทน ; บัญชีอีเมล+รหัสผ่านล้วน ต้องใส่รหัสผ่านเสมอ
+     * 🔒 (2026-10-29) เดิมบัญชีที่ผูก LINE/Facebook ข้ามรหัสผ่านไปเลย (พิมพ์ "ลบบัญชี" อย่างเดียว)
+     *    → ใครได้ session ไป กดครั้งเดียวบัญชีหายถาวร (ข้อมูลถูกล้าง ย้อนกลับไม่ได้)
+     *
+     *  - password   : บัญชีอีเมล+รหัสผ่าน (อีเมลจริง ไม่ผูก LINE/FB)
+     *  - email_code : ผูก LINE/FB และมีอีเมลจริง → รหัส 6 หลักที่ส่งไปอีเมล (EmailOtpService)
+     *  - two_factor : ไม่มีอีเมลจริง แต่เปิด 2FA ที่มีแอป Authenticator หรือรหัสกู้คืน
+     *  - add_email  : ไม่มีทั้งอีเมลจริงและ 2FA → ต้องเพิ่มอีเมลจริงในโปรไฟล์ก่อน
+     *                 (ระบบยังไม่มีการตั้งเวลาลบล่วงหน้า และห้ามส่งรหัสทาง LINE push — โควต้าทั้งธุรกิจ 300/เดือน)
+     *
+     * หลักฐานที่ใช้ได้เสมอ ไม่ว่าวิธีหลักคืออะไร: รหัสผ่านที่ถูก · รหัสทางอีเมล (ถ้ามีอีเมลจริง) · รหัส 2FA (ถ้าเปิด)
+     * — บัญชี Google ที่ได้รหัสผ่านสุ่มตอนสมัคร (ไม่ผูก LINE/FB) จึงลบได้ด้วยรหัสทางอีเมล
      */
-    public function requiresPassword(User $user): bool
+    public function confirmationMethod(User $user): string
     {
-        if (! empty($user->line_user_id) || ! empty($user->facebook_user_id) || ! empty($user->facebook_psid)) {
-            return false;
+        if (AccountEmail::isDeliverable($user->email)) {
+            $linked = ! empty($user->line_user_id) || ! empty($user->facebook_user_id) || ! empty($user->facebook_psid);
+
+            return $linked ? self::METHOD_EMAIL_CODE : self::METHOD_PASSWORD;
         }
 
-        return ! str_ends_with(mb_strtolower((string) $user->email), '@thaiprompt.local');
+        return $this->twoFactorSettings($user) ? self::METHOD_TWO_FACTOR : self::METHOD_ADD_EMAIL;
+    }
+
+    /** วิธีหลักคือรหัสผ่าน (คงไว้ให้แอปเวอร์ชันเก่าที่อ่าน requires_password) */
+    public function requiresPassword(User $user): bool
+    {
+        return $this->confirmationMethod($user) === self::METHOD_PASSWORD;
+    }
+
+    /** ใช้รหัสทางอีเมลยืนยันได้ไหม (มีอีเมลจริง) */
+    public function canUseEmailCode(User $user): bool
+    {
+        return AccountEmail::isDeliverable($user->email);
+    }
+
+    /**
+     * ส่งรหัส 6 หลักไปอีเมลของบัญชีเพื่อยืนยันการลบ
+     *
+     * @return array{success: bool, message: string, retry_after?: int}
+     */
+    public function sendEmailCode(User $user): array
+    {
+        if (! $this->canUseEmailCode($user)) {
+            return [
+                'success' => false,
+                'message' => 'บัญชีนี้ยังไม่มีอีเมลจริงสำหรับรับรหัส กรุณาเพิ่มอีเมลของคุณที่หน้าโปรไฟล์ก่อน',
+            ];
+        }
+
+        $result = app(EmailOtpService::class)->sendOtp((string) $user->email, $this->emailCodePurpose($user), [
+            'มีคำขอลบบัญชี '.config('app.name').' ('.$user->name.') อย่างถาวร',
+            'ถ้าคุณไม่ได้ขอลบบัญชี อย่าบอกรหัสนี้กับใคร และเปลี่ยนรหัสผ่านทันที',
+        ]);
+
+        if ($result['success'] ?? false) {
+            $result['message'] = 'ส่งรหัสยืนยันไปที่ '.AccountEmail::mask((string) $user->email).' แล้ว (หมดอายุใน 10 นาที)';
+        }
+
+        return $result;
     }
 
     /**
      * ตรวจการยืนยันของผู้ใช้ก่อนลบ (ใช้ร่วมกันทั้งแอปและเว็บ)
      *
      * - ต้องพิมพ์ "ลบบัญชี" ตรงตัว
-     * - บัญชีอีเมล+รหัสผ่าน ต้องใส่รหัสผ่านถูก ; บัญชี LINE/FB ไม่บังคับ แต่ถ้าใส่มาต้องถูก
+     * - ต้องมีหลักฐานอย่างน้อย 1 อย่าง: รหัสผ่าน / รหัสทางอีเมล / รหัส 2FA (ดู confirmationMethod)
      *
      * @return array{code: string, message: string, field: string}|null null = ผ่าน
      */
-    public function confirmationError(User $user, mixed $confirmText, mixed $password): ?array
+    public function confirmationError(User $user, mixed $confirmText, mixed $password, mixed $emailCode = null, mixed $twoFactorCode = null): ?array
     {
         if (! is_string($confirmText) || trim($confirmText) !== self::CONFIRM_TEXT) {
             return [
@@ -283,16 +349,28 @@ class AccountDeletionService
         }
 
         $password = is_string($password) ? $password : '';
+        $emailCode = is_string($emailCode) ? (string) preg_replace('/\D/', '', $emailCode) : '';
+        $twoFactorCode = is_string($twoFactorCode) ? trim($twoFactorCode) : '';
 
-        if ($password === '' && $this->requiresPassword($user)) {
+        // ลองรหัสผ่าน/รหัส 2FA ผิดหลายครั้ง → พักก่อน (กันเดาด้วย session ที่ขโมยมา)
+        $limiterKey = 'account-delete-proof:'.$user->id;
+        if (($password !== '' || $twoFactorCode !== '') && RateLimiter::tooManyAttempts($limiterKey, self::MAX_PROOF_ATTEMPTS)) {
             return [
-                'code' => 'PASSWORD_REQUIRED',
-                'message' => 'กรุณากรอกรหัสผ่านเพื่อยืนยันการลบบัญชี',
-                'field' => 'password',
+                'code' => 'TOO_MANY_ATTEMPTS',
+                'message' => 'ยืนยันตัวตนผิดหลายครั้งเกินไป กรุณารอ '.(int) ceil(RateLimiter::availableIn($limiterKey) / 60).' นาทีแล้วลองใหม่',
+                'field' => $password !== '' ? 'password' : 'two_factor_code',
             ];
         }
 
-        if ($password !== '' && ! Hash::check($password, (string) $user->getAuthPassword())) {
+        if ($password !== '') {
+            if (Hash::check($password, (string) $user->getAuthPassword())) {
+                RateLimiter::clear($limiterKey);
+
+                return null;
+            }
+
+            RateLimiter::hit($limiterKey, self::PROOF_DECAY_SECONDS);
+
             return [
                 'code' => 'PASSWORD_INCORRECT',
                 'message' => 'รหัสผ่านไม่ถูกต้อง',
@@ -300,7 +378,83 @@ class AccountDeletionService
             ];
         }
 
-        return null;
+        if ($emailCode !== '' && $this->canUseEmailCode($user)) {
+            $result = app(EmailOtpService::class)->verifyOtp((string) $user->email, $emailCode, $this->emailCodePurpose($user));
+
+            return ($result['valid'] ?? false) ? null : [
+                'code' => 'EMAIL_CODE_INVALID',
+                'message' => ($result['reason'] ?? null) === 'purpose_mismatch'
+                    ? 'รหัสนี้ไม่ใช่รหัสสำหรับลบบัญชี กรุณากดส่งรหัสใหม่'
+                    : (string) ($result['message'] ?? 'รหัสยืนยันไม่ถูกต้อง'),
+                'field' => 'email_code',
+            ];
+        }
+
+        if ($twoFactorCode !== '' && ($settings = $this->twoFactorSettings($user))) {
+            $valid = ($settings->hasGoogle2FASecret() && preg_match('/^\d{6}$/', $twoFactorCode) && $settings->verifyGoogle2FACode($twoFactorCode))
+                || $settings->verifyRecoveryCode($twoFactorCode);
+
+            if ($valid) {
+                RateLimiter::clear($limiterKey);
+                $settings->recordSuccessfulVerification();
+
+                return null;
+            }
+
+            RateLimiter::hit($limiterKey, self::PROOF_DECAY_SECONDS);
+            $settings->recordFailedVerification();
+
+            return [
+                'code' => 'TWO_FACTOR_CODE_INVALID',
+                'message' => 'รหัสยืนยันตัวตน (2FA) ไม่ถูกต้อง',
+                'field' => 'two_factor_code',
+            ];
+        }
+
+        return match ($this->confirmationMethod($user)) {
+            self::METHOD_PASSWORD => [
+                'code' => 'PASSWORD_REQUIRED',
+                'message' => 'กรุณากรอกรหัสผ่านเพื่อยืนยันการลบบัญชี (ไม่รู้รหัสผ่าน ขอรหัสยืนยันทางอีเมลแทนได้)',
+                'field' => 'password',
+            ],
+            self::METHOD_EMAIL_CODE => [
+                'code' => 'EMAIL_CODE_REQUIRED',
+                'message' => 'กรุณาขอรหัสยืนยันที่ส่งไปอีเมล '.AccountEmail::mask((string) $user->email).' แล้วกรอกรหัส 6 หลักเพื่อยืนยันการลบบัญชี',
+                'field' => 'email_code',
+            ],
+            self::METHOD_TWO_FACTOR => [
+                'code' => 'TWO_FACTOR_CODE_REQUIRED',
+                'message' => 'กรุณากรอกรหัส 6 หลักจากแอป Authenticator (หรือรหัสกู้คืน) เพื่อยืนยันการลบบัญชี',
+                'field' => 'two_factor_code',
+            ],
+            default => [
+                'code' => 'REAL_EMAIL_REQUIRED',
+                'message' => 'บัญชีนี้ยังไม่มีอีเมลจริงไว้ยืนยันตัวตน กรุณาเพิ่มอีเมลของคุณที่หน้าโปรไฟล์ก่อน แล้วกลับมาลบบัญชีด้วยรหัสที่ส่งไปอีเมล',
+                'field' => 'account',
+            ],
+        };
+    }
+
+    /** รหัสลบบัญชีผูกกับบัญชีนี้ — ใช้กับการเปลี่ยนอีเมล/บัญชีอื่นไม่ได้ */
+    private function emailCodePurpose(User $user): string
+    {
+        return 'account_delete:'.$user->id;
+    }
+
+    /** 2FA ที่ใช้ยืนยันการลบได้ (เปิดอยู่ + มีแอป Authenticator หรือรหัสกู้คืน) — ไม่ส่งรหัสทาง LINE/SMS */
+    private function twoFactorSettings(User $user): ?TwoFactorUserSetting
+    {
+        if (! $this->hasTable('two_factor_user_settings')) {
+            return null;
+        }
+
+        $settings = TwoFactorUserSetting::where('user_id', $user->id)->first();
+
+        if (! $settings || ! $settings->enabled || (! $settings->hasGoogle2FASecret() && ! $settings->hasRecoveryCodes())) {
+            return null;
+        }
+
+        return $settings;
     }
 
     /**
@@ -372,6 +526,10 @@ class AccountDeletionService
         } catch (\Throwable) {
             // ไม่ถือว่าพัง — ekyc:purge-stale ล้างรอบค้างให้อีกชั้น
         }
+
+        // 🔒 (2026-10-29) รูปเอกสาร KYC แบบเดิมบน private disk (kyc-private/{user_id}) — กวาดทั้งโฟลเดอร์
+        //    รวมรูปที่ถูกแทนที่/ไฟล์กำพร้าที่ไม่มีแถวชี้ (แถวที่มีชี้ ลบไปแล้วใน KycVerificationObserver)
+        app(\App\Services\Kyc\KycDocumentStorage::class)->deleteUserDir((int) $user->id);
 
         // 📸 (2026-10-04) สำเนารูปถ่ายสดพร้อมลายน้ำที่แคชไว้ (ไม่รอรอบล้างรายวัน)
         try {

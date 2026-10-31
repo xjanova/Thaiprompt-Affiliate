@@ -97,6 +97,9 @@ class TwoFactorUserSetting extends Model
             return false;
         }
 
+        // 🐛 (2026-10-29) รหัสถูกสร้างเป็นตัวพิมพ์ใหญ่ — ลูกค้าพิมพ์ตัวเล็ก/เว้นวรรคติดมาเลยใช้ไม่ได้
+        $code = strtoupper(trim($code));
+
         foreach ($this->recovery_codes as $index => $hashedCode) {
             if (password_verify($code, $hashedCode)) {
                 // Remove used code

@@ -50,7 +50,7 @@
         </div>
         <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap; font-size:13px;">
             <a href="{{ route('home') }}" style="color:var(--deep1); text-decoration:none;"><i class="fas fa-house"></i> หน้าหลัก</a>
-            <a href="{{ route('user.coin-shop.index') }}" style="color:var(--deep1); text-decoration:none;"><i class="fas fa-coins"></i> Coin Shop</a>
+            <a href="{{ route('user.video-coins.index') }}" style="color:var(--deep1); text-decoration:none;"><i class="fas fa-coins"></i> Video Coins</a>
         </div>
     </section>
 </main>

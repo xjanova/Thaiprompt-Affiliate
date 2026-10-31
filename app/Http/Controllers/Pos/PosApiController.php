@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pos;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Seller\Concerns\ResolvesSellerStore;
 use App\Models\PosCategory;
 use App\Models\PosDevice;
 use App\Models\PosSetting;
@@ -11,8 +12,10 @@ use App\Models\PosTransactionItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -28,6 +31,60 @@ use Illuminate\Support\Str;
  */
 class PosApiController extends Controller
 {
+    use ResolvesSellerStore;
+
+    /**
+     * เช็กว่า API ยังทำงานอยู่ (public — แอป MAUI ใช้ตรวจการเชื่อมต่อ)
+     */
+    public function health(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'timestamp' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * ร้านที่ผู้เรียก API มีสิทธิ์ดู — ผู้ขายเห็นได้แค่ร้านตัวเอง ส่วนแอดมินเลือกร้านผ่าน store_id ได้
+     * (ผู้ขายที่ไม่มีร้านได้ 0 เพื่อให้ผลลัพธ์ว่าง ไม่ใช่ข้อมูลทุกร้าน)
+     */
+    private function scopedStoreId(Request $request): ?int
+    {
+        if ($request->user()->hasRole(['admin', 'super_admin'])) {
+            return $request->integer('store_id') ?: null;
+        }
+
+        return $this->currentStore($request)?->id ?? 0;
+    }
+
+    /**
+     * ส่งรูปในคีย์ image และ image_url ที่ PWA อ่านอยู่ (ตาราง products เก็บไว้ที่ main_image_url)
+     */
+    private function withImageKeys(Collection $products): Collection
+    {
+        return $products->each(function ($product) {
+            $product->image = $product->main_image_url;
+            $product->image_url = $product->main_image_url;
+        });
+    }
+
+    /**
+     * ลูกค้าของร้าน = คนที่เคยซื้อกับร้านนี้ ทั้งออนไลน์และหน้าร้าน
+     * ห้ามคืนผู้ใช้ทั้งระบบ เพราะผู้ขายจะเห็นชื่อ อีเมล และเบอร์ของคนที่ไม่ใช่ลูกค้าตัวเอง
+     */
+    private function storeCustomers(?int $storeId): Builder
+    {
+        $inStore = function ($q) use ($storeId) {
+            if ($storeId !== null) {
+                $q->where('store_id', $storeId);
+            }
+        };
+
+        return User::query()->where(function ($q) use ($inStore) {
+            $q->whereHas('orders', $inStore)->orWhereHas('posTransactions', $inStore);
+        });
+    }
+
     // ============================================
     // PRODUCTS
     // ============================================
@@ -38,7 +95,7 @@ class PosApiController extends Controller
     public function getAllProducts(Request $request): JsonResponse
     {
         try {
-            $storeId = $request->input('store_id');
+            $storeId = $this->scopedStoreId($request);
 
             $query = Product::query()
                 ->where('is_active', true)
@@ -56,26 +113,17 @@ class PosApiController extends Controller
                     'low_stock_threshold',
                     'vat_percentage',
                     'category_id',
-                    'image',
+                    'main_image_url',
                     'is_active',
                     'updated_at',
                 ]);
 
             // กรองตามร้านค้า
-            if ($storeId) {
-                $query->where('vendor_store_id', $storeId);
+            if ($storeId !== null) {
+                $query->where('store_id', $storeId);
             }
 
-            $products = $query->get();
-
-            // แปลง image path เป็น URL
-            $products = $products->map(function ($product) {
-                if ($product->image) {
-                    $product->image_url = asset('storage/'.$product->image);
-                }
-
-                return $product;
-            });
+            $products = $this->withImageKeys($query->get());
 
             return response()->json([
                 'success' => true,
@@ -92,7 +140,6 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงข้อมูลสินค้าได้',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -104,7 +151,7 @@ class PosApiController extends Controller
     {
         try {
             $since = $request->input('since');
-            $storeId = $request->input('store_id');
+            $storeId = $this->scopedStoreId($request);
 
             if (! $since) {
                 return $this->getAllProducts($request);
@@ -125,7 +172,7 @@ class PosApiController extends Controller
                     'low_stock_threshold',
                     'vat_percentage',
                     'category_id',
-                    'image',
+                    'main_image_url',
                     'is_active',
                     'is_blocked',
                     'updated_at',
@@ -133,11 +180,11 @@ class PosApiController extends Controller
                 ])
                 ->withTrashed(); // รวม soft deleted เพื่อ sync การลบ
 
-            if ($storeId) {
-                $query->where('vendor_store_id', $storeId);
+            if ($storeId !== null) {
+                $query->where('store_id', $storeId);
             }
 
-            $products = $query->get();
+            $products = $this->withImageKeys($query->get());
 
             return response()->json([
                 'success' => true,
@@ -196,7 +243,7 @@ class PosApiController extends Controller
         try {
             $query = $request->input('q', '');
             $categoryId = $request->input('category_id');
-            $storeId = $request->input('store_id');
+            $storeId = $this->scopedStoreId($request);
             $limit = $request->input('limit', 50);
 
             $productsQuery = Product::query()
@@ -218,8 +265,8 @@ class PosApiController extends Controller
             }
 
             // กรองตามร้านค้า
-            if ($storeId) {
-                $productsQuery->where('vendor_store_id', $storeId);
+            if ($storeId !== null) {
+                $productsQuery->where('store_id', $storeId);
             }
 
             $products = $productsQuery->limit($limit)->get();
@@ -248,15 +295,15 @@ class PosApiController extends Controller
     public function getAllCategories(Request $request): JsonResponse
     {
         try {
-            $storeId = $request->input('store_id');
+            $storeId = $this->scopedStoreId($request);
 
             $query = PosCategory::query()
                 ->where('is_active', true)
-                ->orderBy('sort_order')
+                ->orderBy('order')
                 ->orderBy('name');
 
-            if ($storeId) {
-                $query->where('vendor_store_id', $storeId);
+            if ($storeId !== null) {
+                $query->where('store_id', $storeId);
             }
 
             $categories = $query->get();
@@ -288,10 +335,15 @@ class PosApiController extends Controller
                 return $this->getAllCategories($request);
             }
 
-            $categories = PosCategory::query()
-                ->where('updated_at', '>=', $since)
-                ->withTrashed()
-                ->get();
+            $storeId = $this->scopedStoreId($request);
+
+            $query = PosCategory::query()->where('updated_at', '>=', $since);
+
+            if ($storeId !== null) {
+                $query->where('store_id', $storeId);
+            }
+
+            $categories = $query->get();
 
             return response()->json([
                 'success' => true,
@@ -319,31 +371,9 @@ class PosApiController extends Controller
     public function getAllCustomers(Request $request): JsonResponse
     {
         try {
-            $storeId = $request->input('store_id');
-
             // ดึงลูกค้าที่เกี่ยวข้องกับร้านค้า
-            $customers = User::query()
-                ->whereHas('orders', function ($q) use ($storeId) {
-                    if ($storeId) {
-                        $q->where('vendor_store_id', $storeId);
-                    }
-                })
-                ->orWhereHas('posTransactions', function ($q) use ($storeId) {
-                    if ($storeId) {
-                        $q->whereHas('device', function ($d) use ($storeId) {
-                            $d->where('vendor_store_id', $storeId);
-                        });
-                    }
-                })
-                ->select([
-                    'id',
-                    'name',
-                    'email',
-                    'phone',
-                    'member_code',
-                    'points',
-                    'updated_at',
-                ])
+            $customers = $this->storeCustomers($this->scopedStoreId($request))
+                ->select(['id', 'name', 'email', 'phone', 'updated_at'])
                 ->limit(1000)
                 ->get();
 
@@ -374,17 +404,9 @@ class PosApiController extends Controller
                 return $this->getAllCustomers($request);
             }
 
-            $customers = User::query()
+            $customers = $this->storeCustomers($this->scopedStoreId($request))
                 ->where('updated_at', '>=', $since)
-                ->select([
-                    'id',
-                    'name',
-                    'email',
-                    'phone',
-                    'member_code',
-                    'points',
-                    'updated_at',
-                ])
+                ->select(['id', 'name', 'email', 'phone', 'updated_at'])
                 ->get();
 
             return response()->json([
@@ -410,14 +432,13 @@ class PosApiController extends Controller
             $query = $request->input('q', '');
             $limit = $request->input('limit', 20);
 
-            $customers = User::query()
+            $customers = $this->storeCustomers($this->scopedStoreId($request))
                 ->where(function ($q) use ($query) {
                     $q->where('name', 'like', "%{$query}%")
                         ->orWhere('phone', 'like', "%{$query}%")
-                        ->orWhere('email', 'like', "%{$query}%")
-                        ->orWhere('member_code', $query);
+                        ->orWhere('email', 'like', "%{$query}%");
                 })
-                ->select(['id', 'name', 'email', 'phone', 'member_code', 'points'])
+                ->select(['id', 'name', 'email', 'phone'])
                 ->limit($limit)
                 ->get();
 
@@ -506,10 +527,10 @@ class PosApiController extends Controller
     {
         try {
             $deviceId = $request->input('device_id');
-            $storeId = $request->input('store_id');
+            $storeId = $this->scopedStoreId($request);
 
             // ดึงการตั้งค่าจาก PosSetting หรือค่าเริ่มต้น
-            $settings = PosSetting::where('vendor_store_id', $storeId)
+            $settings = PosSetting::where('store_id', $storeId)
                 ->first();
 
             // ค่าเริ่มต้น

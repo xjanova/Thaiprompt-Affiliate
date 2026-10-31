@@ -6,6 +6,19 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+// Frame pacing: on a 120/144 Hz screen draw every nth vsync so the scene runs near 60 fps
+// (the speed its per-frame motion was tuned for) at well under half the GPU work.
+function __paceSkip() {
+    const p = __paceSkip.s || (__paceSkip.s = { vsync: 1000 / 60, last: 0, count: 0 });
+    const now = performance.now();
+    const raw = now - p.last;
+    p.last = now;
+    if (raw > 2 && raw < 50) p.vsync = p.vsync * 0.95 + raw * 0.05;
+    if (++p.count < Math.max(1, Math.floor(1000 / p.vsync / 55))) return true;
+    p.count = 0;
+    return false;
+}
+
 export class Wealth3DMindMap {
     constructor(containerId, options = {}) {
         this.container = document.getElementById(containerId);
@@ -49,7 +62,8 @@ export class Wealth3DMindMap {
 
         // Renderer setup
         this.renderer = new THREE.WebGLRenderer({
-            antialias: true,
+            // near 2x pixels the edges are already smooth: MSAA there only costs bandwidth
+            antialias: (window.devicePixelRatio || 1) < 1.75,
             alpha: true,
             powerPreference: 'high-performance'
         });
@@ -425,6 +439,7 @@ export class Wealth3DMindMap {
 
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
+        if (__paceSkip()) return;
 
         // Animate nodes
         this.nodes.forEach(node => {

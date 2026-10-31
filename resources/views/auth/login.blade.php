@@ -25,12 +25,6 @@
         $siteSettings = \App\Models\SiteSetting::getSetting();
         $appName = $siteSettings->site_name ?: config('app.brand_name', 'Thai Prompt');
 
-        // 🔖 โลโก้ต้องเป็นตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อนเสมอ
-        //    เดิมอ่านจาก SiteSetting อย่างเดียว → หน้า login โชว์โลโก้เก่าที่ค้างอยู่ในตั้งค่านั้น
-        //    ส่วนหน้าอื่นๆ (storefront/admin V4) ใช้ ThemeSetting.logo_path = คนละรูปกัน
-        //    ลำดับ: โลโก้ธีม → โลโก้แบรนด์ Thai Prompt (public/images/brand, สาขา @else ด้านล่าง)
-        //    2026-09-26: เลิกถอยไป SiteSetting.logo — บน prod เป็นไฟล์แบรนด์เก่าค้างอยู่ ถ้าถอยไปจะโชว์โลโก้เก่ากลับมา
-        $logo = optional(\App\Models\ThemeSetting::active())->logo_path;
         $favicon = $siteSettings->favicon;
     @endphp
 
@@ -210,7 +204,7 @@
     </style>
     @include('auth.partials.nova-skin')
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 relative overflow-x-hidden {{ config('shop.nova_public', true) ? 'nv-auth' : '' }}">
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 relative overflow-x-hidden nv-auth">
     {{-- ✨ Firefly Container --}}
     <div id="fireflies" class="fixed inset-0 pointer-events-none z-0 overflow-hidden"></div>
 
@@ -249,28 +243,15 @@
                 <div class="text-center mb-6 sm:mb-8">
                     {{-- Logo --}}
                     <div class="flex justify-center mb-4">
-                        @if($logo)
-                            <div class="relative group">
-                                {{-- Glow Effect --}}
-                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-                                {{-- Logo Image --}}
-                                <div class="relative bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                                    <img src="{{ asset('storage/' . $logo) }}"
-                                         alt="{{ $appName }}"
-                                         class="h-16 sm:h-20 w-auto animate-float">
-                                </div>
-                            </div>
-                        @else
-                            {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
-                            <div class="relative group">
-                                <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                                <picture class="relative block animate-float">
-                                    <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
-                                    <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
-                                         width="192" height="56" class="h-14 sm:h-16 w-auto">
-                                </picture>
-                            </div>
-                        @endif
+                        {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
+                        <div class="relative group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity"></div>
+                            <picture class="relative block animate-float">
+                                <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
+                                <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
+                                     width="192" height="56" class="h-14 sm:h-16 w-auto">
+                            </picture>
+                        </div>
                     </div>
 
                     {{-- Title --}}

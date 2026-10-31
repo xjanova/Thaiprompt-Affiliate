@@ -186,12 +186,4 @@ HTML;
 </script>
 HTML;
     }
-
-    /**
-     * Get share URL
-     */
-    public function getShareUrl(): string
-    {
-        return route('chatbot.embed.preview', ['code' => $this->unique_code]);
-    }
 }

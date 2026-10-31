@@ -90,6 +90,9 @@ class IdempotencyMiddleware
             'route' => $request->path(),
             'amount' => $request->input('amount'),
             'payment_method' => $request->input('payment_method'),
+            // 🐛 (2026-10-29) เดิมไม่มีผู้รับใน key — โอน QR ยอดเท่ากันให้ 2 คนในนาทีเดียว
+            //    รายการที่ 2 ได้ response เก่าของรายการแรก (ขึ้น "สำเร็จ" แต่เงินไม่ได้โอนจริง)
+            'to' => $request->input('wallet_address'),
             'timestamp' => now()->format('Y-m-d H:i'), // Group by minute
         ];
 

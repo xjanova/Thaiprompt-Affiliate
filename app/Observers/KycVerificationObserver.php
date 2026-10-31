@@ -4,10 +4,10 @@ namespace App\Observers;
 
 use App\Models\KycVerification;
 use App\Services\Ekyc\EkycService;
+use App\Services\Kyc\KycDocumentStorage;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class KycVerificationObserver
 {
@@ -147,30 +147,36 @@ class KycVerificationObserver
             return;
         }
 
-        $deletedFiles = [];
+        // 🔒 (2026-10-29) รูปแบบเดิมอยู่ได้ทั้ง private disk (ใหม่) และ public disk (ไฟล์เก่าที่ยังไม่ย้าย)
+        //    → KycDocumentStorage หา disk ให้เอง · ลบหลัง commit เหมือน eKYC (ธุรกรรมถูกย้อน = แถวยังอยู่ ไฟล์ต้องอยู่ด้วย)
+        $paths = array_values(array_filter([$kycVerification->id_card_image, $kycVerification->selfie_image]));
+        if (empty($paths)) {
+            return;
+        }
 
-        // ลบรูปบัตรประชาชน/ใบขับขี่
-        if ($kycVerification->id_card_image) {
-            if (Storage::disk('public')->exists($kycVerification->id_card_image)) {
-                Storage::disk('public')->delete($kycVerification->id_card_image);
-                $deletedFiles[] = $kycVerification->id_card_image;
+        $kycId = $kycVerification->id;
+        $userId = $kycVerification->user_id;
+
+        DB::afterCommit(function () use ($paths, $kycId, $userId) {
+            $documents = app(KycDocumentStorage::class);
+            $deleted = 0;
+
+            // ไฟล์ที่แถวอื่นยังชี้อยู่ (ใช้ร่วมกัน) ต้องเก็บไว้ — ไม่นับแถวนี้ (hook deleting = แถวยังไม่หายตอนเช็ค)
+            foreach ($paths as $path) {
+                if ($documents->exists($path) && ! $documents->isReferenced($path, $kycId)) {
+                    $documents->delete($path);
+                    $deleted++;
+                }
             }
-        }
 
-        // ลบรูป selfie
-        if ($kycVerification->selfie_image) {
-            if (Storage::disk('public')->exists($kycVerification->selfie_image)) {
-                Storage::disk('public')->delete($kycVerification->selfie_image);
-                $deletedFiles[] = $kycVerification->selfie_image;
+            if ($deleted > 0) {
+                // ไม่ log พาธไฟล์ — จำนวนพอ
+                Log::info('Deleted KYC images for privacy protection', [
+                    'kyc_id' => $kycId,
+                    'user_id' => $userId,
+                    'deleted_files' => $deleted,
+                ]);
             }
-        }
-
-        if (! empty($deletedFiles)) {
-            Log::info('Deleted KYC images for privacy protection', [
-                'kyc_id' => $kycVerification->id,
-                'user_id' => $kycVerification->user_id,
-                'deleted_files' => $deletedFiles,
-            ]);
-        }
+        });
     }
 }

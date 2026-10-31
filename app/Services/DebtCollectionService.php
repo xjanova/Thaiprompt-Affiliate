@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\EarningsLedger;
 use App\Models\Order;
-use App\Models\Refund;
 use App\Models\User;
 use App\Models\WalletDebt;
 use Illuminate\Support\Facades\DB;
@@ -445,7 +444,8 @@ class DebtCollectionService
             'all_debts' => $debts,
             'has_active_debt' => $activeDebts->count() > 0,
             'oldest_debt_date' => $activeDebts->min('created_at'),
-            'total_paid' => $debts->where('status', WalletDebt::STATUS_PAID)->sum('original_amount'),
+            // 🐛 (2026-10-29) เดิมนับเฉพาะหนี้ที่ชำระครบ — ยอดที่ถูกหักไปบางส่วนแล้วไม่ถูกนับ อัตราชำระบนหน้าเว็บต่ำกว่าจริง
+            'total_paid' => $debts->sum('deducted_amount'),
         ];
     }
 

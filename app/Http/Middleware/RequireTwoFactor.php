@@ -39,10 +39,23 @@ class RequireTwoFactor
             return $next($request);
         }
 
-        // Redirect to 2FA verification page
-        return redirect()->route('two-factor.verify', [
-            'action' => $action,
-            'redirect' => $request->fullUrl(),
-        ])->with('info', 'กรุณายืนยันตัวตนด้วย 2FA เพื่อดำเนินการต่อ');
+        // 🐛 (2026-10-29) แก้ 3 อย่าง:
+        //    1) เดิมเรียก route('two-factor.verify') ซึ่งไม่มีจริง (ชื่อจริง user.two-factor.verify)
+        //       → ทุกครั้งที่ต้องยืนยัน 2FA ก่อนโอน/ถอน ลูกค้าเจอ error 500
+        //    2) หน้าที่เรียกด้วย fetch (สแกนจ่าย) ได้ redirect เป็น HTML → JS อ่าน JSON ไม่ได้ ค้างที่ "โอนไม่สำเร็จ"
+        //    3) ยืนยันเสร็จแล้วพากลับ URL ของ POST → เปิดด้วย GET ไม่ได้ (405) ตอนนี้กลับหน้าฟอร์มเดิม
+        $back = $request->isMethod('GET') ? $request->fullUrl() : url()->previous();
+        $verifyUrl = route('user.two-factor.verify', ['action' => $action, 'redirect' => $back]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'TWO_FACTOR_REQUIRED',
+                'message' => 'กรุณายืนยันตัวตนด้วย 2FA ก่อนทำรายการนี้',
+                'verify_url' => $verifyUrl,
+            ], 403);
+        }
+
+        return redirect()->to($verifyUrl)->with('info', 'กรุณายืนยันตัวตนด้วย 2FA เพื่อดำเนินการต่อ');
     }
 }

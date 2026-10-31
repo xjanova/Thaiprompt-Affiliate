@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingNotification;
 use App\Models\ServiceProvider;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -13,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
  * ServiceBookingNotificationService
  *
  * บริการส่งการแจ้งเตือนสำหรับ Service Booking System
- * รองรับ LINE OA, Email, SMS, Push Notification
+ * รองรับ In-App, Push Notification (แอป), Email, SMS — ไม่มี LINE (เอาออก 2026-10-16)
  */
 class ServiceBookingNotificationService
 {
@@ -26,13 +25,14 @@ class ServiceBookingNotificationService
     {
         $results = [];
 
-        // 1. LINE OA (ลำดับความสำคัญสูงสุด)
-        if ($provider->hasLineConnected() && $provider->isLineNotificationEnabled()) {
-            $results['line'] = $this->sendLineNotification($booking, $provider, 'new_booking');
-        }
+        // 🚫 (2026-10-16) ไม่แจ้งผ่าน LINE แล้ว — owner: "เราไม่เน้นแจ้งไลน์ แล้วเอาออกเลยแจ้งผ่านแอพอย่างเดียว"
+        //    (LINE push API กินโควต้า 300/เดือน · .claude/LINE_MESSAGING_RULES.md) ⇒ แจ้งในแอป + push มือถือเท่านั้น
 
         // 2. In-App Notification
         $results['in_app'] = $this->sendInAppNotification($booking, $provider, 'new_booking');
+
+        // 3. 🔔 push เข้ามือถือผู้ให้บริการ (ผ่าน NotificationService → SendNotificationPush)
+        $results['push'] = $this->pushToProvider($booking, $provider, 'new_booking');
 
         // 3. Email (ถ้าต้องการ)
         if ($provider->email_notifications ?? false) {
@@ -45,192 +45,6 @@ class ServiceBookingNotificationService
         }
 
         return $results;
-    }
-
-    /**
-     * ส่ง LINE Notification
-     */
-    public function sendLineNotification(ServiceBooking $booking, ServiceProvider $provider, string $type): array
-    {
-        if (! $provider->line_user_id) {
-            return $this->createFailedNotification($booking, $provider, 'line', $type, 'ไม่มี LINE User ID');
-        }
-
-        try {
-            // สร้างข้อความตามประเภท
-            $message = $this->buildLineMessage($booking, $type);
-
-            // ส่งผ่าน LINE Messaging API
-            $response = $this->sendLineMessage($provider->line_user_id, $message);
-
-            // บันทึก notification
-            $notification = $this->createNotification($booking, $provider, 'line', $type, $message);
-            $notification->markAsSent();
-
-            return [
-                'success' => true,
-                'channel' => 'line',
-                'notification_id' => $notification->id,
-                'response' => $response,
-            ];
-        } catch (\Exception $e) {
-            Log::error('LINE Notification Error', [
-                'booking_id' => $booking->id,
-                'provider_id' => $provider->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            $notification = $this->createNotification($booking, $provider, 'line', $type, $message ?? '');
-            $notification->markAsFailed($e->getMessage());
-
-            return [
-                'success' => false,
-                'channel' => 'line',
-                'error' => $e->getMessage(),
-                'notification_id' => $notification->id,
-            ];
-        }
-    }
-
-    /**
-     * สร้างข้อความ LINE
-     */
-    protected function buildLineMessage(ServiceBooking $booking, string $type): array
-    {
-        $messages = [
-            'new_booking' => [
-                'type' => 'flex',
-                'altText' => '🔔 มีงานใหม่! งานจอง #'.$booking->booking_number,
-                'contents' => [
-                    'type' => 'bubble',
-                    'header' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [
-                            [
-                                'type' => 'text',
-                                'text' => '🔔 งานใหม่!',
-                                'weight' => 'bold',
-                                'size' => 'xl',
-                                'color' => '#FF6B6B',
-                            ],
-                        ],
-                    ],
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [
-                            [
-                                'type' => 'text',
-                                'text' => $booking->service->name ?? 'บริการ',
-                                'weight' => 'bold',
-                                'size' => 'lg',
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'margin' => 'md',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '📅', 'flex' => 0],
-                                    ['type' => 'text', 'text' => $booking->scheduled_at->format('d/m/Y H:i'), 'margin' => 'sm'],
-                                ],
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '💰', 'flex' => 0],
-                                    ['type' => 'text', 'text' => number_format($booking->total_amount, 2).' ฿', 'margin' => 'sm'],
-                                ],
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '📍', 'flex' => 0],
-                                    ['type' => 'text', 'text' => number_format($booking->distance_km, 1).' km', 'margin' => 'sm'],
-                                ],
-                            ],
-                        ],
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'sm',
-                        'contents' => [
-                            [
-                                'type' => 'button',
-                                'style' => 'primary',
-                                'color' => '#4CAF50',
-                                'action' => [
-                                    'type' => 'uri',
-                                    'label' => '✅ รับงาน',
-                                    'uri' => route('provider.bookings.accept', $booking->id),
-                                ],
-                            ],
-                            [
-                                'type' => 'button',
-                                'style' => 'secondary',
-                                'action' => [
-                                    'type' => 'uri',
-                                    'label' => '❌ ปฏิเสธ',
-                                    'uri' => route('provider.bookings.reject', $booking->id),
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-
-            'booking_accepted' => [
-                'type' => 'text',
-                'text' => "✅ ผู้ให้บริการรับงานแล้ว\n\nเลขที่จอง: {$booking->booking_number}\nผู้ให้บริการ: {$booking->provider->name}\nเวลานัดหมาย: {$booking->scheduled_at->format('d/m/Y H:i')}",
-            ],
-
-            'booking_rejected' => [
-                'type' => 'text',
-                'text' => "❌ ผู้ให้บริการปฏิเสธงาน\n\nเลขที่จอง: {$booking->booking_number}\nเหตุผล: {$booking->provider_rejected_reason}",
-            ],
-
-            'provider_on_way' => [
-                'type' => 'text',
-                'text' => "🚗 ผู้ให้บริการกำลังเดินทาง\n\nเลขที่จอง: {$booking->booking_number}\nผู้ให้บริการ: {$booking->provider->name}",
-            ],
-
-            'service_completed' => [
-                'type' => 'text',
-                'text' => "✨ บริการเสร็จสิ้น\n\nเลขที่จอง: {$booking->booking_number}\n\nกรุณาให้คะแนนและรีวิวบริการ",
-            ],
-        ];
-
-        return $messages[$type] ?? [
-            'type' => 'text',
-            'text' => "การแจ้งเตือนจากระบบจองบริการ\nเลขที่จอง: {$booking->booking_number}",
-        ];
-    }
-
-    /**
-     * ส่งข้อความผ่าน LINE Messaging API
-     */
-    protected function sendLineMessage(string $lineUserId, array $message): array
-    {
-        $channelAccessToken = config('services.line.channel_access_token');
-
-        if (! $channelAccessToken) {
-            throw new \Exception('LINE Channel Access Token ไม่ถูกตั้งค่า');
-        }
-
-        $response = Http::withToken($channelAccessToken)
-            ->post('https://api.line.me/v2/bot/message/push', [
-                'to' => $lineUserId,
-                'messages' => [$message],
-            ]);
-
-        if (! $response->successful()) {
-            throw new \Exception('LINE API Error: '.$response->body());
-        }
-
-        return $response->json();
     }
 
     /**
@@ -332,6 +146,111 @@ class ServiceBookingNotificationService
             'channel' => 'sms',
             'notification_id' => $notification->id,
         ];
+    }
+
+    /**
+     * 🔔 (2026-10-16) แจ้งเตือน + push เข้ามือถือ "ลูกค้า" ตามสถานะการจอง
+     *
+     * ผ่าน NotificationService::create เท่านั้น (ทางเดียวที่ push ออก) · ❌ ไม่ใช้ LINE push (โควต้า 300/เดือน)
+     * ส่งไม่ได้ต้องไม่ทำให้การจอง/การคืนเงินล้ม → กลืน error แล้ว log
+     *
+     * @param  string  $event  booking_accepted | booking_rejected | provider_on_way | service_completed | booking_cancelled
+     */
+    public function pushToCustomer(ServiceBooking $booking, string $event): bool
+    {
+        $user = $booking->user;
+        if (! $user) {
+            return false;
+        }
+
+        $number = $booking->booking_number;
+        $serviceName = $booking->service->name ?? 'บริการ';
+        $providerName = $booking->provider->name ?? 'ผู้ให้บริการ';
+
+        [$title, $message, $priority] = match ($event) {
+            'booking_accepted' => ['✅ ผู้ให้บริการรับงานแล้ว', "{$providerName} รับงาน {$serviceName} แล้ว · เลขที่จอง {$number}", 'high'],
+            'booking_rejected' => ['ผู้ให้บริการไม่สะดวกรับงาน', "การจอง {$number} กำลังหาผู้ให้บริการใหม่ให้ หรือยกเลิกได้ในแอป", 'high'],
+            'provider_on_way' => ['🚗 ผู้ให้บริการกำลังเดินทาง', "{$providerName} กำลังไปหาคุณ · เลขที่จอง {$number}", 'high'],
+            'service_completed' => ['✨ บริการเสร็จสิ้น', "ขอบคุณที่ใช้บริการ {$serviceName} · ให้คะแนนผู้ให้บริการได้ในแอป", 'normal'],
+            'booking_cancelled' => ['❌ การจองถูกยกเลิก', $booking->payment_status === 'refunded'
+                ? "การจอง {$number} ถูกยกเลิก · คืนเงินเข้ากระเป๋าแล้ว"
+                : "การจอง {$number} ถูกยกเลิก", 'high'],
+            default => ['แจ้งเตือนการจองบริการ', "เลขที่จอง {$number}", 'normal'],
+        };
+
+        return $this->pushTo($user, 'service_booking_'.$event, $title, $message, $priority, $booking, 'user.bookings.show');
+    }
+
+    /**
+     * 🔔 (2026-10-16) แจ้งเตือน + push เข้ามือถือ "ผู้ให้บริการ"
+     *
+     * @param  string  $event  new_booking | booking_cancelled
+     */
+    public function pushToProvider(ServiceBooking $booking, ServiceProvider $provider, string $event): bool
+    {
+        $user = $provider->user;
+        if (! $user) {
+            return false;
+        }
+
+        $number = $booking->booking_number;
+        $serviceName = $booking->service->name ?? 'บริการ';
+
+        [$title, $message, $priority] = match ($event) {
+            'new_booking' => ['🔔 มีงานจองใหม่!', "{$serviceName} · ".number_format((float) $booking->total_amount, 0).' บาท · กดรับงานในแอป', 'urgent'],
+            'booking_cancelled' => ['❌ ลูกค้ายกเลิกการจอง', "การจอง {$number} ({$serviceName}) ถูกยกเลิกแล้ว", 'high'],
+            default => ['แจ้งเตือนงานบริการ', "เลขที่จอง {$number}", 'normal'],
+        };
+
+        return $this->pushTo($user, 'service_booking_provider_'.$event, $title, $message, $priority, $booking, 'provider.bookings.show');
+    }
+
+    /**
+     * สร้างแจ้งเตือนในระบบ (→ กล่องแจ้งเตือนแอป + push) แบบไม่ทำให้ธุรกรรมต้นทางล้ม
+     */
+    protected function pushTo(
+        \App\Models\User $user,
+        string $type,
+        string $title,
+        string $message,
+        string $priority,
+        ServiceBooking $booking,
+        string $routeName
+    ): bool {
+        try {
+            $url = null;
+            try {
+                $url = route($routeName, $booking->id);
+            } catch (\Throwable) {
+                // ไม่มี route → แจ้งเตือนแบบไม่มีลิงก์
+            }
+
+            app(NotificationService::class)->create(
+                $user,
+                $type,
+                $title,
+                $message,
+                [
+                    'booking_id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'channel' => in_array($priority, ['high', 'urgent'], true) ? 'important' : 'orders',
+                ],
+                $url,
+                'ดูการจอง',
+                $priority
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('ServiceBooking push failed', [
+                'booking_id' => $booking->id,
+                'user_id' => $user->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

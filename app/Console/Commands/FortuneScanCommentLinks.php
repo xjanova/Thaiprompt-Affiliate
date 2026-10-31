@@ -147,9 +147,11 @@ class FortuneScanCommentLinks extends Command
             if ($block && ! isset($seenPsid[$psid])) {
                 $seenPsid[$psid] = true;
                 try {
-                    $blockedOk = $fb->blockPageUser($psid);
+                    $ban = $banService->ban('facebook', $psid, null, 'auto (ย้อนหลัง): โพสต์ลิงก์ภายนอกในคอมเมนต์ ('.$domain.')', null, $name);
+                    $botBanned = true;
+                    $blockedOk = $ban->isFullyEnforced();
                     if (! $blockedOk) {
-                        $blockError = $fb->lastFetchError ?? 'unknown';
+                        $blockError = $ban->page_block_error ?? 'unknown';
                         $stats['block_failed']++;
                     } else {
                         $stats['blocked']++;
@@ -157,13 +159,6 @@ class FortuneScanCommentLinks extends Command
                 } catch (\Throwable $e) {
                     $blockError = $e->getMessage();
                     $stats['block_failed']++;
-                }
-
-                try {
-                    $banService->ban('facebook', $psid, null, 'auto (ย้อนหลัง): โพสต์ลิงก์ภายนอกในคอมเมนต์ ('.$domain.')', null, $name);
-                    $botBanned = true;
-                } catch (\Throwable $e) {
-                    Log::warning('scan-comment-links: ban ล้ม: '.$e->getMessage());
                 }
             }
 

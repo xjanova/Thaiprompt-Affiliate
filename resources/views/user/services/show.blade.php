@@ -260,7 +260,7 @@
                                     <input type="radio" name="payment_method" value="wallet" required
                                            class="w-4 h-4 text-purple-600 focus:ring-purple-500">
                                     <i class="fas fa-wallet text-purple-400"></i>
-                                    <span class="text-sm font-medium text-white">กระเป๋าเงิน (ยอดคงเหลือ: ฿{{ number_format(auth()->user()->wallet_balance ?? 0, 2) }})</span>
+                                    <span class="text-sm font-medium text-white">กระเป๋าเงิน (ยอดคงเหลือ: ฿{{ number_format((float) (auth()->user()->wallet?->balance ?? 0), 2) }})</span>
                                 </label>
                                 <label class="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-lg rounded-lg cursor-pointer hover:bg-white/15 transition-colors">
                                     <input type="radio" name="payment_method" value="promptpay" required

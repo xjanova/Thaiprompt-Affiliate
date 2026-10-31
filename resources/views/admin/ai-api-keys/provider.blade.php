@@ -175,7 +175,7 @@
     {{-- ── ตาราง Keys ── --}}
     <div class="tp-card" style="padding:0;overflow:hidden;">
         <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;min-width:1000px;">
+            <table style="width:100%;border-collapse:collapse;min-width:1200px;">
                 <thead>
                     <tr>
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">ชื่อ / Key</th>
@@ -183,6 +183,9 @@
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">Priority</th>
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">Tokens วันนี้</th>
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">Tokens เดือนนี้</th>
+                        {{-- 💰 (2026-10-30) ราคาโมเดล + ค่าใช้จ่ายเดือนนี้ --}}
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);" title="ราคาทางการของค่าย (USD) — เข้า = input, ออก = output, cache = input ที่ cache ไว้">ราคา (USD / 1M)</th>
+                        <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);" title="ประมาณจาก input/output tokens ใน usage logs เดือนนี้ × ราคาโมเดล (ไม่รวมส่วนลด cache)">ค่าใช้จ่ายเดือนนี้</th>
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">Requests</th>
                         <th style="text-align:left;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">ใช้ล่าสุด</th>
                         <th style="text-align:right;padding:12px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);border-bottom:1px solid var(--sd);">จัดการ</th>
@@ -304,6 +307,35 @@
                                 @endif
                             </div>
                         </td>
+                        {{-- 💰 ราคาโมเดลที่ key นี้ใช้จริง --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);color:var(--ink);white-space:nowrap;">
+                            @php $price = $key['pricing'] ?? null; @endphp
+                            @if($price === null)
+                                <span class="tp-muted" style="font-size:.8rem;" title="{{ $key['resolved_model'] ?? '-' }}">ไม่ทราบราคา</span>
+                            @elseif($price['free'])
+                                <span class="tp-pill" style="background:color-mix(in srgb, #5aa07e 18%, transparent);color:#3f7a5e;">ฟรี</span>
+                            @elseif($price['unit'] === 'chars')
+                                <div style="font-size:.85rem;font-family:monospace;">${{ rtrim(rtrim(number_format($price['input'], 2), '0'), '.') }}</div>
+                                <div class="tp-muted" style="font-size:.72rem;">ต่อ 1M ตัวอักษร</div>
+                            @else
+                                <div style="font-size:.85rem;font-family:monospace;" title="เข้า (input) / ออก (output)">
+                                    ${{ rtrim(rtrim(number_format($price['input'], 4), '0'), '.') }} / ${{ rtrim(rtrim(number_format($price['output'], 4), '0'), '.') }}
+                                </div>
+                                <div class="tp-muted" style="font-size:.72rem;">
+                                    เข้า / ออก
+                                    @if($price['cached'] !== null)
+                                        · cache ${{ rtrim(rtrim(number_format($price['cached'], 4), '0'), '.') }}
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+                        {{-- 💰 ค่าใช้จ่ายเดือนนี้ (ประมาณ) --}}
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--sd);color:var(--ink);white-space:nowrap;">
+                            <span class="tp-num" style="font-size:.88rem;font-weight:700;color:var(--ink);">≈ ${{ number_format($key['cost_month_usd'] ?? 0, 2) }}</span>
+                            @if(!empty($key['cost_month_partial']))
+                                <div style="font-size:.72rem;color:#b3622e;" title="มี token ของโมเดลที่ไม่รู้ราคา — ยอดจริงสูงกว่านี้">+ บางส่วนไม่ทราบราคา</div>
+                            @endif
+                        </td>
                         {{-- Requests --}}
                         <td style="padding:12px 16px;border-bottom:1px solid var(--sd);color:var(--ink);">
                             <span style="font-size:.88rem;color:var(--ink);">{{ number_format($key['requests_today']) }}</span>
@@ -351,7 +383,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" style="padding:48px 16px;text-align:center;">
+                        <td colspan="10" style="padding:48px 16px;text-align:center;">
                             <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
                                 <i class="fas fa-key" style="font-size:2.2rem;color:var(--ink2);opacity:.5;"></i>
                                 <p class="tp-muted" style="margin:0;">ยังไม่มี API Key สำหรับ {{ $providerName }}</p>

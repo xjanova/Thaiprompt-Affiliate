@@ -226,7 +226,6 @@
                     </div>
                 </div>
 
-                {{-- หมายเหตุ: ระบบสีถูกจัดการโดย Custom Theme (ThemeSetting) แล้ว --}}
                 <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
                     <div class="flex items-start gap-3">
                         <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-xl mt-1"></i>

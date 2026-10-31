@@ -48,7 +48,6 @@ class ApiThrottleTest extends TestCase
             ['POST', 'api/v1/wallet/pin'],
             ['POST', 'api/v1/wallet/bank-accounts'],
             ['POST', 'api/v1/orders/{id}/cancel'],
-            ['POST', 'api/v1/events/batch'],
             ['DELETE', 'api/v1/account'],
             ['POST', 'api/v1/web-session'],
             ['POST', 'api/v1/rider/register'],
@@ -132,7 +131,7 @@ class ApiThrottleTest extends TestCase
         $this->assertStringContainsString('203.0.113.9', $guestLimit->key);
 
         // อ่านอย่างเดียว (CGNAT) ได้โควต้ามากกว่า
-        $guestRead = Request::create('/api/v1/app/config', 'GET', [], [], [], ['REMOTE_ADDR' => '203.0.113.9']);
+        $guestRead = Request::create('/api/v1/banners', 'GET', [], [], [], ['REMOTE_ADDR' => '203.0.113.9']);
         $this->assertGreaterThan($guestLimit->maxAttempts, $limiter($guestRead)->maxAttempts);
     }
 

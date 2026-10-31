@@ -483,10 +483,10 @@ function idCardDesigner() {
             name: '{{ $setting->name ?? "ID Card Setting" }}',
             background_type: '{{ $setting->background_type ?? "gradient" }}',
             background_color: '{{ $setting->background_color ?? "#8B5CF6" }}',
-            background_gradient: @json($setting->background_gradient ?? ['from' => '#8B5CF6', 'via' => '#EC4899', 'to' => '#3B82F6', 'direction' => 'br']),
+            background_gradient: {{ Js::from($setting->background_gradient ?? ['from' => '#8B5CF6', 'via' => '#EC4899', 'to' => '#3B82F6', 'direction' => 'br']) }},
             background_image: '{{ $setting->background_image ?? "" }}',
             overlay_opacity: {{ $setting->overlay_opacity ?? 0 }},
-            effects: @json($setting->effects ?? ['shimmer' => false, 'particles' => false, 'glow' => false, 'holographic' => false]),
+            effects: {{ Js::from($setting->effects ?? ['shimmer' => false, 'particles' => false, 'glow' => false, 'holographic' => false]) }},
         },
 
         // Element positions

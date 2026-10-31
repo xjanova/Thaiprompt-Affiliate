@@ -1,204 +1,161 @@
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
-@section('title', 'ประวัติการถอนเงิน')
+@section('title', 'คำขอถอนเงินของฉัน')
 
 @php
-    use Illuminate\Support\Str;
-
-    // ── map สีสถานะ (status_color) → hex สำหรับ V4 (เลี่ยง dynamic tailwind class) ──
-    $wStatusColor = function ($c) {
-        return match ($c) {
-            'green', 'emerald' => '#5aa07e',
-            'yellow', 'amber' => '#e0a52e',
-            'red', 'rose' => '#d9534f',
-            'blue', 'indigo' => '#5689b8',
-            default => 'var(--ink2)',
-        };
-    };
-
-    // ── สถิติ 4 ใบ (จาก $statistics ที่ controller ส่งมา) ──
-    $wStatCards = [
-        ['label' => 'ถอนทั้งหมด',   'val' => '฿' . number_format($statistics['total_amount'] ?? 0, 2), 'color' => 'var(--deep1)', 'soft' => 'color-mix(in srgb, var(--accent1) 16%, transparent)', 'icon' => '💰'],
-        ['label' => 'รอดำเนินการ', 'val' => number_format($statistics['pending_count'] ?? 0),         'color' => '#e0a52e',      'soft' => 'rgba(224,165,46,.16)',  'icon' => '⏳'],
-        ['label' => 'สำเร็จ',       'val' => number_format($statistics['completed_count'] ?? 0),       'color' => '#5aa07e',      'soft' => 'rgba(90,160,126,.16)',  'icon' => '✅'],
-        ['label' => 'ปฏิเสธ',       'val' => number_format($statistics['rejected_count'] ?? 0),        'color' => '#d9534f',      'soft' => 'rgba(217,83,79,.16)',   'icon' => '❌'],
+    // คำขอถอนเงิน — ธีมโนวาเต็ม
+    // 🐛 (2026-10-29) เดิมอ่าน $statistics['total_amount'/'pending_count'/...] ซึ่ง service ไม่มี key พวกนี้
+    //    → การ์ดสถิติเป็น 0 ตลอด · ตอนนี้ใช้ key จริงจาก WithdrawalService::getWithdrawalStatistics
+    // 🐛 เดิมโชว์ "เสร็จ" จาก completed_at ซึ่งไม่มีคอลัมน์นี้ — ของจริงคือ transfer_completed_at
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $baht = fn ($n) => '฿'.number_format((float) $n, 2);
+    $stats = $statistics ?? [];
+    $doneTotal = (float) ($stats['total_completed'] ?? 0);
+    [$doneInt, $doneDec] = explode('.', number_format($doneTotal, 2));
+    $kpis = [
+        ['images/nova/wallet/withdraw.webp', 'ยอดที่ขอถอนทั้งหมด', 'Requested', $baht($stats['total_requested'] ?? 0), null],
+        ['images/nova/wallet/hourglass.webp', 'รอตรวจสอบ', 'Pending', number_format((int) ($stats['count_pending'] ?? 0)).' รายการ', 'ยอดรวม '.$baht($stats['total_pending'] ?? 0)],
+        ['images/nova/wallet/bank.webp', 'โอนสำเร็จ', 'Completed', number_format((int) ($stats['count_completed'] ?? 0)).' รายการ', 'ค่าธรรมเนียมรวม '.$baht($stats['total_fees'] ?? 0)],
+        ['images/nova/wallet/scale.webp', 'ถูกปฏิเสธ', 'Rejected', number_format((int) ($stats['count_rejected'] ?? 0)).' รายการ', 'เงินคืนเข้ากระเป๋าแล้ว'],
     ];
+    $tone = fn ($s) => match ($s) {
+        'pending' => 'nvm-chip--info',
+        'processing' => 'nvm-chip--warn',
+        'approved' => 'nvm-chip--gold',
+        'completed' => 'nvm-chip--ok',
+        'rejected' => 'nvm-chip--bad',
+        default => '',
+    };
+    $last4 = fn ($no) => substr(preg_replace('/[^0-9A-Za-z]/', '', (string) $no), -4);
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── หัวข้อ (Hero) ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <a href="{{ route('user.wallet.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-clipboard-list" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ประวัติการถอนเงิน</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">รายการคำขอถอนเงินทั้งหมด</div>
+<section class="nvm-ph" aria-labelledby="nvm-wds-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-ph__back" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าเงิน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Withdrawals</div>
+            <h1 id="nvm-wds-h">คำขอถอนเงินของฉัน</h1>
+            <p class="nvm-ph__lead">ติดตามสถานะทุกคำขอ · ตรวจภายใน 24 ชั่วโมง โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน</p>
+            <div class="nvm-bal">
+                <small>รับเข้าบัญชีแล้วทั้งหมด</small>
+                <b class="nvm-foil nvm-num">฿{{ $doneInt }}<span>.{{ $doneDec }}</span></b>
             </div>
-            <a href="{{ route('user.wallet.withdraw') }}" class="tp-btn tp-btn-primary">💸 ถอนเงิน</a>
+            @if($nvR('user.wallet.withdraw'))
+                <div class="nvm-gap-t"><a class="nvm-btn nvm-btn--gold" href="{{ route('user.wallet.withdraw') }}"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ถอนเงิน</a></div>
+            @endif
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── สถิติ 4 ใบ ───────────────────────────────────────── --}}
-    @if(isset($statistics))
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
-        @foreach($wStatCards as $c)
-            <div class="tp-card" style="padding:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $c['label'] }}</div>
-                    <span class="tp-tile" style="width:40px; height:40px; border-radius:12px; font-size:18px; background:{{ $c['soft'] }};">{{ $c['icon'] }}</span>
-                </div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; margin-top:10px; color:{{ $c['color'] }};">{{ $c['val'] }}</div>
-            </div>
-        @endforeach
-    </div>
-    @endif
-
-    {{-- ── ตารางคำขอถอนเงิน ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; align-items:center; gap:10px; padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-            <div class="tp-section-h">📋 รายการคำขอถอนเงิน</div>
+<section class="nvm-kpis" aria-label="สรุปคำขอถอนเงิน">
+    @foreach($kpis as [$img, $label, $en, $value, $foot])
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset($img) }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">{{ $label }}</div>
+            <div class="nvm-kpi__en nvm-latin">{{ $en }}</div>
+            <div class="nvm-kpi__val nvm-num">{{ $value }}</div>
+            @if($foot)<div class="nvm-kpi__foot"><small>{{ $foot }}</small></div>@endif
         </div>
+    @endforeach
+</section>
 
-        <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <thead>
-                    <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">รหัสคำขอ</th>
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">จำนวนเงิน</th>
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">ช่องทางรับเงิน</th>
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:center; white-space:nowrap;">สถานะ</th>
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right; white-space:nowrap;">วันที่สร้าง</th>
-                        <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:center; white-space:nowrap;">การจัดการ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($withdrawals as $withdrawal)
-                        @php $stColor = $wStatusColor($withdrawal->status_color); @endphp
-                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                            {{-- รหัสคำขอ --}}
-                            <td style="padding:12px 16px; vertical-align:top;">
-                                <div class="tp-num" style="font-size:12.5px; font-weight:700; color:var(--ink);">{{ $withdrawal->request_id }}</div>
-                                @if($withdrawal->user_note)
-                                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ Str::limit($withdrawal->user_note, 30) }}</div>
-                                @endif
-                            </td>
-                            {{-- จำนวนเงิน --}}
-                            <td style="padding:12px 16px; vertical-align:top; white-space:nowrap;">
-                                <div class="tp-num" style="font-size:13px; font-weight:800; color:var(--ink);">฿{{ number_format($withdrawal->amount, 2) }}</div>
-                                @if($withdrawal->fee > 0)
-                                    <div class="tp-num" style="font-size:11px; color:var(--ink2);">ค่าธรรมเนียม: ฿{{ number_format($withdrawal->fee, 2) }}</div>
-                                @endif
-                                @if($withdrawal->net_amount != $withdrawal->amount)
-                                    <div class="tp-num" style="font-size:11px; font-weight:700; color:#5aa07e;">รับสุทธิ: ฿{{ number_format($withdrawal->net_amount, 2) }}</div>
-                                @endif
-                            </td>
-                            {{-- ช่องทางรับเงิน --}}
-                            <td style="padding:12px 16px; vertical-align:top;">
-                                @if($withdrawal->paymentMethod)
-                                    <div style="font-size:12.5px; font-weight:600; color:var(--ink);">
-                                        @if($withdrawal->payment_type === 'bank_transfer')
-                                            🏦 {{ $withdrawal->paymentMethod->bank_name }}
-                                        @elseif($withdrawal->payment_type === 'promptpay')
-                                            💳 PromptPay
-                                        @elseif($withdrawal->payment_type === 'paypal')
-                                            💰 PayPal
-                                        @else
-                                            {{ $withdrawal->payment_type_label }}
-                                        @endif
-                                    </div>
-                                    <div style="font-size:11px; color:var(--ink2);">{{ $withdrawal->paymentMethod->name }}</div>
-                                @else
-                                    <div style="font-size:12.5px; color:var(--ink2);">-</div>
-                                @endif
-                            </td>
-                            {{-- สถานะ --}}
-                            <td style="padding:12px 16px; text-align:center; vertical-align:top;">
-                                <span class="tp-pill" style="color:{{ $stColor }}; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">{{ $withdrawal->status_label }}</span>
-                                @if($withdrawal->rejection_reason)
-                                    <div style="font-size:11px; color:#d9534f; margin-top:4px;">{{ Str::limit($withdrawal->rejection_reason, 30) }}</div>
-                                @endif
-                            </td>
-                            {{-- วันที่สร้าง --}}
-                            <td class="tp-num" style="padding:12px 16px; text-align:right; vertical-align:top; white-space:nowrap;">
-                                <div style="color:var(--ink);">{{ $withdrawal->created_at->format('d/m/Y') }}</div>
-                                <div style="font-size:11px; color:var(--ink2);">{{ $withdrawal->created_at->format('H:i') }}</div>
-                                @if($withdrawal->completed_at)
-                                    <div style="font-size:11px; color:#5aa07e; margin-top:2px;">เสร็จ: {{ $withdrawal->completed_at->format('d/m/Y') }}</div>
-                                @endif
-                            </td>
-                            {{-- การจัดการ --}}
-                            <td style="padding:12px 16px; text-align:center; vertical-align:top; white-space:nowrap;">
-                                @if($withdrawal->isPending())
-                                    <form method="POST" action="{{ route('user.wallet.withdrawal.cancel', $withdrawal->id) }}" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                onclick="return confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกคำขอนี้?')"
-                                                class="tp-btn tp-btn-sm"
-                                                style="color:#d9534f; background:color-mix(in srgb, #d9534f 14%, transparent);">
-                                            ยกเลิก
-                                        </button>
-                                    </form>
-                                @elseif($withdrawal->transfer_slip_url)
-                                    <a href="{{ $withdrawal->transfer_slip_url }}"
-                                       target="_blank"
-                                       class="tp-btn tp-btn-sm"
-                                       style="color:#5689b8; background:rgba(86,137,184,.14);">
-                                        ดูสลิป
-                                    </a>
-                                @else
-                                    <span style="font-size:11px; color:var(--ink2);">-</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" style="padding:56px 20px; text-align:center; color:var(--ink2);">
-                                <div style="font-size:52px; opacity:.5;">📭</div>
-                                <div style="font-weight:700; font-size:15px; margin-top:8px;">ยังไม่มีรายการคำขอถอนเงิน</div>
-                                <a href="{{ route('user.wallet.withdraw') }}" class="tp-btn tp-btn-primary tp-btn-sm" style="margin-top:14px;">สร้างคำขอถอนเงิน</a>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-wdl-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Requests</small><h2 id="nvm-wdl-h">รายการคำขอถอนเงิน</h2></div></div>
 
-        {{-- ── Pagination ──────────────────────────────────────── --}}
-        @if($withdrawals->hasPages())
-            <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                {{ $withdrawals->links() }}
+        @if($withdrawals->isEmpty())
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีคำขอถอนเงิน</b>
+                ถอนเงินเข้าบัญชีธนาคารหรือพร้อมเพย์ได้ตลอด ระบบจะโอนให้ตามรอบ
+                @if($nvR('user.wallet.withdraw'))
+                    <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.wallet.withdraw') }}"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>สร้างคำขอถอนเงิน</a></div>
+                @endif
             </div>
+        @else
+            <ul class="nvm-txs">
+                @foreach($withdrawals as $w)
+                    @php
+                        // ใช้ข้อมูลบัญชีที่บันทึกไว้ตอนยื่นคำขอก่อน — บัญชีในโปรไฟล์อาจถูกแก้/ลบไปแล้ว
+                        $pd = is_array($w->payment_details) ? $w->payment_details : [];
+                        $pmType = $pd['type'] ?? $w->payment_type;
+                        $pmTitle = match ($pmType) {
+                            'bank_transfer' => $pd['bank_name'] ?? optional($w->paymentMethod)->bank_name ?? 'โอนเข้าบัญชีธนาคาร',
+                            'promptpay' => 'พร้อมเพย์',
+                            'paypal' => 'PayPal',
+                            default => $w->payment_type_label,
+                        };
+                        $pmNo = $pd['account_number'] ?? optional($w->paymentMethod)->account_number;
+                    @endphp
+                    <li class="nvm-tx">
+                        <span class="nvm-tx__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $pmType === 'promptpay' ? 'qr' : 'bank' }}"/></svg></span>
+                        <div class="nvm-tx__t">
+                            <b>{{ $pmTitle }}@if($pmNo) <span class="nvm-num">•••• {{ $last4($pmNo) }}</span>@endif</b>
+                            <small class="nvm-num">{{ $w->request_id }}</small>
+                            @if($w->fee > 0 || $w->tax > 0)
+                                <small class="nvm-num">ขอถอน {{ $baht($w->amount) }}@if($w->fee > 0) · ค่าธรรมเนียม {{ $baht($w->fee) }}@endif @if($w->tax > 0) · ภาษี {{ $baht($w->tax) }}@endif</small>
+                            @endif
+                            @if($w->user_note)<small>หมายเหตุ: {{ \Illuminate\Support\Str::limit($w->user_note, 80) }}</small>@endif
+                            @if($w->isRejected() && $w->rejection_reason)
+                                <small class="nvm-err">เหตุผลที่ปฏิเสธ: {{ $w->rejection_reason }}</small>
+                            @endif
+                            @if($w->transfer_completed_at)
+                                <small>โอนเมื่อ <span class="nvm-num">{{ $w->transfer_completed_at->format('d/m/Y H:i') }}</span></small>
+                            @endif
+                        </div>
+                        <div class="nvm-tx__r">
+                            <span class="nvm-tx__amt nvm-num {{ in_array($w->status, ['rejected', 'cancelled'], true) ? 'is-void' : '' }}">{{ $baht($w->net_amount) }}</span>
+                            <span class="nvm-chip {{ $tone($w->status) }}">{{ $w->status_label }}</span>
+                            <time class="nvm-num" datetime="{{ $w->created_at->toIso8601String() }}">{{ $w->created_at->format('d/m/Y H:i') }}</time>
+                            @if($w->isPending())
+                                {{-- ยกเลิกต้องยืนยันอีกครั้ง (กดพลาดบนมือถือ = เสียคิวรอบโอน) --}}
+                                <form method="POST" action="{{ route('user.wallet.withdrawal.cancel', $w->id) }}" class="nvm-tx__act" x-data="{ ask: false, busy: false }" @submit="busy = true">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="nvm-link" x-show="! ask" @click="ask = true">ยกเลิกคำขอ</button>
+                                    <span x-show="ask" x-cloak>
+                                        <button type="submit" class="nvm-btn nvm-btn--sm nvm-btn--bad" :disabled="busy" x-text="busy ? 'กำลังยกเลิก…' : 'ยืนยันยกเลิก'">ยืนยันยกเลิก</button>
+                                        <button type="button" class="nvm-link" @click="ask = false" :disabled="busy">ไม่ใช่</button>
+                                    </span>
+                                </form>
+                            @elseif($w->transfer_slip_url)
+                                <a class="nvm-link" href="{{ $w->transfer_slip_url }}" target="_blank" rel="noopener">ดูสลิปโอน</a>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+            @if($withdrawals->hasPages())
+                <div class="nvm-pager">{{ $withdrawals->links() }}</div>
+            @endif
         @endif
-    </div>
+    </section>
 
-    {{-- ── ข้อมูลเพิ่มเติม ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">ℹ️ ข้อมูลเพิ่มเติม</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px;">
-            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
-                <div style="font-weight:700; font-size:13px; margin-bottom:8px;">สถานะการถอนเงิน</div>
-                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink2);">
-                    <li>🟡 <strong style="color:var(--ink);">รอดำเนินการ</strong> - คำขอยังไม่ได้รับการตรวจสอบ</li>
-                    <li>🔵 <strong style="color:var(--ink);">กำลังดำเนินการ</strong> - กำลังโอนเงิน</li>
-                    <li>🟢 <strong style="color:var(--ink);">สำเร็จ</strong> - โอนเงินสำเร็จแล้ว</li>
-                    <li>🔴 <strong style="color:var(--ink);">ถูกปฏิเสธ</strong> - คำขอถูกปฏิเสธ</li>
-                </ul>
-            </div>
-            <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
-                <div style="font-weight:700; font-size:13px; margin-bottom:8px;">ระยะเวลาดำเนินการ</div>
-                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink2);">
-                    <li>• คำขอจะได้รับการตรวจสอบภายใน 24 ชั่วโมง</li>
-                    <li>• โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน</li>
-                    <li>• คุณสามารถยกเลิกคำขอที่ยังรอดำเนินการได้</li>
-                    <li>• ติดต่อฝ่ายสนับสนุนหากมีปัญหา</li>
-                </ul>
-            </div>
-        </div>
+    <div class="nvm-stack">
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-wst-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Status</small><h2 id="nvm-wst-h">สถานะคำขอ</h2></div></div>
+            <dl class="nvm-kv nvm-kv--legend">
+                <dt><span class="nvm-chip nvm-chip--info">รอดำเนินการ</span></dt><dd>ยังไม่ได้ตรวจ · ยกเลิกเองได้</dd>
+                <dt><span class="nvm-chip nvm-chip--gold">อนุมัติแล้ว</span></dt><dd>รอโอนตามรอบ</dd>
+                <dt><span class="nvm-chip nvm-chip--warn">กำลังดำเนินการ</span></dt><dd>กำลังโอนเงิน</dd>
+                <dt><span class="nvm-chip nvm-chip--ok">สำเร็จ</span></dt><dd>เงินเข้าบัญชีแล้ว</dd>
+                <dt><span class="nvm-chip nvm-chip--bad">ถูกปฏิเสธ</span></dt><dd>เงินคืนเข้ากระเป๋า</dd>
+            </dl>
+        </aside>
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-wtm-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Timeline</small><h2 id="nvm-wtm-h">ระยะเวลาดำเนินการ</h2></div></div>
+            <ol class="nvm-steps">
+                <li>ยื่นคำขอ — ระบบกันยอดออกจากกระเป๋าทันที</li>
+                <li>ทีมงานตรวจสอบภายใน 24 ชั่วโมง</li>
+                <li>โอนเข้าบัญชีเป็นรอบ วันที่ 2 และ 17 ของทุกเดือน</li>
+                <li>มีปัญหา ติดต่อฝ่ายสนับสนุน พร้อมรหัสคำขอ</li>
+            </ol>
+        </aside>
     </div>
 </div>
 @endsection

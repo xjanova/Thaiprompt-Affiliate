@@ -223,7 +223,7 @@ class WalletController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
+                ->with('error', $this->userErrorText($e))
                 ->withInput();
         }
     }
@@ -256,12 +256,7 @@ class WalletController extends Controller
         }
 
         // ดึง payment gateways ที่พร้อมใช้งาน
-        $paymentGateways = PaymentGateway::where('is_active', true)
-            ->where('is_available', true)
-            ->where('is_coming_soon', false)
-            ->where('supports_deposit', true)
-            ->orderBy('sort_order')
-            ->get();
+        $paymentGateways = $this->topupGateways();
 
         $wallet = $this->walletService->getOrCreateWallet($user);
 
@@ -275,10 +270,14 @@ class WalletController extends Controller
      */
     public function processTopupPayment(Request $request, string $transactionId)
     {
+        // 🔒 (2026-10-29) เดิมรับ payment_method เป็นข้อความอะไรก็ได้ → ยิงช่องทางที่แอดมินปิดไว้ได้
+        //    ตอนนี้รับเฉพาะเกตเวย์ที่เปิดอยู่ (หรือช่องทางสำรองที่หน้าเว็บแสดงเมื่อยังไม่ตั้งเกตเวย์)
+        $allowedMethods = $this->topupGateways()->pluck('code')->all() ?: ['promptpay', 'bank_transfer'];
         $request->validate([
-            'payment_method' => 'required|string',
+            'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($allowedMethods)],
         ], [
             'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
+            'payment_method.in' => 'ช่องทางชำระนี้ยังไม่เปิดให้บริการ',
         ]);
 
         $user = auth()->user();
@@ -352,7 +351,7 @@ class WalletController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', $this->userErrorText($e));
         }
     }
 
@@ -488,7 +487,8 @@ class WalletController extends Controller
             return redirect()->route('user.wallet.withdrawals')
                 ->with('success', 'ส่งคำขอถอนเงินเรียบร้อยแล้ว รหัสคำขอ: '.$withdrawal->request_id);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            // คืนยอด/บัญชี/หมายเหตุที่กรอกไว้ (ไม่คืน PIN) — ลูกค้าไม่ต้องพิมพ์ใหม่ทั้งฟอร์ม
+            return redirect()->back()->withInput($request->except('pin'))->with('error', $this->userErrorText($e));
         }
     }
 
@@ -515,7 +515,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ยกเลิกคำขอถอนเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->userErrorText($e));
         }
     }
 
@@ -525,8 +525,11 @@ class WalletController extends Controller
     public function transfer()
     {
         $wallet = $this->walletService->getOrCreateWallet(auth()->user());
+        $feePolicy = $this->transferFeePolicy();
+        // โทเคนใช้ครั้งเดียวต่อฟอร์ม — กดยืนยันซ้ำ/กดย้อนกลับแล้วส่งใหม่ จะไม่โอนซ้ำ
+        $transferToken = (string) Str::uuid();
 
-        return view('user.wallet.transfer', compact('wallet'));
+        return view('user.wallet.transfer', compact('wallet', 'feePolicy', 'transferToken'));
     }
 
     /**
@@ -534,33 +537,66 @@ class WalletController extends Controller
      */
     public function submitTransfer(Request $request)
     {
+        $fromWallet = $this->walletService->getOrCreateWallet(auth()->user());
+
+        // PIN บังคับเฉพาะกระเป๋าที่ตั้ง PIN ไว้ (WalletService ตรวจ PIN แบบเดียวกัน)
+        // — เดิมฟอร์มบังคับกรอก 6 หลักเสมอ กระเป๋าที่ไม่มี PIN พิมพ์เลขอะไรก็ผ่าน ลูกค้างง
         $request->validate([
             'wallet_address' => 'required|string|exists:wallets,wallet_address',
             'amount' => 'required|numeric|min:0.01',
-            'pin' => 'required|string',
+            'pin' => $fromWallet->hasPIN() ? 'required|string' : 'nullable|string',
             'description' => 'nullable|string|max:255',
+            'transfer_token' => 'nullable|string|max:64',
+        ], [
+            'wallet_address.required' => 'กรุณาระบุ Wallet Address ผู้รับ',
+            'wallet_address.exists' => 'ไม่พบ Wallet Address นี้ในระบบ',
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+            'pin.required' => 'กรุณากรอก PIN กระเป๋าเงิน',
         ]);
 
+        // 🔒 (2026-10-29) กันโอนซ้ำจากการกดยืนยัน 2 ที / ย้อนกลับแล้วส่งฟอร์มเดิม
+        //    (หน้าโอน QR มี idempotency อยู่แล้ว แต่หน้าโอนปกติไม่มีเลย)
+        $tokenKey = $request->filled('transfer_token')
+            ? 'wallet-transfer:'.auth()->id().':'.$request->transfer_token
+            : null;
+        if ($tokenKey && ! Cache::add($tokenKey, 1, now()->addMinutes(30))) {
+            return redirect()->route('user.wallet.transactions')
+                ->with('info', 'รายการโอนนี้ถูกส่งไปแล้ว — ตรวจสอบได้ในประวัติธุรกรรม');
+        }
+
         try {
-            $fromWallet = $this->walletService->getOrCreateWallet(auth()->user());
-            $toWallet = \App\Models\Wallet::where('wallet_address', $request->wallet_address)->firstOrFail();
+            $toWallet = Wallet::where('wallet_address', $request->wallet_address)->firstOrFail();
 
             if ($fromWallet->id === $toWallet->id) {
-                return redirect()->back()->with('error', 'ไม่สามารถโอนเงินให้ตัวเองได้');
+                throw new Exception('ไม่สามารถโอนเงินให้ตัวเองได้');
             }
 
-            $result = $this->walletService->transfer(
+            // 🐛 (2026-10-29) เดิมเรียก transfer() ตรง ๆ — ไม่หักค่าธรรมเนียม ไม่เช็คยอดขั้นต่ำ
+            //    ตามที่ตั้งไว้ (transfer_fee_amount / transfer_min_amount) ทั้งที่หน้าโอน QR หักครบ
+            //    → ลูกค้าเลี่ยงค่าธรรมเนียมได้แค่เปลี่ยนมาใช้หน้านี้
+            $amount = (float) $request->amount;
+            $result = $this->walletService->transferWithFee(
                 $fromWallet,
                 $toWallet,
-                $request->amount,
-                $request->pin,
-                $request->description ?? 'Transfer'
+                $amount,
+                (string) $request->input('pin', ''),
+                $request->description ?: 'โอนเงิน'
             );
 
+            $fee = (float) ($result['fee'] ?? 0);
+
             return redirect()->route('user.wallet.index')
-                ->with('success', 'โอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
+                ->with('success', 'โอนเงินสำเร็จ ฿'.number_format($amount, 2).' ให้ '.($toWallet->user->name ?? 'ผู้รับ')
+                    .($fee > 0 ? ' (ค่าธรรมเนียม ฿'.number_format($fee, 2).')' : ''));
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            // โอนไม่สำเร็จ → คืนโทเคนให้ส่งใหม่ได้ + คืนค่าที่กรอกไว้ (ไม่คืน PIN)
+            if ($tokenKey) {
+                Cache::forget($tokenKey);
+            }
+
+            return redirect()->back()->withInput($request->except('pin'))
+                ->with('error', 'โอนเงินไม่สำเร็จ: '.$this->transferErrorText($e->getMessage()));
         }
     }
 
@@ -580,15 +616,41 @@ class WalletController extends Controller
      */
     public function storePaymentMethod(Request $request)
     {
+        // 🐛 (2026-10-29) เดิม rule ไม่มี nullable — ฟอร์มส่งช่องของประเภทอื่นมาเป็นค่าว่าง
+        //    (กลายเป็น null) แล้วตก string/email → เพิ่มบัญชีรับเงินผ่านเว็บไม่ได้เลยสักประเภท
         $validated = $request->validate([
             'type' => 'required|in:promptpay,bank_transfer,paypal',
             'name' => 'required|string|max:255',
-            'account_name' => 'required_if:type,promptpay,bank_transfer|string|max:255',
-            'account_number' => 'required_if:type,promptpay,bank_transfer|string|max:50',
-            'bank_name' => 'required_if:type,bank_transfer|string|max:255',
-            'paypal_email' => 'required_if:type,paypal|email|max:255',
+            'account_name' => 'nullable|required_if:type,promptpay,bank_transfer|string|max:255',
+            'account_number' => ['nullable', 'required_if:type,promptpay,bank_transfer', 'string', 'max:50', 'regex:/^[0-9][0-9\s\-]{7,}[0-9]$/'],
+            'bank_name' => 'nullable|required_if:type,bank_transfer|string|max:255',
+            'paypal_email' => 'nullable|required_if:type,paypal|email|max:255',
             'is_default' => 'boolean',
+        ], [
+            'type.required' => 'กรุณาเลือกประเภทบัญชีรับเงิน',
+            'name.required' => 'กรุณาตั้งชื่อเรียกบัญชีนี้',
+            'account_name.required_if' => 'กรุณากรอกชื่อเจ้าของบัญชี',
+            'account_number.required_if' => 'กรุณากรอกเลขบัญชี / เบอร์พร้อมเพย์',
+            'account_number.regex' => 'เลขบัญชี / เบอร์พร้อมเพย์ต้องเป็นตัวเลข (ใส่ขีดหรือเว้นวรรคได้)',
+            'bank_name.required_if' => 'กรุณาเลือกธนาคาร',
+            'paypal_email.required_if' => 'กรุณากรอกอีเมล PayPal',
+            'paypal_email.email' => 'อีเมล PayPal ไม่ถูกต้อง',
         ]);
+
+        // เก็บเฉพาะช่องของประเภทที่เลือก — ไม่ให้ค่าค้างข้ามประเภท
+        $keep = match ($validated['type']) {
+            'bank_transfer' => ['account_name', 'account_number', 'bank_name'],
+            'promptpay' => ['account_name', 'account_number'],
+            'paypal' => ['paypal_email'],
+        };
+        foreach (['account_name', 'account_number', 'bank_name', 'paypal_email'] as $field) {
+            if (! in_array($field, $keep, true)) {
+                $validated[$field] = null;
+            }
+        }
+        $validated['is_default'] = $request->boolean('is_default')
+            || ! auth()->user()->paymentMethods()->where('is_default', true)->exists(); // บัญชีแรก = ค่าเริ่มต้นให้เลย
+        $validated['is_active'] = true;
 
         try {
             // 🔒 (2026-07-15) ใช้ $validated ไม่ใช่ $request->all()
@@ -601,7 +663,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'เพิ่มช่องทางการรับเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->userErrorText($e));
         }
     }
 
@@ -612,11 +674,17 @@ class WalletController extends Controller
     {
         try {
             $paymentMethod = auth()->user()->paymentMethods()->findOrFail($id);
+            $wasDefault = (bool) $paymentMethod->is_default;
             $paymentMethod->delete();
+
+            // ลบบัญชีค่าเริ่มต้น → ยกบัญชีล่าสุดที่ยังใช้งานขึ้นแทน (หน้าถอนจะได้มีบัญชีเลือกไว้เสมอ)
+            if ($wasDefault) {
+                auth()->user()->paymentMethods()->active()->latest()->first()?->update(['is_default' => true]);
+            }
 
             return redirect()->back()->with('success', 'ลบช่องทางการรับเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->userErrorText($e));
         }
     }
 
@@ -742,7 +810,7 @@ class WalletController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
+                ->with('error', $this->userErrorText($e))
                 ->withInput();
         }
     }
@@ -873,7 +941,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ตั้งค่าช่องทางรับเงินเริ่มต้นเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->userErrorText($e));
         }
     }
 
@@ -894,7 +962,11 @@ class WalletController extends Controller
         $wallet = $this->walletService->getOrCreateWallet(auth()->user());
 
         // จำนวนเงินที่ต้องการรับ (ถ้ามี)
-        $requestedAmount = $request->input('amount', null);
+        // 🔒 (2026-10-29) เดิมเอา ?amount= ดิบไปพิมพ์ใน <script> ด้วย {{ }} (escape แค่ HTML ไม่ใช่ JS)
+        //    → ลิงก์ ?amount=alert(document.cookie) รันโค้ดในเบราว์เซอร์เหยื่อได้ (reflected XSS)
+        //    ตอนนี้รับเฉพาะตัวเลขบวก ปัด 2 ตำแหน่ง
+        $rawAmount = $request->input('amount');
+        $requestedAmount = is_numeric($rawAmount) && (float) $rawAmount > 0 ? round((float) $rawAmount, 2) : null;
 
         // ค่าธรรมเนียมการโอน
         $transferFee = WalletSetting::get('transfer_fee_amount', 0);
@@ -905,9 +977,7 @@ class WalletController extends Controller
         $qrData = [
             'type' => 'tpwallet_transfer',
             'address' => $wallet->wallet_address,
-            'name' => auth()->user()->name,
             'amount' => $requestedAmount,
-            'timestamp' => now()->timestamp,
         ];
 
         return view('user.wallet.qr-code', [
@@ -917,6 +987,7 @@ class WalletController extends Controller
             'transferFee' => $transferFee,
             'transferFeeType' => $transferFeeType,
             'minTransferAmount' => $minTransferAmount,
+            'feePolicy' => $this->transferFeePolicy(),
         ]);
     }
 
@@ -939,6 +1010,7 @@ class WalletController extends Controller
             'transferFee' => $transferFee,
             'transferFeeType' => $transferFeeType,
             'minTransferAmount' => $minTransferAmount,
+            'feePolicy' => $this->transferFeePolicy(),
         ]);
     }
 
@@ -956,10 +1028,12 @@ class WalletController extends Controller
      */
     public function processQrTransfer(Request $request)
     {
+        // PIN บังคับเฉพาะกระเป๋าที่ตั้ง PIN ไว้ — เหมือนหน้าโอนปกติ/ถอนเงิน (WalletService ตรวจแบบเดียวกัน)
+        $hasPin = (bool) optional(Wallet::where('user_id', auth()->id())->first())->hasPIN();
         $request->validate([
             'wallet_address' => 'required|string',
             'amount' => 'required|numeric|min:0.01',
-            'pin' => 'required|string|size:6',
+            'pin' => $hasPin ? 'required|string|size:6' : 'nullable|string',
             'description' => 'nullable|string|max:255',
         ], [
             'wallet_address.required' => 'ไม่พบ Wallet Address ผู้รับ',
@@ -1058,7 +1132,7 @@ class WalletController extends Controller
                         $fromWallet,
                         $toWallet,
                         $amount,
-                        $request->pin,
+                        (string) $request->input('pin', ''),
                         $description
                     );
 
@@ -1106,7 +1180,7 @@ class WalletController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $this->transferErrorText($e->getMessage()),
             ], 400);
         }
     }
@@ -1152,7 +1226,7 @@ class WalletController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => $this->userErrorText($e),
             ], 500);
         }
     }
@@ -1215,22 +1289,65 @@ class WalletController extends Controller
      */
     private function calculateQrTransferFee(float $amount): float
     {
-        $feeType = WalletSetting::get('transfer_fee_type', 'fixed');
-        $feeAmount = WalletSetting::get('transfer_fee_amount', 0);
-        $feeMin = WalletSetting::get('transfer_fee_min', 0);
-        $feeMax = WalletSetting::get('transfer_fee_max', 999999);
+        // สูตรเดียวกับที่ WalletService::transferWithFee หักจริง — ห้ามแยกสูตรอีก
+        return WalletSetting::calculateTransferFee($amount);
+    }
 
-        if ($feeType === 'percentage') {
-            // คิดเป็นเปอร์เซ็นต์
-            $fee = ($amount * $feeAmount) / 100;
-        } else {
-            // คิดเป็นจำนวนคงที่
-            $fee = $feeAmount;
+    /**
+     * นโยบายค่าธรรมเนียม/ยอดขั้นต่ำการโอน — ส่งให้หน้าเว็บคำนวณยอดหักรวมก่อนกดยืนยัน
+     */
+    private function transferFeePolicy(): array
+    {
+        return [
+            'fee_type' => WalletSetting::get('transfer_fee_type', 'fixed'),
+            'fee_amount' => (float) WalletSetting::get('transfer_fee_amount', 0),
+            'fee_min' => (float) WalletSetting::get('transfer_fee_min', 0),
+            'fee_max' => (float) WalletSetting::get('transfer_fee_max', 999999),
+            'min_amount' => (float) WalletSetting::get('transfer_min_amount', 0),
+        ];
+    }
+
+    /**
+     * เกตเวย์ที่ใช้เติมเงินได้ตอนนี้ (หน้าเลือกช่องทาง + ตรวจค่าที่ส่งมาใช้ชุดเดียวกัน)
+     */
+    private function topupGateways()
+    {
+        return PaymentGateway::where('is_active', true)
+            ->where('is_available', true)
+            ->where('is_coming_soon', false)
+            ->where('supports_deposit', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    /**
+     * ข้อความ error ที่โชว์ลูกค้าได้ — error ฐานข้อมูลซ่อนรายละเอียดไว้ (เก็บลง log แทน)
+     *
+     * 🔒 (2026-10-29) เดิมต่อ $e->getMessage() ตรงๆ → SQL error โชว์ชื่อตาราง/คอลัมน์/คำสั่ง SQL ให้ลูกค้าเห็น
+     */
+    private function userErrorText(\Throwable $e): string
+    {
+        if ($e instanceof \Illuminate\Database\QueryException || $e instanceof \PDOException) {
+            Log::error('Wallet error: '.$e->getMessage(), ['user_id' => auth()->id()]);
+
+            return 'เกิดข้อผิดพลาดของระบบ กรุณาลองใหม่อีกครั้ง';
         }
 
-        // Apply min/max limits
-        $fee = max($feeMin, min($feeMax, $fee));
+        return 'เกิดข้อผิดพลาด: '.$this->transferErrorText($e->getMessage());
+    }
 
-        return round($fee, 2);
+    /**
+     * แปลงข้อความ error ภาษาอังกฤษจาก WalletService เป็นภาษาไทยก่อนโชว์ลูกค้า
+     */
+    private function transferErrorText(string $message): string
+    {
+        return match ($message) {
+            'Insufficient balance' => 'ยอดเงินไม่เพียงพอ',
+            'Invalid PIN' => 'PIN ไม่ถูกต้อง',
+            'One or both wallets are not active', 'Wallet is not active' => 'กระเป๋าเงินต้นทางหรือปลายทางถูกระงับ ทำรายการไม่ได้',
+            'Cannot transfer to the same wallet' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+            'Amount must be greater than 0' => 'จำนวนเงินต้องมากกว่า 0',
+            default => $message,
+        };
     }
 }

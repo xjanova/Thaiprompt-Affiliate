@@ -293,6 +293,9 @@ class OrderApiController extends Controller
 
             $item->product?->updateRating();
 
+            // 🔔 แจ้งผู้ขาย (push เข้าแอป)
+            app(\App\Services\SellerReviewNotifier::class)->productReview($review);
+
             return response()->json([
                 'success' => true,
                 'message' => 'ขอบคุณสำหรับรีวิวของคุณ',

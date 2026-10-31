@@ -164,6 +164,15 @@ Schedule::command('fortune:remind-stuck-celtic --min-minutes=30 --max-hours=6 --
     ->name('fortune-remind-stuck-celtic')
     ->runInBackground();
 
+// 🔮 (2026-10-24) คืนเมนู LINE หลักให้คนที่ทำนายจบแล้ว (เมนูช่วงทำนายไม่มีปุ่ม "ดูดวง")
+//   ปกติสลับคืนตอนบอทส่งข้อความ — ตัวนี้เก็บคนที่จบโดยไม่มีข้อความตามมา (ดู FortunePredictionMenu)
+Schedule::command('fortune:prediction-menu-sweep')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-prediction-menu-sweep')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔔 (2026-06-20) Fortune Flow Nudge — กระตุ้นขั้นเลือกแพคเกจ / กล่องกติกา
 // ════════════════════════════════════════════════════════════════
@@ -226,6 +235,13 @@ Schedule::command('fortune:scan-link-spammers --min=3 --days=7 --min-days=2 --wl
     ->withoutOverlapping(30)
     ->onOneServer()
     ->name('fortune-scan-link-spammers')
+    ->runInBackground();
+
+// แบน Facebook ต้องถึงเพจจริง และแบนชั่วคราวต้องปลดบนเพจเมื่อครบเวลา
+Schedule::command('fortune:sync-page-bans --execute --limit=50')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(60)
+    ->onOneServer()
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
@@ -315,24 +331,6 @@ Schedule::command('fortune:content:publish')
     });
 
 // ════════════════════════════════════════════════════════════════
-// 🤖 Bot Automation — รัน automation ที่ถึงเวลาตาม next_execution_at
-// ════════════════════════════════════════════════════════════════
-// ปัญหาก่อนแก้: command `bot:process-automations` มีอยู่แต่ไม่ถูกลงทะเบียน
-// scheduler เลย ทำให้ "โพสเดี๋ยวนี้" (manual) ใช้ได้ แต่ auto-post ไม่ยิง
-//
-// ทุกนาที — เช็ค BotAutomation::dueForExecution() (active + next_execution_at <= now)
-//   แล้วเรียก executeAutomation() ผ่าน BotAutomationService
-//
-// withoutOverlapping(5) — กัน overlap 5 นาที (เผื่อ AI gen content ช้า)
-// onOneServer() — กัน multi-server รันซ้ำ
-Schedule::command('bot:process-automations')
-    ->everyMinute()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('bot-process-automations')
-    ->runInBackground();
-
-// ════════════════════════════════════════════════════════════════
 // 🪙 (2026-10-13) ชำระด้วยเหรียญ TPIX — ตรวจธุรกรรมบนเชน 4289 + บันทึกราคาพูล DEX ทุกนาที
 // ════════════════════════════════════════════════════════════════
 // เงินที่ลูกค้าโอนแล้วแต่ไม่ได้ส่งเลขธุรกรรม / รอ confirmation / เชนล่มตอนส่ง → ตัวนี้ตามเก็บให้
@@ -342,17 +340,6 @@ Schedule::command('tpix:pay-scan')
     ->onOneServer()
     ->name('tpix-pay-scan')
     ->runInBackground();
-
-// ════════════════════════════════════════════════════════════════
-// 📤 Bot Scheduled Posts — โพสที่ admin ตั้งเวลาเฉพาะเจาะจงไว้
-// ════════════════════════════════════════════════════════════════
-// ทุกนาที — เช็ค BotScheduledPost::dueForPublishing() แล้ว dispatch
-//   PublishScheduledPostJob ทีละโพส (ผ่าน queue)
-Schedule::job(new \App\Jobs\BotAutomation\ProcessScheduledPostsJob)
-    ->everyMinute()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('bot-scheduled-posts-publish');
 
 // ════════════════════════════════════════════════════════════════
 // 🚨 (2026-05-25) GHOST SCHEDULES RESCUE — Migrate Kernel.php → routes/console.php
@@ -768,22 +755,6 @@ Schedule::command('line:cleanup-tokens --force')
     ->name('line-cleanup-tokens')
     ->runInBackground();
 
-// 22) Investment Distribute ROI — ROI to staking positions (daily 00:05)
-Schedule::command('investment:distribute-roi')
-    ->dailyAt('00:05')
-    ->withoutOverlapping(60)
-    ->onOneServer()
-    ->name('investment-distribute-roi')
-    ->runInBackground();
-
-// 23) Investment Distribute ROI Retry — retry ROI ที่ fail (ทุก 6 ชั่วโมง)
-Schedule::command('investment:distribute-roi --retry')
-    ->everySixHours()
-    ->withoutOverlapping(60)
-    ->onOneServer()
-    ->name('investment-distribute-roi-retry')
-    ->runInBackground();
-
 // 24) Threat Intelligence Update — DB-driven schedule
 //    Settings: threat_auto_update_enabled / threat_update_frequency / threat_update_time
 //    Frequency: hourly | daily | weekly | custom (cron expression)
@@ -793,11 +764,13 @@ $threatTime = '03:00';
 $threatCustomCron = '';
 $threatDayOfWeek = 0;
 try {
-    $threatEnabled = (bool) \App\Models\Setting::get('threat_auto_update_enabled', 'boolean', true);
-    $threatFrequency = (string) \App\Models\Setting::get('threat_update_frequency', 'string', 'daily');
-    $threatTime = (string) \App\Models\Setting::get('threat_update_time', 'string', '03:00');
-    $threatCustomCron = (string) \App\Models\Setting::get('threat_update_cron', 'string', '');
-    $threatDayOfWeek = (int) \App\Models\Setting::get('threat_update_day', 'integer', 0);
+    // Setting::get รับแค่ (key, default) — ส่ง type เข้าไปด้วยจะได้คำว่า 'string' เป็นค่า default
+    // แล้ว dailyAt('string') กลายเป็น 00:00 ชนงานเที่ยงคืนทุกตัว
+    $threatEnabled = (bool) \App\Models\Setting::get('threat_auto_update_enabled', true);
+    $threatFrequency = (string) \App\Models\Setting::get('threat_update_frequency', 'daily');
+    $threatTime = (string) \App\Models\Setting::get('threat_update_time', '03:00');
+    $threatCustomCron = (string) \App\Models\Setting::get('threat_update_cron', '');
+    $threatDayOfWeek = (int) \App\Models\Setting::get('threat_update_day', 0);
 } catch (\Throwable $e) {
     // DB ไม่พร้อม (CI ก่อน migrate) → skip ลงทะเบียน schedule นี้
     $threatEnabled = false;
@@ -829,42 +802,6 @@ if ($threatEnabled) {
             $threatCmd->dailyAt($threatTime);
     }
 }
-
-// ────────────────────────────────────────────────────────────────
-// 🎬 VIDEO AUTOMATION SYSTEM
-// ────────────────────────────────────────────────────────────────
-
-// 29) Video Automation Schedules — schedule processing (ทุก 5 นาที)
-Schedule::command('video-automation:process --schedules --limit=5')
-    ->everyFiveMinutes()
-    ->withoutOverlapping(10)
-    ->onOneServer()
-    ->name('video-automation-schedules')
-    ->runInBackground();
-
-// 30) Video Automation Pending — pending jobs (ทุก 2 นาที)
-Schedule::command('video-automation:process --pending --limit=3')
-    ->everyTwoMinutes()
-    ->withoutOverlapping(5)
-    ->onOneServer()
-    ->name('video-automation-pending')
-    ->runInBackground();
-
-// 31) Video Automation Retry — failed jobs retry (ทุก 30 นาที)
-Schedule::command('video-automation:process --retry --limit=5')
-    ->everyThirtyMinutes()
-    ->withoutOverlapping(35)
-    ->onOneServer()
-    ->name('video-automation-retry')
-    ->runInBackground();
-
-// 32) Video Automation Cleanup — ลบไฟล์ต้นฉบับหลังโพสสำเร็จ (hourly)
-Schedule::command('video-automation:process --cleanup --limit=10')
-    ->hourly()
-    ->withoutOverlapping(15)
-    ->onOneServer()
-    ->name('video-automation-cleanup')
-    ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
 // 🌸 (2026-08-04) ความจำบทสนทนาของน้อง Eve — เพดานเก็บ 7 วัน
@@ -977,6 +914,15 @@ Schedule::command('notifications:send-scheduled')
     ->withoutOverlapping(5)
     ->onOneServer()
     ->name('notifications-send-scheduled')
+    ->runInBackground();
+
+// 🔔 (2026-10-16) push โปร/ประกาศตั้งเวลา (mobile_push_notifications.status=scheduled)
+// เดิมบันทึกไว้แต่ไม่มีใครส่ง · จองแถวก่อนยิง → แถวเดียวไม่ส่งซ้ำ · ค้างเกิน 6 ชม. = ปิดทิ้ง ไม่ส่ง
+Schedule::command('mobile-push:send-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('mobile-push-send-scheduled')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════

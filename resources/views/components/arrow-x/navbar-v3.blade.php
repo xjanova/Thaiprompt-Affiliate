@@ -104,7 +104,7 @@
 
         {{-- Search Bar (Hidden on Mobile) --}}
         @if($showSearch)
-            <div class="hidden md:block" x-data="{ searchOpen: false }">
+            <div class="hidden md:block" x-data="{ searchOpen: false, searchQuery: '' }">
                 <div class="relative">
                     <input type="text"
                            placeholder="ค้นหา..."

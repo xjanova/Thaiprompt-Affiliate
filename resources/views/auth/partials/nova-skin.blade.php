@@ -1,9 +1,8 @@
 {{--
  | ธีมโนวาสำหรับหน้าเข้าสู่ระบบ / สมัครสมาชิก (หน้าเต็มไม่มี layout)
  | ทับสีม่วง-ฟ้าเดิมด้วยกรมท่า-ทองของธีมโนวา — แตะเฉพาะสี/ฟอนต์ ไม่แตะฟอร์ม ช่องกรอก Turnstile หรือสคริปต์
- | ใส่ใน <head> หลัง <style> ของหน้า + ใส่คลาส nv-auth ที่ <body> (ปิดได้ด้วย config shop.nova_public)
+ | ใส่ใน <head> หลัง <style> ของหน้า + ใส่คลาส nv-auth ที่ <body>
  --}}
-@if(config('shop.nova_public', true))
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
 <style>
     body.nv-auth {
@@ -60,4 +59,3 @@
     @media (max-width: 1279px) { body.nv-auth::before, body.nv-auth::after { display: none; } }
     @media (prefers-reduced-motion: reduce) { body.nv-auth::before, body.nv-auth::after { animation: none; } }
 </style>
-@endif

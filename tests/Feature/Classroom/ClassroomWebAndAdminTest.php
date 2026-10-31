@@ -214,6 +214,7 @@ class ClassroomWebAndAdminTest extends TestCase
             ->assertRedirect(route('user.classroom.result', $attempt->id));
 
         $this->actingAs($user)->get(route('user.classroom.index'))->assertOk()->assertSee('data-training-badge="seller"', false);
+        $this->actingAs($user)->get(route('user.dashboard'))->assertOk()->assertSee('data-training-badge="seller"', false);
         $this->actingAs($user)->get(route('user.classroom.course', 999999))->assertNotFound();
     }
 

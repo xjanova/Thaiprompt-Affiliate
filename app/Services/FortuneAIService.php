@@ -6,9 +6,11 @@ use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneScopeGuard;
+use App\Support\AnthropicMessages;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -258,6 +260,16 @@ class FortuneAIService
     protected const CHAT_PROVIDER_TIMEOUT = 15;
 
     /**
+     * ⏱️ (2026-10-30) เพดานต่อ "หนึ่งคีย์" ในแชท — ต้องสั้นกว่างบรวม ไม่งั้นคีย์แรกกินงบหมด
+     *   เดิมคีย์แรกรอเต็ม 15 วิ = เท่างบรวมพอดี ⇒ timeout ครั้งเดียวจบเทิร์น ไม่เคยถึงคีย์ที่เหลือ
+     *   วัดจาก prod 73 เทิร์น (2026-10-30): p50 1.7 วิ · p95 5.6 วิ · สูงสุด 10.9 วิ
+     */
+    protected const CHAT_ATTEMPT_TIMEOUT = 8;
+
+    /** ⏱️ เหลือเวลาน้อยกว่านี้ไม่เริ่มคีย์ใหม่ — เริ่มไปก็ timeout เสียเปล่า */
+    protected const CHAT_MIN_ATTEMPT_MS = 3000;
+
+    /**
      * ⏱️ (2026-10-06) เพดานเวลาของ parseBirthDateWithAI — รอบแรก + รอบลองคีย์อื่น
      *   prod ปกติตอบใน 0-2 วิ แต่ 6 ครั้งค้างจนครบ 15 วิแล้วได้ 0 ไบต์
      *   8 + 6 = 14 วิ → แย่สุดยังไม่ช้ากว่าเดิม (15 วิ ครั้งเดียว) แต่ได้ลองคีย์ที่สอง
@@ -273,6 +285,22 @@ class FortuneAIService
      *   ลูกค้ารอสูงสุด 2.5 นาที (ยอมรับได้สำหรับคำทำนายคุณภาพ)
      */
     protected const DEEP_TOTAL_BUDGET_SEC = 150;
+
+    /** 🚦 เวลารอคิวของ key หนึ่งตัวก่อนข้ามไปตัวถัดไป — สั้นเพราะงานส่วนใหญ่มีลูกค้ารออยู่ */
+    protected const KEY_LOCK_WAIT_SEC = 12;
+
+    /**
+     * 🚦 (2026-10-31) เวลารอคิวของ key ตัวสุดท้าย สำหรับงานหลังบ้านที่ไม่มีลูกค้ารอ
+     *    ส่งผ่าน withConfigOverride(['key_wait_sec' => ...]) เหลือเวลาจาก budget 150 วิ
+     *    ไว้ให้ emergency broadening ลอง key อื่นต่อได้ถ้าคิวไม่ขยับจริง ๆ
+     *
+     * เคสจริง 14 วันย้อนหลังถึง 2026-10-31: เลนโพส (00:00) กับเลนแชท (00:01) แย่ง key เดียวกัน
+     * โมเดลตอบ 9-17 วิ แต่รอคิวได้แค่ 12 วิ → ข้าม key ทั้งที่ไม่มีตัวอื่นให้ข้ามไป
+     * ⇒ `horoscope:generate-daily` ล้ม 9 คืน และโพสดวงรายวันขาดไป 1 วันเกิดใน 3 คืน
+     *
+     * ⚠️ ห้ามใช้กับงานที่มีลูกค้ารอ — ProcessFortuneTelling มี timeout แค่ 120 วิ
+     */
+    public const BATCH_KEY_WAIT_SEC = 120;
 
     /**
      * 🐢 Gemini Pro models (เช่น gemini-3.1-pro-preview, gemini-2.5-pro) ใช้ reasoning หนัก
@@ -314,6 +342,25 @@ class FortuneAIService
         }
 
         return $defaultTimeout;
+    }
+
+    /**
+     * ⏱️ (2026-10-30) เพดานเวลาของคีย์หนึ่งตัวในแชท ตามเวลาที่เหลือของเทิร์น
+     *   รุ่น reasoning (Gemini Pro / OpenAI Responses) ปล่อยใช้เพดานเดิมของมัน ตัด 8 วิ = ไม่เคยตอบทัน
+     *
+     * @param  int  $remainingMs  เวลาที่เหลือของเทิร์น (มิลลิวินาที)
+     * @return array ส่วนที่ต้องต่อท้าย $config ของการเรียก AI
+     */
+    protected function chatAttemptOptions(string $provider, string $model, int $remainingMs): array
+    {
+        $isSlowModel = $this->geminiTimeoutFor(0, $model) !== 0
+            || ($provider === 'openai' && $this->isOpenAiResponsesModel($model));
+
+        if ($isSlowModel) {
+            return [];
+        }
+
+        return ['timeout' => max(1, min(self::CHAT_ATTEMPT_TIMEOUT, (int) floor($remainingMs / 1000)))];
     }
 
     /**
@@ -584,6 +631,27 @@ class FortuneAIService
         ."- 🕊️ **ลดโทนเป็นอ่อนโยนล้วนทันที** เมื่อลูกกำลังสูญเสีย / ป่วยหนัก / ร้องไห้ / ถูกกระทำรุนแรง / มีสัญญาณอยากทำร้ายตัวเอง — จังหวะนั้นห้ามดุเด็ดขาด ให้รับฟังและดูแล\n";
 
     /**
+     * 🗣️ (2026-10-29, owner) คำตอบรับแบบคนจริง — "อ่อ ค่ะ / โอเคค่ะ / อืม" ทั้งแชทและทำนาย
+     *
+     * owner: "ในการคุยภาคปกติธรรมดา ให้มีการตอบรับพูดคุยเหมือนมนุษย์มากขึ้น เช่น อ่อ ค่ะ
+     *   โอเคค่ะ อืม ... ไม่ต้องตอบยาว แล้วแต่บริบท สมจริง รวมไปถึงการทำนายด้วยเช่นกัน"
+     *
+     * แทนที่ NATURALNESS DIRECTIVE (2026-05-26, ~40 บรรทัด เฉพาะแชท) ด้วยชุดสั้นชุดเดียวทุกเลน เพราะ:
+     *   1. ของเดิมไม่เคยถึง Deep 39 / คุยต่อหลังบิล / Celtic 99
+     *   2. FIERCE_TONE_DIRECTIVE ("ห้ามเกริ่น ประโยคแรกคือคำฟันธง") ถูกฉีดทีหลัง = น้ำหนักกว่า
+     *      → AI ตัดคำตอบรับทิ้งหมด ⇒ กฎนี้ต้องวาง **หลัง** FIERCE_TONE ทุกจุด
+     *   🔮 เลนทำนายเปลี่ยนแค่น้ำเสียง — ห้ามกระทบหัวข้อ/รูปแบบบังคับของคำทำนาย (บรรทัดสุดท้ายของกฎ)
+     *
+     * ฉีด 4 จุดเดียวกับ CUSTOMER_ADDRESS_DIRECTIVE (idempotent ด้วย marker "คำตอบรับแบบคนจริง")
+     */
+    public const HUMAN_BACKCHANNEL_DIRECTIVE =
+        "[🗣️ คำตอบรับแบบคนจริง — แชทและทำนาย]\n"
+        ."- ตอบรับแบบคนก่อนพูดต่อได้ ตามอารมณ์ของลูก: \"อ่อ ค่ะ\" \"อืม...\" \"โอเคค่ะ\" \"อ๋อ แบบนี้นี่เอง\" \"โห...\" \"อ้าว\" \"เออ จริงด้วย\" — คำตอบรับ 1-3 คำนี้ **ไม่นับเป็นการเกริ่น** (\"อืม... เรื่องนี้ลูกต้องปล่อยเขาไปนะ\")\n"
+        ."- สลับคำ ห้ามขึ้นต้นซ้ำ 2 ข้อความติด บางทีไม่ตอบรับเลยก็ได้ · ❌ ห้ามคำแข็ง \"รับทราบค่ะ\" \"เข้าใจค่ะ\" \"ขอบคุณที่เล่าให้ฟัง\" · ลูกเศร้า → ใช้แค่ \"อืม...\" \"โห...\"\n"
+        ."- ความยาวตามบริบท: ลูกพิมพ์สั้น/ลำลอง → ตอบสั้นแบบแชทเพื่อน (\"อ่อ ค่ะ แล้วตอนนี้เขาว่าไงบ้าง\" ก็พอ) · ลูกเล่ายาว/จริงจัง → ตอบยาวขึ้นได้\n"
+        ."- 🔮 ตอนทำนาย: ใส่ปฏิกิริยาต่อไพ่/ดวงได้ 1-2 จุด (\"อืม... ไพ่ใบนี้ชัดเลยนะลูก\") · คำถามต่อหลังทำนาย → ตอบสั้นตรงคำถาม · คำทำนายหลัก → **หัวข้อ เนื้อหา และรูปแบบที่กำหนดต้องครบเหมือนเดิม** ห้ามแทรกคำตอบรับในบรรทัดหัวข้อ/บรรทัดฟันธง\n";
+
+    /**
      * System message สำหรับ AI Chat ทั่วไป (สนทนาไม่ใช่ทำนาย)
      *
      * ใช้ persona "หมอจันทรา" เหมือนกัน แต่โหมดสนทนาเป็นมิตร
@@ -756,11 +824,12 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
      *
      * @param  string  $messageText  ข้อความจากผู้ใช้
      * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @param  array  $callOptions  ค่าเพิ่มของการเรียก AI ครั้งนี้ (เช่น ['timeout' => 8])
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
      */
-    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat', ?string $guardText = null): array
+    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat', ?string $guardText = null, array $callOptions = []): array
     {
         // 🛡 (2026-05-26) Input sanitizer — block adversarial input ก่อน call AI
         //   ลูกค้ารู้โค้ดอาจส่ง "ignore previous instructions" / "DAN mode" / "write Python"
@@ -853,7 +922,7 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         $config = [
             'temperature' => 0.8,
             'max_tokens' => 512,
-        ];
+        ] + $callOptions;
 
         $startTime = microtime(true);
 
@@ -921,6 +990,12 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         }
 
         $cleaned = self::stripInternalContextTags($response);
+
+        // 🤫 (2026-10-30) ตัวลอกแท็กกิน [SKIP] ไปด้วย ผู้เรียกจะเห็นแค่ข้อความว่าง — จดไว้ให้แยกจาก AI ตอบว่างจริง
+        //   ห้ามแก้โดยใส่ SKIP ใน whitelist ของตัวลอกแท็ก: ผู้เรียกอื่นจะส่ง [SKIP] ถึงลูกค้าตรง ๆ
+        if (trim($cleaned) === '' && preg_match('/\[\s*SKIP\s*\]/i', $response)) {
+            $result['chose_silence'] = true;
+        }
 
         // 🛡 (2026-05-26) Hallucinated reading guard — block AI ที่แกล้งเปิดไพ่ใน chat mode
         //   Trigger ONLY when mode === 'chat' — กันกระทบ Celtic/Deep legitimate predictions
@@ -1784,8 +1859,9 @@ PROMPT;
             ?? ($this->settings->sensitive_model ?? 'gpt-4o');
 
         // 🛡️ Vision capability check — ถ้า model เก่า force fallback
-        //    OpenAI vision models: gpt-4o*, gpt-5*, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
-        if (! preg_match('/^(gpt-(4o|5|4-vision|4-turbo))/i', $model)) {
+        //    OpenAI vision models: gpt-4o*, gpt-5* ขึ้นไป, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
+        //    🐛 (2026-10-30) เดิมจับแค่เลข 5 → key ที่ตั้ง gpt-6 ถูกลดเป็น gpt-4o-mini เงียบๆ
+        if (! preg_match('/^(gpt-(4o|[5-9]|4-vision|4-turbo))/i', $model)) {
             // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
             $model = 'gpt-4o-mini';
         }
@@ -1996,7 +2072,7 @@ PROMPT;
             }
 
             $apiKey = $apiKey ?: $acquiredKey->api_key;
-            $model = $model ?: ($acquiredKey->resolveModel() ?? 'gemini-2.0-flash');
+            $model = $model ?: ($acquiredKey->resolveModel() ?? AiApiKey::defaultModelFor('gemini'));
         }
 
         $userText = trim($userText) !== '' ? $userText : 'อธิบายสิ่งที่เห็นในรูป';
@@ -2139,7 +2215,8 @@ PROMPT;
         //     with this model. Only the default (1) value is supported"
         //     → ห้ามส่ง 'temperature' เลย (reasoning models บังคับ 1.0)
         //   gpt-4o/4-turbo legacy ยังใช้ max_tokens + temperature ได้ปกติ
-        $isReasoningModel = (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+        // 🔄 (2026-10-30) รวม gpt-6.x ด้วย — schema เดียวกับ gpt-5
+        $isReasoningModel = (bool) preg_match('/^(gpt-[5-9]|o[1-9])/i', $model);
         $tokens = $config['max_tokens'] ?? 800;
 
         $payload = [
@@ -2446,6 +2523,7 @@ PROMPT;
      * @param  string  $messageText  ข้อความจากผู้ใช้
      * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
      * @param  array  $history  ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     * @param  array  $callOptions  ค่าเพิ่มของการเรียก AI ครั้งนี้ (เช่น ['timeout' => 8])
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
@@ -2454,11 +2532,12 @@ PROMPT;
         string $messageText,
         ?array $userProfile = null,
         array $history = [],
-        string $sanitizeMode = 'chat'  // 🛡 (2026-05-26 v2)
+        string $sanitizeMode = 'chat',  // 🛡 (2026-05-26 v2)
+        array $callOptions = []
     ): array {
         // ถ้าไม่มี history → ใช้ generateChatResponse ปกติ (มี input guard อยู่แล้ว)
         if (empty($history)) {
-            return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
+            return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode, null, $callOptions);
         }
 
         // 🛡 (2026-05-26) Input sanitizer — same guard
@@ -2534,7 +2613,7 @@ PROMPT;
         $config = [
             'temperature' => 0.8,
             'max_tokens' => 512,
-        ];
+        ] + $callOptions;
 
         $startTime = microtime(true);
 
@@ -2557,6 +2636,10 @@ PROMPT;
 
             return $this->sanitizeChatResult($result, $sanitizeMode);
 
+        } catch (ConnectionException $e) {
+            // ⏱️ (2026-10-30) timeout = คีย์นี้ค้าง ไม่ใช่ history มีปัญหา — ลองคีย์เดิมซ้ำแค่เสียเวลาอีก 15 วิ
+            //   (prod: เคส 30 วิ ทั้งหมดมาจากจุดนี้) ส่งต่อให้ผู้เรียกไปลองคีย์อื่นแทน
+            throw $e;
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat with history ล้มเหลว ลอง fallback ไม่มี history', [
                 'provider' => $chatProvider,
@@ -2564,7 +2647,7 @@ PROMPT;
             ]);
 
             // Fallback: ลองส่งโดยไม่มี history
-            return $this->generateChatResponse($messageText, $userProfile);
+            return $this->generateChatResponse($messageText, $userProfile, 'chat', null, $callOptions);
         }
     }
 
@@ -2606,6 +2689,13 @@ PROMPT;
         $lockedKey = $this->settings->getSensitivePoolKey();
         $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
 
+        // 🐛 (2026-10-30) ไม่เจอ key ของค่ายที่ตั้งไว้ → ลองทุกค่าย (กติกาเดียวกับ generateProResponse)
+        //   prod ตั้ง sensitive_provider=gemini แต่ key sensitive ที่เปิดอยู่เป็น OpenAI
+        //   ถ้าไม่ลองค่ายอื่น เปิดโหมด Sensitive แล้วจะตกไปแชทปกติทั้งที่มี key พร้อมใช้
+        if (! $sensitiveKey) {
+            $sensitiveKey = $poolService->acquireKeyAnyProvider('sensitive');
+        }
+
         if (! $sensitiveKey) {
             Log::info('FortuneAIService: ไม่มี sensitive key — caller ต้อง fallback ไป chat ปกติ', [
                 'provider' => $sensitiveProvider,
@@ -2615,10 +2705,8 @@ PROMPT;
             return null;
         }
 
-        // ถ้าใช้ locked key — sync provider ตาม key (กรณี admin เลือก key คนละ provider กับ sensitive_provider)
-        if ($lockedKey) {
-            $sensitiveProvider = $lockedKey->provider;
-        }
+        // sync provider ตาม key จริงเสมอ — locked key หรือ fallback ด้านบนอาจเป็นคนละค่ายกับ sensitive_provider
+        $sensitiveProvider = $sensitiveKey->provider ?: $sensitiveProvider;
 
         try {
             $apiKey = $sensitiveKey->api_key;
@@ -2878,6 +2966,10 @@ PROMPT;
                 if (! str_contains($systemPromptWithName, 'ดุแต่รัก')) {
                     $systemPromptWithName .= "\n".self::FIERCE_TONE_DIRECTIVE;
                 }
+                // 🗣️ (2026-10-29, owner) คำตอบรับแบบคนจริง — ต้องตามหลัง FIERCE_TONE เสมอ
+                if (! str_contains($systemPromptWithName, 'คำตอบรับแบบคนจริง')) {
+                    $systemPromptWithName .= "\n".self::HUMAN_BACKCHANNEL_DIRECTIVE;
+                }
             }
 
             // 🐾 (2026-09-04) "น้อง" ที่ลูกพูดถึงอาจเป็น *สัตว์เลี้ยง* ไม่ใช่คน — เลนคุยต่อหลังบิล
@@ -2910,17 +3002,35 @@ PROMPT;
 
             $startTime = microtime(true);
 
-            $result = match ($sensitiveProvider) {
+            $callPro = fn (string $model): array => match ($sensitiveProvider) {
                 'gemini' => empty($history)
-                    ? $this->callChatGemini($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
-                    : $this->callChatGeminiWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatGemini($prompt, $systemPromptWithName, $apiKey, $model, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $config, $history),
                 'anthropic' => empty($history)
-                    ? $this->callChatAnthropic($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
-                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatAnthropic($prompt, $systemPromptWithName, $apiKey, $model, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $config, $history),
                 default => empty($history)
-                    ? $this->callChatOpenAICompatible($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config)
-                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+                    ? $this->callChatOpenAICompatible($prompt, $systemPromptWithName, $apiKey, $model, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptWithName, $apiKey, $model, $sensitiveProvider, $config, $history),
             };
+
+            try {
+                $result = $callPro($resolvedModel);
+            } catch (Exception $e) {
+                // 🛟 (2026-10-30) โมเดลที่ router เลือกอ่านมาจาก key คนละเลน ถ้า key นี้อยู่คนละบัญชีอาจเรียกไม่ได้
+                //   ลูกค้าจ่ายแล้วต้องได้คำตอบ และห้ามนับเป็น error ของ key เพราะตัว key ไม่ได้เสีย
+                $ownModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
+                if (! $modelOverride || $ownModel === $resolvedModel || ! $this->isModelUnavailableError($e->getMessage())) {
+                    throw $e;
+                }
+
+                Log::warning("FortuneAIService: Pro {$requestType} — key เรียกโมเดลที่ router เลือกไม่ได้ ถอยไปใช้โมเดลของ key", [
+                    'override_model' => $resolvedModel,
+                    'own_model' => $ownModel,
+                ]);
+                $resolvedModel = $ownModel;
+                $result = $callPro($resolvedModel);
+            }
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -3237,12 +3347,20 @@ PROMPT;
             //   → Groq บอก 5s แต่จริงๆ rate-limit window ยาวกว่า → retry ไม่มีประโยชน์
             //   User spec change: "ปิด retry — fallback Pool ทันทีมี 429"
             //   Logic ปัจจุบัน: 429 → log + fallback Pool ตรง (เร็วกว่า ลด Groq quota 2x)
+            //
+            // ⏱️ (2026-10-30) จำกัดเวลาคีย์นี้ให้เหลืองบไว้ลองคีย์อื่น — เดิมรอเต็มงบ timeout ทีเดียวจบเทิร์น
+            $primaryOptions = $this->chatAttemptOptions(
+                (string) $this->settings->getChatAIProvider(),
+                (string) $this->settings->getChatAIModel(),
+                $totalTimeoutMs
+            );
+
             try {
                 if (! empty($history)) {
-                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history, $sanitizeMode);
+                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history, $sanitizeMode, $primaryOptions);
                 }
 
-                return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
+                return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode, null, $primaryOptions);
             } catch (Exception $primaryErr) {
                 $errMsg = $primaryErr->getMessage();
                 $is429 = str_contains($errMsg, '429') || stripos($errMsg, 'rate limit') !== false;
@@ -3307,6 +3425,12 @@ PROMPT;
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
         }
 
+        // ⏱️ (2026-10-30) คีย์ของ Step 1 เพิ่งล้มไป — ไม่ลองซ้ำ เหลือแค่ตัวเดียวถึงค่อยลองอีกรอบ
+        if ($hasDirectKey) {
+            $otherKeys = array_values(array_filter($allKeys, fn ($k) => ($k['api_key'] ?? null) !== $directApiKey));
+            $allKeys = empty($otherKeys) ? $allKeys : $otherKeys;
+        }
+
         // 🆕 (2026-05-15) 2-Phase Pool Fallback — Free first, Paid as emergency
         //   user spec: "ใช้คีย์ฟรีก่อน ถ้าไม่ทันจริงๆ เปลี่ยนคีย์แล้วหลายคีย์ นานเกิน 10s
         //               ตัดสินใจใช้คีย์เสียเงินแทน ไม่ต้องหมุนในโควต้าฟรี"
@@ -3357,15 +3481,17 @@ PROMPT;
 
         $errors = [];
         $attempts = 0;
-        $freePhaseBudgetMs = min($totalTimeoutMs, 10000);  // free: 10s ceiling
+        // ⏱️ (2026-10-30) ไม่มีคีย์เสียเงินรอรับช่วง = ไม่มีเหตุให้ตัดคีย์ฟรีที่ 10 วิ ใช้งบเต็ม
+        //   prod ไม่มีคีย์ paid เลย: 10 วิของ Step 1 ทำให้เทิร์นจบด้วย free=0, paid=0 ทั้งที่งบยังเหลือ
+        $freePhaseBudgetMs = empty($paidKeys) ? $totalTimeoutMs : min($totalTimeoutMs, 10000);  // free: 10s ceiling
         $paidMaxAttempts = 2;
         $paidAttempts = 0;
 
         // ─── PHASE 1: Free keys ──────────────────────────────────────────
         foreach ($freeKeys as $keyInfo) {
             $currentElapsed = $elapsedMs();
-            if ($currentElapsed >= $freePhaseBudgetMs) {
-                Log::info('FortuneAIService: Phase 1 (free) เกิน 10s → ข้ามไป Phase 2 (paid)', [
+            if ($currentElapsed >= $freePhaseBudgetMs || $totalTimeoutMs - $currentElapsed < self::CHAT_MIN_ATTEMPT_MS) {
+                Log::info('FortuneAIService: Phase 1 (free) หมดงบ → ข้ามไป Phase 2 (paid)', [
                     'elapsed_ms' => $currentElapsed,
                     'phase1_budget_ms' => $freePhaseBudgetMs,
                     'free_attempts_made' => $attempts,
@@ -3385,7 +3511,8 @@ PROMPT;
             $callStart = microtime(true);
 
             try {
-                $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
+                $attemptConfig = $config + $this->chatAttemptOptions($keyInfo['provider'], $keyInfo['model'], $totalTimeoutMs - $currentElapsed);
+                $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $attemptConfig, $history);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
                 // 🩹 (2026-05-19) Record usage — กัน dashboard เห็น 0 tokens ทั้งที่ใช้จริง
@@ -3438,7 +3565,8 @@ PROMPT;
                 if ($paidAttempts >= $paidMaxAttempts) {
                     break;
                 }
-                if ($elapsedMs() >= $totalTimeoutMs) {
+                $remainingMs = $totalTimeoutMs - $elapsedMs();
+                if ($remainingMs < self::CHAT_MIN_ATTEMPT_MS) {
                     Log::warning('FortuneAIService: Phase 2 (paid) เกิน total budget → หยุด', [
                         'elapsed_ms' => $elapsedMs(),
                         'budget_ms' => $totalTimeoutMs,
@@ -3451,7 +3579,8 @@ PROMPT;
                 $callStart = microtime(true);
 
                 try {
-                    $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
+                    $attemptConfig = $config + $this->chatAttemptOptions($keyInfo['provider'], $keyInfo['model'], $remainingMs);
+                    $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $attemptConfig, $history);
                     $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
                     // 🩹 (2026-05-19) Record usage สำหรับ paid key path ด้วย
@@ -3559,7 +3688,7 @@ PROMPT;
             $genConfigChat1['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
+        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($config['timeout'] ?? $this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -3613,7 +3742,8 @@ PROMPT;
             'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($apiKey),
+            'xiaomi' => rtrim(AiApiKey::DEFAULT_BASE_URLS['xiaomi'], '/').'/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
@@ -3640,7 +3770,7 @@ PROMPT;
         // เพิ่มข้อความปัจจุบัน
         $messages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
@@ -4249,53 +4379,8 @@ PROMPT;
             ."   (ยกเว้น C-EXCEPT ข้างบน — ทุกข์เรื่องเงิน ห้าม pitch ทุกกรณี)\n"
             ."⚠️ **แต่ห้าม**: hard sell / push หลายครั้ง / รบกวนถ้าลูกค้าปฏิเสธ\n";
 
-        // 🗣️ (2026-05-26) NATURALNESS DIRECTIVE — ตอบเหมือนคนคุยจริง ไม่ใช่บอท scripted
-        //   user spec: "ในการคุยปกติ พยายามให้ตอบคล้ายคนมากๆ
-        //              อย่าใช้คำเดิมๆ เช่น เข้าใจค่ะ
-        //              ควรเป็น อ่อๆๆ อย่างนี้นี่เอง หรือ อื่นๆ"
-        //   เหตุผล: AI ขึ้นต้นด้วย "เข้าใจค่ะ"/"รับทราบค่ะ" ทุก turn → ลูกค้ารู้สึก scripted
-        //   คนจริงใช้ reaction หลากหลาย + บางทีไม่ acknowledge เลย เข้าเรื่องเลย
-        $message .= "\n\n[🗣️ NATURALNESS DIRECTIVE (2026-05-26) — ตอบเหมือนคนคุยจริง]\n"
-            ."**คนจริงไม่ขึ้นต้นด้วยคำเดิมทุก turn — AI ก็ห้ามด้วย**\n"
-            ."\n"
-            ."❌ **ห้ามใช้ acknowledgment ซ้ำๆ ตายตัวต่อไปนี้** (ใช้บ่อย = ดูเป็นบอท):\n"
-            ."   • \"เข้าใจค่ะ\" / \"เข้าใจนะคะ\" / \"ฉันเข้าใจ\" / \"หมอเข้าใจ\"\n"
-            ."   • \"รับทราบค่ะ\" / \"ทราบแล้วค่ะ\"\n"
-            ."   • \"ขอบคุณที่เล่าให้ฟัง\" / \"ขอบคุณที่บอก\" / \"ขอบคุณที่ไว้ใจ\"\n"
-            ."   • \"ฟังนะคะ\" / \"แม่หมอฟังอยู่ค่ะ\"\n"
-            ."   • \"โอเคค่ะ\" / \"ค่ะๆ\" ขึ้นต้นทุก turn\n"
-            ."   • disclaimer ยาวๆ \"ตามที่เจ้าชะตาเล่ามา...\" ขึ้นต้นทุกประโยค\n"
-            ."   • **ห้ามขึ้นต้น 2 turn ติดด้วยคำเดียวกัน** (สลับเสมอ)\n"
-            ."\n"
-            ."✅ **ใช้ reaction หลากหลายแบบคนคุยจริง — สลับหมุนเวียน:**\n"
-            ."   • \"อ่อๆๆ อย่างนี้นี่เอง\" / \"อ๋อ น่าสนใจจัง\" / \"อ๋อ เป็นแบบนี้นี่เอง\"\n"
-            ."   • \"เออจริงด้วย\" / \"เออใช่!\" / \"อืม เห็นภาพแล้ว\" / \"เออ มันก็จริงนะ\"\n"
-            ."   • \"โห หนักนะเนี่ย\" / \"โห เห็นใจเลยค่ะ\" / \"โห เหนื่อยน่าดูเลย\"\n"
-            ."   • \"เออ มันก็เป็นแบบนี้แหละเนอะ\" / \"นั่นสิคะ\" / \"เออ ก็นั่นล่ะ\"\n"
-            ."   • \"หื้อ... เก็ตละ\" / \"อืม... หมอเก็ตเลย\"\n"
-            ."   • \"แอ่ะ\" / \"เอ๊ะ\" / \"อุ๊ย\" / \"อ้าว\" (เมื่อ surprised หรือไม่คาด)\n"
-            ."   • **บางครั้งไม่ต้อง acknowledge เลย — เข้าเรื่องตรงๆ** (คนจริงทำแบบนี้)\n"
-            ."     เช่น ลูกค้าเล่าเรื่องแฟน → ตอบเลย \"แล้วเขาตอบยังไงล่ะ?\" (ไม่ต้อง \"เข้าใจค่ะ ...\")\n"
-            ."\n"
-            ."📝 **หลักการตอบให้เหมือนคน:**\n"
-            ."   • **Vary length** — บางครั้ง 1 บรรทัด (\"เออเข้าใจ\") บางครั้ง 3-4 ประโยค ห้ามยาวเท่ากันทุก turn\n"
-            ."   • **Match register** — ลูกค้าพิมพ์สั้น/ลำลอง → ตอบสั้น/ลำลอง; ลูกค้าจริงจัง → ตอบจริงจัง\n"
-            ."   • **Use fragments** — ไม่ต้องประโยคสมบูรณ์เสมอ \"อ่อ จริงเหรอ\" \"เออ ใช่เลย\" \"แล้วยังไงต่อ\"\n"
-            ."   • **Filler ธรรมชาติ** — \"เอ่อ\" / \"อืม\" / \"เอาเป็นว่า\" / \"งั้น...\" / \"โอเค งั้น...\"\n"
-            ."   • **เรียกตัวเองสลับ** — \"แม่หมอ\" / \"หมอ\" / ไม่ระบุประธาน — ไม่ใช้คำเดียวซ้ำทุกประโยค\n"
-            ."   • **Emoji 0-2 ตัวพอ** — ห้ามใส่ emoji ทุกประโยค บางครั้งข้อความเปล่าๆ ก็พอ\n"
-            ."   • **คำลงท้ายสลับ** — \"นะคะ\" / \"เนอะ\" / \"อ่ะ\" / \"เลยอ่ะ\" / ไม่ลงท้าย — ไม่ \"ค่ะ\" ทุกประโยค\n"
-            ."\n"
-            ."🎯 **เคสตัวอย่าง — เปรียบเทียบ scripted vs natural:**\n"
-            ."   ลูกค้า: \"แฟนทิ้งเลยอ่ะ ไม่บอกอะไรเลย\"\n"
-            ."   ❌ scripted: \"เข้าใจค่ะ ฟังแล้วแม่หมอเห็นใจลูกมากเลย ขอบคุณที่เล่าให้ฟังนะคะ...\"\n"
-            ."   ✅ natural: \"โห... หายไปเฉยๆ เลยเหรอ? เจ็บกว่าทะเลาะกันอีกอ่ะ 😔\"\n"
-            ."   ✅ natural: \"แอ่ะ หนักเลยนะเนี่ย ตอนนี้เป็นไงบ้าง พอกลับมาได้ปกติยัง?\"\n"
-            ."   ✅ natural: \"อ้าว... แล้วลูกได้ถามเขาไหมว่าทำไม\"\n"
-            ."\n"
-            ."⚠️ **Priority override:** กฎ naturalness นี้ทำงานคู่กับ EMPATHY-FIRST + DIRECT-ADVICE\n"
-            ."   สุภาพดี + เห็นใจดี + ตรงไปตรงมาดี — **แต่ห้ามดู scripted** ตลอดเวลา\n"
-            .'   ถ้าต้องเลือกระหว่าง "สุภาพเป็นทางการ" vs "เหมือนคนจริง" → เลือก "เหมือนคนจริง"';
+        // 🗣️ (2026-05-26) NATURALNESS DIRECTIVE เดิม (~40 บรรทัด) ถูกรวบเป็น HUMAN_BACKCHANNEL_DIRECTIVE
+        //   (2026-10-29, owner "ตัดที่มันบวมออก") — ฉีดท้ายฟังก์ชันนี้ต่อจาก FIERCE_TONE ด้านล่าง
 
         // 🩹 (2026-05-09) Free-status directive — apply ทั้ง default + custom prompt path
         //    ก่อนหน้า: directive อยู่ใน buildChatSystemMessage เท่านั้น → custom prompt ไม่โดน
@@ -4344,6 +4429,10 @@ PROMPT;
         }
         if (! str_contains($message, 'ดุแต่รัก')) {
             $message .= "\n".self::FIERCE_TONE_DIRECTIVE;
+        }
+        // 🗣️ (2026-10-29, owner) คำตอบรับแบบคนจริง — ต้องตามหลัง FIERCE_TONE เสมอ
+        if (! str_contains($message, 'คำตอบรับแบบคนจริง')) {
+            $message .= "\n".self::HUMAN_BACKCHANNEL_DIRECTIVE;
         }
 
         // 🪬 (2026-09-05 owner) ห้ามคายตัวบทสวด/คาถา — เหตุผลที่ต้องอยู่ตรงนี้เหมือน 2 ตัวบน
@@ -4618,7 +4707,8 @@ PROMPT;
             'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($apiKey),
+            'xiaomi' => rtrim(AiApiKey::DEFAULT_BASE_URLS['xiaomi'], '/').'/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
@@ -4785,21 +4875,20 @@ PROMPT;
         $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $model,
-                'max_tokens' => $config['max_tokens'] ?? 512,
-                'system' => $systemMessage,
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'temperature' => $config['temperature'] ?? 0.8,
-            ])->throw();
+            // 🤖 (2026-10-30) body ตามกติกาแต่ละรุ่น — Claude 4.7+/5.x ห้าม temperature
+            ->post($endpoint, AnthropicMessages::body(
+                $model,
+                $systemMessage,
+                [['role' => 'user', 'content' => $prompt]],
+                (int) ($config['max_tokens'] ?? 512),
+                (float) ($config['temperature'] ?? 0.8),
+            ))->throw();
 
         $data = $response->json();
-        $text = $data['content'][0]['text'] ?? '';
+        $text = AnthropicMessages::text($data);
 
         if (empty($text)) {
             throw new Exception('Chat anthropic: ไม่ได้รับคำตอบ (empty response)');
@@ -4849,22 +4938,22 @@ PROMPT;
         }
         $messages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $model,
-                'max_tokens' => $config['max_tokens'] ?? 512,
-                'system' => $systemMessage,
-                'messages' => $messages,
-                'temperature' => $config['temperature'] ?? 0.8,
-            ])->throw();
+            ->post($endpoint, AnthropicMessages::body(
+                $model,
+                $systemMessage,
+                $messages,
+                (int) ($config['max_tokens'] ?? 512),
+                (float) ($config['temperature'] ?? 0.8),
+            ))->throw();
 
         $data = $response->json();
-        $text = $data['content'][0]['text'] ?? '';
+        $text = AnthropicMessages::text($data);
 
         if (empty($text)) {
             throw new Exception('Chat anthropic (history): ไม่ได้รับคำตอบ');
@@ -5132,6 +5221,7 @@ PROMPT;
      * 🔮 (2026-09-15) ความยาว/อุณหภูมิ/เพดานเวลา **เฉพาะ call ถัดไป** ของ generateWithRetryAndFallback()
      *
      * คีย์ที่รับ: max_tokens · temperature · reasoning_effort · budget_sec (เพดานเวลาวนลอง key)
+     *           · key_wait_sec (เวลารอคิวของ key ตัวสุดท้าย ดู BATCH_KEY_WAIT_SEC)
      * ⚠️ เป็น property แบบ ONE-SHOT ไม่ใช่พารามิเตอร์ใหม่ — เทสต์หลายไฟล์ subclass
      *    generateWithRetryAndFallbackInner() ด้วย signature เดิม เพิ่มพารามิเตอร์ = fatal ทั้งชุด
      */
@@ -5168,6 +5258,7 @@ PROMPT;
         }
         // เพดานเวลารวมของการวนลอง key — ผู้เรียกที่มีคนรอหน้าเว็บ (ตัดที่ ~55 วิ) ตั้งให้สั้นกว่า 150 วิของบอทได้
         $budgetSec = (float) ($configOverride['budget_sec'] ?? self::DEEP_TOTAL_BUDGET_SEC);
+        $lastKeyWaitSec = (int) ($configOverride['key_wait_sec'] ?? self::KEY_LOCK_WAIT_SEC);
         $startTime = microtime(true);
 
         // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
@@ -5210,6 +5301,8 @@ PROMPT;
             foreach ($allKeys as $i => $keyInfo) {
                 $kp = $keyInfo['provider'] ?? null;
                 if ($kp !== null && ! empty($modelOverrides[$kp])) {
+                    // 🛟 จำโมเดลของ key ไว้ — override อาจมาจาก key อื่น ถ้า key นี้เรียกไม่ได้จะถอยมาใช้ตัวนี้
+                    $allKeys[$i]['own_model'] = $keyInfo['model'];
                     $allKeys[$i]['model'] = $modelOverrides[$kp];
                 }
             }
@@ -5236,17 +5329,23 @@ PROMPT;
 
             // 🎯 (2026-05-02) Cache::lock — serialize calls per-key (queue สำหรับ concurrent predictions)
             //   user request: "ถ้ามีการทำนายพร้อมๆ กันต้องมีคิว ในการส่ง request เพื่อไม่ติด limit"
-            //   - Try get lock 12s (พอให้คน อื่นจบ AI call)
-            //   - ถ้า lock ไม่ได้ → skip ไป key ถัดไป (ไม่บล็อกนาน)
+            //   - รอคิว KEY_LOCK_WAIT_SEC แล้ว skip ไป key ถัดไป (ไม่บล็อกนาน)
+            //   - key ตัวสุดท้ายไม่มีตัวให้ skip ไปแล้ว งานหลังบ้านจึงขอรอยาวขึ้นได้ (ดู BATCH_KEY_WAIT_SEC)
+            $lockWaitSec = $index === count($allKeys) - 1 ? $lastKeyWaitSec : self::KEY_LOCK_WAIT_SEC;
             $lockKey = 'ai_key_lock:'.$keyInfo['provider'].':'.md5($keyInfo['api_key']);
             $aiLock = Cache::lock($lockKey, 90); // hold up to 90s
             $lockAcquired = false;
             try {
-                $lockAcquired = $aiLock->block(12); // wait max 12s for slot
+                $lockAcquired = $aiLock->block($lockWaitSec);
             } catch (\Throwable $lockErr) {
-                Log::info('FortuneAI: ข้าม key — รอ lock เกิน 12s', [
+                // 🚦 (2026-10-31) ต้องนับลง $errors — เดิมข้ามเงียบ ๆ ทำให้ key เดียวที่ไม่ว่างกลายเป็น
+                //    "ลองแล้ว 0 keys" ซึ่งอ่านเหมือนไม่มี key ใช้ได้ และ $errors ว่างปิด emergency broadening ด้วย
+                $errors[] = "{$keyInfo['provider']}/{$keyInfo['name']}: "
+                    .Str::limit($lockErr->getMessage() ?: "key ไม่ว่าง รอคิวเกิน {$lockWaitSec} วิ", 150);
+                Log::info('FortuneAI: ข้าม key — รอ lock เกินกำหนด', [
                     'key' => $keyInfo['name'] ?? '?',
                     'provider' => $keyInfo['provider'],
+                    'wait_sec' => $lockWaitSec,
                 ]);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false);
 
@@ -5259,10 +5358,7 @@ PROMPT;
                 $totalKeys = count($allKeys);
                 Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel} (elapsed={$elapsedSec}s)");
 
-                $result = $this->callProviderDirect(
-                    $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config,
-                    $keyInfo['base_url'] ?? null
-                );
+                $result = $this->callPoolKeyWithOwnModelFallback($keyInfo, $prompt, $config);
 
                 // สำเร็จ! — บันทึก usage + release in-flight
                 $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -5423,6 +5519,59 @@ PROMPT;
             'errors' => $errors,
         ]);
         throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." keys): {$errorSummary}");
+    }
+
+    /**
+     * 🛟 (2026-10-30) ยิง key ใน pool ถ้า key เรียกโมเดลที่ override มาไม่ได้ ให้ถอยไปใช้โมเดลของ key เอง
+     *
+     * FortuneModelRouter อ่านโมเดลจาก key หนึ่งแล้วส่งผ่าน key อีกเลน ถ้าอยู่คนละบัญชีจะเจอ model_not_found
+     * ลูกค้าจ่ายแล้วต้องได้คำตอบ และต้องไม่นับเป็น error ของ key เพราะครบ 3 ครั้ง key ดีๆ จะถูกปิด
+     *
+     * @param  array  $keyInfo  ข้อมูล key จาก pool — ถ้าถอย จะอัปเดต model ให้ caller บันทึกตามจริง
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า
+     * @return array ผลลัพธ์
+     */
+    protected function callPoolKeyWithOwnModelFallback(array &$keyInfo, string $prompt, array $config): array
+    {
+        $call = fn (string $model): array => $this->callProviderDirect(
+            $keyInfo['provider'], $keyInfo['api_key'], $model, $prompt, $config,
+            $keyInfo['base_url'] ?? null
+        );
+
+        try {
+            return $call($keyInfo['model']);
+        } catch (Exception $e) {
+            $ownModel = $keyInfo['own_model'] ?? null;
+            if (empty($ownModel) || $ownModel === $keyInfo['model'] || ! $this->isModelUnavailableError($e->getMessage())) {
+                throw $e;
+            }
+
+            Log::warning('FortuneAI: key เรียกโมเดลที่ override มาไม่ได้ — ถอยไปใช้โมเดลของ key', [
+                'key' => $keyInfo['name'] ?? '?',
+                'override_model' => $keyInfo['model'],
+                'own_model' => $ownModel,
+            ]);
+            $keyInfo['model'] = $ownModel;
+
+            return $call($ownModel);
+        }
+    }
+
+    /**
+     * 🛟 (2026-10-30) error นี้แปลว่า "key นี้เรียกโมเดลนี้ไม่ได้" ไม่ใช่ key เสีย
+     *
+     * ข้อความจริงจาก OpenAI:
+     *   - The model `x` does not exist or you do not have access to it.
+     *   - The requested model 'x' does not exist.
+     *   - Project `p` does not have access to model `x`
+     *
+     * ⚠️ ต้องดูจากข้อความ เพราะ callOpenAiResponses ห่อ RequestException เป็น Exception ธรรมดา
+     *    และ Laravel ตัดเนื้อ response ที่ 120 ตัวอักษร รหัส model_not_found จึงอาจหลุดไปแล้ว
+     */
+    protected function isModelUnavailableError(string $errorMessage): bool
+    {
+        return preg_match('/model_not_found|\bmodel\b.{0,80}\bdoes not exist|does not have access to (?:the )?model/i', $errorMessage) === 1;
     }
 
     /**
@@ -5813,7 +5962,7 @@ PROMPT;
                 $keys[] = [
                     'provider' => 'openrouter',
                     'api_key' => $claudeKey,
-                    'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-haiku'),
+                    'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-haiku-5.5'),
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Claude/OpenRouter Key',
@@ -6069,19 +6218,13 @@ PROMPT;
      */
     protected function getDefaultModelForProvider(string $provider): string
     {
-        return match ($provider) {
-            'gemini' => 'gemini-2.5-flash',
-            'groq' => 'llama-3.3-70b-versatile',
-            'grok' => 'grok-3-latest',  // 🎯 (2026-05-22) grok-2-* deprecated by xAI → use grok-3-latest
-            'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
-            'openrouter' => 'anthropic/claude-3-haiku',
-            'deepseek' => 'deepseek-chat',
-            'typhoon' => 'typhoon-v2-70b-instruct',
-            'xiaomi' => 'mimo-v2.5-pro',          // 🆕 (2026-05-01) Xiaomi MiMo
-            'openai' => 'gpt-4o-mini',
-            'anthropic' => 'claude-haiku-4-5',
-            default => 'gemini-2.5-flash',
-        };
+        // 🔄 (2026-10-30) ใช้ default ของ Pool (AiApiKey::MODELS_BY_PROVIDER) — รายการเดิมชี้โมเดลที่ปิดแล้วหลายตัว
+        //   qwen คงรุ่น HuggingFace ไว้ — path นี้ใช้กับ token hf_ ของระบบเดิม (ดู qwenChatUrl)
+        if ($provider === 'qwen') {
+            return 'Qwen/Qwen2.5-72B-Instruct';
+        }
+
+        return AiApiKey::defaultModelFor($provider) ?? AiApiKey::defaultModelFor('gemini');
     }
 
     /**
@@ -6115,6 +6258,8 @@ PROMPT;
         //   (พรอมต์ทั้งระบบยังเขียนว่า "เจ้าชะตา" อยู่หลายร้อยจุด — กฎนี้ประกาศทับว่าเป็นศัพท์ภายใน)
         $base .= "\n\n".self::CUSTOMER_ADDRESS_DIRECTIVE;
         $base .= "\n".self::FIERCE_TONE_DIRECTIVE;
+        // 🗣️ (2026-10-29, owner) "อืม... ไพ่ใบนี้ชัดเลย" — ตอบรับแบบคนจริงตอนทำนาย (ตามหลัง FIERCE_TONE)
+        $base .= "\n".self::HUMAN_BACKCHANNEL_DIRECTIVE;
 
         // 🪬 (2026-09-05 owner) ห้ามคายตัวบทสวด/คาถา — คลุมทั้ง Deep 39 + Celtic 99 ที่ system role
         //   ต้นเรื่อง: ลูกค้าจ่ายแล้วขอบทสวด บอทให้จริง แต่ *ไม่ครบ + ผิด*
@@ -6647,6 +6792,22 @@ PROMPT;
         }
     }
 
+    /**
+     * 🔄 (2026-10-30) URL แชทของ Qwen ตามชนิด key
+     *
+     * Pool (หน้า AI API Keys) ใช้ DashScope (Model Studio) — ชื่อโมเดลแบบ qwen3.7-plus
+     * แต่ระบบเดิมใช้ HuggingFace router (token ขึ้นต้น hf_, ชื่อโมเดลแบบ Qwen/Qwen2.5-72B-Instruct)
+     * → แยกด้วย prefix ของ key ให้ทั้งสองแบบยังใช้ได้
+     */
+    protected function qwenChatUrl(?string $apiKey): string
+    {
+        if (str_starts_with((string) $apiKey, 'hf_')) {
+            return 'https://router.huggingface.co/v1/chat/completions';
+        }
+
+        return rtrim(AiApiKey::DEFAULT_BASE_URLS['qwen'], '/').'/chat/completions';
+    }
+
     protected function callQwen(string $prompt, array $config = []): array
     {
         try {
@@ -6654,7 +6815,7 @@ PROMPT;
             // ให้คุณภาพคำทำนายดีกว่า text generation API เดิม
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
-                ->post('https://router.huggingface.co/v1/chat/completions', [
+                ->post($this->qwenChatUrl($this->apiKey), [
                     'model' => $this->model,
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
@@ -6688,12 +6849,15 @@ PROMPT;
      *   - GPT-5.x family (gpt-5, gpt-5.5, gpt-5.5-pro, gpt-5.5-mini, gpt-5.4, gpt-5.4-mini)
      *   - o-series reasoning (o1, o1-preview, o1-mini, o3, o3-mini, o4)
      *
+     *   - 🔄 (2026-10-30) GPT-6.x (gpt-6-luna, gpt-6.1-sol, gpt-6-astra …) — reasoning ทุกรุ่น
+     *     และบางรุ่นไม่มี function calling บน Chat Completions → ต้องไป Responses
+     *
      * Legacy /v1/chat/completions ยังใช้ได้สำหรับ:
      *   - gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo
      */
     protected function isOpenAiResponsesModel(string $model): bool
     {
-        return (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+        return (bool) preg_match('/^(gpt-[5-9]|o[1-9])/i', $model);
     }
 
     /**
@@ -6863,22 +7027,20 @@ PROMPT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withHeaders([
                     'x-api-key' => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
+                    'anthropic-version' => AnthropicMessages::API_VERSION,
                     'content-type' => 'application/json',
                 ])
-                ->post($endpoint, [
-                    'model' => $this->model,
-                    'max_tokens' => $config['max_tokens'] ?? 2048,
-                    'system' => $this->getReadingSystemMessage(),
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'temperature' => $config['temperature'] ?? 0.7,
-                ])->throw();
+                ->post($endpoint, AnthropicMessages::body(
+                    $this->model,
+                    $this->getReadingSystemMessage(),
+                    [['role' => 'user', 'content' => $prompt]],
+                    (int) ($config['max_tokens'] ?? 2048),
+                    (float) ($config['temperature'] ?? 0.7),
+                ))->throw();
 
             $data = $response->json();
 
-            $text = $data['content'][0]['text'] ?? '';
+            $text = AnthropicMessages::text($data);
             $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
             $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
 
@@ -7139,9 +7301,8 @@ TXT;
      */
     protected function callGrok(string $prompt, array $config = []): array
     {
-        // 🎯 (2026-05-22) grok-2-* deprecated by xAI → ใช้ grok-3-latest เป็น fallback
-        //   ก่อนหน้านี้: 'grok-2-latest' fallback → xAI ตอบ 400 "Model not found"
-        $effectiveModel = $this->model ?: 'grok-3-latest';
+        // 🔄 (2026-10-30) grok-2/3 ปิดแล้ว → fallback ตาม default ของ Pool
+        $effectiveModel = $this->model ?: AiApiKey::defaultModelFor('grok');
 
         try {
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
@@ -7198,7 +7359,7 @@ TXT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.deepseek.com/chat/completions', [
-                    'model' => $this->model ?: 'deepseek-chat',
+                    'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
@@ -7215,12 +7376,12 @@ TXT;
                 'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
                 'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
                 'provider' => 'deepseek',
-                'model' => $this->model ?: 'deepseek-chat',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
             ];
         } catch (Exception $e) {
             Log::error('DeepSeek API Error', [
                 'error' => $e->getMessage(),
-                'model' => $this->model ?: 'deepseek-chat',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('deepseek'),
             ]);
             throw new Exception("DeepSeek API Error: {$e->getMessage()}");
         }
@@ -7246,7 +7407,7 @@ TXT;
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.opentyphoon.ai/v1/chat/completions', [
-                    'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                    'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
                     'messages' => [
                         ['role' => 'system', 'content' => $this->getReadingSystemMessage()],
                         ['role' => 'user', 'content' => $prompt],
@@ -7263,12 +7424,12 @@ TXT;
                 'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
                 'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
                 'provider' => 'typhoon',
-                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
             ];
         } catch (Exception $e) {
             Log::error('Typhoon API Error', [
                 'error' => $e->getMessage(),
-                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                'model' => $this->model ?: AiApiKey::defaultModelFor('typhoon'),
             ]);
             throw new Exception("Typhoon API Error: {$e->getMessage()}");
         }
@@ -7331,7 +7492,7 @@ TXT;
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
             'openai' => 'https://api.openai.com/v1/chat/completions',
-            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'qwen' => $this->qwenChatUrl($this->apiKey),
             'xiaomi' => rtrim($this->currentBaseUrl ?: (AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1'), '/').'/chat/completions',
             default => throw new Exception("Provider '{$this->provider}' ไม่รองรับ Playground"),
         };
@@ -7461,16 +7622,16 @@ TXT;
         $response = Http::timeout(90)
             ->withHeaders([
                 'x-api-key' => $this->apiKey,
-                'anthropic-version' => '2023-06-01',
+                'anthropic-version' => AnthropicMessages::API_VERSION,
                 'content-type' => 'application/json',
             ])
-            ->post($endpoint, [
-                'model' => $this->model,
-                'max_tokens' => $config['max_tokens'] ?? 2048,
-                'system' => $systemMessage,
-                'messages' => $messages,
-                'temperature' => $config['temperature'] ?? 0.75,
-            ])->throw();
+            ->post($endpoint, AnthropicMessages::body(
+                $this->model,
+                $systemMessage,
+                $messages,
+                (int) ($config['max_tokens'] ?? 2048),
+                (float) ($config['temperature'] ?? 0.75),
+            ))->throw();
 
         $data = $response->json();
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -7479,7 +7640,7 @@ TXT;
         $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
 
         return [
-            'response' => $data['content'][0]['text'] ?? '',
+            'response' => AnthropicMessages::text($data),
             'tokens_used' => $inputTokens + $outputTokens,
             'provider' => 'anthropic',
             'model' => $this->model,

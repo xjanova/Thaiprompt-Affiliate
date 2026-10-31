@@ -21,13 +21,16 @@ class ImageUploadService
 
     /**
      * Upload and optimize image (saves as WebP for better performance)
+     *
+     * @param  string  $disk  disk ที่เก็บ — เอกสารส่วนตัว (KYC) ใช้ 'local' ซึ่งเว็บเปิดตรงไม่ได้
      */
     public function uploadImage(
         UploadedFile $file,
         string $directory = 'products',
         int $maxWidth = 1200,
         int $maxHeight = 1200,
-        int $quality = 85
+        int $quality = 85,
+        string $disk = 'public'
     ): string {
         try {
             // Generate unique filename with .webp extension
@@ -45,7 +48,7 @@ class ImageUploadService
 
             // Encode as WebP and save
             $encoded = $image->toWebp(quality: $quality);
-            Storage::disk('public')->put($path, (string) $encoded);
+            Storage::disk($disk)->put($path, (string) $encoded);
 
             return $path;
         } catch (Exception $e) {

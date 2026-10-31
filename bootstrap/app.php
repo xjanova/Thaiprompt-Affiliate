@@ -19,8 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
             // Provider routes (Service Booking)
             Route::middleware('web')->group(base_path('routes/provider.php'));
 
-            // Forum routes (Community Forum System)
-            Route::middleware('web')->group(base_path('routes/forum.php'));
 
             // Fresh Market routes (ตลาดสดไทยพร๊อม)
             Route::middleware('web')->group(base_path('routes/taladsod.php'));
@@ -73,7 +71,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackRequestMetrics::class, // Track request/response metrics
             \App\Http\Middleware\TrackPageView::class, // Track page views for analytics
             \App\Http\Middleware\CheckMaintenanceMode::class, // Maintenance mode check
-            // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
             // 🔒 (2026-09-25) บัญชีที่ถูกระงับ (users.blocked_at) → ออกจากระบบทันทีทุกหน้า
             \App\Http\Middleware\EnsureAccountActive::class,
         ]);
@@ -108,7 +105,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'crypto.wallet.exists' => \App\Http\Middleware\EnsureCryptoWalletExists::class,
             'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
             // API Access Control middleware
-            'api.access' => \App\Http\Middleware\ApiAccessControl::class,
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
             // Provider LINE connection middleware
@@ -161,6 +157,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 🔐 (2026-09-13) ห้าม flash ความลับกลับลง session ตอน validation ไม่ผ่าน
         //    (ค่าเริ่มต้นกันแค่ password — token บอท Telegram ที่เจ้าของกรอกในหน้าช่องทาง จะถูกเก็บ plaintext ใน session)
         $exceptions->dontFlash(['telegram_bot_token']);
+        // 🔐 (2026-10-29) ฟอร์มเปลี่ยนรหัสผ่านสมาชิกใช้ชื่อ new_password — ค่าเริ่มต้นกันแค่ password → รหัสใหม่ค้างใน session
+        $exceptions->dontFlash(['new_password', 'new_password_confirmation', 'pin']);
 
         // 🚦 (2026-09-25) throttle แบบตัวเลข (throttle:N,M,prefix) ตอบ 429 เป็น JSON ภาษาไทยตามรูปแบบ API กลาง
         //    (ค่าเริ่มต้นของ Laravel คือข้อความอังกฤษ "Too Many Attempts.") — หน้าเว็บปกติใช้หน้า 429 เดิม

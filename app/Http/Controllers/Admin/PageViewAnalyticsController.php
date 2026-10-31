@@ -187,18 +187,6 @@ class PageViewAnalyticsController extends Controller
     }
 
     /**
-     * แสดงหน้า Geographic Stats
-     */
-    public function geography(Request $request): View
-    {
-        $period = $request->get('period', '7days');
-
-        $countryStats = PageView::getCountryStats(50, $period);
-
-        return view('admin.analytics.page-views.geography', compact('period', 'countryStats'));
-    }
-
-    /**
      * Export ข้อมูลเป็น CSV
      *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
