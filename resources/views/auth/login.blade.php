@@ -48,7 +48,7 @@
     {{-- Vite Assets --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    @if(config('turnstile.enabled') && config('turnstile.points.login'))
+    @if(config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.login'))
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
 
@@ -369,7 +369,7 @@
                     </div>
 
                     {{-- Turnstile --}}
-                    @if(config('turnstile.enabled') && config('turnstile.points.login'))
+                    @if(config('turnstile.enabled') && config('turnstile.site_key') && config('turnstile.points.login'))
                     <div class="flex justify-center">
                         <div class="cf-turnstile"
                              data-sitekey="{{ config('turnstile.site_key') }}"
