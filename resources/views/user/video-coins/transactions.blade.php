@@ -1,143 +1,97 @@
-@extends('layouts.user-v4')
+{{--
+    ประวัติธุรกรรม Coins (user.video-coins.transactions) — กรองตามประเภท/ช่วงวันที่ + แบ่งหน้า · ธีมโนวาเต็ม
+    Controller: User\VideoCoinController@transactions (GET type, date_from, date_to)
+    ตัวแปร: transactions (paginator ของ VideoCoinTransaction), pageTitle
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ประวัติธุรกรรม Coins')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/classroom-video.css') }}?v={{ filemtime(public_path('theme-nova/member/classroom-video.css')) }}">
+@endpush
+
 @php
-    // ── ป้ายประเภทธุรกรรม + ไอคอน (ใช้แทน switch/case แบบ tailwind เดิม) ──────────
-    $typeMeta = [
-        'earned_video'    => ['ได้รับจากวิดีโอ', 'fa-play'],
-        'earned_quest'    => ['ได้รับจากภารกิจ', 'fa-trophy'],
-        'earned_referral' => ['ได้รับจากแนะนำ',  'fa-users'],
-        'earned_bonus'    => ['โบนัส',           'fa-gift'],
-        'spent_exchange'  => ['แลกเป็นเงิน',     'fa-exchange-alt'],
-        'spent_shop'      => ['ซื้อสินค้า',       'fa-shopping-cart'],
-    ];
-
-    // ── ตัวเลือก dropdown ประเภท (mirror ของเดิม) ──────────────────────────
+    // ตัวเลือกประเภท (ตรงกับ enum ของ video_coin_transactions.type)
     $typeOptions = [
-        'earned_video'    => 'ได้รับจากวิดีโอ',
-        'earned_quest'    => 'ได้รับจากภารกิจ',
+        'earned_video' => 'ได้รับจากวิดีโอ',
+        'earned_quest' => 'ได้รับจากภารกิจ',
+        'earned_level_up' => 'โบนัสเลื่อนเลเวล',
         'earned_referral' => 'ได้รับจากแนะนำ',
-        'earned_bonus'    => 'โบนัส',
-        'spent_exchange'  => 'แลกเป็นเงิน',
-        'spent_shop'      => 'ซื้อสินค้า',
+        'earned_bonus' => 'โบนัส',
+        'spent_exchange' => 'แลกเป็นเงิน',
+        'spent_shop' => 'ซื้อสินค้า',
+        'adjustment' => 'ปรับยอด / คืนเหรียญ',
     ];
-
-    // สีรายรับ/รายจ่าย (hex — ไม่ใช้ dynamic tailwind class)
-    $incomeColor = '#5aa07e';
-    $expenseColor = '#d9534f';
+    $filtered = request()->filled('type') || request()->filled('date_from') || request()->filled('date_to');
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
+<div class="nvm-stack nvm-cv">
 
-    {{-- ── หัวข้อ (Hero) ────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            @if(\Illuminate\Support\Facades\Route::has('user.video-coins.index'))
-                <a href="{{ route('user.video-coins.index') }}" class="tp-icon-btn" title="ย้อนกลับ"><i class="fas fa-arrow-left"></i></a>
-            @endif
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-receipt" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ประวัติธุรกรรม Coins</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ดูรายการได้รับและใช้จ่าย Video Coins</div>
+<section class="nvm-ph" aria-labelledby="nvm-cv-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.video-coins.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>Video Coins</a>
+            <div class="nvm-eyebrow nvm-latin">Coin history</div>
+            <h1 id="nvm-cv-h">ประวัติธุรกรรม Coins</h1>
+            <p class="nvm-ph__lead">ดูรายการได้รับและใช้จ่าย Video Coins ทั้งหมดของคุณ</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--glass nvm-num"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>{{ number_format($transactions->total()) }} รายการ</span>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ฟอร์มกรอง (GET — รักษาชื่อ field type/date_from/date_to) ──────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <form action="{{ route('user.video-coins.transactions') }}" method="GET"
-              style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;">
-            <div style="flex:1; min-width:200px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ประเภท</label>
-                <select name="type" class="tp-input" style="width:100%;">
-                    <option value="">ทั้งหมด</option>
-                    @foreach($typeOptions as $val => $label)
-                        <option value="{{ $val }}" {{ request('type') == $val ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div style="flex:1; min-width:150px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">จากวันที่</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="tp-input tp-num" style="width:100%;">
-            </div>
-            <div style="flex:1; min-width:150px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px;">ถึงวันที่</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}" class="tp-input tp-num" style="width:100%;">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-search"></i> ค้นหา</button>
-                <a href="{{ route('user.video-coins.transactions') }}" class="tp-btn">ล้าง</a>
-            </div>
-        </form>
-    </div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-cv-ft-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Filter</small><h2 id="nvm-cv-ft-h">ค้นหารายการ</h2></div></div>
+    <form action="{{ route('user.video-coins.transactions') }}" method="GET" class="nvm-filter nvm-cv-filter">
+        <div class="nvm-field">
+            <label class="nvm-label" for="vc-type">ประเภท</label>
+            <select id="vc-type" name="type" class="nvm-input">
+                <option value="">ทั้งหมด</option>
+                @foreach($typeOptions as $val => $label)
+                    <option value="{{ $val }}" @selected(request('type') === $val)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="vc-from">จากวันที่</label>
+            <input id="vc-from" type="date" name="date_from" value="{{ request('date_from') }}" class="nvm-input nvm-num">
+        </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="vc-to">ถึงวันที่</label>
+            <input id="vc-to" type="date" name="date_to" value="{{ request('date_to') }}" class="nvm-input nvm-num">
+        </div>
+        <div class="nvm-filter__btns">
+            <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>ค้นหา</button>
+            @if($filtered)
+                <a href="{{ route('user.video-coins.transactions') }}" class="nvm-btn nvm-btn--line">ล้าง</a>
+            @endif
+        </div>
+    </form>
+</section>
 
-    {{-- ── ตารางรายการธุรกรรม ───────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        @if($transactions->count() > 0)
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">ประเภท</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">รายละเอียด</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">วันที่</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; text-align:right;">จำนวน</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; text-align:right;">คงเหลือ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($transactions as $transaction)
-                            @php
-                                // เป็นรายรับหรือไม่ (type ขึ้นต้นด้วย earned)
-                                $isIncome = str_starts_with($transaction->type, 'earned');
-                                $amtColor = $isIncome ? $incomeColor : $expenseColor;
-                                // ดึงป้าย + ไอคอนจาก map (fallback ตามทิศทาง)
-                                $meta = $typeMeta[$transaction->type] ?? null;
-                                $typeLabel = $meta[0] ?? $transaction->type;
-                                $typeIcon = $meta[1] ?? ($isIncome ? 'fa-arrow-down' : 'fa-arrow-up');
-                            @endphp
-                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                                <td style="padding:12px 16px; white-space:nowrap;">
-                                    <div style="display:flex; align-items:center; gap:9px;">
-                                        <span class="tp-tile" style="width:36px; height:36px; border-radius:11px; font-size:14px; background:color-mix(in srgb, {{ $amtColor }} 18%, transparent);"><i class="fas {{ $typeIcon }}" style="color:{{ $amtColor }};"></i></span>
-                                        <span style="font-size:12.5px; font-weight:600;">{{ $typeLabel }}</span>
-                                    </div>
-                                </td>
-                                <td style="padding:12px 16px;">
-                                    <div style="font-size:12.5px; font-weight:600;">{{ $transaction->description ?? $transaction->type }}</div>
-                                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $transaction->created_at->diffForHumans() }}</div>
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; white-space:nowrap; color:var(--ink);">
-                                    <div>{{ $transaction->created_at->format('d/m/Y') }}</div>
-                                    <div style="font-size:11px; color:var(--ink2);">{{ $transaction->created_at->format('H:i') }}</div>
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; font-size:14px; color:{{ $amtColor }};">
-                                    {{ $isIncome ? '+' : '-' }}{{ number_format(abs($transaction->amount), 2) }}
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; color:var(--ink2);">
-                                    {{ number_format($transaction->balance_after, 2) }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- ── หน้า (Pagination) ──────────────────────────────── --}}
-            <div style="padding:14px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                {{ $transactions->withQueryString()->links() }}
-            </div>
-        @else
-            {{-- ── สถานะว่าง ───────────────────────────────────────── --}}
-            <div style="text-align:center; padding:56px 20px;">
-                <div style="font-size:52px; opacity:.5;">📭</div>
-                <div style="font-weight:700; font-size:17px; margin-top:10px;">ไม่พบประวัติธุรกรรม</div>
-                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เริ่มดูวิดีโอเพื่อรับ Video Coins กันเลย</div>
-            </div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-cv-ls-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Transactions</small><h2 id="nvm-cv-ls-h">รายการธุรกรรม</h2></div></div>
+    @if($transactions->count() > 0)
+        <ul class="nvm-txs">
+            @foreach($transactions as $tx)
+                @include('user.video-coins.partials.nova-tx', ['tx' => $tx, 'showDate' => true])
+            @endforeach
+        </ul>
+        @if($transactions->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $transactions->withQueryString()->links() }}</div>
         @endif
-    </div>
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>{{ $filtered ? 'ไม่พบรายการตามเงื่อนไขที่ค้นหา' : 'ไม่พบประวัติธุรกรรม' }}</b>
+            {{ $filtered ? 'ลองเปลี่ยนประเภทหรือช่วงวันที่' : 'เริ่มดูวิดีโอเพื่อรับ Video Coins กันเลย' }}
+        </div>
+    @endif
+</section>
+
 </div>
 @endsection

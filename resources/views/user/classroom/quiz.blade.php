@@ -1,15 +1,15 @@
 {{--
-    ทำข้อสอบ (user.classroom.attempt) — ตัวเลือกสลับลำดับต่อผู้สอบ · ไม่มีเฉลยในหน้านี้
+    ทำข้อสอบ (user.classroom.attempt) — ตัวเลือกสลับลำดับต่อผู้สอบ · ไม่มีเฉลยในหน้านี้ · ธีมโนวาเต็ม
     Controller: User\ClassroomController@attempt
     ตัวแปร: course (ClassroomCourse), quiz (ClassroomPresenter::attemptQuestions — เหมือน POST /api/v1/classroom/courses/{id}/quiz/start), pageTitle
     ส่งคำตอบ: answers[<question_id>] = ตำแหน่งตัวเลือก (เริ่ม 0) → POST user.classroom.attempt.submit
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'แบบทดสอบ')
 
 @push('styles')
-    @include('user.classroom.partials.styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/classroom-video.css') }}?v={{ filemtime(public_path('theme-nova/member/classroom-video.css')) }}">
 @endpush
 
 @php
@@ -18,30 +18,29 @@
         'total' => count($quiz['questions']),
         'courseUrl' => route('user.classroom.course', $quiz['course_id']),
     ];
+    $startClock = sprintf('%02d:%02d', intdiv($quizCfg['left'], 60), $quizCfg['left'] % 60);
 @endphp
 
 @section('content')
-<form method="POST" action="{{ route('user.classroom.attempt.submit', $quiz['attempt_id']) }}" class="cr-scope"
+<form method="POST" action="{{ route('user.classroom.attempt.submit', $quiz['attempt_id']) }}" class="nvm-stack nvm-cv"
       x-data="crQuiz({{ \Illuminate\Support\Js::from($quizCfg) }})" x-init="boot()" x-on:submit="guard($event)">
     @csrf
 
-    <section class="tp-card cr-row cr-between cr-sticky" style="padding:14px 18px;">
+    <section class="nvm-card nvm-cv-quizbar nvm-cv-sticky" aria-label="สถานะการทำข้อสอบ">
         <div>
-            <div class="cr-small cr-muted">แบบทดสอบ{{ $course?->roleLabel() ? 'คอร์ส'.$course->roleLabel() : '' }}</div>
-            <div style="font-weight:800; color:var(--ink);">ตอบแล้ว <span class="cr-num" x-text="answered">0</span>/{{ count($quiz['questions']) }} · ต้องถูก {{ $quiz['pass_score'] }} ข้อ</div>
+            <div class="nvm-help">แบบทดสอบ{{ $course?->roleLabel() ? 'คอร์ส'.$course->roleLabel() : '' }}</div>
+            <b>ตอบแล้ว <span class="nvm-num" x-text="answered">0</span>/{{ count($quiz['questions']) }} · ต้องถูก {{ $quiz['pass_score'] }} ข้อ</b>
         </div>
-        <span class="cr-pill" :class="left <= 300 ? 'cr-tone-bad' : 'cr-tone-navy'" aria-live="polite">
-            <i class="fas fa-stopwatch"></i> <span class="cr-num" x-text="clock()">30:00</span>
+        <span class="nvm-cv-clock" :class="{ 'is-low': left <= 300 }" aria-live="polite">
+            <svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><span class="nvm-num" x-text="clock()">{{ $startClock }}</span>
         </span>
     </section>
 
     @foreach($quiz['questions'] as $n => $q)
-        <fieldset class="tp-card cr-q" style="border:0; margin:0;">
-            <legend class="cr-q-title" style="padding:0;">
-                <span class="cr-num" style="color:var(--deep1);">{{ $n + 1 }}.</span> {{ $q['question'] }}
-            </legend>
+        <fieldset class="nvm-card nvm-box nvm-cv-q">
+            <legend class="nvm-cv-q__t"><span class="nvm-cv-q__n nvm-num">{{ $n + 1 }}.</span> {{ $q['question'] }}</legend>
             @foreach($q['choices'] as $ci => $choice)
-                <label class="cr-choice" :class="{ 'is-picked': picked[{{ $q['id'] }}] === {{ $ci }} }">
+                <label class="nvm-cv-choice" :class="{ 'is-picked': picked[{{ $q['id'] }}] === {{ $ci }} }">
                     <input type="radio" name="answers[{{ $q['id'] }}]" value="{{ $ci }}" x-on:change="pick({{ $q['id'] }}, {{ $ci }})" required>
                     <span>{{ $choice }}</span>
                 </label>
@@ -49,12 +48,12 @@
         </fieldset>
     @endforeach
 
-    <section class="tp-card cr-stack">
-        <div x-show="answered < total" class="cr-muted cr-small">ยังไม่ได้ตอบอีก <span class="cr-num" x-text="total - answered"></span> ข้อ — ข้อที่ไม่ตอบนับว่าผิด</div>
-        <div class="cr-row cr-between">
-            <a href="{{ route('user.classroom.course', $quiz['course_id']) }}" class="cr-btn-ghost"><i class="fas fa-arrow-left"></i> กลับหน้าคอร์ส</a>
-            <button type="submit" class="cr-btn cr-tone-navy" :disabled="busy" :class="{ 'is-disabled': busy }" formnovalidate>
-                <i class="fas fa-paper-plane"></i> <span x-text="busy ? 'กำลังส่งคำตอบ...' : 'ส่งคำตอบ'">ส่งคำตอบ</span>
+    <section class="nvm-card nvm-box">
+        <p x-show="answered < total" class="nvm-help">ยังไม่ได้ตอบอีก <b class="nvm-num" x-text="total - answered"></b> ข้อ — ข้อที่ไม่ตอบนับว่าผิด</p>
+        <div class="nvm-cv-row nvm-cv-row--between nvm-cv-nav nvm-gap-t">
+            <a href="{{ route('user.classroom.course', $quiz['course_id']) }}" class="nvm-btn nvm-btn--line nvm-cv-back"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กลับหน้าคอร์ส</a>
+            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy" formnovalidate>
+                <svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่งคำตอบ...' : 'ส่งคำตอบ'">ส่งคำตอบ</span>
             </button>
         </div>
     </section>
