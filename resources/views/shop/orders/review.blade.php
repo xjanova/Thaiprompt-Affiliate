@@ -40,12 +40,7 @@
     </div>
 </section>
 
-@if(session('error'))
-    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
-        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
-        <div class="nvm-alert__txt"><b>ส่งรีวิวไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
-    </section>
-@endif
+{{-- ข้อความสำเร็จ/ผิดพลาด (session flash) แสดงเป็น toast จาก layouts.user-nova ที่เดียว ไม่ซ้ำในหน้า --}}
 
 <section class="nvm-card nvm-box" aria-labelledby="nvm-os-rv-f">
     <div class="nvm-sec-h"><div><small class="nvm-latin">Your review</small><h2 id="nvm-os-rv-f">รีวิวสินค้า</h2></div></div>

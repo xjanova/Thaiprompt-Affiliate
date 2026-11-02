@@ -99,18 +99,7 @@
     </div>
 </section>
 
-@if(session('error'))
-    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
-        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
-        <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
-    </section>
-@endif
-@if(session('success'))
-    <section class="nvm-card nvm-alert nvm-alert--ok" role="status">
-        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg></span>
-        <div class="nvm-alert__txt"><b>สำเร็จ</b><p>{{ session('success') }}</p></div>
-    </section>
-@endif
+{{-- ข้อความสำเร็จ/ผิดพลาด (session flash) แสดงเป็น toast จาก layouts.user-nova ที่เดียว ไม่ซ้ำในหน้า --}}
 
 <div class="nvm-split">
     <div class="nvm-stack">

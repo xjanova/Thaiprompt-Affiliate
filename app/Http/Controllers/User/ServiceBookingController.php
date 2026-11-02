@@ -460,7 +460,8 @@ class ServiceBookingController extends Controller
             // 🔒 เบอร์ที่ผู้ให้บริการตั้งไว้สำหรับติดต่องาน (เดิมส่งเบอร์ส่วนตัวในบัญชีผู้ใช้ของผู้ให้บริการ)
             'provider' => $booking->provider ? [
                 'name' => $booking->provider->display_name ?: $booking->provider->name,
-                'phone' => $booking->provider->phone,
+                // 🔒 เบอร์โทรส่งเฉพาะช่วงที่ติดตามได้ (ตรงกับหน้า show ที่โชว์ปุ่มโทรเฉพาะช่วงนี้)
+                'phone' => $trackable ? $booking->provider->phone : null,
             ] : null,
             // 🔒 ส่งเฉพาะฟิลด์ที่หน้าติดตามใช้ (เดิมส่งทั้งแถว รวมความเร็ว/แบตเตอรี่เครื่องผู้ให้บริการ)
             'latest_tracking' => $latestTracking ? [
@@ -498,7 +499,24 @@ class ServiceBookingController extends Controller
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+            'accuracy' => 'nullable|numeric|min:0|max:100000',
         ]);
+
+        // 🛡️ บันทึกลง location logs เหมือนเส้นทาง API (ใช้ตรวจ GPS spoofing / พฤติกรรมน่าสงสัย)
+        // หมายเหตุ: คอลัมน์ source เป็น enum (gps,network,passive,fused,manual) ไม่มี web_browser
+        //          ตำแหน่งจากเบราว์เซอร์รวมหลายแหล่ง จึงบันทึกเป็น fused
+        try {
+            app(\App\Services\AntiAbuseService::class)->logLocation($booking, 'user', [
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+                'accuracy' => $validated['accuracy'] ?? null,
+                'source' => 'fused',
+                'app_state' => 'foreground',
+            ]);
+        } catch (\Throwable $e) {
+            // บันทึก log ไม่ได้ ไม่ควรทำให้การแชร์ตำแหน่งล้ม — รายงานไว้ตรวจภายหลัง
+            report($e);
+        }
 
         $booking->update([
             'user_live_latitude' => $validated['latitude'],
@@ -570,7 +588,7 @@ class ServiceBookingController extends Controller
         $user = auth()->user();
 
         // ตรวจสอบว่าเป็นการจองของผู้ใช้นี้
-        if ($booking->user_id !== $user->id) {
+        if ((int) $booking->user_id !== (int) $user->id) {
             abort(403);
         }
 
@@ -591,11 +609,13 @@ class ServiceBookingController extends Controller
             'review' => 'nullable|string|max:1000',
         ]);
 
-        $booking->update([
+        // 🐛 rating/review/rated_at ไม่อยู่ใน $fillable ของ ServiceBooking → update() ทิ้งค่าเงียบๆ รีวิวไม่เคยถูกบันทึก
+        //    ใช้ forceFill เฉพาะ 3 ช่องนี้ (ค่าผ่าน validate แล้ว) แทนการเปิด mass assignment ทั้งโมเดล
+        $booking->forceFill([
             'rating' => $validated['rating'],
             'review' => $validated['review'] ?? null,
             'rated_at' => now(),
-        ]);
+        ])->save();
 
         // อัพเดทคะแนนเฉลี่ยของ Provider
         if ($booking->provider_id) {
@@ -615,7 +635,7 @@ class ServiceBookingController extends Controller
     {
         $user = auth()->user();
 
-        if ($review->user_id !== $user->id) {
+        if ((int) $review->user_id !== (int) $user->id) {
             abort(403);
         }
 
@@ -634,7 +654,7 @@ class ServiceBookingController extends Controller
     {
         $user = auth()->user();
 
-        if ($review->user_id !== $user->id) {
+        if ((int) $review->user_id !== (int) $user->id) {
             abort(403);
         }
 
@@ -643,10 +663,10 @@ class ServiceBookingController extends Controller
             'review' => 'nullable|string|max:1000',
         ]);
 
-        $review->update([
+        $review->forceFill([
             'rating' => $validated['rating'],
             'review' => $validated['review'] ?? null,
-        ]);
+        ])->save();
 
         // อัพเดทคะแนนเฉลี่ยของ Provider
         if ($review->provider_id) {
@@ -666,17 +686,17 @@ class ServiceBookingController extends Controller
     {
         $user = auth()->user();
 
-        if ($review->user_id !== $user->id) {
+        if ((int) $review->user_id !== (int) $user->id) {
             abort(403);
         }
 
         $providerId = $review->provider_id;
 
-        $review->update([
+        $review->forceFill([
             'rating' => null,
             'review' => null,
             'rated_at' => null,
-        ]);
+        ])->save();
 
         // อัพเดทคะแนนเฉลี่ยของ Provider
         if ($providerId) {
@@ -701,7 +721,8 @@ class ServiceBookingController extends Controller
             ->count();
 
         \App\Models\ServiceProvider::where('id', $providerId)->update([
-            'average_rating' => round($avgRating ?? 0, 2),
+            // 🐛 เดิมเขียนคอลัมน์ average_rating ซึ่งไม่มีในตาราง → ส่งรีวิวแล้ว 500 ทุกครั้ง (คอลัมน์จริงคือ rating decimal(2,1))
+            'rating' => round((float) ($avgRating ?? 0), 1),
             'total_reviews' => $totalReviews,
         ]);
     }

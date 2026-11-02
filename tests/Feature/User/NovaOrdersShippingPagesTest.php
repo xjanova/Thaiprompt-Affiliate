@@ -187,6 +187,33 @@ class NovaOrdersShippingPagesTest extends TestCase
         $this->actingAs($user)->get('/user/bookings?status[]=x')->assertOk();
     }
 
+    public function test_booking_index_stats_and_tab_grouping_are_correct(): void
+    {
+        $user = $this->member();
+        $waiting = $this->booking($user, ['status' => 'waiting_provider']);
+        $accepted = $this->booking($user, ['status' => 'provider_accepted']);
+        $onWay = $this->booking($user, ['status' => 'provider_on_way']);
+        $done = $this->booking($user, ['status' => 'completed']);
+        $rejected = $this->booking($user, ['status' => 'provider_rejected']);
+        $this->booking($this->member(), ['status' => 'completed']); // ของคนอื่น ต้องไม่ถูกนับ
+
+        $res = $this->actingAs($user)->get('/user/bookings')->assertOk();
+        $this->assertSame(['total' => 5, 'waiting' => 1, 'active' => 2, 'completed' => 1, 'cancelled' => 1], $res->viewData('stats'));
+
+        // แท็บ "กำลังทำ" ต้องเห็นทั้งงานที่รับแล้วและกำลังเดินทาง (เดิมเห็นแค่ in_progress)
+        $active = $this->actingAs($user)->get('/user/bookings?status=active')->viewData('bookings');
+        $this->assertEqualsCanonicalizing([$accepted->id, $onWay->id], $active->pluck('id')->all());
+
+        $cancelled = $this->actingAs($user)->get('/user/bookings?status=cancelled')->viewData('bookings');
+        $this->assertSame([$rejected->id], $cancelled->pluck('id')->all());
+
+        $completed = $this->actingAs($user)->get('/user/bookings?status=completed')->viewData('bookings');
+        $this->assertSame([$done->id], $completed->pluck('id')->all());
+
+        $waitingTab = $this->actingAs($user)->get('/user/bookings?status=waiting')->viewData('bookings');
+        $this->assertSame([$waiting->id], $waitingTab->pluck('id')->all());
+    }
+
     public function test_booking_show_renders_without_missing_method_error(): void
     {
         $user = $this->member();
@@ -214,6 +241,59 @@ class NovaOrdersShippingPagesTest extends TestCase
             ->assertJsonPath('booking.status', 'in_progress')
             ->assertJsonPath('booking.trackable', true);
         $this->assertStringNotContainsString('battery', $json->getContent());
+        $json->assertJsonPath('provider.phone', '0800000000');
+    }
+
+    public function test_booking_track_json_hides_provider_location_and_phone_after_job_ends(): void
+    {
+        $user = $this->member();
+        $booking = $this->booking($user, ['status' => 'completed']);
+        $booking->provider->forceFill([
+            'current_latitude' => 13.75, 'current_longitude' => 100.5, 'last_location_update' => now(),
+        ])->save();
+
+        $this->actingAs($user)->getJson("/user/bookings/{$booking->id}/track")
+            ->assertOk()
+            ->assertJsonPath('booking.trackable', false)
+            ->assertJsonPath('provider_location', null)
+            ->assertJsonPath('provider.phone', null)
+            ->assertJsonPath('provider.name', 'ช่างเอก');
+    }
+
+    public function test_review_form_on_booking_show_submits(): void
+    {
+        $user = $this->member();
+        $booking = $this->booking($user, ['status' => 'completed']);
+
+        $this->actingAs($user)
+            ->from(route('user.bookings.show', $booking))
+            ->post(route('user.service-reviews.store', $booking), ['rating' => 5, 'review' => 'บริการดีมาก'])
+            ->assertRedirect(route('user.bookings.show', $booking))
+            ->assertSessionHas('success');
+
+        $booking->refresh();
+        $this->assertSame(5, (int) $booking->rating);
+        $this->assertSame('บริการดีมาก', $booking->review);
+
+        $this->actingAs($this->member())
+            ->post(route('user.service-reviews.store', $booking), ['rating' => 1])
+            ->assertForbidden();
+    }
+
+    public function test_shipping_address_failure_shows_generic_message(): void
+    {
+        $user = $this->member();
+        ShippingAddress::creating(function () {
+            throw new \RuntimeException('SQLSTATE[42S22]: Column not found: shipping_addresses.secret');
+        });
+
+        $res = $this->actingAs($user)->from('/shipping-addresses/create')->post('/shipping-addresses', [
+            'recipient_name' => 'สมชาย ใจดี', 'phone_number' => '0811111111', 'address_line_1' => '99/1',
+            'sub_district' => 'คลองเตย', 'district' => 'คลองเตย', 'province' => 'กรุงเทพมหานคร', 'postal_code' => '10110',
+        ]);
+
+        $res->assertRedirect('/shipping-addresses/create');
+        $this->assertSame('ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', session('error'));
     }
 
     public function test_cannot_open_another_members_booking(): void
@@ -239,6 +319,11 @@ class NovaOrdersShippingPagesTest extends TestCase
         $booking->refresh();
         $this->assertEqualsWithDelta(13.7563, (float) $booking->user_live_latitude, 0.0001);
         $this->assertNotNull($booking->user_location_updated_at);
+
+        // 🛡️ ต้องบันทึกลง location logs เหมือนเส้นทาง API (ใช้ตรวจ GPS spoofing)
+        $this->assertDatabaseHas('service_booking_location_logs', [
+            'service_booking_id' => $booking->id, 'actor_type' => 'user', 'user_id' => $user->id,
+        ]);
 
         $done = $this->booking($user, ['status' => 'completed']);
         $this->actingAs($user)

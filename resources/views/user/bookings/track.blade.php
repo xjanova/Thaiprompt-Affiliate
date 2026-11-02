@@ -58,7 +58,8 @@
     <div class="nvm-stack">
         <section class="nvm-card nvm-box" aria-labelledby="nvm-os-bt-map-h">
             <div class="nvm-sec-h"><div><small class="nvm-latin">Map</small><h2 id="nvm-os-bt-map-h">ตำแหน่งบนแผนที่</h2></div></div>
-            <div class="nvm-os-map nvm-os-map--lg" x-ref="map" role="img" aria-label="แผนที่ตำแหน่งผู้ให้บริการและสถานที่ให้บริการ"></div>
+            {{-- ซ่อนกล่องแผนที่จนกว่าจะมีพิกัด (ไม่ให้เห็นกล่องเทาว่างเปล่า) — ResizeObserver ใน partials/map จัด invalidateSize ให้ตอนโชว์ --}}
+            <div class="nvm-os-map nvm-os-map--lg" x-ref="map" x-show="hasMap" x-cloak role="img" aria-label="แผนที่ตำแหน่งผู้ให้บริการและสถานที่ให้บริการ"></div>
             <p class="nvm-help nvm-gap-t" x-show="! hasMap" x-cloak>ยังไม่มีพิกัดให้แสดงบนแผนที่</p>
 
             <div class="nvm-minis nvm-gap-t">
@@ -147,9 +148,13 @@
             init() {
                 this.$nextTick(() => {
                     if (cfg.home && window.nvmOsMap && window.nvmOsMap.ready()) {
-                        this.map = window.nvmOsMap.create(this.$refs.map, cfg.home.lat, cfg.home.lng, 14);
-                        window.nvmOsMap.pin(this.map, cfg.home.lat, cfg.home.lng, 'home');
+                        // โชว์กล่องก่อนแล้วค่อยสร้างแผนที่ — Leaflet ต้องรู้ขนาดกล่องตอนสร้าง
                         this.hasMap = true;
+                        this.$nextTick(() => {
+                            if (this.map) { return; }
+                            this.map = window.nvmOsMap.create(this.$refs.map, cfg.home.lat, cfg.home.lng, 14);
+                            window.nvmOsMap.pin(this.map, cfg.home.lat, cfg.home.lng, 'home');
+                        });
                     }
                     this.poll();
                     if (! ENDED.includes(this.status)) {
@@ -198,8 +203,13 @@
                 }
                 const lat = Number(loc.latitude), lng = Number(loc.longitude);
                 if (! this.map) {
+                    if (! this.hasMap) {
+                        // กล่องแผนที่ยังซ่อนอยู่ — โชว์ก่อน แล้ววาดหมุดในรอบถัดไป
+                        this.hasMap = true;
+                        this.$nextTick(() => this.moveRider(loc));
+                        return;
+                    }
                     this.map = window.nvmOsMap.create(this.$refs.map, lat, lng, 14);
-                    this.hasMap = true;
                 }
                 if (this.riderPin) {
                     this.riderPin.setLatLng([lat, lng]);
@@ -218,7 +228,7 @@
                 if (! this.canGeo) { return; }
                 this.sharing = true;
                 this.watchId = navigator.geolocation.watchPosition(
-                    (p) => this.send(p.coords.latitude, p.coords.longitude),
+                    (p) => this.send(p.coords.latitude, p.coords.longitude, p.coords.accuracy),
                     () => { notify('เปิดตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์', 'error'); this.stopShare(); },
                     { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
                 );
@@ -229,7 +239,7 @@
                 this.sharing = false;
             },
 
-            async send(lat, lng) {
+            async send(lat, lng, accuracy) {
                 // ส่งไม่ถี่เกินทุก 20 วินาที (เส้นทางจำกัด 20 ครั้ง/นาที)
                 const now = Date.now();
                 if (now - this.lastSent < 20000) { return; }
@@ -239,7 +249,7 @@
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' },
-                        body: JSON.stringify({ latitude: lat, longitude: lng })
+                        body: JSON.stringify({ latitude: lat, longitude: lng, accuracy: Number.isFinite(accuracy) ? Math.round(accuracy * 100) / 100 : null })
                     });
                     if (res.status === 422) { notify('การจองนี้ไม่อยู่ในช่วงที่แชร์ตำแหน่งได้แล้ว', 'info'); this.stopShare(); }
                 } catch (e) {
