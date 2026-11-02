@@ -21,7 +21,7 @@ use Tests\Feature\Rider\Fixtures\FakeDeliverableSource;
 use Tests\TestCase;
 
 /**
- * หน้าเว็บไรเดอร์ V4 (/user/rider/*) — ทุกหน้าเปิดได้จริงตามสถานะไรเดอร์ (ต้องใช้ MySQL รันบน CI)
+ * หน้าเว็บไรเดอร์ (ธีมโนวาเต็ม) (/user/rider/*) — ทุกหน้าเปิดได้จริงตามสถานะไรเดอร์ (ต้องใช้ MySQL รันบน CI)
  *
  * ครอบคลุม gap จาก audit 2026-09-25:
  *   - RIDER-07 / GAP-01 หน้าเว็บไรเดอร์ขาด view 6 หน้า (เปิดแล้ว 500) + ไม่มีเมนู
@@ -64,11 +64,11 @@ class RiderWebPagesTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'user']);
 
-        // (2026-10-29) หน้าสมาชิกวิ่งในเปลือกโนวาโหมดสะพานแล้ว (<html class="nvm-v4">) — ไม่มี tp-root ของเปลือก V4 เดิม
+        // (2026-11-02) หน้าไรเดอร์ย้ายเข้าธีมโนวาเต็มแล้ว (layouts.user-nova) — ไม่ใช่โหมดสะพาน nvm-v4
         $this->actingAs($user)->get(route('user.rider.register'))
             ->assertOk()
-            ->assertSee('class="nvm-v4"', false)
-            ->assertSee('tp-card', false)
+            ->assertSee('nvm-body', false)
+            ->assertSee('nvm-card', false)
             ->assertSee('name="pdpa_consent"', false)
             ->assertSee('name="id_card_number"', false)
             ->assertSee(route('user.rider.register.submit'), false);
@@ -113,17 +113,17 @@ class RiderWebPagesTest extends TestCase
         $this->actingAs($user)->get(route('user.rider.earnings'))->assertRedirect(route('user.rider.status'));
 
         $this->actingAs($user)->get(route('user.rider.status'))
-            ->assertOk()->assertSee('tp-card', false)->assertSee('รอตรวจสอบ')->assertSee(route('user.rider.documents'), false);
+            ->assertOk()->assertSee('nvm-card', false)->assertSee('รอตรวจสอบ')->assertSee(route('user.rider.documents'), false);
 
         $this->actingAs($user)->get(route('user.rider.documents'))
-            ->assertOk()->assertSee('tp-card', false)->assertSee('เอกสารไรเดอร์')
+            ->assertOk()->assertSee('nvm-card', false)->assertSee('เอกสารไรเดอร์')
             ->assertSee('name="document_type"', false)->assertSee(route('user.rider.documents.upload'), false);
 
         $this->actingAs($user)->get(route('user.rider.register'))
-            ->assertOk()->assertSee('tp-card', false)->assertSee('แก้ไขใบสมัคร');
+            ->assertOk()->assertSee('nvm-card', false)->assertSee('แก้ไขใบสมัคร');
 
         $this->actingAs($user)->get(route('user.rider.settings'))
-            ->assertOk()->assertSee('tp-card', false)->assertSee(route('user.rider.settings.update'), false);
+            ->assertOk()->assertSee('nvm-card', false)->assertSee(route('user.rider.settings.update'), false);
     }
 
     public function test_rejected_rider_sees_reason_and_can_reapply(): void
@@ -158,8 +158,8 @@ class RiderWebPagesTest extends TestCase
         // (2026-10-13) รับงานในแอปเท่านั้น — เว็บเห็นงาน (อ่านอย่างเดียว) + แบนเนอร์ดาวน์โหลดแอป ไม่มีปุ่มรับงาน/สวิตช์เปิดรับงาน
         $this->actingAs($user)->get(route('user.rider.dashboard'))
             ->assertOk()
-            ->assertSee('class="nvm-v4"', false)
-            ->assertSee('rd-scope', false)
+            ->assertSee('nvm-body', false)
+            ->assertSee('theme-nova/member/rider.css', false)
             ->assertSee('รายได้วันนี้')
             ->assertSee((string) $job->job_number)
             ->assertSee('รับงานและทำงานส่งได้ผ่านแอป Thai Prompt APP เท่านั้น')
@@ -173,7 +173,7 @@ class RiderWebPagesTest extends TestCase
             ->assertDontSee('ยินยอมให้ลูกค้าเห็นตำแหน่งของคุณระหว่างส่งงาน');
 
         foreach (['available', 'current', 'history'] as $tab) {
-            $this->actingAs($user)->get(route('user.rider.jobs', ['tab' => $tab]))->assertOk()->assertSee('tp-card', false);
+            $this->actingAs($user)->get(route('user.rider.jobs', ['tab' => $tab]))->assertOk()->assertSee('nvm-card', false);
         }
         $this->actingAs($user)->get(route('user.rider.jobs', ['tab' => 'available']))->assertSee((string) $job->job_number);
 
@@ -181,7 +181,7 @@ class RiderWebPagesTest extends TestCase
             $this->actingAs($user)->get(route('user.rider.earnings', ['period' => $period]))->assertOk()->assertSee('รายได้ของคุณ');
         }
 
-        $this->actingAs($user)->get(route('user.rider.documents'))->assertOk()->assertSee('tp-card', false);
+        $this->actingAs($user)->get(route('user.rider.documents'))->assertOk()->assertSee('nvm-card', false);
         $this->actingAs($user)->get(route('user.rider.settings'))
             ->assertOk()->assertSee('name="preferred_job_types[]"', false)->assertSee('ยินยอมแล้ว');
 

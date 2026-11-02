@@ -142,6 +142,55 @@ final class RiderWebUi
     }
 
     /**
+     * คลาสชิปธีมโนวา (nvm-chip--*) ตามโทนสถานะงาน — muted ใช้ชิปสีเทาพื้นฐาน
+     */
+    public static function novaChip(?string $status): string
+    {
+        return match (self::jobTone($status)) {
+            'ok' => 'nvm-chip--ok',
+            'bad' => 'nvm-chip--bad',
+            'warn' => 'nvm-chip--warn',
+            'info' => 'nvm-chip--info',
+            default => '',
+        };
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวา (#nvm-i-*) ตามประเภทงาน
+     */
+    public static function novaJobIcon(?string $jobType): string
+    {
+        return match ($jobType) {
+            'fresh_market' => 'basket',
+            'shop_delivery' => 'store',
+            'document' => 'send',
+            'service' => 'gear',
+            default => 'bag',
+        };
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวาตามยานพาหนะ (ชุดไอคอนโนวาไม่มีรูปรถยนต์/จักรยาน — เดินเท้าใช้รูปคน)
+     */
+    public static function novaVehicleIcon(?string $vehicleType): string
+    {
+        return $vehicleType === 'walk' ? 'user' : 'scooter';
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวาตามประเภทเอกสาร
+     */
+    public static function novaDocumentIcon(?string $type): string
+    {
+        return match ($type) {
+            'driver_license' => 'card',
+            'vehicle_registration' => 'scooter',
+            'profile' => 'user',
+            default => 'id',
+        };
+    }
+
+    /**
      * ไอคอน Font Awesome ตามประเภทงาน
      */
     public static function jobIcon(?string $jobType): string

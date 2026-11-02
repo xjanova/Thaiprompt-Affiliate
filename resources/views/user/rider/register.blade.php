@@ -1,5 +1,5 @@
 {{--
-    สมัครเป็นไรเดอร์ / แก้ไขใบสมัคร / ส่งใบสมัครใหม่ (user.rider.register)
+    สมัครเป็นไรเดอร์ / แก้ไขใบสมัคร / ส่งใบสมัครใหม่ (user.rider.register) — ธีมโนวาเต็ม
     Controller: User\RiderController@register → POST user.rider.register.submit (RiderRegistrationRequest + pdpa_consent)
     ตัวแปร: rider (Rider|null), isReapply, vehicleTypes, requiredDocumentsByVehicle, documentTypes, documentFlags,
             minBirthDate, maxBirthDate, formAction, pageTitle
@@ -7,19 +7,18 @@
            vehicle_type, vehicle_plate (บังคับเมื่อมอเตอร์ไซค์/รถยนต์), vehicle_brand, vehicle_color, pdpa_consent
     สำเร็จ → หน้าอัปโหลดเอกสาร (user.rider.documents)
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'สมัครเป็นไรเดอร์')
 
 @push('styles')
-    @include('user.rider.partials.styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/rider.css') }}?v={{ filemtime(public_path('theme-nova/member/rider.css')) }}">
 @endpush
 
 @php
     $ui = \App\Support\RiderWebUi::class;
     $authUser = auth()->user();
     $isPendingEdit = $rider !== null && $rider->status === 'pending';
-    $heroImage = file_exists(public_path('images/taladsod/banner-rider.webp')) ? asset('images/taladsod/banner-rider.webp') : null;
     $vehicle = old('vehicle_type', $rider?->vehicle_type ?: 'motorcycle');
     $provinces = array_keys(\App\Support\ThaiProvinces::PROVINCES);
     $docLabels = collect($documentTypes)->map(fn ($d) => $d['label'])->all();
@@ -36,219 +35,216 @@
     ];
 
     $submitLabel = $isReapply ? 'ส่งใบสมัครใหม่' : ($isPendingEdit ? 'บันทึกการแก้ไขใบสมัคร' : 'ส่งใบสมัครและไปอัปโหลดเอกสาร');
+
+    $steps = [
+        ['label' => '1. กรอกข้อมูล', 'state' => 'current'],
+        ['label' => '2. อัปโหลดเอกสาร', 'state' => $rider && ($documentFlags['id_card'] ?? false) ? 'done' : 'todo'],
+        ['label' => '3. ทีมงานตรวจสอบ', 'state' => 'todo'],
+        ['label' => '4. เริ่มรับงาน', 'state' => 'todo'],
+    ];
 @endphp
 
 @section('content')
-<div class="rd-scope">
+<div class="nvm-stack">
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'register'])
 
     {{-- ── หัวหน้า: ชวนมาเป็นไรเดอร์ ──────────────────────────── --}}
-    <section class="tp-card rd-hero">
-        @if($heroImage)
-            <div class="rd-hero-img" style="background-image:url('{{ $heroImage }}'); opacity:.35;" aria-hidden="true"></div>
-        @endif
-        <div class="rd-hero-in" style="flex-direction:column; align-items:flex-start; padding-top:26px; padding-bottom:26px;">
-            <span class="rd-pill solid rd-tone-gold"><i class="fas fa-motorcycle"></i> ไรเดอร์ไทยพร้อม</span>
-            <h1 class="rd-h1" style="font-size:clamp(22px, 5.5vw, 32px); max-width:560px;">
-                {{ $isReapply ? 'ส่งใบสมัครไรเดอร์ใหม่' : ($isPendingEdit ? 'แก้ไขใบสมัครไรเดอร์' : 'ขับรถส่งของ รับรายได้ใกล้บ้าน') }}
-            </h1>
-            <div class="rd-stack" style="gap:8px; max-width:560px;">
-                <div class="rd-row" style="gap:8px; flex-wrap:nowrap;"><i class="fas fa-bolt" style="color:var(--accent1); width:18px;"></i><span style="font-size:13.5px;">รายได้ค่าส่งเข้ากระเป๋าเงินทันทีที่ส่งสำเร็จ</span></div>
-                <div class="rd-row" style="gap:8px; flex-wrap:nowrap;"><i class="fas fa-clock" style="color:var(--accent1); width:18px;"></i><span style="font-size:13.5px;">เลือกเวลาทำงานเอง เปิด-ปิดรับงานได้ตลอด</span></div>
-                <div class="rd-row" style="gap:8px; flex-wrap:nowrap;"><i class="fas fa-store" style="color:var(--accent1); width:18px;"></i><span style="font-size:13.5px;">งานใกล้บ้านจากร้านค้าและตลาดสดในชุมชน</span></div>
+    <section class="nvm-ph" aria-labelledby="nvm-rd-reg-h">
+        <div class="nvm-ph__in">
+            <div class="nvm-ph__txt">
+                <div class="nvm-eyebrow nvm-latin">Become a rider</div>
+                <h1 id="nvm-rd-reg-h">{{ $isReapply ? 'ส่งใบสมัครไรเดอร์ใหม่' : ($isPendingEdit ? 'แก้ไขใบสมัครไรเดอร์' : 'ขับรถส่งของ รับรายได้ใกล้บ้าน') }}</h1>
+                <ul class="nvm-rd-perks">
+                    <li><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>รายได้ค่าส่งเข้ากระเป๋าเงินทันทีที่ส่งสำเร็จ</li>
+                    <li><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>เลือกเวลาทำงานเอง เปิด-ปิดรับงานได้ตลอด</li>
+                    <li><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>งานใกล้บ้านจากร้านค้าและตลาดสดในชุมชน</li>
+                </ul>
             </div>
+            <img class="nvm-ph__art" src="{{ asset('images/nova/earn/rider.webp') }}" alt="" width="200" height="200">
         </div>
     </section>
 
     {{-- ── ขั้นตอน ────────────────────────────────────────────── --}}
-    <section class="tp-card">
-        <div class="rd-steps" aria-label="ขั้นตอนการสมัคร">
-            <div class="st current"><div class="bar"></div><div class="lb">1. กรอกข้อมูล</div></div>
-            <div class="st {{ $rider && ($documentFlags['id_card'] ?? false) ? 'done' : '' }}"><div class="bar"></div><div class="lb">2. อัปโหลดเอกสาร</div></div>
-            <div class="st"><div class="bar"></div><div class="lb">3. ทีมงานตรวจสอบ</div></div>
-            <div class="st"><div class="bar"></div><div class="lb">4. เริ่มรับงาน</div></div>
-        </div>
-    </section>
+    <div class="nvm-card nvm-box">
+        @include('user.rider.partials.steps', ['steps' => $steps, 'stepsLabel' => 'ขั้นตอนการสมัคร'])
+    </div>
 
     @if($isReapply)
-        <div class="rd-alert rd-tone-bad">
-            <i class="fas fa-circle-xmark"></i>
-            <div>
-                <b>ใบสมัครครั้งก่อนไม่ผ่าน</b>@if($rider?->rejection_reason) — {{ $rider->rejection_reason }}@endif
-                <div class="rd-small" style="margin-top:4px;">แก้ไขข้อมูลตามที่แจ้งแล้วส่งใหม่ได้เลย จากนั้นตรวจเอกสารให้ครบอีกครั้ง</div>
+        <section class="nvm-card nvm-alert nvm-alert--bad" role="status">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b>ใบสมัครครั้งก่อนไม่ผ่าน</b>
+                @if($rider?->rejection_reason)<p>{{ $rider->rejection_reason }}</p>@endif
+                <p>แก้ไขข้อมูลตามที่แจ้งแล้วส่งใหม่ได้เลย จากนั้นตรวจเอกสารให้ครบอีกครั้ง</p>
             </div>
-        </div>
+        </section>
     @elseif($isPendingEdit)
-        <div class="rd-alert rd-tone-info">
-            <i class="fas fa-hourglass-half"></i>
-            <div>ใบสมัครของคุณอยู่ระหว่างตรวจสอบ — แก้ไขข้อมูลได้ ข้อมูลใหม่จะแทนที่ของเดิม <a href="{{ route('user.rider.status') }}" class="rd-link">ดูสถานะ <i class="fas fa-arrow-right"></i></a></div>
-        </div>
+        <section class="nvm-card nvm-alert nvm-alert--info" role="status">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg></span>
+            <div class="nvm-alert__txt"><b>ใบสมัครของคุณอยู่ระหว่างตรวจสอบ</b><p>แก้ไขข้อมูลได้ ข้อมูลใหม่จะแทนที่ของเดิม</p></div>
+            <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.rider.status') }}">ดูสถานะ</a>
+        </section>
     @endif
 
     @if($errors->any())
-        <div class="rd-alert rd-tone-bad" role="alert">
-            <i class="fas fa-circle-exclamation"></i>
-            <div>
+        <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+            <div class="nvm-alert__txt">
                 <b>กรุณาตรวจสอบข้อมูลอีกครั้ง</b>
-                <ul style="margin:6px 0 0; padding-left:18px;">
-                    @foreach($errors->all() as $message)
-                        <li>{{ $message }}</li>
-                    @endforeach
-                </ul>
+                @foreach($errors->all() as $message)<p>{{ $message }}</p>@endforeach
             </div>
-        </div>
+        </section>
     @endif
 
-    <form method="POST" action="{{ $formAction }}" class="rd-stack" novalidate
+    <form method="POST" action="{{ $formAction }}" class="nvm-form" novalidate
           x-data="rdRegister({{ \Illuminate\Support\Js::from($regCfg) }})" x-on:submit="guard($event)">
         @csrf
 
         {{-- ── ข้อมูลส่วนตัว ──────────────────────────────────── --}}
-        <section class="tp-card rd-stack">
-            <h2 class="rd-h2"><i class="fas fa-user" style="color:var(--accent1);"></i> ข้อมูลส่วนตัว</h2>
-            <div class="rd-grid" style="--rd-min:240px;">
-                <div class="rd-field">
-                    <label for="full_name">ชื่อ-นามสกุล (ตามบัตรประชาชน) <span class="req">*</span></label>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-me-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Personal</small><h2 id="nvm-rd-me-h">ข้อมูลส่วนตัว</h2></div></div>
+            <div class="nvm-rd-grid">
+                <div class="nvm-field">
+                    <label for="full_name" class="nvm-label">ชื่อ-นามสกุล (ตามบัตรประชาชน) <em>*</em></label>
                     <input id="full_name" type="text" name="full_name" required minlength="4" maxlength="255" autocomplete="name"
-                           class="tp-input {{ $errors->has('full_name') ? 'is-bad' : '' }}" value="{{ old('full_name', $rider?->full_name ?? $authUser?->name) }}" placeholder="เช่น สมชาย ใจดี">
-                    @error('full_name')<span class="rd-err">{{ $message }}</span>@enderror
+                           class="nvm-input {{ $errors->has('full_name') ? 'is-bad' : '' }}" value="{{ old('full_name', $rider?->full_name ?? $authUser?->name) }}" placeholder="เช่น สมชาย ใจดี">
+                    @error('full_name')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="phone">เบอร์มือถือ <span class="req">*</span></label>
+                <div class="nvm-field">
+                    <label for="phone" class="nvm-label">เบอร์มือถือ <em>*</em></label>
                     <input id="phone" type="tel" name="phone" required inputmode="tel" autocomplete="tel" maxlength="15"
-                           class="tp-input {{ $errors->has('phone') ? 'is-bad' : '' }}" value="{{ old('phone', $rider?->phone ?? $authUser?->phone) }}" placeholder="0812345678">
-                    <span class="rd-hint">ลูกค้าและร้านจะใช้เบอร์นี้ติดต่อคุณระหว่างส่งงาน</span>
-                    @error('phone')<span class="rd-err">{{ $message }}</span>@enderror
+                           class="nvm-input {{ $errors->has('phone') ? 'is-bad' : '' }}" value="{{ old('phone', $rider?->phone ?? $authUser?->phone) }}" placeholder="0812345678">
+                    <span class="nvm-help">ลูกค้าและร้านจะใช้เบอร์นี้ติดต่อคุณระหว่างส่งงาน</span>
+                    @error('phone')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="id_card_number">เลขบัตรประชาชน 13 หลัก <span class="req">*</span></label>
+                <div class="nvm-field">
+                    <label for="id_card_number" class="nvm-label">เลขบัตรประชาชน 13 หลัก <em>*</em></label>
                     <input id="id_card_number" type="text" name="id_card_number" required inputmode="numeric" autocomplete="off" maxlength="17"
-                           class="tp-input {{ $errors->has('id_card_number') ? 'is-bad' : '' }}"
-                           :class="{ 'is-ok': idState === 'ok', 'is-bad': idState === 'bad' || idState === 'long' }"
+                           class="nvm-input nvm-num {{ $errors->has('id_card_number') ? 'is-bad' : '' }}"
+                           :class="{ 'nvm-rd-ok': idState === 'ok', 'is-bad': idState === 'bad' || idState === 'long' }"
                            x-model="idCard" placeholder="1-2345-67890-12-3" value="{{ $regCfg['idCard'] }}">
-                    <span class="rd-hint" :class="{ 'rd-err': idState === 'bad' || idState === 'long' }" x-text="idHint">กรอกเลข 13 หลักบนบัตรประชาชน ระบบตรวจหลักสุดท้ายให้อัตโนมัติ</span>
-                    @error('id_card_number')<span class="rd-err">{{ $message }}</span>@enderror
+                    <span class="nvm-help" :class="{ 'nvm-rd-bad': idState === 'bad' || idState === 'long', 'nvm-rd-ok': idState === 'ok' }" x-text="idHint">กรอกเลข 13 หลักบนบัตรประชาชน ระบบตรวจหลักสุดท้ายให้อัตโนมัติ</span>
+                    @error('id_card_number')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="birth_date">วันเกิด (ต้องอายุ 18 ปีขึ้นไป) <span class="req">*</span></label>
+                <div class="nvm-field">
+                    <label for="birth_date" class="nvm-label">วันเกิด (ต้องอายุ 18 ปีขึ้นไป) <em>*</em></label>
                     <input id="birth_date" type="date" name="birth_date" required min="{{ $minBirthDate }}" max="{{ $maxBirthDate }}"
-                           class="tp-input {{ $errors->has('birth_date') ? 'is-bad' : '' }}"
-                           :class="{ 'is-ok': age !== null && age >= 18, 'is-bad': age !== null && age < 18 }"
+                           class="nvm-input {{ $errors->has('birth_date') ? 'is-bad' : '' }}"
+                           :class="{ 'nvm-rd-ok': age !== null && age >= 18, 'is-bad': age !== null && age < 18 }"
                            x-model="birth" value="{{ $regCfg['birth'] }}">
-                    <span class="rd-hint" :class="{ 'rd-err': age !== null && age < 18 }" x-text="ageHint">เลือกวันเกิดตามปฏิทินในเครื่อง</span>
-                    @error('birth_date')<span class="rd-err">{{ $message }}</span>@enderror
+                    <span class="nvm-help" :class="{ 'nvm-rd-bad': age !== null && age < 18 }" x-text="ageHint">เลือกวันเกิดตามปฏิทินในเครื่อง</span>
+                    @error('birth_date')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
             </div>
         </section>
 
         {{-- ── ที่อยู่ ─────────────────────────────────────────── --}}
-        <section class="tp-card rd-stack">
-            <h2 class="rd-h2"><i class="fas fa-house" style="color:var(--accent1);"></i> ที่อยู่ปัจจุบัน</h2>
-            <div class="rd-field">
-                <label for="address">ที่อยู่ <span class="req">*</span></label>
-                <textarea id="address" name="address" required minlength="10" maxlength="500" rows="3" autocomplete="street-address"
-                          class="tp-input {{ $errors->has('address') ? 'is-bad' : '' }}" placeholder="บ้านเลขที่ ซอย ถนน ตำบล/แขวง">{{ old('address', $rider?->address) }}</textarea>
-                @error('address')<span class="rd-err">{{ $message }}</span>@enderror
-            </div>
-            <div class="rd-grid" style="--rd-min:200px;">
-                <div class="rd-field">
-                    <label for="district">อำเภอ/เขต</label>
-                    <input id="district" type="text" name="district" maxlength="100" class="tp-input" value="{{ old('district', $rider?->district) }}" placeholder="เช่น บางรัก">
-                    @error('district')<span class="rd-err">{{ $message }}</span>@enderror
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-addr-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Address</small><h2 id="nvm-rd-addr-h">ที่อยู่ปัจจุบัน</h2></div></div>
+            <div class="nvm-rd-grid">
+                <div class="nvm-field nvm-rd-span">
+                    <label for="address" class="nvm-label">ที่อยู่ <em>*</em></label>
+                    <textarea id="address" name="address" required minlength="10" maxlength="500" rows="3" autocomplete="street-address"
+                              class="nvm-input {{ $errors->has('address') ? 'is-bad' : '' }}" placeholder="บ้านเลขที่ ซอย ถนน ตำบล/แขวง">{{ old('address', $rider?->address) }}</textarea>
+                    @error('address')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="province">จังหวัด</label>
-                    <input id="province" type="text" name="province" maxlength="100" list="rd-provinces" class="tp-input" value="{{ old('province', $rider?->province) }}" placeholder="เช่น กรุงเทพมหานคร">
+                <div class="nvm-field">
+                    <label for="district" class="nvm-label">อำเภอ/เขต</label>
+                    <input id="district" type="text" name="district" maxlength="100" class="nvm-input" value="{{ old('district', $rider?->district) }}" placeholder="เช่น บางรัก">
+                    @error('district')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="nvm-field">
+                    <label for="province" class="nvm-label">จังหวัด</label>
+                    <input id="province" type="text" name="province" maxlength="100" list="rd-provinces" class="nvm-input" value="{{ old('province', $rider?->province) }}" placeholder="เช่น กรุงเทพมหานคร">
                     <datalist id="rd-provinces">
                         @foreach($provinces as $p)
                             <option value="{{ $p }}"></option>
                         @endforeach
                     </datalist>
-                    @error('province')<span class="rd-err">{{ $message }}</span>@enderror
+                    @error('province')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
             </div>
         </section>
 
         {{-- ── ยานพาหนะ ────────────────────────────────────────── --}}
-        <section class="tp-card rd-stack">
-            <h2 class="rd-h2"><i class="fas fa-motorcycle" style="color:var(--accent1);"></i> ยานพาหนะที่ใช้ส่งงาน</h2>
-            <div class="rd-grid" style="--rd-min:150px; gap:10px;">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-veh-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Vehicle</small><h2 id="nvm-rd-veh-h">ยานพาหนะที่ใช้ส่งงาน</h2></div></div>
+            <div class="nvm-opts nvm-rd-opts" role="radiogroup" aria-label="ประเภทยานพาหนะ">
                 @foreach($vehicleTypes as $value => $label)
-                    <label class="rd-choice">
+                    <label class="nvm-opt">
                         <input type="radio" name="vehicle_type" value="{{ $value }}" required x-model="vehicle" @checked($vehicle === $value)>
-                        <span class="box"><i class="fas {{ $ui::vehicleIcon($value) }}"></i><span style="font-weight:700; font-size:13.5px;">{{ $label }}</span></span>
+                        <span class="nvm-opt__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaVehicleIcon($value) }}"/></svg></span>
+                        <b>{{ $label }}</b>
                     </label>
                 @endforeach
             </div>
-            @error('vehicle_type')<span class="rd-err">{{ $message }}</span>@enderror
+            @error('vehicle_type')<span class="nvm-err">{{ $message }}</span>@enderror
 
-            <div class="rd-grid" style="--rd-min:180px;">
-                <div class="rd-field" x-show="needPlate" x-cloak>
-                    <label for="vehicle_plate">ทะเบียนรถ <span class="req">*</span></label>
-                    <input id="vehicle_plate" type="text" name="vehicle_plate" maxlength="20" class="tp-input {{ $errors->has('vehicle_plate') ? 'is-bad' : '' }}"
+            <div class="nvm-rd-grid nvm-rd-grid--3 nvm-gap-t">
+                <div class="nvm-field" x-show="needPlate" x-cloak>
+                    <label for="vehicle_plate" class="nvm-label">ทะเบียนรถ <em>*</em></label>
+                    <input id="vehicle_plate" type="text" name="vehicle_plate" maxlength="20" class="nvm-input {{ $errors->has('vehicle_plate') ? 'is-bad' : '' }}"
                            :required="needPlate" value="{{ old('vehicle_plate', $rider?->vehicle_plate) }}" placeholder="เช่น 1กข 1234 กรุงเทพฯ">
-                    @error('vehicle_plate')<span class="rd-err">{{ $message }}</span>@enderror
+                    @error('vehicle_plate')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="vehicle_brand">ยี่ห้อ/รุ่น</label>
-                    <input id="vehicle_brand" type="text" name="vehicle_brand" maxlength="100" class="tp-input" value="{{ old('vehicle_brand', $rider?->vehicle_brand) }}" placeholder="เช่น Honda Wave">
-                    @error('vehicle_brand')<span class="rd-err">{{ $message }}</span>@enderror
+                <div class="nvm-field">
+                    <label for="vehicle_brand" class="nvm-label">ยี่ห้อ/รุ่น</label>
+                    <input id="vehicle_brand" type="text" name="vehicle_brand" maxlength="100" class="nvm-input" value="{{ old('vehicle_brand', $rider?->vehicle_brand) }}" placeholder="เช่น Honda Wave">
+                    @error('vehicle_brand')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div class="rd-field">
-                    <label for="vehicle_color">สีรถ</label>
-                    <input id="vehicle_color" type="text" name="vehicle_color" maxlength="50" class="tp-input" value="{{ old('vehicle_color', $rider?->vehicle_color) }}" placeholder="เช่น แดง">
-                    @error('vehicle_color')<span class="rd-err">{{ $message }}</span>@enderror
+                <div class="nvm-field">
+                    <label for="vehicle_color" class="nvm-label">สีรถ</label>
+                    <input id="vehicle_color" type="text" name="vehicle_color" maxlength="50" class="nvm-input" value="{{ old('vehicle_color', $rider?->vehicle_color) }}" placeholder="เช่น แดง">
+                    @error('vehicle_color')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
             </div>
         </section>
 
         {{-- ── เอกสารที่ต้องเตรียม (อัปโหลดในขั้นถัดไป) ─────────────── --}}
-        <section class="tp-card rd-stack">
-            <h2 class="rd-h2"><i class="fas fa-folder-open" style="color:var(--accent1);"></i> เอกสารที่ต้องเตรียม</h2>
-            <p class="rd-muted" style="font-size:13px; margin:0;">หลังส่งใบสมัคร คุณจะอัปโหลดรูปเอกสารเหล่านี้ (ถ่ายจากมือถือได้เลย) — รายการเปลี่ยนตามยานพาหนะที่เลือก</p>
-            <div class="rd-grid" style="--rd-min:190px; gap:10px;">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-prep-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Documents</small><h2 id="nvm-rd-prep-h">เอกสารที่ต้องเตรียม</h2></div></div>
+            <p class="nvm-desc">หลังส่งใบสมัคร คุณจะอัปโหลดรูปเอกสารเหล่านี้ (ถ่ายจากมือถือได้เลย) — รายการเปลี่ยนตามยานพาหนะที่เลือก</p>
+            <ul class="nvm-rd-list nvm-gap-t">
                 @foreach($documentTypes as $type => $meta)
-                    <div class="rd-choice" x-show="requiredDocs.indexOf({{ \Illuminate\Support\Js::from($type) }}) !== -1" x-transition.opacity>
-                        <span class="box" style="cursor:default;">
-                            <i class="fas {{ $ui::documentIcon($type) }}"></i>
-                            <span style="min-width:0;">
-                                <span style="display:block; font-weight:700; font-size:13.5px;">{{ $meta['label'] }}</span>
-                                <span class="rd-small" style="display:block;" :class="docFlags[{{ \Illuminate\Support\Js::from($type) }}] ? '' : 'rd-muted'"
-                                      :style="docFlags[{{ \Illuminate\Support\Js::from($type) }}] ? 'color:var(--rd-ok); font-weight:700;' : ''"
-                                      x-text="docFlags[{{ \Illuminate\Support\Js::from($type) }}] ? 'อัปโหลดแล้ว' : 'อัปโหลดขั้นถัดไป'">อัปโหลดขั้นถัดไป</span>
-                            </span>
+                    @php $tj = \Illuminate\Support\Js::from($type); @endphp
+                    <li x-show="requiredDocs.indexOf({{ $tj }}) !== -1" x-transition.opacity>
+                        <span class="nvm-rd-ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaDocumentIcon($type) }}"/></svg></span>
+                        <span>
+                            <b>{{ $meta['label'] }}</b>
+                            <small :class="docFlags[{{ $tj }}] ? 'is-ok' : ''" x-text="docFlags[{{ $tj }}] ? 'อัปโหลดแล้ว' : 'อัปโหลดขั้นถัดไป'">อัปโหลดขั้นถัดไป</small>
                         </span>
-                    </div>
+                    </li>
                 @endforeach
-            </div>
-            <div class="rd-hint"><i class="fas fa-lock"></i> รูปเอกสารเก็บแบบส่วนตัว ไม่เปิดเผยต่อสาธารณะ เปิดดูได้เฉพาะคุณและทีมงานที่ตรวจสอบ</div>
+            </ul>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>รูปเอกสารเก็บแบบส่วนตัว ไม่เปิดเผยต่อสาธารณะ เปิดดูได้เฉพาะคุณและทีมงานที่ตรวจสอบ</p>
         </section>
 
         {{-- ── ความยินยอม PDPA ─────────────────────────────────── --}}
-        <section class="tp-card rd-stack">
-            <h2 class="rd-h2"><i class="fas fa-shield-halved" style="color:var(--accent1);"></i> การเก็บและใช้ข้อมูลส่วนบุคคล (PDPA)</h2>
-            <details class="rd-details" style="padding:0 4px;">
-                <summary>อ่านรายละเอียดว่าเราใช้ข้อมูลอะไร เพื่ออะไร <i class="fas fa-chevron-down chev"></i></summary>
-                <div class="rd-muted" style="font-size:13px; line-height:1.7; padding-bottom:6px;">
-                    <b style="color:var(--ink);">ข้อมูลที่เก็บ:</b> ชื่อ-นามสกุล เบอร์โทร เลขบัตรประชาชน วันเกิด ที่อยู่ ข้อมูลยานพาหนะ รูปเอกสาร (บัตรประชาชน ใบขับขี่ ทะเบียนรถ รูปหน้าตรง)
-                    และตำแหน่ง GPS ระหว่างที่คุณเปิดรับงานหรือกำลังส่งงาน<br>
-                    <b style="color:var(--ink);">เพื่อ:</b> ยืนยันตัวตนและคุณสมบัติไรเดอร์ จับคู่งานใกล้คุณ ให้ลูกค้าติดตามการส่งของ ความปลอดภัยของลูกค้าและร้านค้า และการจ่ายรายได้<br>
-                    <b style="color:var(--ink);">การเปิดเผย:</b> ลูกค้าและร้านเห็นชื่อ เบอร์ ยานพาหนะ รูปหน้าตรง และตำแหน่งของคุณเฉพาะงานที่คุณรับ ส่วนเลขบัตรและรูปเอกสารเห็นเฉพาะทีมงานที่ตรวจสอบ<br>
-                    <b style="color:var(--ink);">สิทธิ์ของคุณ:</b> ขอดู แก้ไข หรือขอลบข้อมูล และถอนความยินยอมได้ โดยติดต่อทีมงาน หรือลบบัญชีได้ที่หน้าตั้งค่าความปลอดภัย
-                    — อ่านเพิ่มเติมที่<a href="{{ route('privacy') }}" target="_blank" rel="noopener" class="rd-link"> นโยบายความเป็นส่วนตัว</a>
-                </div>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-pdpa-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Privacy</small><h2 id="nvm-rd-pdpa-h">การเก็บและใช้ข้อมูลส่วนบุคคล (PDPA)</h2></div></div>
+            <details class="nvm-rd-details">
+                <summary>อ่านรายละเอียดว่าเราใช้ข้อมูลอะไร เพื่ออะไร <svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></summary>
+                <dl>
+                    <dt>ข้อมูลที่เก็บ</dt>
+                    <dd>ชื่อ-นามสกุล เบอร์โทร เลขบัตรประชาชน วันเกิด ที่อยู่ ข้อมูลยานพาหนะ รูปเอกสาร (บัตรประชาชน ใบขับขี่ ทะเบียนรถ รูปหน้าตรง) และตำแหน่ง GPS ระหว่างที่คุณเปิดรับงานหรือกำลังส่งงาน</dd>
+                    <dt>เพื่อ</dt>
+                    <dd>ยืนยันตัวตนและคุณสมบัติไรเดอร์ จับคู่งานใกล้คุณ ให้ลูกค้าติดตามการส่งของ ความปลอดภัยของลูกค้าและร้านค้า และการจ่ายรายได้</dd>
+                    <dt>การเปิดเผย</dt>
+                    <dd>ลูกค้าและร้านเห็นชื่อ เบอร์ ยานพาหนะ รูปหน้าตรง และตำแหน่งของคุณเฉพาะงานที่คุณรับ ส่วนเลขบัตรและรูปเอกสารเห็นเฉพาะทีมงานที่ตรวจสอบ</dd>
+                    <dt>สิทธิ์ของคุณ</dt>
+                    <dd>ขอดู แก้ไข หรือขอลบข้อมูล และถอนความยินยอมได้ โดยติดต่อทีมงาน หรือลบบัญชีได้ที่หน้าตั้งค่าความปลอดภัย — อ่านเพิ่มเติมที่<a href="{{ route('privacy') }}" target="_blank" rel="noopener" class="nvm-link">นโยบายความเป็นส่วนตัว</a></dd>
+                </dl>
             </details>
-            <label class="rd-alert rd-tone-gold" style="cursor:pointer;">
-                <input type="checkbox" name="pdpa_consent" value="1" required @checked(old('pdpa_consent'))
-                       style="width:22px; height:22px; accent-color:var(--accent1); flex:none; margin-top:1px;">
+            <label class="nvm-rd-consent-box nvm-gap-t">
+                <input type="checkbox" name="pdpa_consent" value="1" required @checked(old('pdpa_consent'))>
                 <span>ฉันยืนยันว่าข้อมูลเป็นความจริง และยินยอมให้เก็บและใช้ข้อมูลส่วนบุคคลตามรายละเอียดข้างต้น</span>
             </label>
-            @error('pdpa_consent')<span class="rd-err">{{ $message }}</span>@enderror
+            @error('pdpa_consent')<span class="nvm-err">{{ $message }}</span>@enderror
         </section>
 
-        <div class="rd-sticky-actions">
-            <button type="submit" class="rd-btn3d rd-tone-gold lg block" :disabled="submitting">
-                <i class="fas" :class="submitting ? 'fa-circle-notch rd-spin' : 'fa-paper-plane'"></i> {{ $submitLabel }}
+        <div class="nvm-rd-sticky">
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="submitting">
+                <svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="submitting ? 'กำลังส่ง…' : @js($submitLabel)">{{ $submitLabel }}</span>
             </button>
         </div>
     </form>

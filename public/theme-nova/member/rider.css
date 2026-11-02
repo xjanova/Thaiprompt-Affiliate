@@ -1,0 +1,162 @@
+/* ==========================================================================
+   หน้าเว็บไรเดอร์ (/user/rider/*) — ส่วนเสริมเฉพาะชุดนี้บนธีมโนวาสมาชิก
+   - ใช้คู่กับ public/theme-nova/nova-member.css (คลาสพื้นฐาน nvm-*) — ไฟล์นี้มีแค่คลาส nvm-rd-*
+   - สีทั้งหมดอ่านจากตัวแปร --nvm-* จึงสลับโหมดสว่าง/มืด (html.dark) ได้เอง
+   - ออกแบบจากจอมือถือ 375px ก่อน แล้วค่อยขยายคอลัมน์บนจอใหญ่
+   ========================================================================== */
+
+/* ── กริดทั่วไป ─────────────────────────────────────────────────────────── */
+.nvm-rd-2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.nvm-rd-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.nvm-rd-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.nvm-rd-acts .nvm-btn { flex: 1 1 auto; }
+@media (min-width: 640px) {
+    .nvm-rd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-rd-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .nvm-rd-acts .nvm-btn { flex: 0 0 auto; }
+}
+@media (min-width: 900px) {
+    .nvm-rd-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.nvm-rd-span { grid-column: 1 / -1; }
+
+/* ── ฮีโร่: รูปโปรไฟล์ไรเดอร์ + ปุ่มสถานะรับงาน ───────────────────────────── */
+.nvm-rd-who { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.nvm-rd-avatar { width: 64px; height: 64px; flex: none; border-radius: 20px; object-fit: cover; box-shadow: 0 0 0 2px rgba(245, 210, 127, .6), 0 10px 22px -10px rgba(0, 0, 0, .6); }
+.nvm-rd-avatar--ph { display: grid; place-items: center; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-rd-avatar--ph .nvm-ico { width: 28px; height: 28px; }
+.nvm-rd-state { display: inline-flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-radius: 16px; font-size: 14px; font-weight: 700; color: var(--nv-gold-100, #fdf3d6); background: rgba(255, 255, 255, .07); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .35); }
+.nvm-rd-state small { font-size: 12px; font-weight: 500; opacity: .8; }
+
+/* ── แถบความคืบหน้างาน / ขั้นตอนสมัคร ──────────────────────────────────── */
+.nvm-rd-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.nvm-rd-steps li { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-rd-steps li::before { content: ""; height: 6px; border-radius: 6px; background: var(--nvm-track); }
+.nvm-rd-steps li small { display: block; font-weight: 500; font-size: 11px; color: var(--nvm-ink-3); }
+.nvm-rd-steps li.is-done { color: var(--nvm-good); }
+.nvm-rd-steps li.is-done::before { background: var(--nvm-good); }
+.nvm-rd-steps li.is-now { color: var(--nvm-gold-ink); }
+.nvm-rd-steps li.is-now::before { background: var(--nv-btn-gold); box-shadow: 0 4px 12px -4px rgba(240, 201, 106, .9); }
+.nvm-rd-steps li.is-stop { color: var(--nvm-bad); }
+.nvm-rd-steps li.is-stop::before { background: var(--nvm-bad); }
+
+/* ── จุดรับ → จุดส่ง ─────────────────────────────────────────────────────── */
+.nvm-rd-route { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; position: relative; }
+.nvm-rd-route li { position: relative; padding-left: 26px; min-width: 0; }
+.nvm-rd-route li::before { content: ""; position: absolute; left: 4px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--nvm-gold-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--nvm-gold-ink) 18%, transparent); }
+.nvm-rd-route li + li::before { background: var(--nvm-good); box-shadow: 0 0 0 4px var(--nvm-good-bg); }
+.nvm-rd-route li + li::after { content: ""; position: absolute; left: 9px; top: -14px; height: 16px; border-left: 2px dashed var(--nvm-line-2); }
+.nvm-rd-route small { display: block; font-size: 11.5px; font-weight: 600; color: var(--nvm-ink-3); }
+.nvm-rd-route b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
+.nvm-rd-route p { margin: 2px 0 0; font-size: 12.5px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+
+/* ── การ์ดงาน ───────────────────────────────────────────────────────────── */
+.nvm-rd-jobs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 768px) { .nvm-rd-jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nvm-rd-job { display: flex; flex-direction: column; gap: 14px; }
+.nvm-rd-job__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.nvm-rd-job__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-rd-job__who b { display: block; font-size: 15px; }
+.nvm-rd-job__who small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-rd-ic { width: 44px; height: 44px; flex: none; border-radius: 14px; display: grid; place-items: center; color: var(--nvm-gold-ink); background: color-mix(in srgb, var(--nv-gold-400, #e8b84a) 18%, transparent); }
+.nvm-rd-ic .nvm-ico { width: 20px; height: 20px; }
+.nvm-rd-earn { flex: none; text-align: right; }
+.nvm-rd-earn small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-rd-earn b { display: block; font-family: var(--nvm-font-display); font-size: 22px; line-height: 1.1; color: var(--nvm-good); white-space: nowrap; }
+.nvm-rd-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.nvm-rd-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--nvm-line); font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-rd-foot > span { display: inline-flex; align-items: center; gap: 6px; }
+.nvm-rd-foot .nvm-ico { width: 15px; height: 15px; }
+
+/* การ์ดงานที่กำลังทำ — ขอบทองให้เด่นกว่าการ์ดอื่น */
+.nvm-rd-live { box-shadow: var(--nvm-shadow), inset 0 0 0 2px color-mix(in srgb, var(--nv-gold-500, #d4a64a) 65%, transparent); }
+.nvm-rd-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--nvm-good); box-shadow: 0 0 0 0 var(--nvm-good-bg); animation: nvm-rd-pulse 1.8s ease-out infinite; }
+@keyframes nvm-rd-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--nvm-good) 55%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+
+/* การ์ดความยินยอมแชร์ตำแหน่ง — ขอบฟ้าให้สะดุดตา */
+.nvm-rd-consent { box-shadow: var(--nvm-shadow), inset 0 0 0 2px color-mix(in srgb, var(--nvm-info) 55%, transparent); }
+
+/* ── กราฟรายได้รายวัน (เดือนนี้มีได้ถึง 31 แท่ง → เลื่อนแนวนอนในกล่อง) ─────── */
+.nvm-rd-scroll { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+.nvm-rd-scroll .nvm-bars { min-width: calc(var(--n, 7) * 26px); }
+.nvm-rd-scroll .nvm-bar span { font-size: 10.5px; }
+
+/* ── เอกสาร ─────────────────────────────────────────────────────────────── */
+.nvm-rd-docs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 700px) { .nvm-rd-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nvm-rd-thumb { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-rd-thumb--ph { display: grid; place-items: center; color: var(--nvm-ink-3); }
+.nvm-rd-thumb--ph .nvm-ico { width: 40px; height: 40px; opacity: .6; }
+.nvm-rd-progress { height: 8px; border-radius: 8px; background: var(--nvm-track); overflow: hidden; }
+.nvm-rd-progress i { display: block; height: 100%; width: var(--w, 0%); border-radius: 8px; background: var(--nv-btn-gold); transition: width .2s; }
+
+/* รูปยืนยันในหน้ารายละเอียดงาน */
+.nvm-rd-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 768px) { .nvm-rd-photos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.nvm-rd-photos a { color: inherit; text-decoration: none; font-size: 12.5px; }
+.nvm-rd-photos small { display: block; margin-top: 6px; color: var(--nvm-ink-3); }
+
+/* ── ฟอร์ม ──────────────────────────────────────────────────────────────── */
+.nvm-input.nvm-rd-ok { box-shadow: inset 0 0 0 1.5px var(--nvm-good); }
+.nvm-help.nvm-rd-ok { color: var(--nvm-good); font-weight: 600; }
+.nvm-help.nvm-rd-bad { color: var(--nvm-bad); font-weight: 600; }
+.nvm-rd-range { width: 100%; accent-color: var(--nv-gold-500, #d4a64a); }
+.nvm-rd-range-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-rd-fee { max-width: 260px; }
+.nvm-rd-sticky { position: sticky; bottom: 84px; z-index: 5; padding: 12px; border-radius: 20px; background: color-mix(in srgb, var(--nvm-paper) 88%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: var(--nvm-shadow), inset 0 0 0 1px var(--nvm-line); }
+@media (min-width: 1100px) { .nvm-rd-sticky { bottom: 16px; } }
+.nvm-rd-details summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--nvm-gold-ink); cursor: pointer; list-style: none; }
+.nvm-rd-details summary::-webkit-details-marker { display: none; }
+.nvm-rd-details summary .nvm-ico { width: 16px; height: 16px; transform: rotate(90deg); transition: transform .2s; }
+.nvm-rd-details[open] summary .nvm-ico { transform: rotate(-90deg); }
+.nvm-rd-details dl { margin: 4px 0 0; display: grid; gap: 8px; font-size: 13px; line-height: 1.65; color: var(--nvm-ink-3); }
+.nvm-rd-details dt { font-weight: 700; color: var(--nvm-ink); }
+.nvm-rd-details dd { margin: 0; }
+.nvm-rd-consent-box { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; cursor: pointer; background: var(--nvm-warn-bg); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-rd-consent-box input { width: 22px; height: 22px; flex: none; margin: 1px 0 0; accent-color: var(--nv-gold-500, #d4a64a); }
+
+/* รายการเอกสารที่ต้องเตรียม / ข้อดีการเป็นไรเดอร์ */
+.nvm-rd-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 640px) { .nvm-rd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nvm-rd-list li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); min-width: 0; }
+.nvm-rd-list li b { display: block; font-size: 14px; }
+.nvm-rd-list li small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-rd-list li small.is-ok { color: var(--nvm-good); font-weight: 700; }
+.nvm-rd-perks { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--nv-on-night-2, rgba(236, 229, 210, .8)); }
+.nvm-rd-perks li { display: flex; align-items: center; gap: 8px; }
+.nvm-rd-perks .nvm-ico { width: 16px; height: 16px; flex: none; color: var(--nv-gold-300, #f5d27f); }
+
+/* ── ตัวเลือกวิทยุ/ช่องติ๊ก (ใช้กับ nvm-opt) ปิดใช้งาน ───────────────────── */
+.nvm-opt:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.nvm-rd-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 900px) { .nvm-rd-opts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.nvm-rd-opts .nvm-opt { padding: 12px; gap: 10px; }
+.nvm-rd-opts .nvm-opt__ic { width: 38px; height: 38px; border-radius: 12px; }
+.nvm-rd-opts .nvm-opt__ic .nvm-ico { width: 18px; height: 18px; }
+
+/* ── สถานะใบสมัคร ───────────────────────────────────────────────────────── */
+.nvm-rd-badge { width: 76px; height: 76px; flex: none; border-radius: 24px; display: grid; place-items: center; color: #1a1405; background: var(--nv-btn-gold); box-shadow: 0 14px 30px -12px rgba(240, 201, 106, .8); }
+.nvm-rd-badge .nvm-ico { width: 36px; height: 36px; }
+.nvm-rd-badge.is-bad { color: #fff; background: var(--nvm-bad); box-shadow: 0 14px 30px -12px var(--nvm-bad); }
+.nvm-rd-badge.is-ok { color: #fff; background: var(--nvm-good); box-shadow: 0 14px 30px -12px var(--nvm-good); }
+.nvm-rd-badge.is-mute { color: var(--nvm-ink-2); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-rd-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.nvm-rd-head > div { flex: 1 1 220px; min-width: 0; }
+.nvm-rd-head h2 { margin: 0; font-family: var(--nvm-font-display); font-size: 22px; }
+.nvm-rd-head p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--nvm-ink-2); }
+
+/* ลดการเคลื่อนไหวตามที่ผู้ใช้ตั้งค่าไว้ */
+@media (prefers-reduced-motion: reduce) {
+    .nvm-rd-dot { animation: none; }
+    .nvm-rd-progress i, .nvm-rd-details summary .nvm-ico { transition: none; }
+}
+
+/* ── ตัวช่วยเล็ก ๆ ───────────────────────────────────────────────────────── */
+.nvm-tabs .nvm-ico { width: 16px; height: 16px; }
+.nvm-rd-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.nvm-rd-pre { white-space: pre-line; overflow-wrap: anywhere; }
+.nvm-meter__bar i.nvm-rd-meter { width: var(--w, 0%); }
+.nvm-rd-job > .nvm-sec-h { margin-bottom: 0; }
+.nvm-rd-job > .nvm-note { margin-top: 0; }
+.nvm-alert > .nvm-rd-acts { flex-basis: 100%; }
+.nvm-txs .nvm-tx__r > .nvm-ico { width: 16px; height: 16px; color: var(--nvm-ink-3); }
