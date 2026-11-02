@@ -65,8 +65,8 @@ function setupMindMapControls() {
     if (toggleRotateBtn && mindMapInstance) {
         toggleRotateBtn.addEventListener('click', () => {
             const isRotating = mindMapInstance.toggleAutoRotate();
-            toggleRotateBtn.textContent = isRotating ? '⏸️ Pause Rotate' : '▶️ Auto Rotate';
-            toggleRotateBtn.classList.toggle('bg-yellow-500/20');
+            toggleRotateBtn.textContent = isRotating ? 'หยุดหมุน' : 'หมุนอัตโนมัติ';
+            toggleRotateBtn.classList.toggle('is-on', !!isRotating);
         });
     }
 
@@ -95,66 +95,65 @@ function getUserIncomeData() {
     };
 }
 
-// Show node details in a modal or sidebar
-function showNodeDetails(nodeData) {
-    // Create a beautiful modal
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80';
-    modal.innerHTML = `
-        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-md w-full border-2 border-cyan-500/50 shadow-2xl transform scale-95 animate-scale-in">
-            <div class="text-center mb-6">
-                <div class="text-6xl mb-4">${nodeData.icon}</div>
-                <h3 class="text-3xl font-bold text-cyan-400 mb-2">${nodeData.data.title}</h3>
-                <p class="text-gray-300">${nodeData.data.description}</p>
-            </div>
-
-            ${nodeData.data.amount ? `
-                <div class="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl mb-6">
-                    <div class="text-sm text-cyan-300 mb-1">รายได้โดยประมาณ</div>
-                    <div class="text-3xl font-bold text-cyan-400">${nodeData.data.amount}</div>
-                </div>
-            ` : ''}
-
-            <button onclick="this.closest('.fixed').remove()"
-                    class="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all">
-                เข้าใจแล้ว ✓
-            </button>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-
-    // Animate in
-    setTimeout(() => {
-        modal.querySelector('div').classList.remove('scale-95');
-        modal.querySelector('div').classList.add('scale-100');
-    }, 10);
+// แสดงรายละเอียด node เป็นป๊อปอัปธีมโนวา (nvm-modal) — สร้างด้วย DOM + textContent ไม่ต่อ HTML จากข้อมูล
+function nvEl(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined && text !== null) el.textContent = String(text);
+    return el;
 }
 
-// Show fallback message if 3D fails to load
+function showNodeDetails(nodeData) {
+    const data = (nodeData && nodeData.data) || {};
+    const modal = nvEl('div', 'nvm-modal');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    const box = nvEl('div', 'nvm-card nvm-modal__box');
+    if (nodeData && nodeData.icon) box.appendChild(nvEl('div', 'nvm-um-modal-ic', nodeData.icon));
+    const title = nvEl('h2', null, data.title || '');
+    title.id = 'nvm-um-node-title';
+    modal.setAttribute('aria-labelledby', title.id);
+    box.appendChild(title);
+    if (data.description) box.appendChild(nvEl('p', null, data.description));
+
+    if (data.amount) {
+        const kv = nvEl('dl', 'nvm-kv');
+        kv.appendChild(nvEl('dt', null, 'รายได้โดยประมาณ'));
+        kv.appendChild(nvEl('dd', 'nvm-num', data.amount));
+        box.appendChild(kv);
+    }
+
+    const close = nvEl('button', 'nvm-btn nvm-btn--gold nvm-btn--block nvm-gap-t', 'เข้าใจแล้ว');
+    close.type = 'button';
+    box.appendChild(close);
+    modal.appendChild(box);
+
+    const remove = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') remove(); };
+    close.addEventListener('click', remove);
+    modal.addEventListener('click', (e) => { if (e.target === modal) remove(); });
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(modal);
+    close.focus();
+}
+
+// แสดงข้อความแทน เมื่อโหลด 3D ไม่สำเร็จ (เช่น เบราว์เซอร์ไม่รองรับ WebGL)
 function showFallbackMessage(containerId, message) {
     const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = `
-            <div class="flex items-center justify-center h-full">
-                <div class="text-center p-8">
-                    <div class="text-6xl mb-4">⚠️</div>
-                    <p class="text-white text-lg mb-4">${message}</p>
-                    <button onclick="location.reload()"
-                            class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all">
-                        รีเฟรชหน้านี้
-                    </button>
-                </div>
-            </div>
-        `;
-    }
+    if (!container) return;
+    container.textContent = '';
+    const box = nvEl('div', 'nvm-empty nvm-um-3d__fail');
+    box.appendChild(nvEl('b', null, 'โหลดภาพ 3 มิติไม่สำเร็จ'));
+    box.appendChild(nvEl('span', null, message));
+    const btn = nvEl('button', 'nvm-btn nvm-btn--ghost nvm-btn--sm', 'รีเฟรชหน้านี้');
+    btn.type = 'button';
+    btn.addEventListener('click', () => location.reload());
+    const wrap = nvEl('div');
+    wrap.appendChild(btn);
+    box.appendChild(wrap);
+    container.appendChild(box);
 }
 
 // Setup global functions for buttons
@@ -166,25 +165,13 @@ function setupGlobalFunctions() {
         }
     };
 
-    // Calculate binary bonus
+    // ปุ่ม "คำนวณ" ของแต่ละช่องทาง → พาไปเครื่องคำนวณในหน้า (เดิมเป็น prompt()/alert() และคิด 1,000฿/คู่ ขัดกับ 100฿/คู่ที่หน้าแสดง)
     window.calculateBinaryBonus = function() {
-        const pairs = prompt('กรุณาใส่จำนวนคู่ต่อสัปดาห์:', '10');
-        if (pairs !== null) {
-            const bonus = parseInt(pairs) * 1000 * 4; // per month
-            alert(`💰 Binary Bonus ต่อเดือน:\n\n${pairs} คู่/สัปดาห์ × 1,000฿ × 4 สัปดาห์\n= ฿${bonus.toLocaleString()}`);
-        }
+        if (typeof window.nvmUmCalcFocus === 'function') window.nvmUmCalcFocus('calc-binary-pairs');
     };
 
-    // Calculate team bonus
     window.calculateTeamBonus = function() {
-        const teamSize = prompt('กรุณาใส่ขนาดทีม (คน):', '100');
-        const avgSales = prompt('ยอดขายเฉลี่ยต่อคน/เดือน (฿):', '2000');
-
-        if (teamSize !== null && avgSales !== null) {
-            const totalSales = parseInt(teamSize) * parseInt(avgSales);
-            const override = totalSales * 0.05; // 5% override
-            alert(`💰 Team Override Bonus:\n\nทีม ${teamSize} คน × ฿${parseInt(avgSales).toLocaleString()}\n= ฿${totalSales.toLocaleString()} (ยอดรวม)\n\nOverride 5% = ฿${Math.floor(override).toLocaleString()}`);
-        }
+        if (typeof window.nvmUmCalcFocus === 'function') window.nvmUmCalcFocus('calc-team-size');
     };
 
     // Update income flow with new data
@@ -219,25 +206,6 @@ window.addEventListener('beforeunload', function() {
         incomeFlowInstance.destroy();
     }
 });
-
-// Add CSS animation for modal
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes scale-in {
-        from {
-            transform: scale(0.95);
-            opacity: 0;
-        }
-        to {
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-    .animate-scale-in {
-        animation: scale-in 0.3s ease-out forwards;
-    }
-`;
-document.head.appendChild(style);
 
 // Export for external use
 export { mindMapInstance, incomeFlowInstance };
