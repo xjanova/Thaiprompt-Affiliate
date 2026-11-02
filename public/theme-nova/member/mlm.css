@@ -1,0 +1,195 @@
+/* =====================================================================
+   ธีมโนวา — ชุดหน้า MLM ของสมาชิก (resources/views/user/mlm/*)
+   โหลดต่อจาก nova-member.css ผ่าน @push('styles') ของแต่ละหน้า
+   - ทุกคลาสขึ้นต้นด้วย nvm-ml- · ใช้ตัวแปร --nvm-* (สว่าง/มืดสลับให้เองจาก html.dark)
+   - mobile-first: เริ่มจากจอ 375px แล้วขยายที่ 768px / 1100px
+   ===================================================================== */
+
+/* ── ทั่วไป ───────────────────────────────────────────────────────── */
+.nvm-ml-page .nvm-meter__bar i { width: var(--w, 0%); max-width: 100%; }
+.nvm-ml-page .nvm-alert__txt small { display: block; margin-top: 2px; font-size: 13px; color: var(--nvm-ink-3); }
+.nvm-ml-page .nvm-kpi__val { overflow-wrap: anywhere; }
+.nvm-ml-nowrap { white-space: nowrap; }
+.nvm-ml-sub { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; color: var(--nvm-ink-3); }
+.nvm-ml-mute { color: var(--nvm-ink-3); }
+.nvm-ml-in { color: var(--nvm-good); }
+.nvm-ml-void { color: var(--nvm-ink-3); text-decoration: line-through; }
+.nvm-ml-note { min-width: 160px; max-width: 280px; font-size: 12.5px; color: var(--nvm-ink-2); overflow-wrap: anywhere; }
+.nvm-ml-h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--nvm-ink-2); }
+.nvm-ml-minis3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nvm-ml-chart { position: relative; height: 260px; }
+.nvm-ml-cta { text-align: center; background: radial-gradient(80% 140% at 50% 0%, var(--nvm-warn-bg), transparent 70%), var(--nvm-paper); }
+.nvm-ml-cta h2 { margin: 0 0 6px; font-family: var(--nvm-font-display); font-size: 22px; }
+.nvm-ml-cta .nvm-filter__btns { justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.nvm-ml-cta .nvm-filter__btns .nvm-btn { flex: 0 1 240px; }
+
+/* ── ฮีโร่ผังสายงาน ───────────────────────────────────────────────── */
+.nvm-ml-who { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.nvm-ml-who .nvm-avatar { width: 52px; height: 52px; font-size: 22px; box-shadow: 0 0 0 2px var(--nv-gold-400); }
+.nvm-ml-who h1 { margin: 0; }
+.nvm-ml-herostats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 16px 0 0; }
+.nvm-ml-herostats > div { padding: 10px 12px; border-radius: 14px; background: rgba(245, 210, 127, .08); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .22); }
+.nvm-ml-herostats dt { font-size: 11.5px; color: var(--nv-on-night-3); }
+.nvm-ml-herostats dd { margin: 2px 0 0; font-family: var(--nvm-font-display); font-size: 18px; font-weight: 700; color: var(--nv-gold-200); }
+
+/* ── ขาซ้าย/ขวา ───────────────────────────────────────────────────── */
+.nvm-ml-legs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.nvm-ml-leg { --lg: var(--nvm-info); position: relative; min-width: 0; }
+.nvm-ml-leg--right { --lg: var(--nvm-good); }
+div.nvm-ml-leg:not(.nvm-card) { padding: 14px 16px; border-radius: 18px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line), inset 4px 0 0 var(--lg); }
+.nvm-card.nvm-ml-leg { box-shadow: var(--nvm-shadow), inset 0 0 0 1px var(--nvm-line), inset 0 4px 0 var(--lg); }
+.nvm-ml-leg__t { display: block; margin-bottom: 10px; font-family: var(--nvm-font-display); font-size: 16px; color: var(--lg); }
+.nvm-ml-leg__badge { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 18px; color: var(--lg); background: color-mix(in srgb, var(--lg) 14%, transparent); }
+.nvm-ml-balance { position: relative; display: flex; height: 16px; border-radius: 20px; overflow: hidden; background: var(--nvm-track); }
+.nvm-ml-balance i { display: block; height: 100%; }
+.nvm-ml-balance .is-left { width: var(--l, 50%); background: var(--nvm-info); }
+.nvm-ml-balance .is-right { flex: 1; background: var(--nvm-good); }
+
+/* ── วงแหวน PV รักษายอด ──────────────────────────────────────────── */
+.nvm-ml-ring { --rc: var(--nvm-good); position: relative; width: 132px; height: 132px; margin: 4px auto 16px; }
+.nvm-ml-ring--warn { --rc: var(--nvm-warn); }
+.nvm-ml-ring--bad { --rc: var(--nvm-bad); }
+.nvm-ml-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.nvm-ml-ring circle { fill: none; stroke-width: 12; }
+.nvm-ml-ring .trk { stroke: var(--nvm-track); }
+.nvm-ml-ring .val { stroke: var(--rc); stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: var(--off, 326.7); transition: stroke-dashoffset 1s var(--nv-ease); }
+.nvm-ml-ring__txt { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.nvm-ml-ring__txt b { font-family: var(--nvm-font-display); font-size: 26px; color: var(--rc); }
+.nvm-ml-ring__txt small { font-size: 11.5px; color: var(--nvm-ink-3); }
+
+/* ── ตาราง / รายชื่อ ──────────────────────────────────────────────── */
+.nvm-ml-person { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+.nvm-ml-person b { display: block; font-size: 14px; font-weight: 600; }
+.nvm-ml-person small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-ml-quick { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.nvm-ml-quick .nvm-tx { padding: 14px 16px; border-top: 0; text-decoration: none; }
+a.nvm-ml-go { text-decoration: none; color: inherit; }
+a.nvm-ml-go > .nvm-ico { color: var(--nvm-gold-ink); }
+a.nvm-ml-go:hover .nvm-tx__t b { color: var(--nvm-gold-ink); }
+.nvm-ml-quick a.nvm-ml-go:hover { box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px var(--nvm-line-2); }
+
+/* ── ผังสายงาน ────────────────────────────────────────────────────── */
+.nvm-ml-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.nvm-ml-search { position: relative; flex: 1 1 100%; display: flex; align-items: center; }
+.nvm-ml-search > .nvm-ico { position: absolute; left: 14px; width: 18px; height: 18px; color: var(--nvm-ink-3); pointer-events: none; }
+.nvm-ml-search .nvm-input { width: 100%; padding-left: 42px; padding-right: 66px; }
+.nvm-ml-search .nvm-chip { position: absolute; right: 10px; }
+.nvm-ml-toolbar > .nvm-btn { flex: 1 1 0; }
+.nvm-ml-tree__stage { position: relative; }
+.nvm-ml-tree__canvas { position: relative; min-height: 420px; border-radius: 18px; overflow: auto; background: radial-gradient(60% 80% at 50% 0%, var(--nvm-warn-bg), transparent 70%), var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-ml-tree__canvas svg { display: block; }
+/* ปุ่มซูมที่ mlm-genealogy-v3.js สร้างเอง (มาพร้อมคลาส Tailwind ที่ธีมนี้ไม่มี) */
+#genealogy-container > div:not(.nvm-ml-tree__miss) { position: absolute; right: 12px; bottom: 12px; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
+#genealogy-container > div > button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 12px; font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--nvm-ink); background: var(--nvm-paper); box-shadow: var(--nvm-shadow), inset 0 0 0 1px var(--nvm-line-2); }
+#genealogy-container > div > button:hover { color: var(--nvm-gold-ink); }
+.nvm-ml-tree__miss { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 13px; color: var(--nvm-bad); }
+.nvm-ml-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 0; padding: 0; font-size: 12.5px; color: var(--nvm-ink-2); }
+.nvm-ml-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.nvm-ml-legend i { width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--nvm-ink-3); }
+.nvm-ml-legend i.is-ok { background: var(--nvm-good); }
+.nvm-ml-legend i.is-warn { background: var(--nvm-warn); }
+.nvm-ml-legend i.is-bad { background: var(--nvm-bad); }
+.nvm-ml-legend i.is-line { width: 26px; height: 3px; border-radius: 2px; background: var(--nvm-line-2); }
+.nvm-ml-legend i.is-dash { width: 26px; height: 0; border-radius: 0; background: none; border-top: 3px dashed var(--nv-gold-500); }
+.nvm-ml-node { position: relative; margin-top: 14px; padding: 16px; border-radius: 18px; background: var(--nvm-paper); box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-ml-node__x { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 10px; cursor: pointer; color: var(--nvm-ink-2); background: var(--nvm-track); }
+.nvm-ml-node__head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 40px; }
+.nvm-ml-node__head b { display: block; font-size: 15px; }
+.nvm-ml-node__head small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-ml-node__av { width: 46px; height: 46px; color: var(--nvm-paper); background: var(--nvm-ink-3); }
+.nvm-ml-node__av.is-ok { background: var(--nvm-good); }
+.nvm-ml-node__av.is-warn { background: var(--nvm-warn); }
+.nvm-ml-node__av.is-bad { background: var(--nvm-bad); }
+.nvm-ml-node__av.is-info { background: var(--nvm-info); }
+.nvm-ml-kvrow { display: contents; }
+
+/* ── ลิงก์แนะนำ ───────────────────────────────────────────────────── */
+.nvm-ml-shares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nvm-ml-shares a { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 14px; font-size: 14px; font-weight: 600; text-decoration: none; color: var(--nvm-ink) !important; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); transition: box-shadow .2s, color .2s; }
+.nvm-ml-shares a:hover { color: var(--nvm-gold-ink) !important; box-shadow: inset 0 0 0 2px var(--nv-gold-500); }
+
+/* ── เครื่องจำลอง ─────────────────────────────────────────────────── */
+.nvm-ml-inputs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.nvm-ml-lblrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nvm-ml-tipbtn { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; cursor: pointer; color: var(--nvm-gold-ink); background: var(--nvm-track); }
+.nvm-ml-tipbtn .nvm-ico { width: 16px; height: 16px; }
+.nvm-ml-tipbox { text-align: left; }
+.nvm-ml-tipbox h2 { margin-bottom: 14px; }
+.nvm-ml-tipbox .nvm-kv { grid-template-columns: auto minmax(0, 1fr); }
+.nvm-ml-tipbox .nvm-kv dd { text-align: left; font-weight: 500; }
+.nvm-ml-runhead { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+.nvm-ml-runhead small { font-size: 13px; color: var(--nvm-ink-3); }
+.nvm-ml-runhead b { font-family: var(--nvm-font-display); font-size: clamp(32px, 9vw, 52px); line-height: 1.15; color: var(--nvm-gold-ink); }
+.nvm-ml-insights { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.nvm-ml-insights .nvm-alert { padding: 12px 16px; }
+.nvm-ml-swrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border-radius: 16px; cursor: pointer; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-ml-swrow b { display: block; font-size: 14px; }
+.nvm-ml-swrow small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* แผนตัวอย่าง (เปรียบเทียบรายได้) */
+.nvm-ml-plans { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.nvm-ml-plan { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.nvm-ml-plan.is-pick { box-shadow: var(--nvm-shadow-lg), inset 0 0 0 2px var(--nv-gold-500); }
+.nvm-ml-plan > img { width: 72px; height: 72px; object-fit: contain; }
+.nvm-ml-plan h2 { margin: 4px 0 0; font-family: var(--nvm-font-display); font-size: 20px; }
+.nvm-ml-plan .nvm-kv { width: 100%; margin: 12px 0; text-align: left; font-size: 13.5px; }
+.nvm-ml-plan__tag { position: absolute; top: 14px; right: 14px; }
+.nvm-ml-plan__sum { width: 100%; padding: 12px 0 14px; border-top: 1px dashed var(--nvm-line-2); }
+.nvm-ml-plan__sum small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-ml-plan__sum b { display: block; margin: 2px 0; font-family: var(--nvm-font-display); font-size: 26px; color: var(--nvm-gold-ink); }
+
+/* จำลองสถานการณ์ทีม */
+.nvm-ml-sim { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.nvm-ml-presets { display: flex; flex-direction: column; gap: 8px; }
+.nvm-ml-presets .nvm-btn { justify-content: flex-start; }
+.nvm-ml-simtree { min-height: 340px; }
+.nvm-ml-simnode { cursor: pointer; outline: none; }
+.nvm-ml-simnode.is-root { cursor: default; }
+.nvm-ml-simnode circle { transition: filter .2s; }
+.nvm-ml-simnode:not(.is-root):hover circle, .nvm-ml-simnode:focus-visible circle { filter: drop-shadow(0 0 6px var(--nv-gold-400)); }
+.nvm-ml-rollline { animation: nvm-ml-dash 1s linear infinite; }
+@keyframes nvm-ml-dash { to { stroke-dashoffset: -11; } }
+.nvm-ml-rollups { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; font-size: 13px; }
+.nvm-ml-rollups li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 8px 10px; border-radius: 12px; background: var(--nvm-paper-2); }
+.nvm-ml-rollups .nvm-ico { width: 14px; height: 14px; color: var(--nvm-ink-3); }
+.nvm-ml-rollups .is-ok { color: var(--nvm-good); }
+.nvm-ml-rollups .is-gold { color: var(--nvm-gold-ink); }
+.nvm-ml-rollups s { color: var(--nvm-bad); }
+
+/* ── ขยายจอ ───────────────────────────────────────────────────────── */
+@media (min-width: 560px) {
+    .nvm-ml-quick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .nvm-ml-shares { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .nvm-ml-search { flex: 1 1 280px; }
+    .nvm-ml-toolbar > .nvm-btn { flex: 0 0 auto; }
+}
+@media (min-width: 768px) {
+    .nvm-ml-legs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-ml-herostats { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 620px; }
+    .nvm-ml-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-ml-insights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-ml-plans { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .nvm-ml-chart { height: 300px; }
+    .nvm-ml-tree__canvas { min-height: 560px; }
+    .nvm-ml-node { position: absolute; top: 12px; right: 12px; z-index: 6; width: 300px; margin: 0; }
+}
+@media (min-width: 1100px) {
+    .nvm-ml-inputs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .nvm-ml-sim { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
+}
+
+/* จอเล็ก: ตัวเลข 3 ช่องเรียงเป็นแถวเดียวไม่พอ */
+@media (max-width: 480px) {
+    .nvm-ml-minis3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-ml-minis3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nvm-ml-rollline { animation: none; }
+    .nvm-ml-ring .val { transition: none; }
+}
+
+@media print {
+    .nvm-ml-noprint { display: none !important; }
+    .nvm-ml-sim { grid-template-columns: minmax(0, 1fr); }
+}

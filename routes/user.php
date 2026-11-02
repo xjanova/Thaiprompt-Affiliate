@@ -433,8 +433,34 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('income-comparison');
 
     // Dividend Simulator - Marketing Tool
+    // ใช้ pool staking ที่เปิดอยู่จริง (APY/ระยะล็อก/ขั้นต่ำ) ถ้าไม่มีหน้าแสดงตัวอย่างพร้อมบอกว่าเป็นค่าสมมติ
     Route::get('/dividend-simulator', function () {
-        return view('user.mlm.dividend-simulator');
+        $pools = collect();
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('tpix_staking_pools')) {
+                // ⚠️ ห้ามใช้ TPIXStakingPool::active() — scope นั้นกรอง is_active ซึ่งตารางไม่มีคอลัมน์นี้
+                // (ตารางใช้ status enum) จะ throw ทุกครั้งแล้วหน้าโชว์แต่ค่าตัวอย่าง
+                // กรองแบบเดียวกับ StakingController: status = active + อยู่ในช่วง starts_at/ends_at
+                $pools = \App\Models\TPIXStakingPool::query()
+                    ->where('status', 'active')
+                    ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+                    ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+                    ->orderBy('lock_period_days')
+                    ->get(['id', 'name', 'apy', 'lock_period_days', 'min_stake_amount'])
+                    ->map(fn ($p) => [
+                        'id' => $p->id,
+                        'name' => (string) $p->name,
+                        'apy' => (float) $p->apy,
+                        'days' => max(1, (int) $p->lock_period_days),
+                        'min' => (float) ($p->min_stake_amount ?? 0),
+                    ])
+                    ->values();
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('dividend-simulator: load staking pools failed', ['error' => $e->getMessage()]);
+        }
+
+        return view('user.mlm.dividend-simulator', ['pools' => $pools]);
     })->name('dividend-simulator');
 });
 

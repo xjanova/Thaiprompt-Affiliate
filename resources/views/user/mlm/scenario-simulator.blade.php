@@ -1,648 +1,407 @@
-@extends('layouts.user-v4')
+{{--
+    จำลองสถานการณ์ MLM (ธีมโนวาเต็ม) — route closure user.mlm.scenario-simulator (เครื่องมือการตลาด ไม่แตะเงินจริง)
+    ข้อมูล: GET user.mlm.settings (global_pv_rate, unilevel_levels, unilevel_max_depth)
+    🐛 แก้จากหน้าเดิม:
+       - เปลี่ยน "ยอดขายต่อคน" แล้วตัวเลขไม่เปลี่ยน (ยอดขายถูกอ่านแค่ตอนสร้างผัง) → อ่านใหม่ทุกครั้งที่คำนวณ
+       - คิดค่าคอมให้อัพไลน์แค่ชั้นเดียว ทั้งที่ตั้งค่า Unilevel มีหลายชั้น → ไล่ขึ้นทุกชั้นตาม unilevel_levels พร้อมข้ามคนไม่แอคทีฟ (rollup)
+       - "เส้น Rollup" ไม่เคยถูกวาด (ไม่มี connection ชนิด rollup) และติ๊ก "แอนิเมชั่น" ไม่มีผล → วาดเส้นประจริง + ติ๊กแล้วเล่นอัตโนมัติ
+       - ป้ายค่าคอมแสดง "0K" เมื่อยอดต่ำกว่าพัน, renderTree ถูกเรียกซ้ำ 2 รอบทุกคลิก, อนุภาคแอนิเมชันลอยผิดตำแหน่งเมื่อเลื่อนผัง
+       - ปุ่ม "คัดลอกลิงก์" คัดลอกแค่ URL หน้าเปล่า (ไม่มีสถานการณ์ติดไป) → เอาออก
+       - d3/html2canvas ไม่ปักเวอร์ชัน → d3@7.9.0 และบันทึกรูปจาก SVG โดยตรง (ไม่ต้องใช้ html2canvas)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'จำลองสถานการณ์ MLM')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/mlm.css') }}?v={{ filemtime(public_path('theme-nova/member/mlm.css')) }}">@endpush
+
 @php
-    // ── หา route สำหรับโหลดตั้งค่า MLM (ป้องกัน route หาย → หน้าไม่พัง) ──
-    // ของเดิมเรียก admin.mlm.settings.get-settings ที่ไม่มีอยู่จริง + เป็น route ฝั่ง admin
-    // หน้านี้เป็นของลูกค้า → ใช้ user.mlm.settings (read-only, คืน JSON เดียวกัน { settings })
-    // fallback: admin.mlm.settings.get ถ้ามีสิทธิ์เข้าถึง
-    $mlmSettingsUrl = \Illuminate\Support\Facades\Route::has('user.mlm.settings')
-        ? route('user.mlm.settings')
-        : (\Illuminate\Support\Facades\Route::has('admin.mlm.settings.get')
-            ? route('admin.mlm.settings.get')
-            : '');
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── หัวข้อ (Hero) ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas fa-dice" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">🎯 จำลองสถานการณ์ MLM</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</div>
-            </div>
-            @if(\Illuminate\Support\Facades\Route::has('user.mlm.genealogy'))
-                <a href="{{ route('user.mlm.genealogy') }}" class="tp-icon-btn no-print" title="กลับไปผังทีม"><i class="fas fa-arrow-left"></i></a>
+<div class="nvm-stack nvm-ml-page" x-data="nvmMlScenario(@js(route('user.mlm.settings')))">
+
+<section class="nvm-ph" aria-labelledby="nvm-mlsc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.mlm.genealogy'))
+                <a class="nvm-ph__back" href="{{ route('user.mlm.genealogy') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ผังสายงาน</a>
             @endif
+            <div class="nvm-eyebrow nvm-latin">Scenario simulator</div>
+            <h1 id="nvm-mlsc-h">จำลองสถานการณ์ทีม</h1>
+            <p class="nvm-ph__lead">แตะสมาชิกในผังเพื่อสลับแอคทีฟ/ไม่แอคทีฟ แล้วดูว่าค่าคอม Unilevel ไหลขึ้นไปหาใคร</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/lantern.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
+
+<div class="nvm-alert nvm-alert--info">
+    <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+    <div class="nvm-alert__txt"><b>ผังนี้เป็นทีมสมมติ</b><small>ใช้ดูหลักการ Rollup และค่าคอม Unilevel ตามค่าตั้งของระบบ ไม่ใช่ทีมจริงและไม่ใช่การรับประกันรายได้</small></div>
+</div>
+
+<div class="nvm-ml-sim">
+    <div class="nvm-stack nvm-ml-noprint">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlsc-p-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Presets</small><h2 id="nvm-mlsc-p-h">สถานการณ์ตัวอย่าง</h2></div></div>
+            <div class="nvm-ml-presets">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="preset('perfect')"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ทุกคนแอคทีฟ</button>
+                <button type="button" class="nvm-btn nvm-btn--line" @click="preset('realistic')"><svg class="nvm-ico"><use href="#nvm-i-users"/></svg>สมจริง (แอคทีฟ ~70%)</button>
+                <button type="button" class="nvm-btn nvm-btn--line" @click="preset('rollup')"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg>ตัวอย่าง Rollup</button>
+            </div>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlsc-s-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Settings</small><h2 id="nvm-mlsc-s-h">ตั้งค่าผัง</h2></div></div>
+            <div class="nvm-form">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="mlsc-sales">ยอดขายต่อคน (บาท/เดือน)</label>
+                    <input id="mlsc-sales" type="number" inputmode="numeric" min="0" step="1000" class="nvm-input nvm-num" x-model.number="sales" @input.debounce.300ms="recalc()">
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="mlsc-depth">จำนวนชั้น</label>
+                    <select id="mlsc-depth" class="nvm-input" x-model.number="depth" @change="build()">
+                        <option value="2">2 ชั้น (7 คน)</option>
+                        <option value="3">3 ชั้น (15 คน)</option>
+                        <option value="4">4 ชั้น (31 คน)</option>
+                        <option value="5">5 ชั้น (63 คน)</option>
+                    </select>
+                </div>
+                <label class="nvm-check"><input type="checkbox" x-model="showRollup" @change="draw()"><span>แสดงเส้น Rollup</span></label>
+                <label class="nvm-check"><input type="checkbox" x-model="autoAnimate"><span>เล่นแอนิเมชันทุกครั้งที่เปลี่ยน</span></label>
+                <button type="button" class="nvm-btn nvm-btn--gold" @click="play()" :disabled="animating"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>เล่นการไหลของค่าคอม</button>
+            </div>
+            <p class="nvm-err nvm-gap-t" x-show="settingsFallback" x-cloak>โหลดค่าตั้งของระบบไม่สำเร็จ กำลังใช้ค่าตัวอย่างแทน</p>
+            <p class="nvm-note" x-show="! settingsFallback && ! levels.length" x-cloak><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span>ระบบยังไม่ได้ตั้งเปอร์เซ็นต์ Unilevel ค่าคอมจึงเป็น 0</span></p>
+        </section>
     </div>
 
-    {{-- ── เลย์เอาต์ 3 คอลัมน์ (ควบคุม / ผังทีม / สรุป) ────────── --}}
-    <div style="display:grid; grid-template-columns:1fr; gap:18px;" class="tp-sim-grid">
+    <section class="nvm-card nvm-box nvm-ml-tree" aria-labelledby="nvm-mlsc-t-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Team tree</small><h2 id="nvm-mlsc-t-h">ผังทีมสมมติ</h2></div></div>
+        <div class="nvm-ml-tree__canvas nvm-ml-simtree" x-ref="canvas" role="img" aria-label="ผังทีมสมมติ แตะสมาชิกเพื่อสลับสถานะ"></div>
+        <ul class="nvm-ml-legend">
+            <li><i class="is-ok"></i>แอคทีฟ (ได้รับค่าคอม)</li>
+            <li><i class="is-bad"></i>ไม่แอคทีฟ (ค่าคอมถูกส่งขึ้นไป)</li>
+            <li><i class="is-line"></i>สายงานปกติ</li>
+            <li><i class="is-dash"></i>เส้นทาง Rollup</li>
+        </ul>
+    </section>
 
-        {{-- ════ ซ้าย: แผงควบคุม ════ --}}
-        <div style="display:flex; flex-direction:column; gap:18px;" class="no-print">
-
-            {{-- สถานการณ์ตัวอย่าง --}}
-            <div class="tp-card" style="padding:18px;">
-                <div class="tp-section-h" style="margin-bottom:14px;">📋 สถานการณ์ตัวอย่าง</div>
-                <div style="display:flex; flex-direction:column; gap:9px;">
-                    <button type="button" onclick="loadPreset('perfect')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:#5aa07e; background:color-mix(in srgb, #5aa07e 14%, transparent);">✨ ทุกคนแอคทีฟ (100%)</button>
-                    <button type="button" onclick="loadPreset('realistic')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:#5689b8; background:color-mix(in srgb, #5689b8 14%, transparent);">📊 สมจริง (70% แอคทีฟ)</button>
-                    <button type="button" onclick="loadPreset('rollup')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:var(--deep1); background:color-mix(in srgb, var(--accent1) 16%, transparent);">🔄 โรลอัพ Demo</button>
-                    <button type="button" onclick="loadPreset('custom')" class="tp-btn" style="width:100%; justify-content:flex-start; gap:8px; color:var(--ink2); background:color-mix(in srgb, var(--ink2) 13%, transparent);">⚙️ กำหนดเอง</button>
-                </div>
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlsc-r-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Summary</small><h2 id="nvm-mlsc-r-h">สรุปรายได้</h2></div></div>
+            <div class="nvm-minis">
+                <div class="nvm-mini nvm-mini--wide"><small>ค่าคอมที่คุณได้</small><b class="nvm-num is-in">฿<span x-text="fmt(rootCommission)"></span></b></div>
+                <div class="nvm-mini"><small>ค่าคอมทั้งผัง</small><b class="nvm-num">฿<span x-text="fmt(totalCommission)"></span></b></div>
+                <div class="nvm-mini"><small>แอคทีฟ</small><b class="nvm-num"><span x-text="activeCount"></span>/<span x-text="members.length"></span> (<span x-text="activeRate"></span>%)</b></div>
             </div>
+        </section>
 
-            {{-- ตั้งค่า --}}
-            <div class="tp-card" style="padding:18px;">
-                <div class="tp-section-h" style="margin-bottom:14px;">⚙️ ตั้งค่า</div>
-
-                <div style="display:flex; flex-direction:column; gap:14px;">
-                    <div>
-                        <label for="perPersonSales" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">💰 ยอดขายต่อคน (บาท)</label>
-                        <input type="number" id="perPersonSales" value="5000" step="1000" min="0"
-                               onchange="recalculate()" class="tp-input" style="width:100%;">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlsc-l-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">By level</small><h2 id="nvm-mlsc-l-h">ค่าคอมของคุณแยกตามชั้น</h2></div></div>
+            <div class="nvm-txs">
+                <template x-for="row in byLevel" :key="row.level">
+                    <div class="nvm-tx">
+                        <span class="nvm-tx__ic"><svg class="nvm-ico"><use href="#nvm-i-users"/></svg></span>
+                        <span class="nvm-tx__t"><b>ชั้น <span x-text="row.level"></span></b><small>แอคทีฟ <span x-text="row.active"></span>/<span x-text="row.total"></span> คน</small></span>
+                        <span class="nvm-tx__amt is-in nvm-num">฿<span x-text="fmt(row.commission)"></span></span>
                     </div>
-
-                    <div>
-                        <label for="treeDepth" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">📊 จำนวนชั้น</label>
-                        <select id="treeDepth" onchange="generateTree()" class="tp-input" style="width:100%;">
-                            <option value="2">2 ชั้น (7 คน)</option>
-                            <option value="3" selected>3 ชั้น (15 คน)</option>
-                            <option value="4">4 ชั้น (31 คน)</option>
-                            <option value="5">5 ชั้น (63 คน)</option>
-                        </select>
-                    </div>
-
-                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
-                        <input type="checkbox" id="showRollup" onchange="toggleRollupView()" checked style="width:18px; height:18px; accent-color:var(--accent1);">
-                        <span style="font-size:12.5px; font-weight:700; color:var(--ink);">แสดงเส้น Rollup</span>
-                    </label>
-
-                    <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
-                        <input type="checkbox" id="animateFlow" onchange="toggleAnimation()" checked style="width:18px; height:18px; accent-color:var(--accent1);">
-                        <span style="font-size:12.5px; font-weight:700; color:var(--ink);">แอนิเมชั่น</span>
-                    </label>
-                </div>
-
-                <div style="margin-top:16px; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                    <button type="button" onclick="playAnimation()" class="tp-btn tp-btn-primary" style="width:100%;">▶️ เล่นแอนิเมชั่น</button>
-                </div>
+                </template>
             </div>
+        </section>
 
-            {{-- คำอธิบาย (Legend) --}}
-            <div class="tp-card" style="padding:18px;">
-                <div class="tp-section-h" style="margin-bottom:14px;">📌 คำอธิบาย</div>
-                <div style="display:flex; flex-direction:column; gap:11px; font-size:13px;">
-                    <div style="display:flex; align-items:center; gap:9px;">
-                        <span style="width:22px; height:22px; border-radius:50%; background:#5aa07e; box-shadow:0 0 0 2px color-mix(in srgb, #5aa07e 55%, #000); flex:none;"></span>
-                        <span>แอคทีฟ (ได้รับรายได้)</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:9px;">
-                        <span style="width:22px; height:22px; border-radius:50%; background:#d9534f; box-shadow:0 0 0 2px color-mix(in srgb, #d9534f 55%, #000); flex:none;"></span>
-                        <span>ไม่แอคทีฟ (รายได้โรลอัพ)</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:9px;">
-                        <span style="width:44px; height:3px; border-radius:2px; background:var(--accent1); flex:none;"></span>
-                        <span>เส้นทางปกติ</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:9px;">
-                        <span style="width:44px; height:0; border-top:3px dashed #e0a52e; flex:none;"></span>
-                        <span>เส้นทาง Rollup</span>
-                    </div>
-                </div>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlsc-ru-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Rollup</small><h2 id="nvm-mlsc-ru-h">รายละเอียด Rollup</h2></div><span class="nvm-chip" x-show="rollups.length" x-text="rollups.length + ' เส้นทาง'"></span></div>
+            <p class="nvm-desc" x-show="! rollups.length">ไม่มี Rollup ทุกคนแอคทีฟ แตะสมาชิกในผังเพื่อปิดการแอคทีฟ</p>
+            <ul class="nvm-ml-rollups" x-show="rollups.length">
+                <template x-for="(r, i) in rollups.slice(0, 30)" :key="i">
+                    <li><b class="is-ok" x-text="r.from"></b><svg class="nvm-ico"><use href="#nvm-i-chev"/></svg><s x-text="r.skipped.join(', ')"></s><svg class="nvm-ico"><use href="#nvm-i-chev"/></svg><b class="is-gold" x-text="r.to"></b></li>
+                </template>
+            </ul>
+            <p class="nvm-help" x-show="rollups.length > 30" x-text="'และอีก ' + (rollups.length - 30) + ' เส้นทาง'"></p>
+        </section>
+
+        <section class="nvm-card nvm-box nvm-ml-noprint" aria-labelledby="nvm-mlsc-x-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Save</small><h2 id="nvm-mlsc-x-h">บันทึก</h2></div></div>
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="saveImage()"><svg class="nvm-ico"><use href="#nvm-i-camera"/></svg>บันทึกรูปผัง</button>
+                <button type="button" class="nvm-btn nvm-btn--ghost" @click="window.print()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>พิมพ์</button>
             </div>
-        </div>
-
-        {{-- ════ กลาง: ผังโครงสร้างทีม (D3 viz — เก็บไลบรารีไว้) ════ --}}
-        <div>
-            <div class="tp-card" style="padding:18px; position:relative;">
-                <div class="tp-section-h" style="margin-bottom:14px; text-align:center;">🌳 ผังโครงสร้างทีม (คลิกเพื่อเปลี่ยนสถานะ)</div>
-
-                {{-- Tree Canvas (เรนเดอร์โดย D3.js) --}}
-                <div id="tree-container" style="position:relative; border-radius:16px; box-shadow:var(--inset-sm); padding:16px; overflow:auto; min-height:600px; background:color-mix(in srgb, var(--accent1) 6%, transparent);">
-                    {{-- Tree จะถูกเรนเดอร์ที่นี่ด้วย JavaScript --}}
-                </div>
-
-                {{-- Commission Flow Overlay --}}
-                <svg id="commission-flow" style="position:absolute; inset:0; pointer-events:none; z-index:10;">
-                    <defs>
-                        <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:#e8c468;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#c79a3a;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-            </div>
-        </div>
-
-        {{-- ════ ขวา: สรุปผล ════ --}}
-        <div style="display:flex; flex-direction:column; gap:18px;">
-
-            {{-- สรุปรายได้รวม --}}
-            <div class="tp-card" style="padding:0; overflow:hidden;">
-                <div style="padding:20px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
-                    <div class="tp-section-h" style="margin-bottom:14px;">💰 สรุปรายได้</div>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
-                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">รายได้รวมทั้งหมด</div>
-                            <div class="tp-num" style="font-size:30px; font-weight:800; color:var(--deep1); line-height:1.1;">฿<span id="total-commission">0</span></div>
-                        </div>
-                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
-                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">จำนวนคนแอคทีฟ</div>
-                            <div class="tp-num" style="font-size:22px; font-weight:800;"><span id="active-count">0</span>/<span id="total-count">0</span></div>
-                        </div>
-                        <div style="padding:13px 15px; border-radius:14px; box-shadow:var(--inset-sm);">
-                            <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">อัตราแอคทีฟ</div>
-                            <div class="tp-num" style="font-size:22px; font-weight:800;"><span id="active-rate">0</span>%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แยกตามชั้น --}}
-            <div class="tp-card" style="padding:18px;">
-                <div class="tp-section-h" style="margin-bottom:14px;">📊 แยกตามชั้น</div>
-                <div id="level-breakdown" style="display:flex; flex-direction:column; gap:11px;">
-                    {{-- เติมโดย JavaScript --}}
-                </div>
-            </div>
-
-            {{-- รายละเอียด Rollup --}}
-            <div id="rollup-details" class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-                <div class="tp-section-h" style="margin-bottom:14px; color:#e0a52e;">🔄 รายละเอียด Rollup</div>
-                <div id="rollup-list" style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
-                    <p style="color:var(--ink2); margin:0;">คลิก member ที่ไม่แอคทีฟเพื่อดู rollup path</p>
-                </div>
-            </div>
-
-            {{-- แชร์/บันทึก --}}
-            <div class="tp-card no-print" style="padding:18px;">
-                <div class="tp-section-h" style="margin-bottom:14px;">📤 แชร์/บันทึก</div>
-                <div style="display:flex; flex-direction:column; gap:9px;">
-                    <button type="button" onclick="captureScenario()" class="tp-btn" style="width:100%; color:#5689b8; background:color-mix(in srgb, #5689b8 14%, transparent);">📸 บันทึกรูปภาพ</button>
-                    <button type="button" onclick="shareScenario()" class="tp-btn" style="width:100%; color:#5aa07e; background:color-mix(in srgb, #5aa07e 14%, transparent);">🔗 คัดลอกลิงก์</button>
-                    <button type="button" onclick="printScenario()" class="tp-btn" style="width:100%; color:var(--ink2); background:color-mix(in srgb, var(--ink2) 13%, transparent);">🖨️ พิมพ์</button>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 
-{{-- สไตล์เฉพาะ D3 tree viz (ไลบรารีกราฟจริง) + เลย์เอาต์ 3 คอลัมน์ + print --}}
-<style>
-    @media (min-width: 1024px) {
-        .tp-sim-grid { grid-template-columns: 1fr 2fr 1fr; }
-    }
-    @media print {
-        .no-print { display: none !important; }
-    }
-
-    /* โหนดสมาชิกใน D3 tree */
-    .member-node {
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .member-node:hover {
-        transform: scale(1.1);
-        filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent1) 55%, transparent));
-    }
-    .member-node.active {
-        fill: #5aa07e;
-        stroke: #3f7a5d;
-    }
-    .member-node.inactive {
-        fill: #d9534f;
-        stroke: #b13c36;
-    }
-
-    /* เส้นเชื่อมปกติ + เส้น Rollup */
-    .connection-line {
-        stroke: var(--accent1);
-        stroke-width: 2;
-        fill: none;
-    }
-    .rollup-line {
-        stroke: #e0a52e;
-        stroke-width: 3;
-        stroke-dasharray: 5, 5;
-        fill: none;
-        animation: dash 1s linear infinite;
-    }
-    @keyframes dash {
-        to { stroke-dashoffset: -10; }
-    }
-
-    /* อนุภาคแสดงการไหลของคอมมิชชั่น */
-    .commission-particle {
-        animation: flow 2s ease-in-out forwards;
-    }
-    @keyframes flow {
-        0%   { opacity: 0; transform: scale(0); }
-        50%  { opacity: 1; transform: scale(1); }
-        100% { opacity: 0; transform: scale(0); }
-    }
-</style>
+</div>
+@endsection
 
 @push('scripts')
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script>
-// ── URL โหลดตั้งค่า MLM (ส่งจาก PHP — ว่างถ้า route ไม่มี → ใช้ค่า default) ──
-const MLM_SETTINGS_URL = @json($mlmSettingsUrl);
+/**
+ * จำลองสถานการณ์ทีม (ผังไบนารีสมมติ) — Alpine + d3
+ * ค่าคอม Unilevel: สมาชิกแต่ละคนส่งค่าคอมขึ้นไปตามชั้น ข้ามคนที่ไม่แอคทีฟ (dynamic compression / rollup)
+ */
+function nvmMlScenario(settingsUrl) {
+    const FALLBACK_LEVELS = [10, 5, 3, 2, 1].map((p, i) => ({ level: i + 1, percentage: p }));
+    const css = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
+    // เก็บ selection ของ d3 นอก state ของ Alpine (ไม่ให้ถูกห่อเป็น Proxy)
+    let particles = null;
 
-let treeData = {
-    settings: {},
-    members: [],
-    connections: [],
-    rollupPaths: []
-};
+    return {
+        sales: 5000,
+        depth: 3,
+        showRollup: true,
+        autoAnimate: true,
+        animating: false,
+        settingsFallback: false,
+        pvRate: 1,
+        maxDepth: 10,
+        levels: [],
+        members: [],
+        rollups: [],
+        byLevel: [],
+        rootCommission: 0,
+        totalCommission: 0,
 
-let selectedMember = null;
-let animationRunning = false;
+        get activeCount() { return this.members.filter(m => m.active).length; },
+        get activeRate() { return this.members.length ? (this.activeCount / this.members.length * 100).toFixed(1) : '0.0'; },
 
-// โหลดตั้งค่า MLM
-async function loadSettings() {
-    if (!MLM_SETTINGS_URL) {
-        generateTree(); // ไม่มี route → ใช้ค่า default
-        return;
-    }
-    try {
-        const response = await fetch(MLM_SETTINGS_URL);
-        const data = await response.json();
-        treeData.settings = data.settings;
-        generateTree();
-    } catch (error) {
-        console.error('Failed to load settings:', error);
-        generateTree(); // Generate with defaults
-    }
-}
-
-// สร้างโครงสร้าง tree
-function generateTree() {
-    const depth = parseInt(document.getElementById('treeDepth').value);
-    treeData.members = [];
-    treeData.connections = [];
-
-    // YOU (root)
-    treeData.members.push({
-        id: 0,
-        level: 0,
-        name: 'คุณ',
-        active: true,
-        sales: 0,
-        commission: 0,
-        x: 0,
-        y: 0
-    });
-
-    let memberId = 1;
-
-    // สร้าง member สำหรับแต่ละชั้น
-    for (let level = 1; level <= depth; level++) {
-        const membersInLevel = Math.pow(2, level);
-
-        for (let i = 0; i < membersInLevel; i++) {
-            const parentId = Math.floor((memberId - 1) / 2);
-
-            treeData.members.push({
-                id: memberId,
-                level: level,
-                name: `M${memberId}`,
-                active: true,
-                sales: parseFloat(document.getElementById('perPersonSales').value),
-                commission: 0,
-                parentId: parentId,
-                x: 0,
-                y: 0
-            });
-
-            // สร้างเส้นเชื่อม
-            treeData.connections.push({
-                from: parentId,
-                to: memberId,
-                type: 'normal'
-            });
-
-            memberId++;
-        }
-    }
-
-    renderTree();
-    recalculate();
-}
-
-// เรนเดอร์ tree visualization
-function renderTree() {
-    const container = document.getElementById('tree-container');
-    const width = container.clientWidth;
-    const height = 600;
-
-    // ล้างของเดิม
-    container.innerHTML = '';
-
-    // สร้าง SVG
-    const svg = d3.select('#tree-container')
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height);
-
-    // คำนวณตำแหน่ง
-    const depth = parseInt(document.getElementById('treeDepth').value);
-    const levelHeight = height / (depth + 2);
-
-    treeData.members.forEach(member => {
-        const membersInLevel = Math.pow(2, member.level);
-        const levelWidth = width / (membersInLevel + 1);
-        const position = treeData.members.filter(m => m.level === member.level).indexOf(member);
-
-        member.x = levelWidth * (position + 1);
-        member.y = levelHeight * (member.level + 1);
-    });
-
-    // วาดเส้นเชื่อม
-    svg.selectAll('.connection')
-        .data(treeData.connections)
-        .enter()
-        .append('line')
-        .attr('class', d => d.type === 'rollup' ? 'rollup-line' : 'connection-line')
-        .attr('x1', d => treeData.members[d.from].x)
-        .attr('y1', d => treeData.members[d.from].y)
-        .attr('x2', d => treeData.members[d.to].x)
-        .attr('y2', d => treeData.members[d.to].y);
-
-    // วาด member
-    const nodes = svg.selectAll('.member-group')
-        .data(treeData.members)
-        .enter()
-        .append('g')
-        .attr('class', 'member-group')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
-
-    // วงกลม
-    nodes.append('circle')
-        .attr('class', d => `member-node ${d.active ? 'active' : 'inactive'}`)
-        .attr('r', d => d.level === 0 ? 30 : 20)
-        .on('click', function(event, d) {
-            if (d.level > 0) {
-                d.active = !d.active;
-                recalculate();
-                renderTree();
+        async init() {
+            try {
+                const res = await fetch(settingsUrl, { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                if (! res.ok || ! data.success) throw new Error('settings');
+                const s = data.settings || {};
+                let levels = s.unilevel_levels;
+                if (typeof levels === 'string') { try { levels = JSON.parse(levels); } catch (e) { levels = []; } }
+                this.levels = Array.isArray(levels) ? levels : [];
+                this.pvRate = Number(s.global_pv_rate) || 1;
+                this.maxDepth = parseInt(s.unilevel_max_depth, 10) || 10;
+            } catch (e) {
+                this.levels = FALLBACK_LEVELS;
+                this.settingsFallback = true;
             }
-        });
+            this.build();
+            let t;
+            window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => this.draw(), 200); });
+        },
 
-    // ป้ายชื่อ
-    nodes.append('text')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '.35em')
-        .style('font-size', '11px')
-        .style('font-weight', '700')
-        .style('fill', 'white')
-        .style('pointer-events', 'none')
-        .text(d => d.name);
-
-    // ป้ายคอมมิชชั่น
-    nodes.append('circle')
-        .attr('cx', 25)
-        .attr('cy', -15)
-        .attr('r', 15)
-        .style('fill', '#e0a52e')
-        .style('stroke', '#a87a1d')
-        .attr('stroke-width', 2)
-        .style('display', d => d.commission > 0 ? 'block' : 'none');
-
-    nodes.append('text')
-        .attr('x', 25)
-        .attr('y', -15)
-        .attr('text-anchor', 'middle')
-        .attr('dy', '.35em')
-        .style('font-size', '11px')
-        .style('font-weight', '700')
-        .style('fill', '#5a3e0c')
-        .style('pointer-events', 'none')
-        .style('display', d => d.commission > 0 ? 'block' : 'none')
-        .text(d => Math.floor(d.commission / 1000) + 'K');
-}
-
-// คำนวณคอมมิชชั่นและ rollup
-function recalculate() {
-    const settings = treeData.settings;
-    const unilevelLevels = settings.unilevel_levels || [];
-    const unilevelMaxDepth = parseInt(settings.unilevel_max_depth || 10);
-
-    // รีเซ็ตคอมมิชชั่น
-    treeData.members.forEach(m => m.commission = 0);
-    treeData.rollupPaths = [];
-
-    // คำนวณแต่ละ member (จากล่างขึ้นบน)
-    for (let level = treeData.members[treeData.members.length - 1].level; level >= 0; level--) {
-        const membersInLevel = treeData.members.filter(m => m.level === level);
-
-        membersInLevel.forEach(member => {
-            if (member.level === 0) return; // ข้าม YOU
-
-            // หาว่าใครได้รับคอมมิชชั่นนี้
-            let sponsor = treeData.members[member.parentId];
-            let currentLevel = 1;
-            let originalSponsor = sponsor;
-
-            // Rollup logic: หา sponsor ที่แอคทีฟถัดไป
-            while (sponsor && !sponsor.active && currentLevel < unilevelMaxDepth) {
-                // บันทึก rollup path
-                const nextSponsor = sponsor.parentId >= 0 ? treeData.members[sponsor.parentId] : null;
-                if (nextSponsor) {
-                    treeData.rollupPaths.push({
-                        from: member.id,
-                        skipped: sponsor.id,
-                        to: nextSponsor.id
-                    });
-                    sponsor = nextSponsor;
-                    currentLevel++;
-                } else {
-                    break;
+        /** สร้างผังไบนารีเต็มตามจำนวนชั้น (id 0 = คุณ, ลูกของ i คือ 2i+1, 2i+2) */
+        build() {
+            const depth = Math.min(5, Math.max(2, parseInt(this.depth, 10) || 3));
+            const list = [];
+            for (let level = 0, id = 0; level <= depth; level++) {
+                for (let i = 0; i < 2 ** level; i++, id++) {
+                    list.push({ id, level, index: i, name: id === 0 ? 'คุณ' : 'M' + id, parentId: id === 0 ? null : Math.floor((id - 1) / 2), active: true, commission: 0 });
                 }
             }
+            this.members = list;
+            this.recalc();
+        },
 
-            // คำนวณคอมมิชชั่น
-            if (sponsor && sponsor.active && currentLevel <= unilevelMaxDepth) {
-                const levelConfig = unilevelLevels[currentLevel - 1];
-                if (levelConfig) {
-                    const percentage = levelConfig.percentage || 0;
-                    const pv = member.sales * (settings.global_pv_rate || 1);
-                    const commission = (pv * percentage) / 100;
-                    sponsor.commission += commission;
+        pct(level) {
+            const cfg = this.levels.find(l => parseInt(l.level, 10) === level) || null;
+            return cfg ? (Number(cfg.percentage) || 0) : 0;
+        },
+
+        recalc() {
+            const sales = Math.max(0, Number(this.sales) || 0);
+            const m = this.members;
+            m.forEach(x => { x.commission = 0; });
+            const rollups = [];
+
+            m.forEach(member => {
+                if (member.level === 0) return;
+                const pv = sales * this.pvRate;
+                let anc = m[member.parentId];
+                let paidLevel = 1;
+                const skipped = [];
+                let firstReceiver = null;
+                while (anc && paidLevel <= this.maxDepth) {
+                    if (anc.active) {
+                        const c = pv * this.pct(paidLevel) / 100;
+                        anc.commission += c;
+                        if (! firstReceiver) firstReceiver = anc;
+                        paidLevel++;
+                    } else if (! firstReceiver) {
+                        skipped.push(anc.name);
+                    }
+                    anc = anc.parentId === null ? null : m[anc.parentId];
                 }
+                if (skipped.length && firstReceiver) {
+                    rollups.push({ fromId: member.id, toId: firstReceiver.id, from: member.name, skipped, to: firstReceiver.name });
+                }
+            });
+
+            this.rollups = rollups;
+            const root = m[0];
+            this.rootCommission = root ? root.commission : 0;
+            this.totalCommission = m.reduce((s, x) => s + x.commission, 0);
+            // ค่าคอมของ "คุณ" แยกตามชั้นของผู้ซื้อ (ชั้นในผัง)
+            const rows = [];
+            const maxLevel = m.reduce((mx, x) => Math.max(mx, x.level), 0);
+            for (let level = 1; level <= maxLevel; level++) {
+                const inLevel = m.filter(x => x.level === level);
+                rows.push({ level, total: inLevel.length, active: inLevel.filter(x => x.active).length, commission: 0 });
             }
-        });
-    }
+            this.byLevel = rows;
+            this.rootByTreeLevel();
+            this.draw();
+            if (this.autoAnimate) this.play();
+        },
 
-    updateSummary();
-    renderTree();
-}
-
-// อัพเดทแผงสรุป
-function updateSummary() {
-    const activeMembers = treeData.members.filter(m => m.active).length;
-    const totalMembers = treeData.members.length;
-    const totalCommission = treeData.members.reduce((sum, m) => sum + m.commission, 0);
-    const activeRate = (activeMembers / totalMembers * 100).toFixed(1);
-
-    document.getElementById('total-commission').textContent = Math.floor(totalCommission).toLocaleString();
-    document.getElementById('active-count').textContent = activeMembers;
-    document.getElementById('total-count').textContent = totalMembers;
-    document.getElementById('active-rate').textContent = activeRate;
-
-    // แยกตามชั้น
-    const maxLevel = Math.max(...treeData.members.map(m => m.level));
-    let levelHtml = '';
-
-    for (let level = 1; level <= maxLevel; level++) {
-        const membersInLevel = treeData.members.filter(m => m.level === level);
-        const activeInLevel = membersInLevel.filter(m => m.active).length;
-        const commissionInLevel = membersInLevel.reduce((sum, m) => sum + m.commission, 0);
-
-        levelHtml += `
-            <div style="padding:12px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-weight:700; color:var(--ink);">ชั้น ${level}</span>
-                    <span style="font-size:11px; color:var(--ink2);">${activeInLevel}/${membersInLevel.length} คน</span>
-                </div>
-                <div class="tp-num" style="font-size:18px; font-weight:800; color:var(--deep1);">฿${Math.floor(commissionInLevel).toLocaleString()}</div>
-            </div>
-        `;
-    }
-
-    document.getElementById('level-breakdown').innerHTML = levelHtml;
-
-    // รายละเอียด Rollup
-    if (treeData.rollupPaths.length > 0) {
-        let rollupHtml = '<div style="display:flex; flex-direction:column; gap:8px;">';
-        treeData.rollupPaths.forEach(path => {
-            const fromMember = treeData.members[path.from];
-            const skippedMember = treeData.members[path.skipped];
-            const toMember = treeData.members[path.to];
-            rollupHtml += `
-                <div style="padding:9px 11px; border-radius:11px; box-shadow:var(--inset-sm); font-size:12px;">
-                    <span style="font-weight:700; color:#5aa07e;">${fromMember.name}</span>
-                    →
-                    <span style="font-weight:700; color:#d9534f; text-decoration:line-through;">${skippedMember.name}</span>
-                    →
-                    <span style="font-weight:700; color:#e0a52e;">${toMember.name}</span>
-                </div>
-            `;
-        });
-        rollupHtml += '</div>';
-        document.getElementById('rollup-list').innerHTML = rollupHtml;
-    } else {
-        document.getElementById('rollup-list').innerHTML = '<p style="color:var(--ink2); font-size:13px; margin:0;">ไม่มี rollup (ทุกคนแอคทีฟ)</p>';
-    }
-}
-
-// สถานการณ์ตัวอย่าง
-function loadPreset(type) {
-    switch(type) {
-        case 'perfect':
-            treeData.members.forEach(m => m.active = true);
-            break;
-        case 'realistic':
-            treeData.members.forEach(m => {
-                if (m.level === 0) {
-                    m.active = true;
-                } else {
-                    m.active = Math.random() > 0.3; // แอคทีฟ 70%
+        /** คิดใหม่เฉพาะของ "คุณ" ว่ามาจากสมาชิกชั้นไหนในผัง */
+        rootByTreeLevel() {
+            const sales = Math.max(0, Number(this.sales) || 0);
+            const m = this.members;
+            const root = m[0];
+            if (! root || ! root.active) return;
+            m.forEach(member => {
+                if (member.level === 0) return;
+                let anc = m[member.parentId];
+                let paidLevel = 1;
+                while (anc && paidLevel <= this.maxDepth) {
+                    if (anc.active) {
+                        if (anc.id === 0) {
+                            const row = this.byLevel.find(r => r.level === member.level);
+                            if (row) row.commission += sales * this.pvRate * this.pct(paidLevel) / 100;
+                            break;
+                        }
+                        paidLevel++;
+                    }
+                    anc = anc.parentId === null ? null : m[anc.parentId];
                 }
             });
-            break;
-        case 'rollup':
-            treeData.members.forEach(m => {
-                if (m.level === 0) {
-                    m.active = true;
-                } else if (m.level === 1) {
-                    m.active = m.id % 2 === 1; // สลับไม่แอคทีฟ
-                } else {
-                    m.active = true;
-                }
+        },
+
+        toggle(id) {
+            const member = this.members[id];
+            if (! member || member.level === 0) return;
+            member.active = ! member.active;
+            this.recalc();
+        },
+
+        preset(type) {
+            this.members.forEach(x => {
+                if (x.level === 0) { x.active = true; return; }
+                if (type === 'realistic') x.active = Math.random() > 0.3;
+                else if (type === 'rollup') x.active = x.level !== 1 || x.id % 2 === 0;
+                else x.active = true;
             });
-            break;
-        case 'custom':
-            // ให้ผู้ใช้กำหนดเอง
-            break;
-    }
-    recalculate();
-    renderTree();
+            this.recalc();
+        },
+
+        layout() {
+            const box = this.$refs.canvas;
+            const depth = this.members.reduce((mx, x) => Math.max(mx, x.level), 0);
+            const leaves = 2 ** depth;
+            const r = depth >= 4 ? 15 : 20;
+            const width = Math.max(box.clientWidth || 320, leaves * (r * 2 + 10));
+            const height = Math.max(320, (depth + 1) * 92 + 40);
+            const levelH = (height - 40) / (depth + 1);
+            this.members.forEach(x => {
+                const slot = width / (2 ** x.level);
+                x.x = slot * (x.index + 0.5);
+                x.y = 30 + levelH * x.level + levelH / 2 - 20;
+            });
+            return { width, height, r };
+        },
+
+        badge(n) {
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K';
+            return Math.round(n).toString();
+        },
+
+        draw() {
+            if (typeof d3 === 'undefined' || ! this.$refs.canvas) return;
+            const { width, height, r } = this.layout();
+            const c = { ok: css('--nvm-good', '#2f9e6a'), bad: css('--nvm-bad', '#d24b4b'), gold: css('--nv-gold-500', '#c9a24a'), line: css('--nvm-line-2', '#c8ccd6'), ink: css('--nvm-ink', '#1b2233'), paper: css('--nvm-paper', '#fffdf8'), badgeInk: css('--nv-navy-800', '#0d1b3d') };
+            const m = this.members;
+            const box = d3.select(this.$refs.canvas);
+            box.selectAll('*').remove();
+            const svg = box.append('svg').attr('xmlns', 'http://www.w3.org/2000/svg').attr('width', width).attr('height', height).attr('viewBox', `0 0 ${width} ${height}`);
+
+            svg.append('g').selectAll('line').data(m.filter(x => x.parentId !== null)).enter().append('line')
+                .attr('x1', d => m[d.parentId].x).attr('y1', d => m[d.parentId].y).attr('x2', d => d.x).attr('y2', d => d.y)
+                .attr('stroke', c.line).attr('stroke-width', 2);
+
+            if (this.showRollup) {
+                svg.append('g').selectAll('path').data(this.rollups).enter().append('path')
+                    .attr('class', 'nvm-ml-rollline')
+                    .attr('d', d => { const a = m[d.fromId], b = m[d.toId]; const mx = (a.x + b.x) / 2 + (a.x < b.x ? -30 : 30); return `M${a.x},${a.y} Q${mx},${(a.y + b.y) / 2} ${b.x},${b.y}`; })
+                    .attr('fill', 'none').attr('stroke', c.gold).attr('stroke-width', 2.5).attr('stroke-dasharray', '6 5');
+            }
+
+            const nodes = svg.append('g').selectAll('g').data(m).enter().append('g')
+                .attr('transform', d => `translate(${d.x},${d.y})`)
+                .attr('class', d => d.level ? 'nvm-ml-simnode' : 'nvm-ml-simnode is-root')
+                .attr('tabindex', d => d.level ? 0 : null)
+                .attr('role', d => d.level ? 'button' : null)
+                .attr('aria-label', d => d.level ? `${d.name} ${d.active ? 'แอคทีฟ' : 'ไม่แอคทีฟ'} แตะเพื่อสลับ` : null)
+                .on('click', (e, d) => this.toggle(d.id))
+                .on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggle(d.id); } });
+
+            nodes.append('circle').attr('r', d => d.level ? r : r + 8).attr('fill', d => d.active ? c.ok : c.bad).attr('stroke', c.paper).attr('stroke-width', 2);
+            nodes.append('text').attr('text-anchor', 'middle').attr('dy', '.35em').attr('fill', c.paper).attr('font-size', d => d.level ? 10 : 12).attr('font-weight', 700).attr('pointer-events', 'none').text(d => d.name);
+
+            const withPay = nodes.filter(d => d.commission > 0);
+            withPay.append('rect').attr('x', r - 6).attr('y', -r - 14).attr('rx', 8).attr('width', 40).attr('height', 16).attr('fill', c.gold);
+            withPay.append('text').attr('x', r + 14).attr('y', -r - 6).attr('dy', '.35em').attr('text-anchor', 'middle').attr('fill', c.badgeInk).attr('font-size', 10).attr('font-weight', 700).attr('pointer-events', 'none').text(d => this.badge(d.commission));
+
+            particles = svg.append('g').attr('pointer-events', 'none');
+        },
+
+        /** อนุภาคเหรียญไหลจากผู้ซื้อไปยังผู้รับค่าคอมคนแรก */
+        play() {
+            if (this.animating || ! particles || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            this.animating = true;
+            const m = this.members;
+            const gold = css('--nv-gold-500', '#c9a24a');
+            let delay = 0;
+            m.forEach(member => {
+                if (member.level === 0) return;
+                let to = m[member.parentId];
+                while (to && ! to.active) to = to.parentId === null ? null : m[to.parentId];
+                if (! to) return;
+                particles.append('circle').attr('cx', member.x).attr('cy', member.y).attr('r', 5).attr('fill', gold).attr('opacity', 0)
+                    .transition().delay(delay).duration(250).attr('opacity', 1)
+                    .transition().duration(800).attr('cx', to.x).attr('cy', to.y)
+                    .transition().duration(200).attr('opacity', 0).remove();
+                delay += Math.max(30, 600 / m.length);
+            });
+            setTimeout(() => { this.animating = false; }, delay + 1300);
+        },
+
+        /** บันทึกผังเป็น PNG จาก SVG โดยตรง */
+        saveImage() {
+            const svgEl = this.$refs.canvas.querySelector('svg');
+            if (! svgEl) return;
+            const w = svgEl.width.baseVal.value, h = svgEl.height.baseVal.value;
+            const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = w * 2; canvas.height = h * 2;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = css('--nvm-paper', '#fffdf8'); ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.scale(2, 2); ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                const a = document.createElement('a');
+                a.download = 'mlm-scenario.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+                window.showNotification?.('บันทึกรูปผังแล้ว', 'success');
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); window.showNotification?.('บันทึกรูปไม่สำเร็จ', 'error'); };
+            img.src = url;
+        },
+
+        fmt(n) { return Math.floor(Number(n) || 0).toLocaleString('th-TH'); },
+    };
 }
-
-// แอนิเมชั่น
-function playAnimation() {
-    if (animationRunning) return;
-    animationRunning = true;
-
-    const svg = d3.select('#commission-flow');
-    svg.selectAll('*').remove();
-
-    let delay = 0;
-
-    // แอนิเมชั่นการไหลของคอมมิชชั่นแต่ละเส้นที่แอคทีฟ
-    treeData.members.forEach(member => {
-        if (member.level > 0 && member.commission > 0) {
-            setTimeout(() => {
-                const circle = svg.append('circle')
-                    .attr('cx', member.x)
-                    .attr('cy', member.y)
-                    .attr('r', 5)
-                    .attr('fill', 'url(#flowGradient)')
-                    .attr('class', 'commission-particle');
-
-                // เคลื่อนไปหา parent
-                const parent = treeData.members[member.parentId];
-                circle.transition()
-                    .duration(1000)
-                    .attr('cx', parent.x)
-                    .attr('cy', parent.y)
-                    .on('end', function() {
-                        d3.select(this).remove();
-                    });
-            }, delay);
-            delay += 200;
-        }
-    });
-
-    setTimeout(() => {
-        animationRunning = false;
-    }, delay + 1000);
-}
-
-function toggleRollupView() {
-    const show = document.getElementById('showRollup').checked;
-    d3.selectAll('.rollup-line').style('display', show ? 'block' : 'none');
-}
-
-function toggleAnimation() {
-    // สลับแอนิเมชั่น
-}
-
-function captureScenario() {
-    html2canvas(document.getElementById('tree-container')).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'mlm-scenario.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    });
-}
-
-function shareScenario() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-        if (window.showNotification) {
-            window.showNotification('คัดลอกลิงก์แล้ว!', 'success');
-        } else {
-            alert('คัดลอกลิงก์แล้ว!');
-        }
-    });
-}
-
-function printScenario() {
-    window.print();
-}
-
-// เริ่มต้น
-loadSettings();
 </script>
 @endpush
-@endsection

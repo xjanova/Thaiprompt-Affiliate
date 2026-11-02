@@ -1,226 +1,160 @@
-@extends('layouts.user-v4')
+{{--
+    ลิงก์แนะนำ MLM + QR (ธีมโนวาเต็ม) — MlmDashboardController::referral
+    ตัวแปร: $member, $referralUrl (หน้าสมัครแบบเพิ่มเพื่อน LINE OA ก่อน · ?ref=รหัสสมาชิก)
+    - QR วาดในเบราว์เซอร์ด้วย qrcodejs (ลิงก์เป็น ASCII ล้วน) — เลิกส่งลิงก์ไปให้ api.qrserver.com วาดแทนแล้ว
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ลิงก์แนะนำ MLM')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/mlm.css') }}?v={{ filemtime(public_path('theme-nova/member/mlm.css')) }}">@endpush
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $me = auth()->user();
+    $initial = mb_strtoupper(mb_substr(trim((string) $me->name) ?: 'U', 0, 1));
+    $lineText = "มาร่วมเป็นส่วนหนึ่งกับเรา!\n".$referralUrl;
+    $mailBody = "สวัสดี!\n\nขอชวนมาร่วมทีมกับเรา สมัครได้ที่: ".$referralUrl."\n\nรหัสแนะนำ: ".$member->member_code;
+    $shares = [
+        ['line', 'LINE', 'https://line.me/R/msg/text/?'.rawurlencode($lineText)],
+        ['fb', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u='.rawurlencode($referralUrl)],
+        ['send', 'X (Twitter)', 'https://twitter.com/intent/tweet?text='.rawurlencode('มาร่วมเป็นส่วนหนึ่งกับเรา!').'&url='.rawurlencode($referralUrl)],
+        ['bell', 'อีเมล', 'mailto:?subject='.rawurlencode('ชวนมาร่วมทีม').'&body='.rawurlencode($mailBody)],
+    ];
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;" x-data="{}">
 
-    {{-- ── หัวข้อ ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-share-nodes" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ลิงก์แนะนำของคุณ</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แชร์ลิงก์นี้เพื่อเชิญเพื่อนเข้าร่วม</div>
-            </div>
+<div class="nvm-stack nvm-ml-page" x-data="nvmMlReferralQr(@js($referralUrl), @js($member->member_code))">
+
+<section class="nvm-ph" aria-labelledby="nvm-mlr-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.mlm.dashboard'))
+                <a class="nvm-ph__back" href="{{ route('user.mlm.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>แดชบอร์ด MLM</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Invite friends</div>
+            <h1 id="nvm-mlr-h">ลิงก์แนะนำของคุณ</h1>
+            <p class="nvm-ph__lead">แชร์ลิงก์หรือให้เพื่อนสแกน QR เพื่อนที่สมัครจะอยู่ในทีมของคุณอัตโนมัติ</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/gift.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ลิงก์แนะนำ + รหัสสมาชิก + QR ─────────────────────── --}}
-    <div class="tp-card" style="padding:22px; display:flex; flex-direction:column; gap:18px;">
-
-        {{-- ลิงก์แนะนำ --}}
-        <div>
-            <div style="font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:7px;">📎 URL ของคุณ</div>
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-                <code class="tp-num" style="flex:1; min-width:200px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm); font-size:12.5px; color:var(--ink); word-break:break-all;">{{ $referralUrl }}</code>
-                <button type="button" onclick="copyReferralUrl()" class="tp-btn tp-btn-primary"><i class="fas fa-copy"></i> คัดลอก</button>
-            </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box nvm-qr" aria-label="QR Code ลิงก์แนะนำ">
+        <div class="nvm-qr__who">
+            <span class="nvm-avatar">{{ $initial }}</span>
+            <b>{{ $me->name }}</b>
+            <small class="nvm-num">รหัสแนะนำ {{ $member->member_code }}</small>
         </div>
 
-        {{-- รหัสสมาชิก --}}
-        <div>
-            <div style="font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:7px;">🆔 รหัสสมาชิกของคุณ</div>
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-                <div class="tp-num" style="flex:1; min-width:200px; padding:13px 15px; border-radius:13px; box-shadow:var(--inset-sm); font-size:22px; font-weight:800; color:var(--deep1);">{{ $member->member_code }}</div>
-                <button type="button" onclick="copyMemberCode()" class="tp-btn"><i class="fas fa-copy"></i> คัดลอก</button>
-            </div>
+        <div class="nvm-qr__box">
+            <div x-ref="qr" role="img" aria-label="QR Code สำหรับสมัครสมาชิกผ่านลิงก์แนะนำ"></div>
+            <span class="nvm-qr__tag">สแกนเพื่อสมัคร</span>
         </div>
+        <p class="nvm-err nvm-gap-t" x-show="qrError" x-cloak x-text="qrError"></p>
 
-        {{-- QR Code --}}
-        <div style="padding-top:4px;">
-            <div style="font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:10px; text-align:center;">QR Code สำหรับแชร์</div>
-            <div style="display:flex; justify-content:center;">
-                <div style="background:#fff; padding:18px; border-radius:18px; box-shadow:var(--raise);">
-                    <div id="qrcode" style="min-width:200px; min-height:200px; display:flex; align-items:center; justify-content:center;">
-                        <div id="qrcode-loading" style="text-align:center; color:#888;">
-                            <i class="fas fa-circle-notch fa-spin" style="font-size:32px; color:#d98e3f;"></i>
-                            <div style="font-size:12px; margin-top:8px;">กำลังสร้าง QR Code...</div>
-                        </div>
-                    </div>
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--gold" @click="download()" :disabled="! ready"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>บันทึกรูป QR</button>
+            <button type="button" class="nvm-btn nvm-btn--line" @click="share()"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>แชร์</button>
+        </div>
+    </section>
+
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlr-l-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Your link</small><h2 id="nvm-mlr-l-h">ลิงก์และรหัสแนะนำ</h2></div></div>
+            <div class="nvm-field">
+                <span class="nvm-label">ลิงก์สมัครสมาชิก</span>
+                <div class="nvm-copy nvm-copy--box">
+                    <code>{{ $referralUrl }}</code>
+                    <button type="button" @click="nvmCopy(url, 'คัดลอกลิงก์แนะนำแล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
                 </div>
             </div>
-            <div id="qrcode-error" class="hidden" style="margin-top:14px; text-align:center;">
-                <div style="color:#d9534f; font-size:12.5px; margin-bottom:8px;">ไม่สามารถสร้าง QR Code ได้</div>
-                <button type="button" onclick="generateQRCode()" class="tp-btn tp-btn-sm">ลองใหม่</button>
-            </div>
-            <div style="text-align:center; font-size:12px; color:var(--ink2); margin-top:12px;">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</div>
-            <div style="display:flex; justify-content:center; margin-top:12px;">
-                <button id="download-qr" onclick="downloadQRCode()" class="tp-btn hidden" style="align-items:center; gap:7px;"><i class="fas fa-download"></i> ดาวน์โหลด QR Code</button>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── แชร์ผ่าน ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">📤 แชร์ผ่าน</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;">
-            <button type="button" onclick="shareViaLine()" class="tp-card tp-card-hover" style="border:0; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px;">
-                <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:22px; background:#06c755;">💚</span>
-                <span style="font-size:13px; font-weight:700;">LINE</span>
-            </button>
-            <button type="button" onclick="shareViaFacebook()" class="tp-card tp-card-hover" style="border:0; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px;">
-                <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:22px; background:#1877f2;">📘</span>
-                <span style="font-size:13px; font-weight:700;">Facebook</span>
-            </button>
-            <button type="button" onclick="shareViaTwitter()" class="tp-card tp-card-hover" style="border:0; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px;">
-                <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:22px; background:#1d9bf0;">🐦</span>
-                <span style="font-size:13px; font-weight:700;">Twitter</span>
-            </button>
-            <button type="button" onclick="shareViaEmail()" class="tp-card tp-card-hover" style="border:0; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px;">
-                <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:22px; background:#6b7280;">📧</span>
-                <span style="font-size:13px; font-weight:700;">Email</span>
-            </button>
-        </div>
-    </div>
-
-    {{-- ── เคล็ดลับ ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">💡 เคล็ดลับการแนะนำ</div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            @php
-                $tips = [
-                    ['แชร์ในช่องทางที่เหมาะสม', 'เลือกช่องทางที่กลุ่มเป้าหมายของคุณใช้งานมากที่สุด'],
-                    ['อธิบายประโยชน์ที่จะได้รับ', 'บอกเล่าประสบการณ์และผลลัพธ์ที่คุณได้รับจากโปรแกรม'],
-                    ['ติดตามและให้คำแนะนำ', 'ช่วยเหลือและให้คำปรึกษากับสมาชิกใหม่ที่เข้าร่วม'],
-                ];
-            @endphp
-            @foreach($tips as [$head, $desc])
-                <div style="display:flex; gap:11px; align-items:flex-start;">
-                    <span class="tp-tile" style="width:30px; height:30px; border-radius:9px; font-size:13px; background:rgba(90,160,126,.18);"><i class="fas fa-check" style="color:#5aa07e;"></i></span>
-                    <div>
-                        <div style="font-weight:700; font-size:13.5px;">{{ $head }}</div>
-                        <div style="font-size:12.5px; color:var(--ink2);">{{ $desc }}</div>
-                    </div>
+            <div class="nvm-field nvm-gap-t">
+                <span class="nvm-label">รหัสสมาชิก (กรอกตอนสมัครแทนลิงก์ได้)</span>
+                <div class="nvm-copy nvm-copy--box">
+                    <code class="nvm-num">{{ $member->member_code }}</code>
+                    <button type="button" @click="nvmCopy(code, 'คัดลอกรหัสสมาชิกแล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlr-s-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Share</small><h2 id="nvm-mlr-s-h">แชร์ผ่าน</h2></div></div>
+            <div class="nvm-ml-shares">
+                @foreach($shares as [$icon, $label, $href])
+                    <a href="{{ $href }}" @if(! str_starts_with($href, 'mailto:')) target="_blank" rel="noopener" @endif>
+                        <svg class="nvm-ico"><use href="#nvm-i-{{ $icon }}"/></svg>{{ $label }}
+                    </a>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlr-t-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Tips</small><h2 id="nvm-mlr-t-h">เคล็ดลับการแนะนำ</h2></div></div>
+            <ol class="nvm-steps">
+                <li>เลือกช่องทางที่เพื่อนของคุณใช้งานมากที่สุด</li>
+                <li>เล่าประสบการณ์จริงของคุณ ไม่สัญญารายได้เกินจริง</li>
+                <li>ช่วยเหลือและให้คำแนะนำสมาชิกใหม่หลังสมัคร</li>
+            </ol>
+        </section>
     </div>
 </div>
 
+</div>
+@endsection
+
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-const referralUrl = @json($referralUrl);
-const memberCode = @json($member->member_code);
-let qrCodeInstance = null;
+/**
+ * QR ลิงก์แนะนำ — วาด/บันทึกรูป/แชร์
+ */
+function nvmMlReferralQr(url, code) {
+    return {
+        url: url,
+        code: code,
+        ready: false,
+        qrError: '',
 
-function showToast(message) {
-    if (window.showNotification) window.showNotification(message, 'success');
-}
+        init() {
+            this.$nextTick(() => this.draw());
+        },
 
-function generateQRCode(retryCount = 0) {
-    const maxRetries = 10;
-    const retryDelay = 300;
-    const qrcodeContainer = document.getElementById('qrcode');
-    const loadingEl = document.getElementById('qrcode-loading');
-    const errorEl = document.getElementById('qrcode-error');
-    const downloadBtn = document.getElementById('download-qr');
-    if (errorEl) errorEl.classList.add('hidden');
+        draw() {
+            const box = this.$refs.qr;
+            if (typeof QRCode === 'undefined') {
+                this.qrError = 'โหลดตัวสร้าง QR ไม่สำเร็จ รีเฟรชหน้าอีกครั้ง หรือใช้ปุ่มคัดลอกลิงก์แทน';
+                return;
+            }
+            box.innerHTML = '';
+            try {
+                new QRCode(box, { text: this.url, width: 464, height: 464, colorDark: '#0b1633', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                this.ready = true;
+            } catch (e) {
+                this.qrError = 'สร้าง QR ไม่สำเร็จ ใช้ปุ่มคัดลอกลิงก์แทน';
+            }
+        },
 
-    if (typeof QRCode === 'undefined') {
-        if (retryCount < maxRetries) {
-            setTimeout(() => generateQRCode(retryCount + 1), retryDelay);
-            return;
-        }
-        useFallbackQRCode();
-        return;
-    }
-    try {
-        if (loadingEl) loadingEl.remove();
-        if (qrCodeInstance) { qrCodeInstance.clear(); qrcodeContainer.innerHTML = ''; }
-        qrCodeInstance = new QRCode(qrcodeContainer, {
-            text: referralUrl, width: 200, height: 200,
-            colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H
-        });
-        if (downloadBtn) { downloadBtn.classList.remove('hidden'); downloadBtn.classList.add('flex'); }
-    } catch (e) {
-        useFallbackQRCode();
-    }
-}
+        download() {
+            const canvas = this.$refs.qr.querySelector('canvas');
+            if (! canvas) { window.showNotification('ยังสร้าง QR ไม่เสร็จ', 'error'); return; }
+            const a = document.createElement('a');
+            a.download = 'qrcode-' + this.code + '.png';
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+            window.showNotification('บันทึกรูป QR แล้ว', 'success');
+        },
 
-function useFallbackQRCode() {
-    const qrcodeContainer = document.getElementById('qrcode');
-    const loadingEl = document.getElementById('qrcode-loading');
-    const errorEl = document.getElementById('qrcode-error');
-    const downloadBtn = document.getElementById('download-qr');
-    if (loadingEl) loadingEl.remove();
-    const encodedUrl = encodeURIComponent(referralUrl);
-    const qrServerUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodedUrl + '&format=png';
-    const img = document.createElement('img');
-    img.src = qrServerUrl;
-    img.alt = 'QR Code';
-    img.width = 200; img.height = 200; img.style.borderRadius = '8px';
-    img.id = 'qrcode-image'; img.crossOrigin = 'anonymous';
-    img.onload = function () {
-        qrcodeContainer.innerHTML = '';
-        qrcodeContainer.appendChild(img);
-        if (downloadBtn) { downloadBtn.classList.remove('hidden'); downloadBtn.classList.add('flex'); }
+        share() {
+            if (navigator.share) {
+                navigator.share({ title: 'มาร่วมทีมกับฉัน', text: 'สมัครสมาชิกผ่านลิงก์แนะนำของฉัน', url: this.url }).catch(() => {});
+                return;
+            }
+            window.nvmCopy(this.url, 'คัดลอกลิงก์แนะนำแล้ว');
+        },
     };
-    img.onerror = function () {
-        if (errorEl) errorEl.classList.remove('hidden');
-        qrcodeContainer.innerHTML = '<p style="color:#888;font-size:12px;">ไม่สามารถโหลด QR Code ได้</p>';
-    };
-}
-
-function downloadQRCode() {
-    const qrcodeContainer = document.getElementById('qrcode');
-    const canvas = qrcodeContainer.querySelector('canvas');
-    const img = qrcodeContainer.querySelector('img');
-    let dataUrl;
-    if (canvas) {
-        dataUrl = canvas.toDataURL('image/png');
-    } else if (img) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = img.width; tempCanvas.height = img.height;
-        tempCanvas.getContext('2d').drawImage(img, 0, 0);
-        dataUrl = tempCanvas.toDataURL('image/png');
-    }
-    if (dataUrl) {
-        const link = document.createElement('a');
-        link.download = 'qrcode-' + memberCode + '.png';
-        link.href = dataUrl; link.click();
-        showToast('ดาวน์โหลด QR Code สำเร็จ');
-    } else {
-        showToast('ไม่สามารถดาวน์โหลด QR Code ได้');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function () { setTimeout(generateQRCode, 100); });
-
-function copyReferralUrl() {
-    navigator.clipboard.writeText(referralUrl).then(() => showToast('คัดลอกลิงก์แนะนำแล้ว')).catch(() => showToast('คัดลอกไม่สำเร็จ'));
-}
-function copyMemberCode() {
-    navigator.clipboard.writeText(memberCode).then(() => showToast('คัดลอกรหัสสมาชิกแล้ว')).catch(() => showToast('คัดลอกไม่สำเร็จ'));
-}
-function shareViaLine() {
-    const message = 'มาร่วมเป็นส่วนหนึ่งกับเรา! 🚀\n' + referralUrl;
-    window.open('https://line.me/R/msg/text/?' + encodeURIComponent(message), '_blank');
-}
-function shareViaFacebook() {
-    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(referralUrl), '_blank');
-}
-function shareViaTwitter() {
-    const text = 'มาร่วมเป็นส่วนหนึ่งกับเรา! 🚀';
-    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(referralUrl), '_blank');
-}
-function shareViaEmail() {
-    const subject = 'เชิญเข้าร่วมโปรแกรม MLM';
-    const body = 'สวัสดี!\n\nฉันอยากเชิญคุณมาร่วมเป็นส่วนหนึ่งกับเรา\n\nสมัครได้ที่: ' + referralUrl + '\n\nรหัสแนะนำ: ' + memberCode;
-    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 }
 </script>
 @endpush
-@endsection
