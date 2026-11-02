@@ -46,7 +46,7 @@ class VideoCoinController extends Controller
             ->get();
 
         // ดึงอัตราแลกเปลี่ยน
-        $exchangeRates = CoinExchangeRate::where('is_active', true)
+        $exchangeRates = CoinExchangeRate::active()
             ->orderBy('coins_amount')
             ->get();
 
@@ -54,6 +54,8 @@ class VideoCoinController extends Controller
         // รายการหัก (แลกเงิน/ซื้อของ) เก็บ amount ติดลบ · รายการได้รับ/คืนเหรียญเก็บบวก
         $todayTotals = VideoCoinTransaction::where('user_id', $user->id)
             ->whereDate('created_at', today())
+            // คืน coins จากคำขอแลกที่ถูกปฏิเสธ ไม่ใช่รายได้ — ไม่นับเป็น "ได้รับวันนี้"
+            ->where(fn ($q) => $q->whereNull('reference_type')->orWhere('reference_type', '!=', 'CoinExchangeRequest'))
             ->selectRaw('COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS earned, COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS spent')
             ->first();
 
@@ -139,8 +141,8 @@ class VideoCoinController extends Controller
             ['balance' => 0]
         );
 
-        // ดึงอัตราแลกเปลี่ยนที่ active
-        $exchangeRates = CoinExchangeRate::where('is_active', true)
+        // ดึงอัตราแลกเปลี่ยนที่เปิดใช้และอยู่ในช่วงวันที่มีผล (effective_from/effective_until)
+        $exchangeRates = CoinExchangeRate::active()
             ->orderBy('coins_amount')
             ->get();
 
@@ -178,7 +180,8 @@ class VideoCoinController extends Controller
         ]);
 
         $user = auth()->user();
-        $rate = CoinExchangeRate::where('is_active', true)->find($request->exchange_rate_id);
+        // active() = เปิดใช้ + อยู่ในช่วงวันที่มีผล (แพคเกจหมดอายุแลกไม่ได้)
+        $rate = CoinExchangeRate::active()->find($request->exchange_rate_id);
 
         if (! $rate) {
             return back()->with('error', 'แพคเกจนี้ปิดการแลกแล้ว กรุณาเลือกแพคเกจอื่น');
@@ -207,6 +210,18 @@ class VideoCoinController extends Controller
 
             if ($rate->max_coins_per_day && ($todayExchanged + $rate->coins_amount) > $rate->max_coins_per_day) {
                 return 'เกินจำนวนที่สามารถแลกได้ต่อวัน';
+            }
+
+            // ตรวจสอบ limit ต่อเดือน (นับคำขอเดือนนี้ที่ยังไม่ถูกปฏิเสธ)
+            if ($rate->max_coins_per_month) {
+                $monthExchanged = CoinExchangeRequest::where('user_id', $user->id)
+                    ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                    ->where('status', '!=', 'rejected')
+                    ->sum('coins_amount');
+
+                if (($monthExchanged + $rate->coins_amount) > $rate->max_coins_per_month) {
+                    return 'เกินจำนวนที่สามารถแลกได้ต่อเดือน';
+                }
             }
 
             // หัก coins แล้วสร้างคำขอ (exchange_rate เป็นคอลัมน์ NOT NULL — เดิมไม่ได้ใส่ ทำให้บันทึกไม่ได้)

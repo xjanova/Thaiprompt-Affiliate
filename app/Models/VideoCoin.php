@@ -121,6 +121,34 @@ class VideoCoin extends Model
     }
 
     /**
+     * คืน coins จากคำขอแลกเงินที่ถูกปฏิเสธ
+     *
+     * ต่างจาก addCoins: ไม่นับเป็น lifetime_earned (ไม่ใช่เหรียญที่หาได้ใหม่)
+     * และย้อนยอด lifetime_spent / lifetime_exchanged ที่ exchangeToMoney เพิ่มไว้
+     */
+    public function refundExchange($amount, $requestId)
+    {
+        $balanceBefore = $this->balance;
+        $this->balance += $amount;
+        $this->lifetime_spent = max(0, (float) $this->lifetime_spent - (float) $amount);
+        $this->lifetime_exchanged = max(0, (float) $this->lifetime_exchanged - (float) $amount);
+        $this->save();
+
+        VideoCoinTransaction::create([
+            'user_id' => $this->user_id,
+            'type' => 'adjustment',
+            'amount' => $amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $this->balance,
+            'reference_type' => 'CoinExchangeRequest',
+            'reference_id' => $requestId,
+            'description' => 'Exchange request rejected - refund',
+        ]);
+
+        return $this;
+    }
+
+    /**
      * Get balance formatted
      */
     public function getFormattedBalanceAttribute()

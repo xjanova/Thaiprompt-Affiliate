@@ -88,16 +88,10 @@ class CoinExchangeRequest extends Model
         $this->admin_note = $note;
         $this->save();
 
-        // Refund coins
+        // คืน coins — ใช้ refundExchange (ไม่นับเป็นรายได้สะสม และย้อนยอดใช้ไป/แลกไป)
         $videoCoin = VideoCoin::where('user_id', $this->user_id)->first();
         if ($videoCoin) {
-            $videoCoin->addCoins(
-                $this->coins_amount,
-                'adjustment',
-                'CoinExchangeRequest',
-                $this->id,
-                'Exchange request rejected - refund'
-            );
+            $videoCoin->refundExchange($this->coins_amount, $this->id);
         }
     }
 

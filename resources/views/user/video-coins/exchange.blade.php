@@ -79,7 +79,8 @@
                 <form action="{{ route('user.video-coins.exchange.submit') }}" method="POST" class="nvm-cv-form"
                       data-confirm="{{ $confirmText }}"
                       x-data="{ busy: false, go(e) { if (this.busy || ! window.confirm(e.target.dataset.confirm)) { e.preventDefault(); return; } this.busy = true; } }"
-                      x-on:submit="go($event)">
+                      x-on:submit="go($event)"
+                      x-on:pageshow.window="if ($event.persisted) busy = false">
                     @csrf
                     <input type="hidden" name="exchange_rate_id" value="{{ $rate->id }}">
                     <button type="submit" class="nvm-cv-rate" @disabled(! $canExchange) :disabled="busy || {{ $canExchange ? 'false' : 'true' }}">
@@ -95,6 +96,9 @@
                             @endif
                             @if($rate->max_coins_per_day)
                                 <span class="nvm-num">แลกได้สูงสุด {{ $vcNum($rate->max_coins_per_day) }} VC ต่อวัน</span>
+                            @endif
+                            @if($rate->max_coins_per_month)
+                                <span class="nvm-num">แลกได้สูงสุด {{ $vcNum($rate->max_coins_per_month) }} VC ต่อเดือน</span>
                             @endif
                         </span>
                         @if($canExchange)

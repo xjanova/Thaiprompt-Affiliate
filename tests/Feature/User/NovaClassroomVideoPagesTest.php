@@ -284,7 +284,15 @@ class NovaClassroomVideoPagesTest extends TestCase
 
         // แอดมินปฏิเสธ = คืน coins กลับเท่ายอดเดิม (ไม่ได้เหรียญเพิ่มฟรี)
         $request->reject(User::factory()->create(['role' => 'admin'])->id, 'ทดสอบ');
-        $this->assertEquals(250.0, (float) VideoCoin::where('user_id', $user->id)->value('balance'));
+        $coin->refresh();
+        $this->assertEquals(250.0, (float) $coin->balance);
+        // คืนเหรียญไม่ใช่รายได้: lifetime_earned ไม่เพิ่ม และย้อนยอดแลก/ใช้ไป
+        $this->assertEquals(0.0, (float) $coin->lifetime_earned);
+        $this->assertEquals(0.0, (float) $coin->lifetime_exchanged);
+        $this->assertEquals(0.0, (float) $coin->lifetime_spent);
+
+        $this->actingAs($user)->get(route('user.video-coins.index'))->assertOk()
+            ->assertViewHas('earnedToday', 0.0);
     }
 
     public function test_exchange_submit_rejects_when_coins_are_not_enough(): void
@@ -337,5 +345,53 @@ class NovaClassroomVideoPagesTest extends TestCase
 
         $this->assertSame(1, CoinExchangeRequest::where('user_id', $user->id)->count());
         $this->assertEquals(900.0, (float) VideoCoin::where('user_id', $user->id)->value('balance'));
+    }
+
+    public function test_exchange_submit_respects_monthly_limit(): void
+    {
+        $user = $this->member();
+        $this->videoLevel($user, 1);
+        $rate = $this->rate(['max_coins_per_month' => 150]);
+        VideoCoin::create(['user_id' => $user->id, 'balance' => 1000]);
+
+        $this->actingAs($user)->post(route('user.video-coins.exchange.submit'), ['exchange_rate_id' => $rate->id])->assertSessionHas('success');
+        $this->actingAs($user)->from(route('user.video-coins.exchange'))
+            ->post(route('user.video-coins.exchange.submit'), ['exchange_rate_id' => $rate->id])
+            ->assertSessionHas('error', 'เกินจำนวนที่สามารถแลกได้ต่อเดือน');
+
+        $this->assertSame(1, CoinExchangeRequest::where('user_id', $user->id)->count());
+        $this->assertEquals(900.0, (float) VideoCoin::where('user_id', $user->id)->value('balance'));
+    }
+
+    public function test_expired_or_future_rate_is_hidden_and_cannot_be_exchanged(): void
+    {
+        $user = $this->member();
+        $this->videoLevel($user, 1);
+        VideoCoin::create(['user_id' => $user->id, 'balance' => 1000]);
+        $expired = $this->rate(['coins_amount' => 333, 'effective_until' => now()->subDay()]);
+        $future = $this->rate(['coins_amount' => 444, 'effective_from' => now()->addDay()]);
+        $current = $this->rate(['coins_amount' => 100]);
+
+        $this->actingAs($user)->get(route('user.video-coins.exchange'))->assertOk()
+            ->assertViewHas('exchangeRates', fn ($rates) => $rates->pluck('id')->all() === [$current->id]);
+
+        foreach ([$expired, $future] as $rate) {
+            $this->actingAs($user)->from(route('user.video-coins.exchange'))
+                ->post(route('user.video-coins.exchange.submit'), ['exchange_rate_id' => $rate->id])
+                ->assertSessionHas('error', 'แพคเกจนี้ปิดการแลกแล้ว กรุณาเลือกแพคเกจอื่น');
+        }
+
+        $this->assertSame(0, CoinExchangeRequest::where('user_id', $user->id)->count());
+        $this->assertEquals(1000.0, (float) VideoCoin::where('user_id', $user->id)->value('balance'));
+    }
+
+    public function test_exchange_form_resets_busy_state_on_back_forward_restore(): void
+    {
+        $user = $this->member();
+        $this->rate();
+        VideoCoin::create(['user_id' => $user->id, 'balance' => 500]);
+
+        $this->actingAs($user)->get(route('user.video-coins.exchange'))->assertOk()
+            ->assertSee('x-on:pageshow.window="if ($event.persisted) busy = false"', false);
     }
 }
