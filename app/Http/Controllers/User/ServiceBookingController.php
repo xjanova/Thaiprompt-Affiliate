@@ -142,16 +142,40 @@ class ServiceBookingController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function category(ServiceCategory $category)
+    public function category(Request $request, ServiceCategory $category)
     {
-        $services = Service::where('category_id', $category->id)
+        // หมวดที่แอดมินปิดไว้ไม่เปิดให้สมาชิกเห็น (หน้าค้นหาก็กรองเฉพาะหมวดที่เปิดอยู่)
+        abort_unless($category->is_active, 404);
+
+        // เรียงลำดับฝั่งเซิร์ฟเวอร์ — เดิมเป็น dropdown ที่กดแล้วไม่มีผลอะไร
+        $sort = $request->input('sort', 'popular');
+        $query = Service::where('category_id', $category->id)
             ->active()
-            ->with('category')
-            ->paginate(12);
+            ->with('category');
+
+        match ($sort) {
+            'name' => $query->orderBy('name'),
+            'price_asc' => $query->orderBy('base_price'),
+            'price_desc' => $query->orderByDesc('base_price'),
+            'rating' => $query->orderByDesc('average_rating'),
+            default => $query->orderByDesc('is_featured')->orderByDesc('booking_count'),
+        };
+
+        $services = $query->paginate(12)->withQueryString();
+
+        // หมวดอื่นที่เปิดอยู่ (หน้าเดิมรอรับตัวแปรนี้แต่ไม่เคยมีใครส่งมา)
+        $relatedCategories = ServiceCategory::active()
+            ->where('id', '!=', $category->id)
+            ->ordered()
+            ->withCount(['services' => fn ($q) => $q->active()])
+            ->limit(8)
+            ->get();
 
         return view('user.services.category', [
             'category' => $category,
             'services' => $services,
+            'relatedCategories' => $relatedCategories,
+            'sort' => $sort,
             'pageTitle' => $category->name,
         ]);
     }
@@ -163,6 +187,9 @@ class ServiceBookingController extends Controller
      */
     public function show(Service $service)
     {
+        // บริการที่ปิดอยู่จองไม่ได้ — ไม่เปิดหน้าฟอร์มจองให้
+        abort_unless($service->isBookable(), 404);
+
         $service->load(['category', 'pricingRules']);
         $service->loadCount(['reviews']);
         $service->incrementViewCount();
@@ -170,31 +197,36 @@ class ServiceBookingController extends Controller
         // คำนวณ PV และ Cashback ที่ลูกค้าจะได้รับ
         $earningsSummary = $this->calculateEarningsPreview($service);
 
+        // ราคาเริ่มต้นจากสูตรเดียวกับตอนสร้างการจอง (ค่าเดินทาง 0 กม. + VAT) — หน้าเดิมโชว์ยอดไม่รวม VAT
+        $pricing = $this->pricingService->calculateTotalPrice([
+            'base_price' => $service->base_price,
+            'distance_km' => 0,
+            'service_id' => $service->id,
+            'options_price' => 0,
+            'discount_amount' => 0,
+        ]);
+
         return view('user.services.show', [
             'service' => $service,
             'pageTitle' => $service->name,
             'earningsSummary' => $earningsSummary,
+            'pricing' => $pricing,
         ]);
     }
 
     /**
      * ฟอร์มจองบริการ
      *
-     * @return \Illuminate\View\View
+     * ฟอร์มจองอยู่บนหน้ารายละเอียดบริการ — เดิม route นี้ render view user.services.book
+     * ที่ไม่มีอยู่จริง (500) จึงพาไปที่ฟอร์มบนหน้ารายละเอียดแทน (ลิงก์/บุ๊กมาร์กเก่ายังใช้ได้)
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function book(Service $service)
     {
-        // ตรวจสอบว่าบริการต้องการตำแหน่งหรือไม่
-        if ($service->requires_location && ! request()->has(['latitude', 'longitude'])) {
-            return redirect()
-                ->back()
-                ->with('error', 'บริการนี้ต้องระบุตำแหน่ง GPS กรุณาเปิดตำแหน่งของคุณ');
-        }
+        abort_unless($service->isBookable(), 404);
 
-        return view('user.services.book', [
-            'service' => $service,
-            'pageTitle' => 'จอง: '.$service->name,
-        ]);
+        return redirect()->to(route('user.services.show', $service).'#nvm-sn-book');
     }
 
     /**
@@ -204,6 +236,9 @@ class ServiceBookingController extends Controller
      */
     public function storeBooking(Request $request, Service $service)
     {
+        // บริการที่ปิดอยู่ห้ามสร้างการจองใหม่
+        abort_unless($service->isBookable(), 404);
+
         $validated = $request->validate([
             'scheduled_at' => 'required|date|after:now',
             'customer_latitude' => $service->requires_location ? 'required|numeric' : 'nullable|numeric',
@@ -523,6 +558,11 @@ class ServiceBookingController extends Controller
             abort(403);
         }
 
+        // แก้ได้เฉพาะการจองที่รีวิวไว้แล้ว (การจองที่ยังไม่รีวิวต้องรีวิวผ่าน storeReview ที่ตรวจสถานะเสร็จสิ้น)
+        abort_if($review->rating === null, 404);
+
+        $review->loadMissing(['service', 'provider']);
+
         return view('user.service-reviews.edit', [
             'booking' => $review,
             'pageTitle' => 'แก้ไขรีวิว',
@@ -541,6 +581,9 @@ class ServiceBookingController extends Controller
         if ($review->user_id !== $user->id) {
             abort(403);
         }
+
+        // เดิม PUT ตรงนี้ให้คะแนนการจองที่ยังไม่เสร็จ/ยังไม่เคยรีวิวได้ (ข้ามด่านของ storeReview)
+        abort_if($review->rating === null, 404);
 
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
