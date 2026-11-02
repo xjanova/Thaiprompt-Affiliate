@@ -8,6 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class WithdrawCryptoRequest extends FormRequest
 {
     /**
+     * เครือข่ายที่ระบบถอนอัตโนมัติรองรับ — หน้าแบบฟอร์มถอน (CryptoWalletController::withdraw) ใช้รายการเดียวกันกรองเหรียญ
+     */
+    public const NETWORKS = ['bitcoin', 'ethereum', 'bsc', 'polygon', 'tron'];
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
@@ -55,7 +60,13 @@ class WithdrawCryptoRequest extends FormRequest
             'network' => [
                 'required',
                 'string',
-                'in:bitcoin,ethereum,bsc,polygon,tron',
+                'in:'.implode(',', self::NETWORKS),
+                function ($attribute, $value, $fail) use ($currency) {
+                    // เครือข่ายต้องตรงกับเครือข่ายของเหรียญ ไม่งั้นคำขอถอนจะบันทึกเครือข่ายผิดและส่งเหรียญหาย
+                    if ($currency && $value !== $currency->network) {
+                        $fail('เครือข่ายไม่ตรงกับสกุลเหรียญที่เลือก');
+                    }
+                },
             ],
             'pin' => [
                 'required',

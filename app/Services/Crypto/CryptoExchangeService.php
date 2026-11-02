@@ -45,12 +45,12 @@ class CryptoExchangeService
         try {
             // Validate currency is active and exchange enabled
             if (! $currency->is_active || ! $currency->exchange_enabled) {
-                throw new \Exception('Currency exchange is not enabled');
+                throw new \Exception('เหรียญนี้ยังไม่เปิดให้แลกเปลี่ยน');
             }
 
             // Check minimum exchange amount
             if ($thbAmount < $currency->min_exchange_amount) {
-                throw new \Exception("Minimum exchange amount is {$currency->min_exchange_amount} THB");
+                throw new \Exception('ยอดแลกเปลี่ยนขั้นต่ำ '.number_format((float) $currency->min_exchange_amount, 2).' บาท');
             }
 
             // Get or create THB wallet
@@ -58,12 +58,12 @@ class CryptoExchangeService
 
             // Verify PIN if provided
             if ($pin && ! $thbWallet->verifyPin($pin)) {
-                throw new \Exception('Invalid PIN');
+                throw new \Exception('PIN กระเป๋าเงินบาทไม่ถูกต้อง');
             }
 
             // Check THB balance
             if ($thbWallet->balance < $thbAmount) {
-                throw new \Exception('Insufficient THB balance');
+                throw new \Exception('ยอดเงินบาทในกระเป๋าไม่เพียงพอ');
             }
 
             // Get or create crypto wallet
@@ -74,7 +74,7 @@ class CryptoExchangeService
             // Get current exchange rate
             $rate = $this->priceService->getCurrentRate($currency);
             if (! $rate) {
-                throw new \Exception('Failed to get exchange rate');
+                throw new \Exception('ดึงราคาแลกเปลี่ยนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
             }
 
             // Calculate crypto amount
@@ -198,7 +198,7 @@ class CryptoExchangeService
         try {
             // Validate currency is active and exchange enabled
             if (! $currency->is_active || ! $currency->exchange_enabled) {
-                throw new \Exception('Currency exchange is not enabled');
+                throw new \Exception('เหรียญนี้ยังไม่เปิดให้แลกเปลี่ยน');
             }
 
             // Get or create crypto wallet
@@ -208,13 +208,13 @@ class CryptoExchangeService
 
             // Verify crypto wallet PIN if custodial
             if ($cryptoWallet->isCustodial() && $pin && ! $cryptoWallet->verifyPin($pin)) {
-                throw new \Exception('Invalid crypto wallet PIN');
+                throw new \Exception('PIN กระเป๋าคริปโตไม่ถูกต้อง');
             }
 
             // Check crypto balance
             $balance = $this->cryptoWalletService->getBalance($cryptoWallet, $currency);
             if ($balance < $cryptoAmount) {
-                throw new \Exception('Insufficient crypto balance');
+                throw new \Exception('ยอดเหรียญในกระเป๋าไม่เพียงพอ');
             }
 
             // Get or create THB wallet
@@ -223,7 +223,7 @@ class CryptoExchangeService
             // Get current exchange rate
             $rate = $this->priceService->getCurrentRate($currency);
             if (! $rate) {
-                throw new \Exception('Failed to get exchange rate');
+                throw new \Exception('ดึงราคาแลกเปลี่ยนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
             }
 
             // Calculate THB amount
@@ -234,7 +234,7 @@ class CryptoExchangeService
 
             // Check minimum exchange amount
             if ($finalThbAmount < $currency->min_exchange_amount) {
-                throw new \Exception("Minimum exchange amount is {$currency->min_exchange_amount} THB");
+                throw new \Exception('ยอดแลกเปลี่ยนขั้นต่ำ '.number_format((float) $currency->min_exchange_amount, 2).' บาท');
             }
 
             // Create exchange transaction record

@@ -1,0 +1,110 @@
+/*
+ * กระเป๋าคริปโตของสมาชิก (ธีมโนวาเต็ม) — /user/crypto-wallet/*
+ * คลาสเฉพาะชุดนี้ขึ้นต้นด้วย nvm-cw- · ใช้ตัวแปร --nvm-* ทั้งหมด จึงรองรับโหมดมืด (html.dark) อัตโนมัติ
+ * โหลดต่อจาก nova-member.css (@push('styles') ในแต่ละหน้า) — ห้ามแก้ nova-member.css เพื่อหน้านี้
+ */
+
+/* เหรียญ: รูปไอคอนเหรียญ หรือวงกลมอักษรตัวแรกเมื่อไม่มีไฟล์ไอคอน */
+.nvm-cw-coin { width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; font-family: var(--nvm-font-display); font-weight: 700; font-size: 17px; color: #1a1405; background: var(--nv-btn-gold); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .4); }
+.nvm-cw-coin img { width: 100%; height: 100%; object-fit: contain; background: var(--nvm-paper); }
+.nvm-cw-coin--lg { width: 56px; height: 56px; font-size: 22px; }
+.nvm-tx__ic.nvm-cw-coin { border-radius: 50%; color: #1a1405; background: var(--nv-btn-gold); }
+
+/* กริดการ์ดที่ยุบเป็นคอลัมน์เดียวบนมือถือ */
+.nvm-cw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.nvm-cw-grid--wide { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+/* การ์ดตัวเลือก (สร้างกระเป๋า / เชื่อมต่อ) — ปุ่มที่หน้าตาเป็น nvm-alert */
+button.nvm-cw-pick { width: 100%; border: 0; font: inherit; text-align: left; cursor: pointer; }
+.nvm-cw-pick .nvm-alert__txt small { display: block; margin-top: 2px; font-size: 13px; color: var(--nvm-ink-3); }
+.nvm-cw-pick.is-off { opacity: .7; }
+
+/* การ์ดเลือกเหรียญที่จะฝาก */
+.nvm-cw-cur { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.nvm-cw-cur__head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-cw-cur__head b { display: block; font-family: var(--nvm-font-display); font-size: 18px; }
+.nvm-cw-cur__head small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-cw-cur__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; color: var(--nvm-gold-ink); }
+.nvm-cw-cur__foot .nvm-ico { width: 16px; height: 16px; }
+.nvm-cw-cur.is-off { opacity: .55; }
+
+/* ที่อยู่บนบล็อกเชน: ยาวมาก ต้องตัดบรรทัดได้ทุกตัวอักษร ไม่ดันหน้าล้นจอมือถือ */
+.nvm-cw-addr { display: block; padding: 10px 12px; border-radius: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; word-break: break-all; color: var(--nvm-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-cw-addr--inline { display: inline; padding: 0; background: none; box-shadow: none; font-size: 12px; color: var(--nvm-ink-2); }
+.nvm-cw-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+
+/* การ์ดกระเป๋า (หน้าจัดการกระเป๋า) */
+.nvm-cw-wallet { display: flex; flex-direction: column; gap: 14px; padding: 20px; }
+.nvm-cw-wallet.is-default { box-shadow: var(--nvm-shadow), inset 0 0 0 2px var(--nv-gold-500); }
+.nvm-cw-wallet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nvm-cw-wallet__name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-cw-wallet__name b { display: block; font-family: var(--nvm-font-display); font-size: 18px; overflow-wrap: anywhere; }
+.nvm-cw-wallet__name small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-cw-wallet__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.nvm-cw-wallet__ic { width: 48px; height: 48px; flex: none; border-radius: 15px; display: grid; place-items: center; color: var(--nvm-gold-ink); background: color-mix(in srgb, var(--nv-gold-400) 16%, transparent); }
+.nvm-cw-wallet__ic .nvm-ico { width: 22px; height: 22px; }
+.nvm-cw-wallet__acts { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--nvm-line); }
+.nvm-cw-wallet__acts form { display: contents; }
+.nvm-cw-wallet__acts .nvm-btn { flex: 1 1 150px; }
+
+/* ตัวเลขสั้น 3 ช่อง (จำนวนที่อยู่ · ธุรกรรม · ล่าสุด) */
+.nvm-cw-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.nvm-cw-stats > div { min-width: 0; padding: 10px 8px; border-radius: 14px; text-align: center; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-cw-stats b { display: block; font-family: var(--nvm-font-display); font-size: 16px; overflow-wrap: anywhere; }
+.nvm-cw-stats small { display: block; font-size: 11px; color: var(--nvm-ink-3); }
+
+/* เหรียญในกระเป๋าแบบชิป (หน้าจัดการกระเป๋า) */
+.nvm-cw-assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.nvm-cw-assets > div { padding: 9px 8px; border-radius: 12px; text-align: center; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-cw-assets small { display: block; font-size: 11px; font-weight: 700; color: var(--nvm-gold-ink); }
+.nvm-cw-assets b { display: block; font-size: 13px; overflow-wrap: anywhere; }
+
+/* สัดส่วนสินทรัพย์ — ความกว้างแท่งมากับ --w (ข้อมูลจริงจากยอดคงเหลือ) */
+.nvm-cw-alloc { display: flex; flex-direction: column; gap: 12px; }
+.nvm-cw-alloc .nvm-meter { margin-top: 0; }
+.nvm-cw-alloc .nvm-meter__bar i { width: var(--w, 0%); }
+
+/* ซื้อ → ได้ (ประวัติการแลกเปลี่ยน) */
+.nvm-cw-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 14px; border-radius: 16px; text-align: center; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-cw-flow small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-cw-flow b { display: block; font-family: var(--nvm-font-display); font-size: 17px; overflow-wrap: anywhere; }
+.nvm-cw-flow b.is-in { color: var(--nvm-good); }
+.nvm-cw-flow > .nvm-ico { width: 22px; height: 22px; color: var(--nvm-gold-ink); }
+
+/* การ์ดรายการ (คำขอถอน · การแลกเปลี่ยน) */
+.nvm-cw-item { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; }
+.nvm-cw-item__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nvm-cw-item__head b { display: block; font-family: var(--nvm-font-display); font-size: 18px; overflow-wrap: anywhere; }
+.nvm-cw-item__head small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-cw-item__acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.nvm-cw-item__acts form { display: contents; }
+
+/* รายการคำเตือน/ข้อมูลแบบมีจุด */
+.nvm-cw-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.55; color: var(--nvm-ink-2); }
+.nvm-cw-list.is-bad { color: var(--nvm-bad); }
+
+/* ตารางกว้าง: เลื่อนแนวนอนในกล่อง ไม่ใช่ทั้งหน้า */
+.nvm-cw-table { min-width: 620px; }
+.nvm-cw-table td .nvm-chip { vertical-align: middle; }
+.nvm-cw-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nvm-cw-cell .nvm-cw-coin { width: 32px; height: 32px; font-size: 14px; }
+.nvm-cw-cell b { display: block; font-size: 13.5px; }
+.nvm-cw-cell small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-cw-up { color: var(--nvm-good); }
+.nvm-cw-down { color: var(--nvm-bad); }
+.nvm-cw-muted { color: var(--nvm-ink-3); }
+
+/* ปุ่มทั้งแถวในฟอร์ม */
+.nvm-cw-submit { width: 100%; height: 50px; }
+
+/* โมดัลสร้างกระเป๋า: ฟอร์มชิดซ้ายในกล่องกลางจอ */
+.nvm-cw-modal { text-align: left; }
+.nvm-cw-modal h2 { text-align: center; }
+.nvm-cw-modal > p { text-align: center; }
+
+@media (max-width: 767px) {
+    .nvm-cw-grid, .nvm-cw-grid--wide { grid-template-columns: minmax(0, 1fr); }
+    .nvm-cw-wallet, .nvm-cw-item { padding: 16px; }
+    .nvm-cw-flow b { font-size: 15px; }
+    .nvm-cw-stats b { font-size: 14px; }
+}

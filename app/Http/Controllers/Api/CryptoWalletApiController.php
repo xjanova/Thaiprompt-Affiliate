@@ -204,6 +204,15 @@ class CryptoWalletApiController extends Controller
             ], 404);
         }
 
+        // ที่อยู่สุ่มที่ระบบไม่มีกุญแจ รับเหรียญจริงไม่ได้ — ไม่ส่งออกไปให้แอปแสดงเป็นที่อยู่ฝาก (เหรียญที่โอนเข้าจะหาย)
+        if (! $address->canReceive()) {
+            return response()->json([
+                'success' => false,
+                'can_receive' => false,
+                'message' => 'เหรียญนี้ยังรับฝากไม่ได้ กรุณาติดต่อทีมงาน',
+            ], 409);
+        }
+
         return response()->json([
             'success' => true,
             'address' => $address->address,

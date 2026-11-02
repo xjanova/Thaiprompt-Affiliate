@@ -229,10 +229,14 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
     Route::post('/create-wallet', [CryptoWalletController::class, 'createWallet'])->name('create-wallet');
     Route::post('/connect-wallet', [CryptoWalletController::class, 'connectWallet'])->name('connect-wallet');
 
+    // ลบ/ตั้งกระเป๋าหลัก — อยู่นอก crypto.wallet.exists เพราะ middleware นั้นส่งคนที่ "ยังไม่มีกระเป๋าหลัก"
+    // ไปหน้า /wallets ให้ตั้งกระเป๋าหลัก ถ้าปุ่มตั้งเองโดนกันด้วย middleware เดียวกันจะวนไม่จบ
+    // (controller ตรวจความเป็นเจ้าของด้วย $user->cryptoWallets()->findOrFail() อยู่แล้ว)
+    Route::delete('/wallet/{id}', [CryptoWalletController::class, 'deleteWallet'])->name('wallet.delete');
+    Route::post('/wallet/{id}/set-default', [CryptoWalletController::class, 'setDefaultWallet'])->name('wallet.set-default');
+
     // Routes requiring crypto wallet to exist
     Route::middleware(['crypto.wallet.exists'])->group(function () {
-        Route::delete('/wallet/{id}', [CryptoWalletController::class, 'deleteWallet'])->name('wallet.delete');
-        Route::post('/wallet/{id}/set-default', [CryptoWalletController::class, 'setDefaultWallet'])->name('wallet.set-default');
 
         // Premium Trading & Portfolio (wallet must exist)
         Route::get('/trading', [CryptoWalletController::class, 'tradingDashboard'])->name('trading');

@@ -442,7 +442,7 @@ class CryptoWalletService
             // Check if wallet has balance
             $totalBalance = $wallet->getTotalBalanceInTHB();
             if ($totalBalance > 0) {
-                throw new \Exception('Cannot delete wallet with balance. Please withdraw all funds first.');
+                throw new \Exception('ลบกระเป๋าที่ยังมียอดคงเหลือไม่ได้ กรุณาถอนหรือขายเหรียญออกให้หมดก่อน');
             }
 
             // Soft delete all related records

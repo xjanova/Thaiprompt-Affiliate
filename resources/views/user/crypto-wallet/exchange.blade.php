@@ -1,186 +1,170 @@
-@extends('layouts.user-v4')
+{{--
+    แลกเปลี่ยน THB ↔ Crypto (ธีมโนวาเต็ม)
+    CryptoExchangeController::index → $thbWallet (กระเป๋าเงินบาท อาจเป็น null) · $cryptoWallet · $currencies (เปิดแลกเปลี่ยน)
+    $cryptoBalances (คีย์เป็นรหัสเหรียญ) · $prices[code] = [buy_rate, sell_rate, change_24h]
+    - ซื้อ: POST exchange.buy → BuyCryptoRequest: currency_code · thb_amount (100-1,000,000) · pin กระเป๋าเงินบาท 6 หลัก
+    - ขาย: POST exchange.sell → SellCryptoRequest: currency_code · crypto_amount · pin กระเป๋าคริปโต 6 หลัก
+    เดิม: อ่าน $prices[..]['buy_price'] ที่ไม่มีอยู่ (คีย์จริง buy_rate) → 500 ทันทีที่มีราคาในระบบ
+    และฟอร์มส่ง currency_id แทน currency_code → ซื้อ/ขายไม่ผ่านการตรวจทุกครั้ง (แก้แล้วทั้งคู่)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'แลกเปลี่ยน THB ↔ Crypto')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/crypto-wallet.css') }}?v={{ filemtime(public_path('theme-nova/member/crypto-wallet.css')) }}">@endpush
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $sellable = $currencies->filter(fn ($c) => ($cryptoBalances[$c->code]['balance'] ?? 0) > 0);
+    $tab = old('crypto_amount') !== null ? 'sell' : 'buy';
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:960px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero + ยอด 2 กระเป๋า ───────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px;">
-                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-exchange-alt"></i></span>
-                <div>
-                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">💱 แลกเปลี่ยนสกุลเงิน</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">ซื้อ/ขาย Crypto ด้วยบาทไทย</div>
-                </div>
-            </div>
-            <a href="{{ route('user.crypto-wallet.index') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับหน้าหลัก</span>
-            </a>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:16px;">
-            <div class="tp-card" style="padding:14px 16px; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span class="tp-tile" style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--deep1);">฿</span>
-                    <div>
-                        <p style="font-size:11.5px; color:var(--ink2); margin:0;">กระเป๋าบาท (THB)</p>
-                        <p class="tp-num" style="font-size:19px; font-weight:800; color:var(--ink); margin:2px 0 0;">฿{{ number_format($thbWallet->balance ?? 0, 2) }}</p>
-                    </div>
-                </div>
-                <a href="{{ route('user.wallet.index') }}" style="color:var(--deep1);"><i class="fas fa-arrow-right"></i></a>
-            </div>
-            <div class="tp-card" style="padding:14px 16px; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span class="tp-tile" style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--deep1);">₿</span>
-                    <div>
-                        <p style="font-size:11.5px; color:var(--ink2); margin:0;">กระเป๋าคริปโต</p>
-                        <p class="tp-num" style="font-size:19px; font-weight:800; color:var(--ink); margin:2px 0 0;">{{ count($cryptoBalances) }} สกุล</p>
-                    </div>
-                </div>
-                <a href="{{ route('user.crypto-wallet.index') }}" style="color:var(--deep1);"><i class="fas fa-arrow-right"></i></a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-cwx-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.crypto-wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าคริปโต</a>
+            <div class="nvm-eyebrow nvm-latin">Exchange</div>
+            <h1 id="nvm-cwx-h">แลกเปลี่ยนสกุลเงิน</h1>
+            <p class="nvm-ph__lead">ซื้อหรือขายเหรียญคริปโตด้วยเงินบาทในกระเป๋าเงินของคุณ</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>กระเป๋าบาท ฿{{ number_format((float) ($thbWallet->balance ?? 0), 2) }}</span>
+                <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>คริปโต {{ number_format(count($cryptoBalances)) }} สกุล</span>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/transfer.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #5aa07e 12%, transparent); border:1px solid color-mix(in srgb, #5aa07e 30%, transparent); color:var(--ink); font-size:14px;">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #d9534f 10%, transparent); border:1px solid color-mix(in srgb, #d9534f 30%, transparent); color:#d9534f; font-size:14px;">{{ session('error') }}</div>
-    @endif
+@include('user.crypto-wallet.partials.flash', ['errorTitle' => 'แลกเปลี่ยนไม่สำเร็จ'])
 
-    {{-- ── แท็บซื้อ/ขาย (Alpine) ─────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;" x-data="{ tab: 'buy' }">
-        <div style="display:flex; border-bottom:1px solid color-mix(in srgb, var(--ink2) 15%, transparent);">
-            <button type="button" @click="tab = 'buy'"
-                    :style="tab === 'buy' ? 'background:color-mix(in srgb, #5aa07e 12%, transparent); color:#5aa07e; border-bottom:2px solid #5aa07e;' : 'color:var(--ink2); border-bottom:2px solid transparent;'"
-                    style="flex:1; padding:15px; font-weight:800; font-size:15px; background:none; border:none; cursor:pointer;">🛒 ซื้อ Crypto</button>
-            <button type="button" @click="tab = 'sell'"
-                    :style="tab === 'sell' ? 'background:color-mix(in srgb, #d9534f 12%, transparent); color:#d9534f; border-bottom:2px solid #d9534f;' : 'color:var(--ink2); border-bottom:2px solid transparent;'"
-                    style="flex:1; padding:15px; font-weight:800; font-size:15px; background:none; border:none; cursor:pointer;">💰 ขาย Crypto</button>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" x-data="{ tab: @js($tab) }" aria-labelledby="nvm-cwx-f-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Trade</small><h2 id="nvm-cwx-f-h">ซื้อ / ขายเหรียญ</h2></div>
+            <div class="nvm-tabs" role="tablist" aria-label="เลือกซื้อหรือขาย">
+                <button type="button" role="tab" :class="{ 'is-on': tab === 'buy' }" :aria-selected="tab === 'buy'" @click="tab = 'buy'"><svg class="nvm-ico"><use href="#nvm-i-cart"/></svg>ซื้อ</button>
+                <button type="button" role="tab" :class="{ 'is-on': tab === 'sell' }" :aria-selected="tab === 'sell'" @click="tab = 'sell'"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ขาย</button>
+            </div>
         </div>
 
-        {{-- แท็บซื้อ --}}
-        <div x-show="tab === 'buy'" style="padding:24px;">
-            <form action="{{ route('user.crypto-wallet.exchange.buy') }}" method="POST">
-                @csrf
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">เลือกสกุลเงินที่ต้องการซื้อ</label>
-                    <select name="currency_id" required style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;">
-                        <option value="">-- เลือกสกุลเงิน --</option>
-                        @foreach($currencies as $curr)
-                            @if($curr->exchange_enabled)
-                                <option value="{{ $curr->id }}">{{ $curr->code }} ({{ $curr->name }})@if(isset($prices[$curr->code])) - ราคา ฿{{ number_format($prices[$curr->code]['buy_price'], 2) }}@endif</option>
-                            @endif
-                        @endforeach
-                    </select>
-                </div>
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">จำนวนเงินบาทที่ต้องการใช้</label>
-                    <div style="position:relative;">
-                        <input type="number" name="thb_amount" step="0.01" required min="1" style="width:100%; padding:12px 60px 12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="0.00">
-                        <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--ink2); font-weight:600; font-size:13px;">THB</span>
-                    </div>
-                    @if($thbWallet)<p style="font-size:12.5px; color:var(--ink2); margin:7px 0 0;">มีอยู่: ฿{{ number_format($thbWallet->balance, 2) }}</p>@endif
-                </div>
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN กระเป๋าเงินบาท</label>
-                    <input type="password" name="pin" required minlength="4" maxlength="6" style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="กรอก PIN">
-                </div>
-                <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
-                    <input type="checkbox" name="accept_terms" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
-                    <span style="font-size:13px; color:var(--ink2);">ฉันยอมรับว่าราคาอาจเปลี่ยนแปลงได้ และ ค่าธรรมเนียมการแลกเปลี่ยนจะถูกหักออกจากยอดเงิน</span>
-                </label>
-                <button type="submit" class="tp-btn" style="width:100%; padding:15px; border-radius:14px; background:linear-gradient(135deg, #5aa07e, #4f9e7e); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none; cursor:pointer;">🛒 ซื้อ Crypto ด้วยบาท</button>
-            </form>
-        </div>
-
-        {{-- แท็บขาย --}}
-        <div x-show="tab === 'sell'" style="padding:24px;">
-            <form action="{{ route('user.crypto-wallet.exchange.sell') }}" method="POST">
-                @csrf
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">เลือกสกุลเงินที่ต้องการขาย</label>
-                    <select name="currency_id" required style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;">
-                        <option value="">-- เลือกสกุลเงิน --</option>
-                        @foreach($currencies as $curr)
-                            @if($curr->exchange_enabled && isset($cryptoBalances[$curr->code]) && $cryptoBalances[$curr->code]['balance'] > 0)
-                                <option value="{{ $curr->id }}">{{ $curr->code }} - มี {{ number_format($cryptoBalances[$curr->code]['balance'], 8) }}@if(isset($prices[$curr->code])) (ราคา ฿{{ number_format($prices[$curr->code]['sell_price'], 2) }})@endif</option>
-                            @endif
-                        @endforeach
-                    </select>
-                </div>
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">จำนวน Crypto ที่ต้องการขาย</label>
-                    <input type="number" name="crypto_amount" step="0.00000001" required min="0.00000001" style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="0.00000000">
-                </div>
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN กระเป๋าคริปโต</label>
-                    <input type="password" name="pin" required minlength="4" maxlength="6" style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;" placeholder="กรอก PIN">
-                </div>
-                <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
-                    <input type="checkbox" name="accept_terms" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
-                    <span style="font-size:13px; color:var(--ink2);">ฉันยอมรับว่าราคาอาจเปลี่ยนแปลงได้ และ ค่าธรรมเนียมการแลกเปลี่ยนจะถูกหักออกจากยอดเงินบาทที่ได้รับ</span>
-                </label>
-                <button type="submit" class="tp-btn" style="width:100%; padding:15px; border-radius:14px; background:linear-gradient(135deg, #d9534f, #cf6f7c); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none; cursor:pointer;">💰 ขาย Crypto รับบาท</button>
-            </form>
-        </div>
-    </div>
-
-    {{-- ── ตารางราคา ─────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-            <h3 style="font-size:15px; font-weight:800; color:var(--ink); margin:0;">ราคาปัจจุบัน</h3>
-            <a href="{{ route('user.crypto-wallet.exchange.history') }}" style="color:var(--deep1); font-size:13px; font-weight:700; text-decoration:none;">ประวัติการแลกเปลี่ยน →</a>
-        </div>
-        <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; min-width:520px;">
-                <thead>
-                    <tr style="border-bottom:1px solid color-mix(in srgb, var(--ink2) 15%, transparent);">
-                        <th style="padding:0 8px 12px 0; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase;">สกุลเงิน</th>
-                        <th style="padding:0 8px 12px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase;">ราคาซื้อ</th>
-                        <th style="padding:0 8px 12px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase;">ราคาขาย</th>
-                        <th style="padding:0 0 12px 8px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase;">เปลี่ยนแปลง 24h</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($currencies->take(5) as $curr)
-                        @if(isset($prices[$curr->code]))
-                            @php $exIconPath = public_path('icons/cryptocurrency/' . strtolower($curr->code) . '.svg'); @endphp
-                            <tr style="border-bottom:1px solid color-mix(in srgb, var(--ink2) 10%, transparent);">
-                                <td style="padding:12px 8px 12px 0;">
-                                    <div style="display:flex; align-items:center; gap:10px;">
-                                        @if(file_exists($exIconPath))<img src="{{ asset('icons/cryptocurrency/' . strtolower($curr->code) . '.svg') }}" alt="{{ $curr->code }}" style="width:30px; height:30px;">@endif
-                                        <div><div style="font-weight:800; color:var(--ink); font-size:13.5px;">{{ $curr->code }}</div><div style="font-size:11.5px; color:var(--ink2);">{{ $curr->name }}</div></div>
-                                    </div>
-                                </td>
-                                <td class="tp-num" style="padding:12px 8px; text-align:right; font-weight:700; color:#5aa07e; font-size:13.5px;">฿{{ number_format($prices[$curr->code]['buy_price'], 2) }}</td>
-                                <td class="tp-num" style="padding:12px 8px; text-align:right; font-weight:700; color:#d9534f; font-size:13.5px;">฿{{ number_format($prices[$curr->code]['sell_price'], 2) }}</td>
-                                <td style="padding:12px 0 12px 8px; text-align:right; font-size:13px;">
-                                    @if(isset($prices[$curr->code]['change_24h']))
-                                        <span style="color:{{ $prices[$curr->code]['change_24h'] >= 0 ? '#5aa07e' : '#d9534f' }};">{{ $prices[$curr->code]['change_24h'] >= 0 ? '+' : '' }}{{ number_format($prices[$curr->code]['change_24h'], 2) }}%</span>
-                                    @else
-                                        <span style="color:var(--ink2);">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endif
+        {{-- ซื้อเหรียญด้วยเงินบาท --}}
+        <form x-show="tab === 'buy'" @if($tab !== 'buy') x-cloak @endif method="POST" action="{{ route('user.crypto-wallet.exchange.buy') }}" class="nvm-form" x-data="{ busy: false }" @submit="busy = true" @pageshow.window="busy = false">
+            @csrf
+            <div class="nvm-field">
+                <label class="nvm-label" for="cw-buy-coin">เหรียญที่ต้องการซื้อ <em>*</em></label>
+                <select id="cw-buy-coin" name="currency_code" required class="nvm-input">
+                    <option value="">เลือกสกุลเงิน</option>
+                    @foreach($currencies as $curr)
+                        <option value="{{ $curr->code }}" @selected(old('currency_code') === $curr->code && $tab === 'buy')>{{ $curr->code }} ({{ $curr->name }})@if(isset($prices[$curr->code])) · ซื้อ ฿{{ number_format((float) $prices[$curr->code]['buy_rate'], 2) }}@endif</option>
                     @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
+                </select>
+            </div>
+            <div class="nvm-field">
+                <label class="nvm-label" for="cw-buy-thb">จำนวนเงินบาทที่ใช้ <em>*</em></label>
+                <div class="nvm-amount"><span>฿</span><input id="cw-buy-thb" type="number" name="thb_amount" step="0.01" min="100" max="1000000" inputmode="decimal" required class="nvm-input" placeholder="0.00" value="{{ old('thb_amount') }}"></div>
+                <span class="nvm-help">ขั้นต่ำ ฿100 · มีอยู่ ฿{{ number_format((float) ($thbWallet->balance ?? 0), 2) }}</span>
+            </div>
+            <div class="nvm-field">
+                <label class="nvm-label" for="cw-buy-pin">PIN กระเป๋าเงินบาท (6 หลัก) <em>*</em></label>
+                <input id="cw-buy-pin" type="password" name="pin" required minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off" class="nvm-input nvm-pin" placeholder="••••••">
+            </div>
+            <label class="nvm-check">
+                <input type="checkbox" name="accept_terms" value="1" required>
+                <span>ฉันยอมรับว่าราคาอาจเปลี่ยนแปลงได้ และค่าธรรมเนียมการแลกเปลี่ยนจะถูกหักจากยอด</span>
+            </label>
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-cw-submit" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-cart"/></svg><span x-text="busy ? 'กำลังซื้อ…' : 'ซื้อเหรียญด้วยเงินบาท'">ซื้อเหรียญด้วยเงินบาท</span></button>
+        </form>
 
-    {{-- ── ข้อมูล ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm);">
-        <h4 style="font-weight:800; color:var(--ink); margin:0 0 10px; font-size:14.5px;">ข้อมูลการแลกเปลี่ยน</h4>
-        <ul style="margin:0; padding-left:18px; color:var(--ink2); font-size:13px; display:flex; flex-direction:column; gap:5px;">
-            <li>ราคาอ้างอิงจากตลาดโลก อัพเดททุก 5 นาที</li>
-            <li>ค่าธรรมเนียมการแลกเปลี่ยนแตกต่างกันไปตามสกุลเงิน</li>
-            <li>การแลกเปลี่ยนจะเสร็จสิ้นทันที ไม่ต้องรอยืนยันจาก Blockchain</li>
-            <li>ยอดเงินจะถูกโอนเข้ากระเป๋าที่เลือกโดยอัตโนมัติ</li>
-        </ul>
+        {{-- ขายเหรียญรับเงินบาท --}}
+        <form x-show="tab === 'sell'" x-cloak method="POST" action="{{ route('user.crypto-wallet.exchange.sell') }}" class="nvm-form" x-data="{ busy: false }" @submit="busy = true" @pageshow.window="busy = false">
+            @csrf
+            @if($sellable->isEmpty())
+                <div class="nvm-empty">
+                    <b>ยังไม่มีเหรียญให้ขาย</b>
+                    ซื้อหรือฝากเหรียญเข้ากระเป๋าก่อน
+                </div>
+            @else
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-sell-coin">เหรียญที่ต้องการขาย <em>*</em></label>
+                    <select id="cw-sell-coin" name="currency_code" required class="nvm-input">
+                        <option value="">เลือกสกุลเงิน</option>
+                        @foreach($sellable as $curr)
+                            <option value="{{ $curr->code }}" @selected(old('currency_code') === $curr->code && $tab === 'sell')>{{ $curr->code }} · มี {{ number_format((float) $cryptoBalances[$curr->code]['balance'], 8) }}@if(isset($prices[$curr->code])) · ขาย ฿{{ number_format((float) $prices[$curr->code]['sell_rate'], 2) }}@endif</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-sell-amt">จำนวนเหรียญที่ขาย <em>*</em></label>
+                    <input id="cw-sell-amt" type="number" name="crypto_amount" step="0.00000001" min="0.00000001" inputmode="decimal" required class="nvm-input nvm-num" placeholder="0.00000000" value="{{ old('crypto_amount') }}">
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-sell-pin">PIN กระเป๋าคริปโต (6 หลัก) <em>*</em></label>
+                    <input id="cw-sell-pin" type="password" name="pin" required minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off" class="nvm-input nvm-pin" placeholder="••••••">
+                </div>
+                <label class="nvm-check">
+                    <input type="checkbox" name="accept_terms" value="1" required>
+                    <span>ฉันยอมรับว่าราคาอาจเปลี่ยนแปลงได้ และค่าธรรมเนียมจะถูกหักจากเงินบาทที่ได้รับ</span>
+                </label>
+                <button type="submit" class="nvm-btn nvm-btn--gold nvm-cw-submit" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg><span x-text="busy ? 'กำลังขาย…' : 'ขายเหรียญรับเงินบาท'">ขายเหรียญรับเงินบาท</span></button>
+            @endif
+        </form>
+    </section>
+
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-cwx-p-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">Prices</small><h2 id="nvm-cwx-p-h">ราคาปัจจุบัน</h2></div>
+                @if($nvR('user.crypto-wallet.exchange.history'))
+                    <a href="{{ route('user.crypto-wallet.exchange.history') }}">ประวัติ<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+                @endif
+            </div>
+            @php $priced = $currencies->filter(fn ($c) => isset($prices[$c->code])); @endphp
+            @if($priced->isNotEmpty())
+                <ul class="nvm-txs">
+                    @foreach($priced as $curr)
+                        @php $p = $prices[$curr->code]; $chg = $p['change_24h']; @endphp
+                        <li class="nvm-tx">
+                            @include('user.crypto-wallet.partials.coin', ['code' => $curr->code])
+                            <div class="nvm-tx__t">
+                                <b>{{ $curr->code }}</b>
+                                <small class="nvm-num">ขาย ฿{{ number_format((float) $p['sell_rate'], 2) }}</small>
+                            </div>
+                            <div class="nvm-tx__r">
+                                <span class="nvm-tx__amt nvm-num">฿{{ number_format((float) $p['buy_rate'], 2) }}</span>
+                                @if($chg !== null)
+                                    <span class="nvm-delta {{ $chg >= 0 ? 'nvm-delta--up' : 'nvm-delta--down' }} nvm-num">{{ $chg >= 0 ? '+' : '' }}{{ number_format((float) $chg, 2) }}%</span>
+                                @else
+                                    <span class="nvm-delta nvm-delta--mute">-</span>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ตัวเลขใหญ่คือราคาซื้อ ราคาอ้างอิงตลาดโลก อัปเดตทุก 5 นาที</p>
+            @else
+                <div class="nvm-empty">
+                    <b>ยังไม่มีข้อมูลราคา</b>
+                    ระบบดึงราคาไม่สำเร็จ ลองใหม่อีกครั้งภายหลัง
+                </div>
+            @endif
+        </section>
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-cwx-i-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Good to know</small><h2 id="nvm-cwx-i-h">ข้อมูลการแลกเปลี่ยน</h2></div></div>
+            <ul class="nvm-cw-list">
+                <li>ค่าธรรมเนียมการแลกเปลี่ยนแตกต่างกันตามสกุลเงิน</li>
+                <li>แลกเปลี่ยนเสร็จทันที ไม่ต้องรอยืนยันจากบล็อกเชน</li>
+                <li>ยอดเงินเข้ากระเป๋าที่เกี่ยวข้องอัตโนมัติ</li>
+            </ul>
+            @if($nvR('user.wallet.index'))
+                <a class="nvm-btn nvm-btn--line nvm-btn--block nvm-gap-t" href="{{ route('user.wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>ไปที่กระเป๋าเงินบาท</a>
+            @endif
+        </aside>
     </div>
+</div>
+
 </div>
 @endsection

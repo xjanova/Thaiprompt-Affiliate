@@ -58,8 +58,12 @@ class CryptoWalletController extends Controller
             ->limit(10)
             ->get();
 
+        // มีกระเป๋าแต่ยังไม่ได้ตั้งกระเป๋าหลัก → หน้าแรกต้องพาไปตั้งกระเป๋าหลัก ไม่ใช่บอกว่า "ยังไม่มีกระเป๋า"
+        $hasWallets = $wallet !== null || $user->cryptoWallets()->exists();
+
         return view('user.crypto-wallet.index', compact(
             'wallet',
+            'hasWallets',
             'currencies',
             'balances',
             'totalValueTHB',
@@ -84,8 +88,10 @@ class CryptoWalletController extends Controller
     public function walletManagement(Request $request)
     {
         $user = $request->user();
+        // CryptoWallet ไม่มี relation balances (ไม่มีตาราง crypto_balances) — เดิม eager load ตัวนี้ทำหน้าล่ม 500
+        // ยอดคงเหลือคำนวณจาก cryptoAddresses ผ่าน getAllBalances() ด้านล่างแทน
         $wallets = $user->cryptoWallets()
-            ->with(['cryptoAddresses.currency', 'balances'])
+            ->with(['cryptoAddresses.currency'])
             ->orderBy('is_default', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -138,8 +144,21 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', self::userMessage($e, 'สร้างกระเป๋าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
+    }
+
+    /**
+     * ข้อความผิดพลาดที่แสดงให้สมาชิกเห็น
+     *
+     * ข้อความภาษาไทยจาก service ตั้งใจให้ผู้ใช้อ่านได้ ส่งต่อได้เลย
+     * ข้อความอื่น (อังกฤษ/ข้อผิดพลาดฐานข้อมูล) อาจเผยรายละเอียดภายใน → ใช้ข้อความกลางแทน (รายละเอียดอยู่ใน log)
+     */
+    public static function userMessage(\Throwable $e, string $fallback = 'ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'): string
+    {
+        $message = $e->getMessage();
+
+        return preg_match('/\p{Thai}/u', $message) ? $message : $fallback;
     }
 
     /**
@@ -219,18 +238,73 @@ class CryptoWalletController extends Controller
             ->first();
 
         if (! $depositAddress) {
-            // Generate new deposit address
-            $cryptoAddress = $this->walletService->generateAddressForCurrency($wallet, $currency);
-            $depositAddress = $cryptoAddress->wallet->depositAddresses()
+            // สร้างที่อยู่ฝากใหม่ (generateAddressForCurrency สร้างทั้ง crypto_addresses และ crypto_deposit_addresses)
+            // เดิมเรียก $cryptoAddress->wallet ซึ่งไม่มี relation ชื่อนี้ (ชื่อจริง cryptoWallet) → 500 ทุกครั้งที่เปิดเหรียญใหม่ครั้งแรก
+            $this->walletService->generateAddressForCurrency($wallet, $currency);
+            $depositAddress = $wallet->depositAddresses()
                 ->where('crypto_currency_id', $currency->id)
+                ->latest('id')
                 ->first();
         }
+
+        // ที่อยู่ที่ระบบสุ่มขึ้นเอง (ไม่มี private key และไม่ได้นำเข้าจากกระเป๋าภายนอก) รับเหรียญจริงไม่ได้
+        // โอนเข้าไปแล้วกู้คืนไม่ได้ — แสดงที่อยู่ให้ลูกค้าเฉพาะเมื่อระบบถือกุญแจของที่อยู่นั้นจริง (แนวเดียวกับ TPIXWalletController::deposit)
+        $sourceAddress = $depositAddress
+            ? $wallet->cryptoAddresses()
+                ->where('crypto_currency_id', $currency->id)
+                ->where('address', $depositAddress->address)
+                ->first()
+            : null;
+        $canReceive = $sourceAddress !== null && $sourceAddress->canReceive();
 
         return view('user.crypto-wallet.deposit-currency', compact(
             'wallet',
             'currency',
-            'depositAddress'
+            'depositAddress',
+            'canReceive'
         ));
+    }
+
+    /**
+     * ที่อยู่ฝากของเหรียญ (JSON) — route user.crypto-wallet.deposit.address
+     *
+     * เดิม route ชี้ไปเมธอดที่ไม่มีอยู่ (500) · ส่งที่อยู่กลับเฉพาะที่รับเหรียญได้จริง (CryptoAddress::canReceive)
+     * ไม่สร้างที่อยู่สุ่มใหม่ เพราะที่อยู่สุ่มรับเหรียญไม่ได้
+     */
+    public function getDepositAddress(Request $request, $currencyCode)
+    {
+        $wallet = $request->user()->defaultCryptoWallet;
+
+        $currency = CryptoCurrency::where('code', strtoupper((string) $currencyCode))
+            ->depositEnabled()
+            ->first();
+
+        if (! $wallet || ! $currency) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบสกุลเงินที่เปิดรับฝาก',
+            ], 404);
+        }
+
+        $address = $wallet->cryptoAddresses()
+            ->where('crypto_currency_id', $currency->id)
+            ->get()
+            ->first(fn ($a) => $a->canReceive());
+
+        if (! $address) {
+            return response()->json([
+                'success' => false,
+                'can_receive' => false,
+                'message' => 'เหรียญนี้ยังรับฝากไม่ได้ กรุณาติดต่อทีมงาน',
+            ], 409);
+        }
+
+        return response()->json([
+            'success' => true,
+            'can_receive' => true,
+            'address' => $address->address,
+            'network' => $address->network,
+        ]);
     }
 
     /**
@@ -246,13 +320,20 @@ class CryptoWalletController extends Controller
                 ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
         }
 
-        $currencies = CryptoCurrency::withdrawalEnabled()->ordered()->get();
+        // แสดงเฉพาะเหรียญที่เครือข่ายผ่าน WithdrawCryptoRequest — เหรียญเครือข่ายอื่น (เช่น TPIX บน tpix-chain)
+        // ถ้าใส่ไว้ในฟอร์มจะถูกปัดตก "เครือข่ายที่เลือกไม่ถูกต้อง" ทุกครั้ง · TPIX ถอนผ่านหน้า user.tpix.withdrawal แทน
+        $allCurrencies = CryptoCurrency::withdrawalEnabled()->ordered()->get();
+        $currencies = $allCurrencies
+            ->filter(fn ($c) => in_array($c->network, WithdrawCryptoRequest::NETWORKS, true))
+            ->values();
+        $tpixWithdrawable = $allCurrencies->contains(fn ($c) => $c->code === 'TPIX');
         $balances = $this->walletService->getAllBalances($wallet);
 
         return view('user.crypto-wallet.withdraw', compact(
             'wallet',
             'currencies',
-            'balances'
+            'balances',
+            'tpixWithdrawable'
         ));
     }
 
@@ -314,7 +395,7 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', self::userMessage($e, 'ส่งคำขอถอนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
     }
 
@@ -326,7 +407,7 @@ class CryptoWalletController extends Controller
         $user = $request->user();
 
         $withdrawals = $user->cryptoWithdrawalRequests()
-            ->with(['currency', 'cryptoWallet'])
+            ->with(['currency', 'cryptoWallet', 'cryptoTransaction.currency'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -360,19 +441,20 @@ class CryptoWalletController extends Controller
 
         $query = $user->cryptoTransactions()->with(['currency', 'cryptoWallet']);
 
-        // Filters
-        if ($request->has('type')) {
+        // ตัวกรอง — ใช้ filled() ไม่ใช่ has(): ฟอร์มส่ง type= ว่างมาเมื่อเลือก "ทั้งหมด"
+        // has() เดิมจึงกรอง type = '' แล้วไม่เจออะไรเลย
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        if ($request->has('currency')) {
+        if ($request->filled('currency')) {
             $currency = CryptoCurrency::where('code', $request->currency)->first();
             if ($currency) {
                 $query->where('crypto_currency_id', $currency->id);
             }
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
@@ -467,7 +549,7 @@ class CryptoWalletController extends Controller
                 ->with('success', 'ลบกระเป๋าสำเร็จ');
 
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', self::userMessage($e, 'ลบกระเป๋าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
     }
 
@@ -544,18 +626,12 @@ class CryptoWalletController extends Controller
         // Get balances with detailed metrics
         $balances = $this->walletService->getAllBalances($wallet);
 
-        // Calculate total portfolio value
+        // มูลค่ารวมจากยอดจริง — ระบบยังไม่เก็บต้นทุนการซื้อ จึงไม่แสดงกำไร/ขาดทุน
+        // (เดิมสมมติต้นทุน = มูลค่า × 0.85 แล้วโชว์ "กำไร" ปลอมให้สมาชิกเห็น)
         $totalValueTHB = 0;
-        $totalInvested = 0;
         foreach ($balances as $balance) {
             $totalValueTHB += $balance['balance_thb'];
-            // In future, track initial investment amounts
-            $totalInvested += $balance['balance_thb'] * 0.85; // Temporary mock
         }
-
-        // Calculate P&L
-        $totalProfitLoss = $totalValueTHB - $totalInvested;
-        $totalProfitLossPercent = $totalInvested > 0 ? (($totalProfitLoss / $totalInvested) * 100) : 0;
 
         // Get recent transactions for activity feed
         $recentTransactions = $user->cryptoTransactions()
@@ -564,41 +640,16 @@ class CryptoWalletController extends Controller
             ->limit(20)
             ->get();
 
-        // Prepare chart data for performance
-        $performanceData = $this->getPortfolioPerformanceData($user, 30); // Last 30 days
+        // จำนวนธุรกรรมทั้งหมดจริง — $recentTransactions ถูกจำกัดไว้ 20 รายการ นับจากตัวนั้นจะค้างที่ 20
+        $totalTransactions = $user->cryptoTransactions()->count();
 
+        // (เดิมมี getPortfolioPerformanceData() สุ่มตัวเลขกราฟผลตอบแทนด้วย rand() — ลบออก ระบบยังไม่เก็บมูลค่าย้อนหลัง)
         return view('user.crypto-wallet.portfolio', compact(
             'wallet',
             'balances',
             'totalValueTHB',
-            'totalInvested',
-            'totalProfitLoss',
-            'totalProfitLossPercent',
             'recentTransactions',
-            'performanceData'
+            'totalTransactions'
         ));
-    }
-
-    /**
-     * Get portfolio performance data for charts
-     */
-    protected function getPortfolioPerformanceData($user, $days = 30)
-    {
-        // This would fetch historical portfolio values
-        // For now, return mock data structure
-        $data = [];
-        $baseValue = 100000;
-
-        for ($i = $days; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $value = $baseValue + (rand(-5000, 15000));
-            $data[] = [
-                'date' => $date->format('Y-m-d'),
-                'value' => $value,
-            ];
-            $baseValue = $value;
-        }
-
-        return $data;
     }
 }

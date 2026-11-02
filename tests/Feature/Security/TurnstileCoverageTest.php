@@ -49,7 +49,10 @@ class TurnstileCoverageTest extends TestCase
         $this->actingAs(User::factory()->create());
         view()->share('errors', new ViewErrorBag);
 
-        return view('user.crypto-wallet.withdraw', ['balances' => [], 'currencies' => collect()])->render();
+        // หน้าธีม Nova แสดงฟอร์มเฉพาะเมื่อมีเหรียญที่ถอนได้ (ไม่มีเหรียญ = หน้าว่าง ไม่มีฟอร์ม) → ส่งเหรียญตัวอย่างหนึ่งตัว
+        $usdt = (object) ['code' => 'USDT', 'network' => 'bsc', 'min_withdrawal' => 10, 'max_withdrawal' => 1000, 'withdrawal_fee' => 1];
+
+        return view('user.crypto-wallet.withdraw', ['balances' => [], 'currencies' => collect([$usdt])])->render();
     }
 
     /** @return array<string, array{string}> */

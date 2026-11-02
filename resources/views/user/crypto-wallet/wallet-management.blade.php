@@ -1,194 +1,147 @@
-@extends('layouts.user-v4')
+{{--
+    ภาพรวมกระเป๋าคริปโตหลายใบ (ธีมโนวาเต็ม)
+    CryptoWalletController::walletManagement → $wallets (ของสมาชิกคนนี้ · กระเป๋าหลักขึ้นก่อน)
+    $balancesByWallet[wallet_id] = collect(getAllBalances) คีย์เป็นรหัสเหรียญ · $totalValue · $totalAssets
+    - เดิม eager load relation balances ที่ไม่มีอยู่ → 500 (แก้ใน controller แล้ว)
+    - ปุ่ม "แก้ชื่อ" (แค่ console.log) และ "ดูรายละเอียด" (ลิงก์ไป URL ที่ไม่มี route) ไม่เคยทำงาน — เอาออก
+    - ลบกระเป๋าเป็นฟอร์ม DELETE ปกติ + โมดัลยืนยัน แทน fetch เดิม
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'Wallet Management')
+@section('title', 'ภาพรวมกระเป๋าคริปโต')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/crypto-wallet.css') }}?v={{ filemtime(public_path('theme-nova/member/crypto-wallet.css')) }}">@endpush
+
+@php
+    $kpis = [
+        ['กระเป๋าทั้งหมด', 'Wallets', number_format($wallets->count()), 'images/nova/cat/wallet.webp'],
+        ['ใช้งานได้', 'Active', number_format($wallets->where('status', 'active')->count()), 'images/nova/wallet/card.webp'],
+        ['รายการเหรียญ', 'Assets', number_format((int) $totalAssets), 'images/nova/deco/coins.webp'],
+        ['มูลค่ารวม (ประมาณ)', 'Total value', '฿'.number_format((float) $totalValue, 2), 'images/nova/wallet/deposit.webp'],
+    ];
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;" x-data="walletManagement()">
 
-    {{-- ── Header + Stats ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:26px 28px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
-        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:18px;">
-            <div>
-                <h1 style="font-size:clamp(24px,5vw,34px); font-weight:800; margin:0; color:var(--ink);">💼 Wallet Management</h1>
-                <p style="font-size:15px; color:var(--ink2); margin:4px 0 0;">จัดการกระเป๋าเงินคริปโตของคุณ</p>
+<div class="nvm-stack" x-data="{ create: @js($errors->has('pin') || $errors->has('pin_confirmation')), del: null }">
+
+<section class="nvm-ph" aria-labelledby="nvm-cwm-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.crypto-wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าคริปโต</a>
+            <div class="nvm-eyebrow nvm-latin">Wallet management</div>
+            <h1 id="nvm-cwm-h">ภาพรวมกระเป๋าคริปโต</h1>
+            <p class="nvm-ph__lead">ดูเหรียญในกระเป๋าทุกใบ ตั้งกระเป๋าหลัก หรือสร้างกระเป๋าใหม่</p>
+            <div class="nvm-pills">
+                <button type="button" class="nvm-btn nvm-btn--gold nvm-btn--sm" @click="create = true"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>สร้างกระเป๋าใหม่</button>
             </div>
-            <button type="button" @click="showCreateModal = true" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:13px 22px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:14.5px; box-shadow:var(--raise); border:none; cursor:pointer;">
-                <i class="fas fa-plus"></i> สร้างกระเป๋าใหม่
-            </button>
         </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:20px;">
-            @php
-                $wmStats = [
-                    ['Total Wallets', count($wallets ?? []), 'var(--ink)'],
-                    ['Active Wallets', $wallets->where('status', 'active')->count(), '#5aa07e'],
-                    ['Total Assets', $totalAssets ?? 0, 'var(--ink)'],
-                    ['Total Value', '฿' . number_format($totalValue ?? 0, 2), 'var(--ink)'],
-                ];
-            @endphp
-            @foreach($wmStats as [$label, $val, $color])
-                <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm);">
-                    <div style="font-size:12px; color:var(--ink2); margin-bottom:5px;">{{ $label }}</div>
-                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $color }};">{{ $val }}</div>
-                </div>
-            @endforeach
-        </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/cat/wallet.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── Wallets Grid ───────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:18px;">
-        @forelse($wallets ?? [] as $wallet)
-            <div class="tp-card" style="padding:24px; {{ $wallet->is_default ? 'box-shadow:var(--card-shadow), 0 0 0 3px color-mix(in srgb, var(--accent1) 45%, transparent);' : '' }}">
-                {{-- header --}}
-                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px;">
-                    <div style="display:flex; align-items:center; gap:14px;">
-                        <span class="tp-tile" style="width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px;">{{ $wallet->type === 'custodial' ? '🔒' : '🌐' }}</span>
-                        <div>
-                            <h3 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 6px;">{{ $wallet->name ?? 'Wallet #' . $wallet->id }}</h3>
-                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                @php $wmType = $wallet->type === 'custodial' ? '#5689b8' : '#d6824a'; $wmActive = $wallet->status === 'active'; @endphp
-                                <span class="tp-pill" style="background:color-mix(in srgb, {{ $wmType }} 18%, transparent); color:{{ $wmType }}; font-size:11px; font-weight:700;">{{ ucfirst($wallet->type) }}</span>
-                                <span class="tp-pill" style="background:color-mix(in srgb, {{ $wmActive ? '#5aa07e' : '#d9534f' }} 18%, transparent); color:{{ $wmActive ? '#5aa07e' : '#d9534f' }}; font-size:11px; font-weight:700;">{{ ucfirst($wallet->status) }}</span>
-                                @if($wallet->is_default)<span class="tp-pill" style="background:color-mix(in srgb, var(--accent1) 20%, transparent); color:var(--deep1); font-size:11px; font-weight:700;">⭐ Default</span>@endif
-                            </div>
-                        </div>
-                    </div>
-                    {{-- dropdown --}}
-                    <div x-data="{ open: false }" style="position:relative;">
-                        <button type="button" @click="open = !open" class="tp-btn" style="width:38px; height:38px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink2); border:none; cursor:pointer;"><i class="fas fa-ellipsis-vertical"></i></button>
-                        <div x-show="open" x-cloak @click.away="open = false" x-transition.opacity
-                             class="tp-card" style="position:absolute; right:0; margin-top:8px; width:190px; padding:6px; z-index:20; box-shadow:var(--card-shadow-hover);">
-                            @if(!$wallet->is_default)
-                                <form action="{{ route('user.crypto-wallet.wallet.set-default', $wallet->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" style="width:100%; text-align:left; padding:9px 12px; border-radius:8px; font-size:13px; color:var(--ink); background:none; border:none; cursor:pointer;">⭐ Set as Default</button>
-                                </form>
-                            @endif
-                            <button type="button" @click="editWallet({{ $wallet->id }})" style="width:100%; text-align:left; padding:9px 12px; border-radius:8px; font-size:13px; color:var(--ink); background:none; border:none; cursor:pointer;">✏️ Edit Name</button>
-                            <button type="button" @click="viewDetails({{ $wallet->id }})" style="width:100%; text-align:left; padding:9px 12px; border-radius:8px; font-size:13px; color:var(--ink); background:none; border:none; cursor:pointer;">👁️ View Details</button>
-                            <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent); margin:5px 0;"></div>
-                            <button type="button" @click="deleteWallet({{ $wallet->id }})" style="width:100%; text-align:left; padding:9px 12px; border-radius:8px; font-size:13px; color:#d9534f; background:none; border:none; cursor:pointer;">🗑️ Delete Wallet</button>
-                        </div>
+@include('user.crypto-wallet.partials.flash', ['errorTitle' => 'ทำรายการไม่สำเร็จ'])
+
+<section class="nvm-kpis" aria-label="สรุปกระเป๋าคริปโต">
+    @foreach($kpis as [$label, $en, $value, $img])
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset($img) }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">{{ $label }}</div>
+            <div class="nvm-kpi__en nvm-latin">{{ $en }}</div>
+            <div class="nvm-kpi__val nvm-num">{{ $value }}</div>
+        </div>
+    @endforeach
+</section>
+
+<div class="nvm-cw-grid nvm-cw-grid--wide">
+    @forelse($wallets as $wallet)
+        @php
+            $walletBalances = $balancesByWallet[$wallet->id] ?? collect();
+            $firstAddress = $wallet->cryptoAddresses->first()?->address;
+        @endphp
+        <section class="nvm-card nvm-cw-wallet {{ $wallet->is_default ? 'is-default' : '' }}" aria-labelledby="nvm-cwm-{{ $wallet->id }}">
+            <div class="nvm-cw-wallet__head">
+                <div class="nvm-cw-wallet__name">
+                    <span class="nvm-cw-wallet__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $wallet->wallet_type === 'custodial' ? 'lock' : 'wallet' }}"/></svg></span>
+                    <div>
+                        <b id="nvm-cwm-{{ $wallet->id }}">{{ $wallet->name ?: 'กระเป๋า #'.$wallet->id }}</b>
+                        <small>{{ $wallet->wallet_type === 'custodial' ? 'ระบบดูแลกุญแจ (Custodial)' : 'กระเป๋าภายนอก' }}</small>
                     </div>
                 </div>
+                <div class="nvm-cw-wallet__chips">
+                    @if($wallet->is_default)<span class="nvm-chip nvm-chip--gold">กระเป๋าหลัก</span>@endif
+                    <span class="nvm-chip {{ $wallet->status === 'active' ? 'nvm-chip--ok' : 'nvm-chip--bad' }}">{{ $wallet->status === 'active' ? 'ใช้งานได้' : ($wallet->status === 'locked' ? 'ถูกล็อก' : 'ถูกระงับ') }}</span>
+                </div>
+            </div>
 
-                {{-- address (external) --}}
-                @if($wallet->type === 'external')
-                    <div style="margin-bottom:20px;">
-                        <div style="font-size:11.5px; color:var(--ink2); margin-bottom:6px;">Wallet Address</div>
-                        <div class="tp-card" style="padding:11px 13px; box-shadow:var(--inset-sm); display:flex; align-items:center; gap:9px;">
-                            <code style="flex:1; font-size:12.5px; color:var(--ink); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $wallet->addresses->first()->address ?? 'N/A' }}</code>
-                            <button type="button" @click="copyToClipboard('{{ $wallet->addresses->first()->address ?? '' }}')" class="tp-btn" style="padding:6px 13px; border-radius:9px; background:color-mix(in srgb, var(--accent1) 16%, transparent); color:var(--deep1); font-size:12px; font-weight:600; border:none; cursor:pointer;">Copy</button>
-                        </div>
+            @if($wallet->wallet_type === 'external' && $firstAddress)
+                <div class="nvm-field">
+                    <span class="nvm-label">ที่อยู่กระเป๋า</span>
+                    <div class="nvm-copy nvm-copy--box">
+                        <code>{{ $firstAddress }}</code>
+                        <button type="button" @click="nvmCopy(@js($firstAddress), 'คัดลอกที่อยู่แล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
                     </div>
+                </div>
+            @endif
+
+            <div class="nvm-field">
+                <span class="nvm-label">เหรียญในกระเป๋า</span>
+                @if($walletBalances->isNotEmpty())
+                    <div class="nvm-cw-assets">
+                        @foreach($walletBalances as $code => $balance)
+                            <div><small>{{ $code }}</small><b class="nvm-num">{{ number_format((float) $balance['balance'], 4) }}</b></div>
+                        @endforeach
+                    </div>
+                @else
+                    <span class="nvm-help">ยังไม่มีเหรียญในกระเป๋านี้</span>
                 @endif
+            </div>
 
-                {{-- assets --}}
-                <div style="margin-bottom:20px;">
-                    <div style="font-size:13px; color:var(--ink2); margin-bottom:11px;">Assets</div>
-                    @php $walletBalances = $balancesByWallet[$wallet->id] ?? []; @endphp
-                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
-                        @forelse($walletBalances as $balance)
-                            <div class="tp-card" style="padding:11px; text-align:center; box-shadow:var(--inset-sm);">
-                                <div style="font-size:11px; color:var(--ink2);">{{ $balance['code'] }}</div>
-                                <div class="tp-num" style="font-size:13.5px; font-weight:800; color:var(--ink); margin-top:3px;">{{ number_format($balance['balance'], 4) }}</div>
-                            </div>
-                        @empty
-                            <div style="grid-column:1/-1; text-align:center; color:var(--ink2); font-size:13px; padding:16px 0;">No assets in this wallet</div>
-                        @endforelse
-                    </div>
-                </div>
+            <div class="nvm-cw-stats">
+                <div><b>{{ $wallet->created_at?->locale('th')->diffForHumans() ?? '-' }}</b><small>สร้างเมื่อ</small></div>
+                <div><b>{{ $wallet->last_activity_at ? $wallet->last_activity_at->locale('th')->diffForHumans() : '-' }}</b><small>ใช้งานล่าสุด</small></div>
+                <div><b class="nvm-num nvm-cw-up">฿{{ number_format((float) $walletBalances->sum('balance_thb'), 2) }}</b><small>มูลค่า</small></div>
+            </div>
 
-                {{-- stats --}}
-                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding-top:18px; border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent);">
-                    <div style="text-align:center;"><div style="font-size:11px; color:var(--ink2); margin-bottom:4px;">Created</div><div style="font-size:12.5px; font-weight:700; color:var(--ink);">{{ $wallet->created_at->diffForHumans() }}</div></div>
-                    <div style="text-align:center;"><div style="font-size:11px; color:var(--ink2); margin-bottom:4px;">Last Used</div><div style="font-size:12.5px; font-weight:700; color:var(--ink);">{{ $wallet->updated_at->diffForHumans() }}</div></div>
-                    <div style="text-align:center;"><div style="font-size:11px; color:var(--ink2); margin-bottom:4px;">Value</div><div class="tp-num" style="font-size:12.5px; font-weight:700; color:#5aa07e;">฿{{ number_format($walletBalances->sum('balance_thb') ?? 0, 2) }}</div></div>
-                </div>
+            <div class="nvm-cw-wallet__acts">
+                @if(! $wallet->is_default && $wallet->status === 'active')
+                    <form method="POST" action="{{ route('user.crypto-wallet.wallet.set-default', $wallet->id) }}">
+                        @csrf
+                        <button type="submit" class="nvm-btn nvm-btn--line nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ตั้งเป็นกระเป๋าหลัก</button>
+                    </form>
+                @endif
+                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="del = @js(['name' => $wallet->name ?: 'กระเป๋า #'.$wallet->id, 'url' => route('user.crypto-wallet.wallet.delete', $wallet->id)])"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ลบกระเป๋า</button>
             </div>
-        @empty
-            <div class="tp-card" style="grid-column:1/-1; padding:64px 24px; text-align:center;">
-                <div style="font-size:56px; margin-bottom:14px;">💳</div>
-                <h3 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 6px;">No Wallets Yet</h3>
-                <p style="color:var(--ink2); font-size:14px; margin:0 0 22px;">Create your first crypto wallet to get started</p>
-                <button type="button" @click="showCreateModal = true" class="tp-btn" style="padding:13px 26px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:700; font-size:15px; box-shadow:var(--raise); border:none; cursor:pointer;">🚀 Create Wallet</button>
+        </section>
+    @empty
+        <section class="nvm-card nvm-box">
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/cat/wallet.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีกระเป๋าคริปโต</b>
+                สร้างกระเป๋าใบแรกเพื่อเริ่มใช้งาน
+                <div><button type="button" class="nvm-btn nvm-btn--gold" @click="create = true"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>สร้างกระเป๋า</button></div>
             </div>
-        @endforelse
-    </div>
+        </section>
+    @endforelse
+</div>
 
-    {{-- ── Create Modal ───────────────────────────────────────── --}}
-    <div x-show="showCreateModal" x-cloak @keydown.escape.window="showCreateModal = false"
-         style="position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:16px;">
-        <div @click="showCreateModal = false" x-show="showCreateModal" x-transition.opacity style="position:fixed; inset:0; background:rgba(0,0,0,.55);"></div>
-        <div class="tp-card" x-show="showCreateModal" x-transition style="position:relative; max-width:520px; width:100%; padding:26px; z-index:1;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-                <h3 style="font-size:24px; font-weight:800; color:var(--ink); margin:0;">Create New Wallet</h3>
-                <button type="button" @click="showCreateModal = false" class="tp-btn" style="width:36px; height:36px; border-radius:11px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink2); border:none; cursor:pointer;"><i class="fas fa-xmark"></i></button>
+@include('user.crypto-wallet.partials.create-wallet-modal')
+
+{{-- ยืนยันก่อนลบ (ลบแล้วกู้คืนเองไม่ได้) --}}
+<div class="nvm-modal" x-show="del" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-cwm-del-h" @click.self="del = null" @keydown.escape.window="del = null">
+    <div class="nvm-card nvm-modal__box">
+        <h2 id="nvm-cwm-del-h">ลบกระเป๋านี้?</h2>
+        <p>กระเป๋า “<span x-text="del ? del.name : ''"></span>” จะถูกลบ ต้องไม่มียอดคงเหลือเหลืออยู่ และกู้คืนเองไม่ได้</p>
+        <form method="POST" :action="del ? del.url : ''" x-data="{ busy: false }" @submit="busy = true">
+            @csrf
+            @method('DELETE')
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="del = null">ยกเลิก</button>
+                <button type="submit" class="nvm-btn nvm-btn--bad" :disabled="busy"><span x-text="busy ? 'กำลังลบ…' : 'ยืนยันการลบ'">ยืนยันการลบ</span></button>
             </div>
-            <div style="display:flex; flex-direction:column; gap:14px;">
-                <button type="button" onclick="window.location='{{ route('user.crypto-wallet.index') }}#create-custodial'" class="tp-card" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:20px; box-shadow:var(--inset-sm); border:none; cursor:pointer;">
-                    <div style="display:flex; align-items:center; gap:14px;">
-                        <span class="tp-tile" style="width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px;">🔒</span>
-                        <div style="text-align:left;"><h4 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">Custodial Wallet</h4><p style="font-size:12.5px; color:var(--ink2); margin:3px 0 0;">ระบบจัดการให้ ปลอดภัย มี PIN ป้องกัน</p></div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color:var(--ink2);"></i>
-                </button>
-                <button type="button" onclick="window.location='{{ route('user.crypto-wallet.index') }}#connect-external'" class="tp-card" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:20px; box-shadow:var(--inset-sm); border:none; cursor:pointer;">
-                    <div style="display:flex; align-items:center; gap:14px;">
-                        <span class="tp-tile" style="width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px;">🌐</span>
-                        <div style="text-align:left;"><h4 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">External Wallet</h4><p style="font-size:12.5px; color:var(--ink2); margin:3px 0 0;">เชื่อมต่อ MetaMask หรือ WalletConnect</p></div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color:var(--ink2);"></i>
-                </button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
-<script>
-function walletManagement() {
-    return {
-        showCreateModal: false,
-
-        copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('คัดลอกแล้ว!');
-            });
-        },
-
-        editWallet(walletId) {
-            const newName = prompt('Enter new wallet name:');
-            if (newName) {
-                console.log('Rename wallet', walletId, 'to', newName);
-            }
-        },
-
-        viewDetails(walletId) {
-            window.location.href = `/user/crypto-wallet/wallets/${walletId}`;
-        },
-
-        async deleteWallet(walletId) {
-            if (!confirm('Are you sure you want to delete this wallet? This action cannot be undone.')) {
-                return;
-            }
-            try {
-                const response = await fetch(`/user/crypto-wallet/wallet/${walletId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                });
-                if (response.ok) {
-                    alert('Wallet deleted successfully');
-                    window.location.reload();
-                } else {
-                    alert('Failed to delete wallet');
-                }
-            } catch (error) {
-                console.error('Delete failed:', error);
-                alert('An error occurred');
-            }
-        }
-    };
-}
-</script>
+</div>
 @endsection
