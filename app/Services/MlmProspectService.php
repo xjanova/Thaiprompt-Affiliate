@@ -186,7 +186,8 @@ class MlmProspectService
         int $sponsorMemberId,
         ?string $status = null,
         ?string $type = null,
-        int $perPage = 15
+        int $perPage = 15,
+        array $filters = []
     ) {
         $query = MlmProspect::where('sponsor_mlm_member_id', $sponsorMemberId)
             ->with(['registeredUser', 'sponsorUser', 'fortuneReferral'])
@@ -199,6 +200,23 @@ class MlmProspectService
         // กรองตามประเภท: fortune = เฉพาะจากระบบดูดวง
         if ($type === 'fortune') {
             $query->whereHas('fortuneReferral');
+        }
+
+        // ค้นหาจากชื่อ LINE หรือ token ของลิงก์เชิญ
+        if (! empty($filters['search'])) {
+            $term = '%'.addcslashes($filters['search'], '%_\\').'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('line_display_name', 'like', $term)
+                    ->orWhere('referral_token', 'like', $term);
+            });
+        }
+
+        // ช่วงวันที่สร้างลิงก์ (Y-m-d — controller ตรวจรูปแบบแล้ว)
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
         return $query->paginate($perPage);

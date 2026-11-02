@@ -1,305 +1,131 @@
-@extends('layouts.user-v4')
+{{--
+    สถิติการตลาดหน้า Recruit (ธีมโนวาเต็ม)
+    - RecruitPageController::analytics: $daily = ทุกวันในช่วง (ไม่มีข้อมูล = 0), $days ∈ {7, 30, 90}
+    - กราฟวาดด้วย CSS ล้วน (ไม่โหลด Chart.js จาก CDN แล้ว) → ใช้สีตามโหมดมืด/สว่างอัตโนมัติ
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'สถิติการตลาด')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/team-recruit.css') }}?v={{ filemtime(public_path('theme-nova/member/team-recruit.css')) }}">@endpush
+
+@php
+    $pct = fn ($part, $whole) => $whole > 0 ? number_format($part / $whole * 100, 1).'%' : '0.0%';
+    $funnelSteps = [
+        ['search', 'การเข้าชม', $funnel['visits'], '100%'],
+        ['send', 'คลิกสมัคร', $funnel['clicked_register'], $pct($funnel['clicked_register'], $funnel['visits'])],
+        ['users', 'ผู้มุ่งหวัง', $funnel['leads'], $pct($funnel['leads'], $funnel['visits'])],
+        ['check', 'สมัครสำเร็จ', $funnel['conversions'], $pct($funnel['conversions'], $funnel['visits'])],
+    ];
+
+    // แกนกราฟ: ค่าสูงสุดของทั้งสองชุด (อย่างน้อย 1 กันหารศูนย์)
+    $peak = max(1, collect($daily)->max(fn ($d) => max($d['visits'], $d['leads'])));
+    // ป้ายวันที่: ช่วงยาวแสดงห่างๆ ไม่ให้ตัวอักษรชนกัน
+    $labelEvery = count($daily) > 31 ? 7 : (count($daily) > 10 ? 3 : 1);
+
+    $deviceNames = ['mobile' => 'มือถือ', 'desktop' => 'คอมพิวเตอร์', 'tablet' => 'แท็บเล็ต'];
+    $deviceTotal = max(1, (int) $deviceBreakdown->sum('count'));
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
+<div class="nvm-stack">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#5aa07e;"><i class="fas fa-chart-bar" style="color:#fff;"></i></span>
-                    <div>
-                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">📊 สถิติการตลาด</h1>
-                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">วิเคราะห์ผลการตลาดหน้า Recruit ของคุณ</div>
-                    </div>
-                </div>
-                <a href="{{ route('user.marketing.recruit.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับไปหน้าจัดการ</a>
+<section class="nvm-ph" aria-labelledby="nvm-ra-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.marketing.recruit.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>หน้าแนะนำสมาชิก</a>
+            <div class="nvm-eyebrow nvm-latin">Marketing analytics</div>
+            <h1 id="nvm-ra-h">สถิติการตลาด</h1>
+            <p class="nvm-ph__lead">ดูว่ามีคนเข้าหน้า Recruit เท่าไร มาจากไหน และสมัครสำเร็จกี่คน ในช่วง {{ $days }} วันล่าสุด</p>
+            <div class="nvm-hero__actions">
+                <nav class="nvm-tabs" aria-label="เลือกช่วงเวลา">
+                    @foreach([7, 30, 90] as $d)
+                        <a href="{{ route('user.marketing.recruit.analytics', ['days' => $d]) }}" class="{{ (int) $days === $d ? 'is-on' : '' }}" @if((int) $days === $d) aria-current="page" @endif>{{ $d }} วัน</a>
+                    @endforeach
+                </nav>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── เลือกช่วงเวลา ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
-            <div style="font-weight:800; color:var(--ink);">ช่วงเวลา</div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 7]) }}" class="tp-btn tp-btn-sm {{ $days == 7 ? 'tp-btn-primary' : '' }}">7 วัน</a>
-                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 30]) }}" class="tp-btn tp-btn-sm {{ $days == 30 ? 'tp-btn-primary' : '' }}">30 วัน</a>
-                <a href="{{ route('user.marketing.recruit.analytics', ['days' => 90]) }}" class="tp-btn tp-btn-sm {{ $days == 90 ? 'tp-btn-primary' : '' }}">90 วัน</a>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-ra-fn-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Conversion funnel</small><h2 id="nvm-ra-fn-h">เส้นทางสู่การสมัคร ({{ $days }} วันล่าสุด)</h2></div></div>
+    <div class="nvm-tr-funnel">
+        @foreach($funnelSteps as [$icon, $label, $value, $rate])
+            <div class="nvm-mini">
+                <span class="nvm-tx__ic is-in"><svg class="nvm-ico"><use href="#nvm-i-{{ $icon }}"/></svg></span>
+                <small>{{ $label }}</small>
+                <b class="nvm-num">{{ number_format($value) }}</b>
+                <em class="nvm-num">{{ $rate }}</em>
             </div>
-        </div>
+        @endforeach
     </div>
+</section>
 
-    {{-- ── Conversion Funnel ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:20px;">กระบวนการ Conversion ({{ $days }} วันล่าสุด)</div>
-        @php
-            $clickRate = $funnel['visits'] > 0 ? ($funnel['clicked_register'] / $funnel['visits'] * 100) : 0;
-            $leadRate = $funnel['visits'] > 0 ? ($funnel['leads'] / $funnel['visits'] * 100) : 0;
-            $conversionRate = $funnel['visits'] > 0 ? ($funnel['conversions'] / $funnel['visits'] * 100) : 0;
-        @endphp
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px;">
-            @foreach([
-                ['fa-eye', '#5689b8', number_format($funnel['visits']), 'การเข้าชม', '100%'],
-                ['fa-hand-pointer', '#5aa07e', number_format($funnel['clicked_register']), 'คลิกสมัคร', number_format($clickRate, 1).'%'],
-                ['fa-users', '#7c5cbf', number_format($funnel['leads']), 'ผู้มุ่งหวัง', number_format($leadRate, 1).'%'],
-                ['fa-check-circle', '#c05a8f', number_format($funnel['conversions']), 'สมัครสำเร็จ', number_format($conversionRate, 1).'%'],
-            ] as $step)
-                <div style="text-align:center;">
-                    <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, {{ $step[1] }}, color-mix(in srgb, {{ $step[1] }} 70%, #000)); display:flex; align-items:center; justify-content:center; box-shadow:var(--raise);">
-                        <i class="fas {{ $step[0] }}" style="font-size:30px; color:#fff;"></i>
-                    </div>
-                    <div class="tp-num" style="font-size:24px; font-weight:800; color:var(--ink);">{{ $step[2] }}</div>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">{{ $step[3] }}</div>
-                    <div style="font-size:12px; font-weight:600; color:{{ $step[1] }}; margin-top:6px;">{{ $step[4] }}</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- ── กราฟ ─────────────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;">
-        <div class="tp-card" style="padding:24px;">
-            <div class="tp-section-h" style="margin-bottom:18px;">การเข้าชมและผู้มุ่งหวังรายวัน</div>
-            <canvas id="visitsLeadsChart" style="width:100%; max-height:300px;"></canvas>
-        </div>
-        <div class="tp-card" style="padding:24px;">
-            <div class="tp-section-h" style="margin-bottom:18px;">การเข้าชมตามอุปกรณ์</div>
-            <div style="display:flex; align-items:center; justify-content:center; height:300px;">
-                <canvas id="deviceChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── Top Referrers ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:18px;">แหล่งอ้างอิงยอดนิยม (Top 10)</div>
-        @if($topReferrers->count() > 0)
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                @foreach($topReferrers as $index => $referrer)
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border-radius:12px; box-shadow:var(--inset-sm);">
-                        <div style="display:flex; align-items:center; gap:14px; flex:1; min-width:0;">
-                            <div style="flex-shrink:0; width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #5689b8, #7c5cbf); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:13px;">{{ $index + 1 }}</div>
-                            <div style="flex:1; min-width:0;">
-                                <p style="font-weight:600; color:var(--ink); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ parse_url($referrer->referrer_url, PHP_URL_HOST) ?? $referrer->referrer_url }}</p>
-                                <p style="font-size:11px; color:var(--ink2); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ Str::limit($referrer->referrer_url, 60) }}</p>
-                            </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-ra-day-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Daily</small><h2 id="nvm-ra-day-h">การเข้าชมและผู้มุ่งหวังรายวัน</h2></div></div>
+        <div class="nvm-tr-legend"><span><i></i>การเข้าชม</span><span><i class="is-lead"></i>ผู้มุ่งหวัง</span></div>
+        <div class="nvm-tr-chart">
+            <div class="nvm-tr-chart__in" role="img" aria-label="กราฟแท่งการเข้าชมและผู้มุ่งหวังรายวัน {{ count($daily) }} วัน">
+                @foreach($daily as $i => $day)
+                    <div class="nvm-tr-day" title="{{ $day['date']->locale('th')->translatedFormat('j M') }} · เข้าชม {{ number_format($day['visits']) }} · ผู้มุ่งหวัง {{ number_format($day['leads']) }}">
+                        <div class="nvm-tr-day__bars">
+                            <i style="--h: {{ round($day['visits'] / $peak * 100, 1) }}%"></i>
+                            <i class="is-lead" style="--h: {{ round($day['leads'] / $peak * 100, 1) }}%"></i>
                         </div>
-                        <span style="flex-shrink:0; display:inline-flex; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; color:#fff; background:#5689b8;">{{ number_format($referrer->count) }} ครั้ง</span>
+                        <span class="nvm-num">{{ $i % $labelEvery === 0 ? $day['date']->format('j/n') : '' }}</span>
                     </div>
                 @endforeach
             </div>
-        @else
-            <div style="text-align:center; padding:48px 20px;">
-                <div style="width:64px; height:64px; margin:0 auto 16px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
-                    <i class="fas fa-link" style="font-size:26px; color:var(--ink2);"></i>
-                </div>
-                <p style="color:var(--ink2); margin:0;">ยังไม่มีข้อมูลแหล่งอ้างอิง</p>
-            </div>
+        </div>
+        @if(collect($daily)->sum('visits') + collect($daily)->sum('leads') === 0)
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ยังไม่มีการเข้าชมในช่วงนี้ ลองแชร์ลิงก์หน้า Recruit ดูนะ</p>
         @endif
-    </div>
+    </section>
+
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-ra-dev-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Devices</small><h2 id="nvm-ra-dev-h">การเข้าชมตามอุปกรณ์</h2></div></div>
+        @forelse($deviceBreakdown as $device)
+            @php $share = round($device->count / $deviceTotal * 100, 1); @endphp
+            <div class="nvm-meter">
+                <div class="nvm-meter__row"><span>{{ $deviceNames[$device->device_type] ?? ($device->device_type ?: 'ไม่ระบุ') }}</span><b class="nvm-num">{{ number_format($device->count) }} · {{ $share }}%</b></div>
+                <div class="nvm-meter__bar nvm-tr-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($share) }}"><i style="--w: {{ $share }}%"></i></div>
+            </div>
+        @empty
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/phone.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีข้อมูลอุปกรณ์</b>
+                เมื่อมีคนเข้าชม ระบบจะแยกให้ว่าใช้มือถือหรือคอมพิวเตอร์
+            </div>
+        @endforelse
+    </section>
+</div>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-ra-ref-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Top referrers</small><h2 id="nvm-ra-ref-h">แหล่งอ้างอิงยอดนิยม (10 อันดับ)</h2></div></div>
+    @if($topReferrers->count() > 0)
+        <ul class="nvm-txs">
+            @foreach($topReferrers as $index => $referrer)
+                <li class="nvm-tx">
+                    <span class="nvm-tx__ic nvm-num">{{ $index + 1 }}</span>
+                    <div class="nvm-tx__t">
+                        <b>{{ parse_url($referrer->referrer_url, PHP_URL_HOST) ?: $referrer->referrer_url }}</b>
+                        <small>{{ \Illuminate\Support\Str::limit($referrer->referrer_url, 60) }}</small>
+                    </div>
+                    <div class="nvm-tx__r"><span class="nvm-chip nvm-chip--info nvm-num">{{ number_format($referrer->count) }} ครั้ง</span></div>
+                </li>
+            @endforeach
+        </ul>
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีข้อมูลแหล่งอ้างอิง</b>
+            เมื่อมีคนกดลิงก์มาจากเว็บอื่น (เช่น Facebook) จะแสดงที่นี่
+        </div>
+    @endif
+</section>
+
 </div>
 @endsection
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // สีสำหรับ Dark Mode
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const textColor = isDarkMode ? '#e5e7eb' : '#374151';
-    const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
-
-    // Chart 1: Visits & Leads Line Chart
-    const visitsLeadsCtx = document.getElementById('visitsLeadsChart').getContext('2d');
-
-    // เตรียมข้อมูล
-    const dates = @json($visitsPerDay->pluck('date'));
-    const visitsData = @json($visitsPerDay->pluck('count'));
-
-    // สร้าง Map สำหรับ leads
-    const leadsMap = new Map();
-    @json($leadsPerDay).forEach(item => {
-        leadsMap.set(item.date, item.count);
-    });
-
-    // จับคู่ leads กับ dates
-    const leadsData = dates.map(date => leadsMap.get(date) || 0);
-
-    new Chart(visitsLeadsCtx, {
-        type: 'line',
-        data: {
-            labels: dates.map(date => {
-                const d = new Date(date);
-                return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-            }),
-            datasets: [
-                {
-                    label: 'การเข้าชม',
-                    data: visitsData,
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(59, 130, 246)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                },
-                {
-                    label: 'ผู้มุ่งหวัง',
-                    data: leadsData,
-                    borderColor: 'rgb(168, 85, 247)',
-                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(168, 85, 247)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: textColor,
-                        font: {
-                            size: 12,
-                            family: "'Inter', sans-serif"
-                        },
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: true,
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' ครั้ง';
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: textColor,
-                        font: {
-                            size: 11
-                        },
-                        callback: function(value) {
-                            return value.toLocaleString();
-                        }
-                    },
-                    grid: {
-                        color: gridColor,
-                        drawBorder: false
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: textColor,
-                        font: {
-                            size: 11
-                        }
-                    },
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // Chart 2: Device Pie Chart
-    const deviceCtx = document.getElementById('deviceChart').getContext('2d');
-
-    const deviceData = @json($deviceBreakdown);
-    const deviceLabels = deviceData.map(d => {
-        const labels = {
-            'mobile': 'มือถือ',
-            'desktop': 'คอมพิวเตอร์',
-            'tablet': 'แท็บเล็ต'
-        };
-        return labels[d.device_type] || d.device_type || 'ไม่ระบุ';
-    });
-    const deviceCounts = deviceData.map(d => d.count);
-
-    new Chart(deviceCtx, {
-        type: 'doughnut',
-        data: {
-            labels: deviceLabels,
-            datasets: [{
-                data: deviceCounts,
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)',   // Blue
-                    'rgba(168, 85, 247, 0.8)',   // Purple
-                    'rgba(236, 72, 153, 0.8)',   // Pink
-                ],
-                borderColor: [
-                    'rgb(59, 130, 246)',
-                    'rgb(168, 85, 247)',
-                    'rgb(236, 72, 153)',
-                ],
-                borderWidth: 2,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        color: textColor,
-                        font: {
-                            size: 12,
-                            family: "'Inter', sans-serif"
-                        },
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
-                            return context.label + ': ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
-                        }
-                    }
-                }
-            }
-        }
-    });
-});
-</script>
-@endpush

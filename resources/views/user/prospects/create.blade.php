@@ -1,99 +1,81 @@
-@extends('layouts.user-v4')
+{{--
+    สร้างลิงก์เชิญผู้มุ่งหวัง (ธีมโนวาเต็ม)
+    - กดปุ่มเดียว → MlmProspectController::store สร้างลิงก์แล้วพาไปหน้ารายละเอียด (มี QR/ปุ่มแชร์)
+    - ไม่ได้เป็นสมาชิก MLM = $notMlmMember → แสดงคำแนะนำแทนปุ่มสร้าง
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'สร้างลิงก์เชิญ')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/team-recruit.css') }}?v={{ filemtime(public_path('theme-nova/member/team-recruit.css')) }}">@endpush
+
+@php
+    $notMlm = isset($notMlmMember) && $notMlmMember;
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:920px; margin-inline:auto;">
+<div class="nvm-stack">
 
-    @if(isset($notMlmMember) && $notMlmMember)
-    {{-- ไม่ได้เป็นสมาชิก MLM --}}
-    <div class="tp-card" style="padding:18px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-        <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:20px; background:#e0a52e;"><i class="fas fa-triangle-exclamation" style="color:#fff;"></i></span>
-        <div style="flex:1; min-width:200px;">
-            <div style="font-weight:700;">คุณยังไม่ได้เป็นสมาชิก MLM</div>
-            <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">สมัครเป็นสมาชิก MLM ก่อนเพื่อสร้างลิงก์เชิญและเริ่มสร้างทีม</div>
+<section class="nvm-ph" aria-labelledby="nvm-ppc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.prospects.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ผู้มุ่งหวังของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Invitation link</div>
+            <h1 id="nvm-ppc-h">สร้างลิงก์เชิญสมาชิก</h1>
+            <p class="nvm-ph__lead">สร้างลิงก์เฉพาะสำหรับเชิญเพื่อนหนึ่งคนให้สมัครผ่าน LINE แล้วติดตามได้ว่าถึงขั้นไหน</p>
         </div>
-        <div style="display:flex; gap:8px;">
-            <a href="{{ route('user.mlm.dashboard') }}" class="tp-btn tp-btn-primary">ไปหน้า MLM Dashboard</a>
-            <a href="{{ route('user.prospects.index') }}" class="tp-btn">← กลับ</a>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/mascot/welcome.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
+
+@if($notMlm)
+    <section class="nvm-card nvm-alert" role="status">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>คุณยังไม่ได้เป็นสมาชิก MLM</b>
+            <p>สมัครเป็นสมาชิก MLM ก่อน จึงจะสร้างลิงก์เชิญและเริ่มสร้างทีมได้</p>
         </div>
-    </div>
-    @else
+        <div class="nvm-alert__side"><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.mlm.dashboard') }}">ไปหน้า MLM</a></div>
+    </section>
+@else
+    <div class="nvm-split">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-ppc-go-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Ready</small><h2 id="nvm-ppc-go-h">พร้อมเริ่มต้นแล้วใช่ไหม?</h2></div></div>
+            <p class="nvm-desc">กดปุ่มด้านล่าง ระบบจะสร้างลิงก์เชิญพิเศษพร้อม QR Code ให้ทันที แล้วพาไปหน้าแชร์</p>
+            <form method="POST" action="{{ route('user.prospects.store') }}" class="nvm-gap-t" x-data="{ sending: false }" @submit="sending = true">
+                @csrf
+                <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="sending"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg><span x-text="sending ? 'กำลังสร้าง…' : 'สร้างลิงก์เชิญเลย'">สร้างลิงก์เชิญเลย</span></button>
+            </form>
 
-    {{-- หัวข้อ --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-link" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:180px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">สร้างลิงก์เชิญสมาชิก</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">สร้างลิงก์เพื่อเชิญเพื่อนของคุณสมัครผ่าน LINE</div>
-            </div>
-            <a href="{{ route('user.prospects.index') }}" class="tp-btn">← กลับ</a>
-        </div>
-    </div>
+            <ul class="nvm-ky-perks nvm-gap-t">
+                <li><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>รับค่าคอมมิชชั่นเมื่อเพื่อนสมัครสำเร็จ</li>
+                <li><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ติดตามความคืบหน้าแต่ละคนได้</li>
+                <li><svg class="nvm-ico"><use href="#nvm-i-users"/></svg>สร้างทีมของคุณเองผ่านระบบ MLM</li>
+            </ul>
+        </section>
 
-    {{-- วิธีใช้งาน --}}
-    <div class="tp-card" style="padding:20px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">ℹ️ วิธีการใช้งาน</div>
-        <div style="display:flex; flex-direction:column; gap:11px;">
-            @php
-                $steps = [
-                    'กดปุ่ม "สร้างลิงก์เชิญ" ด้านล่างเพื่อสร้างลิงก์พิเศษสำหรับเชิญเพื่อน',
-                    'แชร์ลิงก์หรือ QR Code ให้เพื่อนผ่าน LINE, Facebook หรือช่องทางอื่นๆ',
-                    'เมื่อเพื่อนคลิกลิงก์ ระบบจะนำไปเพิ่มเพื่อน LINE OA เพื่อเริ่มสมัครสมาชิก',
-                    'ติดตามสถานะการสมัครได้ที่หน้า "ผู้มุ่งหวังของฉัน"',
-                ];
-            @endphp
-            @foreach($steps as $i => $step)
-                <div style="display:flex; gap:11px; align-items:flex-start;">
-                    <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px; font-weight:800;">{{ $i + 1 }}</span>
-                    <div style="font-size:13.5px; padding-top:3px;">{{ $step }}</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
+        <aside class="nvm-stack">
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-ppc-how-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">How it works</small><h2 id="nvm-ppc-how-h">วิธีการใช้งาน</h2></div></div>
+                <ol class="nvm-steps">
+                    <li>กด "สร้างลิงก์เชิญเลย" เพื่อสร้างลิงก์สำหรับเพื่อนหนึ่งคน</li>
+                    <li>แชร์ลิงก์หรือ QR Code ผ่าน LINE, Facebook หรือช่องทางอื่น</li>
+                    <li>เพื่อนกดลิงก์ ระบบพาไปเพิ่มเพื่อน LINE OA เพื่อเริ่มสมัคร</li>
+                    <li>ติดตามสถานะได้ที่หน้า "ผู้มุ่งหวังของฉัน"</li>
+                </ol>
+            </section>
 
-    {{-- จุดเด่น --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
-        @php
-            $features = [
-                ['💰', 'รายได้จากการแนะนำ', 'รับค่าคอมมิชชั่นเมื่อเพื่อนที่แนะนำสมัครสำเร็จ'],
-                ['📊', 'ติดตามสถานะ', 'ติดตามความคืบหน้าของผู้มุ่งหวังแต่ละคนแบบ Real-time'],
-                ['🤝', 'สร้างทีมของคุณ', 'สร้างเครือข่ายและทีมของคุณเองผ่านระบบ MLM'],
-            ];
-        @endphp
-        @foreach($features as [$emoji, $head, $desc])
-            <div class="tp-card" style="padding:18px; text-align:center;">
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px; margin:0 auto;">{{ $emoji }}</span>
-                <div style="font-weight:700; font-size:14px; margin-top:10px;">{{ $head }}</div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">{{ $desc }}</div>
-            </div>
-        @endforeach
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-ppc-note-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Good to know</small><h2 id="nvm-ppc-note-h">หมายเหตุสำคัญ</h2></div></div>
+                <ul class="nvm-ky-perks">
+                    <li><svg class="nvm-ico"><use href="#nvm-i-user"/></svg>หนึ่งลิงก์ใช้ได้กับหนึ่งคน สร้างได้ไม่จำกัด</li>
+                    <li><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>เมื่อมีคนกดลิงก์ ระบบจะล็อกผู้มุ่งหวังคนนั้นให้คุณช่วงเวลาหนึ่ง หมดเวลาแล้วต่ออายุได้</li>
+                    <li><svg class="nvm-ico"><use href="#nvm-i-line"/></svg>ผู้กดลิงก์ต้องเพิ่มเพื่อน LINE OA ก่อนเริ่มสมัคร</li>
+                </ul>
+            </section>
+        </aside>
     </div>
+@endif
 
-    {{-- ปุ่มสร้าง --}}
-    <div class="tp-card" style="padding:28px 20px; text-align:center;">
-        <span class="tp-tile" style="width:64px; height:64px; border-radius:20px; font-size:30px; margin:0 auto;"><i class="fas fa-link" style="color:#fff;"></i></span>
-        <div style="font-size:20px; font-weight:800; margin-top:14px;">พร้อมเริ่มต้นแล้วใช่ไหม?</div>
-        <div style="font-size:13px; color:var(--ink2); margin-top:4px;">คลิกปุ่มด้านล่างเพื่อสร้างลิงก์เชิญพิเศษของคุณ</div>
-        <form method="POST" action="{{ route('user.prospects.store') }}" style="margin-top:18px;">
-            @csrf
-            <button type="submit" class="tp-btn tp-btn-primary" style="height:48px; padding:0 26px; font-size:15px;"><i class="fas fa-plus"></i> สร้างลิงก์เชิญเลย</button>
-        </form>
-        <div style="font-size:11px; color:var(--ink2); margin-top:12px;">* ลิงก์เชิญมีอายุ 7 วัน หลังจากนั้นจะหมดอายุอัตโนมัติ</div>
-    </div>
-
-    {{-- หมายเหตุ --}}
-    <div class="tp-card" style="padding:18px; box-shadow:var(--inset-sm); border-left:4px solid #e0a52e;">
-        <div style="font-weight:700; font-size:13.5px; margin-bottom:8px;">⚠️ หมายเหตุสำคัญ</div>
-        <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink2); display:flex; flex-direction:column; gap:5px;">
-            <li>แต่ละลิงก์เชิญใช้ได้กับบุคคลหนึ่งคนเท่านั้น</li>
-            <li>สร้างลิงก์เชิญได้ไม่จำกัดจำนวน</li>
-            <li>ลิงก์หมดอายุหลัง 7 วัน หรือเมื่อมีการสมัครสำเร็จ</li>
-            <li>ผู้คลิกลิงก์ต้องเพิ่มเพื่อน LINE OA ของเราเพื่อเริ่มสมัคร</li>
-        </ul>
-    </div>
-    @endif
 </div>
 @endsection

@@ -99,6 +99,13 @@ class TeamTransferController extends Controller
     {
         $user = Auth::user();
 
+        // 🐛 (2026-11-02) ไม่ได้เป็นสมาชิก MLM แล้วยิง POST ตรง → เดิมส่ง null เข้า service = TypeError (500)
+        if (! $user->mlmMember) {
+            return redirect()
+                ->route('user.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
         // Validate input
         $validated = $request->validate([
             'new_sponsor_code' => 'required|string|max:50',
@@ -145,8 +152,8 @@ class TeamTransferController extends Controller
      */
     public function show(MlmTeamTransferRequest $teamTransfer)
     {
-        // ตรวจสอบว่าเป็นเจ้าของคำขอหรือไม่
-        if ($teamTransfer->user_id !== Auth::id()) {
+        // ตรวจสอบว่าเป็นเจ้าของคำขอหรือไม่ (แปลงเป็น int ก่อนเทียบ — กันไดรเวอร์คืนค่าเป็นสตริง)
+        if ((int) $teamTransfer->user_id !== (int) Auth::id()) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงคำขอนี้');
         }
 
@@ -175,7 +182,7 @@ class TeamTransferController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบว่าเป็นเจ้าของคำขอหรือไม่
-        if ($teamTransfer->user_id !== $user->id) {
+        if ((int) $teamTransfer->user_id !== (int) $user->id) {
             abort(403, 'คุณไม่มีสิทธิ์ดำเนินการกับคำขอนี้');
         }
 
@@ -201,7 +208,7 @@ class TeamTransferController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบว่าเป็นเจ้าของคำขอหรือไม่
-        if ($teamTransfer->user_id !== $user->id) {
+        if ((int) $teamTransfer->user_id !== (int) $user->id) {
             abort(403, 'คุณไม่มีสิทธิ์ดำเนินการกับคำขอนี้');
         }
 
@@ -289,7 +296,8 @@ class TeamTransferController extends Controller
             ->where('status', MlmTeamTransferRequest::STATUS_PENDING)
             ->with(['member.user', 'newSponsor.user'])
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         // คำขอที่ดำเนินการแล้ว (อนุมัติ/ปฏิเสธ)
         $processedApprovals = MlmTeamTransferRequest::where('old_unilevel_sponsor_id', $user->mlmMember->id)
@@ -301,11 +309,14 @@ class TeamTransferController extends Controller
             ])
             ->with(['member.user', 'newSponsor.user'])
             ->latest()
-            ->paginate(15, ['*'], 'processed_page');
+            ->paginate(15, ['*'], 'processed_page')
+            ->withQueryString();
 
         return view('user.team-transfer.approvals', [
             'pendingApprovals' => $pendingApprovals,
             'processedApprovals' => $processedApprovals,
+            // เปิดแท็บ "ดำเนินการแล้ว" ค้างไว้เมื่อกดเปลี่ยนหน้าของแท็บนั้น (เดิมเด้งกลับแท็บแรกทุกครั้ง)
+            'activeTab' => request()->has('processed_page') ? 'processed' : 'pending',
             'pageTitle' => 'คำขอย้ายทีมที่ต้องอนุมัติ',
         ]);
     }

@@ -1,201 +1,191 @@
-@extends('layouts.user-v4')
+{{--
+    หน้าแนะนำสมาชิก (Recruit) — จัดการข้อมูลที่แสดง + QR/ลิงก์แชร์ (ธีมโนวาเต็ม)
+    - RecruitPageController::index สร้าง customization ให้อัตโนมัติถ้ายังไม่มี
+    - ชื่อฟิลด์ custom_name / custom_phone / custom_address / custom_pitch / custom_image / is_active ตรงกับ ::update
+    - 🐛 (2026-11-02) is_active เดิมเป็น checkbox เดี่ยว — เอาติ๊กออกแล้วเบราว์เซอร์ไม่ส่งค่า
+      = ปิดหน้า Recruit ไม่ได้เลย · ตอนนี้มี hidden is_active=0 นำหน้าเสมอ
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'หน้าแนะนำสมาชิก')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/team-recruit.css') }}?v={{ filemtime(public_path('theme-nova/member/team-recruit.css')) }}">@endpush
+
+@php
+    $memberCode = $mlmMember?->member_code;
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;" x-data="recruitPageManager()">
+<div class="nvm-stack">
 
-    {{-- ── Hero + สถิติ ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #c05a8f 18%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#c05a8f;"><i class="fas fa-bullhorn" style="color:#fff;"></i></span>
-                    <div>
-                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">📢 หน้าแนะนำสมาชิก</h1>
-                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ</div>
-                    </div>
-                </div>
-                <a href="{{ $recruitUrl }}" target="_blank" class="tp-btn tp-btn-sm"><i class="fas fa-external-link-alt"></i> ดูหน้า Recruit</a>
+<section class="nvm-ph" aria-labelledby="nvm-rc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">Recruit page</div>
+            <h1 id="nvm-rc-h">หน้าแนะนำสมาชิก</h1>
+            <p class="nvm-ph__lead">แต่งหน้าชวนสมัครของคุณ แล้วแชร์ลิงก์หรือ QR Code ให้เพื่อน ระบบจะติดตามผู้สนใจให้</p>
+            <div class="nvm-pills">
+                @if($customization->is_active)
+                    <span class="nvm-pill nvm-pill--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>เปิดใช้งานอยู่</span>
+                @else
+                    <span class="nvm-pill nvm-pill--bad"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ปิดใช้งานอยู่</span>
+                @endif
             </div>
-
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
-                <div class="tp-card" style="padding:14px; text-align:center;">
-                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">การเข้าชม</div>
-                    <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">{{ number_format($stats['total_views']) }}</div>
-                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">+{{ $stats['views_last_7_days'] }} ใน 7 วัน</div>
-                </div>
-                <div class="tp-card" style="padding:14px; text-align:center;">
-                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">ผู้มุ่งหวัง</div>
-                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#c05a8f;">{{ number_format($stats['total_leads']) }}</div>
-                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">+{{ $stats['leads_last_7_days'] }} ใน 7 วัน</div>
-                </div>
-                <div class="tp-card" style="padding:14px; text-align:center;">
-                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">สมาชิกใหม่</div>
-                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e;">{{ number_format($stats['total_conversions']) }}</div>
-                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">คนสมัครสำเร็จ</div>
-                </div>
-                <div class="tp-card" style="padding:14px; text-align:center;">
-                    <div style="font-size:11px; color:var(--ink2); margin-bottom:2px;">อัตราสำเร็จ</div>
-                    <div class="tp-num" style="font-size:26px; font-weight:800; color:#5689b8;">{{ number_format($stats['conversion_rate'], 1) }}%</div>
-                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">Conversion Rate</div>
-                </div>
+            <div class="nvm-hero__actions">
+                <a class="nvm-btn nvm-btn--gold" href="{{ $recruitUrl }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>ดูหน้า Recruit</a>
+                <a class="nvm-btn nvm-btn--ghost" href="{{ route('user.marketing.recruit.leads') }}"><svg class="nvm-ico"><use href="#nvm-i-users"/></svg>ผู้มุ่งหวัง</a>
+                <a class="nvm-btn nvm-btn--ghost" href="{{ route('user.marketing.recruit.analytics') }}"><svg class="nvm-ico"><use href="#nvm-i-grid"/></svg>สถิติการตลาด</a>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/mascot/welcome.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ฟอร์มแก้ไขข้อมูล ──────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:18px;"><i class="fas fa-edit" style="color:#c05a8f; margin-right:8px;"></i>แก้ไขข้อมูลส่วนตัว</div>
+@if(session('error'))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
+    </section>
+@endif
 
-        <form action="{{ route('user.marketing.recruit.update') }}" method="POST" enctype="multipart/form-data">
+<section class="nvm-tr-stats" aria-label="สถิติหน้า Recruit">
+    <div class="nvm-mini"><small>การเข้าชม</small><b class="nvm-num">{{ number_format($stats['total_views']) }}</b><small>+{{ number_format($stats['views_last_7_days']) }} ใน 7 วัน</small></div>
+    <div class="nvm-mini"><small>ผู้มุ่งหวัง</small><b class="nvm-num is-gold">{{ number_format($stats['total_leads']) }}</b><small>+{{ number_format($stats['leads_last_7_days']) }} ใน 7 วัน</small></div>
+    <div class="nvm-mini"><small>สมาชิกใหม่</small><b class="nvm-num is-in">{{ number_format($stats['total_conversions']) }}</b><small>คนสมัครสำเร็จ</small></div>
+    <div class="nvm-mini"><small>อัตราสำเร็จ</small><b class="nvm-num is-info">{{ number_format((float) $stats['conversion_rate'], 1) }}%</b><small>Conversion rate</small></div>
+</section>
+
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-rc-form-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Your details</small><h2 id="nvm-rc-form-h">ข้อมูลที่แสดงบนหน้า Recruit</h2></div></div>
+
+        <form action="{{ route('user.marketing.recruit.update') }}" method="POST" enctype="multipart/form-data" class="nvm-form" x-data="{ sending: false }" @submit="sending = true">
             @csrf
             @method('PUT')
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
-                <div>
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-user" style="color:#c05a8f; margin-right:6px;"></i>ชื่อที่แสดง</label>
-                    <input type="text" name="custom_name" value="{{ old('custom_name', $customization->custom_name) }}" class="tp-input" placeholder="ชื่อที่ต้องการให้แสดง (ถ้าไม่กรอกจะใช้ชื่อจากโปรไฟล์)">
-                    @error('custom_name')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
+            <div class="nvm-tr-grid">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="custom_name">ชื่อที่แสดง</label>
+                    <input type="text" id="custom_name" name="custom_name" maxlength="255" value="{{ old('custom_name', $customization->custom_name) }}" class="nvm-input @error('custom_name') is-bad @enderror" placeholder="เว้นว่างไว้ = ใช้ชื่อจากโปรไฟล์">
+                    @error('custom_name')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div>
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-phone" style="color:#5689b8; margin-right:6px;"></i>เบอร์โทรติดต่อ</label>
-                    <input type="text" name="custom_phone" value="{{ old('custom_phone', $customization->custom_phone) }}" class="tp-input" placeholder="เบอร์โทรสำหรับให้ผู้สนใจติดต่อ">
-                    @error('custom_phone')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
+                <div class="nvm-field">
+                    <label class="nvm-label" for="custom_phone">เบอร์โทรติดต่อ</label>
+                    <input type="tel" id="custom_phone" name="custom_phone" maxlength="20" value="{{ old('custom_phone', $customization->custom_phone) }}" class="nvm-input @error('custom_phone') is-bad @enderror" placeholder="เบอร์ให้ผู้สนใจโทรหา">
+                    @error('custom_phone')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div style="grid-column:1/-1;">
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-map-marker-alt" style="color:#d9534f; margin-right:6px;"></i>ที่อยู่</label>
-                    <textarea name="custom_address" rows="3" class="tp-input" style="resize:vertical;" placeholder="ที่อยู่ที่ต้องการแสดง">{{ old('custom_address', $customization->custom_address) }}</textarea>
-                    @error('custom_address')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
+                <div class="nvm-field is-wide">
+                    <label class="nvm-label" for="custom_address">ที่อยู่</label>
+                    <textarea id="custom_address" name="custom_address" rows="3" class="nvm-input @error('custom_address') is-bad @enderror" placeholder="ที่อยู่ที่ต้องการแสดง (ไม่บังคับ)">{{ old('custom_address', $customization->custom_address) }}</textarea>
+                    @error('custom_address')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div style="grid-column:1/-1;">
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-comment-dots" style="color:#5aa07e; margin-right:6px;"></i>คำชักชวนส่วนตัว</label>
-                    <textarea name="custom_pitch" rows="5" class="tp-input" style="resize:vertical;" placeholder="เขียนคำชักชวนของคุณเอง (ถ้าไม่กรอกจะใช้ข้อความจากเทมเพลต)">{{ old('custom_pitch', $customization->custom_pitch) }}</textarea>
-                    @error('custom_pitch')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
+                <div class="nvm-field is-wide">
+                    <label class="nvm-label" for="custom_pitch">คำชักชวนส่วนตัว</label>
+                    <textarea id="custom_pitch" name="custom_pitch" rows="5" maxlength="1000" class="nvm-input @error('custom_pitch') is-bad @enderror" placeholder="เขียนคำชวนของคุณเอง (เว้นว่างไว้ = ใช้ข้อความจากเทมเพลต)">{{ old('custom_pitch', $customization->custom_pitch) }}</textarea>
+                    @error('custom_pitch')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div style="grid-column:1/-1;">
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="fas fa-image" style="color:#c05a8f; margin-right:6px;"></i>รูปภาพ</label>
+                <div class="nvm-field is-wide">
+                    <label class="nvm-label" for="custom_image">รูปภาพ</label>
                     @if($customization->custom_image)
-                        <div style="margin-bottom:12px;">
-                            <img src="{{ $customization->getDisplayImage() }}" alt="Current Image" style="width:128px; height:128px; border-radius:12px; object-fit:cover; box-shadow:var(--inset-sm);">
-                        </div>
+                        <img class="nvm-tr-thumb" src="{{ $customization->getDisplayImage() }}" alt="รูปปัจจุบัน" width="112" height="112" loading="lazy">
                     @endif
-                    <input type="file" name="custom_image" accept="image/*" class="tp-input">
-                    <p style="margin-top:6px; font-size:11px; color:var(--ink2);">รองรับไฟล์: JPG, PNG, GIF (สูงสุด 2MB)</p>
-                    @error('custom_image')<p style="margin-top:6px; font-size:12px; color:#d9534f;">{{ $message }}</p>@enderror
+                    <input type="file" id="custom_image" name="custom_image" accept="image/jpeg,image/png,image/gif" class="nvm-input @error('custom_image') is-bad @enderror">
+                    <span class="nvm-help">รองรับ JPG, PNG, GIF ขนาดไม่เกิน 2MB</span>
+                    @error('custom_image')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
-                <div style="grid-column:1/-1;">
-                    <label style="display:inline-flex; align-items:center; cursor:pointer; gap:10px;">
-                        <input type="checkbox" name="is_active" value="1" {{ $customization->is_active ? 'checked' : '' }} style="width:18px; height:18px;">
-                        <span style="font-size:13px; font-weight:600; color:var(--ink);"><i class="fas fa-toggle-on" style="color:#5aa07e; margin-right:6px;"></i>เปิดใช้งานหน้า Recruit</span>
+                <div class="nvm-field is-wide">
+                    <input type="hidden" name="is_active" value="0">
+                    <label class="nvm-tr-switch">
+                        <span><b>เปิดใช้งานหน้า Recruit</b><small>ปิดไว้ = คนที่เปิดลิงก์จะไม่เห็นหน้าชวนสมัครของคุณ</small></span>
+                        <span class="nvm-sw"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $customization->is_active))><i></i></span>
                     </label>
                 </div>
             </div>
 
-            <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap;">
-                <button type="submit" class="tp-btn tp-btn-primary" style="background:#c05a8f; border-color:#c05a8f;"><i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง</button>
-                <a href="{{ route('user.marketing.recruit.leads') }}" class="tp-btn" style="background:#5689b8; border-color:#5689b8; color:#fff;"><i class="fas fa-users"></i> ดูผู้มุ่งหวัง</a>
-                <a href="{{ route('user.marketing.recruit.analytics') }}" class="tp-btn" style="background:#5aa07e; border-color:#5aa07e; color:#fff;"><i class="fas fa-chart-bar"></i> สถิติการตลาด</a>
-            </div>
+            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="sending"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="sending ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'">บันทึกการเปลี่ยนแปลง</span></button>
         </form>
-    </div>
+    </section>
 
-    {{-- ── QR + ลิงก์ ────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:18px;"><i class="fas fa-qrcode" style="color:#5689b8; margin-right:8px;"></i>QR Code และลิงก์แนะนำ</div>
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-rc-share-h"
+           x-data="nvmTrRecruitShare(@js($recruitUrl), @js((string) $memberCode))">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Share</small><h2 id="nvm-rc-share-h">QR Code และลิงก์แนะนำ</h2></div></div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px;">
-            <div style="text-align:center;">
-                <div style="display:inline-block; background:#fff; padding:24px; border-radius:16px; box-shadow:var(--raise); margin-bottom:16px;">
-                    <div id="qrcode"></div>
+        <div class="nvm-tr-share">
+            <div class="nvm-qr">
+                <div class="nvm-qr__box">
+                    <div x-ref="qr"></div>
+                    <div class="nvm-qr__miss" x-show="qrFailed" x-cloak>
+                        <svg class="nvm-ico"><use href="#nvm-i-qr"/></svg>
+                        สร้าง QR ไม่สำเร็จ
+                        <small>รีเฟรชหน้าอีกครั้ง หรือคัดลอกลิงก์ด้านล่างแทน</small>
+                    </div>
+                    <span class="nvm-qr__tag">สแกนเพื่อสมัคร</span>
                 </div>
-                <div>
-                    <button @click="downloadQR()" class="tp-btn"><i class="fas fa-download"></i> ดาวน์โหลด QR Code</button>
-                </div>
+                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="downloadQr()" :disabled="qrFailed"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ดาวน์โหลด QR Code</button>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:16px;">
-                <div>
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;">ลิงก์หน้า Recruit:</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="recruitUrl" value="{{ $recruitUrl }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:13px;">
-                        <button @click="copyUrl('recruitUrl')" class="tp-btn" style="background:#5689b8; border-color:#5689b8; color:#fff;"><i class="fas fa-copy"></i></button>
-                    </div>
+            <div>
+                <span class="nvm-label">ลิงก์หน้า Recruit</span>
+                <div class="nvm-copy nvm-copy--box">
+                    <code>{{ $recruitUrl }}</code>
+                    <button type="button" @click="nvmCopy(url, 'คัดลอกลิงก์แล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
                 </div>
-                <div>
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:6px;">รหัสสมาชิก:</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="memberCode" value="{{ $mlmMember?->member_code }}" readonly class="tp-input" style="flex:1; font-family:monospace; font-size:20px; font-weight:800; text-align:center;">
-                        <button @click="copyUrl('memberCode')" class="tp-btn" style="background:#c05a8f; border-color:#c05a8f; color:#fff;"><i class="fas fa-copy"></i></button>
+
+                @if($memberCode)
+                    <span class="nvm-label nvm-gap-t">รหัสสมาชิก</span>
+                    <div class="nvm-copy nvm-copy--box">
+                        <code>{{ $memberCode }}</code>
+                        <button type="button" @click="nvmCopy(code, 'คัดลอกรหัสสมาชิกแล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
                     </div>
-                </div>
-                <div style="padding-top:8px;">
-                    <p style="font-size:12.5px; font-weight:600; color:var(--ink); margin:0 0 10px;">แชร์ผ่าน:</p>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button @click="shareVia('line')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#5aa07e; border-color:#5aa07e; color:#fff;"><i class="fab fa-line"></i> LINE</button>
-                        <button @click="shareVia('facebook')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#3b5998; border-color:#3b5998; color:#fff;"><i class="fab fa-facebook"></i> Facebook</button>
-                        <button @click="shareVia('twitter')" class="tp-btn" style="flex:1; min-width:100px; justify-content:center; background:#4a9fd4; border-color:#4a9fd4; color:#fff;"><i class="fab fa-twitter"></i> Twitter</button>
-                    </div>
+                @endif
+
+                <span class="nvm-label nvm-gap-t">แชร์ผ่าน</span>
+                <div class="nvm-tr-channels">
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="share('line')"><svg class="nvm-ico"><use href="#nvm-i-line"/></svg>LINE</button>
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="share('facebook')"><svg class="nvm-ico"><use href="#nvm-i-fb"/></svg>Facebook</button>
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="share('x')"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>X</button>
                 </div>
             </div>
         </div>
-    </div>
+    </aside>
 </div>
+
+</div>
+@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-function recruitPageManager() {
-    return {
-        recruitUrl: '{{ $recruitUrl }}',
-        memberCode: '{{ $mlmMember?->member_code }}',
-        qrcode: null,
-
-        init() {
-            // Generate QR Code
-            this.qrcode = new QRCode(document.getElementById("qrcode"), {
-                text: this.recruitUrl,
-                width: 200,
-                height: 200,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-            });
-        },
-
-        copyUrl(elementId) {
-            const input = document.getElementById(elementId);
-            input.select();
-            navigator.clipboard.writeText(input.value).then(() => {
-                alert('✅ คัดลอกแล้ว!');
-            });
-        },
-
-        downloadQR() {
-            const canvas = document.querySelector('#qrcode canvas');
-            const url = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.download = `recruit-qr-${this.memberCode}.png`;
-            link.href = url;
-            link.click();
-        },
-
-        shareVia(platform) {
-            const message = `มาร่วมเป็นส่วนหนึ่งกับทีมของฉัน! 🚀`;
-
-            switch(platform) {
-                case 'line':
-                    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(message + '\n' + this.recruitUrl)}`, '_blank');
-                    break;
-                case 'facebook':
-                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(this.recruitUrl)}`, '_blank');
-                    break;
-                case 'twitter':
-                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(this.recruitUrl)}`, '_blank');
-                    break;
-            }
-        }
+    // แชร์หน้า Recruit: สร้าง QR จากลิงก์ (ตัวอักษรละตินล้วน — qrcodejs นับอักษรไทยผิด) + ปุ่มแชร์/ดาวน์โหลด
+    function nvmTrRecruitShare(url, code) {
+        return {
+            url: url,
+            code: code,
+            qrFailed: false,
+            init() {
+                if (typeof QRCode === 'undefined') { this.qrFailed = true; return; }
+                try {
+                    new QRCode(this.$refs.qr, { text: this.url, width: 464, height: 464, colorDark: '#0b1633', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                } catch (e) { this.qrFailed = true; }
+            },
+            downloadQr() {
+                const canvas = this.$refs.qr.querySelector('canvas');
+                if (! canvas) { window.showNotification('ยังไม่มี QR ให้ดาวน์โหลด', 'error'); return; }
+                const link = document.createElement('a');
+                link.download = 'recruit-qr-' + (this.code || 'link') + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            },
+            share(platform) {
+                const message = 'มาร่วมเป็นส่วนหนึ่งกับทีมของฉัน!';
+                const links = {
+                    line: 'https://line.me/R/msg/text/?' + encodeURIComponent(message + '\n' + this.url),
+                    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(this.url),
+                    x: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(message) + '&url=' + encodeURIComponent(this.url),
+                };
+                if (links[platform]) window.open(links[platform], '_blank', 'noopener');
+            },
+        };
     }
-}
 </script>
 @endpush
-@endsection
