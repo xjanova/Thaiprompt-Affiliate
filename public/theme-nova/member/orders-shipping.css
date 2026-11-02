@@ -1,0 +1,162 @@
+/* =====================================================================
+   ธีมโนวา — ชุดหน้า "คำสั่งซื้อ · ที่อยู่จัดส่ง · การจองบริการ" ของสมาชิก
+   โหลดเฉพาะหน้า shop/orders/*, user/shipping-addresses/*, user/bookings/* (ต่อจาก nova-member.css)
+   ทุกคลาสขึ้นต้นด้วย nvm-os- · สีอ้างตัวแปร --nvm-* เท่านั้น (โหมดสว่าง/มืดสลับตาม html.dark อัตโนมัติ)
+   ===================================================================== */
+
+/* ── ปุ่ม/ลิงก์เรียงแถว ───────────────────────────────── */
+.nvm-os-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.nvm-os-acts form { margin: 0; }
+.nvm-os-acts--end { justify-content: flex-end; }
+.nvm-os-acts--ph { margin-top: 18px; }
+.nvm-os-btn-bad { color: var(--nvm-bad) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nvm-bad) 40%, transparent); }
+.nvm-os-btn-bad:hover { background: var(--nvm-bad-bg); }
+
+/* ── การ์ดที่อยู่จัดส่ง ─────────────────────────────── */
+.nvm-os-addrs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.nvm-os-addr { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; }
+.nvm-os-addr.is-default { box-shadow: var(--nvm-shadow), inset 0 0 0 1.5px var(--nv-gold-500); }
+.nvm-os-addr__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nvm-os-addr__head b { font-family: var(--nvm-font-display); font-size: 17px; overflow-wrap: anywhere; }
+.nvm-os-addr .nvm-os-acts { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--nvm-line); }
+.nvm-os-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--nvm-ink-2); }
+.nvm-os-lines li { display: flex; gap: 10px; align-items: flex-start; overflow-wrap: anywhere; min-width: 0; }
+.nvm-os-lines .nvm-ico { width: 16px; height: 16px; margin-top: 2px; color: var(--nvm-gold-ink); }
+.nvm-os-lines .is-note { font-style: italic; color: var(--nvm-ink-3); }
+
+/* ── ฟอร์ม 2 คอลัมน์ ───────────────────────────────── */
+.nvm-os-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.nvm-os-narrow { max-width: 820px; width: 100%; margin-inline: auto; }
+.nvm-os-form-foot { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 16px; border-top: 1px solid var(--nvm-line); }
+.nvm-os-form-foot .nvm-btn { flex: 1 1 180px; }
+
+/* ── รายการคำสั่งซื้อ / การจอง ─────────────────────── */
+.nvm-os-list { display: flex; flex-direction: column; gap: 14px; }
+.nvm-os-order { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; }
+.nvm-os-order__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.nvm-os-order__no { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.nvm-os-order__no a, .nvm-os-order__no b { font-weight: 700; font-size: 16px; text-decoration: none; color: var(--nvm-ink); overflow-wrap: anywhere; }
+.nvm-os-order__no a:hover { color: var(--nvm-gold-ink); }
+.nvm-os-order__meta { margin-top: 4px; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-os-order__amt { text-align: right; }
+.nvm-os-order__amt small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-os-order__amt b { font-family: var(--nvm-font-display); font-size: 21px; color: var(--nvm-gold-ink); white-space: nowrap; }
+.nvm-os-order > .nvm-os-acts { padding-top: 12px; border-top: 1px solid var(--nvm-line); }
+
+/* แถวสินค้า (รูปย่อ + ชื่อ + จำนวน) */
+.nvm-os-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.nvm-os-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-os-item__t { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-os-item__q { font-size: 12.5px; color: var(--nvm-ink-3); white-space: nowrap; }
+.nvm-os-more { font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-os-thumb { width: 52px; height: 52px; flex: none; border-radius: 14px; overflow: hidden; display: grid; place-items: center; color: var(--nvm-gold-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-os-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-os-thumb--lg { width: 72px; height: 72px; border-radius: 16px; }
+.nvm-os-thumb--xl { width: 88px; height: 88px; border-radius: 18px; }
+.nvm-os-tag { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; font-size: 12.5px; color: var(--nvm-info); background: var(--nvm-info-bg); overflow-wrap: anywhere; }
+.nvm-os-tag .nvm-ico { width: 15px; height: 15px; }
+
+/* รายการสินค้าแบบละเอียด (หน้ารายละเอียดคำสั่งซื้อ) */
+.nvm-os-lineitem { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--nvm-line); }
+.nvm-os-lineitem:first-child { border-top: 0; padding-top: 0; }
+.nvm-os-lineitem__b { flex: 1; min-width: 0; }
+.nvm-os-lineitem__b > b { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.nvm-os-lineitem__b > small { display: block; font-size: 12px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-os-lineitem__p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-os-lineitem__p b { font-family: var(--nvm-font-display); font-size: 15px; color: var(--nvm-gold-ink); }
+.nvm-os-lineitem .nvm-os-acts { margin-top: 8px; }
+
+/* ── ไทม์ไลน์สถานะ ─────────────────────────────────── */
+.nvm-os-tl { list-style: none; margin: 0; padding: 0; position: relative; }
+.nvm-os-tl li { position: relative; display: flex; gap: 14px; padding-bottom: 16px; }
+.nvm-os-tl li:last-child { padding-bottom: 0; }
+.nvm-os-tl li::before { content: ""; position: absolute; left: 17px; top: 36px; bottom: 0; width: 2px; background: var(--nvm-track); }
+.nvm-os-tl li:last-child::before { display: none; }
+.nvm-os-tl li.is-done::before { background: color-mix(in srgb, var(--nv-gold-500) 55%, transparent); }
+.nvm-os-tl__dot { position: relative; z-index: 1; width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--nvm-ink-3); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-os-tl__dot .nvm-ico { width: 17px; height: 17px; }
+.nvm-os-tl .is-done .nvm-os-tl__dot { color: #1a1405; background: var(--nv-btn-gold); box-shadow: none; }
+.nvm-os-tl .is-now .nvm-os-tl__dot { color: var(--nvm-gold-ink); background: var(--nvm-paper); box-shadow: inset 0 0 0 2px var(--nv-gold-500), 0 0 0 5px color-mix(in srgb, var(--nv-gold-400) 20%, transparent); }
+.nvm-os-tl .is-bad .nvm-os-tl__dot { color: var(--nvm-bad); background: var(--nvm-bad-bg); box-shadow: none; }
+.nvm-os-tl .is-small .nvm-os-tl__dot { width: 28px; height: 28px; margin: 4px; }
+.nvm-os-tl .is-small::before { left: 17px; top: 36px; }
+.nvm-os-tl__b { min-width: 0; padding-top: 7px; }
+.nvm-os-tl__b b { display: block; font-size: 14px; font-weight: 600; color: var(--nvm-ink-3); }
+.nvm-os-tl .is-done .nvm-os-tl__b b, .nvm-os-tl .is-now .nvm-os-tl__b b { color: var(--nvm-ink); font-weight: 700; }
+.nvm-os-tl .is-bad .nvm-os-tl__b b { color: var(--nvm-bad); }
+.nvm-os-tl .is-small .nvm-os-tl__b b { font-size: 13px; }
+.nvm-os-tl__b small { display: block; font-size: 12px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-os-tl--scroll { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+
+/* ── แผนที่ (Leaflet) + หมุด ───────────────────────── */
+.nvm-os-map { position: relative; z-index: 0; height: 300px; border-radius: 18px; overflow: hidden; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-os-map--lg { height: min(460px, 62vh); }
+.nvm-os-map--sm { height: 200px; }
+.nvm-os-map .leaflet-container { font-family: var(--nvm-font-ui); }
+.nvm-os-pin { width: 40px; height: 40px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); display: grid; place-items: center; color: #1a1405; background: var(--nv-btn-gold); border: 2px solid #fff; box-shadow: 0 6px 14px rgba(0, 0, 0, .3); }
+.nvm-os-pin .nvm-ico { transform: rotate(45deg); width: 18px; height: 18px; }
+.nvm-os-pin--rider { color: var(--nv-gold-200); background: linear-gradient(160deg, var(--nv-navy-600), var(--nv-navy-900)); }
+.nvm-os-pin--shop { color: #fff; background: var(--nvm-good); }
+.nvm-os-pin--me { color: #fff; background: var(--nvm-info); }
+.nvm-os-live { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 10px; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-os-live > span { display: inline-flex; align-items: center; gap: 6px; }
+.nvm-os-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--nvm-ink-3); }
+.nvm-os-dot.is-on { background: var(--nvm-good); box-shadow: 0 0 0 4px var(--nvm-good-bg); }
+.nvm-os-share { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-os-share > div { flex: 1; min-width: 200px; }
+.nvm-os-share b { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.nvm-os-share b .nvm-ico { width: 16px; height: 16px; color: var(--nvm-gold-ink); }
+.nvm-os-share small { display: block; margin-top: 2px; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── ผู้ให้บริการ / ไรเดอร์ ────────────────────────── */
+.nvm-os-who { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.nvm-os-who__av { width: 56px; height: 56px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center; color: var(--nv-gold-200); background: linear-gradient(160deg, var(--nv-navy-600), var(--nv-navy-900)); box-shadow: 0 0 0 2px var(--nvm-paper), 0 0 0 3.5px var(--nvm-line-2); }
+.nvm-os-who__av img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-os-who__av .nvm-ico { width: 24px; height: 24px; }
+.nvm-os-who__t { flex: 1; min-width: 180px; }
+.nvm-os-who__t b { display: block; font-size: 15px; overflow-wrap: anywhere; }
+.nvm-os-who__t small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-os-who__t p { margin: 6px 0 0; font-size: 13px; color: var(--nvm-ink-2); line-height: 1.55; }
+.nvm-os-rate { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-os-rate i { font-style: normal; color: var(--nv-gold-500); letter-spacing: 1px; }
+
+/* ── ให้คะแนนดาว + รูปแนบ ───────────────────────────── */
+.nvm-os-stars { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.nvm-os-stars button { width: 46px; height: 46px; padding: 0; border: 0; border-radius: 12px; background: transparent; font: inherit; font-size: 34px; line-height: 1; cursor: pointer; color: var(--nvm-track); color: color-mix(in srgb, var(--nvm-ink-3) 40%, transparent); transition: transform .15s, color .15s; }
+.nvm-os-stars button.is-on { color: var(--nv-gold-500); transform: scale(1.06); }
+.nvm-os-stars button:focus-visible { outline: 2px solid var(--nv-gold-500); outline-offset: 2px; }
+.nvm-os-stars span { margin-left: 6px; font-weight: 700; color: var(--nvm-gold-ink); }
+.nvm-os-shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.nvm-os-shot { position: relative; aspect-ratio: 1 / 1; border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-os-shot img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-os-shot button { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(7, 13, 32, .7); }
+.nvm-os-shot button .nvm-ico { width: 15px; height: 15px; }
+.nvm-os-drop.is-full { opacity: .5; cursor: not-allowed; }
+.nvm-os-count { text-align: right; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── ยอดรวม/ตัวเลขบนฮีโร่ ───────────────────────────── */
+.nvm-os-ph-amt { margin-top: 14px; }
+.nvm-os-ph-amt small { display: block; font-size: 12.5px; color: var(--nv-on-night-3); }
+.nvm-os-ph-amt b { font-family: var(--nvm-font-display); font-weight: 700; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; }
+
+/* ── หน้าต่างยืนยัน (ยกเลิก) ────────────────────────── */
+.nvm-os-modal .nvm-modal__box { text-align: left; }
+.nvm-os-modal .nvm-modal__box h2 { display: flex; align-items: center; gap: 8px; }
+.nvm-os-modal .nvm-modal__box h2 .nvm-ico { color: var(--nvm-bad); }
+.nvm-os-modal .nvm-form { margin-top: 14px; }
+
+/* ── จุดตัดหน้าจอ ─────────────────────────────────── */
+@media (max-width: 1099px) {
+    .nvm-os-addrs { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+    .nvm-os-order, .nvm-os-addr { padding: 16px; }
+    .nvm-os-order__amt { text-align: left; }
+    .nvm-os-acts > .nvm-btn, .nvm-os-acts > form, .nvm-os-acts > form .nvm-btn { flex: 1 1 auto; }
+    .nvm-os-map { height: 260px; }
+    .nvm-os-map--lg { height: 360px; }
+    .nvm-os-stars button { width: 40px; height: 40px; font-size: 30px; }
+}
+@media (max-width: 640px) {
+    .nvm-os-grid2 { grid-template-columns: minmax(0, 1fr); }
+}

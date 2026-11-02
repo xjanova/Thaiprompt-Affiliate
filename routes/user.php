@@ -587,6 +587,8 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
     Route::get('/', [\App\Http\Controllers\User\ServiceBookingController::class, 'myBookings'])->name('index');
     Route::get('/{booking}', [\App\Http\Controllers\User\ServiceBookingController::class, 'showBooking'])->name('show');
     Route::get('/{booking}/track', [\App\Http\Controllers\User\ServiceBookingController::class, 'trackBooking'])->name('track');
+    // ลูกค้าแชร์ตำแหน่งตัวเองจากหน้าติดตาม (หน้าส่งทุก ~30 วินาทีระหว่างเปิดแชร์)
+    Route::post('/{booking}/location', [\App\Http\Controllers\User\ServiceBookingController::class, 'shareLocation'])->middleware('throttle:20,1')->name('location');
     Route::post('/{booking}/cancel', [\App\Http\Controllers\User\ServiceBookingController::class, 'cancelBooking'])->name('cancel');
 });
 

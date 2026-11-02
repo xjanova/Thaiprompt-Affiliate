@@ -1,126 +1,116 @@
 {{--
- | เขียนรีวิวสินค้าในคำสั่งซื้อ — ธีม V4 (user-v4)
- | ข้อมูลจาก OrderController@showReviewForm: $order, $item
- | ฟอร์ม POST orders.review.submit (multipart): rating (1-5)*, title, comment*, images[] (≤5 รูป, รูปละ ≤2MB) + turnstile ถ้าเปิด
- --}}
-@extends('layouts.user-v4')
+    เขียนรีวิวสินค้าในคำสั่งซื้อ — ธีมโนวาเต็ม
+    ข้อมูลจาก OrderController::showReviewForm: $order (ของผู้ซื้อคนนี้ สถานะ delivered/completed เท่านั้น), $item
+    ฟอร์ม POST orders.review.submit (multipart): rating (1-5)*, title, comment*, images[] (≤5 รูป, รูปละ ≤2MB) + turnstile ถ้าเปิด
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'รีวิวสินค้า — '.$item->product_name)
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/orders-shipping.css') }}?v={{ filemtime(public_path('theme-nova/member/orders-shipping.css')) }}">@endpush
 
 @php
     $rvImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image);
 @endphp
 
 @section('content')
-<x-theme-v4.shop-kit />
 
-<div style="max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
-    <nav class="sf-breadcrumb" aria-label="เส้นทาง">
-        <a href="{{ route('orders.index') }}">คำสั่งซื้อของฉัน</a>
-        <span aria-hidden="true">/</span>
-        <a href="{{ route('orders.show', $order->id) }}">#{{ $order->order_number }}</a>
-        <span aria-hidden="true">/</span>
-        <span style="color:var(--ink); font-weight:600;">รีวิวสินค้า</span>
-    </nav>
+<div class="nvm-stack nvm-os-narrow">
 
-    <div>
-        <h1 style="margin:0; font-size:clamp(22px, 3.6vw, 28px); font-weight:800; color:var(--ink);"><i class="fas fa-star" style="color:var(--deep2);"></i> แบ่งปันประสบการณ์ของคุณ</h1>
-        <p class="tp-muted" style="margin:4px 0 0; font-size:13.5px;">รีวิวของคุณช่วยให้ผู้ซื้อรายอื่นตัดสินใจได้ดีขึ้น</p>
+<section class="nvm-ph" aria-labelledby="nvm-os-rv-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('orders.show', $order->id) }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>คำสั่งซื้อ #{{ $order->order_number }}</a>
+            <div class="nvm-eyebrow nvm-latin">Write a review</div>
+            <h1 id="nvm-os-rv-h">แบ่งปันประสบการณ์ของคุณ</h1>
+            <p class="nvm-ph__lead">รีวิวของคุณช่วยให้ผู้ซื้อรายอื่นตัดสินใจได้ดีขึ้น และช่วยให้ร้านพัฒนาสินค้า</p>
+        </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/lotus.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    <div class="tp-card" style="display:flex; gap:14px; align-items:center;">
-        <span class="sf-thumb" style="width:84px; height:84px; font-size:26px;">@if($rvImg)<img src="{{ $rvImg }}" alt="{{ $item->product_name }}">@else 📦 @endif</span>
-        <div style="min-width:0;">
-            <div style="font-weight:800; color:var(--ink); overflow-wrap:anywhere;">{{ $item->product_name }}</div>
-            @if($item->product_sku)<div class="tp-muted" style="font-size:12.5px;">SKU: {{ $item->product_sku }}</div>@endif
-            <div class="tp-muted" style="font-size:12.5px;">คำสั่งซื้อ #{{ $order->order_number }}</div>
+<section class="nvm-card nvm-box">
+    <div class="nvm-os-who">
+        <span class="nvm-os-thumb nvm-os-thumb--xl">@if($rvImg)<img src="{{ $rvImg }}" alt="{{ $item->product_name }}">@else<svg class="nvm-ico"><use href="#nvm-i-bag"/></svg>@endif</span>
+        <div class="nvm-os-who__t">
+            <b>{{ $item->product_name }}</b>
+            @if($item->product_sku)<small class="nvm-num">SKU: {{ $item->product_sku }}</small>@endif
+            <small class="nvm-num">คำสั่งซื้อ #{{ $order->order_number }}</small>
         </div>
     </div>
+</section>
 
-    @if(session('error'))
-        <div class="sf-note sf-note-err" role="alert">{{ session('error') }}</div>
-    @endif
+{{-- ข้อความสำเร็จ/ผิดพลาด (session flash) แสดงเป็น toast จาก layouts.user-nova ที่เดียว ไม่ซ้ำในหน้า --}}
 
-    <form method="POST" action="{{ route('orders.review.submit', [$order->id, $item->id]) }}" enctype="multipart/form-data"
-          class="tp-card sf-stack" style="gap:18px;"
-          x-data="tpReviewForm({{ (int) old('rating', 0) }}, @js((string) old('comment', '')))" @submit="submit($event)">
+<section class="nvm-card nvm-box" aria-labelledby="nvm-os-rv-f">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Your review</small><h2 id="nvm-os-rv-f">รีวิวสินค้า</h2></div></div>
+
+    <form method="POST" action="{{ route('orders.review.submit', [$order->id, $item->id]) }}" enctype="multipart/form-data" class="nvm-form" novalidate
+          x-data="nvmOsReviewForm({{ (int) old('rating', 0) }}, @js((string) old('comment', '')))" @submit="submit($event)" @pageshow.window="busy = false">
         @csrf
 
-        <div>
-            <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">ให้คะแนนสินค้านี้ <span style="color:var(--sf-sale, #e0564f);">*</span></div>
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;" role="radiogroup" aria-label="คะแนน">
+        <div class="nvm-field">
+            <span class="nvm-label" id="rv-rating-lbl">ให้คะแนนสินค้านี้ <em>*</em></span>
+            <div class="nvm-os-stars" role="radiogroup" aria-labelledby="rv-rating-lbl">
                 <template x-for="star in 5" :key="star">
-                    <button type="button" @click="rating = star" :aria-label="star + ' ดาว'" :aria-checked="(rating === star).toString()" role="radio"
-                            style="border:0; background:transparent; cursor:pointer; padding:4px; font-size:36px; line-height:1; transition:transform .12s ease;"
-                            :style="star <= rating ? 'color:var(--sf-star, #e6b347); transform:scale(1.08);' : 'color:color-mix(in srgb, var(--ink2) 45%, transparent);'">★</button>
+                    <button type="button" role="radio" @click="rating = star" :aria-label="star + ' ดาว'" :aria-checked="(rating === star).toString()" :class="star <= rating && 'is-on'">★</button>
                 </template>
-                <span x-show="rating > 0" x-cloak class="tp-num" style="font-weight:800; font-size:18px; color:var(--deep2); margin-left:6px;" x-text="rating + ' ดาว — ' + ['', 'แย่', 'พอใช้', 'ดี', 'ดีมาก', 'ยอดเยี่ยม'][rating]"></span>
+                <span x-show="rating > 0" x-cloak class="nvm-num" x-text="rating + ' ดาว — ' + ['', 'แย่', 'พอใช้', 'ดี', 'ดีมาก', 'ยอดเยี่ยม'][rating]"></span>
             </div>
             <input type="hidden" name="rating" :value="rating">
-            @error('rating')
-                <div class="sf-note sf-note-err" style="padding:8px 12px; margin-top:8px;">{{ $message }}</div>
-            @enderror
+            <span class="nvm-err" x-show="errors.rating" x-text="errors.rating" x-cloak></span>
+            @error('rating')<span class="nvm-err">{{ $message }}</span>@enderror
         </div>
 
-        <div>
-            <label for="rv-title" style="display:block; font-weight:700; color:var(--ink); margin-bottom:6px;">หัวข้อ (ไม่บังคับ)</label>
-            <input id="rv-title" type="text" name="title" maxlength="200" value="{{ old('title') }}" class="tp-input" placeholder="เช่น สินค้าดีมาก คุ้มราคา">
-            @error('title')
-                <div class="sf-note sf-note-err" style="padding:8px 12px; margin-top:8px;">{{ $message }}</div>
-            @enderror
+        <div class="nvm-field">
+            <label class="nvm-label" for="rv-title">หัวข้อ (ไม่บังคับ)</label>
+            <input id="rv-title" type="text" name="title" maxlength="200" value="{{ old('title') }}" class="nvm-input @error('title') is-bad @enderror" placeholder="เช่น สินค้าดีมาก คุ้มราคา">
+            @error('title')<span class="nvm-err">{{ $message }}</span>@enderror
         </div>
 
-        <div>
-            <label for="rv-comment" style="display:block; font-weight:700; color:var(--ink); margin-bottom:6px;">รีวิว <span style="color:var(--sf-sale, #e0564f);">*</span></label>
-            <textarea id="rv-comment" name="comment" rows="6" maxlength="1000" required class="tp-input" x-model="comment"
+        <div class="nvm-field">
+            <label class="nvm-label" for="rv-comment">รีวิว <em>*</em></label>
+            <textarea id="rv-comment" name="comment" rows="6" maxlength="1000" required class="nvm-input nvm-textarea @error('comment') is-bad @enderror" x-model="comment"
                       placeholder="เล่าประสบการณ์การใช้งาน คุณภาพ การจัดส่ง หรือสิ่งที่ประทับใจ">{{ old('comment') }}</textarea>
-            <div class="tp-muted tp-num" style="text-align:right; font-size:12px; margin-top:4px;"><span x-text="comment.length"></span>/1000</div>
-            @error('comment')
-                <div class="sf-note sf-note-err" style="padding:8px 12px;">{{ $message }}</div>
-            @enderror
+            <div class="nvm-os-count nvm-num"><span x-text="comment.length"></span>/1000</div>
+            <span class="nvm-err" x-show="errors.comment" x-text="errors.comment" x-cloak></span>
+            @error('comment')<span class="nvm-err">{{ $message }}</span>@enderror
         </div>
 
-        <div>
-            <div style="font-weight:700; color:var(--ink); margin-bottom:4px;">รูปภาพ (ไม่บังคับ)</div>
-            <p class="tp-muted" style="margin:0 0 10px; font-size:12.5px;">สูงสุด 5 รูป รูปละไม่เกิน 2MB (PNG / JPG)</p>
+        <div class="nvm-field">
+            <span class="nvm-label">รูปภาพ (ไม่บังคับ)</span>
+            <span class="nvm-help">สูงสุด 5 รูป รูปละไม่เกิน 2MB (PNG / JPG)</span>
             {{-- ช่องไฟล์จริงที่ส่งไปกับฟอร์ม (เติมไฟล์ผ่าน DataTransfer) --}}
-            <input type="file" name="images[]" multiple x-ref="files" accept="image/png,image/jpeg" style="display:none;">
-            <label style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:110px; padding:18px; border-radius:18px; cursor:pointer; text-align:center; background:var(--surf); box-shadow:var(--inset-sm);"
-                   :style="images.length >= 5 ? 'opacity:.5; cursor:not-allowed;' : ''">
-                <i class="fas fa-camera" style="font-size:24px; color:var(--deep1);"></i>
-                <span style="font-weight:700; color:var(--ink); font-size:13.5px;">แตะเพื่อเลือกรูปภาพ</span>
-                <span class="tp-muted tp-num" style="font-size:12px;" x-text="images.length + '/5 รูป'"></span>
-                <input type="file" accept="image/png,image/jpeg" multiple style="display:none;" @change="pick($event)" :disabled="images.length >= 5">
+            <input type="file" name="images[]" multiple x-ref="files" accept="image/png,image/jpeg" class="nvm-sr" tabindex="-1" aria-hidden="true">
+            <label class="nvm-drop-zone nvm-os-drop" :class="images.length >= 5 && 'is-full'">
+                <img src="{{ asset('images/nova/account/profile.webp') }}" alt="" width="72" height="72" loading="lazy">
+                <b>แตะเพื่อเลือกรูปภาพ</b>
+                <small class="nvm-num" x-text="images.length + '/5 รูป'">0/5 รูป</small>
+                <input type="file" accept="image/png,image/jpeg" multiple class="nvm-sr" @change="pick($event)" :disabled="images.length >= 5">
             </label>
-            <div x-show="images.length > 0" x-cloak class="grid" style="grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px; margin-top:10px;">
+            <div class="nvm-os-shots" x-show="images.length > 0" x-cloak>
                 <template x-for="(img, k) in images" :key="img.key">
-                    <div style="position:relative; aspect-ratio:1/1; border-radius:14px; overflow:hidden; box-shadow:var(--raise);">
-                        <img :src="img.url" :alt="img.name" style="width:100%; height:100%; object-fit:cover;">
-                        <button type="button" @click="remove(k)" aria-label="ลบรูป" class="tp-icon-btn" style="position:absolute; top:6px; right:6px; width:32px; height:32px; color:var(--sf-sale, #e0564f);"><i class="fas fa-xmark"></i></button>
+                    <div class="nvm-os-shot">
+                        <img :src="img.url" :alt="img.name">
+                        <button type="button" @click="remove(k)" aria-label="ลบรูป"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg></button>
                     </div>
                 </template>
             </div>
-            @error('images')
-                <div class="sf-note sf-note-err" style="padding:8px 12px; margin-top:8px;">{{ $message }}</div>
-            @enderror
-            @error('images.*')
-                <div class="sf-note sf-note-err" style="padding:8px 12px; margin-top:8px;">{{ $message }}</div>
-            @enderror
+            @error('images')<span class="nvm-err">{{ $message }}</span>@enderror
+            @error('images.*')<span class="nvm-err">{{ $message }}</span>@enderror
         </div>
 
-        <div class="sf-note sf-note-info" style="font-size:12.5px;">
-            <strong>แนวทางการเขียนรีวิว</strong> — เขียนตามจริงจากประสบการณ์ใช้งาน สุภาพ และไม่ใส่ข้อมูลส่วนตัว (เบอร์โทร ที่อยู่)
-        </div>
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span><b>แนวทางการเขียนรีวิว</b> — เขียนตามจริงจากประสบการณ์ใช้งาน สุภาพ และไม่ใส่ข้อมูลส่วนตัว (เบอร์โทร ที่อยู่)</span></p>
 
-        <x-turnstile point="review" />
+        <x-turnstile point="review" class="nvm-turnstile" />
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
-            <button type="submit" class="sf-btn3d" :disabled="busy" :class="(rating === 0 || comment.trim() === '') && 'is-disabled'">
-                <i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i> ส่งรีวิว
-            </button>
-            <a href="{{ route('orders.show', $order->id) }}" class="sf-btn3d is-soft">ยกเลิก</a>
+        <div class="nvm-os-form-foot">
+            <a class="nvm-btn nvm-btn--line" href="{{ route('orders.show', $order->id) }}">ยกเลิก</a>
+            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่ง…' : 'ส่งรีวิว'">ส่งรีวิว</span></button>
         </div>
     </form>
+</section>
+
 </div>
 @endsection
 
@@ -129,28 +119,35 @@
     /**
      * ฟอร์มรีวิว: ดาว + ข้อความ + รูป (เก็บไฟล์ไว้ใน input จริงผ่าน DataTransfer เพื่อให้ส่งไปกับฟอร์มได้)
      */
-    function tpReviewForm(initialRating, initialComment) {
+    function nvmOsReviewForm(initialRating, initialComment) {
+        const notify = (message, type) => window.dispatchEvent(new CustomEvent('notify', { detail: { message: message, type: type || 'info' } }));
+
         return {
             rating: initialRating || 0,
             comment: initialComment || '',
             images: [],
+            errors: { rating: '', comment: '' },
             busy: false,
+            init() {
+                // ออกจากหน้า → คืนหน่วยความจำรูปตัวอย่าง
+                window.addEventListener('pagehide', () => this.images.forEach((i) => URL.revokeObjectURL(i.url)));
+            },
             sync() {
                 try {
                     const dt = new DataTransfer();
-                    this.images.forEach(i => dt.items.add(i.file));
+                    this.images.forEach((i) => dt.items.add(i.file));
                     this.$refs.files.files = dt.files;
                 } catch (e) {
-                    window.tpShop.notify('เบราว์เซอร์นี้แนบรูปไม่ได้ ส่งรีวิวแบบไม่มีรูปได้ตามปกติ', 'info');
+                    notify('เบราว์เซอร์นี้แนบรูปไม่ได้ ส่งรีวิวแบบไม่มีรูปได้ตามปกติ', 'info');
                 }
             },
             pick(ev) {
                 const files = Array.from(ev.target.files || []);
                 ev.target.value = '';
                 for (const file of files) {
-                    if (this.images.length >= 5) { window.tpShop.notify('อัปโหลดได้สูงสุด 5 รูป', 'info'); break; }
-                    if (!/^image\/(png|jpe?g)$/i.test(file.type)) { window.tpShop.notify('รองรับเฉพาะไฟล์ PNG หรือ JPG', 'error'); continue; }
-                    if (file.size > 2048 * 1024) { window.tpShop.notify('ไฟล์ ' + file.name + ' ใหญ่เกิน 2MB', 'error'); continue; }
+                    if (this.images.length >= 5) { notify('อัปโหลดได้สูงสุด 5 รูป', 'info'); break; }
+                    if (! /^image\/(png|jpe?g)$/i.test(file.type)) { notify('รองรับเฉพาะไฟล์ PNG หรือ JPG', 'error'); continue; }
+                    if (file.size > 2048 * 1024) { notify('ไฟล์ ' + file.name + ' ใหญ่เกิน 2MB', 'error'); continue; }
                     this.images.push({ key: Date.now() + '-' + Math.random(), name: file.name, file: file, url: URL.createObjectURL(file) });
                 }
                 this.sync();
@@ -163,8 +160,9 @@
             },
             submit(e) {
                 if (this.busy) { e.preventDefault(); return; }
-                if (this.rating < 1) { e.preventDefault(); window.tpShop.notify('กรุณาให้คะแนนดาวก่อนส่งรีวิว', 'error'); return; }
-                if (this.comment.trim() === '') { e.preventDefault(); window.tpShop.notify('กรุณาเขียนรีวิว', 'error'); return; }
+                this.errors.rating = this.rating < 1 ? 'กรุณาให้คะแนนดาวก่อนส่งรีวิว' : '';
+                this.errors.comment = this.comment.trim() === '' ? 'กรุณาเขียนรีวิว' : '';
+                if (this.errors.rating || this.errors.comment) { e.preventDefault(); return; }
                 this.busy = true;
             }
         };

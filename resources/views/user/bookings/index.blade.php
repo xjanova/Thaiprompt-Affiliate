@@ -1,288 +1,184 @@
-@extends('layouts.user-v4')
+{{--
+    การจองบริการของฉัน (ธีมโนวาเต็ม)
+    ข้อมูลจาก User\ServiceBookingController::myBookings — $bookings (paginator ของสมาชิกคนนี้), $stats [total, waiting, active, completed, cancelled], $status (แท็บที่เลือก)
+    ยกเลิก POST user.bookings.cancel {reason}* — หน้าต่างยืนยันในหน้านี้ · ติดตาม GET user.bookings.track (หน้าแผนที่)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'การจองของฉัน')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/orders-shipping.css') }}?v={{ filemtime(public_path('theme-nova/member/orders-shipping.css')) }}">@endpush
+
+@php
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
+    $bkStatus = $status ?? '';
+    $bkTabs = [
+        '' => ['ทั้งหมด', $stats['total'] ?? 0],
+        'waiting' => ['รอดำเนินการ', $stats['waiting'] ?? 0],
+        'active' => ['กำลังทำ', $stats['active'] ?? 0],
+        'completed' => ['เสร็จสิ้น', $stats['completed'] ?? 0],
+        'cancelled' => ['ยกเลิก', $stats['cancelled'] ?? 0],
+    ];
+    // โทนชิปสถานะการจอง
+    $bkTone = fn (?string $s) => match ($s) {
+        'pending', 'notifying_provider', 'waiting_provider' => 'warn',
+        'paid', 'provider_accepted' => 'info',
+        'provider_on_way', 'in_progress' => 'gold',
+        'completed' => 'ok',
+        'cancelled', 'provider_rejected' => 'bad',
+        default => '',
+    };
+    $bkTrackable = ['provider_accepted', 'provider_on_way', 'in_progress'];
+    $bkFmt = fn ($d) => $d ? $d->copy()->timezone('Asia/Bangkok')->format('d/m/Y H:i') : '-';
+@endphp
+
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="myBookings()">
-    {{-- Premium Hero Header (Purple-Pink-Red for Bookings) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8 mb-6">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-calendar-check"></i>
-            </div>
-        </div>
-        <div class="relative z-10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-calendar-check text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">📅 การจองของฉัน</h1>
-                        <p class="text-purple-100 mt-1">ดูและจัดการการจองบริการทั้งหมดของคุณ</p>
-                    </div>
-                </div>
 
-                <a href="{{ route('user.services.index') }}"
-                   class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold inline-flex items-center gap-2">
-                    <i class="fas fa-plus"></i>
-                    <span>จองบริการใหม่</span>
-                </a>
-            </div>
+<div class="nvm-stack" x-data="{ cancel: null, reason: '', busy: false }" @keydown.escape.window="cancel = null">
 
-            {{-- Stats in Header --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">ทั้งหมด</p>
-                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ $stats['total'] ?? 0 }}</p>
-                </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">กำลังดำเนินการ</p>
-                    <p class="text-3xl font-bold text-yellow-300 drop-shadow-lg">{{ $stats['pending'] ?? 0 }}</p>
-                </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">กำลังทำ</p>
-                    <p class="text-3xl font-bold text-pink-300 drop-shadow-lg">{{ $stats['in_progress'] ?? 0 }}</p>
-                </div>
-                <div class="glass-fusion rounded-xl p-4 text-center">
-                    <p class="text-purple-100 text-xs mb-1">เสร็จสิ้น</p>
-                    <p class="text-3xl font-bold text-green-300 drop-shadow-lg">{{ $stats['completed'] ?? 0 }}</p>
-                </div>
+<section class="nvm-ph" aria-labelledby="nvm-os-bk-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">My bookings</div>
+            <h1 id="nvm-os-bk-h">การจองของฉัน</h1>
+            <p class="nvm-ph__lead">ดูสถานะ ติดตามผู้ให้บริการ และจัดการการจองบริการทั้งหมดของคุณ</p>
+            <div class="nvm-bal">
+                <small>การจองทั้งหมด</small>
+                <b class="nvm-foil nvm-num">{{ number_format((int) ($stats['total'] ?? 0)) }}<span> รายการ</span></b>
             </div>
+            @if(RouteFacade::has('user.services.index'))
+                <div class="nvm-os-acts nvm-os-acts--ph">
+                    <a class="nvm-btn nvm-btn--gold" href="{{ route('user.services.index') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>จองบริการใหม่</a>
+                </div>
+            @endif
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scooter.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-
-    {{-- Filter Tabs --}}
-    <div class="mb-6">
-        <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 rounded-xl shadow-lg p-2">
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('user.bookings.index') }}"
-                   class="px-4 py-2 rounded-lg font-semibold transition-all duration-200 {{ !request('status') ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                    ทั้งหมด
-                </a>
-                <a href="{{ route('user.bookings.index', ['status' => 'pending']) }}"
-                   class="px-4 py-2 rounded-lg font-semibold transition-all duration-200 {{ request('status') === 'pending' ? 'bg-yellow-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                    รอดำเนินการ
-                </a>
-                <a href="{{ route('user.bookings.index', ['status' => 'in_progress']) }}"
-                   class="px-4 py-2 rounded-lg font-semibold transition-all duration-200 {{ request('status') === 'in_progress' ? 'bg-purple-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                    กำลังทำ
-                </a>
-                <a href="{{ route('user.bookings.index', ['status' => 'completed']) }}"
-                   class="px-4 py-2 rounded-lg font-semibold transition-all duration-200 {{ request('status') === 'completed' ? 'bg-green-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                    เสร็จสิ้น
-                </a>
-                <a href="{{ route('user.bookings.index', ['status' => 'cancelled']) }}"
-                   class="px-4 py-2 rounded-lg font-semibold transition-all duration-200 {{ request('status') === 'cancelled' ? 'bg-red-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                    ยกเลิก
-                </a>
-            </div>
-        </div>
+<div class="nvm-kpis">
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">รอดำเนินการ <span class="nvm-kpi__en nvm-latin">Waiting</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($stats['waiting'] ?? 0)) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--warn">รอชำระ/รอผู้ให้บริการ</span></div>
     </div>
-
-    {{-- Bookings List --}}
-    <div class="space-y-4">
-        @forelse($bookings as $booking)
-        <div class="backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div class="p-6">
-                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    {{-- Left: Booking Info --}}
-                    <div class="flex-1">
-                        <div class="flex items-start gap-4">
-                            {{-- Service Icon --}}
-                            <div class="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-3xl shadow-lg">
-                                {{ $booking->service->category->icon ?? '🔧' }}
-                            </div>
-
-                            {{-- Booking Details --}}
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                                        {{ $booking->service->name }}
-                                    </h3>
-                                    <x-booking-status-badge :status="$booking->status" />
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-hashtag text-purple-600 dark:text-purple-400"></i>
-                                        <span class="font-mono">{{ $booking->booking_number }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-calendar text-purple-600 dark:text-purple-400"></i>
-                                        <span>{{ $booking->scheduled_at?->format('d/m/Y H:i') ?? '-' }}</span>
-                                    </div>
-                                    @if($booking->provider)
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas fa-user-tie text-purple-600 dark:text-purple-400"></i>
-                                            <span>{{ $booking->provider->name ?? 'ผู้ให้บริการ' }}</span>
-                                        </div>
-                                    @else
-                                        <div class="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                                            <i class="fas fa-hourglass-half"></i>
-                                            <span>กำลังหาผู้ให้บริการ...</span>
-                                        </div>
-                                    @endif
-                                </div>
-
-                                @if($booking->customer_address)
-                                    <div class="mt-2 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <i class="fas fa-map-marker-alt text-purple-600 dark:text-purple-400 mt-0.5"></i>
-                                        <span class="line-clamp-1">{{ $booking->customer_address }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Right: Price & Actions --}}
-                    <div class="flex flex-col items-end gap-3 md:min-w-[200px]">
-                        {{-- Price --}}
-                        <div class="text-right">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">ราคารวม</p>
-                            <p class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                                ฿{{ number_format($booking->total_price, 2) }}
-                            </p>
-                        </div>
-
-                        {{-- Action Buttons --}}
-                        <div class="flex flex-wrap gap-2 justify-end">
-                            {{-- View Details --}}
-                            <a href="{{ route('user.bookings.show', $booking) }}"
-                               class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all duration-200 text-sm font-semibold">
-                                <i class="fas fa-eye mr-1"></i>ดูรายละเอียด
-                            </a>
-
-                            {{-- Track (if in progress) --}}
-                            @if(in_array($booking->status, ['provider_on_way', 'in_progress']))
-                                <a href="{{ route('user.bookings.track', $booking) }}"
-                                   class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 text-sm font-semibold">
-                                    <i class="fas fa-map-marked-alt mr-1"></i>ติดตาม
-                                </a>
-                            @endif
-
-                            {{-- Cancel (if can cancel) --}}
-                            @if(in_array($booking->status, ['pending', 'paid', 'waiting_provider']))
-                                <button @click="showCancelModal({{ $booking->id }})"
-                                        class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 text-sm font-semibold">
-                                    <i class="fas fa-times mr-1"></i>ยกเลิก
-                                </button>
-                            @endif
-
-                            {{-- Review (if completed and not reviewed) --}}
-                            @if($booking->status === 'completed' && !$booking->review && \Illuminate\Support\Facades\Route::has('user.service-reviews.create'))
-                                <a href="{{ route('user.service-reviews.create', $booking) }}"
-                                   class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 text-sm font-semibold">
-                                    <i class="fas fa-star mr-1"></i>รีวิว
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @empty
-        <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-xl p-12 text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-                <i class="fas fa-calendar-times text-3xl text-gray-400"></i>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">ไม่มีการจอง</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">
-                คุณยังไม่มีการจองบริการ
-            </p>
-            <a href="{{ route('user.services.index') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg transition-all duration-200">
-                <i class="fas fa-search"></i>
-                <span>ค้นหาบริการ</span>
-            </a>
-        </div>
-        @endforelse
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/scooter.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">กำลังทำ <span class="nvm-kpi__en nvm-latin">Active</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($stats['active'] ?? 0)) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--gold">ติดตามได้</span></div>
     </div>
-
-    {{-- Pagination --}}
-    @if($bookings->hasPages())
-        <div class="mt-6">
-            {{ $bookings->links() }}
-        </div>
-    @endif
-
-    {{-- Cancel Modal --}}
-    <div x-show="showCancelModal"
-         x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto"
-         style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div x-show="showCancelModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 class="fixed inset-0 bg-black/50 backdrop-blur-sm"
-                 @click="showCancelModal = false"></div>
-
-            <div x-show="showCancelModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 class="tp-card relative rounded-2xl p-6 max-w-md w-full">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                    ยืนยันการยกเลิก
-                </h3>
-
-                <form :action="'/user/bookings/' + cancelBookingId + '/cancel'" method="POST">
-                    @csrf
-                    <p class="text-gray-600 dark:text-gray-400 mb-4">
-                        คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
-                    </p>
-
-                    <div class="flex gap-3">
-                        <button type="submit"
-                                class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all duration-200">
-                            ยืนยันยกเลิก
-                        </button>
-                        <button type="button"
-                                @click="showCancelModal = false"
-                                class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all duration-200">
-                            ปิด
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/lotus.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">เสร็จสิ้น <span class="nvm-kpi__en nvm-latin">Done</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($stats['completed'] ?? 0)) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip nvm-chip--ok">ให้คะแนนได้</span></div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <img class="nvm-kpi__img" src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="48" height="48" loading="lazy">
+        <div class="nvm-kpi__lbl">ยกเลิก <span class="nvm-kpi__en nvm-latin">Cancelled</span></div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($stats['cancelled'] ?? 0)) }}</div>
+        <div class="nvm-kpi__foot"><span class="nvm-chip">ยกเลิก/ถูกปฏิเสธ</span></div>
     </div>
 </div>
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-os-bkl-h">
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">Bookings</small><h2 id="nvm-os-bkl-h">รายการจอง</h2></div>
+        <nav class="nvm-tabs" aria-label="กรองสถานะการจอง">
+            @foreach($bkTabs as $key => [$label, $count])
+                <a href="{{ route('user.bookings.index', $key === '' ? [] : ['status' => $key]) }}" class="{{ $bkStatus === $key ? 'is-on' : '' }}" @if($bkStatus === $key) aria-current="page" @endif>
+                    {{ $label }}<span class="nvm-chip nvm-num">{{ number_format((int) $count) }}</span>
+                </a>
+            @endforeach
+        </nav>
+    </div>
+
+    @if($bookings->count())
+        <div class="nvm-os-list">
+            @foreach($bookings as $booking)
+                @php $tn = $bkTone($booking->status); @endphp
+                <article class="nvm-card nvm-os-order" aria-label="การจอง #{{ $booking->booking_number }}">
+                    <div class="nvm-os-order__head">
+                        <div>
+                            <div class="nvm-os-order__no">
+                                <a href="{{ route('user.bookings.show', $booking) }}">{{ $booking->service?->name ?? 'บริการ' }}</a>
+                                <span class="nvm-chip {{ $tn ? 'nvm-chip--'.$tn : '' }}">{{ $booking->status_text }}</span>
+                            </div>
+                            <div class="nvm-os-order__meta nvm-num">#{{ $booking->booking_number }}@if($booking->service?->category) · {{ $booking->service->category->name }}@endif</div>
+                        </div>
+                        <div class="nvm-os-order__amt">
+                            <small>ราคารวม</small>
+                            {{-- 🐛 เดิมอ่าน total_price (ไม่มีคอลัมน์นี้) ยอดเลยขึ้น ฿0.00 ทุกรายการ --}}
+                            <b class="nvm-num">฿{{ number_format((float) $booking->total_amount, 2) }}</b>
+                        </div>
+                    </div>
+
+                    <ul class="nvm-os-lines">
+                        <li><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg><span class="nvm-num">นัดหมาย {{ $bkFmt($booking->scheduled_at) }}</span></li>
+                        @if($booking->provider)
+                            <li><svg class="nvm-ico"><use href="#nvm-i-user"/></svg><span>{{ $booking->provider->display_name ?: $booking->provider->name }}</span></li>
+                        @elseif(! in_array($booking->status, ['cancelled', 'completed', 'provider_rejected'], true))
+                            <li class="is-note"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg><span>กำลังหาผู้ให้บริการ…</span></li>
+                        @endif
+                    </ul>
+
+                    <div class="nvm-os-acts">
+                        <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.bookings.show', $booking) }}"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>ดูรายละเอียด</a>
+                        @if(in_array($booking->status, $bkTrackable, true))
+                            <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.bookings.track', $booking) }}"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>ติดตาม</a>
+                        @endif
+                        @if($booking->status === 'completed' && ! $booking->rating)
+                            <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.bookings.show', $booking) }}#review"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ให้คะแนน</a>
+                        @endif
+                        @if($booking->canCancel())
+                            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm nvm-os-btn-bad"
+                                    @click="cancel = { url: @js(route('user.bookings.cancel', $booking)), no: @js($booking->booking_number), paid: {{ $booking->payment_status === 'paid' ? 'true' : 'false' }} }; reason = ''">
+                                <svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยกเลิก
+                            </button>
+                        @endif
+                    </div>
+                </article>
+            @endforeach
+        </div>
+
+        @if($bookings->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $bookings->links() }}</div>
+        @endif
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>{{ $bkStatus === '' ? 'ยังไม่มีการจอง' : 'ไม่มีการจองในสถานะนี้' }}</b>
+            {{ $bkStatus === '' ? 'ค้นหาบริการที่ต้องการแล้วจองได้เลย' : 'ลองเลือกสถานะอื่น' }}
+            @if($bkStatus === '' && RouteFacade::has('user.services.index'))
+                <div><a class="nvm-btn nvm-btn--gold" href="{{ route('user.services.index') }}"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>ค้นหาบริการ</a></div>
+            @endif
+        </div>
+    @endif
+</section>
+
+{{-- หน้าต่างยืนยันยกเลิก — 🐛 เดิมไม่มีช่องเหตุผล (คอนโทรลเลอร์บังคับ reason) จึงยกเลิกจากหน้านี้ไม่ได้เลย
+     และชื่อ showCancelModal ถูกใช้ทั้งเป็นตัวแปรและเมธอด หน้าต่างจึงเปิดค้างตั้งแต่โหลดหน้า --}}
+<div class="nvm-modal nvm-os-modal" x-show="cancel" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-os-bk-cc-h" @click.self="cancel = null">
+    <div class="nvm-card nvm-modal__box">
+        <h2 id="nvm-os-bk-cc-h"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ยกเลิกการจอง?</h2>
+        <p class="nvm-desc nvm-gap-t">การจอง <b class="nvm-num" x-text="cancel && ('#' + cancel.no)"></b> จะถูกยกเลิกและย้อนกลับไม่ได้</p>
+        <p class="nvm-note" x-show="cancel && cancel.paid"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ชำระเงินแล้ว — ระบบคืนเงินเข้ากระเป๋าเงินของคุณอัตโนมัติ</p>
+        <form method="POST" :action="cancel ? cancel.url : ''" class="nvm-form" @submit="if (busy || reason.trim() === '') { $event.preventDefault(); return; } busy = true">
+            @csrf
+            <div class="nvm-field">
+                <label class="nvm-label" for="bk-cancel-reason">เหตุผลในการยกเลิก <em>*</em></label>
+                <textarea id="bk-cancel-reason" name="reason" rows="3" maxlength="500" required class="nvm-input" x-model="reason" placeholder="เช่น เปลี่ยนวันนัด ไม่สะดวกแล้ว"></textarea>
+            </div>
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="cancel = null">ปิด</button>
+                <button type="submit" class="nvm-btn nvm-btn--bad" :disabled="busy || reason.trim() === ''"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยืนยันยกเลิก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
 @endsection
-
-@push('scripts')
-<script>
-function myBookings() {
-    return {
-        showCancelModal: false,
-        cancelBookingId: null,
-
-        showCancelModal(bookingId) {
-            this.cancelBookingId = bookingId;
-            this.showCancelModal = true;
-        }
-    }
-}
-</script>
-@endpush

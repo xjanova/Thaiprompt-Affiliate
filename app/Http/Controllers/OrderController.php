@@ -19,7 +19,8 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $status = $request->get('status');
+        // รับเฉพาะข้อความ — ?status[]=x (อาร์เรย์) ไม่ควรหลุดเข้า where()
+        $status = is_string($request->get('status')) ? $request->get('status') : null;
 
         $query = Order::with(['items.product'])
             ->where('user_id', auth()->id())
