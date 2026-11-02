@@ -43,13 +43,7 @@
     </div>
 </section>
 
-@if(session('info'))
-    <section class="nvm-card nvm-alert nvm-alert--info" role="status">
-        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
-        <div class="nvm-alert__txt"><b>แจ้งให้ทราบ</b><p>{{ session('info') }}</p></div>
-    </section>
-@endif
-
+{{-- session('info') (เช่น "กรุณาสมัครเป็นผู้ขายก่อนค่ะ") แสดงเป็น toast จากโครงโนวาแล้ว — ไม่ทำกล่องซ้ำที่นี่ --}}
 <form method="POST" action="{{ route('taladsod.register-seller.store') }}" class="nvm-stack"
       x-data="{ agree: {{ old('agree_terms') ? 'true' : 'false' }}, sending: false }" x-on:submit="sending = true" @pageshow.window="sending = false">
     @csrf

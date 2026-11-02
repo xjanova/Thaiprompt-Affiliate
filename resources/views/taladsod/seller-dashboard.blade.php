@@ -65,7 +65,12 @@
                 <a class="nvm-btn nvm-btn--ghost nvm-btn--sm" href="{{ route('taladsod.seller', $seller->id) }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>ดูหน้าร้านแบบลูกค้า</a>
             </div>
         </div>
-        <img class="nvm-ph__art" src="{{ asset('images/nova/svc/market.webp') }}" alt="" width="200" height="200">
+        @if($seller->shop_image)
+            {{-- รูปร้านที่เจ้าของอัปโหลดไว้ — ไม่มีรูปค่อยใช้ภาพตลาดของชุดโนวา --}}
+            <img class="nvm-ph__art nvm-td-logo" src="{{ $seller->shop_image }}" alt="รูปร้าน {{ $seller->shop_name }}" width="200" height="200">
+        @else
+            <img class="nvm-ph__art" src="{{ asset('images/nova/svc/market.webp') }}" alt="" width="200" height="200">
+        @endif
     </div>
 </section>
 

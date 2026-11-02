@@ -225,6 +225,80 @@ class NovaTaladsodPagesTest extends TestCase
         $this->assertTrue(view()->exists('taladsod.partials.kit-js'));
     }
 
+    public function test_order_buttons_lock_without_font_awesome_and_unlock_on_back(): void
+    {
+        $order = $this->pendingOrder();
+        $this->actingAs($this->sellerUser);
+
+        $pages = [
+            'ออเดอร์' => route('taladsod.seller.orders'),
+            'รายละเอียดออเดอร์' => route('taladsod.seller.orders.show', $order),
+        ];
+
+        foreach ($pages as $name => $url) {
+            $html = (string) $this->get($url)->assertOk()->getContent();
+            // ปุ่มรับ/อัปเดตออเดอร์ห้ามยัด HTML สปินเนอร์ Font Awesome
+            $this->assertStringNotContainsString('insertAdjacentHTML', $html, "หน้า {$name} ยังยัด HTML ใส่ปุ่ม");
+            $this->assertStringNotContainsString('fa-circle-notch', $html, "หน้า {$name} ยังใช้สปินเนอร์ Font Awesome");
+            $this->assertDoesNotMatchRegularExpression('/class="[^"]*\bfa-[a-z]/', $html, "หน้า {$name} ยังมีไอคอน Font Awesome");
+            // ล็อกปุ่มด้วย data-td-locked แล้วปลดตอนกดย้อนกลับ (bfcache)
+            $this->assertStringContainsString('data-td-locked', $html, "หน้า {$name} ไม่ล็อกปุ่มระหว่างส่ง");
+            $this->assertStringContainsString('pageshow', $html, "หน้า {$name} ไม่ปลดล็อกปุ่มตอนกดย้อนกลับ");
+        }
+    }
+
+    public function test_profile_shop_type_radio_resets_after_failed_save(): void
+    {
+        $this->actingAs($this->sellerUser);
+        $html = (string) $this->get(route('taladsod.seller.profile'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('name="sp_mode"', $html);
+        // บันทึกไม่สำเร็จ → ตั้งปุ่มเลือกกลับตามสถานะจริง
+        $this->assertStringContainsString("querySelectorAll('input[name=sp_mode]')", $html, 'ไม่มีโค้ดตั้งปุ่มประเภทร้านกลับหลังบันทึกพลาด');
+    }
+
+    public function test_dashboard_header_shows_the_shop_image_or_falls_back(): void
+    {
+        $this->actingAs($this->sellerUser);
+
+        // ไม่มีรูปร้าน → ใช้ภาพตลาดของชุดโนวา
+        $html = (string) $this->get(route('taladsod.seller.dashboard'))->assertOk()->getContent();
+        $this->assertStringContainsString('images/nova/svc/market.webp', $html);
+        $this->assertStringNotContainsString('nvm-td-logo', $html);
+
+        // มีรูปร้าน → หัวหน้าแสดงรูปร้านแทน
+        $this->shop->update(['shop_image' => 'https://cdn.example.test/shop-nova.jpg']);
+        $html = (string) $this->get(route('taladsod.seller.dashboard'))->assertOk()->getContent();
+        $this->assertStringContainsString('nvm-td-logo', $html);
+        $this->assertStringContainsString('https://cdn.example.test/shop-nova.jpg', $html);
+    }
+
+    public function test_register_seller_info_flash_shows_once_as_toast(): void
+    {
+        $newbie = $this->member();
+        $message = 'กรุณาสมัครเป็นผู้ขายก่อนค่ะ';
+
+        $html = (string) $this->actingAs($newbie)
+            ->withSession(['info' => $message])
+            ->get(route('taladsod.register-seller'))
+            ->assertOk()
+            ->getContent();
+
+        // โครงโนวาแปลง flash เป็น toast อยู่แล้ว → ห้ามมีกล่องซ้ำในหน้า
+        $this->assertSame(1, substr_count($html, (string) \Illuminate\Support\Js::from($message)), 'ไม่มี toast ข้อความ info จากโครงโนวา');
+        $this->assertStringNotContainsString($message, $html, 'ข้อความ info ยังแสดงเป็นกล่องซ้ำในหน้า');
+        $this->assertStringNotContainsString('nvm-alert--info', $html);
+    }
+
+    public function test_map_pin_colours_come_from_nova_variables(): void
+    {
+        $css = (string) file_get_contents(public_path('theme-nova/member/taladsod.css'));
+
+        $this->assertStringContainsString('.nvm-td-map .tp-map-pin', $css, 'ไม่มีการตั้งสีหมุดแผนที่ชุดโนวา');
+        $this->assertMatchesRegularExpression('/\.nvm-td-map \.tp-map-pin\.is-shop \{[^}]*var\(--nvm-good\)/', $css);
+        $this->assertDoesNotMatchRegularExpression('/\.tp-map-pin\.is-shop \{[^}]*#[0-9a-f]{3,6}/i', $css, 'หมุดร้านยังใช้สี hex ตายตัว');
+    }
+
     public function test_listing_form_keeps_field_names(): void
     {
         $this->actingAs($this->sellerUser);

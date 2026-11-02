@@ -8,6 +8,9 @@
 .nvm-td-nav { width: 100%; }
 .nvm-td-nav .nvm-ico { width: 16px; height: 16px; }
 
+/* ── รูปร้านในหัวหน้า (แทนภาพตลาด) ─────────────────────── */
+.nvm-ph__art.nvm-td-logo { object-fit: cover; border-radius: 32px; filter: none; animation: none; box-shadow: var(--nvm-shadow), 0 0 0 3px var(--nv-gold-500); background: var(--nvm-paper-2); }
+
 /* ── ปุ่มหลายปุ่มเรียงกัน / ป้ายเรียงกัน ─────────────────── */
 .nvm-td-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .nvm-td-acts--end { justify-content: flex-end; }
@@ -39,7 +42,7 @@
 .nvm-td-map .leaflet-container { font-family: var(--nvm-font-ui); }
 /* หมุดจาก <x-theme-v4.leaflet /> อ้างตัวแปรธีม V4 ที่ไม่มีในเปลือกโนวา → ตั้งสีชุดโนวาแทน */
 .nvm-td-map .tp-map-pin { color: #1a1405; border-color: #fff; background: linear-gradient(135deg, var(--nv-gold-300), var(--nv-gold-600)); }
-.nvm-td-map .tp-map-pin.is-shop { color: #fff; background: linear-gradient(135deg, #4fae84, #2f8a63); }
+.nvm-td-map .tp-map-pin.is-shop { color: var(--nvm-paper); background: linear-gradient(135deg, var(--nvm-good), color-mix(in srgb, var(--nvm-good) 70%, var(--nvm-ink))); }
 .nvm-td-map .tp-map-pin.is-rider { color: #fff; background: linear-gradient(135deg, var(--nv-navy-600), var(--nv-navy-900)); }
 
 /* ── สวิตช์ + ข้อความ ───────────────────────────────────── */
