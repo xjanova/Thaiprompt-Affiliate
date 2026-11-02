@@ -95,7 +95,7 @@ class WalletBalanceDisplayTest extends TestCase
         $this->actingAs($user)
             ->get(route('user.services.show', $this->makeService()))
             ->assertOk()
-            ->assertSee('ยอดคงเหลือ: ฿1,250.50', false);
+            ->assertSee('ยอดคงเหลือ ฿1,250.50', false);
     }
 
     public function test_service_page_shows_zero_for_user_without_wallet(): void
@@ -105,6 +105,6 @@ class WalletBalanceDisplayTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'user']))
             ->get(route('user.services.show', $this->makeService()))
             ->assertOk()
-            ->assertSee('ยอดคงเหลือ: ฿0.00', false);
+            ->assertSee('ยอดคงเหลือ ฿0.00', false);
     }
 }
