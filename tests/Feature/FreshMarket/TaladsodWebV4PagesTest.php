@@ -30,7 +30,7 @@ use Tests\TestCase;
  * ครอบคลุม:
  * - หน้าสาธารณะ (ผู้ใช้ทั่วไป): หน้าแรก / ค้นหา / หมวด / สินค้า / หน้าร้าน (ร้านประจำ, รถเข็นเปิดอยู่, ร้านปิด) / landing / ติดตามไรเดอร์
  * - หน้าผู้ซื้อ: ตะกร้า / ชำระเงิน / ออเดอร์ / รายละเอียดออเดอร์ (นัดรับ + ไรเดอร์)
- * - หน้าผู้ขาย: สมัคร / แดชบอร์ด / ออเดอร์ / รายละเอียดออเดอร์ / สินค้า / ลงขาย / แก้ไข / รายได้ / ตั้งค่าร้าน
+ * - หน้าผู้ขาย (ธีมโนวาเต็มแล้ว): สมัคร / แดชบอร์ด / ออเดอร์ / รายละเอียดออเดอร์ / สินค้า / ลงขาย / แก้ไข / รายได้ / ตั้งค่าร้าน
  * - endpoint ใหม่ของหน้าเว็บ: ร้านใกล้ฉัน, สถานะออเดอร์, ตัวเลขออเดอร์ร้าน, login-continue, แก้รูปสินค้า
  * ทุกหน้าต้องตอบ 200 และใช้ธีม V4 (มีคลาส tp-card) — ไม่มี layout เก่า (layouts.taladsod)
  */
@@ -316,34 +316,34 @@ class TaladsodWebV4PagesTest extends TestCase
     // หน้าผู้ขาย
     // =====================================================
 
-    public function test_seller_pages_render_v4_for_fixed_mobile_and_closed_shops(): void
+    public function test_seller_pages_render_nova_for_fixed_mobile_and_closed_shops(): void
     {
         $order = $this->pendingPickupOrder();
 
         $this->actingAs($this->sellerUser);
-        $this->assertV4Page($this->get(route('taladsod.seller.dashboard')), ['ครัวป้าแดง', 'ร้านเปิดอยู่', 'มีออเดอร์รอรับ', 'ค่าธรรมเนียมการขาย (GP)', 'ผัดกะเพราราดข้าว']);
-        $this->assertV4Page($this->get(route('taladsod.seller.orders')), [$order->order_number, 'กุ้ง, ไข่ดาว', 'เผ็ดน้อย', 'รับออเดอร์', 'อัปเดตอัตโนมัติ']);
-        $this->assertV4Page($this->get(route('taladsod.seller.orders', ['status' => 'pending'])), [$order->order_number]);
-        $this->assertV4Page($this->get(route('taladsod.seller.orders.show', $order)), ['รายการที่ต้องเตรียม', 'กุ้ง, ไข่ดาว', 'รับออเดอร์', 'ยกเลิกออเดอร์']);
-        $this->assertV4Page($this->get(route('taladsod.seller.listings')), ['ผัดกะเพราราดข้าว', '2 กลุ่มตัวเลือก', 'ลงขายสินค้าใหม่']);
-        $this->assertV4Page($this->get(route('taladsod.seller.listings', ['status' => 'sold_out'])), ['ไม่มีสินค้าในหมวดนี้']);
-        $this->assertV4Page($this->get(route('taladsod.listing.create')), ['ลงขายสินค้าใหม่', 'ตัวเลือกสินค้า', 'เลือกเนื้อสัตว์']);
-        $this->assertV4Page($this->get(route('taladsod.listing.edit', $this->krapao->id)), ['แก้ไขสินค้า', 'ผัดกะเพราราดข้าว', 'ลบสินค้า']);
-        $this->assertV4Page($this->get(route('taladsod.seller.earnings')), ['รายได้ร้าน', 'รายได้สุทธิ 14 วันล่าสุด', 'เงินที่กำลังจะได้']);
-        $this->assertV4Page($this->get(route('taladsod.seller.profile')), ['ตั้งค่าร้าน', 'ครัวป้าแดง', 'ปักหมุดร้าน']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.dashboard')), ['ครัวป้าแดง', 'ร้านเปิดอยู่', 'มีออเดอร์รอรับ', 'ค่าธรรมเนียมการขาย (GP)', 'ผัดกะเพราราดข้าว']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.orders')), [$order->order_number, 'กุ้ง, ไข่ดาว', 'เผ็ดน้อย', 'รับออเดอร์', 'อัปเดตอัตโนมัติ']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.orders', ['status' => 'pending'])), [$order->order_number]);
+        $this->assertNovaPage($this->get(route('taladsod.seller.orders.show', $order)), ['รายการที่ต้องเตรียม', 'กุ้ง, ไข่ดาว', 'รับออเดอร์', 'ยกเลิกออเดอร์']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.listings')), ['ผัดกะเพราราดข้าว', '2 กลุ่มตัวเลือก', 'ลงขายสินค้าใหม่']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.listings', ['status' => 'sold_out'])), ['ไม่มีสินค้าในหมวดนี้']);
+        $this->assertNovaPage($this->get(route('taladsod.listing.create')), ['ลงขายสินค้าใหม่', 'ตัวเลือกสินค้า', 'เลือกเนื้อสัตว์']);
+        $this->assertNovaPage($this->get(route('taladsod.listing.edit', $this->krapao->id)), ['แก้ไขสินค้า', 'ผัดกะเพราราดข้าว', 'ลบสินค้า']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.earnings')), ['รายได้ร้าน', 'รายได้สุทธิ 14 วันล่าสุด', 'เงินที่กำลังจะได้']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.profile')), ['ตั้งค่าร้าน', 'ครัวป้าแดง', 'ปักหมุดร้าน']);
 
         // รถเข็นที่เปิดอยู่ + ส่งตำแหน่งสด
         $this->actingAs($this->cartUser);
-        $this->assertV4Page($this->get(route('taladsod.seller.dashboard')), ['รถเข็นลุงหนวด', 'ร้านเปิดอยู่', 'ส่งตำแหน่งสดทุก 30 วินาที', 'ปิดร้าน']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.dashboard')), ['รถเข็นลุงหนวด', 'ร้านเปิดอยู่', 'ส่งตำแหน่งสดทุก 30 วินาที', 'ปิดร้าน']);
 
         // รถเข็นที่ปิดอยู่
         $this->actingAs($this->closedUser);
-        $this->assertV4Page($this->get(route('taladsod.seller.dashboard')), ['รถเข็นป้าปิด', 'ร้านปิดอยู่', 'เปิดร้านที่นี่วันนี้']);
+        $this->assertNovaPage($this->get(route('taladsod.seller.dashboard')), ['รถเข็นป้าปิด', 'ร้านปิดอยู่', 'เปิดร้านที่นี่วันนี้']);
 
         // ยังไม่มีร้าน → หน้าสมัคร (แดชบอร์ดพาไปหน้าสมัคร)
         $newbie = User::factory()->create();
         $this->actingAs($newbie)->get(route('taladsod.seller.dashboard'))->assertRedirect(route('taladsod.register-seller'));
-        $this->assertV4Page($this->actingAs($newbie)->get(route('taladsod.register-seller')), ['สมัครเปิดร้านตลาดสด', 'ปักหมุดร้าน', 'สมัครเปิดร้าน']);
+        $this->assertNovaPage($this->actingAs($newbie)->get(route('taladsod.register-seller')), ['สมัครเปิดร้านตลาดสด', 'ปักหมุดร้าน', 'สมัครเปิดร้าน']);
     }
 
     public function test_seller_action_from_list_returns_to_list_and_poll_reports_new_orders(): void
@@ -515,6 +515,30 @@ class TaladsodWebV4PagesTest extends TestCase
 
         $this->assertStringContainsString('tp-card', $html, 'หน้าไม่ได้ใช้ธีม V4');
         $this->assertStringContainsString('ts-scope', $html, 'หน้าไม่มีชุด UI ตลาดสด');
+        $this->assertStringNotContainsString('taladsod/app.js', $html, 'ยังใช้ layout ตลาดสดเก่า');
+
+        foreach ($texts as $text) {
+            $response->assertSee($text, false);
+        }
+
+        return $response;
+    }
+
+    /**
+     * หน้าผู้ขายย้ายไปธีมโนวาเต็มแล้ว (layouts.user-nova) — ต้องไม่มีโครง V4 หลงเหลือ
+     *
+     * @param  array<int, string>  $texts
+     */
+    private function assertNovaPage($response, array $texts = [])
+    {
+        $response->assertOk();
+        $html = (string) $response->getContent();
+
+        $this->assertStringContainsString('nvm-body', $html, 'หน้าไม่ได้ใช้ธีมโนวา');
+        $this->assertStringContainsString('nova-member.css', $html, 'หน้าไม่ได้โหลด CSS โนวา');
+        $this->assertStringContainsString('theme-nova/member/taladsod.css', $html, 'หน้าไม่ได้โหลด CSS ตลาดสดโนวา');
+        $this->assertStringNotContainsString('class="nvm-v4"', $html, 'ยังห่อด้วย V4');
+        $this->assertStringNotContainsString('tp-card', $html, 'ยังมีคลาส V4 หลงเหลือ');
         $this->assertStringNotContainsString('taladsod/app.js', $html, 'ยังใช้ layout ตลาดสดเก่า');
 
         foreach ($texts as $text) {

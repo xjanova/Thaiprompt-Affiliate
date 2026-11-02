@@ -1,11 +1,12 @@
 {{--
- | ออเดอร์ของร้าน (taladsod.seller.orders) — รับ / เตรียม / พร้อมส่ง / ส่งมอบ / ยกเลิก — ธีม V4 (user-v4)
+ | ออเดอร์ของร้าน (taladsod.seller.orders) — รับ / เตรียม / พร้อมส่ง / ส่งมอบ / ยกเลิก — ธีมโนวาเต็ม (layouts.user-nova)
  | Controller: FreshMarket\HomeController@sellerOrders
  | ตัวแปร: $seller, $orders (paginator + buyer, listing, riderJob, items), $statusFilter, $statusCounts [status => n], $statuses [status => ป้ายไทย]
  | ปุ่ม: PUT taladsod.seller.orders.status {action: accept|prepare|ready|handover|cancel, reason (บังคับเมื่อ cancel), return_to=list, return_status}
  | รีเฟรชอัตโนมัติ: poll GET taladsod.seller.orders.poll ทุก 20 วินาที → มีออเดอร์ใหม่/เปลี่ยนสถานะ = แจ้ง + โหลดหน้าใหม่ (ถ้าไม่ได้เปิดกล่องอยู่)
+ | ความเป็นส่วนตัว: รายการแสดงแค่ชื่อลูกค้า (เบอร์โทร/ที่อยู่ดูได้ที่หน้ารายละเอียดหลังรับออเดอร์)
  --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'ออเดอร์ร้าน · '.$seller->shop_name)
 
@@ -25,152 +26,152 @@
     ];
 @endphp
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/taladsod.css') }}?v={{ filemtime(public_path('theme-nova/member/taladsod.css')) }}">@endpush
+
 @section('content')
-<x-theme-v4.shop-kit />
-@include('taladsod.partials.kit')
+@include('taladsod.partials.kit-js')
 
-<div class="ts-scope ts-stack" style="gap:16px;" x-data="tsSellerOrders({{ \Illuminate\Support\Js::from($pollCfg) }})">
-    @include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'orders'])
+<div class="nvm-stack" x-data="tsSellerOrders({{ \Illuminate\Support\Js::from($pollCfg) }})">
 
-    <div class="ts-refresh" x-show="changed" x-cloak>
-        <span><i class="fas fa-bell" aria-hidden="true"></i> <span x-text="changeText"></span></span>
-        <button type="button" class="ts-btn3d soft sm" x-on:click="window.location.reload()">รีเฟรชรายการ</button>
-    </div>
-
-    <div class="ts-row" style="justify-content:space-between;">
-        <div>
-            <h1 class="ts-h1">ออเดอร์ของร้าน</h1>
-            <p class="ts-muted" style="margin:6px 0 0; font-size:13px;"><span class="ts-dot live ts-tone-ok" style="display:inline-block; margin-right:6px;"></span>อัปเดตอัตโนมัติทุก 20 วินาที</p>
+<section class="nvm-ph" aria-labelledby="nvm-td-so-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">Shop orders</div>
+            <h1 id="nvm-td-so-h">ออเดอร์ของร้าน</h1>
+            <p class="nvm-ph__lead"><span class="nvm-td-dot is-ok is-live"></span> อัปเดตอัตโนมัติทุก 20 วินาที</p>
+            <div class="nvm-hero__actions nvm-td-acts">
+                <a class="nvm-btn nvm-btn--ghost nvm-btn--sm" href="{{ route('taladsod.seller.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>หน้าร้านวันนี้</a>
+            </div>
         </div>
-        <a href="{{ route('taladsod.seller.dashboard') }}" class="tp-btn"><i class="fas fa-store" aria-hidden="true"></i> หน้าร้านวันนี้</a>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/icons/bag.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    <div class="sf-scroll" role="tablist" aria-label="กรองตามสถานะ">
-        <a href="{{ route('taladsod.seller.orders') }}" class="sf-chip {{ ! $statusFilter ? 'is-on' : '' }}" role="tab" aria-selected="{{ ! $statusFilter ? 'true' : 'false' }}">ทั้งหมด <span class="ts-num" style="opacity:.75;">{{ $allCount }}</span></a>
-        @foreach($filterOrder as $key)
-            @if(isset($statuses[$key]) && (($statusCounts[$key] ?? 0) > 0 || $statusFilter === $key || in_array($key, ['pending', 'accepted', 'preparing', 'ready'], true)))
-                <a href="{{ route('taladsod.seller.orders', ['status' => $key]) }}" class="sf-chip {{ $statusFilter === $key ? 'is-on' : '' }}" role="tab" aria-selected="{{ $statusFilter === $key ? 'true' : 'false' }}">
-                    {{ $statuses[$key] }}
-                    <span class="ts-num" style="opacity:.75;">{{ (int) ($statusCounts[$key] ?? 0) }}</span>
-                </a>
-            @endif
-        @endforeach
-    </div>
+@include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'orders'])
 
-    <div class="ts-stack">
-        @forelse($orders as $order)
-            @php
-                $actions = $order->allowedActions('seller');
-                $lines = $order->lineItems();
-                $tone = $ui::orderTone($order->order_status);
-                $isNew = $order->order_status === \App\Models\FreshMarketOrder::STATUS_PENDING;
-                $job = $order->riderJob;
-            @endphp
-            <article class="tp-card ts-stack" style="padding:16px; gap:12px; {{ $isNew ? 'box-shadow:var(--card-shadow), 0 0 0 2px color-mix(in srgb, var(--ts-warn) 55%, transparent);' : '' }}">
-                <div class="ts-row" style="justify-content:space-between; gap:8px;">
-                    <div style="min-width:0;">
-                        <a href="{{ route('taladsod.seller.orders.show', $order) }}" class="ts-link" style="font-size:15px;">#{{ $order->order_number }}</a>
-                        <span class="ts-muted ts-small"> · {{ $ui::shortDate($order->created_at) }} · {{ $order->created_at?->diffForHumans() }}</span>
-                        <div class="ts-muted ts-small" style="margin-top:2px;"><i class="fas fa-user" aria-hidden="true"></i> {{ $order->buyer?->name ?? 'ลูกค้า' }}</div>
-                    </div>
-                    <span class="ts-pill solid ts-tone-{{ $tone }}"><i class="fas {{ $ui::orderIcon($order->order_status) }}" aria-hidden="true"></i> {{ $order->status_label }}</span>
-                </div>
+<section class="nvm-card nvm-alert nvm-alert--info" x-show="changed" x-cloak role="status">
+    <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-bell"/></svg></span>
+    <div class="nvm-alert__txt"><b x-text="changeText"></b><p>กดรีเฟรชเพื่อดูรายการล่าสุด</p></div>
+    <button type="button" class="nvm-btn nvm-btn--gold nvm-btn--sm" x-on:click="window.location.reload()">รีเฟรชรายการ</button>
+</section>
 
-                <div class="ts-row" style="gap:6px;">
-                    <span class="ts-pill {{ $order->delivery_type === 'rider' ? 'ts-tone-deep' : 'ts-tone-muted' }}"><i class="fas {{ $order->delivery_type === 'rider' ? 'fa-motorcycle' : 'fa-person-walking' }}" aria-hidden="true"></i> {{ $ui::deliveryLabel($order->delivery_type) }}</span>
-                    <span class="ts-pill {{ $order->payment_method === 'cod' ? 'ts-tone-warn' : 'ts-tone-ok' }}"><i class="fas {{ $order->payment_method === 'cod' ? 'fa-money-bill-wave' : 'fa-wallet' }}" aria-hidden="true"></i> {{ $order->payment_method === 'cod' ? 'เก็บเงินปลายทาง' : 'จ่ายแล้วผ่านกระเป๋าเงิน' }}</span>
-                    @if($job)
-                        <span class="ts-pill ts-tone-info"><i class="fas fa-motorcycle" aria-hidden="true"></i> {{ $job->status_text }}</span>
-                    @endif
-                </div>
+<nav class="nvm-tabs" aria-label="กรองตามสถานะ">
+    <a href="{{ route('taladsod.seller.orders') }}" class="{{ ! $statusFilter ? 'is-on' : '' }}" @if(! $statusFilter) aria-current="page" @endif>ทั้งหมด <span class="nvm-chip nvm-num">{{ $allCount }}</span></a>
+    @foreach($filterOrder as $key)
+        @if(isset($statuses[$key]) && (($statusCounts[$key] ?? 0) > 0 || $statusFilter === $key || in_array($key, ['pending', 'accepted', 'preparing', 'ready'], true)))
+            <a href="{{ route('taladsod.seller.orders', ['status' => $key]) }}" class="{{ $statusFilter === $key ? 'is-on' : '' }}" @if($statusFilter === $key) aria-current="page" @endif>
+                {{ $statuses[$key] }} <span class="nvm-chip nvm-num">{{ (int) ($statusCounts[$key] ?? 0) }}</span>
+            </a>
+        @endif
+    @endforeach
+</nav>
 
-                <div class="tp-inset" style="border-radius:14px; padding:10px 12px;">
-                    @foreach($lines as $item)
-                        <div class="ts-row" style="gap:8px; flex-wrap:nowrap; align-items:flex-start; padding:4px 0;">
-                            <b class="ts-num" style="min-width:30px; color:var(--deep1);">{{ (int) $item->quantity }}×</b>
-                            <div style="flex:1; min-width:0;">
-                                <b style="font-size:14px; overflow-wrap:anywhere;">{{ $item->title }}</b>
-                                @if($item->optionsLabel() !== '')
-                                    <div style="font-size:13px; font-weight:700; color:var(--deep2);">{{ $item->optionsLabel() }}</div>
-                                @endif
-                                @if($item->note)
-                                    <div class="ts-small" style="color:var(--ts-bad); font-weight:700;"><i class="fas fa-note-sticky" aria-hidden="true"></i> {{ $item->note }}</div>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                    @if($order->delivery_notes)
-                        <div class="ts-muted ts-small" style="margin-top:4px;"><i class="fas fa-comment" aria-hidden="true"></i> {{ $order->delivery_notes }}</div>
-                    @endif
-                </div>
-
-                <div class="ts-row" style="justify-content:space-between; gap:10px;">
-                    <div>
-                        <b class="ts-money" style="font-size:18px;">฿{{ $ui::money($order->total_amount) }}</b>
-                        <span class="ts-muted ts-small"> · ร้านได้ ฿{{ $ui::money($order->seller_earning) }}</span>
-                    </div>
-                    <div class="ts-row" style="gap:8px;">
-                        @foreach($actions as $action)
-                            @continue($action === 'cancel')
-                            @php $style = $ui::actionStyle($action); @endphp
-                            <form method="POST" action="{{ route('taladsod.seller.orders.status', $order) }}" x-on:submit="lock($event)">
-                                @csrf
-                                @method('PUT')
-                                <input type="hidden" name="action" value="{{ $action }}">
-                                <input type="hidden" name="return_to" value="list">
-                                <input type="hidden" name="return_status" value="{{ $statusFilter }}">
-                                <button type="submit" class="ts-btn3d sm ts-tone-{{ $style['tone'] }}"><i class="fas {{ $style['icon'] }}" aria-hidden="true"></i> {{ \App\Models\FreshMarketOrder::actionLabel($action) }}</button>
-                            </form>
-                        @endforeach
-                        @if(in_array('cancel', $actions, true))
-                            <button type="button" class="tp-btn tp-btn-sm ts-btn-ghost ts-tone-bad"
-                                    x-on:click="openCancel(@js($order->order_number), @js(route('taladsod.seller.orders.status', $order)))">
-                                <i class="fas fa-xmark" aria-hidden="true"></i> ยกเลิก
-                            </button>
-                        @endif
-                        <a href="{{ route('taladsod.seller.orders.show', $order) }}" class="tp-btn tp-btn-sm">รายละเอียด</a>
-                    </div>
-                </div>
-            </article>
-        @empty
-            <div class="tp-card ts-empty" style="padding:44px 18px;">
-                <span class="em" aria-hidden="true">📭</span>
-                <b style="font-size:16px;">{{ $statusFilter ? 'ไม่มีออเดอร์ในสถานะนี้' : 'ยังไม่มีออเดอร์' }}</b>
-                <span class="ts-muted">เปิดร้านไว้ แล้วออเดอร์ใหม่จะเด้งขึ้นที่นี่ทันที</span>
-                <a href="{{ route('taladsod.seller.dashboard') }}" class="ts-btn3d ts-tone-gold sm"><i class="fas fa-store" aria-hidden="true"></i> ไปหน้าร้านวันนี้</a>
-            </div>
-        @endforelse
-    </div>
-
-    @if($orders->hasPages())
-        <div>{{ $orders->links('vendor.pagination.tp-v4') }}</div>
-    @endif
-
-    {{-- กล่องยกเลิก (ต้องมีเหตุผล) --}}
-    <div class="ts-dialog-bg" x-show="cancel.open" x-cloak x-transition.opacity x-on:click.self="cancel.open = false" x-on:keydown.escape.window="cancel.open = false">
-        <form method="POST" :action="cancel.url" class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="so-cancel-h" x-on:submit="lock($event)">
-            @csrf
-            @method('PUT')
-            <input type="hidden" name="action" value="cancel">
-            <input type="hidden" name="return_to" value="list">
-            <input type="hidden" name="return_status" value="{{ $statusFilter }}">
-            <h2 id="so-cancel-h" class="ts-h2"><i class="fas fa-circle-xmark" style="color:var(--ts-bad);" aria-hidden="true"></i> ยกเลิกออเดอร์ #<span x-text="cancel.number"></span></h2>
-            <p class="ts-muted" style="margin:0; font-size:13.5px;">ลูกค้าจะได้รับแจ้งเหตุผล และได้เงินคืนอัตโนมัติ (ถ้าจ่ายแล้ว)</p>
-            <div class="ts-row" style="gap:6px;">
-                @foreach($cancelReasons as $reason)
-                    <button type="button" class="sf-chip" :class="cancel.reason === @js($reason) ? 'is-on' : ''" x-on:click="cancel.reason = @js($reason)">{{ $reason }}</button>
-                @endforeach
-            </div>
+@forelse($orders as $order)
+    @php
+        $actions = $order->allowedActions('seller');
+        $lines = $order->lineItems();
+        $isNew = $order->order_status === \App\Models\FreshMarketOrder::STATUS_PENDING;
+        $job = $order->riderJob;
+    @endphp
+    <article class="nvm-card nvm-td-order {{ $isNew ? 'is-new' : '' }}">
+        <div class="nvm-td-order__head">
             <div>
-                <label class="ts-label" for="so-reason">เหตุผล <span class="req">*</span></label>
-                <textarea id="so-reason" name="reason" class="tp-input" rows="2" maxlength="500" required x-model="cancel.reason" placeholder="บอกลูกค้าสั้นๆ ว่าทำไมต้องยกเลิก"></textarea>
+                <a href="{{ route('taladsod.seller.orders.show', $order) }}">#{{ $order->order_number }}</a>
+                <small>{{ $ui::shortDate($order->created_at) }} · {{ $order->created_at?->diffForHumans() }} · ลูกค้า {{ $order->buyer?->name ?? 'ลูกค้า' }}</small>
             </div>
-            <div class="ts-row" style="justify-content:flex-end;">
-                <button type="button" class="tp-btn" x-on:click="cancel.open = false">ไม่ยกเลิก</button>
-                <button type="submit" class="ts-btn3d ts-tone-bad sm" :disabled="!cancel.reason.trim()"><i class="fas fa-xmark" aria-hidden="true"></i> ยืนยันยกเลิก</button>
+            <span class="{{ $ui::novaChip($ui::orderTone($order->order_status)) }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaOrderIcon($order->order_status) }}"/></svg>{{ $order->status_label }}</span>
+        </div>
+
+        <div class="nvm-td-chips">
+            <span class="{{ $order->delivery_type === 'rider' ? 'nvm-chip nvm-chip--info' : 'nvm-chip' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $order->delivery_type === 'rider' ? 'scooter' : 'store' }}"/></svg>{{ $ui::deliveryLabel($order->delivery_type) }}</span>
+            <span class="{{ $order->payment_method === 'cod' ? 'nvm-chip nvm-chip--warn' : 'nvm-chip nvm-chip--ok' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $order->payment_method === 'cod' ? 'cash' : 'wallet' }}"/></svg>{{ $order->payment_method === 'cod' ? 'เก็บเงินปลายทาง' : 'จ่ายแล้วผ่านกระเป๋าเงิน' }}</span>
+            @if($job)
+                <span class="nvm-chip nvm-chip--info"><svg class="nvm-ico"><use href="#nvm-i-scooter"/></svg>{{ $job->status_text }}</span>
+            @endif
+        </div>
+
+        <div class="nvm-td-lines">
+            @foreach($lines as $item)
+                <div class="nvm-td-line">
+                    <b class="nvm-num">{{ (int) $item->quantity }}×</b>
+                    <div>
+                        <b>{{ $item->title }}</b>
+                        @if($item->optionsLabel() !== '')<span class="nvm-td-opt-txt">{{ $item->optionsLabel() }}</span>@endif
+                        @if($item->note)<span class="nvm-td-note">โน้ต: {{ $item->note }}</span>@endif
+                    </div>
+                </div>
+            @endforeach
+            @if($order->delivery_notes)
+                <span class="nvm-td-muted">ข้อความจากลูกค้า: {{ $order->delivery_notes }}</span>
+            @endif
+        </div>
+
+        <div class="nvm-td-order__foot">
+            <div>
+                <span class="nvm-td-price nvm-num">฿{{ $ui::money($order->total_amount) }}</span>
+                <small> · ร้านได้ ฿{{ $ui::money($order->seller_earning) }}</small>
             </div>
-        </form>
-    </div>
+            <div class="nvm-td-acts">
+                @foreach($actions as $action)
+                    @continue($action === 'cancel')
+                    <form method="POST" action="{{ route('taladsod.seller.orders.status', $order) }}" x-on:submit="lock($event)">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="action" value="{{ $action }}">
+                        <input type="hidden" name="return_to" value="list">
+                        <input type="hidden" name="return_status" value="{{ $statusFilter }}">
+                        <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaActionIcon($action) }}"/></svg>{{ \App\Models\FreshMarketOrder::actionLabel($action) }}</button>
+                    </form>
+                @endforeach
+                @if(in_array('cancel', $actions, true))
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm"
+                            x-on:click="openCancel(@js($order->order_number), @js(route('taladsod.seller.orders.status', $order)))">
+                        <svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยกเลิก
+                    </button>
+                @endif
+                <a href="{{ route('taladsod.seller.orders.show', $order) }}" class="nvm-btn nvm-btn--line nvm-btn--sm">รายละเอียด</a>
+            </div>
+        </div>
+    </article>
+@empty
+    <section class="nvm-card nvm-empty">
+        <img src="{{ asset('images/nova/icons/bag.webp') }}" alt="" width="86" height="86" loading="lazy">
+        <b>{{ $statusFilter ? 'ไม่มีออเดอร์ในสถานะนี้' : 'ยังไม่มีออเดอร์' }}</b>
+        เปิดร้านไว้ แล้วออเดอร์ใหม่จะเด้งขึ้นที่นี่ทันที
+        <div><a href="{{ route('taladsod.seller.dashboard') }}" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>ไปหน้าร้านวันนี้</a></div>
+    </section>
+@endforelse
+
+@if($orders->hasPages())
+    <div class="nvm-pager">{{ $orders->links() }}</div>
+@endif
+
+{{-- กล่องยกเลิก (ต้องมีเหตุผล) --}}
+<div class="nvm-modal" x-show="cancel.open" x-cloak x-transition.opacity x-on:click.self="cancel.open = false" x-on:keydown.escape.window="cancel.open = false">
+    <form method="POST" :action="cancel.url" class="nvm-card nvm-modal__box nvm-form" role="dialog" aria-modal="true" aria-labelledby="so-cancel-h" x-on:submit="lock($event)">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="action" value="cancel">
+        <input type="hidden" name="return_to" value="list">
+        <input type="hidden" name="return_status" value="{{ $statusFilter }}">
+        <h2 id="so-cancel-h">ยกเลิกออเดอร์ #<span x-text="cancel.number"></span></h2>
+        <p class="nvm-desc">ลูกค้าจะได้รับแจ้งเหตุผล และได้เงินคืนอัตโนมัติ (ถ้าจ่ายแล้ว)</p>
+        <div class="nvm-picks">
+            @foreach($cancelReasons as $reason)
+                <button type="button" :class="cancel.reason === @js($reason) ? 'is-on' : ''" x-on:click="cancel.reason = @js($reason)">{{ $reason }}</button>
+            @endforeach
+        </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="so-reason">เหตุผล <em>*</em></label>
+            <textarea id="so-reason" name="reason" class="nvm-input nvm-textarea" rows="2" maxlength="500" required x-model="cancel.reason" placeholder="บอกลูกค้าสั้นๆ ว่าทำไมต้องยกเลิก"></textarea>
+        </div>
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--line" x-on:click="cancel.open = false">ไม่ยกเลิก</button>
+            <button type="submit" class="nvm-btn nvm-btn--bad" :disabled="!cancel.reason.trim()"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยืนยันยกเลิก</button>
+        </div>
+    </form>
+</div>
+
 </div>
 @endsection
 
@@ -191,13 +192,19 @@
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible' && !this.changed) { this.poll(); }
                 });
+                // กลับมาด้วยปุ่มย้อนกลับของเบราว์เซอร์ (bfcache) → ปลดล็อกปุ่ม
+                window.addEventListener('pageshow', (e) => {
+                    if (!e.persisted) { return; }
+                    this.submitting = false;
+                    document.querySelectorAll('[data-td-locked]').forEach((b) => { b.disabled = false; b.removeAttribute('data-td-locked'); });
+                });
             },
 
             lock(e) {
                 if (this.submitting) { e.preventDefault(); return; }
                 this.submitting = true;
                 const btn = e.target.querySelector('button[type="submit"]');
-                if (btn) { btn.disabled = true; btn.insertAdjacentHTML('afterbegin', '<i class="fas fa-circle-notch ts-spin" aria-hidden="true"></i> '); }
+                if (btn) { btn.disabled = true; btn.setAttribute('data-td-locked', '1'); }
             },
 
             openCancel(number, url) {

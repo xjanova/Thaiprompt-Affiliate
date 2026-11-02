@@ -1,11 +1,11 @@
 {{--
- | สินค้า/เมนูทั้งหมดของร้าน (taladsod.seller.listings) — ธีม V4 (user-v4)
+ | สินค้า/เมนูทั้งหมดของร้าน (taladsod.seller.listings) — ธีมโนวาเต็ม (layouts.user-nova)
  | Controller: FreshMarket\HomeController@sellerListings
  | ตัวแปร: $seller, $listings (paginator + category, option_groups_count), $statusFilter (all|selling|hidden|sold_out|suspended),
  |         $counts [filter => จำนวน], $canCreate, $gpRate
  | ลบ: DELETE taladsod.listing.destroy {return_to=listings} (มีกล่องยืนยัน)
  --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'สินค้าของร้าน · ตลาดสด')
 
@@ -20,108 +20,113 @@
     ];
 @endphp
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/taladsod.css') }}?v={{ filemtime(public_path('theme-nova/member/taladsod.css')) }}">@endpush
+
 @section('content')
-<x-theme-v4.shop-kit />
-@include('taladsod.partials.kit')
 
-<div class="ts-scope ts-stack" style="gap:16px;" x-data="{ del: null, delUrl: '', sending: false }">
-    @include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'listings'])
+<div class="nvm-stack" x-data="{ del: null, delUrl: '', sending: false }">
 
-    <div class="ts-row" style="justify-content:space-between;">
-        <div>
-            <h1 class="ts-h1">สินค้าและเมนูของร้าน</h1>
-            <p class="ts-muted" style="margin:6px 0 0; font-size:13.5px;">GP ตอนนี้ {{ rtrim(rtrim(number_format((float) $gpRate, 2), '0'), '.') }}% · ลูกค้าเห็นเฉพาะสินค้าที่ "เปิดขาย"</p>
+<section class="nvm-ph" aria-labelledby="nvm-td-sl-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">My menu</div>
+            <h1 id="nvm-td-sl-h">สินค้าและเมนูของร้าน</h1>
+            <p class="nvm-ph__lead">GP ตอนนี้ {{ rtrim(rtrim(number_format((float) $gpRate, 2), '0'), '.') }}% · ลูกค้าเห็นเฉพาะสินค้าที่ "เปิดขาย"</p>
+            <div class="nvm-hero__actions nvm-td-acts">
+                @if($canCreate)
+                    <a class="nvm-btn nvm-btn--gold" href="{{ route('taladsod.listing.create') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>ลงขายสินค้าใหม่</a>
+                @else
+                    <span class="nvm-pill nvm-pill--warn">ลงขายครบโควต้าแล้ว — ต่ออายุสมาชิกที่หน้าร้านวันนี้</span>
+                @endif
+            </div>
         </div>
-        @if($canCreate)
-            <a href="{{ route('taladsod.listing.create') }}" class="ts-btn3d ts-tone-gold"><i class="fas fa-plus" aria-hidden="true"></i> ลงขายสินค้าใหม่</a>
-        @else
-            <span class="sf-note sf-note-warn ts-small">ลงขายครบโควต้าแล้ว — ต่ออายุสมาชิกที่หน้าร้านวันนี้</span>
-        @endif
+        <img class="nvm-ph__art" src="{{ asset('images/nova/icons/basket.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    <div class="sf-scroll" role="tablist" aria-label="กรองสินค้า">
-        @foreach($filters as $key => $label)
-            <a href="{{ route('taladsod.seller.listings', $key === 'all' ? [] : ['status' => $key]) }}" class="sf-chip {{ $statusFilter === $key ? 'is-on' : '' }}" role="tab" aria-selected="{{ $statusFilter === $key ? 'true' : 'false' }}">
-                {{ $label }} <span class="ts-num" style="opacity:.75;">{{ number_format((int) ($counts[$key] ?? 0)) }}</span>
-            </a>
-        @endforeach
-    </div>
+@include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'listings'])
 
-    @if($listings->count() > 0)
-        <div class="ts-grid" style="--ts-min:280px;">
-            @foreach($listings as $listing)
-                @php $st = $ui::listingStatus($listing); @endphp
-                <article class="tp-card ts-stack" style="padding:14px; gap:12px;">
-                    <div class="ts-row" style="gap:12px; flex-wrap:nowrap; align-items:flex-start;">
-                        <a href="{{ route('taladsod.listing.edit', $listing->id) }}" class="sf-thumb" style="width:76px; height:76px;">
-                            @if($listing->primary_image)
-                                <img src="{{ $listing->primary_image }}" alt="" loading="lazy">
+<nav class="nvm-tabs" aria-label="กรองสินค้า">
+    @foreach($filters as $key => $label)
+        <a href="{{ route('taladsod.seller.listings', $key === 'all' ? [] : ['status' => $key]) }}" class="{{ $statusFilter === $key ? 'is-on' : '' }}" @if($statusFilter === $key) aria-current="page" @endif>
+            {{ $label }} <span class="nvm-chip nvm-num">{{ number_format((int) ($counts[$key] ?? 0)) }}</span>
+        </a>
+    @endforeach
+</nav>
+
+@if($listings->count() > 0)
+    <div class="nvm-td-grid">
+        @foreach($listings as $listing)
+            @php $st = $ui::listingStatus($listing); @endphp
+            <article class="nvm-card nvm-td-item">
+                <div class="nvm-td-item__top">
+                    <a href="{{ route('taladsod.listing.edit', $listing->id) }}" class="nvm-td-thumb nvm-td-thumb--lg" aria-label="แก้ไข {{ $listing->title }}">
+                        @if($listing->primary_image)
+                            <img src="{{ $listing->primary_image }}" alt="" loading="lazy">
+                        @else
+                            <svg class="nvm-ico"><use href="#nvm-i-basket"/></svg>
+                        @endif
+                    </a>
+                    <div class="nvm-td-item__txt">
+                        <b>{{ $listing->title }}</b>
+                        <div class="nvm-td-price nvm-num">฿{{ $ui::money($listing->price) }} <small>/ {{ $listing->unit }}</small></div>
+                        <div class="nvm-td-chips nvm-gap-t">
+                            <span class="{{ $ui::novaChip($st['tone']) }}">{{ $st['label'] }}</span>
+                            @if($listing->tracksStock())
+                                <span class="{{ (int) $listing->quantity_available <= 5 ? 'nvm-chip nvm-chip--warn' : 'nvm-chip' }}">เหลือ {{ number_format((int) $listing->quantity_available) }}</span>
                             @else
-                                <span aria-hidden="true">🥬</span>
+                                <span class="nvm-chip nvm-chip--ok">ทำตามสั่ง</span>
                             @endif
-                        </a>
-                        <div style="flex:1; min-width:0;">
-                            <b style="display:block; font-size:14.5px; line-height:1.4; overflow-wrap:anywhere;">{{ $listing->title }}</b>
-                            <div class="ts-row" style="gap:6px; margin-top:4px;">
-                                <span class="ts-money" style="font-size:16px;">฿{{ $ui::money($listing->price) }}</span>
-                                <span class="ts-muted ts-small">/ {{ $listing->unit }}</span>
-                            </div>
-                            <div class="ts-row" style="gap:6px; margin-top:6px;">
-                                <span class="ts-pill ts-tone-{{ $st['tone'] }}">{{ $st['label'] }}</span>
-                                @if($listing->tracksStock())
-                                    <span class="ts-pill {{ (int) $listing->quantity_available <= 5 ? 'ts-tone-warn' : 'ts-tone-muted' }}">เหลือ {{ number_format((int) $listing->quantity_available) }}</span>
-                                @else
-                                    <span class="ts-pill ts-tone-ok">ทำตามสั่ง</span>
-                                @endif
-                                @if((int) $listing->option_groups_count > 0)
-                                    <span class="ts-pill ts-tone-info"><i class="fas fa-sliders" aria-hidden="true"></i> {{ (int) $listing->option_groups_count }} กลุ่มตัวเลือก</span>
-                                @endif
-                            </div>
+                            @if((int) $listing->option_groups_count > 0)
+                                <span class="nvm-chip nvm-chip--info">{{ (int) $listing->option_groups_count }} กลุ่มตัวเลือก</span>
+                            @endif
                         </div>
                     </div>
-                    <div class="ts-row ts-muted ts-small" style="gap:12px;">
-                        @if($listing->category)<span>{{ $listing->category->icon }} {{ $listing->category->name }}</span>@endif
-                        <span><i class="fas fa-eye" aria-hidden="true"></i> {{ number_format((int) $listing->view_count) }}</span>
-                        <span><i class="fas fa-bag-shopping" aria-hidden="true"></i> {{ number_format((int) $listing->order_count) }}</span>
-                    </div>
-                    <div class="ts-row" style="gap:8px;">
-                        <a href="{{ route('taladsod.listing.edit', $listing->id) }}" class="ts-btn3d sm ts-tone-gold" style="flex:1;"><i class="fas fa-pen" aria-hidden="true"></i> แก้ไข</a>
-                        <a href="{{ route('taladsod.listing', $listing->slug) }}" class="tp-btn" target="_blank" rel="noopener" aria-label="ดูหน้าสินค้า {{ $listing->title }}"><i class="fas fa-eye" aria-hidden="true"></i></a>
-                        <button type="button" class="tp-btn" style="color:var(--ts-bad);" aria-label="ลบ {{ $listing->title }}"
-                                x-on:click="del = @js($listing->title); delUrl = @js(route('taladsod.listing.destroy', $listing->id))">
-                            <i class="fas fa-trash-can" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </article>
-            @endforeach
-        </div>
-        @if($listings->hasPages())
-            <div>{{ $listings->links('vendor.pagination.tp-v4') }}</div>
-        @endif
-    @else
-        <div class="tp-card ts-empty" style="padding:44px 18px;">
-            <span class="em" aria-hidden="true">🍳</span>
-            <b style="font-size:16px;">{{ $statusFilter === 'all' ? 'ยังไม่มีสินค้าในร้าน' : 'ไม่มีสินค้าในหมวดนี้' }}</b>
-            <span class="ts-muted">ลงเมนูแรกของร้าน ใส่รูปสวยๆ ตั้งตัวเลือก แล้วกดเปิดร้านได้เลย</span>
-            @if($canCreate)
-                <a href="{{ route('taladsod.listing.create') }}" class="ts-btn3d ts-tone-gold"><i class="fas fa-plus" aria-hidden="true"></i> ลงขายสินค้าแรก</a>
-            @endif
-        </div>
-    @endif
-
-    {{-- กล่องยืนยันลบ --}}
-    <div class="ts-dialog-bg" x-show="del" x-cloak x-transition.opacity x-on:keydown.escape.window="del = null" x-on:click.self="del = null">
-        <form method="POST" :action="delUrl" class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="sl-del-h" x-on:submit="sending = true">
-            @csrf
-            @method('DELETE')
-            <input type="hidden" name="return_to" value="listings">
-            <h2 id="sl-del-h" class="ts-h2"><i class="fas fa-trash-can" style="color:var(--ts-bad);" aria-hidden="true"></i> ลบ "<span x-text="del"></span>"?</h2>
-            <p class="ts-muted" style="margin:0; font-size:13.5px;">สินค้าจะหายจากหน้าร้านทันที — ถ้ามีออเดอร์ที่ยังไม่เสร็จ ระบบจะไม่ให้ลบ</p>
-            <div class="ts-row" style="justify-content:flex-end;">
-                <button type="button" class="tp-btn" x-on:click="del = null">ไม่ลบ</button>
-                <button type="submit" class="ts-btn3d ts-tone-bad sm" :disabled="sending"><i class="fas fa-trash-can" aria-hidden="true"></i> ลบสินค้า</button>
-            </div>
-        </form>
+                </div>
+                <div class="nvm-td-item__meta">
+                    @if($listing->category)<span>{{ $listing->category->icon }} {{ $listing->category->name }}</span>@endif
+                    <span>ดู {{ number_format((int) $listing->view_count) }} ครั้ง</span>
+                    <span>สั่ง {{ number_format((int) $listing->order_count) }} ครั้ง</span>
+                </div>
+                <div class="nvm-td-acts">
+                    <a href="{{ route('taladsod.listing.edit', $listing->id) }}" class="nvm-btn nvm-btn--gold nvm-btn--sm nvm-td-grow">แก้ไข</a>
+                    <a href="{{ route('taladsod.listing', $listing->slug) }}" class="nvm-td-ib" target="_blank" rel="noopener" aria-label="ดูหน้าสินค้า {{ $listing->title }}"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg></a>
+                    <button type="button" class="nvm-td-ib is-bad" aria-label="ลบ {{ $listing->title }}"
+                            x-on:click="del = @js($listing->title); delUrl = @js(route('taladsod.listing.destroy', $listing->id))">
+                        <svg class="nvm-ico"><use href="#nvm-i-x"/></svg>
+                    </button>
+                </div>
+            </article>
+        @endforeach
     </div>
+    @if($listings->hasPages())
+        <div class="nvm-pager">{{ $listings->links() }}</div>
+    @endif
+@else
+    <section class="nvm-card nvm-empty">
+        <img src="{{ asset('images/nova/icons/basket.webp') }}" alt="" width="86" height="86" loading="lazy">
+        <b>{{ $statusFilter === 'all' ? 'ยังไม่มีสินค้าในร้าน' : 'ไม่มีสินค้าในหมวดนี้' }}</b>
+        ลงเมนูแรกของร้าน ใส่รูปสวยๆ ตั้งตัวเลือก แล้วกดเปิดร้านได้เลย
+        @if($canCreate)
+            <div><a href="{{ route('taladsod.listing.create') }}" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>ลงขายสินค้าแรก</a></div>
+        @endif
+    </section>
+@endif
+
+{{-- กล่องยืนยันลบ --}}
+<div class="nvm-modal" x-show="del" x-cloak x-transition.opacity x-on:keydown.escape.window="del = null" x-on:click.self="del = null">
+    <form method="POST" :action="delUrl" class="nvm-card nvm-modal__box" role="dialog" aria-modal="true" aria-labelledby="sl-del-h" x-on:submit="sending = true">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="return_to" value="listings">
+        <h2 id="sl-del-h">ลบ "<span x-text="del"></span>"?</h2>
+        <p>สินค้าจะหายจากหน้าร้านทันที — ถ้ามีออเดอร์ที่ยังไม่เสร็จ ระบบจะไม่ให้ลบ</p>
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--line" x-on:click="del = null">ไม่ลบ</button>
+            <button type="submit" class="nvm-btn nvm-btn--bad" :disabled="sending"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ลบสินค้า</button>
+        </div>
+    </form>
+</div>
+
 </div>
 @endsection
