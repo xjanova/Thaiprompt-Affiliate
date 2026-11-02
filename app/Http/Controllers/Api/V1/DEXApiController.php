@@ -9,6 +9,7 @@ use App\Services\TPIX\DEXService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DEXApiController extends Controller
@@ -167,7 +168,7 @@ class DEXApiController extends Controller
             $quote = $this->dexService->getQuote(
                 $tokenIn,
                 $tokenOut,
-                $request->amount_in
+                (string) $request->amount_in
             );
 
             return response()->json([
@@ -189,11 +190,8 @@ class DEXApiController extends Controller
                 ],
             ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to get quote',
-                'error' => $e->getMessage(),
-            ], 500);
+        } catch (\Throwable $e) {
+            return $this->failure($e, 'Failed to get quote');
         }
     }
 
@@ -225,9 +223,9 @@ class DEXApiController extends Controller
                 $request->user(),
                 $tokenIn,
                 $tokenOut,
-                $request->amount_in,
-                $request->min_amount_out,
-                $request->slippage_tolerance ?? 0.5
+                (string) $request->amount_in,
+                (string) $request->min_amount_out,
+                (float) ($request->slippage_tolerance ?? 0.5)
             );
 
             return response()->json([
@@ -235,11 +233,8 @@ class DEXApiController extends Controller
                 'data' => $result,
             ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Swap failed',
-                'error' => $e->getMessage(),
-            ], 400);
+        } catch (\Throwable $e) {
+            return $this->failure($e, 'Swap failed');
         }
     }
 
@@ -270,8 +265,8 @@ class DEXApiController extends Controller
                 $request->user(),
                 $tokenA,
                 $tokenB,
-                $request->amount_a,
-                $request->amount_b
+                (string) $request->amount_a,
+                (string) $request->amount_b
             );
 
             return response()->json([
@@ -279,11 +274,8 @@ class DEXApiController extends Controller
                 'data' => $result,
             ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to add liquidity',
-                'error' => $e->getMessage(),
-            ], 400);
+        } catch (\Throwable $e) {
+            return $this->failure($e, 'Failed to add liquidity');
         }
     }
 
@@ -307,8 +299,8 @@ class DEXApiController extends Controller
         try {
             $result = $this->dexService->removeLiquidity(
                 $request->user(),
-                $request->position_id,
-                $request->lp_tokens
+                (int) $request->position_id,
+                (string) $request->lp_tokens
             );
 
             return response()->json([
@@ -316,11 +308,8 @@ class DEXApiController extends Controller
                 'data' => $result,
             ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to remove liquidity',
-                'error' => $e->getMessage(),
-            ], 400);
+        } catch (\Throwable $e) {
+            return $this->failure($e, 'Failed to remove liquidity');
         }
     }
 
@@ -430,5 +419,32 @@ class DEXApiController extends Controller
         });
 
         return response()->json(['data' => $stats]);
+    }
+
+    /**
+     * ตอบข้อผิดพลาดของการทำรายการ
+     * - \DomainException = ข้อผิดพลาดทางธุรกิจที่รู้จัก (รหัสภาษาอังกฤษ เช่น Insufficient balance) ส่งต่อให้หน้าเว็บแปลไทย
+     * - อื่นๆ บันทึก log แล้วตอบข้อความกลาง ไม่ส่งข้อความ exception ดิบ (SQL / ชื่อคีย์ภายใน) ออกไป
+     */
+    protected function failure(\Throwable $e, string $message): JsonResponse
+    {
+        if ($e instanceof \DomainException) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        Log::error('DEX action failed: '.$message, [
+            'user_id' => auth()->id(),
+            'exception' => $e,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+            'error' => 'Request failed',
+        ], 500);
     }
 }

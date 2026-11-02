@@ -5,7 +5,7 @@
  */
 
 /* ── สัญลักษณ์เหรียญ (ตัวอักษรย่อบนวงกลมทอง แทนโลโก้ที่อาจไม่มี) ── */
-.nvm-dx-coin { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--nvm-font-latin); font-size: 12px; font-weight: 700; letter-spacing: .02em; color: #1a1405; background: var(--nv-btn-gold); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), 0 6px 14px -8px rgba(138, 100, 32, .8); overflow: hidden; }
+.nvm-dx-coin { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--nvm-font-latin); font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--nv-navy-900); background: var(--nv-btn-gold); box-shadow: inset 0 0 0 1px var(--nvm-line-2), var(--nvm-shadow); overflow: hidden; }
 .nvm-dx-coin img { width: 100%; height: 100%; object-fit: cover; }
 .nvm-dx-coin--b { color: var(--nvm-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
 .nvm-dx-pair { display: inline-flex; align-items: center; flex: none; }
@@ -22,7 +22,7 @@
 .nvm-dx-leg .nvm-input { height: 44px; }
 .nvm-dx-max { margin-top: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--nvm-gold-ink); cursor: pointer; }
 .nvm-dx-flip { display: flex; justify-content: center; margin: -8px 0; position: relative; z-index: 1; }
-.nvm-dx-flip button { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: var(--nvm-gold-ink); background: var(--nvm-paper); box-shadow: inset 0 0 0 1px var(--nvm-line-2), 0 6px 16px -8px rgba(20, 26, 43, .45); transition: transform .3s; }
+.nvm-dx-flip button { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: var(--nvm-gold-ink); background: var(--nvm-paper); box-shadow: inset 0 0 0 1px var(--nvm-line-2), var(--nvm-shadow); transition: transform .3s; }
 .nvm-dx-flip button:hover { transform: rotate(180deg); }
 .nvm-dx-flip .nvm-ico { width: 18px; height: 18px; }
 
@@ -48,11 +48,7 @@
 .nvm-dx-range { width: 100%; accent-color: var(--nv-gold-500); }
 .nvm-dx-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .nvm-dx-quick button { height: 38px; border: 0; border-radius: 12px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--nvm-ink-2); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
-.nvm-dx-quick button.is-on { color: #1a1405; background: var(--nv-btn-gold); box-shadow: none; }
-
-/* ── ตัวเลือกระยะล็อก (Stake) ── */
-.nvm-dx-locks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.nvm-dx-locks .nvm-opt { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; }
+.nvm-dx-quick button.is-on { color: var(--nv-navy-900); background: var(--nv-btn-gold); box-shadow: none; }
 
 /* ── ข้อความยาว (tx hash) ── */
 .nvm-dx-hash { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
@@ -69,7 +65,3 @@
     .nvm-dx-pools { grid-template-columns: minmax(0, 1fr); }
     .nvm-dx-pct { font-size: 34px; }
 }
-
-/* fieldset ของตัวเลือก (ล้างกรอบตั้งต้นของเบราว์เซอร์) */
-.nvm-dx-fs { margin: 0; padding: 0; border: 0; min-width: 0; }
-.nvm-dx-fs legend { padding: 0; margin-bottom: 6px; }

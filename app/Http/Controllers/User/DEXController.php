@@ -123,7 +123,9 @@ class DEXController extends Controller
             ->where('status', '!=', 'removed')
             ->findOrFail($positionId);
 
-        return view('user.dex.remove-liquidity', compact('position'));
+        $totalLiquidity = $this->dexService->effectiveTotalLiquidity($position->pool);
+
+        return view('user.dex.remove-liquidity', compact('position', 'totalLiquidity'));
     }
 
     /**

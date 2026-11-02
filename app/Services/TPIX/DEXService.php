@@ -2,21 +2,28 @@
 
 namespace App\Services\TPIX;
 
+use App\Models\TPIXLiquidityPool;
+use App\Models\TPIXLiquidityPosition;
+use App\Models\TPIXSwap;
 use App\Models\TPIXToken;
+use App\Models\TPIXTokenBalance;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Decentralized Exchange (DEX) Service
- * Token Swap with Automated Market Maker (AMM)
- * Constant Product Formula: x * y = k
+ * บริการแลกเปลี่ยนเหรียญ (DEX) แบบ AMM สูตร x * y = k
+ *
+ * กติกาสำคัญ
+ * - พูลเก็บเหรียญตามลำดับ token_a_id < token_b_id เสมอ → ทุกครั้งที่ใช้สำรอง/จำนวน ต้องจัดทิศให้ตรงกับพูลก่อน
+ * - ขอราคา/แลก ใช้พูลแบบอ่านอย่างเดียว (ไม่สร้างพูลใหม่) · สร้างพูลได้เฉพาะตอนเพิ่มสภาพคล่อง
+ * - ข้อผิดพลาดที่สมาชิกควรเห็นโยนเป็น \DomainException (ข้อความเป็นรหัสภาษาอังกฤษที่หน้าเว็บแปลไทยได้)
+ *   ส่วนข้อผิดพลาดอื่นให้ตัวควบคุมบันทึก log แล้วตอบข้อความกลาง
  */
 class DEXService
 {
     /**
-     * Swap Token A for Token B
-     * Uses constant product AMM formula
+     * แลกเหรียญ tokenIn → tokenOut ผ่านพูลที่มีอยู่แล้ว
      */
     public function swap(
         User $user,
@@ -26,79 +33,76 @@ class DEXService
         string $minAmountOut,
         float $slippageTolerance = 0.5
     ): array {
+        $amountIn = $this->normalizeAmount($amountIn);
+        $minAmountOut = $this->normalizeAmount($minAmountOut, true);
+
+        if ($tokenIn->id === $tokenOut->id) {
+            throw new \DomainException('Invalid pair');
+        }
+
         DB::beginTransaction();
 
         try {
-            // Get liquidity pool
-            $pool = $this->getOrCreatePool($tokenIn, $tokenOut);
-
-            // Calculate output amount using AMM formula
-            $amountOut = $this->calculateOutputAmount(
-                $amountIn,
-                $pool['reserve_in'],
-                $pool['reserve_out']
-            );
-
-            // Check slippage
-            if (bccomp($amountOut, $minAmountOut, 8) < 0) {
-                throw new \Exception('Slippage tolerance exceeded');
+            // ล็อกแถวพูลกันการแลกพร้อมกันอ่านสำรองค่าเดียวกัน
+            $pool = $this->findPool($tokenIn, $tokenOut, true);
+            if (! $pool) {
+                throw new \DomainException('Pool not found');
             }
 
-            // Calculate price impact
-            $priceImpact = $this->calculatePriceImpact(
-                $amountIn,
-                $pool['reserve_in'],
-                $pool['reserve_out']
-            );
+            [$reserveIn, $reserveOut, $inIsA] = $this->orientReserves($pool, $tokenIn->id);
+            if (bccomp($reserveIn, '0', 8) <= 0 || bccomp($reserveOut, '0', 8) <= 0) {
+                throw new \DomainException('No liquidity');
+            }
 
-            // Platform fee (0.3%)
+            $amountOut = $this->calculateOutputAmount($amountIn, $reserveIn, $reserveOut);
+            if (bccomp($amountOut, '0', 8) <= 0 || bccomp($amountOut, $reserveOut, 8) >= 0) {
+                throw new \DomainException('No liquidity');
+            }
+
+            if (bccomp($amountOut, $minAmountOut, 8) < 0) {
+                throw new \DomainException('Slippage tolerance exceeded');
+            }
+
+            $priceImpact = $this->calculatePriceImpact($amountIn, $reserveIn, $reserveOut);
+
+            // ค่าธรรมเนียมแพลตฟอร์ม 0.3%
             $fee = bcmul($amountOut, '0.003', 8);
             $amountOutAfterFee = bcsub($amountOut, $fee, 8);
 
-            // Check user balance
-            $userBalance = \App\Models\TPIXTokenBalance::where('user_id', $user->id)
-                ->where('token_id', $tokenIn->id)
-                ->first();
+            // ตรวจและหักยอดฝั่งจ่าย (ล็อกแถว)
+            $this->deductUserBalance($user->id, $tokenIn->id, $amountIn);
 
-            if (! $userBalance || bccomp($userBalance->available_balance, $amountIn, 8) < 0) {
-                throw new \Exception('Insufficient balance');
-            }
+            // เพิ่มยอดฝั่งรับ (สร้างแถวพร้อม wallet_address ถ้ายังไม่เคยถือ)
+            $this->addUserBalance($user->id, $tokenOut->id, $amountOutAfterFee);
 
-            // Execute swap
-            // 1. Deduct tokenIn from user
-            $userBalance->decrement('balance', $amountIn);
-            $userBalance->decrement('available_balance', $amountIn);
+            // อัปเดตสำรองตามทิศของพูล
+            $newIn = bcadd($reserveIn, $amountIn, 8);
+            $newOut = bcsub($reserveOut, $amountOut, 8);
+            $pool->forceFill([
+                'reserve_a' => $inIsA ? $newIn : $newOut,
+                'reserve_b' => $inIsA ? $newOut : $newIn,
+                'fees_collected' => bcadd((string) $pool->fees_collected, $fee, 8),
+                'tx_count' => (int) $pool->tx_count + 1,
+                'last_trade_at' => now(),
+            ])->save();
 
-            // 2. Add tokenOut to user
-            $userBalanceOut = \App\Models\TPIXTokenBalance::firstOrCreate(
-                ['user_id' => $user->id, 'token_id' => $tokenOut->id],
-                ['balance' => 0, 'available_balance' => 0]
-            );
+            $this->distributeFeeToLPs($pool->id, $fee);
 
-            $userBalanceOut->increment('balance', $amountOutAfterFee);
-            $userBalanceOut->increment('available_balance', $amountOutAfterFee);
-
-            // 3. Update pool reserves
-            $this->updatePoolReserves(
-                $pool['id'],
-                bcadd($pool['reserve_in'], $amountIn, 8),
-                bcsub($pool['reserve_out'], $amountOut, 8)
-            );
-
-            // 4. Add fee to LP providers
-            $this->distributeFeeToLPs($pool['id'], $fee);
-
-            // 5. Record swap transaction
-            $swap = \App\Models\TPIXSwap::create([
+            $swap = TPIXSwap::create([
                 'user_id' => $user->id,
-                'pool_id' => $pool['id'],
+                'pool_id' => $pool->id,
                 'token_in_id' => $tokenIn->id,
                 'token_out_id' => $tokenOut->id,
                 'amount_in' => $amountIn,
                 'amount_out' => $amountOutAfterFee,
                 'fee' => $fee,
                 'price_impact' => $priceImpact,
+                'price_before' => bcdiv($reserveOut, $reserveIn, 8),
+                'price_after' => bcdiv($newOut, $newIn, 8),
+                'min_amount_out' => $minAmountOut,
+                'slippage_tolerance' => $slippageTolerance,
                 'tx_hash' => '0x'.bin2hex(random_bytes(32)),
+                'status' => 'completed',
             ]);
 
             DB::commit();
@@ -120,26 +124,19 @@ class DEXService
                 'price_impact' => $priceImpact,
                 'tx_hash' => $swap->tx_hash,
             ];
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Swap failed: '.$e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Calculate output amount using constant product formula
-     * amountOut = (reserveOut * amountIn) / (reserveIn + amountIn)
+     * จำนวนที่ได้ตามสูตร constant product (หัก 0.3% ฝั่งขาเข้า)
+     * amountOut = (reserveOut * amountIn * 997) / (reserveIn * 1000 + amountIn * 997)
      */
-    protected function calculateOutputAmount(
-        string $amountIn,
-        string $reserveIn,
-        string $reserveOut
-    ): string {
-        // Apply 0.3% fee
-        $amountInWithFee = bcmul($amountIn, '997', 8); // 99.7%
-
+    protected function calculateOutputAmount(string $amountIn, string $reserveIn, string $reserveOut): string
+    {
+        $amountInWithFee = bcmul($amountIn, '997', 8);
         $numerator = bcmul($amountInWithFee, $reserveOut, 8);
         $denominator = bcadd(bcmul($reserveIn, '1000', 8), $amountInWithFee, 8);
 
@@ -147,34 +144,27 @@ class DEXService
     }
 
     /**
-     * Calculate price impact
+     * ผลกระทบต่อราคา (%) — ค่าติดลบ = ราคาฝั่งรับแย่ลง
      */
-    protected function calculatePriceImpact(
-        string $amountIn,
-        string $reserveIn,
-        string $reserveOut
-    ): float {
-        // Price before = reserveOut / reserveIn
+    protected function calculatePriceImpact(string $amountIn, string $reserveIn, string $reserveOut): float
+    {
         $priceBefore = bcdiv($reserveOut, $reserveIn, 8);
+        if (bccomp($priceBefore, '0', 8) === 0) {
+            return 0.0;
+        }
 
-        // Price after
         $newReserveIn = bcadd($reserveIn, $amountIn, 8);
         $amountOut = $this->calculateOutputAmount($amountIn, $reserveIn, $reserveOut);
         $newReserveOut = bcsub($reserveOut, $amountOut, 8);
         $priceAfter = bcdiv($newReserveOut, $newReserveIn, 8);
 
-        // Impact = (priceAfter - priceBefore) / priceBefore * 100
-        $impact = bcdiv(
-            bcmul(bcsub($priceAfter, $priceBefore, 8), '100', 8),
-            $priceBefore,
-            2
-        );
-
-        return (float) $impact;
+        return (float) bcdiv(bcmul(bcsub($priceAfter, $priceBefore, 8), '100', 8), $priceBefore, 2);
     }
 
     /**
-     * Add liquidity to pool
+     * เพิ่มสภาพคล่อง (สร้างพูลใหม่ได้ที่นี่ที่เดียว)
+     *
+     * $amountA เป็นจำนวนของ $tokenA ตามที่สมาชิกเลือก — ถ้าทิศกลับกับพูลจะสลับจำนวนให้ตรงฝั่งก่อนคำนวณ
      */
     public function addLiquidity(
         User $user,
@@ -183,108 +173,134 @@ class DEXService
         string $amountA,
         string $amountB
     ): array {
+        $amountA = $this->normalizeAmount($amountA);
+        $amountB = $this->normalizeAmount($amountB);
+
+        if ($tokenA->id === $tokenB->id) {
+            throw new \DomainException('Invalid pair');
+        }
+
         DB::beginTransaction();
 
         try {
             $pool = $this->getOrCreatePool($tokenA, $tokenB);
-
-            // Calculate LP tokens to mint
-            if ($pool['total_liquidity'] === '0') {
-                // Initial liquidity
-                $lpTokens = bcsqrt(bcmul($amountA, $amountB, 8), 8);
-            } else {
-                // Proportional liquidity
-                $lpTokensA = bcdiv(
-                    bcmul($amountA, $pool['total_liquidity'], 8),
-                    $pool['reserve_a'],
-                    8
-                );
-                $lpTokensB = bcdiv(
-                    bcmul($amountB, $pool['total_liquidity'], 8),
-                    $pool['reserve_b'],
-                    8
-                );
-                $lpTokens = min($lpTokensA, $lpTokensB);
+            if (! $pool->is_active) {
+                throw new \DomainException('Pool is not active');
             }
 
-            // Deduct tokens from user
+            // จัดจำนวนให้ตรงฝั่งของพูล (token_a_id < token_b_id)
+            if ($tokenA->id !== (int) $pool->token_a_id) {
+                [$tokenA, $tokenB] = [$tokenB, $tokenA];
+                [$amountA, $amountB] = [$amountB, $amountA];
+            }
+
+            $reserveA = (string) $pool->reserve_a;
+            $reserveB = (string) $pool->reserve_b;
+            $totalLiquidity = $this->effectiveTotalLiquidity($pool);
+            $hasReserves = bccomp($reserveA, '0', 8) > 0 && bccomp($reserveB, '0', 8) > 0;
+
+            if (! $hasReserves || bccomp($totalLiquidity, '0', 8) <= 0) {
+                // สภาพคล่องแรกของพูล
+                $lpTokens = bcsqrt(bcmul($amountA, $amountB, 16), 8);
+            } else {
+                // ตามสัดส่วนสำรอง — ใช้ฝั่งที่ได้น้อยกว่า
+                $lpTokensA = bcdiv(bcmul($amountA, $totalLiquidity, 16), $reserveA, 8);
+                $lpTokensB = bcdiv(bcmul($amountB, $totalLiquidity, 16), $reserveB, 8);
+                $lpTokens = bccomp($lpTokensA, $lpTokensB, 8) <= 0 ? $lpTokensA : $lpTokensB;
+            }
+
+            if (bccomp($lpTokens, '0', 8) <= 0) {
+                throw new \DomainException('Amount too small');
+            }
+
+            // หักยอดสมาชิก (ตรวจยอดพอก่อนหักทุกครั้ง)
             $this->deductUserBalance($user->id, $tokenA->id, $amountA);
             $this->deductUserBalance($user->id, $tokenB->id, $amountB);
 
-            // Update pool reserves
-            $this->updatePoolReserves(
-                $pool['id'],
-                bcadd($pool['reserve_a'], $amountA, 8),
-                bcadd($pool['reserve_b'], $amountB, 8)
-            );
+            $pool->forceFill([
+                'reserve_a' => bcadd($reserveA, $amountA, 8),
+                'reserve_b' => bcadd($reserveB, $amountB, 8),
+                'total_liquidity' => bcadd($totalLiquidity, $lpTokens, 8),
+            ])->save();
 
-            // Mint LP tokens to user
-            $lpPosition = \App\Models\TPIXLiquidityPosition::create([
+            $lpPosition = TPIXLiquidityPosition::create([
                 'user_id' => $user->id,
-                'pool_id' => $pool['id'],
+                'pool_id' => $pool->id,
                 'token_a_amount' => $amountA,
                 'token_b_amount' => $amountB,
                 'lp_tokens' => $lpTokens,
+                'status' => 'active',
+                'add_tx_hash' => '0x'.bin2hex(random_bytes(32)),
             ]);
 
             DB::commit();
 
             return [
                 'success' => true,
+                'pool_id' => $pool->id,
                 'lp_tokens' => $lpTokens,
                 'position_id' => $lpPosition->id,
             ];
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
         }
     }
 
     /**
-     * Remove liquidity from pool
+     * ถอนสภาพคล่องตามจำนวน LP
      */
-    public function removeLiquidity(
-        User $user,
-        int $positionId,
-        string $lpTokensToRemove
-    ): array {
+    public function removeLiquidity(User $user, int $positionId, string $lpTokensToRemove): array
+    {
+        $lpTokensToRemove = $this->normalizeAmount($lpTokensToRemove);
+
         DB::beginTransaction();
 
         try {
-            $position = \App\Models\TPIXLiquidityPosition::where('id', $positionId)
+            $position = TPIXLiquidityPosition::where('id', $positionId)
                 ->where('user_id', $user->id)
+                ->where('status', '!=', 'removed')
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
 
-            if (bccomp($lpTokensToRemove, $position->lp_tokens, 8) > 0) {
-                throw new \Exception('Insufficient LP tokens');
+            if (! $position) {
+                throw new \DomainException('Position not found');
             }
 
-            $pool = $this->getPool($position->pool_id);
-
-            // Calculate tokens to return
-            $percentage = bcdiv($lpTokensToRemove, $pool['total_liquidity'], 8);
-            $amountA = bcmul($pool['reserve_a'], $percentage, 8);
-            $amountB = bcmul($pool['reserve_b'], $percentage, 8);
-
-            // Update pool reserves
-            $this->updatePoolReserves(
-                $pool['id'],
-                bcsub($pool['reserve_a'], $amountA, 8),
-                bcsub($pool['reserve_b'], $amountB, 8)
-            );
-
-            // Return tokens to user
-            $this->addUserBalance($user->id, $pool['token_a_id'], $amountA);
-            $this->addUserBalance($user->id, $pool['token_b_id'], $amountB);
-
-            // Burn LP tokens
-            $position->decrement('lp_tokens', $lpTokensToRemove);
-
-            if (bccomp($position->fresh()->lp_tokens, '0', 8) === 0) {
-                $position->delete();
+            if (bccomp($lpTokensToRemove, (string) $position->lp_tokens, 8) > 0) {
+                throw new \DomainException('Insufficient LP tokens');
             }
+
+            $pool = TPIXLiquidityPool::whereKey($position->pool_id)->lockForUpdate()->firstOrFail();
+            $totalLiquidity = $this->effectiveTotalLiquidity($pool);
+
+            if (bccomp($totalLiquidity, '0', 8) <= 0 || bccomp($lpTokensToRemove, $totalLiquidity, 8) > 0) {
+                throw new \DomainException('Insufficient LP tokens');
+            }
+
+            $reserveA = (string) $pool->reserve_a;
+            $reserveB = (string) $pool->reserve_b;
+            $amountA = bcdiv(bcmul($reserveA, $lpTokensToRemove, 16), $totalLiquidity, 8);
+            $amountB = bcdiv(bcmul($reserveB, $lpTokensToRemove, 16), $totalLiquidity, 8);
+
+            $pool->forceFill([
+                'reserve_a' => bcsub($reserveA, $amountA, 8),
+                'reserve_b' => bcsub($reserveB, $amountB, 8),
+                'total_liquidity' => bcsub($totalLiquidity, $lpTokensToRemove, 8),
+            ])->save();
+
+            $this->addUserBalance($user->id, (int) $pool->token_a_id, $amountA);
+            $this->addUserBalance($user->id, (int) $pool->token_b_id, $amountB);
+
+            // เผา LP · ถอนหมดแล้วเก็บแถวไว้เป็นประวัติ (status removed) แทนการลบทิ้ง
+            $remaining = bcsub((string) $position->lp_tokens, $lpTokensToRemove, 8);
+            $isEmpty = bccomp($remaining, '0', 8) <= 0;
+            $position->forceFill([
+                'lp_tokens' => $isEmpty ? '0' : $remaining,
+                'status' => $isEmpty ? 'removed' : 'active',
+                'removed_at' => $isEmpty ? now() : null,
+                'remove_tx_hash' => '0x'.bin2hex(random_bytes(32)),
+            ])->save();
 
             DB::commit();
 
@@ -293,137 +309,181 @@ class DEXService
                 'amount_a' => $amountA,
                 'amount_b' => $amountB,
             ];
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
         }
     }
 
     /**
-     * Get or create liquidity pool
+     * สภาพคล่องรวมที่ใช้คำนวณ — พูลเก่าที่ total_liquidity ค้างเป็น 0 ใช้ผลรวม LP ของตำแหน่งที่ยังเปิดอยู่แทน
+     * (เดิม addLiquidity ไม่เคยบวก total_liquidity จึงมีพูลที่มีสำรองแต่ total = 0)
      */
-    protected function getOrCreatePool(TPIXToken $tokenA, TPIXToken $tokenB): array
+    public function effectiveTotalLiquidity(TPIXLiquidityPool $pool): string
     {
-        // Ensure consistent ordering
-        if ($tokenA->id > $tokenB->id) {
-            [$tokenA, $tokenB] = [$tokenB, $tokenA];
+        $total = (string) ($pool->total_liquidity ?? '0');
+        if (bccomp($total, '0', 8) > 0) {
+            return $total;
         }
 
-        $pool = \App\Models\TPIXLiquidityPool::firstOrCreate(
-            [
-                'token_a_id' => $tokenA->id,
-                'token_b_id' => $tokenB->id,
-            ],
-            [
-                'reserve_a' => '0',
-                'reserve_b' => '0',
-                'total_liquidity' => '0',
-                'fee_percentage' => '0.3',
-            ]
-        );
+        $sum = TPIXLiquidityPosition::where('pool_id', $pool->id)
+            ->where('status', '!=', 'removed')
+            ->sum('lp_tokens');
 
-        return $pool->toArray();
+        return $this->normalizeAmount((string) $sum, true);
     }
 
     /**
-     * Helper methods
+     * หาพูลของคู่เหรียญแบบอ่านอย่างเดียว (เฉพาะพูลที่เปิดใช้งาน) — ไม่สร้างพูลใหม่
      */
-    protected function getPool(int $poolId): array
+    public function findPool(TPIXToken $tokenA, TPIXToken $tokenB, bool $lock = false): ?TPIXLiquidityPool
     {
-        return \App\Models\TPIXLiquidityPool::findOrFail($poolId)->toArray();
+        [$a, $b] = $tokenA->id < $tokenB->id ? [$tokenA->id, $tokenB->id] : [$tokenB->id, $tokenA->id];
+
+        $query = TPIXLiquidityPool::where('token_a_id', $a)
+            ->where('token_b_id', $b)
+            ->where('is_active', true);
+
+        return $lock ? $query->lockForUpdate()->first() : $query->first();
     }
 
-    protected function updatePoolReserves(int $poolId, string $reserveA, string $reserveB): void
+    /**
+     * หาหรือสร้างพูล (ใช้เฉพาะตอนเพิ่มสภาพคล่อง) — ล็อกแถวพูลไว้จนจบ transaction
+     */
+    protected function getOrCreatePool(TPIXToken $tokenA, TPIXToken $tokenB): TPIXLiquidityPool
     {
-        \App\Models\TPIXLiquidityPool::where('id', $poolId)->update([
-            'reserve_a' => $reserveA,
-            'reserve_b' => $reserveB,
-            'updated_at' => now(),
+        [$a, $b] = $tokenA->id < $tokenB->id ? [$tokenA->id, $tokenB->id] : [$tokenB->id, $tokenA->id];
+
+        $pool = TPIXLiquidityPool::where('token_a_id', $a)->where('token_b_id', $b)->lockForUpdate()->first();
+        if ($pool) {
+            return $pool;
+        }
+
+        TPIXLiquidityPool::create([
+            'token_a_id' => $a,
+            'token_b_id' => $b,
+            'reserve_a' => '0',
+            'reserve_b' => '0',
+            'total_liquidity' => '0',
+            'fee_percentage' => '0.3',
+            'is_active' => true,
         ]);
+
+        return TPIXLiquidityPool::where('token_a_id', $a)->where('token_b_id', $b)->lockForUpdate()->firstOrFail();
     }
 
+    /**
+     * สำรองตามทิศการแลก: [สำรองฝั่งจ่าย, สำรองฝั่งรับ, ฝั่งจ่ายคือ token_a หรือไม่]
+     */
+    protected function orientReserves(TPIXLiquidityPool $pool, int $tokenInId): array
+    {
+        $reserveA = $this->normalizeAmount((string) $pool->reserve_a, true);
+        $reserveB = $this->normalizeAmount((string) $pool->reserve_b, true);
+        $inIsA = $tokenInId === (int) $pool->token_a_id;
+
+        return $inIsA ? [$reserveA, $reserveB, true] : [$reserveB, $reserveA, false];
+    }
+
+    /**
+     * หักยอดสมาชิก — ปฏิเสธถ้ายอดใช้ได้ไม่พอ (เดิมหักตรงๆ ทำให้ยอดติดลบได้)
+     */
     protected function deductUserBalance(int $userId, int $tokenId, string $amount): void
     {
-        $balance = \App\Models\TPIXTokenBalance::where('user_id', $userId)
+        $balance = TPIXTokenBalance::where('user_id', $userId)
             ->where('token_id', $tokenId)
             ->lockForUpdate()
-            ->firstOrFail();
+            ->first();
 
-        $balance->decrement('balance', $amount);
-        $balance->decrement('available_balance', $amount);
+        if (! $balance
+            || $balance->is_frozen
+            || bccomp((string) $balance->available_balance, $amount, 8) < 0
+            || bccomp((string) $balance->balance, $amount, 8) < 0) {
+            throw new \DomainException('Insufficient balance');
+        }
+
+        $balance->forceFill([
+            'balance' => bcsub((string) $balance->balance, $amount, 8),
+            'available_balance' => bcsub((string) $balance->available_balance, $amount, 8),
+            'last_activity_at' => now(),
+        ])->save();
     }
 
+    /**
+     * เพิ่มยอดสมาชิก (สร้างแถวพร้อม wallet_address ถ้ายังไม่มี)
+     */
     protected function addUserBalance(int $userId, int $tokenId, string $amount): void
     {
-        $balance = \App\Models\TPIXTokenBalance::firstOrCreate(
-            ['user_id' => $userId, 'token_id' => $tokenId],
-            ['balance' => '0', 'available_balance' => '0']
-        );
+        $balance = TPIXTokenBalance::lockOrCreateFor($userId, $tokenId);
 
-        $balance->increment('balance', $amount);
-        $balance->increment('available_balance', $amount);
+        $balance->forceFill([
+            'balance' => bcadd((string) $balance->balance, $amount, 8),
+            'available_balance' => bcadd((string) $balance->available_balance, $amount, 8),
+            'last_activity_at' => now(),
+        ])->save();
     }
 
     protected function distributeFeeToLPs(int $poolId, string $fee): void
     {
-        // Distribute fee proportionally to LP token holders
-        // This is a simplified version - implement full distribution logic
+        // แบบย่อ: ค่าธรรมเนียมบันทึกใน fees_collected ของพูล ยังไม่ได้แจกรายตำแหน่ง
         Log::info('Distributing fee to LPs', ['pool_id' => $poolId, 'fee' => $fee]);
     }
 
     /**
-     * Get quote for swap
+     * ขอราคาแลก — อ่านอย่างเดียว ไม่สร้างพูล
+     * ไม่มีพูล/ไม่มีสภาพคล่อง ตอบ amount_out = 0 พร้อม error 'No liquidity'
      */
     public function getQuote(TPIXToken $tokenIn, TPIXToken $tokenOut, string $amountIn): array
     {
-        $pool = $this->getOrCreatePool($tokenIn, $tokenOut);
+        $amountIn = $this->normalizeAmount($amountIn);
+        $empty = ['amount_out' => '0', 'price_impact' => 0, 'fee' => '0', 'price' => '0', 'error' => 'No liquidity'];
 
-        if ($pool['reserve_in'] === '0' || $pool['reserve_out'] === '0') {
-            return [
-                'amount_out' => '0',
-                'price_impact' => 0,
-                'error' => 'No liquidity',
-            ];
+        $pool = $tokenIn->id === $tokenOut->id ? null : $this->findPool($tokenIn, $tokenOut);
+        if (! $pool) {
+            return $empty;
         }
 
-        $amountOut = $this->calculateOutputAmount(
-            $amountIn,
-            $pool['reserve_in'],
-            $pool['reserve_out']
-        );
+        [$reserveIn, $reserveOut] = $this->orientReserves($pool, $tokenIn->id);
+        if (bccomp($reserveIn, '0', 8) <= 0 || bccomp($reserveOut, '0', 8) <= 0) {
+            return $empty;
+        }
 
-        $priceImpact = $this->calculatePriceImpact(
-            $amountIn,
-            $pool['reserve_in'],
-            $pool['reserve_out']
-        );
+        $amountOut = $this->calculateOutputAmount($amountIn, $reserveIn, $reserveOut);
+        if (bccomp($amountOut, '0', 8) <= 0) {
+            return $empty;
+        }
 
         $fee = bcmul($amountOut, '0.003', 8);
 
         return [
+            'pool_id' => $pool->id,
             'amount_out' => bcsub($amountOut, $fee, 8),
-            'price_impact' => $priceImpact,
+            'price_impact' => $this->calculatePriceImpact($amountIn, $reserveIn, $reserveOut),
             'fee' => $fee,
             'price' => bcdiv($amountOut, $amountIn, 8),
         ];
     }
 
     /**
-     * Square root function for BC Math
+     * แปลงจำนวนเป็นสตริงทศนิยมที่ bcmath ใช้ได้ (กันค่าแบบ 1e3 / ค่าติดลบ ที่ทำให้ bcmath พัง)
      */
-    protected function bcsqrt(string $number, int $scale = 8): string
+    protected function normalizeAmount(string $amount, bool $allowZero = false): string
     {
-        $guess = bcdiv($number, '2', $scale);
+        $amount = trim($amount);
 
-        for ($i = 0; $i < 10; $i++) {
-            $guess = bcdiv(
-                bcadd($guess, bcdiv($number, $guess, $scale), $scale),
-                '2',
-                $scale
-            );
+        if (! preg_match('/^\d+(\.\d+)?$/', $amount)) {
+            if (is_numeric($amount) && (float) $amount >= 0) {
+                $amount = number_format((float) $amount, 8, '.', '');
+            } else {
+                throw new \DomainException('Invalid amount');
+            }
         }
 
-        return $guess;
+        $amount = bcadd($amount, '0', 8);
+
+        if (! $allowZero && bccomp($amount, '0', 8) <= 0) {
+            throw new \DomainException('Invalid amount');
+        }
+
+        return $amount;
     }
 }

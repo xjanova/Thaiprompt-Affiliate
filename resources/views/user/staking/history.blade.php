@@ -69,7 +69,7 @@
     <div class="nvm-sec-h">
         <div><small class="nvm-latin">History</small><h2 id="nvm-dx-shsl-h">รายการทั้งหมด</h2></div>
         @if($stakes->isNotEmpty())
-            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออก CSV</button>
+            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออกหน้านี้ (CSV {{ number_format(count($csvRows)) }} แถว)</button>
         @endif
     </div>
 

@@ -271,6 +271,338 @@ class NovaDexStakingPagesTest extends TestCase
             ->assertDontSee('19.4321');
     }
 
+    // ── ทำรายการจริงผ่าน route เว็บ (happy path + กรณีที่ต้องปฏิเสธ) ─────
+
+    private function giveBalance(User $member, TPIXToken $token, string $amount): TPIXTokenBalance
+    {
+        return TPIXTokenBalance::updateOrCreate(
+            ['user_id' => $member->id, 'token_id' => $token->id],
+            ['wallet_address' => '0x'.str_repeat('a', 40), 'balance' => $amount, 'available_balance' => $amount]
+        );
+    }
+
+    private function balanceOf(User $member, TPIXToken $token): ?TPIXTokenBalance
+    {
+        return TPIXTokenBalance::where('user_id', $member->id)->where('token_id', $token->id)->first();
+    }
+
+    public function test_quote_and_swap_succeed_and_update_balances_and_pool_reserves(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+
+        // เดิม getQuote อ่าน reserve_in/reserve_out ที่ไม่มีอยู่ → 500 ทุกครั้ง
+        $quote = $this->actingAs($member)->postJson(route('user.dex.quote'), [
+            'token_in_id' => $s['tpix']->id, 'token_out_id' => $s['gold']->id, 'amount_in' => '10',
+        ])->assertOk()->json('data');
+
+        $this->assertGreaterThan(19, (float) $quote['amount_out']);
+        $this->assertLessThan(20, (float) $quote['amount_out']);
+
+        // แลกไปยังเหรียญที่ยังไม่เคยถือ (GOLD) — เดิมสร้างแถวยอดไม่ได้เพราะไม่มี wallet_address
+        $this->assertNull($this->balanceOf($member, $s['gold']));
+        $this->actingAs($member)->postJson(route('user.dex.swap.execute'), [
+            'token_in_id' => $s['tpix']->id,
+            'token_out_id' => $s['gold']->id,
+            'amount_in' => '10',
+            'min_amount_out' => bcmul($quote['amount_out'], '0.99', 8),
+        ])->assertOk()->assertJsonPath('data.amount_out', $quote['amount_out']);
+
+        $tpix = $this->balanceOf($member, $s['tpix']);
+        $this->assertSame(0, bccomp($tpix->available_balance, '865.5', 8));
+        $this->assertSame(0, bccomp($tpix->balance, '890', 8));
+
+        $gold = $this->balanceOf($member, $s['gold']);
+        $this->assertSame(0, bccomp($gold->available_balance, $quote['amount_out'], 8));
+        $this->assertNotEmpty($gold->wallet_address);
+
+        $pool = $s['pool']->fresh();
+        $this->assertSame(0, bccomp($pool->reserve_a, '1010', 8));
+        $this->assertSame(-1, bccomp($pool->reserve_b, '2000', 8));
+        $this->assertSame('completed', TPIXSwap::where('user_id', $member->id)->latest('id')->first()->status);
+    }
+
+    public function test_swap_in_the_reverse_direction_moves_the_right_reserves(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $this->giveBalance($member, $s['gold'], '50');
+
+        $this->actingAs($member)->postJson(route('user.dex.swap.execute'), [
+            'token_in_id' => $s['gold']->id, 'token_out_id' => $s['tpix']->id, 'amount_in' => '20', 'min_amount_out' => '0',
+        ])->assertOk();
+
+        $pool = $s['pool']->fresh();
+        $this->assertSame(0, bccomp($pool->reserve_b, '2020', 8));
+        $this->assertSame(-1, bccomp($pool->reserve_a, '1000', 8));
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['gold'])->available_balance, '30', 8));
+    }
+
+    public function test_quote_for_a_pair_without_pool_does_not_create_a_pool(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $silver = $this->token($s['admin'], 'SILV');
+        $before = TPIXLiquidityPool::count();
+
+        $this->actingAs($member)->postJson(route('user.dex.quote'), [
+            'token_in_id' => $s['tpix']->id, 'token_out_id' => $silver->id, 'amount_in' => '5',
+        ])->assertOk()->assertJsonPath('data.amount_out', '0');
+
+        $this->actingAs($member)->postJson(route('user.dex.swap.execute'), [
+            'token_in_id' => $s['tpix']->id, 'token_out_id' => $silver->id, 'amount_in' => '5', 'min_amount_out' => '0',
+        ])->assertStatus(400)->assertJsonPath('error', 'Pool not found');
+
+        $this->assertSame($before, TPIXLiquidityPool::count());
+    }
+
+    public function test_swap_beyond_balance_is_rejected_without_changes(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+
+        $this->actingAs($member)->postJson(route('user.dex.swap.execute'), [
+            'token_in_id' => $s['tpix']->id, 'token_out_id' => $s['gold']->id, 'amount_in' => '5000', 'min_amount_out' => '0',
+        ])->assertStatus(400)->assertJsonPath('error', 'Insufficient balance');
+
+        $this->assertSame(0, bccomp($s['pool']->fresh()->reserve_a, '1000', 8));
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['tpix'])->available_balance, '875.5', 8));
+    }
+
+    public function test_adding_liquidity_beyond_balance_is_rejected(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $this->giveBalance($member, $s['gold'], '10');
+        $positions = TPIXLiquidityPosition::count();
+
+        $this->actingAs($member)->postJson(route('user.dex.liquidity.add'), [
+            'token_a_id' => $s['tpix']->id, 'token_b_id' => $s['gold']->id, 'amount_a' => '100', 'amount_b' => '200',
+        ])->assertStatus(400)->assertJsonPath('error', 'Insufficient balance');
+
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['gold'])->available_balance, '10', 8));
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['tpix'])->available_balance, '875.5', 8));
+        $this->assertSame($positions, TPIXLiquidityPosition::count());
+        $this->assertSame(0, bccomp($s['pool']->fresh()->reserve_a, '1000', 8));
+    }
+
+    public function test_adding_liquidity_in_reverse_order_keeps_pool_reserves_on_the_right_side(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $this->giveBalance($member, $s['gold'], '100');
+
+        // เลือก GOLD เป็นฝั่ง A (กลับทิศกับพูล ที่ TPIX เป็น token_a)
+        $res = $this->actingAs($member)->postJson(route('user.dex.liquidity.add'), [
+            'token_a_id' => $s['gold']->id, 'token_b_id' => $s['tpix']->id, 'amount_a' => '20', 'amount_b' => '10',
+        ])->assertOk();
+
+        $pool = $s['pool']->fresh();
+        $this->assertSame(0, bccomp($pool->reserve_a, '1010', 8));
+        $this->assertSame(0, bccomp($pool->reserve_b, '2020', 8));
+        $this->assertSame(0, bccomp($pool->total_liquidity, '1428.14', 8));
+
+        $position = TPIXLiquidityPosition::find($res->json('data.position_id'));
+        $this->assertSame(0, bccomp($position->token_a_amount, '10', 8));
+        $this->assertSame(0, bccomp($position->token_b_amount, '20', 8));
+        $this->assertSame(0, bccomp($position->lp_tokens, '14.14', 8));
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['gold'])->available_balance, '80', 8));
+    }
+
+    public function test_opening_a_new_pair_creates_the_pool_with_total_liquidity(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $silver = $this->token($s['admin'], 'SILV');
+        $this->giveBalance($member, $silver, '100');
+
+        $this->actingAs($member)->postJson(route('user.dex.liquidity.add'), [
+            'token_a_id' => $s['tpix']->id, 'token_b_id' => $silver->id, 'amount_a' => '25', 'amount_b' => '100',
+        ])->assertOk();
+
+        $pool = TPIXLiquidityPool::where('token_a_id', $s['tpix']->id)->where('token_b_id', $silver->id)->firstOrFail();
+        $this->assertSame(0, bccomp($pool->total_liquidity, '50', 8));
+        $this->assertSame(0, bccomp($pool->reserve_a, '25', 8));
+        $this->assertSame(0, bccomp($pool->reserve_b, '100', 8));
+    }
+
+    public function test_removing_liquidity_returns_tokens_and_updates_pool_totals(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+
+        $this->actingAs($member)->postJson(route('user.dex.liquidity.remove'), [
+            'position_id' => $s['position']->id, 'lp_tokens' => '141.4',
+        ])->assertOk();
+
+        $pool = $s['pool']->fresh();
+        $this->assertSame(0, bccomp($pool->reserve_a, '900', 8));
+        $this->assertSame(0, bccomp($pool->reserve_b, '1800', 8));
+        $this->assertSame(0, bccomp($pool->total_liquidity, '1272.6', 8));
+
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['tpix'])->available_balance, '975.5', 8));
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['gold'])->available_balance, '200', 8));
+
+        $position = $s['position']->fresh();
+        $this->assertSame('removed', $position->status);
+        $this->assertNotNull($position->removed_at);
+    }
+
+    public function test_removing_liquidity_from_a_legacy_pool_with_zero_total_uses_position_sum(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+        $s['pool']->forceFill(['total_liquidity' => '0'])->save();
+
+        // หน้าถอนแสดงส่วนแบ่งจริง (เดิมขึ้น 0)
+        $this->actingAs($member)->get(route('user.dex.remove-liquidity', $s['position']->id))
+            ->assertOk()->assertSee('0022a'.chr(92).'u0022:1000,', false);
+
+        $this->actingAs($member)->postJson(route('user.dex.liquidity.remove'), [
+            'position_id' => $s['position']->id, 'lp_tokens' => '70.7',
+        ])->assertOk();
+
+        $this->assertSame(0, bccomp($this->balanceOf($member, $s['tpix'])->available_balance, '1375.5', 8));
+        $this->assertSame('active', $s['position']->fresh()->status);
+    }
+
+    public function test_stake_claim_and_unstake_succeed_through_web_routes(): void
+    {
+        $admin = $this->member(['role' => 'admin']);
+        $tpix = $this->token($admin, 'TPIX');
+        $pool = $this->stakingPool($admin, $tpix);
+        $member = $this->member();
+        $this->giveBalance($member, $tpix, '1000');
+
+        $this->actingAs($member)->postJson(route('user.staking.stake'), [
+            'pool_id' => $pool->id, 'amount' => '100', 'lock_period_days' => 30,
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $stake = TPIXStake::where('user_id', $member->id)->firstOrFail();
+        $this->assertSame(0, bccomp($stake->amount, '100', 8));
+        $this->assertSame($tpix->id, (int) $stake->token_id);
+        $this->assertTrue($stake->unlock_at->isFuture());
+        $balance = $this->balanceOf($member, $tpix);
+        $this->assertSame(0, bccomp($balance->available_balance, '900', 8));
+        $this->assertSame(0, bccomp($balance->staked_balance, '100', 8));
+        $this->assertSame(0, bccomp($pool->fresh()->total_staked, '600', 8));
+        $this->assertSame(4, (int) $pool->fresh()->current_stakers);
+
+        // รับรางวัลหลัง 10 วัน: 100 × 12.5% × 10/365 ≈ 0.3425
+        $this->travel(10)->days();
+        $claimed = $this->actingAs($member)->postJson(route('user.staking.claim'), ['pool_id' => $pool->id])
+            ->assertOk()->json('data.claimed_amount');
+        $this->assertEqualsWithDelta(0.3425, (float) $claimed, 0.001);
+        $this->assertSame(0, bccomp($this->balanceOf($member, $tpix)->available_balance, bcadd('900', $claimed, 8), 8));
+
+        // ยังอยู่ในช่วงล็อก → ถอนไม่ได้
+        $this->actingAs($member)->postJson(route('user.staking.unstake'), ['pool_id' => $pool->id])
+            ->assertStatus(400)->assertJsonPath('success', false);
+        $this->assertSame('active', $stake->fresh()->status);
+
+        // พ้นช่วงล็อก → ถอนได้พร้อมรางวัลที่เหลือ
+        $this->travel(21)->days();
+        $res = $this->actingAs($member)->postJson(route('user.staking.unstake'), ['pool_id' => $pool->id])->assertOk();
+
+        $stake->refresh();
+        $this->assertSame('unstaked', $stake->status);
+        $this->assertNotNull($stake->unstaked_at);
+        $balance = $this->balanceOf($member, $tpix);
+        $this->assertSame(0, bccomp($balance->staked_balance, '0', 8));
+        $this->assertSame(1, bccomp($balance->available_balance, bcadd('1000', $claimed, 8), 8));
+        $this->assertSame(0, bccomp($pool->fresh()->total_staked, '500', 8));
+        $this->assertSame(3, (int) $pool->fresh()->current_stakers);
+        $this->assertGreaterThan(0, (float) $res->json('data.rewards'));
+    }
+
+    public function test_staking_into_a_pool_that_is_not_open_is_rejected(): void
+    {
+        $admin = $this->member(['role' => 'admin']);
+        $tpix = $this->token($admin, 'TPIX');
+        $member = $this->member();
+        $this->giveBalance($member, $tpix, '1000');
+
+        foreach (['draft', 'paused', 'ended'] as $status) {
+            $pool = $this->stakingPool($admin, $tpix, ['status' => $status]);
+            $this->actingAs($member)->postJson(route('user.staking.stake'), ['pool_id' => $pool->id, 'amount' => '100'])
+                ->assertStatus(400)->assertJsonPath('success', false);
+        }
+
+        $expired = $this->stakingPool($admin, $tpix, ['ends_at' => now()->subDay()]);
+        $this->actingAs($member)->postJson(route('user.staking.stake'), ['pool_id' => $expired->id, 'amount' => '100'])
+            ->assertStatus(400);
+
+        $full = $this->stakingPool($admin, $tpix, ['max_stakers' => 3]);
+        $this->actingAs($member)->postJson(route('user.staking.stake'), ['pool_id' => $full->id, 'amount' => '100'])
+            ->assertStatus(400);
+
+        $capped = $this->stakingPool($admin, $tpix, ['pool_cap' => '550']);
+        $this->actingAs($member)->postJson(route('user.staking.stake'), ['pool_id' => $capped->id, 'amount' => '100'])
+            ->assertStatus(400);
+
+        $this->assertSame(0, TPIXStake::where('user_id', $member->id)->count());
+        $this->assertSame(0, bccomp($this->balanceOf($member, $tpix)->available_balance, '1000', 8));
+    }
+
+    public function test_stake_lock_period_follows_the_pool(): void
+    {
+        $admin = $this->member(['role' => 'admin']);
+        $tpix = $this->token($admin, 'TPIX');
+        $pool = $this->stakingPool($admin, $tpix);
+        $member = $this->member();
+        $this->giveBalance($member, $tpix, '1000');
+
+        // พูลล็อก 30 วัน → ขอแบบไม่ล็อก (0 วัน) ไม่ได้
+        $this->actingAs($member)->postJson(route('user.staking.stake'), [
+            'pool_id' => $pool->id, 'amount' => '100', 'lock_period_days' => 0,
+        ])->assertStatus(400)->assertJsonPath('success', false);
+        $this->assertSame(0, TPIXStake::where('user_id', $member->id)->count());
+
+        // ฟอร์มแสดงระยะล็อกของพูลเท่านั้น ไม่มีตัวเลือกระยะอื่น
+        $this->actingAs($member)->get(route('user.staking.stake-form', $pool->id))
+            ->assertOk()
+            ->assertSee('ล็อก 30 วัน')
+            ->assertDontSee('ยืดหยุ่น')
+            ->assertDontSee('name="lock_period_days"', false);
+    }
+
+    public function test_stake_beyond_balance_is_rejected(): void
+    {
+        $admin = $this->member(['role' => 'admin']);
+        $tpix = $this->token($admin, 'TPIX');
+        $pool = $this->stakingPool($admin, $tpix);
+        $member = $this->member();
+        $this->giveBalance($member, $tpix, '50');
+
+        $this->actingAs($member)->postJson(route('user.staking.stake'), ['pool_id' => $pool->id, 'amount' => '100'])
+            ->assertStatus(400)->assertJsonPath('message', 'ยอดคงเหลือไม่พอ');
+    }
+
+    public function test_unexpected_errors_do_not_leak_raw_exception_text(): void
+    {
+        $member = $this->member();
+        $s = $this->scenario($member);
+
+        $this->mock(\App\Services\TPIX\DEXService::class, function ($mock) {
+            $mock->shouldReceive('getQuote')->andThrow(new \RuntimeException('SQLSTATE[42S22] secret column'));
+        });
+
+        $res = $this->actingAs($member)->postJson(route('user.dex.quote'), [
+            'token_in_id' => $s['tpix']->id, 'token_out_id' => $s['gold']->id, 'amount_in' => '1',
+        ])->assertStatus(500)->assertJsonPath('error', 'Request failed');
+
+        $this->assertStringNotContainsString('SQLSTATE', $res->getContent());
+    }
+
+    public function test_history_csv_button_says_it_exports_only_the_current_page(): void
+    {
+        $member = $this->member();
+        $this->scenario($member);
+
+        $this->actingAs($member)->get(route('user.dex.swap-history'))->assertOk()->assertSee('ส่งออกหน้านี้');
+        $this->actingAs($member)->get(route('user.staking.history'))->assertOk()->assertSee('ส่งออกหน้านี้');
+    }
+
     // ── สิทธิ์เจ้าของ ─────────────────────────────────────────────
 
     public function test_member_cannot_open_another_members_liquidity_position(): void

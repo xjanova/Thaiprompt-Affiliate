@@ -79,7 +79,14 @@ class StakingController extends Controller
             ->where('token_id', $pool->token_id)
             ->first();
 
-        return view('user.staking.stake', compact('pool', 'balance'));
+        // Stake ที่ยังเปิดอยู่ในพูลนี้ (ถ้ามี ฟอร์มจะเป็นการ Stake เพิ่ม)
+        $myStake = auth()->user()
+            ->stakes()
+            ->where('pool_id', $pool->id)
+            ->where('status', 'active')
+            ->first();
+
+        return view('user.staking.stake', compact('pool', 'balance', 'myStake'));
     }
 
     /**

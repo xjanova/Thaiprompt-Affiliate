@@ -2,7 +2,9 @@
     ฟอร์ม Stake (ธีมโนวาเต็ม)
     - $pool = พูลที่ไม่ใช่ฉบับร่าง · $balance = แถว tpix_token_balances ของสมาชิกสำหรับเหรียญของพูล (อาจ null)
     - ยอดใช้ได้อ่านจาก available_balance (เดิมอ่าน $balance->amount ซึ่งไม่มีคอลัมน์นี้ จึงขึ้น 0.00 เสมอ)
-    - ตัวเลือกระยะล็อก/ตัวคูณ APY ตรงกับที่ StakingApiController::calculateAPY ใช้ (0,7,30,90,180,365 วัน)
+    - ระยะล็อกและ APY ยึดตามพูล (lock_period_days / apy) — เซิร์ฟเวอร์ตรวจแบบเดียวกัน
+      (เดิมให้เลือก 0–365 วันพร้อมตัวคูณ APY ตายตัว ทำให้เลือก "ยืดหยุ่น" ในพูลที่ต้องล็อก 30 วันได้)
+    - มี Stake อยู่แล้ว = Stake เพิ่ม: รวมยอดเข้ารายการเดิม และเริ่มนับระยะล็อกใหม่
     - ส่งผ่าน route เว็บ user.staking.stake (session + CSRF)
 --}}
 @extends('layouts.user-nova')
@@ -20,21 +22,18 @@
     $symbol = $pool->token->symbol;
     $available = (string) ($balance->available_balance ?? $balance->balance ?? '0');
     $apy = (float) $pool->apy;
-    $locks = [
-        ['days' => 0, 'label' => 'ยืดหยุ่น', 'apy' => $apy * 0.5],
-        ['days' => 7, 'label' => '7 วัน', 'apy' => $apy * 0.7],
-        ['days' => 30, 'label' => '30 วัน', 'apy' => $apy * 0.9],
-        ['days' => 90, 'label' => '90 วัน', 'apy' => $apy],
-        ['days' => 180, 'label' => '180 วัน', 'apy' => $apy * 1.2],
-        ['days' => 365, 'label' => '365 วัน', 'apy' => $apy * 1.5],
-    ];
+    $lockDays = max(0, (int) $pool->lock_period_days);
+    $lockLabel = $lockDays > 0 ? number_format($lockDays).' วัน' : 'ไม่ล็อก (ถอนได้ทุกเมื่อ)';
+    $existingAmount = $myStake ? (string) $myStake->amount : '0';
     $config = [
         'poolId' => $pool->id,
         'balance' => $available,
         'min' => (string) $pool->min_stake_amount,
         'max' => $pool->max_stake_amount ? (string) $pool->max_stake_amount : null,
         'symbol' => $symbol,
-        'locks' => $locks,
+        'lockDays' => $lockDays,
+        'apy' => $apy,
+        'existing' => $existingAmount,
         'active' => $pool->status === 'active',
     ];
 @endphp
@@ -48,10 +47,11 @@
             <a class="nvm-ph__back" href="{{ route('user.staking.show', $pool->id) }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>{{ $pool->name ?: $symbol }}</a>
             <div class="nvm-eyebrow nvm-latin">Stake {{ $symbol }}</div>
             <h1 id="nvm-dx-sf-h">Stake {{ $pool->token->name }}</h1>
-            <p class="nvm-ph__lead">เลือกจำนวนและระยะล็อก ยิ่งล็อกนานยิ่งได้ APY สูง</p>
+            <p class="nvm-ph__lead">ใส่จำนวนที่ต้องการ Stake · รางวัลคิดตาม APY ของพูลและเริ่มนับทันที</p>
             <div class="nvm-pills">
                 <span class="nvm-pill nvm-pill--glass">คงเหลือ <span class="nvm-num">{{ $num($available) }} {{ $symbol }}</span></span>
-                <span class="nvm-pill nvm-pill--gold">APY สูงสุด <span class="nvm-num">{{ $num($apy * 1.5, 2) }}%</span></span>
+                <span class="nvm-pill nvm-pill--gold">APY <span class="nvm-num">{{ $num($apy, 2) }}%</span></span>
+                <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>ล็อก {{ $lockLabel }}</span>
             </div>
         </div>
         <img class="nvm-ph__art" src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="200" height="200">
@@ -85,29 +85,20 @@
                 <span class="nvm-err" x-show="error()" x-text="error()" x-cloak></span>
             </div>
 
-            <fieldset class="nvm-field nvm-dx-fs">
-                <legend class="nvm-label">ระยะล็อก</legend>
-                <div class="nvm-opts nvm-dx-locks" role="radiogroup">
-                    @foreach($locks as $lock)
-                        <label class="nvm-opt">
-                            <input type="radio" name="lock_period_days" value="{{ $lock['days'] }}" x-model.number="lockDays" @checked($lock['days'] === 30)>
-                            <b>{{ $lock['label'] }}</b>
-                            <small class="nvm-num">APY {{ $num($lock['apy'], 2) }}%</small>
-                        </label>
-                    @endforeach
-                </div>
-            </fieldset>
+            @if($myStake)
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>คุณมี Stake ในพูลนี้อยู่แล้ว <span class="nvm-num">{{ $num($existingAmount) }} {{ $symbol }}</span> — ยอดใหม่จะรวมเข้ารายการเดิม@if($lockDays > 0) และเริ่มนับระยะล็อก {{ $lockLabel }} ใหม่ตั้งแต่วันนี้@endif</p>
+            @endif
 
             <dl class="nvm-kv">
                 <dt>จำนวน</dt><dd class="nvm-num" x-text="fmt(amount || 0) + ' ' + cfg.symbol"></dd>
-                <dt>ระยะล็อก</dt><dd x-text="lock().label"></dd>
-                <dt>APY</dt><dd class="nvm-num" x-text="fmt(lock().apy, 2) + '%'"></dd>
+                <dt>ระยะล็อก</dt><dd>{{ $lockLabel }}</dd>
+                <dt>APY</dt><dd class="nvm-num">{{ $num($apy, 2) }}%</dd>
                 <dt>วันปลดล็อก</dt><dd class="nvm-num" x-text="unlockText()"></dd>
                 <dt class="nvm-kv__total">รางวัลโดยประมาณ</dt><dd class="nvm-kv__total nvm-num" x-text="fmt(estimate()) + ' ' + cfg.symbol"></dd>
             </dl>
-            <p class="nvm-help" x-show="lockDays === 0">แบบยืดหยุ่นคิดรางวัลประมาณการ 30 วัน · แบบล็อกคิดตลอดระยะล็อก</p>
+            <p class="nvm-help">{{ $lockDays > 0 ? 'รางวัลประมาณการคิดตลอดระยะล็อก' : 'พูลไม่ล็อก รางวัลประมาณการคิด 30 วัน' }}</p>
 
-            <label class="nvm-check"><input type="checkbox" x-model="agreed">ฉันเข้าใจว่าการถอนก่อนครบระยะล็อกอาจมีค่าปรับ และมูลค่าเหรียญขึ้นลงได้</label>
+            <label class="nvm-check"><input type="checkbox" x-model="agreed">ฉันเข้าใจว่าถอน Stake ได้หลังครบระยะล็อกเท่านั้น และมูลค่าเหรียญขึ้นลงได้</label>
 
             <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="! canSubmit() || busy || ! cfg.active">
                 <svg class="nvm-ico"><use href="#nvm-i-lock"/></svg><span x-text="busy ? 'กำลัง Stake...' : 'ยืนยัน Stake'">ยืนยัน Stake</span>
@@ -123,11 +114,11 @@
             <dt>ผู้ Stake</dt><dd class="nvm-num">{{ number_format((int) $pool->current_stakers) }}</dd>
         </dl>
         <ol class="nvm-steps nvm-gap-t">
-            <li>เลือกจำนวนและระยะล็อกที่ต้องการ</li>
+            <li>ใส่จำนวนที่ต้องการ Stake</li>
             <li>รางวัลเริ่มนับทันทีหลัง Stake สำเร็จ</li>
             <li>รับรางวัลหรือถอน Stake ได้จากหน้ารายละเอียดพูล</li>
         </ol>
-        <p class="nvm-note is-bad"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ถอนก่อนครบระยะล็อกอาจถูกหักค่าปรับตามเงื่อนไขของพูล</p>
+        <p class="nvm-note is-bad"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ถอน Stake ได้เมื่อครบระยะล็อกของพูลแล้วเท่านั้น (รับรางวัลระหว่างล็อกได้)</p>
     </aside>
 </div>
 
@@ -137,19 +128,17 @@
 @push('scripts')
 @include('user.dex.partials.nova-js')
 <script>
-// ฟอร์ม Stake: ตรวจขั้นต่ำ/สูงสุด/ยอดคงเหลือก่อนส่ง (เซิร์ฟเวอร์ตรวจซ้ำอีกชั้น)
+// ฟอร์ม Stake: ตรวจขั้นต่ำ/สูงสุด/ยอดคงเหลือก่อนส่ง (เซิร์ฟเวอร์ตรวจซ้ำอีกชั้น) · ระยะล็อก/APY มาจากพูล
 function nvmDxStake(cfg) {
     return {
         cfg: cfg,
         amount: '',
-        lockDays: 30,
         agreed: false,
         busy: false,
         fmt(n, d) { return window.nvmDxFmt(n, d); },
-        lock() { return this.cfg.locks.find(l => l.days === Number(this.lockDays)) || this.cfg.locks[0]; },
         useMax() {
             let v = parseFloat(this.cfg.balance) || 0;
-            if (this.cfg.max) v = Math.min(v, parseFloat(this.cfg.max));
+            if (this.cfg.max) v = Math.min(v, Math.max(0, parseFloat(this.cfg.max) - parseFloat(this.cfg.existing)));
             this.amount = String(v);
         },
         error() {
@@ -157,18 +146,18 @@ function nvmDxStake(cfg) {
             if (this.amount === '' || isNaN(a)) return '';
             if (a <= 0) return 'จำนวนต้องมากกว่า 0';
             if (a < parseFloat(this.cfg.min)) return 'ต่ำกว่าขั้นต่ำ ' + this.fmt(this.cfg.min) + ' ' + this.cfg.symbol;
-            if (this.cfg.max && a > parseFloat(this.cfg.max)) return 'เกินสูงสุด ' + this.fmt(this.cfg.max) + ' ' + this.cfg.symbol;
+            if (this.cfg.max && a + parseFloat(this.cfg.existing) > parseFloat(this.cfg.max)) return 'รวมกับที่ Stake อยู่แล้วเกินสูงสุด ' + this.fmt(this.cfg.max) + ' ' + this.cfg.symbol;
             if (a > parseFloat(this.cfg.balance)) return 'ยอดคงเหลือไม่พอ';
             return '';
         },
         estimate() {
             const a = parseFloat(this.amount) || 0;
-            const days = Number(this.lockDays) || 30;
-            return a * (this.lock().apy / 100) * days / 365;
+            const days = Number(this.cfg.lockDays) || 30;
+            return a * (Number(this.cfg.apy) / 100) * days / 365;
         },
         unlockText() {
-            if (! Number(this.lockDays)) return 'ถอนได้ทุกเมื่อ';
-            const d = new Date(Date.now() + Number(this.lockDays) * 86400000);
+            if (! Number(this.cfg.lockDays)) return 'ถอนได้ทุกเมื่อ';
+            const d = new Date(Date.now() + Number(this.cfg.lockDays) * 86400000);
             return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
         },
         canSubmit() { return parseFloat(this.amount) > 0 && ! this.error() && this.agreed; },
@@ -176,7 +165,7 @@ function nvmDxStake(cfg) {
             if (! this.canSubmit() || this.busy) return;
             this.busy = true;
             try {
-                await window.nvmDxPost(@js(route('user.staking.stake')), { pool_id: this.cfg.poolId, amount: this.amount, lock_period_days: Number(this.lockDays) });
+                await window.nvmDxPost(@js(route('user.staking.stake')), { pool_id: this.cfg.poolId, amount: this.amount, lock_period_days: Number(this.cfg.lockDays) });
                 window.showNotification('Stake สำเร็จ', 'success');
                 window.location.href = @js(route('user.staking.show', $pool->id));
             } catch (e) {

@@ -21,7 +21,8 @@
     $symB = $pool->tokenB->symbol ?? '?';
 
     // คาดการณ์ที่ได้คืนจากสัดส่วน LP ต่อสภาพคล่องรวมของพูล (สูตรเดียวกับ DEXService::removeLiquidity)
-    $totalLiquidity = (float) $pool->total_liquidity;
+    // $totalLiquidity มาจาก DEXService::effectiveTotalLiquidity (พูลเก่าที่ total_liquidity ค้าง 0 ใช้ผลรวม LP แทน)
+    $totalLiquidity = (float) $totalLiquidity;
     $shareFraction = $totalLiquidity > 0 ? (float) $position->lp_tokens / $totalLiquidity : 0;
     $preview = [
         'lp' => (string) $position->lp_tokens,

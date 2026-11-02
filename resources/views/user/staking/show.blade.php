@@ -4,6 +4,7 @@
     - $recentStakes = ความเคลื่อนไหวล่าสุดในพูล — มีแค่จำนวน/สถานะ/เวลา ไม่มีตัวตนของสมาชิกคนอื่น
       (เดิมดึงจาก API ที่ส่งชื่อผู้ใช้และ user id ของคนอื่นมาแสดง)
     - รับรางวัล / ถอน Stake ส่งผ่าน route เว็บ user.staking.claim / user.staking.unstake (session + CSRF)
+    - พูลไม่มีค่าปรับถอนก่อนกำหนด → ถอน Stake ได้หลังวันปลดล็อกเท่านั้น (เซิร์ฟเวอร์ตรวจซ้ำ) · รับรางวัลได้ตลอด
 --}}
 @extends('layouts.user-nova')
 
@@ -70,7 +71,7 @@
             @else
                 <div class="nvm-status {{ $locked ? 'is-warn' : '' }}">
                     <svg class="nvm-ico"><use href="#nvm-i-{{ $locked ? 'lock' : 'check' }}"/></svg>
-                    <span>{{ $locked ? 'อยู่ในช่วงล็อก' : 'ปลดล็อกแล้ว ถอนได้' }}<small>{{ $locked ? 'ปลดล็อก '.$thDate($myStake->unlock_at).' · ถอนก่อนกำหนดอาจมีค่าปรับ' : 'ถอนพร้อมรับรางวัลสะสมได้ทันที' }}</small></span>
+                    <span>{{ $locked ? 'อยู่ในช่วงล็อก' : 'ปลดล็อกแล้ว ถอนได้' }}<small>{{ $locked ? 'ปลดล็อก '.$thDate($myStake->unlock_at).' · ถอน Stake ได้หลังวันปลดล็อก รับรางวัลได้ตลอด' : 'ถอนพร้อมรับรางวัลสะสมได้ทันที' }}</small></span>
                 </div>
                 <div class="nvm-minis nvm-gap-t">
                     <div class="nvm-mini"><small>จำนวนที่ Stake</small><b class="nvm-num">{{ $num($myStake->amount) }} {{ $symbol }}</b></div>
@@ -80,7 +81,7 @@
                 </div>
                 <div class="nvm-filter__btns nvm-gap-t">
                     <button type="button" class="nvm-btn nvm-btn--line" @click="ask('claim')" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-gift"/></svg>รับรางวัล</button>
-                    <button type="button" class="nvm-btn nvm-btn--bad" @click="ask('unstake')" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-out"/></svg>ถอน Stake</button>
+                    <button type="button" class="nvm-btn nvm-btn--bad" @click="ask('unstake')" :disabled="busy || {{ $locked ? 'true' : 'false' }}" @if($locked) title="ถอนได้หลัง {{ $thDate($myStake->unlock_at) }}" @endif><svg class="nvm-ico"><use href="#nvm-i-out"/></svg>ถอน Stake</button>
                 </div>
             @endif
         </section>
@@ -136,7 +137,7 @@
         <div class="nvm-card nvm-modal__box">
             <h2 id="nvm-dx-sc-h" x-text="action === 'claim' ? 'รับรางวัล Stake' : 'ถอน Stake'"></h2>
             <p x-show="action === 'claim'">รางวัลที่คำนวณได้ถึงตอนนี้จะเข้ายอด {{ $symbol }} ของคุณ</p>
-            <p x-show="action === 'unstake'">ถอน <b class="nvm-num">{{ $num($myStake->amount) }} {{ $symbol }}</b> พร้อมรางวัลสะสม@if($locked) — <b>ยังอยู่ในช่วงล็อก อาจถูกหักค่าปรับ</b>@endif</p>
+            <p x-show="action === 'unstake'">ถอน <b class="nvm-num">{{ $num($myStake->amount) }} {{ $symbol }}</b> พร้อมรางวัลที่ยังไม่ได้รับ</p>
             <div class="nvm-filter__btns">
                 <button type="button" class="nvm-btn nvm-btn--line" @click="action = null" :disabled="busy">ยกเลิก</button>
                 <button type="button" class="nvm-btn" :class="action === 'unstake' ? 'nvm-btn--bad' : 'nvm-btn--gold'" @click="run()" :disabled="busy"><span x-text="busy ? 'กำลังทำรายการ...' : 'ยืนยัน'">ยืนยัน</span></button>

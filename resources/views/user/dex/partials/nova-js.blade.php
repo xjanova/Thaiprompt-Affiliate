@@ -14,6 +14,13 @@
         'Insufficient LP tokens': 'LP Token ไม่พอสำหรับจำนวนที่เลือก',
         'No rewards to claim': 'ยังไม่มีรางวัลให้รับ',
         'Cannot unstake yet - still locked': 'ยังอยู่ในช่วงล็อก ถอนไม่ได้',
+        'No liquidity': 'พูลนี้ยังไม่มีสภาพคล่องพอสำหรับการแลก',
+        'Pool not found': 'ยังไม่มีพูลสำหรับคู่เหรียญนี้',
+        'Pool is not active': 'พูลนี้ปิดใช้งานอยู่',
+        'Position not found': 'ไม่พบตำแหน่งสภาพคล่องนี้ หรือถอนไปหมดแล้ว',
+        'Invalid amount': 'จำนวนไม่ถูกต้อง',
+        'Invalid pair': 'เลือกเหรียญสองฝั่งให้ต่างกัน',
+        'Amount too small': 'จำนวนน้อยเกินไปสำหรับพูลนี้',
         'Unauthenticated.': 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'
     };
 

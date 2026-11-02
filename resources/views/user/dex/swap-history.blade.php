@@ -1,7 +1,7 @@
 {{--
     ประวัติการแลกเปลี่ยน — TPIX DEX (ธีมโนวาเต็ม)
     - $swaps = ประวัติของสมาชิกเอง (แบ่งหน้า 20) · $filters = ตัวกรองจาก query string · $summary = ยอดรวมทั้งหมด
-    - ตัวกรองเป็นฟอร์ม GET ธรรมดา · ปุ่มส่งออก CSV ทำจากแถวในหน้านี้ (ฝั่งเบราว์เซอร์)
+    - ตัวกรองเป็นฟอร์ม GET ธรรมดา · ปุ่มส่งออก CSV ทำจากแถวในหน้านี้ (ฝั่งเบราว์เซอร์) — ป้ายปุ่มบอกชัดว่าส่งออกเฉพาะหน้านี้
 --}}
 @extends('layouts.user-nova')
 
@@ -68,7 +68,7 @@
     <div class="nvm-sec-h">
         <div><small class="nvm-latin">History</small><h2 id="nvm-dx-shl-h">รายการทั้งหมด</h2></div>
         @if($swaps->isNotEmpty())
-            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออก CSV</button>
+            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออกหน้านี้ (CSV {{ number_format(count($csvRows)) }} แถว)</button>
         @endif
     </div>
 
