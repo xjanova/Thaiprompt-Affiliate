@@ -287,4 +287,87 @@ class NovaMlmPagesTest extends TestCase
         $this->actingAs($user)->get(route('user.mlm.income-comparison'))
             ->assertOk()->assertDontSee('คุณสมชาย')->assertSee('ไม่ใช่การรับประกันรายได้');
     }
+
+    public function test_dividend_simulator_uses_active_staking_pool(): void
+    {
+        // ตารางใช้ status enum ไม่มี is_active — เดิม query พังเงียบแล้วโชว์แต่ค่าตัวอย่างเสมอ
+        $user = $this->user();
+        $row = fn (string $name, string $status, float $apy) => [
+            'token_id' => 999999, 'creator_id' => $user->id, 'name' => $name, 'apy' => $apy,
+            'lock_period_days' => 45, 'min_stake_amount' => 10, 'status' => $status,
+            'created_at' => now(), 'updated_at' => now(),
+        ];
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+        \Illuminate\Support\Facades\DB::table('tpix_staking_pools')->insert([
+            $row('Pool จริงทดสอบ', 'active', 17.25),
+            $row('Pool ร่างทดสอบ', 'draft', 88.5),
+        ]);
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+
+        $response = $this->actingAs($user)->get(route('user.mlm.dividend-simulator'));
+        $response->assertOk()->assertDontSee('ยังไม่มี pool staking ที่เปิดอยู่');
+
+        $pools = collect($response->viewData('pools'));
+        $this->assertCount(1, $pools);
+        $this->assertSame('Pool จริงทดสอบ', $pools->first()['name']);
+        $this->assertSame(17.25, $pools->first()['apy']);
+    }
+
+    public function test_dashboard_binary_estimate_matches_engine_formula(): void
+    {
+        // 2:1 → min(ขาอ่อน, floor(ขาแข็ง/2)) และรวม PV ยกยอด: ซ้าย 100, ขวา 250+50 = 300 → 100 คู่ (สูตรเดิมได้ 50)
+        \Illuminate\Support\Facades\Cache::put('mlm_setting_binary_pairing_type', '2:1', 60);
+        \Illuminate\Support\Facades\Cache::put('mlm_setting_binary_pair_commission', 100, 60);
+        $user = $this->user();
+        $member = $this->member($user, $this->plan('binary'), [
+            'left_leg_pv' => 100, 'right_leg_pv' => 250, 'carried_right_pv' => 50,
+        ]);
+
+        $est = app(\App\Services\MlmBinaryService::class)->estimatePairs($member->fresh());
+        $this->assertSame(100, $est['pairs']);
+
+        $this->actingAs($user)->get(route('user.mlm.dashboard'))
+            ->assertOk()->assertSee('฿10,000.00')->assertDontSee('฿5,000.00')->assertSee('แบบ 2:1');
+    }
+
+    public function test_genealogy_does_not_load_third_party_avatar(): void
+    {
+        $plan = $this->plan('unilevel');
+        $me = $this->user(['profile_picture' => null, 'line_picture_url' => null]);
+        $root = $this->member($me, $plan);
+        $child = $this->user(['profile_picture' => null, 'line_picture_url' => null]);
+        $this->member($child, $plan, ['unilevel_sponsor_id' => $root->id, 'unilevel_level' => 1]);
+
+        // แถบบนของเชลล์ (x-nova.member-topbar) ไม่อยู่ในขอบเขตหน้านี้ — ตรวจเฉพาะส่วนหัวของหน้าผังสายงาน
+        $html = $this->actingAs($me)->get(route('user.mlm.genealogy'))->assertOk()->getContent();
+        $start = strpos($html, 'nvm-ml-who');
+        $this->assertNotFalse($start);
+        $hero = substr($html, $start, strpos($html, '</h1>', $start) - $start);
+        $this->assertStringNotContainsString('ui-avatars.com', $hero);
+        $this->assertStringNotContainsString('<img', $hero, 'ไม่มีรูปจริงต้องแสดงอักษรย่อ');
+        $json = $this->actingAs($me)->getJson(route('user.mlm.genealogy-data', ['type' => 'unilevel']))
+            ->assertOk()->getContent();
+        $this->assertStringNotContainsString('ui-avatars.com', $json);
+    }
+
+    public function test_preview_calculation_multiplies_pv_rate_like_engine(): void
+    {
+        // PV จริง (MlmPvService) = ยอดขาย × global_pv_rate — หน้าจำลองต้องใช้ทิศเดียวกัน
+        \Illuminate\Support\Facades\Cache::put('mlm_setting_global_pv_rate', 2, 60);
+        $user = $this->user();
+
+        $this->actingAs($user)->postJson(route('user.mlm.preview-calculation'), ['sales_amount' => 1000])
+            ->assertOk()->assertJsonPath('calculation.total_pv', 2000);
+    }
+
+    public function test_simulators_use_same_pv_direction(): void
+    {
+        $user = $this->user();
+        foreach (['user.mlm.income-comparison', 'user.mlm.income-simulator', 'user.mlm.scenario-simulator'] as $route) {
+            $html = $this->actingAs($user)->get(route($route))->assertOk()->getContent();
+            $this->assertDoesNotMatchRegularExpression('/[Ss]ales\s*\/\s*(this\.)?pvRate/', $html, $route.' ยังหาร PV rate');
+        }
+        $scenario = $this->actingAs($user)->get(route('user.mlm.scenario-simulator'))->getContent();
+        $this->assertStringNotContainsString("'#ffffff'", $scenario);
+    }
 }

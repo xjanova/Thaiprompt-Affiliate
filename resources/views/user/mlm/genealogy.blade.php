@@ -57,7 +57,8 @@
             <div class="nvm-eyebrow nvm-latin">MLM center</div>
             <div class="nvm-ml-who">
                 <span class="nvm-avatar">
-                    @if($me->profile_picture_url)
+                    {{-- profile_picture_url ไม่เคยว่าง (ไม่มีรูปจะได้ ui-avatars.com) — เช็คแหล่งรูปจริงแทน --}}
+                    @if($me->profile_picture || $me->line_picture_url)
                         <img src="{{ $me->profile_picture_url }}" alt="" width="52" height="52">
                     @else
                         {{ $initial }}

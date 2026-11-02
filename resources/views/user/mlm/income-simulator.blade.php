@@ -391,9 +391,14 @@ function nvmMlIncomeSim(settingsUrl, ranksUrl, previewUrl) {
             const rankMultiplier = Math.max(1, this.selectedRank ? this.num(this.selectedRank.bonus_multiplier, 1) : 1);
             const rankCommissionRate = this.selectedRank ? this.num(this.selectedRank.commission_rate) : 0;
             const leftRatio = Math.min(100, Math.max(0, this.num(s.binary_default_left_ratio, 50)));
-            const weakerLegPv = Math.min(teamPv * leftRatio / 100, teamPv * (100 - leftRatio) / 100);
-            const pairRatio = s.binary_pairing_type === '2:1' ? 2 : 1;
-            const estimatedPairs = Math.max(0, Math.floor(weakerLegPv / pairRatio));
+            const leftPv = teamPv * leftRatio / 100;
+            const rightPv = teamPv * (100 - leftRatio) / 100;
+            const weakerLegPv = Math.min(leftPv, rightPv);
+            const strongerLegPv = Math.max(leftPv, rightPv);
+            // สูตรเดียวกับ MlmBinaryService::calculatePairsAvailable — 2:1 = min(ขาอ่อน, ขาแข็ง/2)
+            const estimatedPairs = Math.max(0, Math.floor(s.binary_pairing_type === '2:1'
+                ? Math.min(weakerLegPv, strongerLegPv / 2)
+                : weakerLegPv));
             const depth = Math.min(10, Math.max(1, parseInt(s.unilevel_max_depth, 10) || 10));
 
             let unilevel = 0;

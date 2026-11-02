@@ -438,7 +438,13 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         $pools = collect();
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('tpix_staking_pools')) {
-                $pools = \App\Models\TPIXStakingPool::active()
+                // ⚠️ ห้ามใช้ TPIXStakingPool::active() — scope นั้นกรอง is_active ซึ่งตารางไม่มีคอลัมน์นี้
+                // (ตารางใช้ status enum) จะ throw ทุกครั้งแล้วหน้าโชว์แต่ค่าตัวอย่าง
+                // กรองแบบเดียวกับ StakingController: status = active + อยู่ในช่วง starts_at/ends_at
+                $pools = \App\Models\TPIXStakingPool::query()
+                    ->where('status', 'active')
+                    ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+                    ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
                     ->orderBy('lock_period_days')
                     ->get(['id', 'name', 'apy', 'lock_period_days', 'min_stake_amount'])
                     ->map(fn ($p) => [

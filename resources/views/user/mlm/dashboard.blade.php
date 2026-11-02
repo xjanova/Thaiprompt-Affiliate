@@ -31,11 +31,12 @@
     // วงแหวน r=52 → เส้นรอบวง 326.7
     $ringOff = round(326.7 - 326.7 * $pvPct / 100, 1);
 
-    // ── ประมาณการ Binary จาก PV คงเหลือของขาอ่อน (ก่อนหักเพดานรายวัน) ──
-    $weakLegPv = min((float) $member->left_leg_pv, (float) $member->right_leg_pv);
+    // ── ประมาณการ Binary ด้วยสูตรเดียวกับรอบจับคู่จริง (รวม PV ยกยอด, ก่อนหักเพดานรายวัน) ──
+    $estBin = app(\App\Services\MlmBinaryService::class)->estimatePairs($member);
+    $weakLegPv = $estBin['weak_pv'];
     $pairComm = (float) \App\Models\MlmGlobalSetting::get('binary_pair_commission', 100);
-    $pairRatio = \App\Models\MlmGlobalSetting::get('binary_pairing_type', '1:1') === '2:1' ? 2 : 1;
-    $estPairs = (int) floor($weakLegPv / $pairRatio);
+    $pairLabel = $estBin['pairing_type'];
+    $estPairs = (int) $estBin['pairs'];
 
     $statusTone = ['paid' => 'ok', 'approved' => 'info', 'pending' => 'warn', 'rejected' => 'bad', 'cancelled' => 'bad', 'clawback' => 'bad'];
 
@@ -145,7 +146,7 @@
                     <div class="nvm-mini"><small>คู่ที่จับได้ (ประมาณ)</small><b class="nvm-num">{{ number_format($estPairs) }}</b></div>
                     <div class="nvm-mini"><small>คอมมิชชั่น (ประมาณ)</small><b class="nvm-num is-in">{{ $baht($estPairs * $pairComm) }}</b></div>
                 </div>
-                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ประมาณการจาก PV คงเหลือของขาอ่อน · {{ $baht($pairComm) }} ต่อคู่ (แบบ {{ $pairRatio }}:1) ยังไม่หักเพดานรายวัน ยอดจริงคำนวณตอนจับคู่</p>
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ประมาณการจาก PV คงเหลือรวม PV ยกยอดของทั้งสองขา · {{ $baht($pairComm) }} ต่อคู่ (แบบ {{ $pairLabel }}) ยังไม่หักเพดานรายวัน ยอดจริงคำนวณตอนจับคู่</p>
             </section>
         @endif
 

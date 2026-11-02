@@ -414,6 +414,12 @@ class MlmDashboardController extends Controller
         }
 
         unset($node['email'], $node['phone']);
+        // รูปสำรองจาก ui-avatars.com (User::profile_picture_url เมื่อไม่มีรูปจริง) ส่งอักษรแรกของชื่อไปบริการภายนอก
+        // ตัดทิ้งให้หน้าแสดงอักษรย่อเอง
+        if (isset($node['avatar_url']) && is_string($node['avatar_url'])
+            && str_starts_with($node['avatar_url'], 'https://ui-avatars.com/')) {
+            $node['avatar_url'] = null;
+        }
         if (! $isRoot) {
             unset($node['total_earnings']);
         }
@@ -507,9 +513,9 @@ class MlmDashboardController extends Controller
             $unilevelEnabled = \App\Models\MlmGlobalSetting::get('unilevel_enabled', true);
             $binaryEnabled = \App\Models\MlmGlobalSetting::get('binary_enabled', true);
 
-            // คำนวณ PV
-            // กันหารศูนย์เมื่อแอดมินตั้งอัตรา PV เป็น 0
-            $totalPv = $salesAmount / ((float) $pvRate > 0 ? (float) $pvRate : 1.0);
+            // คำนวณ PV = ยอดขาย × global_pv_rate (สูตรเดียวกับ MlmPvService/MlmCalculationService ที่คิด PV จริง
+            // และหน้าจำลองฝั่งแอดมิน) — เดิมหารด้วยอัตรา ทำให้ผลจำลองกลับทิศเมื่ออัตราไม่ใช่ 1
+            $totalPv = $salesAmount * max(0.0, (float) $pvRate);
 
             // ==== UNILEVEL CALCULATION ====
             $unilevelTotal = 0;

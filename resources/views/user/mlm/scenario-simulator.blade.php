@@ -318,7 +318,7 @@ function nvmMlScenario(settingsUrl) {
         draw() {
             if (typeof d3 === 'undefined' || ! this.$refs.canvas) return;
             const { width, height, r } = this.layout();
-            const c = { ok: css('--nvm-good', '#2f9e6a'), bad: css('--nvm-bad', '#d24b4b'), gold: css('--nv-gold-500', '#c9a24a'), line: css('--nvm-line-2', '#c8ccd6'), ink: css('--nvm-ink', '#1b2233') };
+            const c = { ok: css('--nvm-good', '#2f9e6a'), bad: css('--nvm-bad', '#d24b4b'), gold: css('--nv-gold-500', '#c9a24a'), line: css('--nvm-line-2', '#c8ccd6'), ink: css('--nvm-ink', '#1b2233'), paper: css('--nvm-paper', '#fffdf8'), badgeInk: css('--nv-navy-800', '#0d1b3d') };
             const m = this.members;
             const box = d3.select(this.$refs.canvas);
             box.selectAll('*').remove();
@@ -344,12 +344,12 @@ function nvmMlScenario(settingsUrl) {
                 .on('click', (e, d) => this.toggle(d.id))
                 .on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggle(d.id); } });
 
-            nodes.append('circle').attr('r', d => d.level ? r : r + 8).attr('fill', d => d.active ? c.ok : c.bad).attr('stroke', '#ffffff').attr('stroke-width', 2);
-            nodes.append('text').attr('text-anchor', 'middle').attr('dy', '.35em').attr('fill', '#ffffff').attr('font-size', d => d.level ? 10 : 12).attr('font-weight', 700).attr('pointer-events', 'none').text(d => d.name);
+            nodes.append('circle').attr('r', d => d.level ? r : r + 8).attr('fill', d => d.active ? c.ok : c.bad).attr('stroke', c.paper).attr('stroke-width', 2);
+            nodes.append('text').attr('text-anchor', 'middle').attr('dy', '.35em').attr('fill', c.paper).attr('font-size', d => d.level ? 10 : 12).attr('font-weight', 700).attr('pointer-events', 'none').text(d => d.name);
 
             const withPay = nodes.filter(d => d.commission > 0);
             withPay.append('rect').attr('x', r - 6).attr('y', -r - 14).attr('rx', 8).attr('width', 40).attr('height', 16).attr('fill', c.gold);
-            withPay.append('text').attr('x', r + 14).attr('y', -r - 6).attr('dy', '.35em').attr('text-anchor', 'middle').attr('fill', '#3b2a06').attr('font-size', 10).attr('font-weight', 700).attr('pointer-events', 'none').text(d => this.badge(d.commission));
+            withPay.append('text').attr('x', r + 14).attr('y', -r - 6).attr('dy', '.35em').attr('text-anchor', 'middle').attr('fill', c.badgeInk).attr('font-size', 10).attr('font-weight', 700).attr('pointer-events', 'none').text(d => this.badge(d.commission));
 
             particles = svg.append('g').attr('pointer-events', 'none');
         },
@@ -387,7 +387,7 @@ function nvmMlScenario(settingsUrl) {
                 const canvas = document.createElement('canvas');
                 canvas.width = w * 2; canvas.height = h * 2;
                 const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = css('--nvm-paper', '#fffdf8'); ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.scale(2, 2); ctx.drawImage(img, 0, 0);
                 URL.revokeObjectURL(url);
                 const a = document.createElement('a');

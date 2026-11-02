@@ -152,7 +152,8 @@ function nvmMlCompare(settingsUrl, scenarios) {
         calc(s) {
             const teamSales = s.teamSize * s.teamAvgSales;
             const pvRate = Number(this.settings.global_pv_rate) || 1;
-            const teamPv = teamSales / pvRate;
+            // PV = ยอดขาย × global_pv_rate (สูตรเดียวกับ MlmPvService ที่คิด PV จริง)
+            const teamPv = teamSales * pvRate;
             let levels = this.settings.unilevel_levels;
             if (typeof levels === 'string') { try { levels = JSON.parse(levels); } catch (e) { levels = []; } }
             const unilevel = (Array.isArray(levels) ? levels : []).reduce((sum, l) => sum + teamPv * (Number(l.percentage) || 0) / 100, 0);

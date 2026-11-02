@@ -202,6 +202,31 @@ class MlmBinaryService
     }
 
     /**
+     * ประมาณการจำนวนคู่ที่จับได้ตอนนี้ของสมาชิก (สูตรเดียวกับรอบจับคู่จริง)
+     *
+     * รวม PV คงเหลือ + PV ที่ยกยอดมา (carried) ของแต่ละขา แล้วใช้ calculatePairsAvailable
+     * ยังไม่หักเพดานรายวัน/รายสัปดาห์ — ใช้แสดงผลบนหน้าแดชบอร์ดเท่านั้น
+     *
+     * @return array{left_pv: float, right_pv: float, weak_pv: float, pairs: int, pairing_type: string}
+     */
+    public function estimatePairs(MlmMember $member): array
+    {
+        $pairingType = MlmGlobalSetting::get('binary_pairing_type', '1:1') === '2:1' ? '2:1' : '1:1';
+        $leftPv = (float) $member->left_leg_pv + (float) $member->carried_left_pv;
+        $rightPv = (float) $member->right_leg_pv + (float) $member->carried_right_pv;
+        $weak = min($leftPv, $rightPv);
+        $strong = max($leftPv, $rightPv);
+
+        return [
+            'left_pv' => $leftPv,
+            'right_pv' => $rightPv,
+            'weak_pv' => $weak,
+            'pairs' => $this->calculatePairsAvailable($weak, $strong, $pairingType),
+            'pairing_type' => $pairingType,
+        ];
+    }
+
+    /**
      * คำนวณจำนวน pairs ที่สามารถจับคู่ได้ตาม pairing type
      *
      * สำหรับ 1:1: pairs = weakerLeg (1 PV จากแต่ละขา = 1 pair)
