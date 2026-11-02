@@ -1,6 +1,7 @@
 {{--
     ถอนเหรียญคริปโต (ธีมโนวาเต็ม)
-    CryptoWalletController::withdraw → $wallet · $currencies (เปิดถอนอยู่) · $balances (คีย์เป็นรหัสเหรียญ)
+    CryptoWalletController::withdraw → $wallet · $currencies (เปิดถอน + เครือข่ายอยู่ใน WithdrawCryptoRequest::NETWORKS) · $balances (คีย์เป็นรหัสเหรียญ)
+    $tpixWithdrawable — TPIX (tpix-chain) ถอนผ่านฟอร์มนี้ไม่ได้ → ลิงก์ไปหน้า user.tpix.withdrawal แทน
     POST user.crypto-wallet.withdraw.submit — WithdrawCryptoRequest ต้องการ:
       currency_code · network (bitcoin/ethereum/bsc/polygon/tron) · to_address · amount · pin (ตัวเลข 6 หลัก) · accept_terms
     เดิมฟอร์มส่ง currency_id ไม่มี network/accept_terms และให้ PIN 4-6 หลัก → ส่งคำขอไม่ผ่านการตรวจทุกครั้ง (แก้แล้ว)
@@ -159,6 +160,13 @@
                 </ul>
             </div>
         </aside>
+        @if($tpixWithdrawable && \Illuminate\Support\Facades\Route::has('user.tpix.withdrawal'))
+            <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.tpix.withdrawal') }}">
+                <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg></span>
+                <div class="nvm-alert__txt"><b>ถอนเหรียญ TPIX</b><p>TPIX อยู่บนเครือข่าย TPIX Chain ถอนผ่านหน้ากระเป๋า TPIX</p></div>
+                <div class="nvm-alert__side"><small>ไปหน้าถอน TPIX →</small></div>
+            </a>
+        @endif
         @if(\Illuminate\Support\Facades\Route::has('user.crypto-wallet.withdrawals'))
             <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.crypto-wallet.withdrawals') }}">
                 <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="58" height="58" loading="lazy">

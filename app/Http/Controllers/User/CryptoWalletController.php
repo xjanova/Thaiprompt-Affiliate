@@ -58,8 +58,12 @@ class CryptoWalletController extends Controller
             ->limit(10)
             ->get();
 
+        // มีกระเป๋าแต่ยังไม่ได้ตั้งกระเป๋าหลัก → หน้าแรกต้องพาไปตั้งกระเป๋าหลัก ไม่ใช่บอกว่า "ยังไม่มีกระเป๋า"
+        $hasWallets = $wallet !== null || $user->cryptoWallets()->exists();
+
         return view('user.crypto-wallet.index', compact(
             'wallet',
+            'hasWallets',
             'currencies',
             'balances',
             'totalValueTHB',
@@ -140,8 +144,21 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', self::userMessage($e, 'สร้างกระเป๋าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
+    }
+
+    /**
+     * ข้อความผิดพลาดที่แสดงให้สมาชิกเห็น
+     *
+     * ข้อความภาษาไทยจาก service ตั้งใจให้ผู้ใช้อ่านได้ ส่งต่อได้เลย
+     * ข้อความอื่น (อังกฤษ/ข้อผิดพลาดฐานข้อมูล) อาจเผยรายละเอียดภายใน → ใช้ข้อความกลางแทน (รายละเอียดอยู่ใน log)
+     */
+    public static function userMessage(\Throwable $e, string $fallback = 'ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'): string
+    {
+        $message = $e->getMessage();
+
+        return preg_match('/\p{Thai}/u', $message) ? $message : $fallback;
     }
 
     /**
@@ -238,8 +255,7 @@ class CryptoWalletController extends Controller
                 ->where('address', $depositAddress->address)
                 ->first()
             : null;
-        $canReceive = $sourceAddress !== null
-            && ($sourceAddress->is_imported || ! empty($sourceAddress->encrypted_private_key));
+        $canReceive = $sourceAddress !== null && $sourceAddress->canReceive();
 
         return view('user.crypto-wallet.deposit-currency', compact(
             'wallet',
@@ -247,6 +263,48 @@ class CryptoWalletController extends Controller
             'depositAddress',
             'canReceive'
         ));
+    }
+
+    /**
+     * ที่อยู่ฝากของเหรียญ (JSON) — route user.crypto-wallet.deposit.address
+     *
+     * เดิม route ชี้ไปเมธอดที่ไม่มีอยู่ (500) · ส่งที่อยู่กลับเฉพาะที่รับเหรียญได้จริง (CryptoAddress::canReceive)
+     * ไม่สร้างที่อยู่สุ่มใหม่ เพราะที่อยู่สุ่มรับเหรียญไม่ได้
+     */
+    public function getDepositAddress(Request $request, $currencyCode)
+    {
+        $wallet = $request->user()->defaultCryptoWallet;
+
+        $currency = CryptoCurrency::where('code', strtoupper((string) $currencyCode))
+            ->depositEnabled()
+            ->first();
+
+        if (! $wallet || ! $currency) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบสกุลเงินที่เปิดรับฝาก',
+            ], 404);
+        }
+
+        $address = $wallet->cryptoAddresses()
+            ->where('crypto_currency_id', $currency->id)
+            ->get()
+            ->first(fn ($a) => $a->canReceive());
+
+        if (! $address) {
+            return response()->json([
+                'success' => false,
+                'can_receive' => false,
+                'message' => 'เหรียญนี้ยังรับฝากไม่ได้ กรุณาติดต่อทีมงาน',
+            ], 409);
+        }
+
+        return response()->json([
+            'success' => true,
+            'can_receive' => true,
+            'address' => $address->address,
+            'network' => $address->network,
+        ]);
     }
 
     /**
@@ -262,13 +320,20 @@ class CryptoWalletController extends Controller
                 ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
         }
 
-        $currencies = CryptoCurrency::withdrawalEnabled()->ordered()->get();
+        // แสดงเฉพาะเหรียญที่เครือข่ายผ่าน WithdrawCryptoRequest — เหรียญเครือข่ายอื่น (เช่น TPIX บน tpix-chain)
+        // ถ้าใส่ไว้ในฟอร์มจะถูกปัดตก "เครือข่ายที่เลือกไม่ถูกต้อง" ทุกครั้ง · TPIX ถอนผ่านหน้า user.tpix.withdrawal แทน
+        $allCurrencies = CryptoCurrency::withdrawalEnabled()->ordered()->get();
+        $currencies = $allCurrencies
+            ->filter(fn ($c) => in_array($c->network, WithdrawCryptoRequest::NETWORKS, true))
+            ->values();
+        $tpixWithdrawable = $allCurrencies->contains(fn ($c) => $c->code === 'TPIX');
         $balances = $this->walletService->getAllBalances($wallet);
 
         return view('user.crypto-wallet.withdraw', compact(
             'wallet',
             'currencies',
-            'balances'
+            'balances',
+            'tpixWithdrawable'
         ));
     }
 
@@ -330,7 +395,7 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', self::userMessage($e, 'ส่งคำขอถอนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
     }
 
@@ -484,7 +549,7 @@ class CryptoWalletController extends Controller
                 ->with('success', 'ลบกระเป๋าสำเร็จ');
 
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', self::userMessage($e, 'ลบกระเป๋าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'));
         }
     }
 
@@ -575,12 +640,16 @@ class CryptoWalletController extends Controller
             ->limit(20)
             ->get();
 
+        // จำนวนธุรกรรมทั้งหมดจริง — $recentTransactions ถูกจำกัดไว้ 20 รายการ นับจากตัวนั้นจะค้างที่ 20
+        $totalTransactions = $user->cryptoTransactions()->count();
+
         // (เดิมมี getPortfolioPerformanceData() สุ่มตัวเลขกราฟผลตอบแทนด้วย rand() — ลบออก ระบบยังไม่เก็บมูลค่าย้อนหลัง)
         return view('user.crypto-wallet.portfolio', compact(
             'wallet',
             'balances',
             'totalValueTHB',
-            'recentTransactions'
+            'recentTransactions',
+            'totalTransactions'
         ));
     }
 }

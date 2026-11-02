@@ -1,6 +1,6 @@
 {{--
     พอร์ตคริปโตของฉัน (ธีมโนวาเต็ม)
-    CryptoWalletController::portfolio → $wallet · $balances (code => currency/balance/balance_thb) · $totalValueTHB · $recentTransactions
+    CryptoWalletController::portfolio → $wallet · $balances (code => currency/balance/balance_thb) · $totalValueTHB · $recentTransactions (20 รายการล่าสุด) · $totalTransactions (จำนวนทั้งหมดจริง)
     แสดงเฉพาะตัวเลขจริงจากยอดคงเหลือ — เดิมมีกำไร/ขาดทุนปลอม (ต้นทุน = มูลค่า × 0.85) และกราฟสุ่มด้วย rand()
     และหน้าแตก 500 (string % int) — ระบบยังไม่เก็บต้นทุนจึงไม่แสดงกำไร/ขาดทุน
 --}}
@@ -24,7 +24,7 @@
     $kpis = [
         ['มูลค่ารวม (ประมาณ)', 'Total value', '฿'.number_format($total, 2), 'images/nova/deco/coins.webp'],
         ['เหรียญที่ถืออยู่', 'Holdings', number_format($holdings->count()).' สกุล', 'images/nova/wallet/card.webp'],
-        ['ธุรกรรมล่าสุด', 'Recent activity', number_format($recentTransactions->count()).' รายการ', 'images/nova/deco/scroll.webp'],
+        ['ธุรกรรมทั้งหมด', 'Transactions', number_format($totalTransactions).' รายการ', 'images/nova/deco/scroll.webp'],
     ];
 @endphp
 

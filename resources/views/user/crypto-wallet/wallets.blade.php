@@ -3,7 +3,8 @@
     CryptoWalletController::wallets → $wallets = กระเป๋าของสมาชิกคนนี้เท่านั้น (พร้อม cryptoAddresses.currency)
     - ตั้งเป็นกระเป๋าหลัก: POST user.crypto-wallet.wallet.set-default (SetDefaultWalletRequest ตรวจความเป็นเจ้าของ)
     - ลบ: DELETE user.crypto-wallet.wallet.delete — ต้องกดยืนยันในโมดัลก่อน · ฝั่งเซิร์ฟเวอร์ไม่ให้ลบกระเป๋าที่ยังมียอด
-    - ที่อยู่ในกระเป๋าเป็นของสมาชิกเอง แสดงเต็มได้
+    - ที่อยู่ในกระเป๋าเป็นของสมาชิกเอง แสดงเต็มได้ — แต่เฉพาะที่รับเหรียญได้จริง (CryptoAddress::canReceive)
+      ที่อยู่สุ่มที่ระบบไม่มีกุญแจ ถ้าแสดงไว้สมาชิกอาจคัดลอกไปโอนเหรียญเข้าแล้วเหรียญหายถาวร → แสดง "ยังรับฝากไม่ได้" แทน
 --}}
 @extends('layouts.user-nova')
 
@@ -45,12 +46,13 @@
 </div>
 
 @forelse($wallets as $wallet)
+    @php $walletName = $wallet->name ?: 'กระเป๋า #'.$wallet->id; @endphp
     <section class="nvm-card nvm-cw-wallet {{ $wallet->is_default ? 'is-default' : '' }}" aria-labelledby="nvm-cww-{{ $wallet->id }}">
         <div class="nvm-cw-wallet__head">
             <div class="nvm-cw-wallet__name">
                 <span class="nvm-cw-wallet__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $wallet->wallet_type === 'custodial' ? 'lock' : 'wallet' }}"/></svg></span>
                 <div>
-                    <b id="nvm-cww-{{ $wallet->id }}">{{ $wallet->name }}</b>
+                    <b id="nvm-cww-{{ $wallet->id }}">{{ $walletName }}</b>
                     <small>{{ $wallet->wallet_type === 'custodial' ? 'ระบบดูแลกุญแจ (Custodial)' : 'กระเป๋าภายนอก' }}</small>
                 </div>
             </div>
@@ -76,7 +78,11 @@
                             @include('user.crypto-wallet.partials.coin', ['code' => $addrCode])
                             <div class="nvm-tx__t">
                                 <b>{{ $addrCode }}</b>
-                                <small class="nvm-cw-mono">{{ $address->address }}</small>
+                                @if($address->canReceive())
+                                    <small class="nvm-cw-mono">{{ $address->address }}</small>
+                                @else
+                                    <small>ยังรับฝากไม่ได้</small>
+                                @endif
                             </div>
                             <div class="nvm-tx__r">
                                 <span class="nvm-tx__amt nvm-num">{{ number_format((float) $address->balance, 8) }}</span>
@@ -88,7 +94,7 @@
             @else
                 <div class="nvm-empty">
                     <b>ยังไม่มีที่อยู่ในกระเป๋านี้</b>
-                    ที่อยู่จะถูกสร้างเมื่อคุณเลือกฝากเหรียญครั้งแรก
+                    ยอดเหรียญที่ซื้อหรือได้รับจะแสดงที่นี่
                 </div>
             @endif
         </div>
@@ -106,7 +112,7 @@
                     <button type="submit" class="nvm-btn nvm-btn--line nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ตั้งเป็นกระเป๋าหลัก</button>
                 </form>
             @endif
-            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="del = @js(['id' => $wallet->id, 'name' => $wallet->name, 'url' => route('user.crypto-wallet.wallet.delete', $wallet->id)])"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ลบกระเป๋า</button>
+            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="del = @js(['id' => $wallet->id, 'name' => $walletName, 'url' => route('user.crypto-wallet.wallet.delete', $wallet->id)])"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ลบกระเป๋า</button>
         </div>
     </section>
 @empty

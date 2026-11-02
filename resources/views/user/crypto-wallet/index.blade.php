@@ -2,6 +2,7 @@
     กระเป๋าคริปโต — หน้าหลัก (ธีมโนวาเต็ม)
     CryptoWalletController::index → $wallet (กระเป๋าหลัก อาจเป็น null) · $balances (getAllBalances: code => [currency, balance, balance_thb])
     $totalValueTHB · $recentTransactions (10 รายการล่าสุดของสมาชิกคนนี้)
+    $hasWallets — มีกระเป๋าอย่างน้อยหนึ่งใบ (มีแต่ไม่มีกระเป๋าหลัก → ปุ่มไปตั้งกระเป๋าหลักที่ /wallets)
     ยังไม่มีกระเป๋า → ปุ่มเปิดโมดัลสร้างกระเป๋า (ฟอร์มไม่ผ่าน = เปิดโมดัลค้างไว้พร้อมข้อความผิดพลาด)
 --}}
 @extends('layouts.user-nova')
@@ -48,6 +49,8 @@
             <div class="nvm-pills">
                 @if($statusPill)
                     <span class="nvm-pill nvm-pill--{{ $statusPill[0] }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $statusPill[1] }}"/></svg>{{ $statusPill[2] }}</span>
+                @elseif($hasWallets)
+                    <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ยังไม่ได้ตั้งกระเป๋าหลัก</span>
                 @else
                     <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ยังไม่มีกระเป๋าคริปโต</span>
                 @endif
@@ -107,6 +110,8 @@
                     @if($nvR('user.crypto-wallet.deposit'))
                         <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.crypto-wallet.deposit') }}"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ฝากเหรียญ</a></div>
                     @endif
+                @elseif($hasWallets)
+                    ตั้งกระเป๋าหลักก่อน แล้วจึงฝาก ถอน หรือแลกเปลี่ยนเหรียญได้
                 @else
                     สร้างกระเป๋าคริปโตก่อน แล้วจึงฝาก ถอน หรือแลกเปลี่ยนเหรียญได้
                 @endif
@@ -118,7 +123,7 @@
         <div class="nvm-sec-h"><div><small class="nvm-latin">My wallet</small><h2 id="nvm-cw-me-h">กระเป๋าของฉัน</h2></div></div>
         @if($wallet)
             <dl class="nvm-kv">
-                <dt>ชื่อกระเป๋า</dt><dd>{{ $wallet->name }}</dd>
+                <dt>ชื่อกระเป๋า</dt><dd>{{ $wallet->name ?: 'กระเป๋า #'.$wallet->id }}</dd>
                 <dt>ประเภท</dt><dd>{{ $wallet->wallet_type === 'custodial' ? 'ระบบดูแลกุญแจ (Custodial)' : 'กระเป๋าภายนอก' }}</dd>
                 <dt>สถานะ</dt>
                 <dd>
@@ -134,6 +139,16 @@
             @if($nvR('user.crypto-wallet.wallets'))
                 <a class="nvm-btn nvm-btn--line nvm-btn--block nvm-gap-t" href="{{ route('user.crypto-wallet.wallets') }}"><svg class="nvm-ico"><use href="#nvm-i-gear"/></svg>จัดการกระเป๋า</a>
             @endif
+        @elseif($hasWallets)
+            {{-- มีกระเป๋าแล้วแต่ยังไม่มีกระเป๋าหลัก (middleware crypto.wallet.exists จะส่งมาตั้งที่ /wallets) --}}
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/cat/wallet.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่ได้ตั้งกระเป๋าหลัก</b>
+                เลือกกระเป๋าหลักก่อน จึงจะฝาก ถอน และแลกเปลี่ยนเหรียญได้
+                @if($nvR('user.crypto-wallet.wallets'))
+                    <div><a class="nvm-btn nvm-btn--gold" href="{{ route('user.crypto-wallet.wallets') }}"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>ตั้งกระเป๋าหลัก</a></div>
+                @endif
+            </div>
         @else
             <div class="nvm-empty">
                 <img src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="86" height="86" loading="lazy">

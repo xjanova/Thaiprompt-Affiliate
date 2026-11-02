@@ -52,7 +52,7 @@
         </div>
 
         {{-- ซื้อเหรียญด้วยเงินบาท --}}
-        <form x-show="tab === 'buy'" method="POST" action="{{ route('user.crypto-wallet.exchange.buy') }}" class="nvm-form" x-data="{ busy: false }" @submit="busy = true" @pageshow.window="busy = false">
+        <form x-show="tab === 'buy'" @if($tab !== 'buy') x-cloak @endif method="POST" action="{{ route('user.crypto-wallet.exchange.buy') }}" class="nvm-form" x-data="{ busy: false }" @submit="busy = true" @pageshow.window="busy = false">
             @csrf
             <div class="nvm-field">
                 <label class="nvm-label" for="cw-buy-coin">เหรียญที่ต้องการซื้อ <em>*</em></label>

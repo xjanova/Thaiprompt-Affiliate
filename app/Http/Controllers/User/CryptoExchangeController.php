@@ -110,7 +110,7 @@ class CryptoExchangeController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => CryptoWalletController::userMessage($e),
             ], 500);
         }
     }
@@ -152,7 +152,7 @@ class CryptoExchangeController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', CryptoWalletController::userMessage($e));
         }
     }
 
@@ -193,7 +193,7 @@ class CryptoExchangeController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', CryptoWalletController::userMessage($e));
         }
     }
 

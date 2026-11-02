@@ -142,6 +142,17 @@ class CryptoAddress extends Model
     /**
      * Get masked address for display
      */
+    /**
+     * ที่อยู่นี้รับเหรียญจริงได้หรือไม่
+     *
+     * ได้ก็ต่อเมื่อนำเข้าจากกระเป๋าภายนอก หรือระบบถือ private key ไว้
+     * ที่อยู่ที่ generateAddressForCurrency() สุ่มขึ้นเอง (ไม่มีกุญแจ) ใครโอนเข้าไปเหรียญหายถาวร — ห้ามแสดงเป็นที่อยู่ฝาก
+     */
+    public function canReceive(): bool
+    {
+        return (bool) $this->is_imported || ! empty($this->encrypted_private_key);
+    }
+
     public function getMaskedAddress(): string
     {
         if (strlen($this->address) <= 10) {

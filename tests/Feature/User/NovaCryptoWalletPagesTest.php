@@ -29,7 +29,10 @@ class NovaCryptoWalletPagesTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactor::class);
+        $this->withoutMiddleware([
+            \App\Http\Middleware\RequireTwoFactor::class,
+            \App\Http\Middleware\VerifyCloudfareTurnstile::class,
+        ]);
         Http::fake();
         Cache::flush();
     }
@@ -434,5 +437,259 @@ class NovaCryptoWalletPagesTest extends TestCase
         $markets = $this->actingAs($user)->get(route('user.crypto-wallet.trading'))->assertOk()->getContent();
         $this->assertStringNotContainsString('Order Book', $markets);
         $this->assertStringContainsString('1,000,000.00', $markets);
+    }
+
+    /**
+     * สมาชิกที่ยังไม่มีกระเป๋าเลย — เปลือกโนวาเต็ม + โมดัลสร้างกระเป๋า + empty state
+     */
+    public function test_index_for_member_with_no_wallet_shows_create_modal(): void
+    {
+        $user = $this->member();
+
+        $response = $this->actingAs($user)->get(route('user.crypto-wallet.index'));
+
+        $response->assertOk();
+        $html = $response->getContent();
+        $this->assertFullNova($html);
+        $this->assertStringContainsString('id="nvm-cw-create-h"', $html);
+        $this->assertStringContainsString(route('user.crypto-wallet.create-wallet'), $html);
+        $response->assertSee('คุณยังไม่มีกระเป๋าคริปโต');
+        $response->assertDontSee('ยังไม่ได้ตั้งกระเป๋าหลัก');
+    }
+
+    /**
+     * มีกระเป๋าแต่ไม่มีกระเป๋าหลัก — ต้องพาไปตั้งกระเป๋าหลัก ไม่ใช่บอกว่ายังไม่มีกระเป๋า
+     */
+    public function test_index_for_member_without_default_wallet_points_to_wallets(): void
+    {
+        $user = $this->member();
+        $this->wallet($user, ['is_default' => false]);
+
+        $response = $this->actingAs($user)->get(route('user.crypto-wallet.index'));
+
+        $response->assertOk();
+        $response->assertSee('ยังไม่ได้ตั้งกระเป๋าหลัก');
+        $response->assertDontSee('คุณยังไม่มีกระเป๋าคริปโต');
+        $this->assertStringContainsString('href="'.route('user.crypto-wallet.wallets').'"', $response->getContent());
+    }
+
+    /**
+     * หน้ากระเป๋าต้องไม่แสดงที่อยู่สุ่มที่ไม่มีกุญแจ (โอนเข้าแล้วเหรียญหาย) แต่แสดงที่อยู่นำเข้าได้
+     */
+    public function test_wallets_page_hides_placeholder_addresses(): void
+    {
+        $user = $this->member();
+        $btc = $this->currency('BTC');
+        $eth = $this->currency('ETH');
+        $wallet = $this->wallet($user);
+        $this->address($wallet, $btc, 0, ['address' => 'bc1qplaceholdernokey000000000000000', 'is_imported' => false]);
+        $this->address($wallet, $eth, 0, ['address' => '0x'.str_repeat('e', 40), 'is_imported' => true]);
+
+        $response = $this->actingAs($user)->get(route('user.crypto-wallet.wallets'));
+
+        $response->assertOk();
+        $response->assertDontSee('bc1qplaceholdernokey000000000000000');
+        $response->assertSee('0x'.str_repeat('e', 40));
+        $response->assertSee('ยังรับฝากไม่ได้');
+        $response->assertDontSee('ที่อยู่จะถูกสร้างเมื่อคุณเลือกฝากเหรียญครั้งแรก');
+    }
+
+    /**
+     * route deposit.address เดิมชี้ไปเมธอดที่ไม่มี (500) — ตอนนี้ส่งเฉพาะที่อยู่ที่รับเหรียญได้จริง
+     */
+    public function test_deposit_address_json_only_returns_receivable_address(): void
+    {
+        $user = $this->member();
+        $btc = $this->currency('BTC');
+        $wallet = $this->wallet($user);
+        $this->address($wallet, $btc, 0, ['address' => 'bc1qplaceholdernokey000000000000000']);
+
+        $placeholder = $this->actingAs($user)->getJson(route('user.crypto-wallet.deposit.address', 'btc'));
+        $placeholder->assertStatus(409)->assertJson(['success' => false, 'can_receive' => false]);
+        $this->assertStringNotContainsString('bc1qplaceholdernokey000000000000000', $placeholder->getContent());
+
+        $this->address($wallet, $btc, 0, ['address' => 'bc1qrealimportedaddress0000000000000', 'is_imported' => true]);
+
+        $this->actingAs($user)->getJson(route('user.crypto-wallet.deposit.address', 'btc'))
+            ->assertOk()
+            ->assertJson(['success' => true, 'address' => 'bc1qrealimportedaddress0000000000000']);
+    }
+
+    public function test_crypto_address_can_receive_rule(): void
+    {
+        $this->assertFalse((new CryptoAddress(['is_imported' => false]))->canReceive());
+        $this->assertTrue((new CryptoAddress(['is_imported' => true]))->canReceive());
+        $this->assertTrue((new CryptoAddress(['is_imported' => false, 'encrypted_private_key' => 'enc']))->canReceive());
+    }
+
+    /**
+     * TPIX (tpix-chain) ไม่ผ่าน network ของ WithdrawCryptoRequest — ต้องไม่อยู่ในฟอร์ม และมีลิงก์ไปหน้าถอน TPIX
+     */
+    public function test_withdraw_form_does_not_offer_coins_the_request_rejects(): void
+    {
+        [$user] = $this->richMember();
+        $this->currency('TPIX', ['network' => 'tpix-chain']);
+
+        $html = $this->actingAs($user)->get(route('user.crypto-wallet.withdraw'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('<option value="BTC">', $html);
+        $this->assertStringNotContainsString('<option value="TPIX">', $html);
+        if (\Illuminate\Support\Facades\Route::has('user.tpix.withdrawal')) {
+            $this->assertStringContainsString(route('user.tpix.withdrawal'), $html);
+        }
+    }
+
+    /**
+     * ส่งฟิลด์ตามที่ฟอร์มถอนเรนเดอร์จริง → ต้องผ่าน validation และสร้างคำขอถอน
+     */
+    public function test_withdraw_post_with_rendered_fields_passes_validation(): void
+    {
+        [$user, $btc, $wallet] = $this->richMember();
+
+        $response = $this->actingAs($user)
+            ->from(route('user.crypto-wallet.withdraw'))
+            ->post(route('user.crypto-wallet.withdraw.submit'), [
+                'currency_code' => 'BTC',
+                'network' => $btc->network, // ค่าที่ hidden input ใส่จาก coin.network
+                'to_address' => 'bc1qdestinationaddress000000000000000',
+                'amount' => '0.01',
+                'pin' => '123456',
+                'note' => '',
+                'accept_terms' => '1',
+            ]);
+
+        $response->assertSessionDoesntHaveErrors(['currency_code', 'network', 'to_address', 'amount', 'pin', 'accept_terms']);
+        $this->assertDatabaseHas('crypto_withdrawal_requests', [
+            'user_id' => $user->id,
+            'crypto_wallet_id' => $wallet->id,
+            'crypto_currency_id' => $btc->id,
+            'network' => 'bitcoin',
+        ]);
+    }
+
+    public function test_withdraw_post_rejects_network_that_does_not_match_coin(): void
+    {
+        [$user] = $this->richMember();
+
+        $this->actingAs($user)
+            ->from(route('user.crypto-wallet.withdraw'))
+            ->post(route('user.crypto-wallet.withdraw.submit'), [
+                'currency_code' => 'BTC',
+                'network' => 'ethereum',
+                'to_address' => '0x'.str_repeat('d', 40),
+                'amount' => '0.01',
+                'pin' => '123456',
+                'accept_terms' => '1',
+            ])
+            ->assertSessionHasErrors('network');
+
+        $this->assertSame(0, CryptoWithdrawalRequest::count());
+    }
+
+    /**
+     * ส่งฟิลด์ตามฟอร์มซื้อ/ขายจริง → ผ่าน validation และข้อความผิดพลาดจาก service เป็นภาษาไทย
+     */
+    public function test_exchange_buy_and_sell_posts_pass_validation_with_thai_errors(): void
+    {
+        [$user] = $this->richMember();
+
+        $buy = $this->actingAs($user)
+            ->from(route('user.crypto-wallet.exchange'))
+            ->post(route('user.crypto-wallet.exchange.buy'), [
+                'currency_code' => 'BTC',
+                'thb_amount' => '500',
+                'pin' => '123456',
+                'accept_terms' => '1',
+            ]);
+        $buy->assertSessionDoesntHaveErrors(['currency_code', 'thb_amount', 'pin', 'accept_terms']);
+        $buyError = session('error');
+        if ($buyError !== null) {
+            $this->assertMatchesRegularExpression('/\p{Thai}/u', $buyError);
+            $this->assertStringNotContainsString('Invalid', $buyError);
+            $this->assertStringNotContainsString('Insufficient', $buyError);
+        }
+
+        $sell = $this->actingAs($user)
+            ->from(route('user.crypto-wallet.exchange'))
+            ->post(route('user.crypto-wallet.exchange.sell'), [
+                'currency_code' => 'BTC',
+                'crypto_amount' => '0.01',
+                'pin' => '654321', // PIN ผิด
+                'accept_terms' => '1',
+            ]);
+        $sell->assertSessionDoesntHaveErrors(['currency_code', 'crypto_amount', 'pin', 'accept_terms']);
+        $sell->assertSessionHas('error', 'PIN กระเป๋าคริปโตไม่ถูกต้อง');
+    }
+
+    public function test_exchange_buy_form_is_cloaked_when_sell_tab_restored(): void
+    {
+        [$user] = $this->richMember();
+
+        $html = $this->actingAs($user)
+            ->withSession(['_old_input' => ['crypto_amount' => '0.01', 'currency_code' => 'BTC']])
+            ->get(route('user.crypto-wallet.exchange'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<form x-show="tab === \'buy\'"\s+x-cloak/', $html);
+    }
+
+    /**
+     * ลบกระเป๋าที่มียอด — ข้อความต้องเป็นภาษาไทย
+     */
+    public function test_deleting_wallet_with_balance_shows_thai_error(): void
+    {
+        [$user, , $wallet] = $this->richMember();
+
+        $this->actingAs($user)
+            ->from(route('user.crypto-wallet.wallets'))
+            ->delete(route('user.crypto-wallet.wallet.delete', $wallet->id))
+            ->assertRedirect(route('user.crypto-wallet.wallets'))
+            ->assertSessionHas('error', 'ลบกระเป๋าที่ยังมียอดคงเหลือไม่ได้ กรุณาถอนหรือขายเหรียญออกให้หมดก่อน');
+
+        $this->assertNotNull(CryptoWallet::find($wallet->id));
+    }
+
+    public function test_unexpected_error_message_is_not_leaked(): void
+    {
+        $this->assertSame(
+            'ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            \App\Http\Controllers\User\CryptoWalletController::userMessage(new \RuntimeException('SQLSTATE[42S22]: Column not found'))
+        );
+        $this->assertSame(
+            'PIN กระเป๋าคริปโตไม่ถูกต้อง',
+            \App\Http\Controllers\User\CryptoWalletController::userMessage(new \Exception('PIN กระเป๋าคริปโตไม่ถูกต้อง'))
+        );
+    }
+
+    /**
+     * กระเป๋าที่ไม่มีชื่อ ต้องแสดง "กระเป๋า #id" แทนหัวข้อว่าง
+     */
+    public function test_unnamed_wallet_uses_fallback_name(): void
+    {
+        $user = $this->member();
+        $wallet = $this->wallet($user, ['name' => '']);
+
+        $this->actingAs($user)->get(route('user.crypto-wallet.wallets'))
+            ->assertOk()
+            ->assertSee('กระเป๋า #'.$wallet->id);
+        $this->actingAs($user)->get(route('user.crypto-wallet.index'))
+            ->assertOk()
+            ->assertSee('กระเป๋า #'.$wallet->id);
+    }
+
+    /**
+     * KPI ธุรกรรมต้องเป็นจำนวนทั้งหมดจริง ไม่ค้างที่ 20 (ลิมิตของรายการล่าสุด)
+     */
+    public function test_portfolio_shows_real_transaction_total(): void
+    {
+        [$user, $btc, $wallet] = $this->richMember();
+        for ($i = 0; $i < 24; $i++) {
+            $this->transaction($user, $wallet, $btc, ['tx_hash' => '0x'.str_pad(dechex($i + 1), 64, '0', STR_PAD_LEFT)]);
+        }
+
+        $this->actingAs($user)->get(route('user.crypto-wallet.portfolio'))
+            ->assertOk()
+            ->assertSee('25 รายการ');
     }
 }
