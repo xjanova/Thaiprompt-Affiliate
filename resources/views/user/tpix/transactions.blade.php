@@ -28,7 +28,8 @@
         'failed' => 'ไม่สำเร็จ',
         'cancelled' => 'ยกเลิกแล้ว',
     ];
-    $hasFilter = request()->hasAny(['type', 'status', 'date_from', 'date_to']);
+    // ใช้ filled() — ฟอร์ม GET ส่งทุกช่องมาเสมอแม้ว่าง จึงใช้ hasAny() ไม่ได้
+    $hasFilter = collect(['type', 'status', 'date_from', 'date_to'])->contains(fn ($k) => request()->filled($k));
 @endphp
 
 @section('content')

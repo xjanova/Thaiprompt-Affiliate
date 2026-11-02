@@ -112,7 +112,7 @@ class TPIXWalletController extends Controller
         ];
 
         // เหรียญลูกที่สมาชิกถืออยู่ (เฉพาะของตัวเอง ยอดมากกว่า 0) — เดิมหน้านี้หมุนโหลดค้างตลอดเพราะไม่มีข้อมูลส่งมา
-        $tokenHoldings = TPIXTokenBalance::with('token:id,name,symbol,logo')
+        $tokenHoldings = TPIXTokenBalance::with('token:id,creator_id,name,symbol,logo,status')
             ->where('user_id', $user->id)
             ->where('balance', '>', 0)
             ->orderByDesc('balance')

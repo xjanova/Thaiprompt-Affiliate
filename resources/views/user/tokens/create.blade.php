@@ -137,7 +137,7 @@
         <div class="nvm-form" x-ref="step3" x-show="step === 3" x-cloak>
             <div class="nvm-field">
                 <label class="nvm-label" for="tkc-price">ราคาเริ่มต้น (TPIX)</label>
-                <input id="tkc-price" class="nvm-input nvm-num @error('initial_price_tpix') is-bad @enderror" type="number" name="initial_price_tpix" x-model="f.initial_price_tpix" min="0" step="0.00000001" inputmode="decimal" placeholder="เช่น 0.01">
+                <input id="tkc-price" class="nvm-input nvm-num @error('initial_price_tpix') is-bad @enderror" type="number" name="initial_price_tpix" x-model="f.initial_price_tpix" min="0" max="999999999999" step="0.00000001" inputmode="decimal" placeholder="เช่น 0.01">
                 @error('initial_price_tpix')<span class="nvm-err">{{ $message }}</span>@enderror
             </div>
             @foreach([

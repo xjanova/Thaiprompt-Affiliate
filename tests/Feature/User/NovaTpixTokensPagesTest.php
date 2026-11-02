@@ -185,6 +185,67 @@ class NovaTpixTokensPagesTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_wallet_does_not_link_holdings_of_suspended_tokens(): void
+    {
+        $user = $this->member();
+        $this->wallet($user, $this->currency());
+        $active = $this->token($this->member());
+        $suspended = $this->token($this->member(), ['name' => 'BannedCoin', 'symbol' => 'BAN', 'status' => 'suspended']);
+        $mine = $this->token($user, ['name' => 'MyDraftCoin', 'symbol' => 'MINE', 'status' => 'draft']);
+        foreach ([$active, $suspended, $mine] as $i => $t) {
+            TPIXTokenBalance::create(['token_id' => $t->id, 'user_id' => $user->id, 'wallet_address' => '0x'.str_repeat((string) ($i + 1), 40), 'balance' => 10 + $i]);
+        }
+
+        $this->actingAs($user)->get(route('user.tpix.wallet'))
+            ->assertOk()
+            ->assertSee(route('user.tokens.show', $active->id), false)
+            ->assertSee(route('user.tokens.show', $mine->id), false)
+            ->assertSee('BannedCoin')
+            ->assertSee('ถูกระงับ')
+            ->assertDontSee(route('user.tokens.show', $suspended->id).'"', false);
+    }
+
+    public function test_withdrawal_form_keeps_its_action_and_fields(): void
+    {
+        $user = $this->member();
+        $this->wallet($user, $this->currency());
+
+        $this->actingAs($user)->get(route('user.tpix.withdrawal'))
+            ->assertOk()
+            ->assertSee('action="'.route('user.tpix.withdrawal.process').'"', false)
+            ->assertSee('name="_token"', false)
+            ->assertSee('name="address"', false)
+            ->assertSee('name="amount"', false)
+            ->assertSee('nvm-turnstile', false);
+    }
+
+    public function test_send_form_keeps_its_action_and_one_time_token(): void
+    {
+        $user = $this->member();
+        $this->wallet($user, $this->currency());
+
+        $this->actingAs($user)->get(route('user.tpix.send'))
+            ->assertOk()
+            ->assertSee('action="'.route('user.tpix.send.process').'"', false)
+            ->assertSee('name="_token"', false)
+            ->assertSee('name="transfer_token"', false)
+            ->assertSee('name="recipient"', false)
+            ->assertSee('name="amount"', false);
+    }
+
+    public function test_empty_filter_submit_is_not_treated_as_a_filter(): void
+    {
+        $user = $this->member();
+        $this->wallet($user, $this->currency());
+
+        $this->actingAs($user)
+            ->get(route('user.tpix.transactions', ['type' => '', 'status' => '', 'date_from' => '', 'date_to' => '']))
+            ->assertOk()
+            ->assertSee('ยังไม่มีธุรกรรม')
+            ->assertDontSee('ไม่พบรายการตามตัวกรองนี้')
+            ->assertDontSee('ล้างตัวกรอง');
+    }
+
     // ==================== เปลือกโนวา: ตลาดเหรียญ ====================
 
     public function test_every_token_page_renders_in_the_full_nova_shell(): void
@@ -266,6 +327,20 @@ class NovaTpixTokensPagesTest extends TestCase
             ->post(route('user.tokens.store'), ['symbol' => 'BAD SYMBOL!', 'decimals' => '18'])
             ->assertRedirect(route('user.tokens.create'))
             ->assertSessionHasErrors(['name' => 'กรุณากรอกชื่อเหรียญ', 'symbol' => 'สัญลักษณ์ใช้ได้เฉพาะตัวอักษรอังกฤษและตัวเลข']);
+
+        $this->assertSame(0, TPIXToken::count());
+    }
+
+    public function test_store_rejects_a_price_too_large_for_the_column_with_a_thai_message(): void
+    {
+        $this->actingAs($this->member())
+            ->from(route('user.tokens.create'))
+            ->post(route('user.tokens.store'), [
+                'name' => 'BigCoin', 'symbol' => 'BIG', 'total_supply' => '1000', 'decimals' => '18',
+                'initial_price_tpix' => '1000000000000',
+            ])
+            ->assertRedirect(route('user.tokens.create'))
+            ->assertSessionHasErrors(['initial_price_tpix' => 'ราคาเริ่มต้นสูงสุดไม่เกิน 999,999,999,999 TPIX']);
 
         $this->assertSame(0, TPIXToken::count());
     }

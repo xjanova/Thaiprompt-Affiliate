@@ -5,7 +5,6 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\TPIXToken;
 use App\Models\TPIXTokenBalance;
-use App\Services\TPIX\ReferralService;
 use App\Services\TPIX\TokenFactoryService;
 use App\Services\TPIX\TokenWalletIntegrationService;
 use Illuminate\Http\Request;
@@ -24,17 +23,13 @@ class TokenController extends Controller
 
     protected TokenFactoryService $tokenFactory;
 
-    protected ReferralService $referralService;
-
     protected TokenWalletIntegrationService $walletIntegration;
 
     public function __construct(
         TokenFactoryService $tokenFactory,
-        ReferralService $referralService,
         TokenWalletIntegrationService $walletIntegration
     ) {
         $this->tokenFactory = $tokenFactory;
-        $this->referralService = $referralService;
         $this->walletIntegration = $walletIntegration;
         $this->middleware('auth');
     }
@@ -168,7 +163,8 @@ class TokenController extends Controller
             'github' => 'nullable|url|max:255',
             'twitter' => 'nullable|string|max:255',
             'telegram' => 'nullable|url|max:255',
-            'initial_price_tpix' => 'nullable|numeric|min:0',
+            // คอลัมน์เป็น decimal(20,8) — เกินนี้ MySQL ปฏิเสธแล้วสมาชิกเห็นแค่ข้อความรวม
+            'initial_price_tpix' => 'nullable|numeric|min:0|max:999999999999',
             'is_mintable' => 'boolean',
             'is_burnable' => 'boolean',
             'is_pausable' => 'boolean',
@@ -179,6 +175,9 @@ class TokenController extends Controller
             'symbol.alpha_num' => 'สัญลักษณ์ใช้ได้เฉพาะตัวอักษรอังกฤษและตัวเลข',
             'total_supply.required' => 'กรุณากรอกจำนวนเหรียญทั้งหมด',
             'total_supply.min' => 'จำนวนเหรียญทั้งหมดต้องอย่างน้อย 1',
+            'initial_price_tpix.numeric' => 'ราคาเริ่มต้นต้องเป็นตัวเลข',
+            'initial_price_tpix.min' => 'ราคาเริ่มต้นต้องไม่ติดลบ',
+            'initial_price_tpix.max' => 'ราคาเริ่มต้นสูงสุดไม่เกิน 999,999,999,999 TPIX',
             'url' => 'ลิงก์ไม่ถูกต้อง ต้องขึ้นต้นด้วย https://',
         ]);
 
@@ -263,88 +262,5 @@ class TokenController extends Controller
     public function transactions($id)
     {
         return redirect()->to(route('user.tokens.show', $id).'#transfers');
-    }
-
-    /**
-     * Use Referral Code
-     */
-    public function useReferral(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string',
-        ]);
-
-        try {
-            $referralUse = $this->referralService->useReferralCode(
-                $request->code,
-                Auth::user()
-            );
-
-            return redirect()->back()->with('success', 'Referral code used! Please check your email for verification code.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * Verify Referral
-     */
-    public function verifyReferral(Request $request)
-    {
-        $request->validate([
-            'referral_use_id' => 'required|integer',
-            'verification_code' => 'required|string|size:6',
-        ]);
-
-        try {
-            $referralUse = \App\Models\TPIXReferralUse::findOrFail($request->referral_use_id);
-
-            $this->referralService->verifyReferralUse($referralUse, $request->verification_code);
-
-            return redirect()->back()->with('success', 'Referral verified! Your rewards will be processed soon.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * My Referrals
-     */
-    public function myReferrals()
-    {
-        $user = Auth::user();
-
-        // My referral codes
-        $referralCodes = \App\Models\TPIXReferralCode::where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Statistics
-        $stats = $this->referralService->getUserStats($user);
-
-        return view('user.tokens.referrals', compact('referralCodes', 'stats'));
-    }
-
-    /**
-     * Create Referral Code
-     */
-    public function createReferralCode(Request $request)
-    {
-        $request->validate([
-            'name' => 'nullable|string|max:100',
-            'token_id' => 'nullable|exists:tpix_tokens,id',
-            'reward_percentage' => 'required|numeric|min:0|max:100',
-            'referrer_percentage' => 'required|numeric|min:0|max:100',
-            'max_uses' => 'nullable|integer|min:1',
-            'expires_at' => 'nullable|date|after:now',
-        ]);
-
-        try {
-            $referralCode = $this->referralService->createReferralCode(Auth::user(), $request->all());
-
-            return redirect()->back()->with('success', 'Referral code created: '.$referralCode->code);
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
     }
 }

@@ -126,11 +126,31 @@
             @if($tokenHoldings->isNotEmpty())
                 <ul class="nvm-tx-list">
                     @foreach($tokenHoldings as $holding)
+                        @php
+                            // ลิงก์ไปหน้าเหรียญเฉพาะที่เปิดดูได้ — เหรียญที่ถูกระงับ/ยังไม่ขึ้นเครือข่าย หน้า show ตอบ 404 กับคนที่ไม่ใช่ผู้สร้าง
+                            $hToken = $holding->token;
+                            $hOpen = $hToken && (in_array($hToken->status, \App\Http\Controllers\User\TokenController::PUBLIC_STATUSES, true)
+                                || (int) $hToken->creator_id === (int) auth()->id());
+                        @endphp
                         <li>
-                            <a class="nvm-tx-head" href="{{ route('user.tokens.show', $holding->token_id) }}">
-                                <span class="nvm-tx-coin">{{ mb_substr((string) ($holding->token?->symbol ?? '?'), 0, 1) }}</span>
-                                <div><b>{{ $holding->token?->name ?? 'เหรียญ' }}</b><small>{{ $holding->token?->symbol }}</small></div>
-                            </a>
+                            @if($hOpen)
+                                <a class="nvm-tx-head" href="{{ route('user.tokens.show', $holding->token_id) }}">
+                            @else
+                                <div class="nvm-tx-head">
+                            @endif
+                                <span class="nvm-tx-coin">{{ mb_substr((string) ($hToken?->symbol ?? '?'), 0, 1) }}</span>
+                                <div>
+                                    <b>{{ $hToken?->name ?? 'เหรียญ' }}</b>
+                                    <small>{{ $hToken?->symbol }}</small>
+                                    @unless($hOpen)
+                                        <span class="nvm-pill nvm-pill--bad">{{ $hToken?->status === 'suspended' ? 'ถูกระงับ' : 'ยังไม่เปิดให้ใช้งาน' }}</span>
+                                    @endunless
+                                </div>
+                            @if($hOpen)
+                                </a>
+                            @else
+                                </div>
+                            @endif
                             <span class="nvm-tx-amt nvm-num">{{ number_format((float) $holding->balance, 4) }}</span>
                         </li>
                     @endforeach
