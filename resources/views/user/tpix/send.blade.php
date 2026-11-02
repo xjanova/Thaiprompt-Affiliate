@@ -1,6 +1,13 @@
-@extends('layouts.user-v4')
+{{--
+    ส่ง TPIX ให้สมาชิกในระบบ (ธีมโนวาเต็ม)
+    - transfer_token ใช้ครั้งเดียวต่อฟอร์ม (processSend กันกดซ้ำ/ย้อนกลับแล้วส่งใหม่)
+    - ปุ่มส่งปิดเองเมื่อกระเป๋าถูกระงับหรือยอดไม่ถึง 0.0001 TPIX
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ส่ง TPIX - กระเป๋าเงิน TPIX')
+@section('title', 'ส่ง TPIX')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/tpix-tokens.css') }}?v={{ filemtime(public_path('theme-nova/member/tpix-tokens.css')) }}">@endpush
 
 @php
     // ตัดเหลือ 8 ตำแหน่งแบบเดียวกับที่ processSend รับ — ปัดขึ้นจะส่งเกินยอดจริง
@@ -11,95 +18,99 @@
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-                <span class="tp-tile" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--deep1); flex-shrink:0;"><i class="fas fa-paper-plane"></i></span>
-                <div style="min-width:0;">
-                    <h1 style="font-size:clamp(20px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">ส่ง TPIX</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">โอนให้สมาชิกในระบบ ไม่มีค่าธรรมเนียม ยอดเข้าทันที</div>
-                </div>
-            </div>
-            <a href="{{ route('user.tpix.wallet') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับกระเป๋า</span>
-            </a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-tps-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tpix.wallet') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กลับกระเป๋า</a>
+            <div class="nvm-eyebrow nvm-latin">Send TPIX</div>
+            <h1 id="nvm-tps-h">ส่ง TPIX</h1>
+            <p class="nvm-ph__lead">โอนให้สมาชิกในระบบ ไม่มีค่าธรรมเนียม ยอดเข้าทันที</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/transfer.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ยอด ──────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <div style="font-size:13px; color:var(--ink2); margin-bottom:6px;">ยอดคงเหลือ</div>
-        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:8px;">
-            <div class="tp-num" style="font-size:clamp(26px,6vw,36px); font-weight:800; color:var(--deep1); line-height:1.1; overflow-wrap:anywhere;">{{ number_format((float) $balance, 8) }}</div>
-            <div style="font-size:16px; color:var(--ink2);">TPIX</div>
-        </div>
-    </div>
-
-    {{-- ── ฟอร์มส่ง ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:26px 24px;">
-        <h2 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 20px;">ฟอร์มส่ง TPIX</h2>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tps-f-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Transfer</small><h2 id="nvm-tps-f-h">ฟอร์มส่ง TPIX</h2></div></div>
 
         @if(! $wallet)
-            <div style="padding:13px 15px; border-radius:12px; margin-bottom:18px; background:color-mix(in srgb, #d9534f 10%, transparent); color:#d9534f; font-size:13.5px;">ยังไม่มีกระเป๋า TPIX <a href="{{ route('user.tpix.wallet') }}" style="color:inherit; font-weight:700;">เปิดหน้ากระเป๋า</a> เพื่อสร้างก่อน</div>
+            <div class="nvm-status is-bad">
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>ยังไม่มีกระเป๋า TPIX<small><a class="nvm-link" href="{{ route('user.tpix.wallet') }}">เปิดหน้ากระเป๋า</a> เพื่อสร้างก่อน</small></span>
+            </div>
         @elseif(! $walletActive)
-            <div style="padding:13px 15px; border-radius:12px; margin-bottom:18px; background:color-mix(in srgb, #d9534f 10%, transparent); color:#d9534f; font-size:13.5px;">กระเป๋า TPIX ของคุณถูกระงับการใช้งาน ยังส่งไม่ได้</div>
+            <div class="nvm-status is-bad">
+                <svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>
+                <span>กระเป๋า TPIX ของคุณถูกระงับการใช้งาน ยังส่งไม่ได้</span>
+            </div>
         @elseif(! $canSend)
-            <div style="padding:13px 15px; border-radius:12px; margin-bottom:18px; background:color-mix(in srgb, #d9534f 10%, transparent); color:#d9534f; font-size:13.5px;">ยอดคงเหลือไม่พอให้ส่ง ต้องมีอย่างน้อย 0.0001 TPIX</div>
+            <div class="nvm-status is-bad">
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>ยอดคงเหลือไม่พอให้ส่ง ต้องมีอย่างน้อย 0.0001 TPIX</span>
+            </div>
         @endif
 
-        <form action="{{ route('user.tpix.send.process') }}" method="POST"
+        <form class="nvm-form {{ $canSend ? '' : 'nvm-gap-t' }}" action="{{ route('user.tpix.send.process') }}" method="POST"
               x-data="{ amount: @js(old('amount', '')), maxAmount: @js($maxAmount), canSend: @js($canSend), submitting: false }"
               x-on:submit="submitting = true"
               x-on:pageshow.window="submitting = false">
             @csrf
             <input type="hidden" name="transfer_token" value="{{ $transferToken }}">
 
-            {{-- ผู้รับ --}}
-            <div style="margin-bottom:18px;">
-                <label for="tpix-recipient" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ผู้รับ</label>
-                <input id="tpix-recipient" type="text" name="recipient" value="{{ old('recipient') }}" required maxlength="255"
-                       autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="email" placeholder="อีเมลสมาชิก หรือที่อยู่กระเป๋า TPIX"
-                       style="width:100%; padding:13px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:16px;">
+            <div class="nvm-field">
+                <label class="nvm-label" for="tpix-recipient">ผู้รับ <em>*</em></label>
+                <input id="tpix-recipient" class="nvm-input @error('recipient') is-bad @enderror" type="text" name="recipient" value="{{ old('recipient') }}" required maxlength="255"
+                       autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="email" placeholder="อีเมลสมาชิก หรือที่อยู่กระเป๋า TPIX">
                 @error('recipient')
-                    <p style="font-size:12.5px; color:#d9534f; margin:7px 0 0;">{{ $message }}</p>
+                    <span class="nvm-err">{{ $message }}</span>
                 @else
-                    <p style="font-size:12px; color:var(--ink2); margin:7px 0 0;">ส่งได้เฉพาะสมาชิกในระบบ ถ้าจะส่งออกไปกระเป๋าภายนอกให้ใช้หน้าถอน</p>
+                    <span class="nvm-help">ส่งได้เฉพาะสมาชิกในระบบ ถ้าจะส่งออกไปกระเป๋าภายนอกให้ใช้หน้าถอน</span>
                 @enderror
             </div>
 
-            {{-- จำนวน --}}
-            <div style="margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
-                    <label for="tpix-amount" style="font-size:13px; font-weight:700; color:var(--ink);">จำนวนที่ต้องการส่ง</label>
+            <div class="nvm-field">
+                <div class="nvm-tx-bar">
+                    <label class="nvm-label" for="tpix-amount">จำนวนที่ต้องการส่ง <em>*</em></label>
                     @if($canSend)
-                        <button type="button" x-on:click="amount = maxAmount" style="padding:6px 11px; border-radius:9px; background:var(--surf); box-shadow:var(--inset-sm); border:none; color:var(--deep1); font-size:12.5px; font-weight:700; cursor:pointer;">ส่งทั้งหมด</button>
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" x-on:click="amount = maxAmount">ส่งทั้งหมด</button>
                     @endif
                 </div>
-                <input id="tpix-amount" type="number" name="amount" x-model="amount" required
+                <input id="tpix-amount" class="nvm-input nvm-num @error('amount') is-bad @enderror" type="number" name="amount" x-model="amount" required
                        step="0.00000001" min="0.0001" @if($canSend) max="{{ $maxAmount }}" @endif
-                       inputmode="decimal" placeholder="0.00000000"
-                       style="width:100%; padding:13px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:16px;">
+                       inputmode="decimal" placeholder="0.00000000">
                 @error('amount')
-                    <p style="font-size:12.5px; color:#d9534f; margin:7px 0 0;">{{ $message }}</p>
+                    <span class="nvm-err">{{ $message }}</span>
                 @enderror
             </div>
 
-            {{-- ยืนยันเงื่อนไข --}}
-            <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
-                <input type="checkbox" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
-                <span style="font-size:13px; color:var(--ink2);">ฉันตรวจสอบผู้รับและจำนวนแล้ว และเข้าใจว่าส่งแล้วเรียกคืนไม่ได้</span>
+            <label class="nvm-check">
+                <input type="checkbox" required>
+                <span>ฉันตรวจสอบผู้รับและจำนวนแล้ว และเข้าใจว่าส่งแล้วเรียกคืนไม่ได้</span>
             </label>
 
-            <button type="submit" class="tp-btn" @disabled(! $canSend)
-                    x-bind:disabled="submitting || ! canSend"
-                    x-bind:style="{ opacity: (submitting || ! canSend) ? .55 : 1, cursor: (submitting || ! canSend) ? 'not-allowed' : 'pointer' }"
-                    style="width:100%; min-height:48px; padding:15px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none;">
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-w-full" @disabled(! $canSend)
+                    x-bind:disabled="submitting || ! canSend">
+                <svg class="nvm-ico"><use href="#nvm-i-send"/></svg>
                 <span x-text="submitting ? 'กำลังส่ง...' : 'ส่ง TPIX'">ส่ง TPIX</span>
             </button>
         </form>
-    </div>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tps-b-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Balance</small><h2 id="nvm-tps-b-h">ยอดคงเหลือ</h2></div></div>
+        <div class="nvm-tx-big nvm-num">{{ number_format((float) $balance, 8) }}<span>TPIX</span></div>
+        <ol class="nvm-steps nvm-gap-t">
+            <li>กรอกอีเมลสมาชิก หรือที่อยู่กระเป๋า TPIX ของผู้รับ</li>
+            <li>ใส่จำนวน แล้วตรวจสอบให้ถูกต้องก่อนกดส่ง</li>
+            <li>ยอดเข้ากระเป๋าผู้รับทันที ดูรายการได้ที่หน้าประวัติ</li>
+        </ol>
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>ส่งแล้วเรียกคืนไม่ได้ ระบบอาจขอยืนยันตัวตน 2 ชั้นก่อนส่ง</p>
+    </aside>
+</div>
+
 </div>
 @endsection

@@ -297,41 +297,32 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
 });
 
 // TPIX Token Marketplace & Management (User)
+// /{id} รับเฉพาะตัวเลข — เดิม /{id} ประกาศก่อน /create จน GET /user/tokens/create ตกไปหา show('create') แล้ว 404
+// ลบ route ที่ชี้ method ที่ไม่มีอยู่จริงและไม่มีหน้าไหนลิงก์ถึง: show-transfer, buy, sell, referrals, referrals.use, referrals.verify
 Route::prefix('tokens')->name('tokens.')->group(function () {
     // Token Marketplace
     Route::get('/', [\App\Http\Controllers\User\TokenController::class, 'index'])->name('index');
 
-    // Tutorial (สอนการสร้างเหรียญลูก) - ต้องอยู่ก่อน /{id} เพื่อป้องกัน conflict
+    // Tutorial (สอนการสร้างเหรียญลูก)
     Route::get('/tutorial', [\App\Http\Controllers\User\TokenController::class, 'tutorial'])->name('tutorial');
-
-    Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
-
-    // My Tokens (Creator View)
 
     // Create Token
     Route::get('/create', [\App\Http\Controllers\User\TokenController::class, 'create'])->name('create');
     Route::post('/create', [\App\Http\Controllers\User\TokenController::class, 'store'])->name('store');
 
+    Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->whereNumber('id')->name('show');
+
     // Deploy Token
-    Route::post('/{id}/deploy', [\App\Http\Controllers\User\TokenController::class, 'deploy'])->name('deploy');
+    Route::post('/{id}/deploy', [\App\Http\Controllers\User\TokenController::class, 'deploy'])->whereNumber('id')->name('deploy');
 
     // Token Transfer
-    Route::get('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'showTransfer'])->name('show-transfer');
     Route::post('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'transfer'])
+        ->whereNumber('id')
         ->middleware('two-factor:transfer')
         ->name('transfer');
 
-    // Buy/Sell Tokens
-    Route::post('/{id}/buy', [\App\Http\Controllers\User\TokenController::class, 'buy'])->name('buy');
-    Route::post('/{id}/sell', [\App\Http\Controllers\User\TokenController::class, 'sell'])->name('sell');
-
-    // Referrals
-    Route::get('/referrals', [\App\Http\Controllers\User\TokenController::class, 'referrals'])->name('referrals');
-    Route::post('/referrals/use', [\App\Http\Controllers\User\TokenController::class, 'useReferralCode'])->name('referrals.use');
-    Route::post('/referrals/verify', [\App\Http\Controllers\User\TokenController::class, 'verifyReferralCode'])->name('referrals.verify');
-
-    // Token Transactions History
-    Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
+    // ประวัติธุรกรรมของเหรียญ (ลิงก์จากอีเมล TokenTransferReceivedNotification) → ส่วนธุรกรรมในหน้ารายละเอียด
+    Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->whereNumber('id')->name('transactions');
 });
 
 // TPIX DEX (Decentralized Exchange)

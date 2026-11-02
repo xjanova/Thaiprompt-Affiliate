@@ -1,9 +1,15 @@
-@extends('layouts.user-v4')
+{{--
+    ถอน TPIX ออกไปกระเป๋าภายนอก (ธีมโนวาเต็ม)
+    - เลขทุกตัวใช้ bcmath แบบเดียวกับ processWithdrawal (ยอดเป็น decimal 18 ตำแหน่ง)
+    - route ตรวจ turnstile:tpix_withdrawal + two-factor:withdrawal ก่อนถึง controller
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ถอน TPIX - กระเป๋าเงิน TPIX')
+@section('title', 'ถอน TPIX')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/tpix-tokens.css') }}?v={{ filemtime(public_path('theme-nova/member/tpix-tokens.css')) }}">@endpush
 
 @php
-    // ใช้ bcmath แบบเดียวกับ processWithdrawal — ยอดเป็น decimal 18 ตำแหน่ง ทศนิยมลอยตัวปัดเศษผิดได้
     $fee = (string) $tpixCurrency->withdrawal_fee;
     $minAmount = (string) $tpixCurrency->min_withdrawal;
     $maxAmount = bcsub((string) $wallet->balance, $fee, 8);
@@ -14,179 +20,146 @@
     // ยอดไม่ถึงขั้นต่ำ → ฟอร์มยังแสดงแต่กดส่งไม่ได้ พร้อมบอกเหตุผล
     $canWithdraw = $walletActive && bccomp($maxAmount, '0', 8) > 0 && bccomp($maxAmount, $minAmount, 8) >= 0;
     $money = fn ($n) => number_format((float) $n, 8);
-    $statusLabels = [
-        'pending' => ['รอดำเนินการ', 'var(--accent1)'],
-        'broadcasted' => ['ส่งเข้าเครือข่ายแล้ว', 'var(--accent1)'],
-        'confirming' => ['รอยืนยันบนเครือข่าย', 'var(--accent1)'],
-        'confirmed' => ['สำเร็จ', '#5aa07e'],
-        'completed' => ['สำเร็จ', '#5aa07e'],
-        'failed' => ['ไม่สำเร็จ', '#d9534f'],
-        'cancelled' => ['ยกเลิกแล้ว', '#d9534f'],
-    ];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-                <span class="tp-tile" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--deep1); flex-shrink:0;"><i class="fas fa-upload"></i></span>
-                <div style="min-width:0;">
-                    <h1 style="font-size:clamp(20px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">ถอน TPIX</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">โอนเหรียญออกไปยังกระเป๋าภายนอกบนเครือข่าย TPIX</div>
-                </div>
-            </div>
-            <a href="{{ route('user.tpix.wallet') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับกระเป๋า</span>
-            </a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-tpw-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tpix.wallet') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กลับกระเป๋า</a>
+            <div class="nvm-eyebrow nvm-latin">Withdraw TPIX</div>
+            <h1 id="nvm-tpw-h">ถอน TPIX</h1>
+            <p class="nvm-ph__lead">โอนเหรียญออกไปยังกระเป๋าภายนอกบนเครือข่าย TPIX</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/withdraw.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ยอดและเงื่อนไข ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <div style="font-size:13px; color:var(--ink2); margin-bottom:6px;">ยอดคงเหลือ</div>
-        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:16px;">
-            <div class="tp-num" style="font-size:clamp(26px,6vw,36px); font-weight:800; color:var(--deep1); line-height:1.1; overflow-wrap:anywhere;">{{ $money($wallet->balance) }}</div>
-            <div style="font-size:16px; color:var(--ink2);">TPIX</div>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
-            @foreach([
-                ['ถอนขั้นต่ำ', $money($minAmount)],
-                ['ถอนสูงสุดต่อครั้ง', $tpixCurrency->max_withdrawal ? $money($tpixCurrency->max_withdrawal) : 'ไม่จำกัด'],
-                ['ค่าธรรมเนียม', $money($fee)],
-            ] as [$label, $value])
-                <div class="tp-card" style="padding:12px 14px; box-shadow:var(--inset-sm); min-width:0;">
-                    <div style="font-size:12px; color:var(--ink2); margin-bottom:3px;">{{ $label }}</div>
-                    <div class="tp-num" style="font-size:14px; font-weight:700; color:var(--ink); overflow-wrap:anywhere;">{{ $value }}</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- ── ฟอร์มถอน ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:26px 24px;">
-        <h2 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 20px;">ฟอร์มถอน TPIX</h2>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tpw-f-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Withdrawal</small><h2 id="nvm-tpw-f-h">ฟอร์มถอน TPIX</h2></div></div>
 
         @unless($walletActive)
-            <div style="padding:13px 15px; border-radius:12px; margin-bottom:18px; background:color-mix(in srgb, #d9534f 10%, transparent); color:#d9534f; font-size:13.5px;">กระเป๋า TPIX ของคุณถูกระงับการใช้งาน ยังถอนไม่ได้</div>
+            <div class="nvm-status is-bad">
+                <svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>
+                <span>กระเป๋า TPIX ของคุณถูกระงับการใช้งาน ยังถอนไม่ได้</span>
+            </div>
         @elseif(! $canWithdraw)
-            <div style="padding:13px 15px; border-radius:12px; margin-bottom:18px; background:color-mix(in srgb, #d9534f 10%, transparent); color:#d9534f; font-size:13.5px;">ยอดคงเหลือไม่ถึงขั้นต่ำ ต้องมีอย่างน้อย {{ $money(bcadd($minAmount, $fee, 8)) }} TPIX รวมค่าธรรมเนียม</div>
+            <div class="nvm-status is-bad">
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>ยอดคงเหลือไม่ถึงขั้นต่ำ<small>ต้องมีอย่างน้อย <span class="nvm-num">{{ $money(bcadd($minAmount, $fee, 8)) }}</span> TPIX รวมค่าธรรมเนียม</small></span>
+            </div>
         @endunless
 
-        <form action="{{ route('user.tpix.withdrawal.process') }}" method="POST"
+        <form class="nvm-form {{ $canWithdraw ? '' : 'nvm-gap-t' }}" action="{{ route('user.tpix.withdrawal.process') }}" method="POST"
               x-data="{ amount: @js(old('amount', '')), fee: {{ (float) $fee }}, maxAmount: @js(rtrim(rtrim($maxAmount, '0'), '.')), canWithdraw: @js($canWithdraw), submitting: false }"
               x-on:submit="submitting = true"
               x-on:pageshow.window="submitting = false">
             @csrf
 
-            {{-- ที่อยู่ปลายทาง --}}
-            <div style="margin-bottom:18px;">
-                <label for="tpix-address" style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่ปลายทาง</label>
-                <input id="tpix-address" type="text" name="address" value="{{ old('address') }}" required
+            <div class="nvm-field">
+                <label class="nvm-label" for="tpix-address">ที่อยู่ปลายทาง <em>*</em></label>
+                <input id="tpix-address" class="nvm-input nvm-tx-mono @error('address') is-bad @enderror" type="text" name="address" value="{{ old('address') }}" required
                        maxlength="42" pattern="0x[a-fA-F0-9]{40}" title="ที่อยู่ต้องขึ้นต้นด้วย 0x ตามด้วยอักขระ 40 ตัว"
-                       autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="0x..."
-                       style="width:100%; padding:13px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-family:monospace; font-size:16px;">
+                       autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="0x...">
                 @error('address')
-                    <p style="font-size:12.5px; color:#d9534f; margin:7px 0 0;">{{ $message }}</p>
+                    <span class="nvm-err">{{ $message }}</span>
                 @else
-                    <p style="font-size:12px; color:var(--ink2); margin:7px 0 0;">ตรวจสอบที่อยู่ให้ถูกต้อง โอนไปที่อยู่ผิดแล้วกู้คืนไม่ได้</p>
+                    <span class="nvm-help">ตรวจสอบที่อยู่ให้ถูกต้อง โอนไปที่อยู่ผิดแล้วกู้คืนไม่ได้</span>
                 @enderror
             </div>
 
-            {{-- จำนวน --}}
-            <div style="margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
-                    <label for="tpix-amount" style="font-size:13px; font-weight:700; color:var(--ink);">จำนวนที่ต้องการถอน</label>
+            <div class="nvm-field">
+                <div class="nvm-tx-bar">
+                    <label class="nvm-label" for="tpix-amount">จำนวนที่ต้องการถอน <em>*</em></label>
                     @if($canWithdraw)
-                        <button type="button" x-on:click="amount = maxAmount" style="padding:6px 11px; border-radius:9px; background:var(--surf); box-shadow:var(--inset-sm); border:none; color:var(--deep1); font-size:12.5px; font-weight:700; cursor:pointer;">ถอนสูงสุด</button>
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" x-on:click="amount = maxAmount">ถอนสูงสุด</button>
                     @endif
                 </div>
-                <input id="tpix-amount" type="number" name="amount" x-model="amount" required
+                <input id="tpix-amount" class="nvm-input nvm-num @error('amount') is-bad @enderror" type="number" name="amount" x-model="amount" required
                        step="0.00000001" min="{{ $minAmount }}" @if($canWithdraw) max="{{ $maxAmount }}" @endif
-                       inputmode="decimal" placeholder="0.00000000"
-                       style="width:100%; padding:13px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:16px;">
+                       inputmode="decimal" placeholder="0.00000000">
                 @error('amount')
-                    <p style="font-size:12.5px; color:#d9534f; margin:7px 0 0;">{{ $message }}</p>
+                    <span class="nvm-err">{{ $message }}</span>
                 @enderror
             </div>
 
             {{-- ยอดที่จะถูกหัก --}}
-            <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm); margin-bottom:18px;" x-show="parseFloat(amount) > 0" x-cloak>
-                <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
-                    <div style="display:flex; justify-content:space-between; gap:12px;">
-                        <span style="color:var(--ink2);">ปลายทางจะได้รับ</span>
-                        <span class="tp-num" style="font-weight:700; color:var(--ink);"><span x-text="(parseFloat(amount) || 0).toFixed(8)"></span> TPIX</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; gap:12px;">
-                        <span style="color:var(--ink2);">ค่าธรรมเนียม</span>
-                        <span class="tp-num" style="font-weight:700; color:var(--ink);"><span x-text="fee.toFixed(8)"></span> TPIX</span>
-                    </div>
-                    <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent); padding-top:8px; display:flex; justify-content:space-between; gap:12px;">
-                        <span style="font-weight:800; color:var(--ink);">หักจากกระเป๋า</span>
-                        <span class="tp-num" style="font-weight:800; color:var(--deep1);"><span x-text="((parseFloat(amount) || 0) + fee).toFixed(8)"></span> TPIX</span>
-                    </div>
-                </div>
-            </div>
+            <dl class="nvm-kv" x-show="parseFloat(amount) > 0" x-cloak>
+                <dt>ปลายทางจะได้รับ</dt><dd class="nvm-num"><span x-text="(parseFloat(amount) || 0).toFixed(8)"></span> TPIX</dd>
+                <dt>ค่าธรรมเนียม</dt><dd class="nvm-num"><span x-text="fee.toFixed(8)"></span> TPIX</dd>
+                <dt class="nvm-kv__total">หักจากกระเป๋า</dt><dd class="nvm-kv__total nvm-num"><span x-text="((parseFloat(amount) || 0) + fee).toFixed(8)"></span> TPIX</dd>
+            </dl>
 
-            {{-- ยืนยันเงื่อนไข --}}
-            <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
-                <input type="checkbox" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
-                <span style="font-size:13px; color:var(--ink2);">ฉันตรวจสอบที่อยู่ปลายทางและจำนวนแล้ว และเข้าใจว่าระบบจะหักยอดทันทีเมื่อส่งคำขอ</span>
+            <label class="nvm-check">
+                <input type="checkbox" required>
+                <span>ฉันตรวจสอบที่อยู่ปลายทางและจำนวนแล้ว และเข้าใจว่าระบบจะหักยอดทันทีเมื่อส่งคำขอ</span>
             </label>
 
             {{-- route ตรวจ turnstile:tpix_withdrawal --}}
-            <x-turnstile point="tpix_withdrawal" />
+            <div class="nvm-turnstile"><x-turnstile point="tpix_withdrawal" /></div>
 
-            <button type="submit" class="tp-btn" @disabled(! $canWithdraw)
-                    x-bind:disabled="submitting || ! canWithdraw"
-                    x-bind:style="{ opacity: (submitting || ! canWithdraw) ? .55 : 1, cursor: (submitting || ! canWithdraw) ? 'not-allowed' : 'pointer' }"
-                    style="width:100%; min-height:48px; padding:15px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none;">
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-w-full" @disabled(! $canWithdraw)
+                    x-bind:disabled="submitting || ! canWithdraw">
+                <svg class="nvm-ico"><use href="#nvm-i-up"/></svg>
                 <span x-text="submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอถอน'">ส่งคำขอถอน</span>
             </button>
         </form>
-    </div>
+    </section>
 
-    {{-- ── รายการถอนล่าสุด ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:18px 22px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-            <h2 style="font-size:16px; font-weight:800; color:var(--ink); margin:0;">รายการถอนล่าสุด</h2>
-        </div>
-        @forelse($recentWithdrawals as $withdrawal)
-            @php [$statusLabel, $statusColor] = $statusLabels[$withdrawal->status] ?? [$withdrawal->status, 'var(--ink2)']; @endphp
-            <div style="padding:14px 22px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 9%, transparent); display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 14px;">
-                <div style="min-width:0;">
-                    <div class="tp-num" style="font-weight:700; color:var(--ink); font-size:14px;">{{ $money($withdrawal->amount) }} TPIX</div>
-                    <div style="font-size:12px; color:var(--ink2); margin-top:2px;">
-                        <span style="font-family:monospace;">{{ substr((string) $withdrawal->to_address, 0, 6) }}...{{ substr((string) $withdrawal->to_address, -4) }}</span>
-                        · {{ $withdrawal->created_at->format('d/m/Y H:i') }}
-                    </div>
-                    @if($withdrawal->status === 'cancelled' && $withdrawal->error_message)
-                        <div style="font-size:12px; color:var(--ink2); margin-top:4px; overflow-wrap:anywhere;">ระบบคืนยอดแล้ว · เหตุผล: {{ $withdrawal->error_message }}</div>
-                    @endif
-                    @if($withdrawal->tx_hash)
-                        <div style="font-size:12px; color:var(--ink2); margin-top:4px; font-family:monospace; overflow-wrap:anywhere;">tx {{ $withdrawal->tx_hash }}</div>
-                    @endif
-                </div>
-                <span class="tp-pill" style="background:color-mix(in srgb, {{ $statusColor }} 16%, transparent); color:{{ $statusColor }}; font-size:11.5px; font-weight:700;">{{ $statusLabel }}</span>
+    <div class="nvm-stack">
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-tpw-b-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Balance</small><h2 id="nvm-tpw-b-h">ยอดคงเหลือ</h2></div></div>
+            <div class="nvm-tx-big nvm-num">{{ $money($wallet->balance) }}<span>TPIX</span></div>
+            <div class="nvm-minis nvm-gap-t">
+                <div class="nvm-mini"><small>ถอนขั้นต่ำ</small><b class="nvm-num">{{ $money($minAmount) }}</b></div>
+                <div class="nvm-mini"><small>ค่าธรรมเนียม</small><b class="nvm-num">{{ $money($fee) }}</b></div>
+                <div class="nvm-mini nvm-mini--wide"><small>ถอนสูงสุดต่อครั้ง</small><b class="nvm-num">{{ $tpixCurrency->max_withdrawal ? $money($tpixCurrency->max_withdrawal) : 'ไม่จำกัด' }}</b></div>
             </div>
-        @empty
-            <div style="display:flex; flex-direction:column; align-items:center; padding:36px 24px; text-align:center;">
-                <i class="fas fa-receipt" style="font-size:40px; color:color-mix(in srgb, var(--ink2) 40%, transparent); margin-bottom:12px;"></i>
-                <p style="font-size:13px; color:var(--ink2); margin:0;">ยังไม่มีรายการถอน</p>
-            </div>
-        @endforelse
-    </div>
+        </aside>
 
-    {{-- ── คำเตือน ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #d9534f 8%, transparent);">
-        <h3 style="font-weight:800; color:#d9534f; margin:0 0 10px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><i class="fas fa-exclamation-triangle"></i> ก่อนถอน</h3>
-        <ul style="margin:0; padding-left:18px; color:#d9534f; font-size:13px; display:flex; flex-direction:column; gap:5px;">
-            <li>รับเฉพาะที่อยู่บนเครือข่าย TPIX เท่านั้น</li>
-            <li>โอนไปที่อยู่ผิดหรือเครือข่ายผิด เหรียญจะสูญหายถาวร</li>
-            <li>หลังส่งคำขอ รายการจะอยู่ในสถานะรอดำเนินการ</li>
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-tpw-w-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Before you withdraw</small><h2 id="nvm-tpw-w-h">ก่อนถอน</h2></div></div>
+            <ul class="nvm-tx-ul">
+                <li>รับเฉพาะที่อยู่บนเครือข่าย TPIX เท่านั้น</li>
+                <li>โอนไปที่อยู่ผิดหรือเครือข่ายผิด เหรียญจะสูญหายถาวร</li>
+                <li>หลังส่งคำขอ รายการจะอยู่ในสถานะรอดำเนินการ</li>
+            </ul>
+        </aside>
+    </div>
+</div>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-tpw-l-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Recent withdrawals</small><h2 id="nvm-tpw-l-h">รายการถอนล่าสุด</h2></div></div>
+    @if($recentWithdrawals->isNotEmpty())
+        <ul class="nvm-txs">
+            @foreach($recentWithdrawals as $withdrawal)
+                <li class="nvm-tx">
+                    <span class="nvm-tx__ic"><svg class="nvm-ico"><use href="#nvm-i-up"/></svg></span>
+                    <span class="nvm-tx__t nvm-tx__t--wrap">
+                        <b class="nvm-num">{{ $money($withdrawal->amount) }} TPIX</b>
+                        <small><span class="nvm-tx-mono">{{ substr((string) $withdrawal->to_address, 0, 6) }}...{{ substr((string) $withdrawal->to_address, -4) }}</span> · <span class="nvm-num">{{ $withdrawal->created_at->format('d/m/Y H:i') }}</span></small>
+                        @if($withdrawal->status === 'cancelled' && $withdrawal->error_message)
+                            <small class="nvm-err">ระบบคืนยอดแล้ว · เหตุผล: {{ $withdrawal->error_message }}</small>
+                        @endif
+                        @if($withdrawal->tx_hash)
+                            <small class="nvm-tx-mono">tx {{ $withdrawal->tx_hash }}</small>
+                        @endif
+                    </span>
+                    <span class="nvm-tx__r">@include('user.tpix.partials.status-pill', ['status' => $withdrawal->status])</span>
+                </li>
+            @endforeach
         </ul>
-    </div>
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีรายการถอน</b>
+        </div>
+    @endif
+</section>
+
 </div>
 @endsection

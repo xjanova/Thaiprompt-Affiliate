@@ -1,75 +1,77 @@
-@extends('layouts.user-v4')
+{{--
+    ฝาก TPIX (ธีมโนวาเต็ม)
+    - $canReceive มาจาก controller: แสดงที่อยู่เฉพาะเมื่อระบบถือ private key ของที่อยู่นั้นจริง
+      ที่อยู่ที่สุ่มขึ้นเฉย ๆ ห้ามแสดง เพราะเหรียญที่โอนเข้ามาจะกู้คืนไม่ได้
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ฝาก TPIX - กระเป๋าเงิน TPIX')
+@section('title', 'ฝาก TPIX')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/tpix-tokens.css') }}?v={{ filemtime(public_path('theme-nova/member/tpix-tokens.css')) }}">@endpush
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-                <span class="tp-tile" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--deep1); flex-shrink:0;"><i class="fas fa-download"></i></span>
-                <div style="min-width:0;">
-                    <h1 style="font-size:clamp(20px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">ฝาก TPIX</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">รับเหรียญเข้ากระเป๋า TPIX ของคุณ</div>
-                </div>
-            </div>
-            <a href="{{ route('user.tpix.wallet') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับกระเป๋า</span>
-            </a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-tpd-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tpix.wallet') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กลับกระเป๋า</a>
+            <div class="nvm-eyebrow nvm-latin">Deposit TPIX</div>
+            <h1 id="nvm-tpd-h">ฝาก TPIX</h1>
+            <p class="nvm-ph__lead">รับเหรียญเข้ากระเป๋า TPIX ของคุณ</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/deposit.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ที่อยู่รับฝาก ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <div style="font-size:13px; color:var(--ink2); margin-bottom:6px;">ยอดคงเหลือ</div>
-        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:18px;">
-            <div class="tp-num" style="font-size:clamp(26px,6vw,36px); font-weight:800; color:var(--deep1); line-height:1.1; overflow-wrap:anywhere;">{{ number_format((float) $wallet->balance, 8) }}</div>
-            <div style="font-size:16px; color:var(--ink2);">TPIX</div>
-        </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tpd-addr-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Balance</small><h2 id="nvm-tpd-addr-h">ยอดคงเหลือ</h2></div></div>
+        <div class="nvm-tx-big nvm-num">{{ number_format((float) $wallet->balance, 8) }}<span>TPIX</span></div>
 
         @if($canReceive)
-            <h2 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 10px;">ที่อยู่รับฝากของคุณ</h2>
-            <div x-data="{ copied: false, copy() { navigator.clipboard?.writeText(@js($depositAddress->address)).then(() => { this.copied = true; setTimeout(() => this.copied = false, 1800); }); } }"
-                 style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-                <code style="flex:1 1 240px; min-width:0; padding:13px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-size:14px; overflow-wrap:anywhere;">{{ $depositAddress->address }}</code>
-                <button type="button" x-on:click="copy()" style="min-height:44px; padding:10px 16px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:none; color:var(--deep1); font-size:13px; font-weight:700; cursor:pointer;">
-                    <span x-text="copied ? 'คัดลอกแล้ว' : 'คัดลอก'">คัดลอก</span>
-                </button>
+            <h3 class="nvm-label nvm-gap-t">ที่อยู่รับฝากของคุณ</h3>
+            <div class="nvm-copy nvm-copy--box">
+                <code class="nvm-tx-mono">{{ $depositAddress->address }}</code>
+                <button type="button" x-data @click="nvmCopy(@js($depositAddress->address), 'คัดลอกที่อยู่รับฝากแล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
             </div>
-            <ul style="margin:14px 0 0; padding-left:18px; color:var(--ink2); font-size:13px; display:flex; flex-direction:column; gap:5px;">
+            <ul class="nvm-tx-ul nvm-gap-t">
                 <li>รับเฉพาะเหรียญ TPIX บนเครือข่าย TPIX เท่านั้น</li>
-                <li>ฝากขั้นต่ำ {{ number_format((float) $tpixCurrency->min_deposit, 8) }} TPIX</li>
-                <li>ยอดเข้ากระเป๋าหลังเครือข่ายยืนยันครบ {{ (int) $tpixCurrency->confirmations_required }} บล็อก</li>
+                <li>ฝากขั้นต่ำ <span class="nvm-num">{{ number_format((float) $tpixCurrency->min_deposit, 8) }}</span> TPIX</li>
+                <li>ยอดเข้ากระเป๋าหลังเครือข่ายยืนยันครบ <span class="nvm-num">{{ (int) $tpixCurrency->confirmations_required }}</span> บล็อก</li>
             </ul>
         @else
             {{-- ที่อยู่ที่ระบบสร้างตอนนี้ไม่มี private key — ห้ามแสดงให้ใครโอนเหรียญจริงเข้ามา --}}
-            <div style="padding:14px 16px; border-radius:12px; background:color-mix(in srgb, var(--accent1) 10%, transparent); color:var(--ink); font-size:13.5px;">
-                <div style="font-weight:800; margin-bottom:4px;">ยังไม่เปิดรับฝากเหรียญจากภายนอก</div>
-                <div style="color:var(--ink2);">ระบบยังไม่มีที่อยู่รับฝากบนเชนสำหรับบัญชีของคุณ กรุณาอย่าโอนเหรียญมาที่ที่อยู่ใดจนกว่าหน้านี้จะแสดงที่อยู่ให้</div>
+            <div class="nvm-status is-warn nvm-gap-t">
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>ยังไม่เปิดรับฝากเหรียญจากภายนอก<small>ระบบยังไม่มีที่อยู่รับฝากบนเชนสำหรับบัญชีของคุณ กรุณาอย่าโอนเหรียญมาที่ที่อยู่ใดจนกว่าหน้านี้จะแสดงที่อยู่ให้</small></span>
             </div>
             @if(\Illuminate\Support\Facades\Route::has('tpix-pay.topup'))
-                <a href="{{ route('tpix-pay.topup') }}" class="tp-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; margin-top:14px; padding:12px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--deep1); font-weight:700; font-size:14px; text-decoration:none; text-align:center;">
-                    <i class="fas fa-coins"></i> <span>ใช้เหรียญ TPIX เติมเงินเข้ากระเป๋าเงินบาท</span>
-                </a>
+                <a class="nvm-btn nvm-btn--line nvm-btn--block nvm-w-full nvm-gap-t" href="{{ route('tpix-pay.topup') }}"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ใช้เหรียญ TPIX เติมเงินเข้ากระเป๋าเงินบาท</a>
             @endif
         @endif
-    </div>
+    </section>
 
-    {{-- ── รายการฝากล่าสุด ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:18px 22px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-            <h2 style="font-size:16px; font-weight:800; color:var(--ink); margin:0;">รายการฝากล่าสุด</h2>
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tpd-tx-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Deposits</small><h2 id="nvm-tpd-tx-h">รายการฝากล่าสุด</h2></div>
+            <a href="{{ route('user.tpix.transactions', ['type' => 'deposit']) }}">ทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
         </div>
-        @forelse($recentDeposits as $transaction)
-            @include('user.tpix.partials.tx-row')
-        @empty
-            <div style="display:flex; flex-direction:column; align-items:center; padding:36px 24px; text-align:center;">
-                <i class="fas fa-receipt" style="font-size:40px; color:color-mix(in srgb, var(--ink2) 40%, transparent); margin-bottom:12px;"></i>
-                <p style="font-size:13px; color:var(--ink2); margin:0;">ยังไม่มีรายการฝาก</p>
+        @if($recentDeposits->isNotEmpty())
+            <div class="nvm-txs nvm-tks">
+                @foreach($recentDeposits as $transaction)
+                    @include('user.tpix.partials.tx-row')
+                @endforeach
             </div>
-        @endforelse
-    </div>
+        @else
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีรายการฝาก</b>
+            </div>
+        @endif
+    </section>
+</div>
+
 </div>
 @endsection
