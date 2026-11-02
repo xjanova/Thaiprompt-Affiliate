@@ -30,9 +30,7 @@ class MemberPagesNovaShellTest extends TestCase
      * สมาชิกที่ยังไม่มี MLM member → อ่าน property บน null
      * ⚠️ แก้หน้าไหนแล้วให้ลบออกจากรายการนี้ — เทสต์จะเฝ้าไม่ให้พังซ้ำ
      */
-    private const KNOWN_BROKEN = [
-        'user/ranks/dashboard', 'user/ranks/widget-data', 'user/star-upgrade',
-    ];
+    private const KNOWN_BROKEN = [];
 
     public function test_every_member_page_renders_in_the_nova_shell(): void
     {

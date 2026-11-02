@@ -1058,3 +1058,95 @@ input[type="file"].nvm-input::file-selector-button { margin-right: 12px; height:
     .nvm-ky-perks { gap: 8px; }
     .nvm-ky-perks li { padding: 12px 4px; font-size: 11.5px; }
 }
+
+/* =====================================================================
+   ระดับสมาชิก (user/ranks/*) — คลาส nvm-rk-*
+   ===================================================================== */
+/* เหรียญยศ (components/nova/rank-badge) — สีพื้นจาก ranks.color ผ่าน --rk-c */
+.nvm-rk-badge { --rk-c: var(--nv-gold-500); flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; font-size: 21px; line-height: 1; font-weight: 700; color: #fff; background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--rk-c) 50%, #fff), var(--rk-c) 72%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), 0 6px 14px -6px color-mix(in srgb, var(--rk-c) 80%, transparent); }
+.nvm-rk-badge { position: relative; }
+.nvm-rk-badge > img { position: absolute; inset: 14%; width: 72%; height: 72%; object-fit: contain; }
+.nvm-rk-badge.has-img > span { visibility: hidden; }
+.nvm-rk-badge--sm { width: 30px; height: 30px; font-size: 15px; }
+.nvm-rk-badge--lg { width: 60px; height: 60px; font-size: 28px; }
+.nvm-rk-badge--xl { width: 150px; height: 150px; font-size: 70px; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .4), 0 0 0 7px rgba(245, 210, 127, .2), 0 22px 40px -14px rgba(0, 0, 0, .65); }
+.nvm-rk-hero { display: grid; place-items: center; }
+.nvm-rk-hero > img { width: 100%; height: 100%; object-fit: contain; }
+
+.nvm-rk-h3 { margin: 22px 0 6px; font-family: var(--nvm-font-display); font-size: 16px; color: var(--nvm-ink); }
+.nvm-rk-req { font-style: normal; color: var(--nvm-bad); }
+.nvm-rk-of { font-family: var(--nvm-font-ui); font-size: 12px; font-weight: 500; color: var(--nvm-ink-3); }
+.nvm-rk-link { position: relative; }
+.nvm-rk-link > a { text-decoration: none; }
+.nvm-rk-link > a::after { content: ""; position: absolute; inset: 0; }
+.nvm-rk-link > .nvm-ico { width: 16px; height: 16px; color: var(--nvm-ink-3); }
+.nvm-rk-link:hover b { color: var(--nvm-gold-ink); }
+
+/* สิทธิ์ที่มี / สิ่งที่จะได้ */
+.nvm-rk-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+.nvm-rk-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.nvm-rk-perks li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-rk-perks li > div { min-width: 0; }
+.nvm-rk-perks__ic { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--nvm-track); }
+.nvm-rk-perks b { display: block; font-size: 14px; }
+.nvm-rk-perks__val { display: block; font-family: var(--nvm-font-display); font-weight: 700; color: var(--nvm-good); }
+.nvm-rk-perks small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.5; color: var(--nvm-ink-3); }
+
+/* เส้นทางทุกระดับ — เส้นแนวตั้งลากผ่านกลางเหรียญ */
+.nvm-rk-road { --rk-node: 44px; list-style: none; margin: 0; padding: 0; position: relative; display: flex; flex-direction: column; gap: 6px; }
+.nvm-rk-road--full { --rk-node: 60px; }
+.nvm-rk-road::before { content: ""; position: absolute; left: calc(var(--rk-node) / 2 + 8px); top: 24px; bottom: 24px; width: 2px; border-radius: 2px; background: var(--nvm-track); }
+.nvm-rk-road > li { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 4px 14px; padding: 10px 12px 10px 9px; border-radius: 18px; }
+.nvm-rk-road > li > div { min-width: 0; padding-top: 2px; }
+.nvm-rk-road > li > div > b { display: block; font-family: var(--nvm-font-display); font-size: 16px; }
+.nvm-rk-road > li > div > small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-rk-road > li > div > .nvm-desc { margin-top: 6px; }
+.nvm-rk-road > li:not(.is-now):not(.is-done) .nvm-rk-badge { filter: grayscale(.7); opacity: .65; }
+.nvm-rk-road > li.is-now { background: color-mix(in srgb, var(--nv-gold-400) 13%, transparent); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-rk-road > li.is-now > div > b { color: var(--nvm-gold-ink); }
+.nvm-rk-road > li .nvm-meter { margin-top: 10px; max-width: 420px; }
+.nvm-rk-road > li .nvm-meter__bar { height: 10px; }
+.nvm-rk-gifts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.nvm-rk-conds { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nvm-rk-conds li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--nvm-ink-2); }
+.nvm-rk-conds .nvm-ico { width: 15px; height: 15px; margin-top: 2px; color: var(--nvm-ink-3); }
+.nvm-rk-conds li.is-met .nvm-ico { color: var(--nvm-good); }
+.nvm-rk-tips b { color: var(--nvm-ink); margin-right: 4px; }
+
+/* กระดานผู้นำ */
+.nvm-rk-podium { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: end; }
+.nvm-rk-pod { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px; text-align: center; min-width: 0; }
+.nvm-rk-pod--1 { order: 2; padding-top: 28px; padding-bottom: 24px; box-shadow: var(--nvm-shadow-lg), inset 0 0 0 2px rgba(240, 201, 106, .55); }
+.nvm-rk-pod--2 { order: 1; }
+.nvm-rk-pod--3 { order: 3; }
+.nvm-rk-pod.is-me { box-shadow: var(--nvm-shadow), inset 0 0 0 2px var(--nvm-gold-ink); }
+.nvm-rk-pod__no, .nvm-rk-no { --medal: var(--nvm-track); display: grid; place-items: center; border-radius: 50%; font-family: var(--nvm-font-display); font-weight: 700; color: #1a1405; background: var(--medal); }
+.nvm-rk-pod__no { width: 52px; height: 52px; font-size: 22px; }
+.nvm-rk-pod--1 .nvm-rk-pod__no { width: 64px; height: 64px; font-size: 28px; }
+.nvm-rk-pod--1 .nvm-rk-pod__no, .nvm-rk-no--1 { --medal: var(--nv-btn-gold); }
+.nvm-rk-pod--2 .nvm-rk-pod__no, .nvm-rk-no--2 { --medal: linear-gradient(180deg, #f1f3f6, #9aa4ad); }
+.nvm-rk-pod--3 .nvm-rk-pod__no, .nvm-rk-no--3 { --medal: linear-gradient(180deg, #f4cfa5, #b9783f); }
+.nvm-rk-pod__name { max-width: 100%; font-family: var(--nvm-font-display); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-rk-pod__rank { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-rk-pod__pts { font-family: var(--nvm-font-display); font-weight: 700; font-size: 20px; color: var(--nvm-gold-ink); }
+.nvm-rk-pod__pts small { font-family: var(--nvm-font-ui); font-size: 11.5px; font-weight: 500; color: var(--nvm-ink-3); }
+.nvm-rk-no { width: 34px; height: 34px; font-size: 14px; }
+.nvm-rk-no--x { color: var(--nvm-ink-2); }
+.nvm-rk-who { display: inline-flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; }
+.nvm-rk-av { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--nvm-gold-ink); background: color-mix(in srgb, var(--nv-gold-400) 18%, transparent); }
+.nvm-rk-table tr.is-me td { background: color-mix(in srgb, var(--nv-gold-400) 12%, transparent); }
+
+@media (max-width: 767px) {
+    .nvm-rk-badge--xl { width: 84px; height: 84px; font-size: 40px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .4), 0 0 0 4px rgba(245, 210, 127, .2); }
+    .nvm-rk-road--full { --rk-node: 44px; }
+    .nvm-rk-road--full .nvm-rk-badge--lg { width: 44px; height: 44px; font-size: 21px; }
+    .nvm-rk-road > li { grid-template-columns: auto minmax(0, 1fr); }
+    .nvm-rk-road > li > .nvm-chip { grid-column: 2; justify-self: start; }
+    .nvm-rk-podium { gap: 8px; }
+    .nvm-rk-pod { padding: 14px 6px; }
+    .nvm-rk-pod__no { width: 40px; height: 40px; font-size: 18px; }
+    .nvm-rk-pod--1 .nvm-rk-pod__no { width: 48px; height: 48px; font-size: 22px; }
+    .nvm-rk-pod__name { font-size: 14px; }
+    .nvm-rk-pod__pts { font-size: 16px; }
+    .nvm-rk-pod__rank { display: none; }
+}
