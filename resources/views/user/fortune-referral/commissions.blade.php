@@ -78,8 +78,8 @@
     <nav class="nvm-tabs nvm-fr-tabs" aria-label="กรองตามชั้น">
         @foreach($tabs as $key => $label)
             <a href="{{ route('user.fortune-referral.commissions', ['level' => $key]) }}"
-               class="{{ (string) $levelFilter === (string) $key ? 'is-on' : '' }}"
-               @if((string) $levelFilter === (string) $key) aria-current="page" @endif>{{ $label }}</a>
+               class="{{ $levelFilter === (string) $key ? 'is-on' : '' }}"
+               @if($levelFilter === (string) $key) aria-current="page" @endif>{{ $label }}</a>
         @endforeach
     </nav>
 

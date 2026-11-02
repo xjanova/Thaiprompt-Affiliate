@@ -86,6 +86,8 @@
     <section class="nvm-card nvm-fr-tree" aria-labelledby="nvm-fr-tree-h">
         <div class="nvm-sec-h"><div><small class="nvm-latin">Structure</small><h2 id="nvm-fr-tree-h">โครงสร้างสายงาน</h2></div></div>
         <div class="nvm-fr-tree__box" id="fortune-tree-container"></div>
+        {{-- กล่องข้อความว่าง/ผิดพลาด แยกจากกล่องผัง — ไม่แทนที่ DOM ของผัง จึงใช้ viewer ตัวเดิมได้ตลอด --}}
+        <div class="nvm-fr-tree__box" id="fortune-tree-message" role="status" hidden></div>
     </section>
 
     {{-- แม่แบบข้อความว่าง/ผิดพลาด ใส่ลงกล่องผังเมื่อโหลดข้อมูลไม่ได้ --}}
@@ -145,6 +147,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var viewer = null;
     var container = document.getElementById('fortune-tree-container');
+    var messageBox = document.getElementById('fortune-tree-message');
     var depthSelector = document.getElementById('depth-selector');
     var btnReload = document.getElementById('btn-reload-tree');
     var dataUrl = @js(route('user.fortune-referral.tree-data'));
@@ -160,12 +163,19 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     };
 
-    // ใส่ข้อความว่าง/ผิดพลาดแทนผัง — ทิ้ง viewer เดิมด้วย เพราะ DOM ของมันถูกแทนที่ไปแล้ว
-    // (เดิมเก็บ viewer ไว้ กดรีเฟรชรอบถัดไปจึงวาดลง DOM ที่หายไปแล้ว หน้าค้างว่าง)
+    // แสดงข้อความว่าง/ผิดพลาดในกล่องแยก แล้วซ่อนกล่องผังไว้ (ไม่ลบ DOM ของผัง)
+    // เดิมแทนที่ DOM ของผังแล้วสร้าง OrgChartViewer ใหม่ทุกครั้ง → ตัวฟังเหตุการณ์ระดับ document ของตัวเก่าค้างสะสม
     var showMessage = function (templateId) {
         var tpl = document.getElementById(templateId);
-        container.replaceChildren(tpl.content.cloneNode(true));
-        viewer = null;
+        messageBox.replaceChildren(tpl.content.cloneNode(true));
+        container.hidden = true;
+        messageBox.hidden = false;
+    };
+
+    var showChart = function () {
+        messageBox.hidden = true;
+        messageBox.replaceChildren();
+        container.hidden = false;
     };
 
     /**
@@ -175,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var depth = parseInt(depthSelector.value, 10);
         var seq = ++loadSeq;
         btnReload.disabled = true;
+        showChart();
 
         if (!viewer) {
             viewer = new OrgChartViewer(container, Object.assign({ treeType: 'unilevel', maxDepth: depth }, sizing()));
@@ -188,6 +199,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin'
             });
+            if (seq !== loadSeq) return;
+
+            // 404 = ยังไม่เป็นสมาชิก MLM → ข้อความว่าง · สถานะผิดพลาดอื่น (เช่น 500) → ข้อความผิดพลาดให้กดรีเฟรช
+            if (!response.ok) {
+                showMessage(response.status === 404 ? 'nvm-fr-tree-empty' : 'nvm-fr-tree-error');
+                return;
+            }
+
             var result = await response.json();
             if (seq !== loadSeq) return;
 
@@ -215,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', function () {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function () {
-            if (!viewer) return;
+            if (!viewer || container.hidden) return;
             Object.assign(viewer.options, sizing());
             if (viewer.data) {
                 viewer.nodeCount = 0;

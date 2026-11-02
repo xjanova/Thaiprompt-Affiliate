@@ -29,7 +29,10 @@ class FortuneReferralDashboardController extends Controller
     public function commissions(Request $request)
     {
         $user = auth()->user();
-        $levelFilter = $request->get('level', 'all');
+        // รับเฉพาะ '1' / '2' — ค่าอื่น (รวม ?level[]=1 ที่เป็นอาร์เรย์) ถือเป็น 'all'
+        // กันหน้าพังจากการแปลงอาร์เรย์เป็นสตริง และกันข้อความว่าง "ไม่มีรายการในชั้นนี้" ทั้งที่แสดงทุกชั้น
+        $levelQuery = $request->query('level');
+        $levelFilter = in_array($levelQuery, ['1', '2'], true) ? $levelQuery : 'all';
 
         // Query คอมมิชชั่นดูดวง
         $query = FortuneCommission::forUser($user->id)

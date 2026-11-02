@@ -130,6 +130,36 @@ class NovaFortuneReferralPagesTest extends TestCase
         $response->assertSee('/fortune/invite/', false);
     }
 
+    public function test_commissions_page_ignores_crafted_level_query(): void
+    {
+        $user = $this->member();
+        $this->commission($user, $this->member(['name' => 'เพื่อนสายตรง']));
+
+        // ?level[]=1 (อาร์เรย์) เคยทำให้ view พังจาก Array to string conversion → ต้องแสดงทุกชั้นตามปกติ
+        $array = $this->actingAs($user)->get(route('user.fortune-referral.commissions').'?level[]=1');
+        $this->assertNovaShell($array);
+        $array->assertSee('เพื่อนสายตรง');
+
+        // ค่าที่ไม่รู้จักถือเป็น "ทั้งหมด" — แท็บทั้งหมดถูกเลือก และไม่ขึ้นข้อความ "ไม่มีรายการในชั้นนี้"
+        $unknown = $this->actingAs($this->member())->get(route('user.fortune-referral.commissions', ['level' => 'foo']));
+        $this->assertNovaShell($unknown);
+        $unknown->assertSee('ชวนเพื่อนมาดูดวง แล้วค่าแนะนำจะแสดงที่นี่')->assertDontSee('ไม่มีรายการในชั้นนี้');
+        $this->assertSame(1, substr_count($unknown->getContent(), 'aria-current="page"'));
+    }
+
+    public function test_recruit_page_shows_fallback_when_invite_link_cannot_be_generated(): void
+    {
+        $this->mock(\App\Services\FortuneAffiliateService::class, function ($mock) {
+            $mock->shouldReceive('generateReferralLink')->andThrow(new \RuntimeException('สร้างลิงก์ไม่ได้'));
+        });
+
+        $response = $this->actingAs($this->member())->get(route('user.fortune-referral.recruit'));
+
+        $this->assertNovaShell($response);
+        $response->assertSee('ยังสร้างลิงก์เชิญให้ไม่ได้');
+        $response->assertDontSee('คัดลอกลิงก์เชิญแล้ว')->assertDontSee('/fortune/invite/', false);
+    }
+
     public function test_recruit_page_shows_package_rates_when_enabled(): void
     {
         FortuneTellingSetting::create([
@@ -184,6 +214,18 @@ class NovaFortuneReferralPagesTest extends TestCase
         // ข้อความว่าง/ผิดพลาดของผังต้องเป็นคลาสโนวา (เดิมเป็นคลาส Tailwind ที่เชลล์โนวาไม่โหลด → ข้อความไม่มีสไตล์)
         $page->assertSee('id="nvm-fr-tree-empty"', false)->assertSee('id="nvm-fr-tree-error"', false);
         $this->assertStringNotContainsString('text-gray-500 dark:text-gray-400', $page->getContent());
+        // ข้อความว่าง/ผิดพลาดแสดงในกล่องแยก ไม่แทนที่ DOM ของผัง → ใช้ viewer ตัวเดียว ไม่สร้างใหม่จนตัวฟังเหตุการณ์ค้างสะสม
+        $html = $page->getContent();
+        $page->assertSee('id="fortune-tree-message"', false);
+        $this->assertStringContainsString('messageBox.replaceChildren(tpl.content.cloneNode(true))', $html);
+        $this->assertStringNotContainsString('container.replaceChildren(', $html);
+        // สถานะ HTTP ผิดพลาด (เช่น 500) ต้องขึ้นข้อความผิดพลาด ไม่ใช่ "ยังไม่มีข้อมูลสายงาน"
+        $this->assertStringContainsString('if (!response.ok)', $html);
+        $this->assertStringContainsString("response.status === 404 ? 'nvm-fr-tree-empty' : 'nvm-fr-tree-error'", $html);
+        // เปลี่ยนความลึกต้องโหลดใหม่เสมอ (แม้รอบก่อนผิดพลาด) และปิดปุ่มรีเฟรชระหว่างโหลด
+        $this->assertStringContainsString("depthSelector.addEventListener('change', loadFortuneTree)", $html);
+        $this->assertStringContainsString('btnReload.disabled = true', $html);
+        $this->assertStringContainsString('if (seq !== loadSeq) return;', $html);
 
         $json = $this->actingAs($user)->getJson(route('user.fortune-referral.tree-data', ['depth' => 3]));
         $json->assertOk()->assertJsonPath('success', true)

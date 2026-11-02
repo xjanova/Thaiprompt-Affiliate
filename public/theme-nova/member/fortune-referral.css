@@ -78,3 +78,6 @@
     .nvm-fr-link .nvm-refer__code code { flex-basis: 100%; }
     .nvm-fr-link .nvm-refer__code .nvm-btn { flex: 1; }
 }
+
+/* กล่องผัง/กล่องข้อความสลับกันด้วย [hidden] — กันคลาสอื่นตั้ง display ทับ */
+.nvm-fr-tree__box[hidden] { display: none; }
