@@ -1,0 +1,75 @@
+/*
+ * หน้าสมาชิก TPIX DEX + Staking (ธีมโนวาเต็ม)
+ * - ใช้ตัวแปร --nvm-* จาก nova-member.css ทั้งหมด → โหมดสว่าง/มืด (html.dark) ทำงานเอง
+ * - คลาสขึ้นต้น nvm-dx- เท่านั้น · ออกแบบจากจอมือถือ 375px ขึ้นไป
+ */
+
+/* ── สัญลักษณ์เหรียญ (ตัวอักษรย่อบนวงกลมทอง แทนโลโก้ที่อาจไม่มี) ── */
+.nvm-dx-coin { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--nvm-font-latin); font-size: 12px; font-weight: 700; letter-spacing: .02em; color: #1a1405; background: var(--nv-btn-gold); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), 0 6px 14px -8px rgba(138, 100, 32, .8); overflow: hidden; }
+.nvm-dx-coin img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-dx-coin--b { color: var(--nvm-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-dx-pair { display: inline-flex; align-items: center; flex: none; }
+.nvm-dx-pair .nvm-dx-coin + .nvm-dx-coin { margin-left: -12px; }
+
+/* ── กล่องแลกเปลี่ยน ── */
+.nvm-dx-leg { padding: 14px 16px; border-radius: 18px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-dx-leg__top { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-dx-leg__top b { color: var(--nvm-ink); font-weight: 600; }
+.nvm-dx-leg__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 150px); gap: 10px; align-items: center; margin-top: 8px; }
+.nvm-dx-leg__amt { width: 100%; min-width: 0; height: 46px; padding: 0; border: 0; background: transparent; font-family: var(--nvm-font-display); font-size: 26px; font-weight: 700; color: var(--nvm-ink); }
+.nvm-dx-leg__amt:focus { outline: none; }
+.nvm-dx-leg__amt::placeholder { color: var(--nvm-ink-3); opacity: .7; }
+.nvm-dx-leg .nvm-input { height: 44px; }
+.nvm-dx-max { margin-top: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--nvm-gold-ink); cursor: pointer; }
+.nvm-dx-flip { display: flex; justify-content: center; margin: -8px 0; position: relative; z-index: 1; }
+.nvm-dx-flip button { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: var(--nvm-gold-ink); background: var(--nvm-paper); box-shadow: inset 0 0 0 1px var(--nvm-line-2), 0 6px 16px -8px rgba(20, 26, 43, .45); transition: transform .3s; }
+.nvm-dx-flip button:hover { transform: rotate(180deg); }
+.nvm-dx-flip .nvm-ico { width: 18px; height: 18px; }
+
+/* ── แถบตั้งค่า slippage ── */
+.nvm-dx-slip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nvm-dx-slip .nvm-input { width: 96px; height: 36px; font-size: 14px; }
+
+/* ── การ์ดพูล ── */
+.nvm-dx-pools { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.nvm-dx-pool { order: var(--o, 0); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+.nvm-dx-pool__head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-dx-pool__head > div { min-width: 0; }
+.nvm-dx-pool__head b { display: block; font-family: var(--nvm-font-display); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-dx-pool__head small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-dx-pool__acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.nvm-dx-pool__acts .nvm-btn { flex: 1 1 120px; }
+.nvm-dx-pool .nvm-minis { gap: 8px; }
+.nvm-dx-pool .nvm-mini { padding: 10px 12px; }
+.nvm-dx-pool .nvm-mini b { font-size: 15px; }
+
+/* ── ตัวเลื่อนเปอร์เซ็นต์ (ถอนสภาพคล่อง) ── */
+.nvm-dx-pct { font-family: var(--nvm-font-display); font-size: 40px; font-weight: 700; text-align: center; color: var(--nvm-gold-ink); }
+.nvm-dx-range { width: 100%; accent-color: var(--nv-gold-500); }
+.nvm-dx-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.nvm-dx-quick button { height: 38px; border: 0; border-radius: 12px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--nvm-ink-2); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-dx-quick button.is-on { color: #1a1405; background: var(--nv-btn-gold); box-shadow: none; }
+
+/* ── ตัวเลือกระยะล็อก (Stake) ── */
+.nvm-dx-locks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.nvm-dx-locks .nvm-opt { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; }
+
+/* ── ข้อความยาว (tx hash) ── */
+.nvm-dx-hash { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
+
+/* ── กล่องเตือนความเสี่ยง (ใช้ร่วมกับ nvm-alert) ── */
+.nvm-dx-risk ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--nvm-ink-2); line-height: 1.6; }
+
+/* ── ความกว้างแท่งแบบส่งค่าผ่านตัวแปร --w ── */
+.nvm-dx-bar { width: var(--w, 0%); }
+
+@media (max-width: 767px) {
+    .nvm-dx-leg__row { grid-template-columns: minmax(0, 1fr) minmax(0, 120px); }
+    .nvm-dx-leg__amt { font-size: 22px; }
+    .nvm-dx-pools { grid-template-columns: minmax(0, 1fr); }
+    .nvm-dx-pct { font-size: 34px; }
+}
+
+/* fieldset ของตัวเลือก (ล้างกรอบตั้งต้นของเบราว์เซอร์) */
+.nvm-dx-fs { margin: 0; padding: 0; border: 0; min-width: 0; }
+.nvm-dx-fs legend { padding: 0; margin-bottom: 6px; }

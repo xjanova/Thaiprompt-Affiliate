@@ -1,466 +1,145 @@
-@extends('layouts.user-v4')
+{{--
+    ถอนสภาพคล่อง — TPIX DEX (ธีมโนวาเต็ม)
+    - $position = ตำแหน่งของสมาชิกเอง (controller ค้นผ่าน auth()->user()->liquidityPositions() → ของคนอื่น 404)
+    - เลือกเปอร์เซ็นต์ → แปลงเป็น lp_tokens แล้วส่งไป user.dex.liquidity.remove (session + CSRF)
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ถอน Liquidity - TPIX DEX')
+@section('title', 'ถอนสภาพคล่อง - TPIX DEX')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/dex-staking.css') }}?v={{ filemtime(public_path('theme-nova/member/dex-staking.css')) }}">@endpush
+
+@php
+    $num = function ($n, int $d = 6) {
+        $s = number_format((float) $n, $d, '.', ',');
+
+        return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
+    };
+    $abbr = fn (?string $symbol) => mb_strtoupper(mb_substr((string) $symbol, 0, 3));
+    $pool = $position->pool;
+    $symA = $pool->tokenA->symbol ?? '?';
+    $symB = $pool->tokenB->symbol ?? '?';
+
+    // คาดการณ์ที่ได้คืนจากสัดส่วน LP ต่อสภาพคล่องรวมของพูล (สูตรเดียวกับ DEXService::removeLiquidity)
+    $totalLiquidity = (float) $pool->total_liquidity;
+    $shareFraction = $totalLiquidity > 0 ? (float) $position->lp_tokens / $totalLiquidity : 0;
+    $preview = [
+        'lp' => (string) $position->lp_tokens,
+        'a' => (float) $pool->reserve_a * $shareFraction,
+        'b' => (float) $pool->reserve_b * $shareFraction,
+    ];
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="relative overflow-hidden bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 dark:from-red-800 dark:via-rose-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+<div class="nvm-stack" x-data="nvmDxRemove(@js($preview))">
+
+<section class="nvm-ph" aria-labelledby="nvm-dx-rm-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.dex.my-positions') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ตำแหน่งของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Remove liquidity</div>
+            <h1 id="nvm-dx-rm-h">ถอนสภาพคล่อง {{ $symA }} / {{ $symB }}</h1>
+            <p class="nvm-ph__lead">เลือกสัดส่วนที่ต้องการถอน ระบบจะคืนเหรียญทั้งสองฝั่งตามส่วนแบ่งของคุณในพูล</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--glass">LP <span class="nvm-num">{{ $num($position->lp_tokens) }}</span></span>
+                <span class="nvm-pill nvm-pill--glass">ส่วนแบ่ง <span class="nvm-num">{{ $num($position->share_percentage, 4) }}%</span></span>
+            </div>
         </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-minus-square"></i></div>
-        </div>
-        <div class="relative z-10"><div class="flex items-center gap-4">
-            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-minus-square text-4xl text-white drop-shadow-lg"></i></div>
-            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Remove Liquidity</h1>
-            <p class="text-white/80 text-lg mt-1">ถอนสภาพคล่อง</p></div>
-        </div></div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/withdraw.webp') }}" alt="" width="200" height="200">
     </div>
-                    <!-- Position Info -->
-                    <div class="alert alert-light border rounded-3 p-3 mb-4" id="positionInfo">
-                        <div class="text-center mb-3">
-                            <h5 class="fw-bold mb-0" id="poolPair">Loading...</h5>
-                            <small class="text-muted">Liquidity Pool</small>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">LP Tokens ของคุณ</small>
-                            <small class="fw-bold" id="yourLPTokens">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">ส่วนแบ่งใน Pool</small>
-                            <small class="fw-bold" id="yourSharePercent">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">มูลค่าปัจจุบัน</small>
-                            <small class="text-success fw-bold" id="currentValue">-</small>
-                        </div>
-                    </div>
+</section>
 
-                    <!-- Amount to Remove -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">จำนวนที่ต้องการถอน</label>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-dx-rmf-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Amount</small><h2 id="nvm-dx-rmf-h">จำนวนที่ถอน</h2></div></div>
 
-                        <!-- Percentage Buttons -->
-                        <div class="btn-group w-100 mb-3" role="group">
-                            <button type="button" class="btn btn-outline-primary percent-btn" data-percent="25">25%</button>
-                            <button type="button" class="btn btn-outline-primary percent-btn" data-percent="50">50%</button>
-                            <button type="button" class="btn btn-outline-primary percent-btn" data-percent="75">75%</button>
-                            <button type="button" class="btn btn-outline-primary percent-btn" data-percent="100">100%</button>
-                        </div>
-
-                        <!-- Custom Amount Slider -->
-                        <div class="mb-3">
-                            <input type="range" class="form-range" id="removePercent" min="0" max="100" value="50" step="1">
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">0%</small>
-                                <strong class="text-primary" id="percentDisplay">50%</strong>
-                                <small class="text-muted">100%</small>
-                            </div>
-                        </div>
-
-                        <!-- LP Token Amount Input -->
-                        <div class="input-group">
-                            <input type="number" class="form-control form-control-lg"
-                                   id="lpTokenAmount" placeholder="0.0" step="0.00000001">
-                            <span class="input-group-text">LP Tokens</span>
-                        </div>
-                    </div>
-
-                    <!-- Expected Receive -->
-                    <div class="alert alert-success border-0 rounded-3 p-3 mb-4">
-                        <h6 class="fw-bold mb-3">
-                            <i class="fas fa-hand-holding-usd me-2"></i>
-                            คุณจะได้รับ
-                        </h6>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="d-flex align-items-center">
-                                <img src="" id="tokenALogo" width="24" height="24" class="rounded-circle me-2" onerror="this.src='/images/default-token.png'">
-                                <span id="tokenASymbol">-</span>
-                            </div>
-                            <strong id="receiveAmountA">0.00</strong>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <img src="" id="tokenBLogo" width="24" height="24" class="rounded-circle me-2" onerror="this.src='/images/default-token.png'">
-                                <span id="tokenBSymbol">-</span>
-                            </div>
-                            <strong id="receiveAmountB">0.00</strong>
-                        </div>
-                        <hr class="my-2">
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">มูลค่ารวม (THB)</small>
-                            <strong class="text-success" id="totalValueTHB">฿0.00</strong>
-                        </div>
-                    </div>
-
-                    <!-- ROI & Earnings Summary -->
-                    <div class="bg-light rounded-3 p-3 mb-4" id="earningsSummary">
-                        <h6 class="fw-bold mb-3">สรุปผลตอบแทน</h6>
-                        <div class="row text-center">
-                            <div class="col-6 mb-3">
-                                <small class="text-muted d-block">ROI</small>
-                                <strong id="roiPercent" class="text-success">-</strong>
-                            </div>
-                            <div class="col-6 mb-3">
-                                <small class="text-muted d-block">กำไร/ขาดทุน</small>
-                                <strong id="profitLoss" class="text-success">-</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">ค่าธรรมเนียมที่ได้รับ</small>
-                                <strong class="text-primary" id="feesEarned">฿0.00</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Impermanent Loss</small>
-                                <strong id="impermanentLoss" class="text-warning">-</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Price Details -->
-                    <div class="alert alert-light border rounded-3 p-3 mb-4">
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">อัตราแลกเปลี่ยนปัจจุบัน</small>
-                            <small id="currentRate">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">ส่วนแบ่งคงเหลือ</small>
-                            <small id="remainingShare">-</small>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="button" class="btn btn-danger btn-lg w-100 mb-3" id="removeLiquidityBtn">
-                        <i class="fas fa-minus-circle me-2"></i>
-                        ถอน Liquidity
-                    </button>
-
-                    <!-- Warning -->
-                    <div class="alert alert-warning border-0 rounded-3">
-                        <h6 class="fw-bold mb-2">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            คำเตือน
-                        </h6>
-                        <small class="text-muted">
-                            • การถอน Liquidity จะได้รับ Token ทั้งสองชนิดตามสัดส่วนใน Pool<br>
-                            • ราคา Token อาจเปลี่ยนแปลงไปจากตอนที่ฝาก (Impermanent Loss)<br>
-                            • การถอนเสร็จสิ้นทันที ไม่สามารถยกเลิกได้
-                        </small>
-                    </div>
-                </div>
+        <form class="nvm-form" @submit.prevent="confirming = true" novalidate>
+            @csrf
+            <input type="hidden" name="position_id" value="{{ $position->id }}">
+            <div class="nvm-dx-pct nvm-num" aria-live="polite"><span x-text="pct">50</span>%</div>
+            <input type="range" class="nvm-dx-range" min="1" max="100" step="1" x-model.number="pct" aria-label="เปอร์เซ็นต์ที่ถอน">
+            <div class="nvm-dx-quick" role="group" aria-label="เลือกเปอร์เซ็นต์ด่วน">
+                <template x-for="v in [25, 50, 75, 100]" :key="v">
+                    <button type="button" :class="{ 'is-on': pct === v }" @click="pct = v" x-text="v === 100 ? 'ทั้งหมด' : v + '%'"></button>
+                </template>
             </div>
+
+            <dl class="nvm-kv">
+                <dt>LP Token ที่ถอน</dt><dd class="nvm-num" x-text="fmt(lpOut())"></dd>
+                <dt>ได้รับ {{ $symA }} (ประมาณ)</dt><dd class="nvm-num" x-text="fmt(preview.a * pct / 100)"></dd>
+                <dt>ได้รับ {{ $symB }} (ประมาณ)</dt><dd class="nvm-num" x-text="fmt(preview.b * pct / 100)"></dd>
+            </dl>
+
+            <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="busy">
+                <svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ถอนสภาพคล่อง
+            </button>
+        </form>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-dx-pos-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Position</small><h2 id="nvm-dx-pos-h">ตำแหน่งปัจจุบัน</h2></div></div>
+        <div class="nvm-dx-pool__head">
+            <span class="nvm-dx-pair" aria-hidden="true"><span class="nvm-dx-coin">{{ $abbr($symA) }}</span><span class="nvm-dx-coin nvm-dx-coin--b">{{ $abbr($symB) }}</span></span>
+            <div><b>{{ $symA }} / {{ $symB }}</b><small>เพิ่มเมื่อ {{ $position->created_at?->copy()->locale('th')->translatedFormat('j M Y') ?? '-' }}</small></div>
         </div>
+        <dl class="nvm-kv nvm-gap-t">
+            <dt>{{ $symA }} ที่ฝาก</dt><dd class="nvm-num">{{ $num($position->token_a_amount) }}</dd>
+            <dt>{{ $symB }} ที่ฝาก</dt><dd class="nvm-num">{{ $num($position->token_b_amount) }}</dd>
+            <dt>LP Token</dt><dd class="nvm-num">{{ $num($position->lp_tokens) }}</dd>
+            <dt>มูลค่าปัจจุบัน</dt><dd class="nvm-num">{{ $num($position->getCurrentValueTPIX(), 4) }} TPIX</dd>
+            <dt>ค่าธรรมเนียมที่ได้</dt><dd class="nvm-num">{{ $num($position->fees_earned) }}</dd>
+        </dl>
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>จำนวนที่ได้รับจริงคำนวณจากสำรองของพูล ณ ตอนที่ทำรายการ</p>
+    </aside>
+</div>
 
-        <!-- Side Info Panel -->
-        <div class="col-lg-4">
-            <!-- Position History -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fas fa-chart-line text-primary me-2"></i>
-                        ประวัติตำแหน่งนี้
-                    </h6>
-                    <div id="positionHistory">
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">วันที่เพิ่ม</small>
-                            <small id="createdAt">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">ระยะเวลา</small>
-                            <small id="duration">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">เงินลงทุนเริ่มต้น</small>
-                            <small id="initialInvestment">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">APY เฉลี่ย</small>
-                            <small class="text-success" id="avgAPY">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">ธุรกรรมทั้งหมด</small>
-                            <small id="transactionCount">-</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pool Stats -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fas fa-swimming-pool text-info me-2"></i>
-                        สถิติ Pool
-                    </h6>
-                    <div id="poolStats">
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">TVL</small>
-                            <small class="fw-bold" id="poolTVL">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">ปริมาณ 24ชม.</small>
-                            <small id="volume24h">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">APY ปัจจุบัน</small>
-                            <small class="text-success fw-bold" id="currentAPY">-</small>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">LP Providers</small>
-                            <small id="lpProviders">-</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="nvm-modal" x-show="confirming" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-dx-cf-h" @click.self="confirming = false" @keydown.escape.window="confirming = false">
+    <div class="nvm-card nvm-modal__box">
+        <h2 id="nvm-dx-cf-h">ยืนยันถอนสภาพคล่อง</h2>
+        <p>ถอน <b class="nvm-num" x-text="pct + '%'"></b> ของตำแหน่ง {{ $symA }} / {{ $symB }}</p>
+        <dl class="nvm-kv">
+            <dt>{{ $symA }}</dt><dd class="nvm-num" x-text="fmt(preview.a * pct / 100)"></dd>
+            <dt>{{ $symB }}</dt><dd class="nvm-num" x-text="fmt(preview.b * pct / 100)"></dd>
+        </dl>
+        <div class="nvm-filter__btns">
+            <button type="button" class="nvm-btn nvm-btn--line" @click="confirming = false" :disabled="busy">ยกเลิก</button>
+            <button type="button" class="nvm-btn nvm-btn--gold" @click="submit()" :disabled="busy"><span x-text="busy ? 'กำลังถอน...' : 'ยืนยัน'">ยืนยัน</span></button>
         </div>
     </div>
 </div>
 
-<!-- Confirmation Modal -->
-<div class="modal fade" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    ยืนยันการถอน Liquidity
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>คุณกำลังจะถอน Liquidity จำนวน:</p>
-                <div class="alert alert-light">
-                    <strong id="confirmAmount">-</strong> LP Tokens
-                </div>
-                <p>และจะได้รับ:</p>
-                <div class="alert alert-success">
-                    <div><strong id="confirmTokenA">-</strong></div>
-                    <div><strong id="confirmTokenB">-</strong></div>
-                </div>
-                <p class="text-danger mb-0">
-                    <small><strong>หมายเหตุ:</strong> การดำเนินการนี้ไม่สามารถยกเลิกได้</small>
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">
-                    <i class="fas fa-check me-2"></i>ยืนยันการถอน
-                </button>
-            </div>
-        </div>
-    </div>
 </div>
-
 @endsection
 
 @push('scripts')
+@include('user.dex.partials.nova-js')
 <script>
-$(document).ready(function() {
-    const positionId = {{ $positionId ?? 'null' }};
-    let positionData = null;
-
-    // Load position data
-    loadPosition();
-
-    function loadPosition() {
-        $.ajax({
-            url: `/api/v1/tpix/dex/positions/${positionId}`,
-            method: 'GET',
-            success: function(response) {
-                positionData = response.data;
-                displayPosition();
-            },
-            error: function() {
-                alert('ไม่พบข้อมูลตำแหน่ง Liquidity');
-                window.location.href = '{{ route("user.dex.my-positions") }}';
+// ถอนสภาพคล่องตามเปอร์เซ็นต์ — 100% ส่งจำนวน LP เต็มตามฐานข้อมูล (กันเศษทศนิยม)
+function nvmDxRemove(preview) {
+    return {
+        preview: preview,
+        pct: 50,
+        busy: false,
+        confirming: false,
+        fmt(n, d) { return window.nvmDxFmt(n, d); },
+        lpOut() {
+            if (this.pct >= 100) return this.preview.lp;
+            return (Math.floor(parseFloat(this.preview.lp) * this.pct / 100 * 1e8) / 1e8).toFixed(8);
+        },
+        async submit() {
+            if (this.busy) return;
+            this.busy = true;
+            try {
+                await window.nvmDxPost(@js(route('user.dex.liquidity.remove')), { position_id: {{ (int) $position->id }}, lp_tokens: this.lpOut() });
+                window.showNotification('ถอนสภาพคล่องสำเร็จ', 'success');
+                window.location.href = @js(route('user.dex.my-positions'));
+            } catch (e) {
+                window.showNotification(e.message, 'error');
+                this.busy = false;
+                this.confirming = false;
             }
-        });
-    }
-
-    function displayPosition() {
-        // Position info
-        $('#poolPair').text(positionData.pool.pair);
-        $('#yourLPTokens').text(formatNumber(positionData.lp_token_balance));
-        $('#yourSharePercent').text(positionData.share_percentage.toFixed(4) + '%');
-        $('#currentValue').text('฿' + formatNumber(positionData.current_value));
-
-        // Token info
-        $('#tokenASymbol').text(positionData.pool.token_a.symbol);
-        $('#tokenBSymbol').text(positionData.pool.token_b.symbol);
-        $('#tokenALogo').attr('src', positionData.pool.token_a.logo_url);
-        $('#tokenBLogo').attr('src', positionData.pool.token_b.logo_url);
-
-        // Position history
-        $('#createdAt').text(new Date(positionData.created_at).toLocaleDateString('th-TH'));
-        $('#duration').text(calculateDuration(positionData.created_at));
-        $('#initialInvestment').text('฿' + formatNumber(positionData.initial_value));
-        $('#avgAPY').text(positionData.avg_apy.toFixed(2) + '%');
-
-        // Pool stats
-        $('#poolTVL').text('฿' + formatNumber(positionData.pool.tvl));
-        $('#volume24h').text('฿' + formatNumber(positionData.pool.volume_24h));
-        $('#currentAPY').text(positionData.pool.apy.toFixed(2) + '%');
-        $('#lpProviders').text(positionData.pool.lp_count || '-');
-
-        // Calculate initial amounts
-        calculateRemoveAmounts();
-    }
-
-    // Percentage buttons
-    $('.percent-btn').click(function() {
-        const percent = $(this).data('percent');
-        $('#removePercent').val(percent);
-        updatePercentDisplay();
-        calculateRemoveAmounts();
-    });
-
-    // Range slider
-    $('#removePercent').on('input', function() {
-        updatePercentDisplay();
-        calculateRemoveAmounts();
-    });
-
-    function updatePercentDisplay() {
-        const percent = $('#removePercent').val();
-        $('#percentDisplay').text(percent + '%');
-
-        const lpAmount = (positionData.lp_token_balance * percent / 100).toFixed(8);
-        $('#lpTokenAmount').val(lpAmount);
-    }
-
-    // Manual LP token input
-    $('#lpTokenAmount').on('input', function() {
-        const amount = parseFloat($(this).val()) || 0;
-        const percent = (amount / positionData.lp_token_balance * 100).toFixed(0);
-        $('#removePercent').val(Math.min(percent, 100));
-        $('#percentDisplay').text(Math.min(percent, 100) + '%');
-        calculateRemoveAmounts();
-    });
-
-    function calculateRemoveAmounts() {
-        const lpAmount = parseFloat($('#lpTokenAmount').val()) || 0;
-        const percent = lpAmount / positionData.lp_token_balance;
-
-        // Calculate token amounts
-        const amountA = positionData.token_a_amount * percent;
-        const amountB = positionData.token_b_amount * percent;
-
-        $('#receiveAmountA').text(formatNumber(amountA));
-        $('#receiveAmountB').text(formatNumber(amountB));
-
-        // Calculate total value
-        const totalValue = amountA * positionData.pool.token_a.price_thb +
-                          amountB * positionData.pool.token_b.price_thb;
-        $('#totalValueTHB').text('฿' + formatNumber(totalValue));
-
-        // ROI calculation
-        const initialValue = positionData.initial_value * percent;
-        const profit = totalValue - initialValue;
-        const roiPercent = (profit / initialValue * 100).toFixed(2);
-
-        $('#roiPercent').text(roiPercent + '%').removeClass('text-success text-danger')
-            .addClass(profit >= 0 ? 'text-success' : 'text-danger');
-        $('#profitLoss').text('฿' + formatNumber(profit)).removeClass('text-success text-danger')
-            .addClass(profit >= 0 ? 'text-success' : 'text-danger');
-
-        // Fees earned
-        const feesEarned = positionData.fees_earned * percent;
-        $('#feesEarned').text('฿' + formatNumber(feesEarned));
-
-        // Impermanent loss
-        if (positionData.impermanent_loss) {
-            const il = positionData.impermanent_loss.loss_percentage * percent;
-            $('#impermanentLoss').text(il.toFixed(2) + '%');
         }
-
-        // Current rate
-        const rate = positionData.pool.price;
-        $('#currentRate').text(`1 ${positionData.pool.token_a.symbol} = ${formatNumber(rate)} ${positionData.pool.token_b.symbol}`);
-
-        // Remaining share
-        const remainingPercent = ((1 - percent) * positionData.share_percentage).toFixed(4);
-        $('#remainingShare').text(remainingPercent + '%');
-    }
-
-    // Remove liquidity
-    $('#removeLiquidityBtn').click(function() {
-        const lpAmount = $('#lpTokenAmount').val();
-
-        if (!lpAmount || lpAmount <= 0) {
-            alert('กรุณาระบุจำนวนที่ต้องการถอน');
-            return;
-        }
-
-        // Show confirmation modal
-        $('#confirmAmount').text(formatNumber(lpAmount));
-        $('#confirmTokenA').text(formatNumber($('#receiveAmountA').text()) + ' ' + $('#tokenASymbol').text());
-        $('#confirmTokenB').text(formatNumber($('#receiveAmountB').text()) + ' ' + $('#tokenBSymbol').text());
-        $('#confirmModal').modal('show');
-    });
-
-    // Confirm remove
-    $('#confirmRemoveBtn').click(function() {
-        const lpAmount = $('#lpTokenAmount').val();
-
-        $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>กำลังประมวลผล...');
-
-        $.ajax({
-            url: '/api/v1/tpix/dex/liquidity/remove',
-            method: 'POST',
-            data: {
-                position_id: positionId,
-                lp_token_amount: lpAmount,
-                _token: $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                $('#confirmModal').modal('hide');
-                alert('ถอน Liquidity สำเร็จ!');
-                window.location.href = '{{ route("user.dex.my-positions") }}';
-            },
-            error: function(xhr) {
-                alert('เกิดข้อผิดพลาด: ' + (xhr.responseJSON?.message || 'Unknown error'));
-                $('#confirmRemoveBtn').prop('disabled', false).html('<i class="fas fa-check me-2"></i>ยืนยันการถอน');
-            }
-        });
-    });
-
-    function calculateDuration(createdAt) {
-        const now = new Date();
-        const created = new Date(createdAt);
-        const diff = now - created;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        return days + ' วัน';
-    }
-
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-        });
-    }
-});
+    };
+}
 </script>
-@endpush
-
-@push('styles')
-<style>
-.percent-btn {
-    font-size: 0.875rem;
-}
-
-.percent-btn.active {
-    background-color: #0d6efd;
-    color: white;
-}
-
-.form-range::-webkit-slider-thumb {
-    background-color: #0d6efd;
-}
-
-.form-range::-moz-range-thumb {
-    background-color: #0d6efd;
-}
-</style>
 @endpush

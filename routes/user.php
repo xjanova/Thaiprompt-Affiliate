@@ -347,6 +347,21 @@ Route::prefix('dex')->name('dex.')->group(function () {
     // My DEX Activity
     Route::get('/my-positions', [\App\Http\Controllers\User\DEXController::class, 'myPositions'])->name('my-positions');
     Route::get('/swap-history', [\App\Http\Controllers\User\DEXController::class, 'swapHistory'])->name('swap-history');
+
+    // ทำรายการจากหน้าเว็บ (session + CSRF) — ใช้ตัวควบคุมเดียวกับ API
+    // เดิมหน้าเรียก /api/v1/tpix/dex/* ตรงๆ แต่กลุ่ม api ไม่มี session → สมาชิกที่ล็อกอินเว็บโดน 401 ทุกครั้ง
+    Route::post('/quote', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'quote'])
+        ->middleware('throttle:60,1')
+        ->name('quote');
+    Route::post('/swap', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'swap'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('swap.execute');
+    Route::post('/liquidity/add', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'addLiquidity'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('liquidity.add');
+    Route::post('/liquidity/remove', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'removeLiquidity'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('liquidity.remove');
 });
 
 // TPIX Staking
@@ -360,6 +375,17 @@ Route::prefix('staking')->name('staking.')->group(function () {
 
     // My Staking
     Route::get('/history', [\App\Http\Controllers\User\StakingController::class, 'history'])->name('history');
+
+    // ทำรายการจากหน้าเว็บ (session + CSRF) — ใช้ตัวควบคุมเดียวกับ API /api/v1/tpix/staking/*
+    Route::post('/stake', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'stake'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('stake');
+    Route::post('/unstake', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'unstake'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('unstake');
+    Route::post('/claim', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'claim'])
+        ->middleware('tpix.rate.limit:trade')
+        ->name('claim');
 });
 
 // Notifications
