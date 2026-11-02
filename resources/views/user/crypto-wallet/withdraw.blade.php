@@ -160,7 +160,7 @@
                 </ul>
             </div>
         </aside>
-        @if($tpixWithdrawable && \Illuminate\Support\Facades\Route::has('user.tpix.withdrawal'))
+        @if(($tpixWithdrawable ?? false) && \Illuminate\Support\Facades\Route::has('user.tpix.withdrawal'))
             <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.tpix.withdrawal') }}">
                 <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg></span>
                 <div class="nvm-alert__txt"><b>ถอนเหรียญ TPIX</b><p>TPIX อยู่บนเครือข่าย TPIX Chain ถอนผ่านหน้ากระเป๋า TPIX</p></div>
