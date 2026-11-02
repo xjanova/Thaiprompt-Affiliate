@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Rank;
+use App\Models\User;
 use App\Services\RankingService;
 use Illuminate\Http\Request;
 
@@ -29,7 +30,9 @@ class RankController extends Controller
 
         $nextRankProgress = $user->next_rank_progress;
         $currentRank = $user->currentRank;
-        $nextRank = $currentRank?->next_rank;
+        // ยังไม่มียศ → เป้าหมายคือยศแรก (เดิม null แล้วหน้าบอกว่า "อยู่ระดับสูงสุดแล้ว")
+        $nextRank = $this->nextRankFor($currentRank);
+        [$pointsPercent, $pointsNeeded] = $this->pointsProgress($user, $currentRank, $nextRank);
 
         // Get leaderboard position
         $leaderboardPosition = $this->getUserLeaderboardPosition($user);
@@ -70,6 +73,8 @@ class RankController extends Controller
             'currentRank',
             'nextRank',
             'nextRankProgress',
+            'pointsPercent',
+            'pointsNeeded',
             'leaderboardPosition',
             'currentRankRequirements',
             'currentRankBonuses',
@@ -84,18 +89,24 @@ class RankController extends Controller
 
     public function progress()
     {
-        $user = auth()->user();
-        $allRanks = Rank::active()->byLevel()->get();
-        $userProgress = $user->rankProgress()->with('targetRank')->get();
+        $user = auth()->user()->load('currentRank');
+        $allRanks = Rank::active()->byLevel()->with(['activeRequirements' => fn ($q) => $q->orderBy('weight')])->get();
+        $userProgress = $user->rankProgress()->get()->keyBy('target_rank_id');
+        $currentRank = $user->currentRank;
+        $nextRank = $this->nextRankFor($currentRank);
+        [$pointsPercent, $pointsNeeded] = $this->pointsProgress($user, $currentRank, $nextRank);
 
-        return view('user.ranks.progress', compact('user', 'allRanks', 'userProgress'));
+        return view('user.ranks.progress', compact('user', 'allRanks', 'userProgress', 'currentRank', 'nextRank', 'pointsPercent', 'pointsNeeded'));
     }
 
     public function leaderboard()
     {
+        $user = auth()->user();
         $leaderboard = $this->rankingService->getLeaderboard(100);
+        // อันดับจริงของตัวเอง แม้ไม่ติด 100 อันดับแรก (ต้องมียศก่อนถึงจะอยู่บนกระดาน)
+        $myPosition = $user->current_rank_id ? $this->getUserLeaderboardPosition($user) : null;
 
-        return view('user.ranks.leaderboard', compact('leaderboard'));
+        return view('user.ranks.leaderboard', compact('leaderboard', 'myPosition'));
     }
 
     public function requestPromotion(Request $request)
@@ -122,17 +133,11 @@ class RankController extends Controller
         }
 
         $currentRank = $user->currentRank;
-        $nextRank = $currentRank?->next_rank;
-        $nextRankProgress = $user->next_rank_progress;
+        $nextRank = $this->nextRankFor($currentRank);
+        [$progressPercentage] = $this->pointsProgress($user, $currentRank, $nextRank);
 
         // Get leaderboard position
         $leaderboardPosition = $this->getUserLeaderboardPosition($user);
-
-        // Calculate progress percentage
-        $progressPercentage = 0;
-        if ($nextRank && $nextRankProgress) {
-            $progressPercentage = $nextRankProgress->progress_percentage ?? 0;
-        }
 
         $data = [
             'current_rank' => [
@@ -148,8 +153,9 @@ class RankController extends Controller
                 'name_th' => $nextRank->name_th,
                 'level' => $nextRank->level,
             ] : null,
-            'current_points' => $user->rank_points ?? 0,
-            'next_rank_points' => $nextRankProgress->target_points ?? 0,
+            'current_points' => (int) ($user->rank_points ?? 0),
+            // user_rank_progress ไม่มีคอลัมน์ target_points (เดิมได้ 0 เสมอ) → ใช้เกณฑ์คะแนนของยศถัดไป
+            'next_rank_points' => (int) ($nextRank?->min_points ?? 0),
             'progress_percentage' => round($progressPercentage, 2),
             'leaderboard_position' => $leaderboardPosition,
         ];
@@ -162,9 +168,45 @@ class RankController extends Controller
 
     private function getUserLeaderboardPosition($user)
     {
-        return \App\Models\User::whereNotNull('current_rank_id')
-            ->where('rank_points', '>', $user->rank_points)
+        // 🐛 rank_points เป็น null (โมเดลที่ยังไม่ refresh หลังสร้าง) → where('>', null) โยน InvalidArgumentException = หน้า 500
+        return User::whereNotNull('current_rank_id')
+            ->where('rank_points', '>', (int) ($user->rank_points ?? 0))
             ->count() + 1;
+    }
+
+    /**
+     * ยศถัดไปที่ต้องไปให้ถึง — ยังไม่มียศ = ยศแรกที่เปิดใช้งาน
+     */
+    private function nextRankFor(?Rank $currentRank): ?Rank
+    {
+        return $currentRank ? $currentRank->next_rank : Rank::active()->byLevel()->first();
+    }
+
+    /**
+     * ความคืบหน้าด้วยคะแนนสู่ยศถัดไป (สูตรเดียวกับการ์ดระดับบนแดชบอร์ดสมาชิก — DashboardController)
+     *
+     * @return array{0: float, 1: int} [เปอร์เซ็นต์ 0-100, คะแนนที่ยังขาด]
+     */
+    private function pointsProgress(User $user, ?Rank $currentRank, ?Rank $nextRank): array
+    {
+        if (! $nextRank) {
+            return [100.0, 0];
+        }
+
+        $points = (int) ($user->rank_points ?? 0);
+        $from = (int) ($currentRank?->min_points ?? 0);
+        $to = (int) ($nextRank->min_points ?? 0);
+        $needed = max(0, $to - $points);
+
+        // ถึงเกณฑ์แล้ว (รวมยศที่ตั้งไว้ 0 คะแนน) = เต็มหลอด ไม่ใช่ 0%
+        if ($needed === 0) {
+            return [100.0, 0];
+        }
+
+        $span = $to - $from;
+        $percent = $span > 0 ? min(100, max(0, ($points - $from) / $span * 100)) : 0;
+
+        return [round($percent, 1), $needed];
     }
 
     /**

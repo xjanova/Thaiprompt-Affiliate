@@ -1,196 +1,125 @@
-@extends('layouts.user-v4')
+{{--
+    เส้นทางทุกระดับ (ธีมโนวาเต็ม) — RankController::progress
+    ตัวแปร: $user, $allRanks (พร้อม activeRequirements), $userProgress (keyBy target_rank_id),
+            $currentRank, $nextRank, $pointsPercent, $pointsNeeded
+    🐛 หน้าเดิมวนลูป $rank->requirements ซึ่งเป็น relation → พิมพ์ JSON ดิบของเงื่อนไขออกมาทั้งก้อน
+       และอ่าน $rank->benefits / $user->team_count ที่ไม่มีอยู่จริง — ตอนนี้ใช้ชื่อเงื่อนไขจาก activeRequirements
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ความคืบหน้ายศ')
+@section('title', 'เส้นทางทุกระดับ')
+
+@php
+    $rankName = fn ($r) => $r ? ($r->name_th ?: $r->name) : null;
+    $level = (int) ($currentRank?->level ?? 0);
+    $points = (int) ($user->rank_points ?? 0);
+    $num = fn ($v) => rtrim(rtrim(number_format((float) $v, 2), '0'), '.');
+@endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── Hero: ความคืบหน้ายศ ──────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            @if(\Illuminate\Support\Facades\Route::has('user.ranks.dashboard'))
-                <a href="{{ route('user.ranks.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-            @endif
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-chart-line" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ความคืบหน้ายศ</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ติดตามความคืบหน้าสู่ยศที่สูงขึ้น</div>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-rp-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.ranks.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ระดับของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Rank roadmap</div>
+            <h1 id="nvm-rp-h">เส้นทางทุกระดับ</h1>
+            <p class="nvm-ph__lead">
+                @if($nextRank && $pointsNeeded > 0)
+                    อีก {{ number_format($pointsNeeded) }} คะแนนจะถึงเกณฑ์ระดับ{{ $rankName($nextRank) }}
+                @elseif($nextRank)
+                    คะแนนถึงเกณฑ์ระดับ{{ $rankName($nextRank) }}แล้ว ทำเงื่อนไขให้ครบเพื่อเลื่อนระดับ
+                @elseif($currentRank)
+                    คุณอยู่ระดับสูงสุดแล้ว ยินดีด้วย!
+                @else
+                    เงื่อนไขและสิทธิ์ของแต่ละยศ
+                @endif
+            </p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--gold"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>{{ $rankName($currentRank) ?? 'ยังไม่มียศ' }}</span>
+                <span class="nvm-pill nvm-pill--glass"><span class="nvm-num">{{ number_format($points) }}</span> คะแนน</span>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ยศปัจจุบัน ────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div style="text-align:center; margin-bottom:22px;">
-            <div class="tp-section-h" style="justify-content:center; margin-bottom:16px;">🏅 ยศปัจจุบันของคุณ</div>
-            @if($user->currentRank)
-                <div style="display:inline-block;">
-                    <div style="display:flex; justify-content:center; margin-bottom:14px;">
-                        <x-rank-icon :rank="$user->currentRank" size="2xl" />
-                    </div>
-                    <h3 class="tp-num" style="font-size:26px; font-weight:800; margin:0 0 6px;">{{ $user->currentRank->name }}</h3>
-                    <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $user->currentRank->description ?? '' }}</p>
-                    <div style="margin-top:14px;">
-                        <span class="tp-pill tp-pill-gold" style="font-size:14px; padding:7px 18px;">ระดับ {{ $user->currentRank->level }}</span>
-                    </div>
-                </div>
-            @else
-                <div style="text-align:center; padding:24px 0;">
-                    <div style="font-size:54px;">🎯</div>
-                    <div style="font-weight:700; font-size:16px; margin-top:8px;">ยังไม่มียศ</div>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">เริ่มต้นสร้างทีมและสะสมคะแนนเพื่อรับยศแรกของคุณ</div>
-                </div>
-            @endif
-        </div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-rp-list-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">All ranks</small><h2 id="nvm-rp-list-h">ยศทั้งหมด {{ $allRanks->count() }} ระดับ</h2></div></div>
 
-        {{-- สถิติปัจจุบัน 3 ใบ --}}
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
-            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
-                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">คะแนนปัจจุบัน</div>
-                <div class="tp-num" style="font-size:28px; font-weight:800; color:#5689b8;">{{ number_format($user->rank_points ?? 0, 0) }}</div>
-            </div>
-            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
-                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">จำนวนทีม</div>
-                <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--deep1);">{{ $user->team_count ?? 0 }}</div>
-            </div>
-            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); text-align:center;">
-                <div style="font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">รายได้รวม</div>
-                <div class="tp-num" style="font-size:28px; font-weight:800; color:#5aa07e;">฿{{ number_format($user->total_commissions ?? 0, 2) }}</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── เส้นทางความก้าวหน้า ───────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:18px;">📊 เส้นทางความก้าวหน้า</div>
-
-        <div style="display:flex; flex-direction:column; gap:18px;">
-            @foreach($allRanks as $index => $rank)
+    @if($allRanks->count())
+        <ol class="nvm-rk-road nvm-rk-road--full">
+            @foreach($allRanks as $rank)
                 @php
-                    $isCurrentRank = $user->currentRank && $user->currentRank->id === $rank->id;
-                    $isAchieved = $user->currentRank && $user->currentRank->level >= $rank->level;
-                    $progress = $userProgress->firstWhere('target_rank_id', $rank->id);
-                    $progressPercentage = $progress->progress_percentage ?? 0;
-
-                    // สีกรอบตามสถานะยศ (ปัจจุบัน / ผ่านแล้ว / ยังไม่ถึง)
-                    if ($isCurrentRank) {
-                        $borderColor = 'var(--accent1)';
-                        $borderWidth = '2px';
-                    } elseif ($isAchieved) {
-                        $borderColor = '#5aa07e';
-                        $borderWidth = '1px';
-                    } else {
-                        $borderColor = 'color-mix(in srgb, var(--ink2) 22%, transparent)';
-                        $borderWidth = '1px';
-                    }
+                    $isNow = $currentRank && $currentRank->id === $rank->id;
+                    $isDone = ! $isNow && $currentRank && $level >= $rank->level;
+                    $isNext = $nextRank && $nextRank->id === $rank->id;
+                    $row = $userProgress->get($rank->id);
+                    $desc = $rank->description_th ?: $rank->description;
+                    // ยศถัดไปใช้หลอดคะแนนชุดเดียวกับหน้า "ระดับของฉัน" · ยศที่ไกลกว่านั้นใช้ผลคำนวณเงื่อนไขล่าสุด (ถ้ามี)
+                    $barPct = $isNext ? $pointsPercent : ($row ? min(100, max(0, (float) $row->progress_percentage)) : null);
                 @endphp
+                <li class="{{ $isNow ? 'is-now' : ($isDone ? 'is-done' : '') }}" @if($isNow) aria-current="step" @endif>
+                    <x-nova.rank-badge :rank="$rank" size="lg" />
+                    <div>
+                        <b>{{ $rankName($rank) }}</b>
+                        <small>ระดับ {{ $rank->level }}{{ $rank->min_points ? ' · เกณฑ์ '.number_format((int) $rank->min_points).' คะแนน' : '' }}{{ (float) $rank->commission_rate > 0 ? ' · ค่าคอม '.$num($rank->commission_rate).'%' : '' }}</small>
+                        @if($desc)<p class="nvm-desc">{{ $desc }}</p>@endif
 
-                <div style="position:relative;">
-                    {{-- เส้นเชื่อมไทม์ไลน์ --}}
-                    @if(!$loop->last)
-                        <div style="position:absolute; left:30px; top:78px; width:3px; height:100%;
-                                    background:{{ $isAchieved ? '#5aa07e' : 'color-mix(in srgb, var(--ink2) 22%, transparent)' }}; border-radius:3px;"></div>
-                    @endif
+                        @if($rank->activeRequirements->count())
+                            <ul class="nvm-rk-conds" aria-label="เงื่อนไขของระดับ{{ $rankName($rank) }}">
+                                @foreach($rank->activeRequirements as $req)
+                                    @php
+                                        $reqName = $req->name_th ?: $req->name;
+                                        $target = $num($req->target_value);
+                                        // ชื่อจาก RankSeeder มีตัวเลขในตัวอยู่แล้ว ("แนะนำ 5 คน") — ต่อท้ายเฉพาะชื่อที่ยังไม่บอกเป้า
+                                        $showTarget = (float) $req->target_value > 0 && ! str_contains($reqName, $target) && ! str_contains($reqName, number_format((float) $req->target_value));
+                                    @endphp
+                                    <li class="{{ $isNow || $isDone ? 'is-met' : '' }}">
+                                        <svg class="nvm-ico"><use href="#nvm-i-{{ $isNow || $isDone ? 'check' : 'clock' }}"/></svg>
+                                        <span>{{ $reqName }}@if($showTarget) <b class="nvm-num">{{ $target }}</b> {{ $req->unit }}@endif</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
 
-                    {{-- การ์ดยศ --}}
-                    <div style="position:relative; padding:18px; border-radius:16px; box-shadow:var(--inset-sm);
-                                border:{{ $borderWidth }} solid {{ $borderColor }};">
-                        <div style="display:flex; align-items:flex-start; gap:18px;">
-                            {{-- ไอคอนยศ --}}
-                            <div style="flex-shrink:0; position:relative; z-index:1;">
-                                <x-rank-icon :rank="$rank" size="lg" />
+                        @if(! $isNow && ! $isDone && $barPct !== null)
+                            <div class="nvm-meter">
+                                <div class="nvm-meter__row"><span>{{ $isNext ? 'คะแนนสู่ระดับนี้' : 'ความคืบหน้าล่าสุด' }}</span><b class="nvm-num">{{ number_format($barPct, 1) }}%</b></div>
+                                <div class="nvm-meter__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($barPct) }}" aria-label="ความคืบหน้าสู่ระดับ{{ $rankName($rank) }}"><i style="width: {{ $barPct }}%"></i></div>
                             </div>
-
-                            {{-- เนื้อหา --}}
-                            <div style="flex:1; min-width:0;">
-                                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px;">
-                                    <div style="min-width:0;">
-                                        <h3 style="font-size:17px; font-weight:700; margin:0; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
-                                            {{ $rank->name }}
-                                            @if($isCurrentRank)
-                                                <span class="tp-pill tp-pill-gold" style="font-size:10.5px;">ยศปัจจุบัน</span>
-                                            @elseif($isAchieved)
-                                                <span class="tp-pill" style="font-size:10.5px; color:#fff; background:#5aa07e;">✓ ผ่านแล้ว</span>
-                                            @endif
-                                        </h3>
-                                        <p style="font-size:12.5px; color:var(--ink2); margin:4px 0 0;">{{ $rank->description ?? '' }}</p>
-                                    </div>
-                                    <div style="text-align:right; flex-shrink:0;">
-                                        <div style="font-size:11px; color:var(--ink2);">ระดับ</div>
-                                        <div class="tp-num" style="font-size:22px; font-weight:800;">{{ $rank->level }}</div>
-                                    </div>
-                                </div>
-
-                                {{-- เงื่อนไข --}}
-                                @if($rank->requirements)
-                                    <div style="padding:12px 14px; border-radius:13px; box-shadow:var(--inset-sm); margin-bottom:10px;">
-                                        <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px;">เงื่อนไข:</div>
-                                        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:5px;">
-                                            @foreach($rank->requirements as $requirement)
-                                                <li style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink2);">
-                                                    <span style="color:{{ $isAchieved ? '#5aa07e' : 'var(--ink2)' }};">{{ $isAchieved ? '✅' : '○' }}</span>
-                                                    <span>{{ $requirement }}</span>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
-
-                                {{-- แถบความคืบหน้า (เฉพาะยศที่ยังไม่ผ่าน) --}}
-                                @if(!$isAchieved && $progress)
-                                    <div>
-                                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--ink2); margin-bottom:6px;">
-                                            <span>ความคืบหน้า</span>
-                                            <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($progressPercentage, 1) }}%</span>
-                                        </div>
-                                        <div style="height:12px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
-                                            <div style="height:100%; width:{{ min($progressPercentage, 100) }}%; border-radius:20px;
-                                                        background:linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width .5s ease;"></div>
-                                        </div>
-                                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--ink2); margin-top:6px;">
-                                            <span class="tp-num">{{ number_format($progress->current_points ?? 0, 0) }} คะแนน</span>
-                                            <span class="tp-num">{{ number_format($progress->target_points ?? 0, 0) }} คะแนน</span>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                {{-- สิทธิพิเศษ --}}
-                                @if($rank->benefits)
-                                    <div style="margin-top:10px; padding:11px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
-                                        <div style="font-size:12.5px; font-weight:700; color:#5689b8; margin-bottom:4px;">สิทธิพิเศษ:</div>
-                                        <div style="font-size:12.5px; color:var(--ink2);">{{ implode(', ', $rank->benefits) }}</div>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
+                        @endif
                     </div>
-                </div>
+                    @if($isNow)
+                        <span class="nvm-chip nvm-chip--gold">ยศปัจจุบัน</span>
+                    @elseif($isDone)
+                        <span class="nvm-chip nvm-chip--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ผ่านแล้ว</span>
+                    @elseif($isNext)
+                        <span class="nvm-chip nvm-chip--warn">เป้าหมายถัดไป</span>
+                    @endif
+                </li>
             @endforeach
+        </ol>
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ระบบระดับสมาชิกยังไม่เปิดใช้งาน</b>
+            เมื่อเปิดแล้ว เงื่อนไขของแต่ละยศจะแสดงที่นี่
         </div>
-    </div>
+    @endif
+</section>
 
-    {{-- ── เคล็ดลับเพื่อเลื่อนยศ ──────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">💡 เคล็ดลับเพื่อเลื่อนยศ</div>
-        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--ink2);">
-            <li style="display:flex; gap:10px; align-items:flex-start;">
-                <span>✅</span>
-                <span><strong style="color:var(--ink);">สร้างทีมใหม่:</strong> เชิญสมาชิกใหม่เพื่อเพิ่มทีมและสร้างรายได้</span>
-            </li>
-            <li style="display:flex; gap:10px; align-items:flex-start;">
-                <span>✅</span>
-                <span><strong style="color:var(--ink);">รักษาทีมที่มีอยู่:</strong> ช่วยเหลือทีมให้ประสบความสำเร็จ</span>
-            </li>
-            <li style="display:flex; gap:10px; align-items:flex-start;">
-                <span>✅</span>
-                <span><strong style="color:var(--ink);">สะสม PV:</strong> ซื้อสินค้าและบริการเพื่อสะสมคะแนน</span>
-            </li>
-            <li style="display:flex; gap:10px; align-items:flex-start;">
-                <span>✅</span>
-                <span><strong style="color:var(--ink);">เรียนรู้ตลอดเวลา:</strong> พัฒนาทักษะการขายและการสร้างทีม</span>
-            </li>
-        </ul>
-    </div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-rp-tip-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Tips</small><h2 id="nvm-rp-tip-h">เคล็ดลับเพื่อเลื่อนยศ</h2></div></div>
+    <ol class="nvm-steps nvm-rk-tips">
+        <li><span><b>สร้างทีมใหม่</b> เชิญสมาชิกใหม่เพื่อขยายทีมและสร้างรายได้</span></li>
+        <li><span><b>รักษาทีมที่มีอยู่</b> ช่วยเหลือทีมให้ประสบความสำเร็จ</span></li>
+        <li><span><b>สะสม PV</b> ซื้อสินค้าและบริการเพื่อสะสมคะแนน</span></li>
+        <li><span><b>เรียนรู้ตลอดเวลา</b> พัฒนาทักษะการขายและการสร้างทีม</span></li>
+    </ol>
+</section>
+
 </div>
 @endsection
