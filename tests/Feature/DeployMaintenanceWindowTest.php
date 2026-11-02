@@ -36,7 +36,6 @@ class DeployMaintenanceWindowTest extends TestCase
         'api/webhooks/*',
         'api/v1/sms-payment/*',
         'api/v1/juntra/server/*',
-        'payment/callback/*',
     ];
 
     protected function setUp(): void
@@ -92,7 +91,7 @@ class DeployMaintenanceWindowTest extends TestCase
         $next = fn () => new Response('passed');
 
         foreach (['/webhook/line/fortune', '/webhook/facebook', '/api/webhook/line', '/api/webhook/bot/facebook',
-            '/api/v1/sms-payment/notify', '/api/v1/juntra/server/bills', '/payment/callback/123'] as $uri) {
+            '/api/v1/sms-payment/notify', '/api/v1/juntra/server/bills'] as $uri) {
             $this->assertSame('passed', $middleware->handle(Request::create($uri, 'POST'), $next)->getContent(), "{$uri} ต้องผ่านระหว่างปิดซ่อม");
         }
 

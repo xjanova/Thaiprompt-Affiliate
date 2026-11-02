@@ -32,6 +32,5 @@ class PreventRequestsDuringMaintenance extends Middleware
         'api/webhooks/*',         // api.php: GitHub release
         'api/v1/sms-payment/*',   // แอป SMS Checker แจ้งเงินเข้า
         'api/v1/juntra/server/*', // เซิร์ฟเวอร์ จันทรา.online (server-to-server)
-        'payment/callback/*',     // web.php: payment gateway callback
     ];
 }

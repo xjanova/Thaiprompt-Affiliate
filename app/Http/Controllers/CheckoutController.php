@@ -804,27 +804,6 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Payment callback (for gateway webhooks)
-     */
-    public function paymentCallback(Request $request, $transactionId)
-    {
-        try {
-            $verified = $this->paymentService->verifyPayment($transactionId, $request->all());
-
-            if ($verified) {
-                return response()->json(['success' => true]);
-            }
-
-            return response()->json(['success' => false, 'message' => 'Verification failed'], 400);
-
-        } catch (\Exception $e) {
-            \Log::error('Payment callback failed: '.$e->getMessage());
-
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
      * 💳 กลับมาจากหน้าจ่ายบัตรของ Stripe (success_url)
      * ยืนยันการจ่ายแบบ synchronous (retrieve session) แล้ว complete order ทันที
      */

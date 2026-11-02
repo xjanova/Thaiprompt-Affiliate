@@ -512,8 +512,11 @@ Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function
     Route::get('/stripe/{orderId}/cancel', [\App\Http\Controllers\CheckoutController::class, 'stripeCancel'])->name('stripe.cancel');
 });
 
-// Payment Callback Routes (for webhooks - no auth required)
-Route::post('/payment/callback/{transactionId}', [\App\Http\Controllers\CheckoutController::class, 'paymentCallback'])->name('payment.callback');
+// ⛔ (2026-11-03) ถอด POST /payment/callback/{transactionId} ออกแล้ว
+//   route นี้ส่ง $request->all() ของผู้ใช้เข้า provider->verify() ตรงๆ ไม่เช็คเจ้าของ/ลายเซ็น
+//   ผู้ซื้อที่ login อยู่ส่ง {status:success, approved_by:x} → บิลโอน/COD กลายเป็น "จ่ายแล้ว" โดยไม่มีเงินเข้า
+//   gateway จริงยิงเข้า /api/webhook/* (มี webhook.verify ตรวจลายเซ็น) · สลิปโอนอนุมัติผ่านปุ่ม admin เท่านั้น
+//   ห้ามเพิ่มกลับ — ดู tests/Feature/Security/PaymentCallbackSelfApproveTest.php
 
 // Shipping Addresses Routes (Authenticated)
 Route::middleware('auth')->prefix('shipping-addresses')->name('shipping-addresses.')->group(function () {

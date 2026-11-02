@@ -307,7 +307,6 @@ class ThreatIpBlockingTest extends TestCase
         $this->assertSame(200, $this->statusFor('8.8.8.8', '/webhook/line/abc'));
         $this->assertSame(200, $this->statusFor('8.8.8.8', '/api/webhook/payment'));
         $this->assertSame(200, $this->statusFor('8.8.8.8', '/api/v1/sms-payment/notify'));
-        $this->assertSame(200, $this->statusFor('8.8.8.8', '/payment/callback/stripe'));
         $this->assertSame(403, $this->statusFor('8.8.8.8', '/login'));
 
         BlockedIp::create(['ip_address' => '8.8.8.8', 'type' => 'blacklist', 'ip_type' => 'single', 'is_active' => true]);
