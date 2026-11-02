@@ -274,6 +274,56 @@ class NovaTeamRecruitPagesTest extends TestCase
         $response->assertViewHas('activeTab', 'processed');
     }
 
+    public function test_team_transfer_approvals_reject_modal_clears_reason_between_requests(): void
+    {
+        [, $oldLeader] = $this->transferWorld();
+
+        $html = $this->actingAs($oldLeader)->get(route('user.team-transfer.approvals'))->assertOk()->getContent();
+
+        // textarea เดียวใช้ร่วมกัน → ต้องผูกกับ reason และล้างค่าเมื่อเปิดหน้าต่างให้คำขอใหม่/ปิด
+        $this->assertStringContainsString('x-model="reason"', $html);
+        $this->assertStringContainsString("reason = ''; reject = ", $html);
+        $this->assertStringContainsString("@click.self=\"reject = null; reason = ''\"", $html);
+    }
+
+    public function test_team_transfer_reject_validation_error_is_visible_outside_modal(): void
+    {
+        [, $oldLeader, , $request] = $this->transferWorld();
+
+        $this->actingAs($oldLeader)
+            ->from(route('user.team-transfer.approvals'))
+            ->post(route('user.team-transfer.reject', $request), ['rejection_reason' => ''])
+            ->assertRedirect(route('user.team-transfer.approvals'))
+            ->assertSessionHasErrors('rejection_reason');
+
+        $html = $this->actingAs($oldLeader)->followingRedirects()
+            ->from(route('user.team-transfer.approvals'))
+            ->post(route('user.team-transfer.reject', $request), ['rejection_reason' => ''])
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('ปฏิเสธคำขอไม่สำเร็จ', $html);
+        // ข้อความต้องอยู่ก่อนหน้าต่าง (นอก x-show="reject")
+        $alertPos = strpos($html, 'ปฏิเสธคำขอไม่สำเร็จ');
+        $modalPos = strpos($html, 'x-show="reject"');
+        $this->assertNotFalse($modalPos);
+        $this->assertLessThan($modalPos, $alertPos);
+        $this->assertSame(MlmTeamTransferRequest::STATUS_PENDING, $request->fresh()->status);
+    }
+
+    public function test_forms_with_sending_lock_reset_after_back_navigation(): void
+    {
+        $leader = $this->member();
+        $leaderMember = $this->mlm($leader);
+        $user = $this->member();
+        $this->mlm($user, ['unilevel_sponsor_id' => $leaderMember->id]);
+
+        foreach (['user.team-transfer.create', 'user.marketing.recruit.index', 'user.prospects.create'] as $name) {
+            $html = $this->actingAs($user)->get(route($name))->assertOk()->getContent();
+            $this->assertStringContainsString('@pageshow.window="if ($event.persisted) sending = false"', $html, $name);
+        }
+    }
+
     // ── หน้าแนะนำสมาชิก (Recruit) ───────────────────────────
 
     public function test_recruit_index_keeps_form_fields(): void
@@ -512,6 +562,54 @@ class NovaTeamRecruitPagesTest extends TestCase
         $this->assertTrue($fresh->locked_until->isFuture());
         // เปิดหน้าดูแล้วต้องยังไม่กลับเป็นหมดอายุ (isLocked() เดิมเห็น locked_until เก่า)
         $this->assertTrue($fresh->isLocked());
+    }
+
+    public function test_prospects_renew_follows_global_lock_settings(): void
+    {
+        // แอดมินปิดการล็อกผู้มุ่งหวัง + ตั้งเวลา 48 ชม. → ต่ออายุแล้วต้องไม่ล็อก และใช้เวลาตามที่ตั้ง
+        \Illuminate\Support\Facades\DB::table('mlm_global_settings')->insert([
+            'key' => 'prospect_test',
+            'enable_prospect_lock' => false,
+            'prospect_lock_duration_hours' => 48,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user = $this->member();
+        $this->mlm($user);
+        $prospect = $this->prospect($user, [
+            'status' => 'expired',
+            'clicked_at' => now()->subDays(3),
+            'is_locked' => true,
+            'locked_until' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)->post(route('user.prospects.renew', $prospect->id))
+            ->assertRedirect(route('user.prospects.show', $prospect->id));
+
+        $fresh = $prospect->fresh();
+        $this->assertSame('pending', $fresh->status);
+        $this->assertFalse((bool) $fresh->is_locked);
+        $this->assertFalse($fresh->isExpired());
+        $this->assertEqualsWithDelta(now()->addHours(48)->timestamp, $fresh->locked_until->timestamp, 120);
+    }
+
+    public function test_prospects_renew_uses_default_24h_lock_without_settings(): void
+    {
+        $user = $this->member();
+        $this->mlm($user);
+        $prospect = $this->prospect($user, [
+            'status' => 'expired',
+            'clicked_at' => now()->subDays(3),
+            'is_locked' => true,
+            'locked_until' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)->post(route('user.prospects.renew', $prospect->id));
+
+        $fresh = $prospect->fresh();
+        $this->assertTrue((bool) $fresh->is_locked);
+        $this->assertEqualsWithDelta(now()->addHours(24)->timestamp, $fresh->locked_until->timestamp, 120);
     }
 
     public function test_prospects_resend_records_follow_up_time(): void

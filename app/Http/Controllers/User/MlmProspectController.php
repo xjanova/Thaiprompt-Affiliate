@@ -184,11 +184,20 @@ class MlmProspectController extends Controller
 
         // 🐛 (2026-11-02) เดิมเขียน expires_at ซึ่งไม่มีคอลัมน์นี้ (ไม่อยู่ใน fillable → ถูกทิ้งเงียบ)
         //    ลิงก์ที่ล็อกหมดเวลาแล้วจึงกลับเป็น "หมดอายุ" ทันทีที่เปิดดู (isLocked() เห็น locked_until เก่า)
-        //    ตอนนี้: เคยมีคนกดลิงก์แล้ว → ต่อเวลาล็อกอีก 7 วัน · ยังไม่เคยมีใครกด → ปลดล็อกรอคนกดใหม่
+        //    ตอนนี้: เคยมีคนกดลิงก์แล้ว → ต่อเวลาล็อกตามการตั้งค่ากลาง (เหมือนตอนคลิกครั้งแรกใน MlmProspectService)
+        //    ยังไม่เคยมีใครกด → ปลดล็อกรอคนกดใหม่
+        //    ⚙️ แอดมินปิดการล็อกผู้มุ่งหวัง (enable_prospect_lock = false) → ไม่ล็อก แต่ยังตั้งเวลาหมดอายุใหม่ให้ลิงก์
+        $globalSettings = \App\Models\MlmGlobalSetting::first();
+        $lockEnabled = (bool) ($globalSettings->enable_prospect_lock ?? true);
+        $lockHours = (int) ($globalSettings->prospect_lock_duration_hours ?? 24);
+        if ($lockHours <= 0) {
+            $lockHours = 24;
+        }
+
         $prospect->update([
             'status' => 'pending',
-            'is_locked' => (bool) $prospect->clicked_at,
-            'locked_until' => $prospect->clicked_at ? now()->addDays(7) : null,
+            'is_locked' => $prospect->clicked_at ? $lockEnabled : false,
+            'locked_until' => $prospect->clicked_at ? now()->addHours($lockHours) : null,
         ]);
 
         return redirect()->route('user.prospects.show', $id)

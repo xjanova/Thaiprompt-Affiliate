@@ -42,7 +42,7 @@
         <section class="nvm-card nvm-box" aria-labelledby="nvm-ppc-go-h">
             <div class="nvm-sec-h"><div><small class="nvm-latin">Ready</small><h2 id="nvm-ppc-go-h">พร้อมเริ่มต้นแล้วใช่ไหม?</h2></div></div>
             <p class="nvm-desc">กดปุ่มด้านล่าง ระบบจะสร้างลิงก์เชิญพิเศษพร้อม QR Code ให้ทันที แล้วพาไปหน้าแชร์</p>
-            <form method="POST" action="{{ route('user.prospects.store') }}" class="nvm-gap-t" x-data="{ sending: false }" @submit="sending = true">
+            <form method="POST" action="{{ route('user.prospects.store') }}" class="nvm-gap-t" x-data="{ sending: false }" @submit="sending = true" @pageshow.window="if ($event.persisted) sending = false">
                 @csrf
                 <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="sending"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg><span x-text="sending ? 'กำลังสร้าง…' : 'สร้างลิงก์เชิญเลย'">สร้างลิงก์เชิญเลย</span></button>
             </form>

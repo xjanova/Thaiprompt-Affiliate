@@ -42,7 +42,7 @@
         {{-- ค่าเริ่มต้นส่งผ่าน @js (ปลอดภัยกับเครื่องหมายคำพูด/ขึ้นบรรทัดใหม่ในเหตุผล) --}}
         <form method="POST" action="{{ route('user.team-transfer.store') }}" class="nvm-form"
               x-data="{ code: @js((string) old('new_sponsor_code', '')), reason: @js((string) old('reason', '')), sending: false }"
-              @submit="sending = true">
+              @submit="sending = true" @pageshow.window="if ($event.persisted) sending = false">
             @csrf
 
             <div class="nvm-field">

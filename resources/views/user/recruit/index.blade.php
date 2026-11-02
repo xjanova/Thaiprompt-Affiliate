@@ -52,14 +52,14 @@
     <div class="nvm-mini"><small>การเข้าชม</small><b class="nvm-num">{{ number_format($stats['total_views']) }}</b><small>+{{ number_format($stats['views_last_7_days']) }} ใน 7 วัน</small></div>
     <div class="nvm-mini"><small>ผู้มุ่งหวัง</small><b class="nvm-num is-gold">{{ number_format($stats['total_leads']) }}</b><small>+{{ number_format($stats['leads_last_7_days']) }} ใน 7 วัน</small></div>
     <div class="nvm-mini"><small>สมาชิกใหม่</small><b class="nvm-num is-in">{{ number_format($stats['total_conversions']) }}</b><small>คนสมัครสำเร็จ</small></div>
-    <div class="nvm-mini"><small>อัตราสำเร็จ</small><b class="nvm-num is-info">{{ number_format((float) $stats['conversion_rate'], 1) }}%</b><small>Conversion rate</small></div>
+    <div class="nvm-mini"><small>อัตราสำเร็จ</small><b class="nvm-num is-info">{{ number_format((float) $stats['conversion_rate'], 1) }}%</b><small>สมัครต่อผู้เข้าชม</small></div>
 </section>
 
 <div class="nvm-split">
     <section class="nvm-card nvm-box" aria-labelledby="nvm-rc-form-h">
         <div class="nvm-sec-h"><div><small class="nvm-latin">Your details</small><h2 id="nvm-rc-form-h">ข้อมูลที่แสดงบนหน้า Recruit</h2></div></div>
 
-        <form action="{{ route('user.marketing.recruit.update') }}" method="POST" enctype="multipart/form-data" class="nvm-form" x-data="{ sending: false }" @submit="sending = true">
+        <form action="{{ route('user.marketing.recruit.update') }}" method="POST" enctype="multipart/form-data" class="nvm-form" x-data="{ sending: false }" @submit="sending = true" @pageshow.window="if ($event.persisted) sending = false">
             @csrf
             @method('PUT')
 

@@ -23,7 +23,7 @@
 @endphp
 
 @section('content')
-<div class="nvm-stack" x-data="{ tab: @js($activeTab ?? 'pending'), reject: null }" @keydown.escape.window="reject = null">
+<div class="nvm-stack" x-data="{ tab: @js($activeTab ?? 'pending'), reject: null, reason: '' }" @keydown.escape.window="reject = null; reason = ''">
 
 <section class="nvm-ph" aria-labelledby="nvm-tra-h">
     <div class="nvm-ph__in">
@@ -46,6 +46,14 @@
         <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
     </section>
 @endif
+
+{{-- ข้อผิดพลาดของเหตุผลปฏิเสธต้องอยู่นอกหน้าต่าง — หลัง redirect หน้าต่างเริ่มแบบปิดอยู่ จึงมองไม่เห็นถ้าอยู่ข้างใน --}}
+@error('rejection_reason')
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ปฏิเสธคำขอไม่สำเร็จ</b><p>{{ $message }}</p></div>
+    </section>
+@enderror
 
 <section class="nvm-card nvm-box" aria-label="คำขอย้ายทีม">
     <div class="nvm-tabs nvm-tr-tabs" role="tablist">
@@ -89,7 +97,7 @@
                                 @csrf
                                 <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>อนุมัติ</button>
                             </form>
-                            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="reject = @js(['id' => $request->id, 'name' => $who, 'action' => route('user.team-transfer.reject', $request)])"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ปฏิเสธ</button>
+                            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="reason = ''; reject = @js(['id' => $request->id, 'name' => $who, 'action' => route('user.team-transfer.reject', $request)])"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ปฏิเสธ</button>
                         </div>
                     </article>
                 @endforeach
@@ -140,8 +148,9 @@
     </div>
 </section>
 
-{{-- หน้าต่างกรอกเหตุผลปฏิเสธ — ฟอร์มเดียวใช้ร่วมกันทุกคำขอ (action มาจากปุ่มที่กด) --}}
-<div class="nvm-modal" x-show="reject" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-tra-rej-h" @click.self="reject = null">
+{{-- หน้าต่างกรอกเหตุผลปฏิเสธ — ฟอร์มเดียวใช้ร่วมกันทุกคำขอ (action มาจากปุ่มที่กด)
+     ล้างเหตุผล (reason) ทุกครั้งที่เปิด/ปิด ไม่ให้เหตุผลที่พิมพ์ค้างของคนหนึ่งไปติดกับคำขอของอีกคน --}}
+<div class="nvm-modal" x-show="reject" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-tra-rej-h" @click.self="reject = null; reason = ''">
     <div class="nvm-card nvm-modal__box nvm-tr-modal">
         <h2 id="nvm-tra-rej-h">ปฏิเสธคำขอ</h2>
         <p class="nvm-desc" x-text="reject ? 'คำขอย้ายทีมของ ' + reject.name : ''"></p>
@@ -149,12 +158,11 @@
             @csrf
             <div class="nvm-field">
                 <label class="nvm-label" for="rejection_reason">เหตุผลที่ปฏิเสธ <em>*</em></label>
-                <textarea id="rejection_reason" name="rejection_reason" rows="4" required maxlength="500" class="nvm-input" placeholder="ระบุเหตุผลที่ปฏิเสธคำขอนี้"></textarea>
+                <textarea id="rejection_reason" name="rejection_reason" x-model="reason" rows="4" required maxlength="500" class="nvm-input" placeholder="ระบุเหตุผลที่ปฏิเสธคำขอนี้"></textarea>
                 <span class="nvm-help">สมาชิกจะเห็นเหตุผลที่คุณระบุ</span>
-                @error('rejection_reason')<span class="nvm-err">{{ $message }}</span>@enderror
             </div>
             <div class="nvm-filter__btns">
-                <button type="button" class="nvm-btn nvm-btn--line" @click="reject = null">ยกเลิก</button>
+                <button type="button" class="nvm-btn nvm-btn--line" @click="reject = null; reason = ''">ยกเลิก</button>
                 <button type="submit" class="nvm-btn nvm-btn--bad">ยืนยันปฏิเสธ</button>
             </div>
         </form>
