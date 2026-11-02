@@ -84,8 +84,10 @@ class CryptoWalletController extends Controller
     public function walletManagement(Request $request)
     {
         $user = $request->user();
+        // CryptoWallet ไม่มี relation balances (ไม่มีตาราง crypto_balances) — เดิม eager load ตัวนี้ทำหน้าล่ม 500
+        // ยอดคงเหลือคำนวณจาก cryptoAddresses ผ่าน getAllBalances() ด้านล่างแทน
         $wallets = $user->cryptoWallets()
-            ->with(['cryptoAddresses.currency', 'balances'])
+            ->with(['cryptoAddresses.currency'])
             ->orderBy('is_default', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -219,17 +221,31 @@ class CryptoWalletController extends Controller
             ->first();
 
         if (! $depositAddress) {
-            // Generate new deposit address
-            $cryptoAddress = $this->walletService->generateAddressForCurrency($wallet, $currency);
-            $depositAddress = $cryptoAddress->wallet->depositAddresses()
+            // สร้างที่อยู่ฝากใหม่ (generateAddressForCurrency สร้างทั้ง crypto_addresses และ crypto_deposit_addresses)
+            // เดิมเรียก $cryptoAddress->wallet ซึ่งไม่มี relation ชื่อนี้ (ชื่อจริง cryptoWallet) → 500 ทุกครั้งที่เปิดเหรียญใหม่ครั้งแรก
+            $this->walletService->generateAddressForCurrency($wallet, $currency);
+            $depositAddress = $wallet->depositAddresses()
                 ->where('crypto_currency_id', $currency->id)
+                ->latest('id')
                 ->first();
         }
+
+        // ที่อยู่ที่ระบบสุ่มขึ้นเอง (ไม่มี private key และไม่ได้นำเข้าจากกระเป๋าภายนอก) รับเหรียญจริงไม่ได้
+        // โอนเข้าไปแล้วกู้คืนไม่ได้ — แสดงที่อยู่ให้ลูกค้าเฉพาะเมื่อระบบถือกุญแจของที่อยู่นั้นจริง (แนวเดียวกับ TPIXWalletController::deposit)
+        $sourceAddress = $depositAddress
+            ? $wallet->cryptoAddresses()
+                ->where('crypto_currency_id', $currency->id)
+                ->where('address', $depositAddress->address)
+                ->first()
+            : null;
+        $canReceive = $sourceAddress !== null
+            && ($sourceAddress->is_imported || ! empty($sourceAddress->encrypted_private_key));
 
         return view('user.crypto-wallet.deposit-currency', compact(
             'wallet',
             'currency',
-            'depositAddress'
+            'depositAddress',
+            'canReceive'
         ));
     }
 
@@ -326,7 +342,7 @@ class CryptoWalletController extends Controller
         $user = $request->user();
 
         $withdrawals = $user->cryptoWithdrawalRequests()
-            ->with(['currency', 'cryptoWallet'])
+            ->with(['currency', 'cryptoWallet', 'cryptoTransaction.currency'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -360,19 +376,20 @@ class CryptoWalletController extends Controller
 
         $query = $user->cryptoTransactions()->with(['currency', 'cryptoWallet']);
 
-        // Filters
-        if ($request->has('type')) {
+        // ตัวกรอง — ใช้ filled() ไม่ใช่ has(): ฟอร์มส่ง type= ว่างมาเมื่อเลือก "ทั้งหมด"
+        // has() เดิมจึงกรอง type = '' แล้วไม่เจออะไรเลย
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        if ($request->has('currency')) {
+        if ($request->filled('currency')) {
             $currency = CryptoCurrency::where('code', $request->currency)->first();
             if ($currency) {
                 $query->where('crypto_currency_id', $currency->id);
             }
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
@@ -544,18 +561,12 @@ class CryptoWalletController extends Controller
         // Get balances with detailed metrics
         $balances = $this->walletService->getAllBalances($wallet);
 
-        // Calculate total portfolio value
+        // มูลค่ารวมจากยอดจริง — ระบบยังไม่เก็บต้นทุนการซื้อ จึงไม่แสดงกำไร/ขาดทุน
+        // (เดิมสมมติต้นทุน = มูลค่า × 0.85 แล้วโชว์ "กำไร" ปลอมให้สมาชิกเห็น)
         $totalValueTHB = 0;
-        $totalInvested = 0;
         foreach ($balances as $balance) {
             $totalValueTHB += $balance['balance_thb'];
-            // In future, track initial investment amounts
-            $totalInvested += $balance['balance_thb'] * 0.85; // Temporary mock
         }
-
-        // Calculate P&L
-        $totalProfitLoss = $totalValueTHB - $totalInvested;
-        $totalProfitLossPercent = $totalInvested > 0 ? (($totalProfitLoss / $totalInvested) * 100) : 0;
 
         // Get recent transactions for activity feed
         $recentTransactions = $user->cryptoTransactions()
@@ -564,41 +575,12 @@ class CryptoWalletController extends Controller
             ->limit(20)
             ->get();
 
-        // Prepare chart data for performance
-        $performanceData = $this->getPortfolioPerformanceData($user, 30); // Last 30 days
-
+        // (เดิมมี getPortfolioPerformanceData() สุ่มตัวเลขกราฟผลตอบแทนด้วย rand() — ลบออก ระบบยังไม่เก็บมูลค่าย้อนหลัง)
         return view('user.crypto-wallet.portfolio', compact(
             'wallet',
             'balances',
             'totalValueTHB',
-            'totalInvested',
-            'totalProfitLoss',
-            'totalProfitLossPercent',
-            'recentTransactions',
-            'performanceData'
+            'recentTransactions'
         ));
-    }
-
-    /**
-     * Get portfolio performance data for charts
-     */
-    protected function getPortfolioPerformanceData($user, $days = 30)
-    {
-        // This would fetch historical portfolio values
-        // For now, return mock data structure
-        $data = [];
-        $baseValue = 100000;
-
-        for ($i = $days; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $value = $baseValue + (rand(-5000, 15000));
-            $data[] = [
-                'date' => $date->format('Y-m-d'),
-                'value' => $value,
-            ];
-            $baseValue = $value;
-        }
-
-        return $data;
     }
 }

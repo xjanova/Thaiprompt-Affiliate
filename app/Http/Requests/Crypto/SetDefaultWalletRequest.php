@@ -11,8 +11,9 @@ class SetDefaultWalletRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Check if the wallet belongs to the user
-        $walletId = $this->route('wallet') ?? $this->wallet_id;
+        // กระเป๋าต้องเป็นของสมาชิกคนนี้และยังใช้งานได้
+        // route จริงคือ /wallet/{id}/set-default — เดิมอ่าน route('wallet') ที่ไม่มีอยู่ จึงได้ 403 ทุกครั้ง
+        $walletId = $this->route('id') ?? $this->route('wallet') ?? $this->wallet_id;
 
         if (! $walletId) {
             return false;
@@ -28,12 +29,9 @@ class SetDefaultWalletRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'wallet_id' => [
-                'required',
-                'exists:crypto_wallets,id',
-            ],
-        ];
+        // รหัสกระเป๋ามากับ URL และตรวจความเป็นเจ้าของแล้วใน authorize() — ไม่ต้องส่ง wallet_id ในฟอร์มซ้ำ
+        // (เดิมบังคับ wallet_id ที่ฟอร์มไม่เคยส่ง ปุ่ม "ตั้งเป็นกระเป๋าหลัก" จึงใช้ไม่ได้)
+        return [];
     }
 
     /**

@@ -212,16 +212,16 @@ class CryptoExchangeController extends Controller
                 'toCryptoWallet',
             ]);
 
-        // Filters
-        if ($request->has('type')) {
+        // ตัวกรอง — filled() แทน has(): เลือก "ทั้งหมด" ฟอร์มส่งค่าว่างมา has() เดิมกรองค่าว่างจนไม่เจอรายการ
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('currency')) {
+        if ($request->filled('currency')) {
             $query->currency($request->currency);
         }
 

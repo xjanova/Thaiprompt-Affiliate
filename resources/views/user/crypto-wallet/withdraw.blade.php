@@ -1,189 +1,193 @@
-@extends('layouts.user-v4')
+{{--
+    ถอนเหรียญคริปโต (ธีมโนวาเต็ม)
+    CryptoWalletController::withdraw → $wallet · $currencies (เปิดถอนอยู่) · $balances (คีย์เป็นรหัสเหรียญ)
+    POST user.crypto-wallet.withdraw.submit — WithdrawCryptoRequest ต้องการ:
+      currency_code · network (bitcoin/ethereum/bsc/polygon/tron) · to_address · amount · pin (ตัวเลข 6 หลัก) · accept_terms
+    เดิมฟอร์มส่ง currency_id ไม่มี network/accept_terms และให้ PIN 4-6 หลัก → ส่งคำขอไม่ผ่านการตรวจทุกครั้ง (แก้แล้ว)
+    route มี turnstile:crypto_withdrawal และ two-factor:withdrawal
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ถอนเหรียญคริปโต')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/crypto-wallet.css') }}?v={{ filemtime(public_path('theme-nova/member/crypto-wallet.css')) }}">@endpush
+
+@php
+    // ข้อมูลเหรียญที่ Alpine ใช้คำนวณค่าธรรมเนียม/ยอดสุทธิ (ตัวเลขทั้งหมดมาจากตาราง crypto_currencies)
+    $currencyData = $currencies->mapWithKeys(fn ($c) => [$c->code => [
+        'code' => $c->code,
+        'network' => $c->network,
+        'min' => (float) $c->min_withdrawal,
+        'max' => $c->max_withdrawal !== null ? (float) $c->max_withdrawal : null,
+        'fee' => (float) $c->withdrawal_fee,
+        'balance' => (float) ($balances[$c->code]['balance'] ?? 0),
+    ]])->all();
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:center; gap:14px;">
-                <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--deep1);"><i class="fas fa-arrow-up"></i></span>
-                <div>
-                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">📤 ถอนเหรียญคริปโต</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:2px;">โอนเหรียญไปยังกระเป๋าภายนอก</div>
-                </div>
-            </div>
-            <a href="{{ route('user.crypto-wallet.index') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับหน้าหลัก</span>
-            </a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-cwwd-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.crypto-wallet.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กระเป๋าคริปโต</a>
+            <div class="nvm-eyebrow nvm-latin">Withdraw crypto</div>
+            <h1 id="nvm-cwwd-h">ถอนเหรียญคริปโต</h1>
+            <p class="nvm-ph__lead">โอนเหรียญไปยังกระเป๋าภายนอก ทีมงานตรวจคำขอก่อนส่งขึ้นบล็อกเชน</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/withdraw.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #5aa07e 12%, transparent); border:1px solid color-mix(in srgb, #5aa07e 30%, transparent); color:var(--ink); font-size:14px;">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 18px; background:color-mix(in srgb, #d9534f 10%, transparent); border:1px solid color-mix(in srgb, #d9534f 30%, transparent); color:#d9534f; font-size:14px;">{{ session('error') }}</div>
-    @endif
+@include('user.crypto-wallet.partials.flash', ['errorTitle' => 'ส่งคำขอถอนไม่สำเร็จ'])
 
-    {{-- ── ยอดคงเหลือ ─────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <h3 style="font-weight:800; color:var(--ink); margin:0 0 14px; font-size:15px;">ยอดคงเหลือของคุณ</h3>
-        @if(count($balances) > 0)
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                @foreach($balances as $code => $balance)
-                    @php $wIconPath = public_path('icons/cryptocurrency/' . strtolower($code) . '.svg'); @endphp
-                    <div class="tp-card" style="padding:13px 15px; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                        <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-                            @if(file_exists($wIconPath))
-                                <img src="{{ asset('icons/cryptocurrency/' . strtolower($code) . '.svg') }}" alt="{{ $code }}" style="width:40px; height:40px; flex-shrink:0;">
-                            @else
-                                <span class="tp-tile" style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--deep1); flex-shrink:0;">{{ substr($code, 0, 1) }}</span>
-                            @endif
-                            <div>
-                                <div style="font-weight:700; color:var(--ink); font-size:14px;">{{ $balance['currency']->name }}</div>
-                                <div style="font-size:12.5px; color:var(--ink2);">{{ $code }}</div>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div class="tp-num" style="font-weight:800; color:var(--ink); font-size:14px;">{{ number_format($balance['balance'], 8) }}</div>
-                            <div style="font-size:12px; color:var(--ink2);">≈ ฿{{ number_format($balance['balance_thb'], 2) }}</div>
-                        </div>
-                    </div>
-                @endforeach
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-cwwd-f-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Request</small><h2 id="nvm-cwwd-f-h">แบบฟอร์มถอนเหรียญ</h2></div></div>
+
+        @if($currencies->isEmpty())
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีสกุลเงินที่เปิดให้ถอน</b>
+                ทีมงานจะเปิดให้ถอนเร็วๆ นี้
             </div>
         @else
-            <div style="text-align:center; padding:24px 0;">
-                <div style="font-size:44px; margin-bottom:10px;">💰</div>
-                <p style="color:var(--ink2); font-size:14px; margin:0;">ไม่มียอดคงเหลือ</p>
-            </div>
-        @endif
-    </div>
+            <form method="POST" action="{{ route('user.crypto-wallet.withdraw.submit') }}" class="nvm-form"
+                  x-data="nvmCwWithdraw({ coins: {{ \Illuminate\Support\Js::from($currencyData) }}, code: @js((string) old('currency_code', '')), amount: @js((string) old('amount', '')) })"
+                  @submit="busy = true" @pageshow.window="busy = false">
+                @csrf
+                <input type="hidden" name="network" :value="coin ? coin.network : ''">
 
-    {{-- ── ฟอร์มถอน (Alpine — preserve logic) ─────────────────── --}}
-    <div class="tp-card" style="padding:26px 24px;">
-        <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 20px;">ฟอร์มถอนเหรียญ</h3>
-
-        <form action="{{ route('user.crypto-wallet.withdraw.submit') }}" method="POST" x-data="{ selectedCurrency: null, amount: '', fee: 0, netAmount: 0 }">
-            @csrf
-
-            {{-- เลือกสกุลเงิน --}}
-            <div style="margin-bottom:18px;">
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">เลือกสกุลเงิน</label>
-                <select name="currency_id" required
-                        @change="selectedCurrency = $event.target.options[$event.target.selectedIndex].dataset.currency ? JSON.parse($event.target.options[$event.target.selectedIndex].dataset.currency) : null; fee = selectedCurrency ? parseFloat(selectedCurrency.withdrawal_fee) : 0; calculateNet()"
-                        style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;">
-                    <option value="">-- เลือกสกุลเงิน --</option>
-                    @foreach($currencies as $curr)
-                        @php
-                            // สร้าง JSON สำหรับ data attribute (แทน @json เพื่อเลี่ยง nested-directive edge case)
-                            $currData = json_encode([
-                                'code' => $curr->code,
-                                'min_withdrawal' => $curr->min_withdrawal,
-                                'max_withdrawal' => $curr->max_withdrawal,
-                                'withdrawal_fee' => $curr->withdrawal_fee,
-                                'network' => $curr->network,
-                            ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-                        @endphp
-                        <option value="{{ $curr->id }}" data-currency='{!! $currData !!}'>
-                            {{ $curr->code }} ({{ strtoupper($curr->network) }})
-                            @if(isset($balances[$curr->code]))
-                                - มี {{ number_format($balances[$curr->code]['balance'], 8) }}
-                            @endif
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- ที่อยู่ปลายทาง --}}
-            <div style="margin-bottom:18px;">
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">ที่อยู่ปลายทาง (Destination Address)</label>
-                <input type="text" name="to_address" required
-                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-family:monospace; font-size:13px;"
-                       placeholder="0x...">
-                <p style="font-size:11.5px; color:var(--ink2); margin:7px 0 0;">กรุณาตรวจสอบที่อยู่ให้ถูกต้อง การถอนไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</p>
-            </div>
-
-            {{-- จำนวน --}}
-            <div style="margin-bottom:18px;">
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">จำนวนที่ต้องการถอน</label>
-                <input type="number" name="amount" step="0.00000001" required x-model="amount" @input="calculateNet()"
-                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
-                       placeholder="0.00000000">
-                <template x-if="selectedCurrency">
-                    <div style="margin-top:8px; font-size:12.5px; color:var(--ink2);">
-                        <div>ขั้นต่ำ: <span x-text="selectedCurrency.min_withdrawal"></span> <span x-text="selectedCurrency.code"></span></div>
-                        <div x-show="selectedCurrency.max_withdrawal">สูงสุด: <span x-text="selectedCurrency.max_withdrawal"></span> <span x-text="selectedCurrency.code"></span></div>
-                    </div>
-                </template>
-            </div>
-
-            {{-- แสดงค่าธรรมเนียม --}}
-            <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm); margin-bottom:18px;" x-show="selectedCurrency && amount > 0">
-                <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--ink2);">จำนวนถอน:</span>
-                        <span style="font-weight:700; color:var(--ink);"><span x-text="parseFloat(amount).toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--ink2);">ค่าธรรมเนียมเครือข่าย:</span>
-                        <span style="font-weight:700; color:#d9534f;">- <span x-text="fee.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
-                    </div>
-                    <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 15%, transparent); padding-top:8px; display:flex; justify-content:space-between;">
-                        <span style="font-weight:800; color:var(--ink);">จำนวนที่จะได้รับ:</span>
-                        <span style="font-weight:800; color:#5aa07e;"><span x-text="netAmount.toFixed(8)"></span> <span x-text="selectedCurrency ? selectedCurrency.code : ''"></span></span>
-                    </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-wd-coin">สกุลเงิน <em>*</em></label>
+                    <select id="cw-wd-coin" name="currency_code" required class="nvm-input @error('currency_code') is-bad @enderror" x-model="code">
+                        <option value="">เลือกสกุลเงิน</option>
+                        @foreach($currencies as $curr)
+                            <option value="{{ $curr->code }}">{{ $curr->code }} ({{ strtoupper($curr->network) }}) · มี {{ number_format((float) ($balances[$curr->code]['balance'] ?? 0), 8) }}</option>
+                        @endforeach
+                    </select>
+                    @error('currency_code')<span class="nvm-err">{{ $message }}</span>@enderror
+                    @error('network')<span class="nvm-err">{{ $message }}</span>@enderror
                 </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-wd-to">ที่อยู่ปลายทาง <em>*</em></label>
+                    <input id="cw-wd-to" type="text" name="to_address" required maxlength="255" autocomplete="off" spellcheck="false" class="nvm-input nvm-cw-mono @error('to_address') is-bad @enderror" value="{{ old('to_address') }}" placeholder="0x...">
+                    <span class="nvm-help">ตรวจที่อยู่ให้ถูกต้อง ถอนไปที่อยู่ผิดกู้คืนไม่ได้</span>
+                    @error('to_address')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-wd-amt">จำนวนที่ถอน <em>*</em></label>
+                    <input id="cw-wd-amt" type="number" name="amount" step="0.00000001" min="0" inputmode="decimal" required class="nvm-input nvm-num @error('amount') is-bad @enderror" placeholder="0.00000000" x-model="amount">
+                    <div class="nvm-picks" x-show="coin && coin.balance > 0" x-cloak>
+                        <button type="button" @click="amount = String(coin.balance)">ถอนทั้งหมด <span class="nvm-num" x-text="coin ? fmt(coin.balance) : ''"></span></button>
+                    </div>
+                    <span class="nvm-help" x-show="coin" x-cloak>ขั้นต่ำ <span class="nvm-num" x-text="coin ? fmt(coin.min) : ''"></span><template x-if="coin && coin.max"><span> · สูงสุด <span class="nvm-num" x-text="fmt(coin.max)"></span></span></template> <span x-text="coin ? coin.code : ''"></span></span>
+                    <span class="nvm-err" x-show="coin && amt > coin.balance" x-cloak>ยอดเกินกว่าที่มีในกระเป๋า</span>
+                    @error('amount')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-mini" x-show="coin && amt > 0" x-cloak>
+                    <dl class="nvm-kv">
+                        <dt>จำนวนถอน</dt><dd class="nvm-num" x-text="coin ? fmt(amt) + ' ' + coin.code : ''"></dd>
+                        <dt>ค่าธรรมเนียมเครือข่าย</dt><dd class="nvm-num" x-text="coin ? '-' + fmt(coin.fee) + ' ' + coin.code : ''"></dd>
+                        <dt class="nvm-kv__total">จำนวนที่จะได้รับ</dt><dd class="nvm-num nvm-kv__total" x-text="coin ? fmt(net) + ' ' + coin.code : ''"></dd>
+                    </dl>
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-wd-pin">PIN กระเป๋าคริปโต (6 หลัก) <em>*</em></label>
+                    <input id="cw-wd-pin" type="password" name="pin" required minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off" class="nvm-input nvm-pin @error('pin') is-bad @enderror" placeholder="••••••">
+                    @error('pin')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="cw-wd-note">หมายเหตุ (ถ้ามี)</label>
+                    <textarea id="cw-wd-note" name="note" rows="2" maxlength="500" class="nvm-input" placeholder="หมายเหตุส่วนตัว">{{ old('note') }}</textarea>
+                </div>
+
+                <label class="nvm-check">
+                    <input type="checkbox" name="accept_terms" value="1" required @checked(old('accept_terms'))>
+                    <span>ฉันตรวจที่อยู่ปลายทางและเครือข่ายแล้ว และเข้าใจว่าส่งไปที่อยู่ผิดจะกู้คืนไม่ได้</span>
+                </label>
+                @error('accept_terms')<span class="nvm-err">{{ $message }}</span>@enderror
+
+                <div class="nvm-turnstile"><x-turnstile point="crypto_withdrawal" /></div>
+
+                <div class="nvm-filter__btns">
+                    <a class="nvm-btn nvm-btn--line" href="{{ route('user.crypto-wallet.index') }}">ยกเลิก</a>
+                    <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy || (coin && amt > coin.balance)"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่งคำขอ…' : 'ส่งคำขอถอน'">ส่งคำขอถอน</span></button>
+                </div>
+            </form>
+        @endif
+    </section>
+
+    <div class="nvm-stack">
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-cwwd-bal-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Balances</small><h2 id="nvm-cwwd-bal-h">ยอดคงเหลือ</h2></div></div>
+            @if(count($balances) > 0)
+                <ul class="nvm-txs">
+                    @foreach($balances as $code => $balance)
+                        <li class="nvm-tx">
+                            @include('user.crypto-wallet.partials.coin', ['code' => $code])
+                            <div class="nvm-tx__t"><b>{{ $balance['currency']->name }}</b><small>{{ $code }}</small></div>
+                            <div class="nvm-tx__r">
+                                <span class="nvm-tx__amt nvm-num">{{ number_format((float) $balance['balance'], 8) }}</span>
+                                <time class="nvm-num">≈ ฿{{ number_format((float) $balance['balance_thb'], 2) }}</time>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <div class="nvm-empty">
+                    <b>ไม่มียอดคงเหลือ</b>
+                    ฝากหรือซื้อเหรียญก่อนจึงจะถอนได้
+                </div>
+            @endif
+        </aside>
+        <aside class="nvm-card nvm-alert nvm-alert--bad" aria-labelledby="nvm-cwwd-warn-h">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b id="nvm-cwwd-warn-h">คำเตือนสำคัญ</b>
+                <ul class="nvm-cw-list">
+                    <li>ตรวจที่อยู่ปลายทางและเครือข่ายให้ถูกต้องก่อนยืนยัน</li>
+                    <li>ถอนไปที่อยู่หรือเครือข่ายผิด เหรียญจะสูญหายถาวร</li>
+                    <li>คำขอจำนวนมากอาจใช้เวลาตรวจสอบเพิ่มเติม</li>
+                    <li>ค่าธรรมเนียมเครือข่ายขึ้นอยู่กับความหนาแน่นของบล็อกเชน</li>
+                </ul>
             </div>
-
-            {{-- PIN --}}
-            <div style="margin-bottom:18px;">
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN กระเป๋า</label>
-                <input type="password" name="pin" required minlength="4" maxlength="6"
-                       style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px;"
-                       placeholder="กรอก PIN ของคุณ">
-            </div>
-
-            {{-- หมายเหตุ --}}
-            <div style="margin-bottom:18px;">
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">หมายเหตุ (ถ้ามี)</label>
-                <textarea name="note" rows="2"
-                          style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px; resize:vertical;"
-                          placeholder="หมายเหตุส่วนตัว..."></textarea>
-            </div>
-
-            {{-- ยืนยันเงื่อนไข --}}
-            <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer;">
-                <input type="checkbox" required style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1); flex-shrink:0;">
-                <span style="font-size:13px; color:var(--ink2);">ฉันยืนยันว่าได้ตรวจสอบที่อยู่ปลายทางและเครือข่ายแล้ว และเข้าใจว่าการส่งไปที่อยู่ผิดจะไม่สามารถกู้คืนได้</span>
-            </label>
-
-            {{-- route ตรวจ turnstile:crypto_withdrawal --}}
-            <x-turnstile point="crypto_withdrawal" />
-
-            <button type="submit" class="tp-btn" style="width:100%; padding:15px; border-radius:14px; background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; font-weight:800; font-size:16px; box-shadow:var(--raise); border:none; cursor:pointer;">ส่งคำขอถอนเงิน</button>
-        </form>
-    </div>
-
-    {{-- ── คำเตือน ───────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px 22px; box-shadow:var(--inset-sm); background:color-mix(in srgb, #d9534f 8%, transparent);">
-        <h4 style="font-weight:800; color:#d9534f; margin:0 0 10px; font-size:14.5px; display:flex; align-items:center; gap:8px;"><span>⚠️</span> คำเตือนสำคัญ!</h4>
-        <ul style="margin:0; padding-left:18px; color:#d9534f; font-size:13px; display:flex; flex-direction:column; gap:5px;">
-            <li>ตรวจสอบที่อยู่ปลายทางและเครือข่ายให้ถูกต้องก่อนยืนยัน</li>
-            <li>การถอนไปที่อยู่ผิดหรือเครือข่ายผิดจะทำให้เหรียญสูญหายถาวร</li>
-            <li>คำขอถอนจำนวนมากอาจต้องใช้เวลาตรวจสอบเพิ่มเติม</li>
-            <li>ค่าธรรมเนียมเครือข่ายขึ้นอยู่กับความหนาแน่นของ Blockchain</li>
-        </ul>
+        </aside>
+        @if(\Illuminate\Support\Facades\Route::has('user.crypto-wallet.withdrawals'))
+            <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.crypto-wallet.withdrawals') }}">
+                <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="58" height="58" loading="lazy">
+                <div class="nvm-alert__txt"><b>คำขอถอนของฉัน</b><p>ดูสถานะ หรือยกเลิกคำขอที่ยังรอตรวจ</p></div>
+                <div class="nvm-alert__side"><small>ดูทั้งหมด →</small></div>
+            </a>
+        @endif
     </div>
 </div>
 
-<script>
-function calculateNet() {
-    const amount = parseFloat(this.amount) || 0;
-    const fee = parseFloat(this.fee) || 0;
-    this.netAmount = Math.max(0, amount - fee);
-}
-</script>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    // ฟอร์มถอนเหรียญ: ค่าธรรมเนียม/ยอดสุทธิคำนวณสดจากข้อมูลเหรียญ (สูตรเดียวกับ submitWithdrawal: สุทธิ = จำนวน - withdrawal_fee) + กันกดส่งซ้ำ
+    document.addEventListener('alpine:init', function () {
+        window.Alpine.data('nvmCwWithdraw', function (o) {
+            return {
+                coins: o.coins,
+                code: o.code,
+                amount: o.amount,
+                busy: false,
+                get coin() { return this.coins[this.code] || null; },
+                get amt() { var a = parseFloat(this.amount); return isNaN(a) || a <= 0 ? 0 : a; },
+                get net() { return this.coin ? Math.max(0, this.amt - this.coin.fee) : 0; },
+                fmt(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 8 }); },
+            };
+        });
+    });
+</script>
+@endpush
