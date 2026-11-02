@@ -1,5 +1,5 @@
 {{--
-    การ์ด "งานที่กำลังทำ" (แดชบอร์ด + แท็บงานปัจจุบัน) — อ่านอย่างเดียว
+    การ์ด "งานที่กำลังทำ" (แดชบอร์ด + แท็บงานปัจจุบัน) — อ่านอย่างเดียว · ธีมโนวา
     ตัวแปร: $jobData (JobDetail จาก RiderJob::toApiDetail ของไรเดอร์เจ้าของงาน)
     (2026-10-13) อัปเดตสถานะ/ส่งมอบ/ส่ง GPS ทำในแอป Thai Prompt APP เท่านั้น — เว็บมีแค่ลิงก์รายละเอียด + นำทาง
 --}}
@@ -15,62 +15,49 @@
         ? $ui::directionsUrl($cjPickup['latitude'] ?? null, $cjPickup['longitude'] ?? null, $cjPickup['address'] ?? null)
         : $ui::directionsUrl($cjDrop['latitude'] ?? null, $cjDrop['longitude'] ?? null, $cjDrop['address'] ?? null);
 @endphp
-<section class="tp-card rd-stack" style="box-shadow:var(--card-shadow), 0 0 0 2px color-mix(in srgb, var(--accent1) 50%, transparent);">
-    <div class="rd-row" style="justify-content:space-between;">
-        <div class="rd-row" style="gap:10px;">
-            <span class="rd-dot live rd-tone-ok"></span>
-            <span class="rd-h2">งานที่กำลังทำ</span>
-        </div>
-        <span class="rd-pill solid rd-tone-{{ $ui::jobTone($cjStatus) }}">{{ $jobData['status_text'] ?? '' }}</span>
+<section class="nvm-card nvm-box nvm-rd-live nvm-rd-job" aria-labelledby="nvm-rd-cj-{{ $cjId }}">
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">On the road</small><h2 id="nvm-rd-cj-{{ $cjId }}">งานที่กำลังทำ</h2></div>
+        <span class="nvm-chip {{ $ui::novaChip($cjStatus) }}"><span class="nvm-rd-dot" aria-hidden="true"></span>{{ $jobData['status_text'] ?? '' }}</span>
     </div>
 
-    <div class="rd-row" style="justify-content:space-between; align-items:flex-end;">
-        <div style="min-width:0;">
-            <div style="font-weight:800; font-size:16px; color:var(--ink);"><i class="fas {{ $ui::jobIcon($jobData['job_type'] ?? null) }}" style="color:var(--deep1);"></i> {{ $jobData['job_type_text'] ?? 'ส่งของ' }}</div>
-            <div class="rd-muted rd-small">#{{ $jobData['job_number'] }} · รับงานเมื่อ {{ $ui::time($jobData['accepted_at'] ?? null) }} น.</div>
+    <div class="nvm-rd-job__head">
+        <div class="nvm-rd-job__who">
+            <span class="nvm-rd-ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaJobIcon($jobData['job_type'] ?? null) }}"/></svg></span>
+            <div>
+                <b>{{ $jobData['job_type_text'] ?? 'ส่งของ' }}</b>
+                <small class="nvm-num">#{{ $jobData['job_number'] }} · รับงานเมื่อ {{ $ui::time($jobData['accepted_at'] ?? null) }} น.</small>
+            </div>
         </div>
-        <div style="text-align:right;">
-            <div class="rd-small rd-muted">รายได้งานนี้</div>
-            <div class="rd-money" style="font-size:26px; line-height:1;">฿{{ $ui::money($jobData['rider_earnings'] ?? 0) }}</div>
-        </div>
+        <div class="nvm-rd-earn"><small>รายได้งานนี้</small><b class="nvm-num">฿{{ $ui::money($jobData['rider_earnings'] ?? 0) }}</b></div>
     </div>
 
-    <div class="rd-steps" aria-label="ความคืบหน้างาน">
-        @foreach($cjSteps as $step)
-            <div class="st {{ $step['state'] }}"><div class="bar"></div><div class="lb">{{ $step['label'] }}</div></div>
-        @endforeach
-    </div>
+    @include('user.rider.partials.steps', ['steps' => $cjSteps, 'stepsLabel' => 'ความคืบหน้างาน'])
 
-    <div class="rd-route">
-        <div class="pt rd-tone-gold">
-            <div class="t">รับของที่</div>
-            <div class="v">{{ ($cjPickup['name'] ?? null) ?: 'จุดรับของ' }}</div>
-            @if(!empty($cjPickup['address']))<div class="rd-small rd-muted">{{ $cjPickup['address'] }}</div>@endif
-        </div>
-        <div class="pt rd-tone-ok">
-            <div class="t">ส่งให้</div>
-            <div class="v">{{ ($cjDrop['name'] ?? null) ?: (($cjDrop['area'] ?? null) ?: 'ลูกค้า') }}</div>
-            @if(!empty($cjDrop['address']))<div class="rd-small rd-muted">{{ $cjDrop['address'] }}</div>@endif
-        </div>
-    </div>
+    <ul class="nvm-rd-route">
+        <li>
+            <small>รับของที่</small>
+            <b>{{ ($cjPickup['name'] ?? null) ?: 'จุดรับของ' }}</b>
+            @if(!empty($cjPickup['address']))<p>{{ $cjPickup['address'] }}</p>@endif
+        </li>
+        <li>
+            <small>ส่งให้</small>
+            <b>{{ ($cjDrop['name'] ?? null) ?: (($cjDrop['area'] ?? null) ?: 'ลูกค้า') }}</b>
+            @if(!empty($cjDrop['address']))<p>{{ $cjDrop['address'] }}</p>@endif
+        </li>
+    </ul>
 
     @if(!empty($jobData['is_cod']))
-        <div class="rd-alert rd-tone-warn">
-            <i class="fas fa-money-bill-wave"></i>
-            <div>งานนี้<b>เก็บเงินปลายทาง ฿{{ $ui::money($jobData['cod_amount'] ?? 0) }}</b> — รับเงินสดจากลูกค้าก่อนส่งมอบของในแอป</div>
-        </div>
+        <p class="nvm-note is-bad"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg><span>งานนี้<b>เก็บเงินปลายทาง ฿{{ $ui::money($jobData['cod_amount'] ?? 0) }}</b> — รับเงินสดจากลูกค้าก่อนส่งมอบของในแอป</span></p>
     @endif
 
-    <div class="rd-alert rd-tone-info">
-        <i class="fas fa-mobile-screen-button"></i>
-        <div>อัปเดตสถานะ ส่งมอบของ และส่งตำแหน่ง GPS ของงานนี้ในแอป Thai Prompt APP</div>
-    </div>
+    <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>อัปเดตสถานะ ส่งมอบของ และส่งตำแหน่ง GPS ของงานนี้ในแอป Thai Prompt APP</p>
 
-    <div class="rd-row">
-        <a href="{{ route('user.rider.jobs.show', $cjId) }}" class="tp-btn"><i class="fas fa-circle-info"></i> ดูรายละเอียดงาน</a>
+    <div class="nvm-rd-acts">
+        <a href="{{ route('user.rider.jobs.show', $cjId) }}" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ดูรายละเอียดงาน</a>
         @if($cjNavTarget)
-            <a href="{{ $cjNavTarget }}" target="_blank" rel="noopener noreferrer" class="tp-btn">
-                <i class="fas fa-diamond-turn-right"></i> {{ $cjBeforePickup ? 'นำทางไปร้าน' : 'นำทางไปลูกค้า' }}
+            <a href="{{ $cjNavTarget }}" target="_blank" rel="noopener noreferrer" class="nvm-btn nvm-btn--line nvm-btn--sm">
+                <svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>{{ $cjBeforePickup ? 'นำทางไปร้าน' : 'นำทางไปลูกค้า' }}
             </a>
         @endif
     </div>

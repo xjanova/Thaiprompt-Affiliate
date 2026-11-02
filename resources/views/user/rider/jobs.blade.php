@@ -1,23 +1,23 @@
 {{--
-    งานไรเดอร์ (user.rider.jobs) — แท็บ งานรอรับ / งานปัจจุบัน / ประวัติ
+    งานไรเดอร์ (user.rider.jobs) — แท็บ งานรอรับ / งานปัจจุบัน / ประวัติ · ธีมโนวาเต็ม
     Controller: User\RiderController@jobs (?tab=available|current|history&status=completed|cancelled|failed)
     ตัวแปร: rider, tab, statusFilter, availableJobs, availableReason, currentJob, currentJobData, history (paginator),
             historyItems (JobSummary[]), canAcceptJobs, blockReason, pageTitle
     (2026-10-13) อ่านอย่างเดียว — รับงาน/ทำงานส่งในแอป Thai Prompt APP เท่านั้น
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'งานไรเดอร์')
 
 @push('styles')
-    @include('user.rider.partials.styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/rider.css') }}?v={{ filemtime(public_path('theme-nova/member/rider.css')) }}">
 @endpush
 
 @php
     $tabs = [
-        'available' => ['label' => 'งานรอรับ', 'icon' => 'fa-bolt', 'count' => count($availableJobs)],
-        'current' => ['label' => 'งานปัจจุบัน', 'icon' => 'fa-person-biking', 'count' => $currentJobData ? 1 : 0],
-        'history' => ['label' => 'ประวัติ', 'icon' => 'fa-clock-rotate-left', 'count' => null],
+        'available' => ['label' => 'งานรอรับ', 'icon' => 'pin', 'count' => count($availableJobs)],
+        'current' => ['label' => 'งานปัจจุบัน', 'icon' => 'scooter', 'count' => $currentJobData ? 1 : 0],
+        'history' => ['label' => 'ประวัติ', 'icon' => 'history', 'count' => null],
     ];
     $historyFilters = [
         '' => 'ทั้งหมด',
@@ -25,36 +25,40 @@
         'cancelled' => 'ยกเลิก',
         'failed' => 'ส่งไม่สำเร็จ',
     ];
+    $availPill = match ($rider->availability) {
+        'online' => 'nvm-pill--ok',
+        'busy' => 'nvm-pill--gold',
+        default => 'nvm-pill--glass',
+    };
 @endphp
 
 @section('content')
-<div class="rd-scope" x-data="{}">
+<div class="nvm-stack">
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'jobs'])
 
     {{-- ── รับงานได้ในแอปเท่านั้น (2026-10-13) ─────────────────── --}}
     @include('user.rider.partials.app-only-banner', ['appOnlyNote' => 'หน้านี้ดูงานใกล้คุณ งานที่กำลังส่ง และประวัติงานได้ — กดรับงานและอัปเดตสถานะงานในแอป'])
 
-    <section class="tp-card rd-hero">
-        <div class="rd-hero-in">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:17px; font-size:22px;"><i class="fas fa-route"></i></span>
-            <div style="flex:1 1 220px; min-width:0;">
-                <h1 class="rd-h1">งานไรเดอร์</h1>
-                <div class="rd-muted rd-small">ดูงานใกล้คุณ ติดตามงานที่กำลังส่ง และดูประวัติงานทั้งหมด</div>
+    <section class="nvm-ph" aria-labelledby="nvm-rd-jobs-h">
+        <div class="nvm-ph__in">
+            <div class="nvm-ph__txt">
+                <div class="nvm-eyebrow nvm-latin">Rider jobs</div>
+                <h1 id="nvm-rd-jobs-h">งานไรเดอร์</h1>
+                <p class="nvm-ph__lead">ดูงานใกล้คุณ ติดตามงานที่กำลังส่ง และดูประวัติงานทั้งหมด</p>
+                <div class="nvm-pills">
+                    <span class="nvm-pill {{ $availPill }}"><svg class="nvm-ico"><use href="#nvm-i-scooter"/></svg>{{ $rider->availability_text }}</span>
+                </div>
             </div>
-            <span class="rd-pill {{ $rider->availability === 'online' ? 'rd-tone-ok' : ($rider->availability === 'busy' ? 'rd-tone-info' : 'rd-tone-muted') }}">
-                <span class="rd-dot {{ $rider->availability === 'online' ? 'live' : '' }}"></span> {{ $rider->availability_text }}
-            </span>
+            <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scooter.webp') }}" alt="" width="200" height="200">
         </div>
     </section>
 
     {{-- ── แท็บ ─────────────────────────────────────────────── --}}
-    <nav class="rd-nav" aria-label="ประเภทงาน">
+    <nav class="nvm-tabs" aria-label="ประเภทงาน">
         @foreach($tabs as $key => $t)
-            <a href="{{ route('user.rider.jobs', ['tab' => $key]) }}" class="{{ $tab === $key ? 'on' : '' }}" @if($tab === $key) aria-current="page" @endif>
-                <i class="fas {{ $t['icon'] }}"></i> {{ $t['label'] }}
-                @if($t['count'])
-                    <span class="rd-pill {{ $tab === $key ? '' : 'rd-tone-gold' }}" style="padding:3px 8px; {{ $tab === $key ? 'background:color-mix(in srgb, var(--rd-on) 25%, transparent); color:var(--rd-on);' : '' }}">{{ $t['count'] }}</span>
-                @endif
+            <a href="{{ route('user.rider.jobs', ['tab' => $key]) }}" class="{{ $tab === $key ? 'is-on' : '' }}" @if($tab === $key) aria-current="page" @endif>
+                <svg class="nvm-ico"><use href="#nvm-i-{{ $t['icon'] }}"/></svg>{{ $t['label'] }}
+                @if($t['count'])<span class="nvm-chip nvm-chip--gold nvm-num">{{ $t['count'] }}</span>@endif
             </a>
         @endforeach
     </nav>
@@ -62,10 +66,7 @@
     @if($tab === 'available')
         {{-- ── งานรอรับ ────────────────────────────────────────── --}}
         @if($rider->status === 'approved' && $rider->availability !== 'online' && !$currentJobData)
-            <div class="rd-alert rd-tone-info">
-                <i class="fas fa-circle-info"></i>
-                <div>เปิดรับงานในแอป Thai Prompt APP แล้วงานใกล้คุณจะแสดงที่นี่</div>
-            </div>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>เปิดรับงานในแอป Thai Prompt APP แล้วงานใกล้คุณจะแสดงที่นี่</p>
         @endif
         @include('user.rider.partials.available-jobs')
 
@@ -74,58 +75,46 @@
         @if($currentJobData)
             @include('user.rider.partials.current-job', ['jobData' => $currentJobData])
         @else
-            <div class="tp-card rd-empty">
-                <div class="ic"><i class="fas fa-motorcycle"></i></div>
-                <div style="font-weight:800; font-size:16px;">ยังไม่มีงานที่กำลังทำ</div>
-                <p class="rd-muted" style="font-size:13px; margin:6px auto 14px; max-width:380px;">รับงานใกล้คุณได้ในแอป Thai Prompt APP</p>
-                <a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="rd-btn3d rd-tone-gold sm"><i class="fas fa-bolt"></i> ดูงานรอรับ</a>
+            <div class="nvm-card nvm-empty">
+                <img src="{{ asset('images/nova/deco/scooter.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีงานที่กำลังทำ</b>
+                รับงานใกล้คุณได้ในแอป Thai Prompt APP
+                <div><a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>ดูงานรอรับ</a></div>
             </div>
         @endif
 
     @else
         {{-- ── ประวัติงาน ──────────────────────────────────────── --}}
-        <div class="rd-row" role="group" aria-label="กรองสถานะ">
-            @foreach($historyFilters as $value => $label)
-                <a href="{{ route('user.rider.jobs', array_filter(['tab' => 'history', 'status' => $value ?: null])) }}"
-                   class="rd-chip {{ ($statusFilter ?? '') === $value ? 'on' : '' }}">{{ $label }}</a>
-            @endforeach
-        </div>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-hist-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">History</small><h2 id="nvm-rd-hist-h">ประวัติงาน</h2></div>
+                <nav class="nvm-tabs" aria-label="กรองสถานะ">
+                    @foreach($historyFilters as $value => $label)
+                        <a href="{{ route('user.rider.jobs', array_filter(['tab' => 'history', 'status' => $value ?: null])) }}"
+                           class="{{ ($statusFilter ?? '') === $value ? 'is-on' : '' }}" @if(($statusFilter ?? '') === $value) aria-current="page" @endif>{{ $label }}</a>
+                    @endforeach
+                </nav>
+            </div>
 
-        <section class="tp-card">
             @if(count($historyItems) === 0)
-                <div class="rd-empty">
-                    <div class="ic"><i class="fas fa-box-open"></i></div>
-                    <div style="font-weight:800; font-size:16px;">ยังไม่มีประวัติงาน{{ $statusFilter ? 'ในสถานะนี้' : '' }}</div>
-                    <p class="rd-muted" style="font-size:13px; margin:6px 0 0;">งานที่ส่งสำเร็จ ยกเลิก หรือส่งไม่สำเร็จจะแสดงที่นี่</p>
+                <div class="nvm-empty">
+                    <img src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="86" height="86" loading="lazy">
+                    <b>ยังไม่มีประวัติงาน{{ $statusFilter ? 'ในสถานะนี้' : '' }}</b>
+                    งานที่ส่งสำเร็จ ยกเลิก หรือส่งไม่สำเร็จจะแสดงที่นี่
                 </div>
             @else
-                <div class="rd-list">
+                <div class="nvm-txs nvm-tks">
                     @foreach($historyItems as $row)
                         @include('user.rider.partials.job-row', ['row' => $row])
                     @endforeach
                 </div>
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ทั้งหมด {{ number_format($history->total()) }} งาน</p>
+            @endif
+
+            @if($history->hasPages())
+                <div class="nvm-pager nvm-gap-t">{{ $history->links() }}</div>
             @endif
         </section>
-
-        @if($history->hasPages())
-            <div class="rd-row" style="justify-content:space-between;">
-                @if($history->previousPageUrl())
-                    <a href="{{ $history->previousPageUrl() }}" class="tp-btn"><i class="fas fa-chevron-left"></i> ก่อนหน้า</a>
-                @else
-                    <span></span>
-                @endif
-                <span class="rd-muted rd-small">หน้า {{ $history->currentPage() }} / {{ $history->lastPage() }} · ทั้งหมด {{ number_format($history->total()) }} งาน</span>
-                @if($history->nextPageUrl())
-                    <a href="{{ $history->nextPageUrl() }}" class="tp-btn">ถัดไป <i class="fas fa-chevron-right"></i></a>
-                @else
-                    <span></span>
-                @endif
-            </div>
-        @endif
     @endif
 </div>
 @endsection
-
-@push('scripts')
-    @include('user.rider.partials.scripts')
-@endpush

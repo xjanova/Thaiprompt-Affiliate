@@ -1,15 +1,15 @@
 {{--
-    รายได้ไรเดอร์ (user.rider.earnings) — ?period=today|week|month|all (ค่าเริ่มต้น week)
+    รายได้ไรเดอร์ (user.rider.earnings) — ?period=today|week|month|all (ค่าเริ่มต้น week) · ธีมโนวาเต็ม
     Controller: User\RiderController@earnings
     ตัวแปร: rider, period, periodOptions, summary (ชุดเดียวกับ API /rider/earnings), dailyEarnings, monthlyEarnings,
             walletBalance, recentJobs (paginator ของงานที่สำเร็จ), kyc{status, verified, required_for_withdrawal}, pageTitle
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'รายได้ไรเดอร์')
 
 @push('styles')
-    @include('user.rider.partials.styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/rider.css') }}?v={{ filemtime(public_path('theme-nova/member/rider.css')) }}">
 @endpush
 
 @php
@@ -21,175 +21,150 @@
     $bestDay = collect($bars)->sortByDesc('earnings')->first();
     $kycVerified = (bool) ($kyc['verified'] ?? false);
     $periodLabel = $periodOptions[$period] ?? 'สัปดาห์นี้';
+
+    // การ์ดตัวเลข: [ป้ายไทย, ป้ายอังกฤษ, ค่า, ภาพ, ข้อความท้าย]
+    $kpis = [
+        ['รายได้เดือนนี้', 'This month', '฿'.$ui::money($monthlyEarnings), 'deco/coins', 'นับจากวันที่ 1 ของเดือน'],
+        ['รายได้สะสมทั้งหมด', 'All time', '฿'.$ui::money($summary['total_earnings_all_time'] ?? 0), 'deco/garland', 'ตั้งแต่เริ่มเป็นไรเดอร์'],
+        ['งานเก็บเงินปลายทาง ('.$periodLabel.')', 'Cash on delivery', number_format((int) ($summary['cod_jobs'] ?? 0)).' งาน', 'wallet/scale',
+            'เก็บ ฿'.$ui::money($summary['cod_collected'] ?? 0).' · นำส่งเข้าระบบ ฿'.$ui::money(abs((float) ($summary['cod_remitted'] ?? 0)))],
+    ];
 @endphp
 
 @section('content')
-<div class="rd-scope">
+<div class="nvm-stack">
     @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'earnings'])
 
     {{-- ── ยอดรายได้ตามช่วงเวลา ─────────────────────────────────── --}}
-    <section class="tp-card rd-hero">
-        <div class="rd-hero-in" style="flex-direction:column; align-items:stretch;">
-            <div class="rd-row" style="justify-content:space-between;">
-                <div class="rd-row" style="gap:12px;">
-                    <span class="tp-tile" style="width:48px; height:48px; border-radius:16px; font-size:20px;"><i class="fas fa-coins"></i></span>
-                    <div>
-                        <h1 class="rd-h1">รายได้ของคุณ</h1>
-                        <div class="rd-muted rd-small">รายได้ค่าส่งจากงานที่ส่งสำเร็จ · {{ $periodLabel }}</div>
-                    </div>
+    <section class="nvm-ph" aria-labelledby="nvm-rd-earn-h">
+        <div class="nvm-ph__in">
+            <div class="nvm-ph__txt">
+                <div class="nvm-eyebrow nvm-latin">Rider earnings</div>
+                <h1 id="nvm-rd-earn-h">รายได้ของคุณ</h1>
+                <p class="nvm-ph__lead">รายได้ค่าส่งจากงานที่ส่งสำเร็จ · {{ $periodLabel }}</p>
+                <div class="nvm-bal">
+                    <small>รายได้{{ $periodLabel }}</small>
+                    <b class="nvm-foil nvm-num">฿{{ $ui::money($gross) }}</b>
                 </div>
-            </div>
-            <div class="rd-row" role="group" aria-label="เลือกช่วงเวลา">
-                @foreach($periodOptions as $key => $label)
-                    <a href="{{ route('user.rider.earnings', ['period' => $key]) }}" class="rd-chip {{ $period === $key ? 'on' : '' }}" @if($period === $key) aria-current="true" @endif>{{ $label }}</a>
-                @endforeach
-            </div>
-            <div class="rd-row" style="align-items:flex-end; gap:18px;">
-                <div>
-                    <div class="rd-small rd-muted">รายได้{{ $periodLabel }}</div>
-                    <div class="rd-money" style="font-size:clamp(36px, 10vw, 52px); line-height:1.05;">฿{{ $ui::money($gross) }}</div>
-                </div>
-                <div class="rd-row" style="gap:8px; padding-bottom:6px;">
-                    <span class="rd-pill rd-tone-ok"><i class="fas fa-circle-check"></i> {{ number_format($jobsCount) }} งาน</span>
+                <div class="nvm-pills">
+                    <span class="nvm-pill nvm-pill--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>{{ number_format($jobsCount) }} งาน</span>
                     @if($jobsCount > 0)
-                        <span class="rd-pill rd-tone-gold"><i class="fas fa-calculator"></i> เฉลี่ย ฿{{ $ui::money($avgPerJob) }}/งาน</span>
+                        <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>เฉลี่ย ฿{{ $ui::money($avgPerJob) }}/งาน</span>
                     @endif
                 </div>
             </div>
+            <img class="nvm-ph__art" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="200" height="200">
         </div>
     </section>
 
+    <nav class="nvm-tabs" aria-label="เลือกช่วงเวลา">
+        @foreach($periodOptions as $key => $label)
+            <a href="{{ route('user.rider.earnings', ['period' => $key]) }}" class="{{ $period === $key ? 'is-on' : '' }}" @if($period === $key) aria-current="page" @endif>{{ $label }}</a>
+        @endforeach
+    </nav>
+
     {{-- ── กระเป๋าเงิน + ถอนเงิน ──────────────────────────────── --}}
-    <div class="rd-grid" style="--rd-min:200px;">
-        <div class="tp-card rd-stat featured rd-tone-gold">
-            <span class="ic"><i class="fas fa-wallet"></i></span>
-            <span class="lbl">ยอดในกระเป๋าเงิน</span>
-            <span class="val">฿{{ $ui::money($walletBalance) }}</span>
-            <div class="rd-row" style="margin-top:6px;">
-                @if($kycVerified)
-                    <a href="{{ route('user.wallet.withdraw') }}" class="rd-btn3d rd-tone-gold sm"><i class="fas fa-money-bill-transfer"></i> ถอนเงิน</a>
-                @else
-                    <a href="{{ route('user.kyc.index') }}" class="rd-btn3d rd-tone-info sm"><i class="fas fa-id-card"></i> ยืนยันตัวตนก่อนถอน</a>
-                @endif
-                <a href="{{ route('user.wallet.transactions') }}" class="tp-btn tp-btn-sm">ประวัติกระเป๋า</a>
+    <section class="nvm-card nvm-alert nvm-alert--ok" aria-label="ยอดในกระเป๋าเงิน">
+        <img class="nvm-alert__img" src="{{ asset('images/nova/icons/wallet.webp') }}" alt="" width="58" height="58" loading="lazy">
+        <div class="nvm-alert__txt">
+            <b>ยอดในกระเป๋าเงิน</b>
+            <p>รายได้ค่าส่งเข้ากระเป๋าเงินของคุณหลังส่งสำเร็จ</p>
+        </div>
+        <div class="nvm-alert__side"><b class="nvm-num">฿{{ $ui::money($walletBalance) }}</b></div>
+        <div class="nvm-rd-acts">
+            @if($kycVerified)
+                <a href="{{ route('user.wallet.withdraw') }}" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ถอนเงิน</a>
+            @else
+                <a href="{{ route('user.kyc.index') }}" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยืนยันตัวตนก่อนถอน</a>
+            @endif
+            <a href="{{ route('user.wallet.transactions') }}" class="nvm-btn nvm-btn--line nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ประวัติกระเป๋า</a>
+        </div>
+    </section>
+
+    <section class="nvm-kpis nvm-kpis--3" aria-label="สรุปรายได้">
+        @foreach($kpis as [$label, $en, $value, $img, $foot])
+            <div class="nvm-card nvm-kpi">
+                <img class="nvm-kpi__img" src="{{ asset('images/nova/'.$img.'.webp') }}" alt="" width="78" height="78" loading="lazy">
+                <div class="nvm-kpi__lbl">{{ $label }}</div>
+                <div class="nvm-kpi__en nvm-latin">{{ $en }}</div>
+                <div class="nvm-kpi__val nvm-num">{{ $value }}</div>
+                <div class="nvm-kpi__foot"><small>{{ $foot }}</small></div>
             </div>
-        </div>
-        <div class="tp-card rd-stat rd-tone-ok">
-            <span class="ic"><i class="fas fa-calendar"></i></span>
-            <span class="lbl">รายได้เดือนนี้</span>
-            <span class="val">฿{{ $ui::money($monthlyEarnings) }}</span>
-            <span class="sub">นับจากวันที่ 1 ของเดือน</span>
-        </div>
-        <div class="tp-card rd-stat rd-tone-info">
-            <span class="ic"><i class="fas fa-trophy"></i></span>
-            <span class="lbl">รายได้สะสมทั้งหมด</span>
-            <span class="val">฿{{ $ui::money($summary['total_earnings_all_time'] ?? 0) }}</span>
-            <span class="sub">ตั้งแต่เริ่มเป็นไรเดอร์</span>
-        </div>
-        <div class="tp-card rd-stat rd-tone-warn">
-            <span class="ic"><i class="fas fa-money-bill-wave"></i></span>
-            <span class="lbl">งานเก็บเงินปลายทาง ({{ $periodLabel }})</span>
-            <span class="val">{{ number_format((int) ($summary['cod_jobs'] ?? 0)) }} งาน</span>
-            <span class="sub">เก็บ ฿{{ $ui::money($summary['cod_collected'] ?? 0) }} · นำส่งเข้าระบบ ฿{{ $ui::money(abs((float) ($summary['cod_remitted'] ?? 0))) }}</span>
-        </div>
-    </div>
+        @endforeach
+    </section>
 
     @if(!$kycVerified)
-        <div class="rd-alert rd-tone-info">
-            <i class="fas fa-id-card"></i>
-            <div>
-                <b>ถอนรายได้ต้องยืนยันตัวตน (KYC) ก่อน</b> — ทำครั้งเดียว ใช้เวลาไม่กี่นาที
-                <div style="margin-top:6px;"><a href="{{ route('user.kyc.index') }}" class="rd-link">ยืนยันตัวตนตอนนี้ <i class="fas fa-arrow-right"></i></a></div>
-            </div>
-        </div>
+        <a class="nvm-card nvm-alert nvm-alert--info" href="{{ route('user.kyc.index') }}">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg></span>
+            <div class="nvm-alert__txt"><b>ถอนรายได้ต้องยืนยันตัวตน (KYC) ก่อน</b><p>ทำครั้งเดียว ใช้เวลาไม่กี่นาที — แตะเพื่อยืนยันตัวตนตอนนี้</p></div>
+        </a>
     @endif
 
     @if((int) ($summary['unsettled_jobs'] ?? 0) > 0)
-        <div class="rd-alert rd-tone-warn">
-            <i class="fas fa-hourglass-half"></i>
-            <div>มี <b>{{ number_format((int) $summary['unsettled_jobs']) }} งาน</b> ที่ระบบกำลังเคลียร์เงิน (เช่นรอหักยอดนำส่งเงินปลายทาง) — ระบบจะลองใหม่อัตโนมัติ กรุณาคงเงินในกระเป๋าไว้ให้พอ</div>
-        </div>
+        <section class="nvm-card nvm-alert" role="status">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b>มี {{ number_format((int) $summary['unsettled_jobs']) }} งานที่ระบบกำลังเคลียร์เงิน</b>
+                <p>เช่นรอหักยอดนำส่งเงินปลายทาง — ระบบจะลองใหม่อัตโนมัติ กรุณาคงเงินในกระเป๋าไว้ให้พอ</p>
+            </div>
+        </section>
     @endif
 
     {{-- ── กราฟรายได้รายวัน ─────────────────────────────────────── --}}
-    <section class="tp-card rd-stack">
-        <div class="rd-row" style="justify-content:space-between;">
-            <h2 class="rd-h2"><i class="fas fa-chart-column" style="color:var(--accent1);"></i> รายได้รายวัน</h2>
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-daily-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Daily</small><h2 id="nvm-rd-daily-h">รายได้รายวัน</h2></div>
             @if($bestDay && $bestDay['earnings'] > 0)
-                <span class="rd-pill rd-tone-gold"><i class="fas fa-crown"></i> วันที่ดีที่สุด {{ $bestDay['sub'] }} · ฿{{ $ui::money($bestDay['earnings']) }}</span>
+                <span class="nvm-chip nvm-chip--gold"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>วันที่ดีที่สุด {{ $bestDay['sub'] }} · ฿{{ $ui::money($bestDay['earnings']) }}</span>
             @endif
         </div>
         @if(count($bars) > 0)
-            <div class="rd-scroll-x">
-                <div class="tp-bars rd-bars" role="img" aria-label="กราฟรายได้รายวัน{{ $periodLabel }}" style="min-width:{{ count($bars) > 10 ? count($bars) * 26 : 0 }}px;">
-                    @foreach($bars as $bar)
-                        <div class="col {{ $bar['is_today'] ? 'today' : '' }}" title="{{ $bar['sub'] }}: ฿{{ $ui::money($bar['earnings']) }} ({{ $bar['jobs'] }} งาน)">
-                            <span class="amt">{{ count($bars) <= 10 && $bar['earnings'] > 0 ? '฿'.$ui::money($bar['earnings']) : '' }}</span>
-                            <div class="stack"><i class="bar {{ $bar['is_today'] ? 'b' : 'a' }}" style="height:{{ $bar['pct'] }}%; display:block;"></i></div>
-                            <span class="lbl">{{ $bar['label'] }}</span>
+            <div class="nvm-rd-scroll" style="--n: {{ count($bars) }}">
+                <div class="nvm-bars" role="img" aria-label="กราฟรายได้รายวัน{{ $periodLabel }}">
+                    @foreach($bars as $i => $bar)
+                        <div class="nvm-bar {{ $bar['is_today'] ? 'is-now' : '' }}" style="--h: {{ $bar['pct'] }}%; --d: {{ $i * 30 }}ms" title="{{ $bar['sub'] }}: ฿{{ $ui::money($bar['earnings']) }} ({{ $bar['jobs'] }} งาน)">
+                            <em class="nvm-num">฿{{ $ui::money($bar['earnings']) }}</em><i></i><span>{{ $bar['label'] }}</span>
                         </div>
                     @endforeach
                 </div>
             </div>
         @else
-            <div class="rd-muted" style="font-size:13px;">
-                <i class="fas fa-circle-info"></i> เลือก "สัปดาห์นี้" หรือ "เดือนนี้" เพื่อดูกราฟรายได้รายวัน
-            </div>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>เลือก "สัปดาห์นี้" หรือ "เดือนนี้" เพื่อดูกราฟรายได้รายวัน</p>
         @endif
     </section>
 
     {{-- ── รายการงานที่ได้รายได้ ───────────────────────────────── --}}
-    <section class="tp-card rd-stack">
-        <div class="rd-row" style="justify-content:space-between;">
-            <h2 class="rd-h2"><i class="fas fa-receipt" style="color:var(--accent1);"></i> งานที่ส่งสำเร็จ</h2>
-            <span class="rd-muted rd-small">ทั้งหมด {{ number_format($recentJobs->total()) }} งาน</span>
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-rd-paid-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Completed jobs</small><h2 id="nvm-rd-paid-h">งานที่ส่งสำเร็จ</h2></div>
+            <span class="nvm-chip nvm-num">ทั้งหมด {{ number_format($recentJobs->total()) }} งาน</span>
         </div>
         @if($recentJobs->count() === 0)
-            <div class="rd-empty">
-                <div class="ic"><i class="fas fa-piggy-bank"></i></div>
-                <div style="font-weight:800; font-size:16px;">ยังไม่มีรายได้</div>
-                <p class="rd-muted" style="font-size:13px; margin:6px auto 14px; max-width:380px;">ส่งงานแรกให้สำเร็จ รายได้จะเข้ากระเป๋าทันทีหลังกดส่งสำเร็จ</p>
-                <a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="rd-btn3d rd-tone-gold sm"><i class="fas fa-bolt"></i> ดูงานรอรับ</a>
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีรายได้</b>
+                ส่งงานแรกให้สำเร็จ รายได้จะเข้ากระเป๋าทันทีหลังกดส่งสำเร็จ
+                <div><a href="{{ route('user.rider.jobs', ['tab' => 'available']) }}" class="nvm-btn nvm-btn--gold nvm-btn--sm"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>ดูงานรอรับ</a></div>
             </div>
         @else
-            <div class="rd-list">
+            <div class="nvm-txs nvm-tks">
                 @foreach($recentJobs as $j)
-                    <a href="{{ route('user.rider.jobs.show', $j->id) }}" class="rd-item rd-tone-ok">
-                        <span class="ic"><i class="fas {{ $ui::jobIcon($j->job_type) }}"></i></span>
-                        <span class="main">
-                            <span class="ttl" style="display:block;">{{ $j->job_type_text }} · #{{ $j->job_number }}</span>
-                            <span class="sub" style="display:block;">
-                                {{ $ui::date($j->completed_at) }} · ค่าส่ง ฿{{ $ui::money($j->total_fee) }}
-                                @if((float) $j->cod_amount > 0) · COD ฿{{ $ui::money($j->cod_amount) }} @endif
-                            </span>
-                        </span>
-                        <span class="end">
-                            <span class="rd-money" style="font-size:16px; color:var(--rd-ok);">+฿{{ $ui::money($j->rider_earnings) }}</span>
-                            <span class="rd-small rd-muted" style="display:block; margin-top:3px;">
-                                @if($j->earnings_settled_at && ((float) $j->cod_amount <= 0 || $j->cod_settled_at))
-                                    <i class="fas fa-circle-check" style="color:var(--rd-ok);"></i> เข้ากระเป๋าแล้ว
-                                @else
-                                    <i class="fas fa-hourglass-half" style="color:var(--rd-warn);"></i> กำลังเคลียร์เงิน
-                                @endif
-                            </span>
-                        </span>
+                    @php $settled = $j->earnings_settled_at && ((float) $j->cod_amount <= 0 || $j->cod_settled_at); @endphp
+                    <a class="nvm-tx" href="{{ route('user.rider.jobs.show', $j->id) }}">
+                        <span class="nvm-tx__ic is-in"><svg class="nvm-ico"><use href="#nvm-i-{{ $ui::novaJobIcon($j->job_type) }}"/></svg></span>
+                        <div class="nvm-tx__t">
+                            <b>{{ $j->job_type_text }} · <span class="nvm-num">#{{ $j->job_number }}</span></b>
+                            <small class="nvm-num">{{ $ui::date($j->completed_at) }} · ค่าส่ง ฿{{ $ui::money($j->total_fee) }}@if((float) $j->cod_amount > 0) · COD ฿{{ $ui::money($j->cod_amount) }}@endif</small>
+                        </div>
+                        <div class="nvm-tx__r">
+                            <span class="nvm-tx__amt nvm-num is-in">+฿{{ $ui::money($j->rider_earnings) }}</span>
+                            <span class="nvm-chip {{ $settled ? 'nvm-chip--ok' : 'nvm-chip--warn' }}">{{ $settled ? 'เข้ากระเป๋าแล้ว' : 'กำลังเคลียร์เงิน' }}</span>
+                        </div>
                     </a>
                 @endforeach
             </div>
             @if($recentJobs->hasPages())
-                <div class="rd-row" style="justify-content:space-between;">
-                    @if($recentJobs->previousPageUrl())
-                        <a href="{{ $recentJobs->previousPageUrl() }}" class="tp-btn"><i class="fas fa-chevron-left"></i> ก่อนหน้า</a>
-                    @else
-                        <span></span>
-                    @endif
-                    <span class="rd-muted rd-small">หน้า {{ $recentJobs->currentPage() }} / {{ $recentJobs->lastPage() }}</span>
-                    @if($recentJobs->nextPageUrl())
-                        <a href="{{ $recentJobs->nextPageUrl() }}" class="tp-btn">ถัดไป <i class="fas fa-chevron-right"></i></a>
-                    @else
-                        <span></span>
-                    @endif
-                </div>
+                <div class="nvm-pager nvm-gap-t">{{ $recentJobs->links() }}</div>
             @endif
         @endif
     </section>

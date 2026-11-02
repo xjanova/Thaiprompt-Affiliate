@@ -128,7 +128,7 @@ final class RiderWebUi
     }
 
     /**
-     * โทนสีของสถานะงาน → ใช้กับคลาส rd-tone-{tone}
+     * โทนสีของสถานะงาน (ok|bad|muted|warn|info) → แปลงเป็นคลาสโนวาด้วย novaChip()/novaPill()
      */
     public static function jobTone(?string $status): string
     {
@@ -142,17 +142,65 @@ final class RiderWebUi
     }
 
     /**
-     * ไอคอน Font Awesome ตามประเภทงาน
+     * คลาสชิปธีมโนวา (nvm-chip--*) ตามโทนสถานะงาน — muted ใช้ชิปสีเทาพื้นฐาน
      */
-    public static function jobIcon(?string $jobType): string
+    public static function novaChip(?string $status): string
+    {
+        return match (self::jobTone($status)) {
+            'ok' => 'nvm-chip--ok',
+            'bad' => 'nvm-chip--bad',
+            'warn' => 'nvm-chip--warn',
+            'info' => 'nvm-chip--info',
+            default => '',
+        };
+    }
+
+    /**
+     * คลาสป้ายสถานะธีมโนวา (nvm-pill--*) ตามโทนสถานะงาน — ยกเลิก (muted) ใช้ป้ายกระจกสีกลาง
+     */
+    public static function novaPill(?string $status): string
+    {
+        return match (self::jobTone($status)) {
+            'ok' => 'nvm-pill--ok',
+            'bad' => 'nvm-pill--bad',
+            'warn' => 'nvm-pill--warn',
+            'muted' => 'nvm-pill--glass',
+            default => 'nvm-pill--gold',
+        };
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวา (#nvm-i-*) ตามประเภทงาน
+     */
+    public static function novaJobIcon(?string $jobType): string
     {
         return match ($jobType) {
-            'fresh_market' => 'fa-basket-shopping',
-            'food' => 'fa-bowl-food',
-            'shop_delivery' => 'fa-bag-shopping',
-            'document' => 'fa-file-lines',
-            'service' => 'fa-screwdriver-wrench',
-            default => 'fa-box',
+            'fresh_market' => 'basket',
+            'shop_delivery' => 'store',
+            'document' => 'send',
+            'service' => 'gear',
+            default => 'bag',
+        };
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวาตามยานพาหนะ (ชุดไอคอนโนวาไม่มีรูปรถยนต์/จักรยาน — เดินเท้าใช้รูปคน)
+     */
+    public static function novaVehicleIcon(?string $vehicleType): string
+    {
+        return $vehicleType === 'walk' ? 'user' : 'scooter';
+    }
+
+    /**
+     * ชื่อไอคอนธีมโนวาตามประเภทเอกสาร
+     */
+    public static function novaDocumentIcon(?string $type): string
+    {
+        return match ($type) {
+            'driver_license' => 'card',
+            'vehicle_registration' => 'scooter',
+            'profile' => 'user',
+            default => 'id',
         };
     }
 
@@ -166,20 +214,6 @@ final class RiderWebUi
             'bicycle' => 'fa-bicycle',
             'walk' => 'fa-person-walking',
             default => 'fa-motorcycle',
-        };
-    }
-
-    /**
-     * ไอคอนเอกสาร
-     */
-    public static function documentIcon(?string $type): string
-    {
-        return match ($type) {
-            'id_card' => 'fa-id-card',
-            'driver_license' => 'fa-id-badge',
-            'vehicle_registration' => 'fa-file-contract',
-            'profile' => 'fa-user',
-            default => 'fa-file',
         };
     }
 

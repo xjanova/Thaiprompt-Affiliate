@@ -1,11 +1,11 @@
 {{--
-    ตัวช่วย JavaScript ร่วมของหน้าเว็บไรเดอร์ (window.rdApi)
+    ตัวช่วย JavaScript ร่วมของหน้าเว็บไรเดอร์ (window.rdApi) — vanilla JS ไม่พึ่ง jQuery
     - post(): ยิง AJAX ไป route session user.rider.* พร้อม CSRF → {ok, status, code, message, data}
       ข้อความผิดพลาดเป็นภาษาไทยเสมอ (ไม่โชว์ข้อความดิบจากเซิร์ฟเวอร์ถ้าไม่ใช่รูปแบบของระบบ)
     - upload(): อัปโหลดไฟล์พร้อมแถบความคืบหน้า (XMLHttpRequest) คืนผลลัพธ์รูปแบบเดียวกับ post()
-    - geo(): ขอพิกัดจากเบราว์เซอร์ (ไม่ได้ = null ไม่ throw)
     - shrink(): ย่อรูปก่อนอัปโหลด (jpg/png/webp ใหญ่กว่า 1.5MB) ประหยัดเน็ตมือถือ
-    (2026-10-13) ลบ rdLocator (ส่งตำแหน่งจากเบราว์เซอร์) + rdJobBoard (รับงาน/ไม่สนใจ) แล้ว — ทำในแอป Thai Prompt APP เท่านั้น
+    - toast(): แจ้งเตือนลอยของเปลือกโนวา (window.showNotification)
+    (2026-10-13) ลบตัวส่งตำแหน่งจากเบราว์เซอร์ + ปุ่มรับงานแล้ว — ทำในแอป Thai Prompt APP เท่านั้น
 --}}
 <script>
 (function () {
@@ -27,24 +27,6 @@
         return 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
     }
 
-    async function post(url, data) {
-        var isForm = (typeof FormData !== 'undefined') && (data instanceof FormData);
-        var headers = { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' };
-        if (!isForm) { headers['Content-Type'] = 'application/json'; }
-
-        var res;
-        try {
-            res = await fetch(url, { method: 'POST', headers: headers, body: isForm ? data : JSON.stringify(data || {}), credentials: 'same-origin' });
-        } catch (e) {
-            return { ok: false, status: 0, code: 'NETWORK', message: statusText(0), data: null };
-        }
-
-        var body = null;
-        try { body = await res.json(); } catch (e) { body = null; }
-
-        return result(res.status, res.ok, body);
-    }
-
     /**
      * แปลงคำตอบเซิร์ฟเวอร์เป็นผลลัพธ์กลาง (ใช้ทั้ง fetch และ XMLHttpRequest)
      * ข้อความจากระบบไรเดอร์ (มี code) เป็นภาษาไทยที่ตั้งใจให้ผู้ใช้เห็น — นอกนั้นใช้ข้อความกลาง
@@ -63,6 +45,21 @@
         }
 
         return { ok: false, status: status, code: body && body.code ? body.code : null, message: message, data: body && body.data ? body.data : null };
+    }
+
+    async function post(url, data) {
+        var headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' };
+        var res;
+        try {
+            res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data || {}), credentials: 'same-origin' });
+        } catch (e) {
+            return result(0, false, null);
+        }
+
+        var body = null;
+        try { body = await res.json(); } catch (e) { body = null; }
+
+        return result(res.status, res.ok, body);
     }
 
     /**
@@ -91,23 +88,6 @@
         });
     }
 
-    function geo(timeoutMs) {
-        return new Promise(function (resolve) {
-            if (!('geolocation' in navigator)) { resolve(null); return; }
-            var done = false;
-            var timer = setTimeout(function () { if (!done) { done = true; resolve(null); } }, (timeoutMs || 12000) + 500);
-            navigator.geolocation.getCurrentPosition(function (pos) {
-                if (done) { return; }
-                done = true; clearTimeout(timer);
-                resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy,
-                    speed: pos.coords.speed, heading: pos.coords.heading });
-            }, function () {
-                if (done) { return; }
-                done = true; clearTimeout(timer); resolve(null);
-            }, { enableHighAccuracy: true, timeout: timeoutMs || 12000, maximumAge: 30000 });
-        });
-    }
-
     function shrink(file, maxSide) {
         return new Promise(function (resolve) {
             if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size < 1.5 * 1024 * 1024 || !window.createImageBitmap) {
@@ -133,11 +113,6 @@
         if (typeof window.showNotification === 'function') { window.showNotification(message, type || 'info'); }
     }
 
-    function money(value) {
-        var n = Math.round(Number(value || 0) * 100) / 100;
-        return n.toLocaleString('th-TH', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
-    }
-
-    window.rdApi = { post: post, upload: upload, geo: geo, shrink: shrink, toast: toast, money: money, statusText: statusText };
+    window.rdApi = { post: post, upload: upload, shrink: shrink, toast: toast, statusText: statusText };
 })();
 </script>
