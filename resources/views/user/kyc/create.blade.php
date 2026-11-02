@@ -1,221 +1,193 @@
-@extends('layouts.user-v4')
+{{--
+    ส่งเอกสารยืนยันตัวตน (ธีมโนวาเต็ม)
+    POST user.kyc.store (KycController::store) — id_card_image + selfie_image · jpeg/jpg/png · ไม่เกิน 5MB ต่อไฟล์
+    - ตรวจชนิด/ขนาดไฟล์ในเบราว์เซอร์ก่อน (ฝั่งเซิร์ฟเวอร์ตรวจซ้ำเสมอ) จะได้ไม่ต้องรออัปโหลดรูปใหญ่แล้วค่อยรู้ว่าไม่ผ่าน
+    - กดส่งแล้วปุ่มล็อก กันกดซ้ำระหว่างอัปโหลด · กลับมาด้วยปุ่มย้อนกลับของเบราว์เซอร์ = ปลดล็อก (pageshow)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ส่งเอกสารยืนยันตัวตน')
 
+@php
+    $nvArt = fn (string $name, string $fallback) => is_file(public_path("images/nova/account/{$name}.webp"))
+        ? asset("images/nova/account/{$name}.webp") : asset("images/nova/{$fallback}.webp");
+
+    // ชื่อช่อง => [หัวข้อ, คำอธิบายในกล่องเลือกรูป, ภาพประกอบ]
+    $slots = [
+        'id_card_image' => ['รูปบัตรประชาชน / ใบขับขี่', 'ถ่ายทั้งใบให้เห็นข้อความและตัวเลขครบ', 'idcard'],
+        'selfie_image' => ['รูปตัวเองถือบัตร', 'ถือบัตรไว้ข้างใบหน้า ไม่สวมหมวกหรือแว่นดำ', 'profile'],
+    ];
+    $hadErrors = $errors->any();
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 18%, transparent), transparent 70%);">
-            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                <a href="{{ route('user.kyc.index') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:23px; background:#5aa07e;"><i class="fas fa-upload" style="color:#fff;"></i></span>
-                <div>
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ส่งเอกสารยืนยันตัวตน</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">กรุณาอัปโหลดเอกสารเพื่อยืนยันตัวตน</div>
-                </div>
-            </div>
+<div class="nvm-stack" x-data="nvmKycUpload()" @pageshow.window="busy = false">
+
+<section class="nvm-ph" aria-labelledby="nvm-kyc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.kyc.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>สถานะการยืนยันตัวตน</a>
+            <div class="nvm-eyebrow nvm-latin">Submit documents</div>
+            <h1 id="nvm-kyc-h">ส่งเอกสารยืนยันตัวตน</h1>
+            <p class="nvm-ph__lead">อัปโหลดรูป 2 รูป ระบบอ่านข้อมูลจากบัตรให้อัตโนมัติ แล้วทีมงานตรวจภายใน 1-3 วันทำการ</p>
         </div>
+        <img class="nvm-ph__art" src="{{ $nvArt('shield', 'deco/scroll') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 16px; border-left:4px solid #d9534f;">
-            <i class="fas fa-exclamation-circle" style="color:#d9534f; margin-right:8px;"></i>{{ session('error') }}
+@if(session('error'))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ส่งเอกสารไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
+    </section>
+@endif
+
+@if($hadErrors)
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt">
+            <b>ส่งเอกสารไม่สำเร็จ</b>
+            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+            <p>เบราว์เซอร์ไม่เก็บรูปที่เลือกไว้ กรุณาเลือกรูปทั้ง 2 รูปใหม่อีกครั้ง</p>
         </div>
-    @endif
+    </section>
+@endif
 
-    @if($errors->any())
-        <div class="tp-card" style="padding:16px; border-left:4px solid #d9534f;">
-            <div style="font-weight:800; color:#d9534f; margin-bottom:8px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>พบข้อผิดพลาด:</div>
-            <ul style="margin:0; padding-left:18px; font-size:13px; color:var(--ink); display:flex; flex-direction:column; gap:4px;">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-kyc-f-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Documents</small><h2 id="nvm-kyc-f-h">เลือกรูปเอกสาร</h2></div></div>
 
-    {{-- ── ตัวอย่างการถ่ายรูป ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px;">
-        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-images" style="margin-right:6px;"></i>ตัวอย่างการถ่ายรูป</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
-            <div style="border-radius:12px; box-shadow:var(--inset-sm); padding:16px;">
-                <div style="font-weight:700; color:var(--ink); text-align:center; margin-bottom:12px;"><i class="fas fa-id-card" style="color:#5689b8; margin-right:6px;"></i>รูปบัตรประชาชน / ใบขับขี่</div>
-                <div style="border-radius:10px; padding:16px; margin-bottom:12px; border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent);">
-                    <svg style="width:100%; height:128px;" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="320" height="180" rx="8" fill="white"/>
-                        <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
-                        <text x="160" y="30" text-anchor="middle" font-size="14" fill="#374151" font-weight="bold">บัตรประจำตัวประชาชน</text>
-                        <rect x="20" y="45" width="60" height="80" rx="4" fill="#D1D5DB"/>
-                        <text x="50" y="90" text-anchor="middle" font-size="24" fill="#6B7280">👤</text>
-                        <rect x="90" y="50" width="120" height="8" rx="2" fill="#D1D5DB"/>
-                        <rect x="90" y="65" width="100" height="8" rx="2" fill="#D1D5DB"/>
-                        <rect x="90" y="80" width="80" height="8" rx="2" fill="#D1D5DB"/>
-                        <rect x="90" y="95" width="110" height="8" rx="2" fill="#D1D5DB"/>
-                        <rect x="20" y="135" width="280" height="25" rx="4" fill="#3B82F6" fill-opacity="0.2"/>
-                        <text x="160" y="152" text-anchor="middle" font-size="12" fill="#1E40AF">เลขบัตรประชาชน 13 หลัก</text>
-                    </svg>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--ink2);">
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ถ่ายทั้งหน้าบัตรให้เห็นชัดเจน</div>
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ข้อความและตัวเลขต้องอ่านได้</div>
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>แสงสว่างเพียงพอ ไม่มืด ไม่เบลอ</div>
-                </div>
-            </div>
-
-            <div style="border-radius:12px; box-shadow:var(--inset-sm); padding:16px;">
-                <div style="font-weight:700; color:var(--ink); text-align:center; margin-bottom:12px;"><i class="fas fa-user-circle" style="color:#5689b8; margin-right:6px;"></i>รูปถ่ายตัวเอง + บัตร</div>
-                <div style="border-radius:10px; padding:16px; margin-bottom:12px; border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent);">
-                    <svg style="width:100%; height:128px;" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="320" height="180" rx="8" fill="white"/>
-                        <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
-                        <circle cx="160" cy="70" r="35" fill="#FDE68A"/>
-                        <circle cx="150" cy="65" r="3" fill="#374151"/>
-                        <circle cx="170" cy="65" r="3" fill="#374151"/>
-                        <path d="M 150 80 Q 160 85 170 80" stroke="#374151" stroke-width="2" fill="none"/>
-                        <rect x="190" y="95" width="90" height="55" rx="3" fill="#BFDBFE" stroke="#3B82F6" stroke-width="2"/>
-                        <text x="235" y="115" text-anchor="middle" font-size="8" fill="#1E40AF">บัตรประชาชน</text>
-                        <rect x="200" y="120" width="20" height="25" rx="2" fill="#93C5FD"/>
-                        <rect x="225" y="123" width="35" height="3" rx="1" fill="#93C5FD"/>
-                        <rect x="225" y="130" width="30" height="3" rx="1" fill="#93C5FD"/>
-                    </svg>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--ink2);">
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ถือบัตรไว้ใกล้ใบหน้า</div>
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ใบหน้าและบัตรต้องชัดเจนทั้งคู่</div>
-                    <div><i class="fas fa-check" style="color:#5aa07e; margin-right:6px;"></i>ไม่ปิดบังใบหน้าด้วยหมวกหรือแว่น</div>
-                </div>
-            </div>
-        </div>
-        <div style="margin-top:16px; padding:12px; border-radius:10px; box-shadow:var(--inset-sm);">
-            <p style="font-size:12px; color:var(--ink2); margin:0;"><i class="fas fa-lightbulb" style="color:#d9a441; margin-right:6px;"></i><strong>เคล็ดลับ:</strong> รูปจะถูกแปลงเป็น WebP อัตโนมัติเพื่อประหยัดพื้นที่และเพิ่มความเร็ว</p>
-        </div>
-    </div>
-
-    {{-- ── เงื่อนไข ──────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px; border-left:4px solid #5689b8;">
-        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-clipboard-check" style="margin-right:6px;"></i>เงื่อนไขและข้อกำหนด</div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
-                <div><div style="font-weight:700; color:var(--ink);">บัตรประชาชน หรือ ใบขับขี่ ต้องไม่หมดอายุ</div><div style="font-size:12px; color:var(--ink2);">ตรวจสอบวันหมดอายุบนบัตร</div></div>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
-                <div><div style="font-weight:700; color:var(--ink);">รองรับไฟล์: JPEG, JPG, PNG</div><div style="font-size:12px; color:var(--ink2);">ขนาดไม่เกิน 5 MB ต่อไฟล์</div></div>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <i class="fas fa-check-circle" style="color:#5689b8; margin-top:3px;"></i>
-                <div><div style="font-weight:700; color:var(--ink);">รูปถ่ายต้องชัดเจน ไม่มืด ไม่เบลอ</div><div style="font-size:12px; color:var(--ink2);">ควรถ่ายในที่แสงสว่างเพียงพอ</div></div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── ฟอร์มอัปโหลด ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px;" x-data="kycUpload()">
-        <form action="{{ route('user.kyc.store') }}" method="POST" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:18px;">
+        <form method="POST" action="{{ route('user.kyc.store') }}" enctype="multipart/form-data" class="nvm-form" novalidate @submit="submit($event)">
             @csrf
 
-            {{-- บัตรประชาชน --}}
-            <div>
-                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;"><i class="fas fa-id-card" style="margin-right:4px;"></i>รูปบัตรประชาชน / ใบขับขี่ <span style="color:#d9534f;">*</span></label>
-                <div style="border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent); border-radius:12px; padding:24px; text-align:center; cursor:pointer;" @click="$refs.idCardInput.click()">
-                    <template x-if="!idCardPreview">
-                        <div>
-                            <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--ink2); margin-bottom:10px;"></i>
-                            <p style="font-size:13px; color:var(--ink2); margin:0 0 4px;">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
-                            <p style="font-size:11px; color:var(--ink2); margin:0;">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
-                        </div>
-                    </template>
-                    <template x-if="idCardPreview">
-                        <div>
-                            <img :src="idCardPreview" style="max-height:256px; margin:0 auto 12px; border-radius:10px;" alt="ID Card Preview">
-                            <button type="button" @click.stop="removeIdCard()" class="tp-btn tp-btn-sm" style="color:#d9534f;"><i class="fas fa-trash"></i> ลบรูป</button>
-                        </div>
-                    </template>
+            @foreach($slots as $name => [$label, $hint, $art])
+                <div class="nvm-field">
+                    <span class="nvm-label" id="{{ $name }}-lbl">{{ $label }} <em>*</em></span>
+                    <label class="nvm-drop-zone nvm-ky-drop" :class="{ 'has-file': files.{{ $name }}, 'is-bad': errors.{{ $name }} }">
+                        <template x-if="! files.{{ $name }}">
+                            <span class="nvm-ky-drop__idle">
+                                <img src="{{ $nvArt($art, 'deco/scroll') }}" alt="" width="72" height="72" loading="lazy">
+                                <b>แตะเพื่อถ่ายรูปหรือเลือกรูป</b>
+                                <small>{{ $hint }}</small>
+                                <small>JPG หรือ PNG ไม่เกิน 5 MB</small>
+                            </span>
+                        </template>
+                        <template x-if="files.{{ $name }}">
+                            <span class="nvm-ky-drop__pick">
+                                <img :src="files.{{ $name }}.url" alt="ตัวอย่าง{{ $label }}">
+                                <small class="nvm-num" x-text="files.{{ $name }}.name + ' · ' + files.{{ $name }}.size"></small>
+                            </span>
+                        </template>
+                        <input type="file" name="{{ $name }}" id="{{ $name }}" class="nvm-sr" accept="image/jpeg,image/png" aria-labelledby="{{ $name }}-lbl" x-ref="{{ $name }}" @change="pick('{{ $name }}', $event)">
+                    </label>
+                    <div class="nvm-ky-drop__acts" x-show="files.{{ $name }}" x-cloak>
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="$refs.{{ $name }}.click()">เปลี่ยนรูป</button>
+                        <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="clear('{{ $name }}')">ลบรูป</button>
+                    </div>
+                    <span class="nvm-err" x-show="errors.{{ $name }}" x-text="errors.{{ $name }}" x-cloak></span>
+                    @error($name)<span class="nvm-err" x-show="! errors.{{ $name }}">{{ $message }}</span>@enderror
                 </div>
-                <input type="file" name="id_card_image" id="id_card_image" accept="image/jpeg,image/jpg,image/png"
-                       style="display:none;" x-ref="idCardInput" @change="previewIdCard($event)" required>
-                @error('id_card_image')
-                    <p style="font-size:12px; color:#d9534f; margin-top:6px;">{{ $message }}</p>
-                @enderror
-            </div>
+            @endforeach
 
-            {{-- เซลฟี่ --}}
-            <div>
-                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;"><i class="fas fa-user-circle" style="margin-right:4px;"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน <span style="color:#d9534f;">*</span></label>
-                <div style="border:2px dashed color-mix(in srgb, var(--ink2) 30%, transparent); border-radius:12px; padding:24px; text-align:center; cursor:pointer;" @click="$refs.selfieInput.click()">
-                    <template x-if="!selfiePreview">
-                        <div>
-                            <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--ink2); margin-bottom:10px;"></i>
-                            <p style="font-size:13px; color:var(--ink2); margin:0 0 4px;">คลิกเพื่ออัปโหลดรูปถ่ายตัวเอง</p>
-                            <p style="font-size:11px; color:var(--ink2); margin:0;">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
-                        </div>
-                    </template>
-                    <template x-if="selfiePreview">
-                        <div>
-                            <img :src="selfiePreview" style="max-height:256px; margin:0 auto 12px; border-radius:10px;" alt="Selfie Preview">
-                            <button type="button" @click.stop="removeSelfie()" class="tp-btn tp-btn-sm" style="color:#d9534f;"><i class="fas fa-trash"></i> ลบรูป</button>
-                        </div>
-                    </template>
-                </div>
-                <input type="file" name="selfie_image" id="selfie_image" accept="image/jpeg,image/jpg,image/png"
-                       style="display:none;" x-ref="selfieInput" @change="previewSelfie($event)" required>
-                @error('selfie_image')
-                    <p style="font-size:12px; color:#d9534f; margin-top:6px;">{{ $message }}</p>
-                @enderror
+            <div class="nvm-filter__btns">
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.kyc.index') }}">ยกเลิก</a>
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span x-text="busy ? 'กำลังส่งเอกสาร…' : 'ส่งเอกสาร'">ส่งเอกสาร</span></button>
             </div>
-
-            {{-- ปุ่ม --}}
-            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <a href="{{ route('user.kyc.index') }}" class="tp-btn" style="flex:1; min-width:120px; justify-content:center; text-align:center;"><i class="fas fa-times"></i> ยกเลิก</a>
-                <button type="submit" class="tp-btn tp-btn-primary" style="flex:1; min-width:120px; justify-content:center; background:#5aa07e; border-color:#5aa07e;"><i class="fas fa-paper-plane"></i> ส่งเอกสาร</button>
-            </div>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>รูปเอกสารเก็บในพื้นที่ส่วนตัว เปิดดูได้เฉพาะคุณและทีมงานที่ตรวจ</p>
         </form>
-    </div>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-kyc-tip-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Photo tips</small><h2 id="nvm-kyc-tip-h">ถ่ายรูปให้ผ่านในครั้งเดียว</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ใช้บัตรประชาชนหรือใบขับขี่ที่ยังไม่หมดอายุ</li>
+            <li>วางบัตรบนพื้นเรียบ ถ่ายตรงๆ ให้เห็นครบทั้งใบ ไม่ตัดขอบ</li>
+            <li>ถ่ายในที่สว่าง ไม่มีแสงสะท้อนทับตัวหนังสือ ภาพไม่มืดและไม่เบลอ</li>
+            <li>รูปคู่บัตร ถือบัตรไว้ข้างใบหน้า ให้เห็นทั้งหน้าและบัตรชัดเจน</li>
+        </ol>
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>ระบบแปลงรูปเป็น WebP ให้เองหลังส่ง ไม่ต้องย่อรูปก่อน</p>
+    </aside>
 </div>
+
+</div>
+@endsection
 
 @push('scripts')
 <script>
-function kycUpload() {
+/**
+ * ฟอร์มส่งเอกสาร KYC — แสดงตัวอย่างรูป ตรวจชนิด/ขนาดก่อนส่ง และกันกดส่งซ้ำ
+ *
+ * ใช้ object URL แทน FileReader (ไม่ต้องอ่านรูป 5MB เป็น base64 ทั้งก้อน) และคืนหน่วยความจำทุกครั้งที่เปลี่ยน/ลบรูป
+ */
+function nvmKycUpload() {
+    const MAX = 5 * 1024 * 1024;
+    const TYPES = ['image/jpeg', 'image/png'];
+    const LABELS = { id_card_image: 'รูปบัตรประชาชน / ใบขับขี่', selfie_image: 'รูปตัวเองถือบัตร' };
+
     return {
-        idCardPreview: null,
-        selfiePreview: null,
+        busy: false,
+        files: { id_card_image: null, selfie_image: null },
+        errors: { id_card_image: '', selfie_image: '' },
 
-        previewIdCard(event) {
+        init() {
+            window.addEventListener('pagehide', () => Object.keys(this.files).forEach((name) => this.release(name)));
+        },
+
+        pick(name, event) {
             const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.idCardPreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            this.errors[name] = '';
+            if (! file) { return; }
+
+            // บางเครื่องไม่บอกชนิดไฟล์ (type ว่าง) — ปล่อยให้เซิร์ฟเวอร์ตัดสิน
+            if (file.type && ! TYPES.includes(file.type)) {
+                this.clear(name);
+                this.errors[name] = LABELS[name] + 'ต้องเป็นไฟล์ JPG หรือ PNG เท่านั้น';
+                return;
             }
-        },
-
-        previewSelfie(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.selfiePreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            if (file.size > MAX) {
+                this.clear(name);
+                this.errors[name] = LABELS[name] + 'ใหญ่เกิน 5 MB กรุณาถ่ายใหม่หรือเลือกรูปที่เล็กลง';
+                return;
             }
+
+            this.release(name);
+            const mb = file.size / 1024 / 1024;
+            this.files[name] = {
+                url: URL.createObjectURL(file),
+                name: file.name,
+                size: mb >= 1 ? mb.toFixed(1) + ' MB' : Math.max(1, Math.round(file.size / 1024)) + ' KB',
+            };
         },
 
-        removeIdCard() {
-            this.idCardPreview = null;
-            this.$refs.idCardInput.value = '';
+        clear(name) {
+            this.release(name);
+            this.files[name] = null;
+            if (this.$refs[name]) { this.$refs[name].value = ''; }
         },
 
-        removeSelfie() {
-            this.selfiePreview = null;
-            this.$refs.selfieInput.value = '';
-        }
+        release(name) {
+            if (this.files[name]) { URL.revokeObjectURL(this.files[name].url); }
+        },
+
+        submit(event) {
+            if (this.busy) { event.preventDefault(); return; }
+
+            let ok = true;
+            Object.keys(this.files).forEach((name) => {
+                if (! this.files[name]) {
+                    this.errors[name] = this.errors[name] || 'กรุณาเลือก' + LABELS[name];
+                    ok = false;
+                }
+            });
+            if (! ok) {
+                event.preventDefault();
+                return;
+            }
+
+            this.busy = true;
+        },
     };
 }
 </script>
 @endpush
-@endsection

@@ -186,7 +186,9 @@ class KycController extends Controller
         // Prepare success message with OCR warning if applicable
         $successMessage = 'ส่งคำขอยืนยันตัวตนเรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบและอนุมัติ';
 
-        if ($ocrError) {
+        // ระบบ OCR ยังไม่ได้ตั้งค่า = เรื่องของแอดมิน (คำแนะนำพูดถึง API Key ของระบบ) ไม่ใช่สิ่งที่สมาชิกแก้ได้
+        // → ไม่โชว์ให้สมาชิกเห็น คำขอส่งสำเร็จแล้ว แอดมินกรอกข้อมูลจากรูปเองตอนตรวจ (log ไว้แล้วด้านบน)
+        if ($ocrError && $ocrError['error_code'] !== 'OCR_NOT_CONFIGURED') {
             // OCR failed, but submission succeeded
             return redirect()->route('user.kyc.index')
                 ->with('warning', $successMessage)
