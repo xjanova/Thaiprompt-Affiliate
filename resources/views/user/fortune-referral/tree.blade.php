@@ -1,235 +1,246 @@
-{{-- resources/views/user/fortune-referral/tree.blade.php --}}
 {{--
-    ผังสายงานดูดวง - User
-    แสดงโครงสร้างการแนะนำเพื่อนดูดวง (L1/L2) ของ user ปัจจุบัน
-    ใช้ OrgChartViewer + Fortune commission data overlay
-
-    @author TP-Affiliate Team
-    @version 4.0.0
+    ผังสายงานดูดวง (ธีมโนวาเต็ม) — FortuneReferralDashboardController::tree
+    - $currentMember = MlmMember ของสมาชิก (null = ยังไม่อยู่ในระบบ MLM → แสดงหน้าว่าง ไม่โหลดผัง)
+    - ผังวาดด้วย OrgChartViewer (public/assets/js/org-chart-viewer.js มีสไตล์ในตัว รองรับ html.dark)
+      ข้อมูลจาก route user.fortune-referral.tree-data (เฉพาะสายงานใต้สมาชิกคนนี้)
 --}}
-
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'ผังสายงานดูดวง')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/fortune-referral.css') }}?v={{ filemtime(public_path('theme-nova/member/fortune-referral.css')) }}">@endpush
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $baht = fn ($n) => '฿'.number_format((float) $n, 2);
+
+    $kpis = [
+        ['รายได้รวม', 'Total', $baht($stats['total']), 'images/nova/deco/coins.webp', 'คอมมิชชั่นดูดวงทั้งหมด'],
+        ['L1 สายตรง', 'Direct', $baht($stats['level1']), 'images/nova/deco/crystal.webp', 'เพื่อนที่คุณแนะนำ'],
+        ['L2 ชั้นหลาน', 'Second level', $baht($stats['level2']), 'images/nova/deco/lotus.webp', 'เพื่อนของเพื่อน'],
+        ['ผู้ที่คุณแนะนำ', 'Referrals', number_format((int) $stats['referral_count']).' คน', 'images/nova/mascot/welcome.webp', 'สายตรงในระบบ MLM'],
+    ];
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #7c5cbf 18%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-                <div style="flex:1; min-width:220px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span class="tp-tile" style="width:50px; height:50px; border-radius:15px; font-size:22px; background:#7c5cbf;"><span style="color:#fff;">🔮</span></span>
-                        <div>
-                            <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ผังสายงานดูดวง</h1>
-                            <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">Level 1 (สายตรง) และ Level 2 (ชั้นหลาน)</div>
-                        </div>
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <a href="{{ route('user.fortune-referral.commissions') }}" class="tp-btn tp-btn-sm">💰 คอมมิชชั่น</a>
-                    <a href="{{ route('user.fortune-referral.recruit') }}" class="tp-btn tp-btn-sm">📢 ชวนเพื่อน</a>
-                </div>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-fr-t-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.mlm.genealogy'))
+                <a class="nvm-ph__back" href="{{ route('user.mlm.genealogy') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>สายงานของฉัน</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">Fortune network</div>
+            <h1 id="nvm-fr-t-h">ผังสายงานดูดวง</h1>
+            <p class="nvm-ph__lead">โครงสร้างการแนะนำเพื่อนดูดวงของคุณ — Level 1 (สายตรง) และ Level 2 (ชั้นหลาน)</p>
+            <div class="nvm-pills">
+                <a class="nvm-pill nvm-pill--glass" href="{{ route('user.fortune-referral.commissions') }}"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>คอมมิชชั่น</a>
+                <a class="nvm-pill nvm-pill--gold" href="{{ route('user.fortune-referral.recruit') }}"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>ชวนเพื่อน</a>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── การ์ดสถิติ ───────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
-        <div class="tp-card" style="padding:16px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="font-size:18px;">💰</span>
-                <span style="font-size:11px; font-weight:600; color:var(--ink2);">รายได้รวม</span>
-            </div>
-            <div class="tp-num" style="font-size:23px; font-weight:800; color:var(--deep1);">฿{{ number_format($stats['total'], 2) }}</div>
+<section class="nvm-kpis" aria-label="สรุปสายงานดูดวง">
+    @foreach($kpis as [$label, $en, $value, $img, $foot])
+        <div class="nvm-card nvm-kpi nvm-rv">
+            <img class="nvm-kpi__img" src="{{ asset($img) }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">{{ $label }}</div>
+            <div class="nvm-kpi__en nvm-latin">{{ $en }}</div>
+            <div class="nvm-kpi__val nvm-num">{{ $value }}</div>
+            <div class="nvm-kpi__foot"><small>{{ $foot }}</small></div>
         </div>
-        <div class="tp-card" style="padding:16px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="display:inline-flex; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; color:#5689b8; background:color-mix(in srgb, #5689b8 16%, transparent);">L1</span>
-                <span style="font-size:11px; font-weight:600; color:var(--ink2);">สายตรง</span>
-            </div>
-            <div class="tp-num" style="font-size:23px; font-weight:800; color:#5689b8;">฿{{ number_format($stats['level1'], 2) }}</div>
-        </div>
-        <div class="tp-card" style="padding:16px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="display:inline-flex; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; color:#7c5cbf; background:color-mix(in srgb, #7c5cbf 16%, transparent);">L2</span>
-                <span style="font-size:11px; font-weight:600; color:var(--ink2);">ชั้นหลาน</span>
-            </div>
-            <div class="tp-num" style="font-size:23px; font-weight:800; color:#7c5cbf;">฿{{ number_format($stats['level2'], 2) }}</div>
-        </div>
-        <div class="tp-card" style="padding:16px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="font-size:18px;">👥</span>
-                <span style="font-size:11px; font-weight:600; color:var(--ink2);">ผู้แนะนำ</span>
-            </div>
-            <div class="tp-num" style="font-size:23px; font-weight:800; color:#5aa07e;">{{ number_format($stats['referral_count']) }} คน</div>
-        </div>
-    </div>
+    @endforeach
+</section>
 
-    @if($currentMember)
-        {{-- ── ตัวควบคุม ─────────────────────────────────────── --}}
-        <div class="tp-card" style="padding:18px;">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:16px; background:#7c5cbf;"><i class="fas fa-sitemap" style="color:#fff;"></i></span>
-                    <div>
-                        <div style="font-weight:800; color:var(--ink);">สายงานของฉัน</div>
-                        <div style="font-size:12px; color:var(--ink2);">รหัส: {{ $currentMember->member_code ?? '-' }}</div>
-                    </div>
-                </div>
-                <div style="display:flex; align-items:flex-end; gap:12px;">
-                    <div>
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--ink2); margin-bottom:4px;">ความลึก</label>
-                        <select id="depth-selector" class="tp-input" style="padding:8px 12px;">
-                            <option value="3">3 ระดับ</option>
-                            <option value="5" selected>5 ระดับ</option>
-                            <option value="7">7 ระดับ</option>
-                            <option value="10">10 ระดับ</option>
-                        </select>
-                    </div>
-                    <button id="btn-reload-tree" class="tp-btn tp-btn-primary" style="background:#7c5cbf; border-color:#7c5cbf;">
-                        <i class="fas fa-sync-alt"></i> รีเฟรช
-                    </button>
+@if($currentMember)
+    <section class="nvm-card nvm-box" aria-label="ตัวควบคุมผัง">
+        <div class="nvm-fr-ctl">
+            <div class="nvm-fr-ctl__who">
+                <span class="nvm-tx__ic"><svg class="nvm-ico"><use href="#nvm-i-users"/></svg></span>
+                <div>
+                    <b>สายงานของฉัน</b>
+                    <small>รหัสสมาชิก: <span class="nvm-num">{{ $currentMember->member_code ?? '-' }}</span></small>
                 </div>
             </div>
-        </div>
-
-        {{-- ── ตัวแสดงผัง ─────────────────────────────────────── --}}
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:14px 20px; box-shadow:var(--inset-sm); display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-project-diagram" style="color:#7c5cbf;"></i>
-                <span style="font-weight:800; color:var(--ink);">โครงสร้างสายงาน</span>
-            </div>
-            <div style="height:clamp(350px, calc(100vh - 450px), 650px);">
-                <div id="fortune-tree-container" style="width:100%; height:100%;"></div>
-            </div>
-        </div>
-    @else
-        {{-- ── ยังไม่มี MLM Member ─────────────────────────────── --}}
-        <div class="tp-card" style="padding:32px; text-align:center;">
-            <div style="width:80px; height:80px; margin:0 auto 20px; border-radius:50%; box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center;">
-                <span style="font-size:40px;">🔮</span>
-            </div>
-            <h3 style="font-size:19px; font-weight:800; color:var(--ink); margin:0 0 8px;">ยังไม่มีข้อมูลสายงาน</h3>
-            <p style="color:var(--ink2); margin:0 0 20px;">คุณยังไม่ได้เป็นสมาชิกในระบบ MLM เริ่มชวนเพื่อนมาดูดวงเพื่อสร้างสายงานของคุณ!</p>
-            <a href="{{ route('user.fortune-referral.recruit') }}" class="tp-btn tp-btn-primary" style="background:#7c5cbf; border-color:#7c5cbf;">📢 ชวนเพื่อนดูดวง</a>
-        </div>
-    @endif
-
-    {{-- ── คำอธิบาย + วิธีใช้ ─────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
-        <div class="tp-card" style="padding:18px;">
-            <div class="tp-section-h" style="margin-bottom:14px;">📋 คำอธิบายสัญลักษณ์</div>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="display:inline-flex; padding:2px 12px; border-radius:999px; font-size:11px; font-weight:700; color:#5689b8; background:color-mix(in srgb, #5689b8 16%, transparent);">L1</span>
-                    <span style="font-size:13px; color:var(--ink);">ชั้น 1 (สายตรง) — เพื่อนที่คุณแนะนำโดยตรง</span>
+            <div class="nvm-fr-ctl__form">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="depth-selector">ความลึก</label>
+                    <select id="depth-selector" class="nvm-input">
+                        <option value="3">3 ระดับ</option>
+                        <option value="5" selected>5 ระดับ</option>
+                        <option value="7">7 ระดับ</option>
+                        <option value="10">10 ระดับ</option>
+                    </select>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="display:inline-flex; padding:2px 12px; border-radius:999px; font-size:11px; font-weight:700; color:#7c5cbf; background:color-mix(in srgb, #7c5cbf 16%, transparent);">L2</span>
-                    <span style="font-size:13px; color:var(--ink);">ชั้น 2 (ชั้นหลาน) — เพื่อนของเพื่อนที่คุณแนะนำ</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="width:16px; height:16px; border-radius:50%; background:#5aa07e;"></span>
-                    <span style="font-size:13px; color:var(--ink);">สมาชิกที่ยังใช้งานอยู่</span>
-                </div>
+                <button type="button" id="btn-reload-tree" class="nvm-btn nvm-btn--gold">
+                    <svg class="nvm-ico"><use href="#nvm-i-history"/></svg>รีเฟรช
+                </button>
             </div>
         </div>
+    </section>
 
-        <div class="tp-card" style="padding:18px;">
-            <div class="tp-section-h" style="margin-bottom:14px;">💡 วิธีใช้งาน</div>
-            <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink);">
-                <p style="margin:0;">📱 <strong>มือถือ:</strong> ลากนิ้วเพื่อเลื่อน, บีบนิ้วเพื่อซูม</p>
-                <p style="margin:0;">🖥️ <strong>คอมพิวเตอร์:</strong> คลิกค้างลากเพื่อเลื่อน, Scroll wheel เพื่อซูม</p>
-                <p style="margin:0;">👆 <strong>คลิก/แตะ</strong> ที่การ์ดสมาชิกเพื่อดูข้อมูลเพิ่มเติม</p>
-                <p style="margin:0;">🔄 กดปุ่ม <strong>"รีเฟรช"</strong> เพื่อโหลดข้อมูลล่าสุด</p>
-            </div>
+    <section class="nvm-card nvm-fr-tree" aria-labelledby="nvm-fr-tree-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Structure</small><h2 id="nvm-fr-tree-h">โครงสร้างสายงาน</h2></div></div>
+        <div class="nvm-fr-tree__box" id="fortune-tree-container"></div>
+        {{-- กล่องข้อความว่าง/ผิดพลาด แยกจากกล่องผัง — ไม่แทนที่ DOM ของผัง จึงใช้ viewer ตัวเดิมได้ตลอด --}}
+        <div class="nvm-fr-tree__box" id="fortune-tree-message" role="status" hidden></div>
+    </section>
+
+    {{-- แม่แบบข้อความว่าง/ผิดพลาด ใส่ลงกล่องผังเมื่อโหลดข้อมูลไม่ได้ --}}
+    <template id="nvm-fr-tree-empty">
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีข้อมูลสายงาน</b>
+            เริ่มชวนเพื่อนมาดูดวงเพื่อสร้างสายงาน!
         </div>
-    </div>
+    </template>
+    <template id="nvm-fr-tree-error">
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/lantern.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>เกิดข้อผิดพลาดในการโหลดข้อมูล</b>
+            กดปุ่ม "รีเฟรช" เพื่อลองใหม่อีกครั้ง
+        </div>
+    </template>
+@else
+    <section class="nvm-card nvm-box">
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีข้อมูลสายงาน</b>
+            คุณยังไม่ได้เป็นสมาชิกในระบบ MLM เริ่มชวนเพื่อนมาดูดวงเพื่อสร้างสายงานของคุณ!
+            <div><a class="nvm-btn nvm-btn--gold" href="{{ route('user.fortune-referral.recruit') }}"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>ชวนเพื่อนดูดวง</a></div>
+        </div>
+    </section>
+@endif
+
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-fr-legend-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Legend</small><h2 id="nvm-fr-legend-h">คำอธิบายสัญลักษณ์</h2></div></div>
+        <ul class="nvm-fr-legend">
+            <li><span class="nvm-chip nvm-chip--info">L1</span>ชั้น 1 (สายตรง) — เพื่อนที่คุณแนะนำโดยตรง</li>
+            <li><span class="nvm-chip nvm-chip--warn">L2</span>ชั้น 2 (ชั้นหลาน) — เพื่อนของเพื่อนที่คุณแนะนำ</li>
+            <li><span class="nvm-fr-dot" aria-hidden="true"></span>สมาชิกที่ยังใช้งานอยู่</li>
+        </ul>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-fr-use-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">How to use</small><h2 id="nvm-fr-use-h">วิธีใช้งาน</h2></div></div>
+        <ol class="nvm-steps">
+            <li>มือถือ: ลากนิ้วเพื่อเลื่อน บีบนิ้วเพื่อซูม</li>
+            <li>คอมพิวเตอร์: คลิกค้างแล้วลากเพื่อเลื่อน ใช้ล้อเมาส์เพื่อซูม</li>
+            <li>คลิกหรือแตะที่การ์ดสมาชิกเพื่อดูข้อมูลเพิ่มเติม</li>
+            <li>กดปุ่ม "รีเฟรช" เพื่อโหลดข้อมูลล่าสุด</li>
+        </ol>
+    </aside>
+</div>
+
 </div>
 @endsection
 
 @if($currentMember)
 @push('scripts')
-<script src="{{ asset('assets/js/org-chart-viewer.js') }}"></script>
+<script src="{{ asset('assets/js/org-chart-viewer.js') }}?v={{ filemtime(public_path('assets/js/org-chart-viewer.js')) }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    let viewer = null;
-    const container = document.getElementById('fortune-tree-container');
-    const depthSelector = document.getElementById('depth-selector');
-    const btnReload = document.getElementById('btn-reload-tree');
+document.addEventListener('DOMContentLoaded', function () {
+    var viewer = null;
+    var container = document.getElementById('fortune-tree-container');
+    var messageBox = document.getElementById('fortune-tree-message');
+    var depthSelector = document.getElementById('depth-selector');
+    var btnReload = document.getElementById('btn-reload-tree');
+    var dataUrl = @js(route('user.fortune-referral.tree-data'));
+    var loadSeq = 0; // เปลี่ยนความลึกระหว่างรอผล → ทิ้งผลของคำขอเก่า ไม่ให้วาดทับผลใหม่
+
+    var isMobile = function () { return window.innerWidth < 768; };
+    var sizing = function () {
+        return {
+            nodeWidth: isMobile() ? 160 : 200,
+            nodeHeight: isMobile() ? 110 : 120,
+            horizontalSpacing: isMobile() ? 20 : 40,
+            verticalSpacing: isMobile() ? 80 : 100
+        };
+    };
+
+    // แสดงข้อความว่าง/ผิดพลาดในกล่องแยก แล้วซ่อนกล่องผังไว้ (ไม่ลบ DOM ของผัง)
+    // เดิมแทนที่ DOM ของผังแล้วสร้าง OrgChartViewer ใหม่ทุกครั้ง → ตัวฟังเหตุการณ์ระดับ document ของตัวเก่าค้างสะสม
+    var showMessage = function (templateId) {
+        var tpl = document.getElementById(templateId);
+        messageBox.replaceChildren(tpl.content.cloneNode(true));
+        container.hidden = true;
+        messageBox.hidden = false;
+    };
+
+    var showChart = function () {
+        messageBox.hidden = true;
+        messageBox.replaceChildren();
+        container.hidden = false;
+    };
 
     /**
      * โหลดและแสดงผังสายงานดูดวง
      */
     async function loadFortuneTree() {
-        const depth = depthSelector.value;
+        var depth = parseInt(depthSelector.value, 10);
+        var seq = ++loadSeq;
+        btnReload.disabled = true;
+        showChart();
 
-        // สร้าง viewer ถ้ายังไม่มี
         if (!viewer) {
-            viewer = new OrgChartViewer(container, {
-                treeType: 'unilevel',
-                maxDepth: parseInt(depth),
-                nodeWidth: window.innerWidth < 768 ? 160 : 200,
-                nodeHeight: window.innerWidth < 768 ? 110 : 120,
-                horizontalSpacing: window.innerWidth < 768 ? 20 : 40,
-                verticalSpacing: window.innerWidth < 768 ? 80 : 100
-            });
+            viewer = new OrgChartViewer(container, Object.assign({ treeType: 'unilevel', maxDepth: depth }, sizing()));
         } else {
-            viewer.options.maxDepth = parseInt(depth);
+            viewer.options.maxDepth = depth;
             viewer.showLoading();
         }
 
-        // Fetch tree data จาก API
         try {
-            const response = await fetch(`{{ route('user.fortune-referral.tree-data') }}?depth=${depth}`);
-            const result = await response.json();
+            var response = await fetch(dataUrl + '?depth=' + depth, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            });
+            if (seq !== loadSeq) return;
+
+            // 404 = ยังไม่เป็นสมาชิก MLM → ข้อความว่าง · สถานะผิดพลาดอื่น (เช่น 500) → ข้อความผิดพลาดให้กดรีเฟรช
+            if (!response.ok) {
+                showMessage(response.status === 404 ? 'nvm-fr-tree-empty' : 'nvm-fr-tree-error');
+                return;
+            }
+
+            var result = await response.json();
+            if (seq !== loadSeq) return;
 
             if (result.success && result.data) {
                 viewer.setData(result.data);
             } else {
-                if (viewer) viewer.hideLoading();
-                // แสดง empty state ในคอนเทนเนอร์
-                container.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"><div class="text-center"><span class="text-4xl mb-4 block">🔮</span><p class="text-lg font-semibold">ยังไม่มีข้อมูลสายงาน</p><p class="text-sm mt-2">เริ่มชวนเพื่อนมาดูดวงเพื่อสร้างสายงาน!</p></div></div>';
+                showMessage('nvm-fr-tree-empty');
             }
         } catch (error) {
-            console.error('Error loading fortune tree:', error);
-            if (viewer) viewer.hideLoading();
-            container.innerHTML = '<div class="flex items-center justify-center h-full text-red-500"><div class="text-center"><span class="text-4xl mb-4 block">⚠️</span><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div></div>';
+            if (seq !== loadSeq) return;
+            console.error('โหลดผังสายงานดูดวงไม่สำเร็จ:', error);
+            showMessage('nvm-fr-tree-error');
+        } finally {
+            if (seq === loadSeq) btnReload.disabled = false;
         }
     }
 
-    // Event Listeners
     btnReload.addEventListener('click', loadFortuneTree);
+    depthSelector.addEventListener('change', loadFortuneTree);
 
-    depthSelector.addEventListener('change', function() {
-        if (viewer) {
-            loadFortuneTree();
-        }
-    });
-
-    // Auto-load on page load
     loadFortuneTree();
 
-    // Responsive handling
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
+    // ปรับขนาดการ์ดตามจอ (หน่วงเวลาไม่ให้วาดใหม่ถี่ ๆ ตอนลากขนาดหน้าต่าง)
+    var resizeTimeout;
+    window.addEventListener('resize', function () {
         clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            if (viewer) {
-                viewer.options.nodeWidth = window.innerWidth < 768 ? 160 : 200;
-                viewer.options.nodeHeight = window.innerWidth < 768 ? 110 : 120;
-                viewer.options.horizontalSpacing = window.innerWidth < 768 ? 20 : 40;
-                viewer.options.verticalSpacing = window.innerWidth < 768 ? 80 : 100;
-
-                if (viewer.data) {
-                    viewer.nodeCount = 0;
-                    viewer.maxDepthReached = 0;
-                    viewer.render();
-                    viewer.fitToScreen();
-                }
+        resizeTimeout = setTimeout(function () {
+            if (!viewer || container.hidden) return;
+            Object.assign(viewer.options, sizing());
+            if (viewer.data) {
+                viewer.nodeCount = 0;
+                viewer.maxDepthReached = 0;
+                viewer.render();
+                viewer.fitToScreen();
             }
         }, 250);
     });

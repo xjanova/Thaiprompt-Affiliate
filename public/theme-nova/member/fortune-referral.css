@@ -1,0 +1,83 @@
+/*
+ * หน้าค่าแนะนำดูดวงของสมาชิก (ธีมโนวาเต็ม) — /user/fortune-referral/*
+ * ใช้ร่วมกับ nova-member.css · สีทั้งหมดอิงตัวแปร --nvm-* เพื่อให้โหมดสว่าง/มืด (html.dark) ใช้ได้ทั้งคู่
+ * คลาสทุกตัวขึ้นต้น nvm-fr-
+ */
+
+/* ── รายการคอมมิชชั่น ─────────────────────────────────── */
+.nvm-fr-tabs { margin-bottom: 6px; }
+.nvm-fr-av { width: 42px; height: 42px; font-size: 16px; box-shadow: 0 0 0 2px var(--nvm-paper), 0 0 0 3.5px var(--nvm-line-2); }
+.nvm-fr-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 3px; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-fr-meta .nvm-chip { height: 20px; font-size: 11px; }
+.nvm-fr-tx .nvm-tx__t b { white-space: normal; overflow-wrap: anywhere; }
+
+/* ── ลิงก์เชิญ (การ์ดกรมท่า nvm-refer) ───────────────────── */
+.nvm-fr-link { padding: 22px; }
+.nvm-fr-link p { max-width: none; }
+.nvm-fr-link .nvm-refer__code { margin-top: 4px; }
+.nvm-fr-link .nvm-refer__code .nvm-btn { flex: none; }
+.nvm-fr-share { flex-wrap: wrap; margin-top: 12px; }
+.nvm-fr-share .nvm-btn { flex: 1 1 140px; }
+.nvm-fr-link .nvm-note { color: var(--nv-on-night-3); }
+
+/* ── ตัวอย่างรายได้ ───────────────────────────────────── */
+.nvm-fr-pkgs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.nvm-fr-pkg { padding: 14px 16px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-fr-pkg__h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.nvm-fr-pkg__h b { font-family: var(--nvm-font-display); font-size: 16px; color: var(--nvm-ink); overflow-wrap: anywhere; }
+.nvm-fr-pkg__h span { font-weight: 700; color: var(--nvm-gold-ink); white-space: nowrap; }
+.nvm-fr-pkg .nvm-kv { font-size: 13px; gap: 8px 12px; }
+.nvm-fr-in { color: var(--nvm-good); }
+.nvm-fr-l2 { color: var(--nvm-warn); }
+.nvm-fr-mute { color: var(--nvm-ink-3); font-weight: 500; }
+.nvm-fr-sim { margin-top: 16px; }
+.nvm-fr-sim__h { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--nvm-ink); }
+.nvm-fr-sim__h small { font-weight: 500; color: var(--nvm-ink-3); }
+.nvm-fr-sim .nvm-mini small { white-space: normal; }
+
+/* ── เทคนิคการแชร์ ────────────────────────────────────── */
+.nvm-fr-tips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.nvm-fr-tip { padding: 18px; }
+.nvm-fr-tip__ic { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 10px; color: var(--nvm-gold-ink); background: color-mix(in srgb, var(--nv-gold-400) 16%, transparent); }
+.nvm-fr-tip__ic .nvm-ico { width: 20px; height: 20px; }
+.nvm-fr-tip b { display: block; font-size: 14.5px; color: var(--nvm-ink); }
+.nvm-fr-tip p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--nvm-ink-3); }
+.nvm-fr-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+/* ── ผังสายงาน ────────────────────────────────────────── */
+.nvm-fr-ctl { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.nvm-fr-ctl__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-fr-ctl__who b { display: block; font-size: 15px; color: var(--nvm-ink); }
+.nvm-fr-ctl__who small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); overflow-wrap: anywhere; }
+.nvm-fr-ctl__form { display: flex; align-items: flex-end; gap: 10px; }
+.nvm-fr-ctl__form .nvm-field { width: 150px; }
+.nvm-fr-ctl__form .nvm-btn { height: 48px; }
+.nvm-fr-tree { padding: 0; overflow: hidden; }
+.nvm-fr-tree .nvm-sec-h { padding: 18px 22px 0; }
+.nvm-fr-tree__box { height: clamp(520px, calc(100vh - 420px), 680px); }
+.nvm-fr-tree__box > .nvm-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.nvm-fr-legend { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--nvm-ink-2); }
+.nvm-fr-legend li { display: flex; align-items: center; gap: 12px; }
+.nvm-fr-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--nvm-good); box-shadow: 0 0 0 3px var(--nvm-good-bg); }
+
+@media (max-width: 1099px) {
+    .nvm-fr-tips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+    .nvm-fr-link { padding: 18px 16px; }
+    .nvm-fr-ctl__form { width: 100%; }
+    .nvm-fr-ctl__form .nvm-field { flex: 1; width: auto; }
+    .nvm-fr-tree .nvm-sec-h { padding: 16px 16px 0; }
+    .nvm-fr-tree__box { height: 520px; }
+}
+
+@media (max-width: 420px) {
+    .nvm-fr-tips { grid-template-columns: minmax(0, 1fr); }
+    .nvm-fr-link .nvm-refer__code { flex-wrap: wrap; padding: 10px; }
+    .nvm-fr-link .nvm-refer__code code { flex-basis: 100%; }
+    .nvm-fr-link .nvm-refer__code .nvm-btn { flex: 1; }
+}
+
+/* กล่องผัง/กล่องข้อความสลับกันด้วย [hidden] — กันคลาสอื่นตั้ง display ทับ */
+.nvm-fr-tree__box[hidden] { display: none; }
