@@ -128,7 +128,7 @@ final class RiderWebUi
     }
 
     /**
-     * โทนสีของสถานะงาน → ใช้กับคลาส rd-tone-{tone}
+     * โทนสีของสถานะงาน (ok|bad|muted|warn|info) → แปลงเป็นคลาสโนวาด้วย novaChip()/novaPill()
      */
     public static function jobTone(?string $status): string
     {
@@ -152,6 +152,20 @@ final class RiderWebUi
             'warn' => 'nvm-chip--warn',
             'info' => 'nvm-chip--info',
             default => '',
+        };
+    }
+
+    /**
+     * คลาสป้ายสถานะธีมโนวา (nvm-pill--*) ตามโทนสถานะงาน — ยกเลิก (muted) ใช้ป้ายกระจกสีกลาง
+     */
+    public static function novaPill(?string $status): string
+    {
+        return match (self::jobTone($status)) {
+            'ok' => 'nvm-pill--ok',
+            'bad' => 'nvm-pill--bad',
+            'warn' => 'nvm-pill--warn',
+            'muted' => 'nvm-pill--glass',
+            default => 'nvm-pill--gold',
         };
     }
 
@@ -191,21 +205,6 @@ final class RiderWebUi
     }
 
     /**
-     * ไอคอน Font Awesome ตามประเภทงาน
-     */
-    public static function jobIcon(?string $jobType): string
-    {
-        return match ($jobType) {
-            'fresh_market' => 'fa-basket-shopping',
-            'food' => 'fa-bowl-food',
-            'shop_delivery' => 'fa-bag-shopping',
-            'document' => 'fa-file-lines',
-            'service' => 'fa-screwdriver-wrench',
-            default => 'fa-box',
-        };
-    }
-
-    /**
      * ไอคอนยานพาหนะ
      */
     public static function vehicleIcon(?string $vehicleType): string
@@ -215,20 +214,6 @@ final class RiderWebUi
             'bicycle' => 'fa-bicycle',
             'walk' => 'fa-person-walking',
             default => 'fa-motorcycle',
-        };
-    }
-
-    /**
-     * ไอคอนเอกสาร
-     */
-    public static function documentIcon(?string $type): string
-    {
-        return match ($type) {
-            'id_card' => 'fa-id-card',
-            'driver_license' => 'fa-id-badge',
-            'vehicle_registration' => 'fa-file-contract',
-            'profile' => 'fa-user',
-            default => 'fa-file',
         };
     }
 

@@ -10,6 +10,7 @@ use App\Services\RiderDispatchService;
 use App\Services\RiderJobService;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -147,6 +148,84 @@ class NovaRiderPagesTest extends TestCase
         $this->assertStringContainsString('อัปเดตสถานะงานในแอป', $dash);
     }
 
+    public function test_completed_cod_job_shows_celebration_and_cod_summary(): void
+    {
+        $rider = $this->makeRider();
+        app(WalletService::class)->getOrCreateWallet($rider->user)->forceFill(['balance' => 1000])->save();
+        $job = $this->createJob(200);
+        $service = app(RiderJobService::class);
+
+        $service->accept($job, $rider->fresh());
+        $service->markPickedUp($job->fresh(), $rider->fresh(), null);
+        $done = $service->deliver($job->fresh(), $rider->fresh(), UploadedFile::fake()->create('proof.jpg', 120, 'image/jpeg'), 13.74, 100.53, true);
+        $this->assertSame('completed', $done->status);
+
+        $html = $this->assertFullNova($this->actingAs($rider->user)->get(route('user.rider.jobs.show', $job)));
+        $this->assertStringContainsString('ส่งสำเร็จ!', $html);
+        $this->assertStringContainsString('เก็บเงินปลายทาง', $html);
+        $this->assertStringContainsString('nvm-pill nvm-pill--ok', $html);
+        // ปุ่มในการ์ดฉลอง: รายได้วันนี้ + ประวัติงาน
+        $this->assertStringContainsString(e(route('user.rider.earnings', ['period' => 'today'])), $html);
+        $this->assertStringContainsString(e(route('user.rider.jobs', ['tab' => 'history'])), $html);
+        $this->assertStringContainsString('ประวัติงาน', $html);
+        $this->assertStringContainsString('รูปยืนยัน', $html);
+    }
+
+    public function test_cancelled_job_shows_cancel_alert_with_neutral_pill(): void
+    {
+        $rider = $this->makeRider();
+        $job = $this->createJob();
+        $service = app(RiderJobService::class);
+
+        $service->accept($job, $rider->fresh());
+        $service->cancel($job->fresh(), 'admin', 'ร้านปิดกะทันหัน');
+
+        $html = $this->assertFullNova($this->actingAs($rider->user)->get(route('user.rider.jobs.show', $job)));
+        $this->assertStringContainsString('งานถูกยกเลิก', $html);
+        $this->assertStringContainsString('ร้านปิดกะทันหัน', $html);
+        // งานยกเลิกต้องไม่ใช้ป้ายสีทองเหมือนงานที่กำลังส่ง
+        $this->assertStringContainsString('nvm-pill nvm-pill--glass', $html);
+        $this->assertStringNotContainsString('nvm-pill nvm-pill--gold', $html);
+    }
+
+    public function test_failed_job_shows_failure_alert(): void
+    {
+        $rider = $this->makeRider();
+        $job = $this->createJob();
+        $service = app(RiderJobService::class);
+
+        $service->accept($job, $rider->fresh());
+        $service->markPickedUp($job->fresh(), $rider->fresh(), null);
+        $service->fail($job->fresh(), $rider->fresh(), 'customer_refused', 'ลูกค้าไม่รับของ');
+
+        $html = $this->assertFullNova($this->actingAs($rider->user)->get(route('user.rider.jobs.show', $job)));
+        $this->assertStringContainsString('ส่งไม่สำเร็จ:', $html);
+        $this->assertStringContainsString('ลูกค้าไม่รับของ', $html);
+        $this->assertStringContainsString('nvm-pill nvm-pill--bad', $html);
+    }
+
+    public function test_history_and_earnings_paginate_with_nova_pager(): void
+    {
+        $rider = $this->makeRider();
+
+        for ($i = 0; $i < 16; $i++) {
+            $job = $this->createJob();
+            RiderJob::whereKey($job->id)->update([
+                'rider_id' => $rider->id,
+                'status' => 'completed',
+                'accepted_at' => now()->subHour(),
+                'completed_at' => now()->subMinutes(60 - $i),
+            ]);
+        }
+
+        $history = $this->assertFullNova($this->actingAs($rider->user)->get(route('user.rider.jobs', ['tab' => 'history'])));
+        $this->assertStringContainsString('nvm-pager', $history);
+        $this->assertStringContainsString('ทั้งหมด 16 งาน', $history);
+
+        $earnings = $this->assertFullNova($this->actingAs($rider->user)->get(route('user.rider.earnings', ['period' => 'all'])));
+        $this->assertStringContainsString('nvm-pager', $earnings);
+    }
+
     public function test_approved_rider_without_consent_sees_consent_card(): void
     {
         $rider = $this->makeRider(['share_location_consent_at' => null]);
@@ -218,7 +297,7 @@ class NovaRiderPagesTest extends TestCase
     // ตัวช่วย
     // =====================================================
 
-    private function createJob(): RiderJob
+    private function createJob(float $cod = 0): RiderJob
     {
         $holder = User::factory()->create();
         $buyer = User::factory()->create();
@@ -241,7 +320,7 @@ class NovaRiderPagesTest extends TestCase
                 'phone' => '0822222222',
                 'notes' => null,
             ],
-            'cod' => 0,
+            'cod' => $cod,
             'party' => [(int) $buyer->id, (int) $seller->id],
             'customer_id' => (int) $buyer->id,
         ]);

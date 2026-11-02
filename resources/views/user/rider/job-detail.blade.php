@@ -70,7 +70,7 @@
                     <em>{{ $ui::distance($jobData['distance_km'] ?? null) }} · ~{{ (int) ($jobData['estimated_duration_minutes'] ?? 0) }} นาที</em>
                 </div>
                 <div class="nvm-pills">
-                    <span class="nvm-pill {{ $ui::jobTone($status) === 'bad' ? 'nvm-pill--bad' : ($ui::jobTone($status) === 'ok' ? 'nvm-pill--ok' : 'nvm-pill--gold') }}">{{ $jobData['status_text'] ?? '' }}</span>
+                    <span class="nvm-pill {{ $ui::novaPill($status) }}">{{ $jobData['status_text'] ?? '' }}</span>
                     @if(!empty($jobData['is_cod']))
                         <span class="nvm-pill nvm-pill--warn"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>COD ฿{{ $ui::money($codAmount) }}</span>
                     @endif
@@ -102,7 +102,10 @@
             </div>
             <div class="nvm-alert__side">
                 <b class="nvm-num">+฿{{ $ui::money($jobData['rider_earnings'] ?? 0) }}</b>
-                <small><a class="nvm-link" href="{{ route('user.rider.earnings', ['period' => 'today']) }}">ดูรายได้วันนี้</a></small>
+            </div>
+            <div class="nvm-rd-acts">
+                <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.rider.earnings', ['period' => 'today']) }}"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ดูรายได้วันนี้</a>
+                <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="{{ route('user.rider.jobs', ['tab' => 'history']) }}"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ประวัติงาน</a>
             </div>
         </section>
     @endif
