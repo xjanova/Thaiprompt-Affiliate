@@ -306,48 +306,30 @@ export class Wealth3DIncomeFlow {
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'income-flow-overlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: 10;
-            `;
-            this.container.style.position = 'relative';
+            overlay.className = 'nvm-um-3d__overlay';
             this.container.appendChild(overlay);
         }
 
         // Create labels for each stream
         incomeStreams.forEach((stream, index) => {
             const label = document.createElement('div');
-            label.className = 'income-label';
             label.id = `income-label-${index}`;
-            label.innerHTML = `
-                <div style="
-                    background: linear-gradient(135deg, rgba(${this.hexToRgb(stream.color)}, 0.9) 0%, rgba(${this.hexToRgb(stream.color)}, 0.7) 100%);
-                    color: white;
-                    padding: 8px 12px;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    text-align: center;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-                    border: 2px solid rgba(255, 255, 255, 0.3);
-                    backdrop-filter: blur(10px);
-                    transform: translate(-50%, -50%);
-                    white-space: nowrap;
-                ">
-                    <div style="font-size: 18px; margin-bottom: 4px;">${stream.icon}</div>
-                    <div>${stream.name}</div>
-                    <div style="font-size: 14px; margin-top: 4px; color: #ffd700;">฿${stream.amount.toLocaleString()}</div>
-                </div>
-            `;
-            label.style.cssText = `
-                position: absolute;
-                pointer-events: none;
-            `;
+            label.className = 'nvm-um-3d__lbl';
+            // สีประจำสายรายได้ส่งผ่านตัวแปร CSS ตัวเดียว ที่เหลืออยู่ใน user-misc.css
+            label.style.setProperty('--nvm-um-c', this.hexToRgb(stream.color));
+            const card = document.createElement('div');
+            card.className = 'nvm-um-3d__lbl-in';
+            [
+                ['nvm-um-3d__lbl-ic', stream.icon],
+                ['', stream.name],
+                ['nvm-um-3d__lbl-a', `฿${stream.amount.toLocaleString()}`],
+            ].forEach(([cls, text]) => {
+                const el = document.createElement('div');
+                if (cls) el.className = cls;
+                el.textContent = text;
+                card.appendChild(el);
+            });
+            label.appendChild(card);
             overlay.appendChild(label);
         });
 
@@ -360,30 +342,18 @@ export class Wealth3DIncomeFlow {
 
         const display = document.createElement('div');
         display.id = 'total-income-display';
-        display.style.cssText = `
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 100%);
-            color: white;
-            padding: 16px 32px;
-            border-radius: 12px;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-            z-index: 20;
-        `;
-        display.innerHTML = `
-            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 4px;">รายได้รวมต่อเดือน</div>
-            <div style="font-size: 32px;">฿${total.toLocaleString()}</div>
-            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">จากทุกช่องทาง</div>
-        `;
+        display.className = 'nvm-um-3d__total';
+        [
+            ['nvm-um-3d__total-k', 'รายได้รวมต่อเดือน'],
+            ['nvm-um-3d__total-v', `฿${total.toLocaleString()}`],
+            ['nvm-um-3d__total-s', 'จากทุกช่องทาง'],
+        ].forEach(([cls, text]) => {
+            const el = document.createElement('div');
+            el.className = cls;
+            el.textContent = text;
+            display.appendChild(el);
+        });
 
-        this.container.style.position = 'relative';
         this.container.appendChild(display);
 
         // Animate number

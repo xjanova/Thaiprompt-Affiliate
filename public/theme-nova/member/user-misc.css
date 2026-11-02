@@ -206,7 +206,21 @@ button.nvm-um-hub:hover, a.nvm-um-hub:hover { transform: translateY(-2px); box-s
 
 /* PRO: เวที 3 มิติ (พื้นกรมท่าเสมอ เพื่อให้ฉาก Three.js อ่านง่ายทั้งสองโหมด) */
 .nvm-um-3d { position: relative; height: 420px; border-radius: 18px; overflow: hidden; background: radial-gradient(80% 80% at 50% 30%, var(--nv-navy-700), var(--nv-navy-950)); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .25); }
-.nvm-um-3d__stage { width: 100%; height: 100%; }
+.nvm-um-3d__stage { position: relative; width: 100%; height: 100%; }
+/* ป้าย/กล่องที่ JS (wealth-3d-*.js) สร้างทับฉาก 3 มิติ */
+.nvm-um-3d__overlay { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.nvm-um-3d__lbl { position: absolute; pointer-events: none; transition: opacity .2s; }
+.nvm-um-3d__lbl-in { transform: translate(-50%, -50%); white-space: nowrap; text-align: center; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--nv-on-night); background: linear-gradient(135deg, rgba(var(--nvm-um-c, 245, 210, 127), .9), rgba(var(--nvm-um-c, 245, 210, 127), .65)); box-shadow: 0 4px 10px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 255, 255, .3); }
+.nvm-um-3d__lbl-ic { font-size: 18px; margin-bottom: 2px; }
+.nvm-um-3d__lbl-a { margin-top: 2px; font-size: 14px; color: var(--nv-gold-200); }
+.nvm-um-3d__total { position: absolute; left: 50%; bottom: 56px; z-index: 2; transform: translateX(-50%); padding: 12px 24px; border-radius: 14px; text-align: center; font-weight: 700; color: #1a1405; background: var(--nv-btn-gold); box-shadow: 0 8px 16px rgba(0, 0, 0, .35); }
+.nvm-um-3d__total-k, .nvm-um-3d__total-s { font-size: 12px; opacity: .85; }
+.nvm-um-3d__total-v { font-size: 26px; font-variant-numeric: tabular-nums; }
+.nvm-um-3d__tip { position: fixed; z-index: 1000; display: none; max-width: 250px; padding: 12px 16px; border-radius: 12px; pointer-events: none; font-size: 14px; color: var(--nv-on-night); background: rgba(7, 13, 32, .92); box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(245, 210, 127, .3); }
+.nvm-um-3d__tip-ic { font-size: 20px; margin-bottom: 6px; }
+.nvm-um-3d__tip-t { font-weight: 700; margin-bottom: 4px; }
+.nvm-um-3d__tip-d { font-size: 12px; color: var(--nv-on-night-2); margin-bottom: 4px; }
+.nvm-um-3d__tip-a { font-weight: 700; color: var(--nv-gold-200); }
 .nvm-um-3d__ctrl { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex; flex-direction: column; gap: 8px; }
 .nvm-um-3d__ctrl .nvm-btn { background: rgba(7, 13, 32, .6); }
 .nvm-um-3d__ctrl .nvm-btn.is-on { background: rgba(245, 210, 127, .22); }

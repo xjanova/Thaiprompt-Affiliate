@@ -47,12 +47,7 @@
     </div>
 </section>
 
-@if(session('error'))
-    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
-        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
-        <div class="nvm-alert__txt"><b>ส่งคำขอไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
-    </section>
-@endif
+{{-- ข้อผิดพลาดตอนส่ง (session error) แสดงเป็น toast จาก layouts.user-nova อยู่แล้ว — ไม่ซ้ำในหน้า --}}
 
 {{-- ── สถานะคำขอ ─────────────────────────────────────── --}}
 @if(in_array($state, ['seller', 'approved'], true))

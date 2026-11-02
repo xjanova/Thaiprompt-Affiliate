@@ -2,11 +2,18 @@
 
 namespace Tests\Feature\User;
 
+use App\Models\MlmCommission;
+use App\Models\MlmMember;
+use App\Models\MlmPlan;
+use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\TwoFactorUserSetting;
 use App\Models\User;
+use App\Models\VendorStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -185,5 +192,137 @@ class NovaUserMiscPagesTest extends TestCase
         $this->actingAs($this->member())->get(route('user.home'))
             ->assertOk()
             ->assertSee(route('user.wallet.qr-transfer'), false);
+    }
+
+    // ── รีวิว: สาขาที่ยังไม่เคยถูกเรนเดอร์ในเทสต์ ─────────────────
+
+    /** ร้านในคำขอเปิดร้าน (ค่าตั้งต้น: รอตรวจ) */
+    private function makeStore(User $owner, array $attrs = []): VendorStore
+    {
+        return VendorStore::create(array_merge([
+            'user_id' => $owner->id,
+            'store_name' => 'ร้านป้าแดงทดสอบ',
+            'store_slug' => 'shop-'.$owner->id.'-'.Str::lower(Str::random(6)),
+            'business_type' => 'individual',
+            'store_phone' => '0812345678',
+            'store_address' => '99/9 ถนนเจริญกรุง',
+            'store_city' => 'บางรัก',
+            'store_state' => 'กรุงเทพมหานคร',
+            'store_postal_code' => '10500',
+            'status' => 'pending',
+            'is_active' => false,
+        ], $attrs));
+    }
+
+    public function test_seller_apply_error_flash_shows_once_as_toast_only(): void
+    {
+        $html = (string) $this->actingAs($this->member())
+            ->withSession(['error' => 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'])
+            ->get(route('user.seller-apply.index'))
+            ->assertOk()
+            ->getContent();
+
+        // toast ของ layouts.user-nova ส่งข้อความผ่าน @js — ในหน้าต้องไม่มีกล่อง alert ข้อความเดียวกันซ้ำอีก
+        $this->assertStringNotContainsString('<p>ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</p>', $html);
+        $this->assertStringContainsString("\$dispatch('notify'", $html);
+    }
+
+    public function test_seller_apply_pending_state_shows_store_summary(): void
+    {
+        $user = $this->member();
+        $this->makeStore($user, ['store_name' => 'ร้านรอตรวจทดสอบ']);
+
+        $res = $this->actingAs($user)->get(route('user.seller-apply.index'));
+        $this->assertNovaPage($res);
+        $res->assertSee('คำขอของคุณกำลังรอตรวจสอบ')
+            ->assertSee('ร้านรอตรวจทดสอบ')
+            ->assertDontSee('name="store_name"', false);
+    }
+
+    public function test_seller_apply_rejected_state_shows_reason_and_prefills_form(): void
+    {
+        $user = $this->member();
+        $this->makeStore($user, [
+            'store_name' => 'ร้านถูกปฏิเสธทดสอบ',
+            'status' => 'closed',
+            'suspension_reason' => 'เอกสาร <ไม่ชัด>',
+        ]);
+
+        $res = $this->actingAs($user)->get(route('user.seller-apply.index'));
+        $this->assertNovaPage($res);
+        $res->assertSee('คำขอครั้งก่อนยังไม่ผ่านการอนุมัติ')
+            ->assertSee('เหตุผล: เอกสาร &lt;ไม่ชัด&gt;', false)
+            ->assertSee('value="ร้านถูกปฏิเสธทดสอบ"', false)
+            ->assertSee('value="10500"', false);
+    }
+
+    public function test_seller_apply_approved_and_ineligible_states(): void
+    {
+        $approved = $this->member();
+        $this->makeStore($approved, ['status' => 'active', 'is_active' => true]);
+        $res = $this->actingAs($approved)->get(route('user.seller-apply.index'));
+        $this->assertNovaPage($res);
+        $res->assertSee('คุณเป็นผู้ขายแล้ว')->assertDontSee('name="store_name"', false);
+
+        $provider = $this->member(['role' => 'provider']);
+        $res = $this->actingAs($provider)->get(route('user.seller-apply.index'));
+        $this->assertNovaPage($res);
+        $res->assertSee('บัญชีประเภทนี้สมัครเปิดร้านเองไม่ได้');
+    }
+
+    public function test_marketplace_renders_product_card_with_discount_and_commission(): void
+    {
+        $seller = User::factory()->create(['role' => 'seller']);
+        $category = ProductCategory::create(['name' => 'หมวดทดสอบ', 'slug' => 'cat-'.Str::lower(Str::random(8)), 'is_active' => true, 'sort_order' => 0]);
+        Product::create([
+            'seller_id' => $seller->id,
+            'category_id' => $category->id,
+            'name' => 'สินค้าโนวาทดสอบ',
+            'slug' => 'nova-test-'.Str::lower(Str::random(6)),
+            'sku' => 'NVT-'.Str::upper(Str::random(8)),
+            'price' => 800,
+            'compare_at_price' => 1000,
+            'commission_rate' => 10,
+            'stock_quantity' => 10,
+            'stock_status' => 'in_stock',
+            'is_active' => true,
+            'is_public_approved' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $res = $this->actingAs($this->member())->get(route('user.marketplace.products'));
+        $this->assertNovaPage($res);
+        $res->assertSee('สินค้าโนวาทดสอบ')
+            ->assertSee('หมวดทดสอบ')
+            ->assertSee('-20%')
+            ->assertSee('ดูสินค้าและแชร์')
+            ->assertSee('nvm-um-mp__rate', false);
+    }
+
+    public function test_home_lists_recent_pending_and_paid_commissions(): void
+    {
+        $user = $this->member();
+        $plan = MlmPlan::create(['name' => 'Test Plan', 'name_th' => 'แผนทดสอบ', 'slug' => 'plan-'.uniqid(), 'type' => 'unilevel', 'is_active' => true, 'is_default' => true]);
+        $member = MlmMember::create(['user_id' => $user->id, 'mlm_plan_id' => $plan->id, 'member_code' => 'M'.uniqid(), 'status' => 'active', 'is_qualified' => true, 'joined_at' => now()->subMonth()]);
+        foreach (['pending' => 120, 'paid' => 340] as $status => $amount) {
+            MlmCommission::create([
+                'mlm_member_id' => $member->id,
+                'mlm_plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'type' => 'direct_referral',
+                'level' => 1,
+                'pv_amount' => 0,
+                'sales_amount' => 1000,
+                'commission_amount' => $amount,
+                'status' => $status,
+            ]);
+        }
+
+        $res = $this->actingAs($user)->get(route('user.home'));
+        $this->assertNovaPage($res);
+        $res->assertSee('รอดำเนินการ')
+            ->assertSee('จ่ายแล้ว')
+            ->assertSee('340')
+            ->assertDontSee('ยังไม่มีคอมมิชชั่น');
     }
 }
