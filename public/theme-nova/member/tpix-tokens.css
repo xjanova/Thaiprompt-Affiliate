@@ -1,0 +1,86 @@
+/* =====================================================================
+   หน้าสมาชิกกลุ่ม TPIX + ตลาดเหรียญ (ธีมโนวาเต็ม)
+   - /user/tpix/* (กระเป๋า · ฝาก · ส่ง · ถอน · ประวัติ · รายละเอียด)
+   - /user/tokens/* (ตลาด · รายละเอียดเหรียญ · สร้างเหรียญ · คู่มือ)
+   ใช้ตัวแปร --nvm-* ชุดเดียวกับ nova-member.css จึงรองรับทั้งโหมดสว่างและ html.dark
+   ทุกคลาสขึ้นต้นด้วย nvm-tx- (เฉพาะกลุ่มหน้านี้)
+   ===================================================================== */
+
+/* ── เหรียญ (โลโก้หรือตัวอักษรแรก) ─────────────────────────── */
+.nvm-tx-coin { width: 46px; height: 46px; flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; font-family: var(--nvm-font-display); font-weight: 700; font-size: 19px; color: #1a1405; background: var(--nv-btn-gold); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), 0 6px 14px -8px rgba(70, 40, 10, .6); }
+.nvm-tx-coin img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-tx-coin--lg { width: 72px; height: 72px; font-size: 30px; }
+.nvm-tx-phcoin { display: grid; place-items: center; }
+.nvm-tx-phcoin .nvm-tx-coin--lg { width: 120px; height: 120px; font-size: 48px; }
+
+/* ── ยอดในฮีโร่: ทศนิยม 8 ตำแหน่งยาว ย่อให้พอดีจอ 375px ─── */
+.nvm-bal b.nvm-tx-hbal { font-size: clamp(26px, 6.4vw, 46px); overflow-wrap: anywhere; max-width: 100%; }
+
+/* ── แถวหัวการ์ดเหรียญ ──────────────────────────────────── */
+.nvm-tx-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-tx-head > div { min-width: 0; }
+.nvm-tx-head b { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--nvm-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvm-tx-head b .nvm-ico { width: 15px; height: 15px; color: var(--nvm-good); }
+.nvm-tx-head small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── ตารางการ์ดเหรียญ ───────────────────────────────────── */
+.nvm-tx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.nvm-tx-tok { display: flex; flex-direction: column; gap: 14px; padding: 18px; text-decoration: none; color: inherit; }
+.nvm-tx-tok:hover { transform: translateY(-2px); box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-tx-tok .nvm-kv { font-size: 13px; gap: 6px 12px; }
+.nvm-tx-tok .nvm-btn { margin-top: auto; }
+
+/* ── ค้นหา + เรียงลำดับ ─────────────────────────────────── */
+.nvm-tx-search { display: flex; gap: 10px; }
+.nvm-tx-search .nvm-input { flex: 1; min-width: 0; }
+.nvm-tx-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* ── คุณสมบัติเหรียญ (เปิด/ปิด) ─────────────────────────── */
+.nvm-tx-feats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nvm-tx-feats li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; font-size: 13.5px; font-weight: 600; color: var(--nvm-ink-3); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-tx-feats li .nvm-ico { width: 18px; height: 18px; }
+.nvm-tx-feats li.is-on { color: var(--nvm-good); background: var(--nvm-good-bg); }
+
+/* ── ที่อยู่/แฮช ตัวอักษรเท่ากัน ────────────────────────── */
+.nvm-tx-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+.nvm-tx-big { font-family: var(--nvm-font-display); font-weight: 700; font-size: clamp(28px, 6vw, 40px); line-height: 1.15; color: var(--nvm-ink); overflow-wrap: anywhere; }
+.nvm-tx-big span { font-size: .45em; color: var(--nvm-ink-3); margin-left: 6px; }
+.nvm-tx-big.is-in { color: var(--nvm-good); }
+
+/* ── รายการเหรียญในกระเป๋า / ผู้ถือ ─────────────────────── */
+.nvm-tx-list { list-style: none; margin: 0; padding: 0; }
+.nvm-tx-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--nvm-line); }
+.nvm-tx-list li:first-child { border-top: 0; }
+.nvm-tx-list a { text-decoration: none; color: inherit; }
+.nvm-tx-list .nvm-tx-amt { font-family: var(--nvm-font-display); font-weight: 700; font-size: 15px; white-space: nowrap; }
+
+/* ── คู่มือ: คำถามที่พบบ่อย ────────────────────────────── */
+.nvm-tx-faq { display: flex; flex-direction: column; gap: 10px; }
+.nvm-tx-faq details { border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-tx-faq summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+.nvm-tx-faq summary::-webkit-details-marker { display: none; }
+.nvm-tx-faq summary .nvm-ico { width: 16px; height: 16px; color: var(--nvm-gold-ink); transition: transform .25s; }
+.nvm-tx-faq details[open] summary .nvm-ico { transform: rotate(90deg); }
+.nvm-tx-faq p { margin: 0; padding: 0 16px 14px; font-size: 13.5px; line-height: 1.6; color: var(--nvm-ink-2); }
+
+/* ── คู่มือ: การ์ดสรุปตัวเลข ────────────────────────────── */
+.nvm-tx-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.nvm-tx-facts > div { padding: 14px; border-radius: 16px; text-align: center; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-tx-facts b { display: block; font-family: var(--nvm-font-display); font-size: 20px; color: var(--nvm-gold-ink); }
+.nvm-tx-facts small { font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-tx-ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.6; color: var(--nvm-ink-2); }
+.nvm-tx-ul b { color: var(--nvm-ink); }
+
+/* ── ฟอร์มสร้างเหรียญ: ตัวเลือกคุณสมบัติแบบติ๊ก ──────────── */
+.nvm-tx-pick { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 16px; cursor: pointer; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); transition: box-shadow .2s, background .2s; }
+.nvm-tx-pick input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: var(--nv-gold-500); }
+.nvm-tx-pick b { display: block; font-size: 14px; }
+.nvm-tx-pick small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-tx-pick:has(input:checked) { background: var(--nvm-paper); box-shadow: inset 0 0 0 2px var(--nv-gold-500); }
+
+@media (max-width: 767px) {
+    .nvm-tx-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-tx-feats { grid-template-columns: minmax(0, 1fr); }
+    .nvm-tx-coin--lg, .nvm-tx-phcoin .nvm-tx-coin--lg { width: 64px; height: 64px; font-size: 26px; }
+    .nvm-tx-search .nvm-btn { padding: 0 14px; }
+}

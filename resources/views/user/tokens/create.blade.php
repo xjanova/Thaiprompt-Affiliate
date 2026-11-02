@@ -1,519 +1,251 @@
-@extends('layouts.user-v4')
+{{--
+    สร้างเหรียญลูก (ธีมโนวาเต็ม) — ฟอร์ม 4 ขั้นใน Alpine ส่ง POST ไป user.tokens.store
+    เดิมพังทั้งหน้า:
+    - GET /user/tokens/create ตกไปหา route /{id} จึง 404 (แก้ลำดับ/whereNumber ใน routes/user.php แล้ว)
+    - ฟอร์มไม่มี action/method → form.submit() ยิง GET กลับหน้าเดิม ไม่มีอะไรถูกบันทึก
+    - checkbox ส่งค่า "on" ซึ่งกฎ boolean ไม่รับ · ช่อง github_url/twitter_handle/telegram_group ไม่ตรงชื่อที่ service อ่าน
+    - ช่องหมวดหมู่และอัปโหลดโลโก้ไม่มีที่เก็บฝั่งเซิร์ฟเวอร์ จึงเอาออก
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'สร้าง Token ใหม่ - TPIX')
+@section('title', 'สร้างเหรียญใหม่')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/tpix-tokens.css') }}?v={{ filemtime(public_path('theme-nova/member/tpix-tokens.css')) }}">@endpush
+
+@php
+    // ขั้นแรกที่มี error จากเซิร์ฟเวอร์ — เปิดฟอร์มไปที่ขั้นนั้นเลย
+    $stepFields = [
+        1 => ['name', 'symbol', 'description', 'total_supply', 'decimals'],
+        2 => ['is_mintable', 'is_burnable', 'is_pausable', 'is_freezable'],
+        3 => ['initial_price_tpix', 'website', 'whitepaper_url', 'github', 'twitter', 'telegram'],
+    ];
+    $startStep = 1;
+    foreach ($stepFields as $n => $fields) {
+        if ($errors->hasAny($fields)) {
+            $startStep = $n;
+            break;
+        }
+    }
+    $flags = [
+        ['is_mintable', 'Mintable', 'สร้างเหรียญเพิ่มได้หลังขึ้นเครือข่าย', false],
+        ['is_burnable', 'Burnable', 'เผาเหรียญเพื่อลดจำนวนได้', true],
+        ['is_pausable', 'Pausable', 'หยุดการโอนทั้งหมดชั่วคราวได้', false],
+        ['is_freezable', 'Freezable', 'ระงับการโอนของบางที่อยู่ได้', false],
+    ];
+    $formData = [
+        'name' => old('name', ''),
+        'symbol' => old('symbol', ''),
+        'description' => old('description', ''),
+        'total_supply' => old('total_supply', ''),
+        'decimals' => (string) old('decimals', '18'),
+        'initial_price_tpix' => old('initial_price_tpix', ''),
+        'website' => old('website', ''),
+    ];
+    foreach ($flags as [$key, , , $default]) {
+        $formData[$key] = (bool) old($key, $default);
+    }
+    $gasCost = $estimatedCost['total_cost_tpix'] ?? null;
+@endphp
 
 @section('content')
-{{-- Alpine.js Component สำหรับ Create Token Form --}}
-<div x-data="createTokenForm()" x-init="init()" class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {{-- Hero Header --}}
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 p-1 mb-8">
-            <div class="bg-white dark:bg-gray-900 rounded-[22px] p-8 text-center">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-xl mb-4">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                </div>
-                <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 mb-3">
-                    สร้าง Token ของคุณ
-                </h1>
-                <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                    เปิดตัว Token ของคุณบน TPIX Blockchain ภายในไม่กี่นาที
-                </p>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-tkc-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tokens.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>ตลาดเหรียญ</a>
+            <div class="nvm-eyebrow nvm-latin">Create token</div>
+            <h1 id="nvm-tkc-h">สร้างเหรียญของคุณ</h1>
+            <p class="nvm-ph__lead">กรอกข้อมูลเหรียญ ทีมงานจะตรวจสอบก่อนนำขึ้น TPIX Blockchain</p>
+            <div class="nvm-hero__actions">
+                <a class="nvm-btn nvm-btn--ghost nvm-btn--sm" href="{{ route('user.tokens.tutorial') }}"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>อ่านคู่มือก่อน</a>
             </div>
         </div>
-
-        {{-- Step Indicator --}}
-        <div class="mb-8">
-            <div class="flex items-center justify-between relative">
-                {{-- Progress Bar --}}
-                <div class="absolute top-8 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 -z-10">
-                    <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
-                         :style="`width: ${((currentStep - 1) / 3) * 100}%`"></div>
-                </div>
-
-                {{-- Steps --}}
-                <template x-for="step in steps" :key="step.number">
-                    <div class="flex flex-col items-center flex-1">
-                        <button @click="goToStep(step.number)"
-                                :class="[
-                                    'w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-200 mb-2',
-                                    currentStep === step.number ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white ring-4 ring-green-200 dark:ring-green-900 scale-110' :
-                                    currentStep > step.number ? 'bg-gradient-to-br from-blue-500 to-purple-500 text-white' :
-                                    'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                                ]">
-                            <span x-show="currentStep > step.number">
-                                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <span x-show="currentStep <= step.number" x-text="step.number"></span>
-                        </button>
-                        <p class="text-sm font-semibold text-center"
-                           :class="currentStep >= step.number ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                           x-text="step.label"></p>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        {{-- Form --}}
-        <form @submit.prevent="submitForm" id="createTokenForm">
-            @csrf
-
-            {{-- Step 1: Basic Information --}}
-            <div x-show="currentStep === 1" class="tp-card rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    ข้อมูลพื้นฐาน
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            ชื่อ Token <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="name" x-model="formData.name" required
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="เช่น My Awesome Token">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            สัญลักษณ์ <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="symbol" x-model="formData.symbol" required
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="เช่น MAT" maxlength="20">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            คำอธิบาย <span class="text-red-500">*</span>
-                        </label>
-                        <textarea name="description" x-model="formData.description" required rows="4"
-                                  class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                  placeholder="อธิบายวัตถุประสงค์และคุณสมบัติของ Token (อย่างน้อย 50 ตัวอักษร)"></textarea>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">อย่างน้อย 50 ตัวอักษร</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Total Supply <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" name="total_supply" x-model="formData.total_supply" required step="0.01"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="เช่น 1000000">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Decimals <span class="text-red-500">*</span>
-                        </label>
-                        <select name="decimals" x-model="formData.decimals" required
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
-                            <option value="18">18 (มาตรฐาน)</option>
-                            <option value="8">8</option>
-                            <option value="6">6</option>
-                            <option value="2">2</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            หมวดหมู่ <span class="text-red-500">*</span>
-                        </label>
-                        <select name="category" x-model="formData.category" required
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
-                            <option value="">เลือกหมวดหมู่</option>
-                            <option value="defi">🏦 DeFi</option>
-                            <option value="gamefi">🎮 GameFi</option>
-                            <option value="meme">😂 Meme</option>
-                            <option value="utility">🔧 Utility</option>
-                            <option value="stablecoin">💵 Stablecoin</option>
-                            <option value="nft">🎨 NFT</option>
-                            <option value="dao">🏛️ DAO</option>
-                            <option value="other">🔹 อื่นๆ</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Logo
-                        </label>
-                        <input type="file" name="logo" accept="image/*" @change="previewLogo($event)"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, SVG (สูงสุด 2MB)</p>
-                        <div x-show="logoPreview" class="mt-3">
-                            <img :src="logoPreview" class="w-20 h-20 rounded-full object-cover ring-4 ring-gray-200 dark:ring-gray-700">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 flex justify-end">
-                    <button type="button" @click="nextStep"
-                            class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition duration-200 flex items-center gap-2">
-                        ถัดไป
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Step 2: Features --}}
-            <div x-show="currentStep === 2" class="tp-card rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    คุณสมบัติ Token
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-6 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg"
-                         :class="formData.is_mintable ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-green-300'"
-                         @click="formData.is_mintable = !formData.is_mintable">
-                        <div class="flex items-start gap-4">
-                            <input type="checkbox" name="is_mintable" x-model="formData.is_mintable"
-                                   class="mt-1 w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500">
-                            <div>
-                                <h3 class="font-bold text-gray-900 dark:text-white mb-1">Mintable</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">อนุญาตให้สร้าง Token ใหม่ได้หลังจาก Deploy</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-6 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg"
-                         :class="formData.is_burnable ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-red-300'"
-                         @click="formData.is_burnable = !formData.is_burnable">
-                        <div class="flex items-start gap-4">
-                            <input type="checkbox" name="is_burnable" x-model="formData.is_burnable"
-                                   class="mt-1 w-5 h-5 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
-                            <div>
-                                <h3 class="font-bold text-gray-900 dark:text-white mb-1">Burnable</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">อนุญาตให้ทำลาย Token เพื่อลด Supply</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-6 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg"
-                         :class="formData.is_pausable ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-yellow-300'"
-                         @click="formData.is_pausable = !formData.is_pausable">
-                        <div class="flex items-start gap-4">
-                            <input type="checkbox" name="is_pausable" x-model="formData.is_pausable"
-                                   class="mt-1 w-5 h-5 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500">
-                            <div>
-                                <h3 class="font-bold text-gray-900 dark:text-white mb-1">Pausable</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">สามารถหยุดการโอน Token ชั่วคราวได้</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-6 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg"
-                         :class="formData.is_freezable ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'"
-                         @click="formData.is_freezable = !formData.is_freezable">
-                        <div class="flex items-start gap-4">
-                            <input type="checkbox" name="is_freezable" x-model="formData.is_freezable"
-                                   class="mt-1 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                            <div>
-                                <h3 class="font-bold text-gray-900 dark:text-white mb-1">Freezable</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">สามารถ Freeze Address เฉพาะได้</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 flex justify-between">
-                    <button type="button" @click="prevStep"
-                            class="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-                        </svg>
-                        ก่อนหน้า
-                    </button>
-                    <button type="button" @click="nextStep"
-                            class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition duration-200 flex items-center gap-2">
-                        ถัดไป
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Step 3: Tokenomics --}}
-            <div x-show="currentStep === 3" class="tp-card rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Tokenomics & ข้อมูลเพิ่มเติม
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            ราคาเริ่มต้น (TPIX) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" name="initial_price_tpix" x-model="formData.initial_price_tpix" required step="0.00000001"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="เช่น 0.01">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            เว็บไซต์
-                        </label>
-                        <input type="url" name="website" x-model="formData.website"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="https://yourtoken.com">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Whitepaper URL
-                        </label>
-                        <input type="url" name="whitepaper_url" x-model="formData.whitepaper_url"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="https://yourtoken.com/whitepaper.pdf">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            GitHub Repository
-                        </label>
-                        <input type="url" name="github_url" x-model="formData.github_url"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="https://github.com/yourproject">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Twitter Handle
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-3 text-gray-500 dark:text-gray-400">@</span>
-                            <input type="text" name="twitter_handle" x-model="formData.twitter_handle"
-                                   class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                   placeholder="yourtoken">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Telegram Group
-                        </label>
-                        <input type="url" name="telegram_group" x-model="formData.telegram_group"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                               placeholder="https://t.me/yourgroup">
-                    </div>
-                </div>
-
-                <div class="mt-8 flex justify-between">
-                    <button type="button" @click="prevStep"
-                            class="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-                        </svg>
-                        ก่อนหน้า
-                    </button>
-                    <button type="button" @click="nextStep"
-                            class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition duration-200 flex items-center gap-2">
-                        ตรวจสอบ
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Step 4: Review & Submit --}}
-            <div x-show="currentStep === 4" class="tp-card rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    ตรวจสอบและยืนยัน
-                </h2>
-
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-                    <p class="text-sm text-blue-800 dark:text-blue-200">
-                        โปรดตรวจสอบข้อมูลของคุณอย่างละเอียด หลังจากส่งแล้ว Token ของคุณจะได้รับการตรวจสอบโดยทีมงานก่อนการ Deploy
-                    </p>
-                </div>
-
-                <div class="space-y-6">
-                    {{-- Basic Info Review --}}
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
-                        <h3 class="font-bold text-gray-900 dark:text-white mb-4">ข้อมูลพื้นฐาน</h3>
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <span class="text-gray-600 dark:text-gray-400">ชื่อ Token:</span>
-                                <span class="ml-2 font-semibold text-gray-900 dark:text-white" x-text="formData.name || '-'"></span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600 dark:text-gray-400">สัญลักษณ์:</span>
-                                <span class="ml-2 font-semibold text-gray-900 dark:text-white" x-text="formData.symbol || '-'"></span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600 dark:text-gray-400">Total Supply:</span>
-                                <span class="ml-2 font-semibold text-gray-900 dark:text-white" x-text="formData.total_supply || '-'"></span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600 dark:text-gray-400">Decimals:</span>
-                                <span class="ml-2 font-semibold text-gray-900 dark:text-white" x-text="formData.decimals || '-'"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Features Review --}}
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
-                        <h3 class="font-bold text-gray-900 dark:text-white mb-4">คุณสมบัติ</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <span x-show="formData.is_mintable" class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-semibold">Mintable</span>
-                            <span x-show="formData.is_burnable" class="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm font-semibold">Burnable</span>
-                            <span x-show="formData.is_pausable" class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-semibold">Pausable</span>
-                            <span x-show="formData.is_freezable" class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-semibold">Freezable</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" x-model="agreedToTerms" required
-                               class="mt-1 w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">
-                            ฉันยอมรับ <a href="/terms-of-service.html" target="_blank" class="text-green-600 dark:text-green-400 hover:underline">ข้อกำหนดการใช้งาน</a> และเข้าใจว่าการสร้าง Token ต้องผ่านการอนุมัติก่อน
-                        </span>
-                    </label>
-                </div>
-
-                <div class="mt-8 flex justify-between">
-                    <button type="button" @click="prevStep"
-                            class="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-                        </svg>
-                        ก่อนหน้า
-                    </button>
-                    <button type="submit" :disabled="!agreedToTerms"
-                            class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        สร้าง Token
-                    </button>
-                </div>
-            </div>
-        </form>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
+
+@if($errors->any())
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ข้อมูลยังไม่ครบหรือไม่ถูกต้อง</b><p>{{ $errors->first() }}</p></div>
+    </section>
+@endif
+
+<div class="nvm-split">
+    <form class="nvm-card nvm-box" method="POST" action="{{ route('user.tokens.store') }}" novalidate
+          x-data="nvmTokenForm(@js($formData), {{ $startStep }})" x-on:submit="submit($event)" x-on:pageshow.window="submitting = false">
+        @csrf
+
+        <div class="nvm-sec-h">
+            <div class="nvm-tabs" role="tablist" aria-label="ขั้นตอนการสร้างเหรียญ">
+                @foreach(['ข้อมูลพื้นฐาน', 'คุณสมบัติ', 'ราคาและลิงก์', 'ตรวจสอบ'] as $i => $label)
+                    <button type="button" role="tab" :class="step === {{ $i + 1 }} && 'is-on'" :aria-selected="step === {{ $i + 1 }}" x-on:click="goTo({{ $i + 1 }})">{{ $i + 1 }}. {{ $label }}</button>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ขั้นที่ 1: ข้อมูลพื้นฐาน --}}
+        <div class="nvm-form" x-ref="step1" x-show="step === 1">
+            <div class="nvm-field">
+                <label class="nvm-label" for="tkc-name">ชื่อเหรียญ <em>*</em></label>
+                <input id="tkc-name" class="nvm-input @error('name') is-bad @enderror" type="text" name="name" x-model="f.name" required maxlength="100" placeholder="เช่น CoffeeCoin">
+                @error('name')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+            <div class="nvm-field">
+                <label class="nvm-label" for="tkc-symbol">สัญลักษณ์ <em>*</em></label>
+                <input id="tkc-symbol" class="nvm-input @error('symbol') is-bad @enderror" type="text" name="symbol" x-model="f.symbol" required maxlength="20" pattern="[A-Za-z0-9]+" autocapitalize="characters" placeholder="เช่น COFFEE">
+                @error('symbol')<span class="nvm-err">{{ $message }}</span>@else<span class="nvm-help">ตัวอักษรอังกฤษและตัวเลขเท่านั้น ไม่เกิน 20 ตัว</span>@enderror
+            </div>
+            <div class="nvm-field">
+                <label class="nvm-label" for="tkc-desc">คำอธิบาย</label>
+                <textarea id="tkc-desc" class="nvm-input nvm-textarea @error('description') is-bad @enderror" name="description" x-model="f.description" maxlength="1000" placeholder="วัตถุประสงค์และการใช้งานของเหรียญ"></textarea>
+                @error('description')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+            <div class="nvm-minis">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="tkc-supply">จำนวนทั้งหมด <em>*</em></label>
+                    <input id="tkc-supply" class="nvm-input nvm-num @error('total_supply') is-bad @enderror" type="number" name="total_supply" x-model="f.total_supply" required min="1" step="1" inputmode="numeric" placeholder="1000000">
+                    @error('total_supply')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="tkc-decimals">ทศนิยม <em>*</em></label>
+                    <select id="tkc-decimals" class="nvm-input @error('decimals') is-bad @enderror" name="decimals" x-model="f.decimals" required>
+                        @foreach(['18' => '18 (มาตรฐาน)', '8' => '8', '6' => '6', '2' => '2'] as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('decimals')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- ขั้นที่ 2: คุณสมบัติ (hidden 0 + checkbox 1 → ส่งค่า boolean เสมอ) --}}
+        <div class="nvm-form" x-ref="step2" x-show="step === 2" x-cloak>
+            @foreach($flags as [$key, $title, $hint])
+                <label class="nvm-tx-pick">
+                    <input type="hidden" name="{{ $key }}" value="0">
+                    <input type="checkbox" name="{{ $key }}" value="1" x-model="f.{{ $key }}">
+                    <span><b>{{ $title }}</b><small>{{ $hint }}</small></span>
+                </label>
+            @endforeach
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>Mintable / Pausable / Freezable ให้อำนาจผู้สร้างสูง ผู้ถือบางคนอาจมองว่าเสี่ยง เลือกเท่าที่จำเป็น</p>
+        </div>
+
+        {{-- ขั้นที่ 3: ราคาและลิงก์ --}}
+        <div class="nvm-form" x-ref="step3" x-show="step === 3" x-cloak>
+            <div class="nvm-field">
+                <label class="nvm-label" for="tkc-price">ราคาเริ่มต้น (TPIX)</label>
+                <input id="tkc-price" class="nvm-input nvm-num @error('initial_price_tpix') is-bad @enderror" type="number" name="initial_price_tpix" x-model="f.initial_price_tpix" min="0" step="0.00000001" inputmode="decimal" placeholder="เช่น 0.01">
+                @error('initial_price_tpix')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+            @foreach([
+                ['website', 'เว็บไซต์', 'url', 'https://yourtoken.com', 255],
+                ['whitepaper_url', 'Whitepaper', 'url', 'https://yourtoken.com/whitepaper.pdf', 500],
+                ['github', 'GitHub', 'url', 'https://github.com/yourproject', 255],
+                ['telegram', 'Telegram', 'url', 'https://t.me/yourgroup', 255],
+                ['twitter', 'X (Twitter)', 'text', '@yourtoken', 255],
+            ] as [$key, $label, $type, $placeholder, $max])
+                <div class="nvm-field">
+                    <label class="nvm-label" for="tkc-{{ $key }}">{{ $label }}</label>
+                    <input id="tkc-{{ $key }}" class="nvm-input @error($key) is-bad @enderror" type="{{ $type }}" name="{{ $key }}" value="{{ old($key) }}" maxlength="{{ $max }}" placeholder="{{ $placeholder }}" @if($key === 'website') x-model="f.website" @endif>
+                    @error($key)<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+            @endforeach
+        </div>
+
+        {{-- ขั้นที่ 4: ตรวจสอบ --}}
+        <div class="nvm-form" x-show="step === 4" x-cloak>
+            <dl class="nvm-kv">
+                <dt>ชื่อเหรียญ</dt><dd x-text="f.name || '-'"></dd>
+                <dt>สัญลักษณ์</dt><dd x-text="(f.symbol || '-').toUpperCase()"></dd>
+                <dt>จำนวนทั้งหมด</dt><dd class="nvm-num" x-text="f.total_supply ? Number(f.total_supply).toLocaleString('th-TH') : '-'"></dd>
+                <dt>ทศนิยม</dt><dd class="nvm-num" x-text="f.decimals"></dd>
+                <dt>ราคาเริ่มต้น</dt><dd class="nvm-num" x-text="f.initial_price_tpix ? f.initial_price_tpix + ' TPIX' : '-'"></dd>
+                <dt>คุณสมบัติ</dt><dd x-text="flagSummary()"></dd>
+            </dl>
+            <div class="nvm-status is-warn">
+                <svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>
+                <span>หลังส่ง เหรียญจะอยู่ในสถานะร่าง<small>ทีมงานตรวจสอบก่อนนำขึ้นเครือข่าย จำนวนทั้งหมดและสัญลักษณ์แก้ไขภายหลังไม่ได้</small></span>
+            </div>
+            <label class="nvm-check">
+                <input type="checkbox" x-model="agreed" required>
+                <span>ฉันตรวจสอบข้อมูลแล้ว และเข้าใจว่าการสร้างเหรียญต้องผ่านการอนุมัติก่อน</span>
+            </label>
+        </div>
+
+        <div class="nvm-filter__btns nvm-gap-t">
+            <button type="button" class="nvm-btn nvm-btn--line" x-show="step > 1" x-cloak x-on:click="goTo(step - 1)">ก่อนหน้า</button>
+            <button type="button" class="nvm-btn nvm-btn--gold" x-show="step < 4" x-on:click="goTo(step + 1)">ถัดไป<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></button>
+            <button type="submit" class="nvm-btn nvm-btn--gold" x-show="step === 4" x-cloak x-bind:disabled="! agreed || submitting">
+                <svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="submitting ? 'กำลังบันทึก...' : 'สร้างเหรียญ'">สร้างเหรียญ</span>
+            </button>
+        </div>
+    </form>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-tkc-a-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">How it works</small><h2 id="nvm-tkc-a-h">ขั้นตอนหลังส่ง</h2></div></div>
+        <ol class="nvm-steps">
+            <li>ระบบบันทึกเหรียญเป็นร่าง ดูได้ที่ "เหรียญที่ฉันสร้าง" ในตลาดเหรียญ</li>
+            <li>ทีมงานตรวจสอบข้อมูลและแจ้งผลให้ทราบ</li>
+            <li>เมื่ออนุมัติ เหรียญจะถูกนำขึ้น TPIX Blockchain และแสดงในตลาด</li>
+        </ol>
+        @if($gasCost !== null)
+            <dl class="nvm-kv nvm-gap-t">
+                <dt>ค่า Gas โดยประมาณ</dt><dd class="nvm-num">{{ rtrim(rtrim(number_format((float) $gasCost, 8), '0'), '.') }} TPIX</dd>
+            </dl>
+            <p class="nvm-help">ประเมินจากราคา Gas ปัจจุบันของเครือข่าย ยอดจริงอาจต่างเล็กน้อย</p>
+        @endif
+    </aside>
+</div>
+
 </div>
 
 @push('scripts')
 <script>
-/**
- * Alpine.js Component สำหรับ Create Token Form
- */
-function createTokenForm() {
-    return {
-        // State
-        currentStep: 1,
-        logoPreview: null,
-        agreedToTerms: false,
-
-        // Steps configuration
-        steps: [
-            { number: 1, label: 'ข้อมูลพื้นฐาน' },
-            { number: 2, label: 'คุณสมบัติ' },
-            { number: 3, label: 'Tokenomics' },
-            { number: 4, label: 'ตรวจสอบ' }
-        ],
-
-        // Form data
-        formData: {
-            name: '',
-            symbol: '',
-            description: '',
-            total_supply: '',
-            decimals: '18',
-            category: '',
-            is_mintable: false,
-            is_burnable: true,
-            is_pausable: false,
-            is_freezable: false,
-            initial_price_tpix: '',
-            website: '',
-            whitepaper_url: '',
-            github_url: '',
-            twitter_handle: '',
-            telegram_group: ''
-        },
-
-        /**
-         * เริ่มต้น component
-         */
-        init() {
-            console.log('Create Token Form initialized');
-        },
-
-        /**
-         * ไปขั้นตอนถัดไป
-         */
-        nextStep() {
-            if (this.currentStep < 4) {
-                this.currentStep++;
+    /**
+     * ฟอร์มสร้างเหรียญ 4 ขั้น — ตรวจช่องบังคับของแต่ละขั้นก่อนไปขั้นถัดไป
+     * (ฟอร์มใช้ novalidate เพราะช่องในขั้นที่ซ่อนอยู่ทำให้เบราว์เซอร์บล็อกการส่งแบบเงียบ ๆ)
+     */
+    function nvmTokenForm(initial, startStep) {
+        return {
+            f: initial,
+            step: startStep,
+            agreed: false,
+            submitting: false,
+            // ตรวจช่องในขั้นที่ระบุ ถ้าไม่ผ่านให้เปิดขั้นนั้นแล้วโชว์ข้อความของเบราว์เซอร์
+            stepValid(n) {
+                const box = this.$refs['step' + n];
+                if (! box) return true;
+                const bad = Array.from(box.querySelectorAll('input, select, textarea')).find((el) => ! el.checkValidity());
+                if (! bad) return true;
+                this.step = n;
+                this.$nextTick(() => bad.reportValidity());
+                return false;
+            },
+            goTo(n) {
+                if (n < 1 || n > 4) return;
+                for (let i = 1; i < n; i++) {
+                    if (i >= this.step && ! this.stepValid(i)) return;
+                }
+                this.step = n;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-
-        /**
-         * กลับขั้นตอนก่อนหน้า
-         */
-        prevStep() {
-            if (this.currentStep > 1) {
-                this.currentStep--;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-
-        /**
-         * ไปยังขั้นตอนที่ระบุ
-         */
-        goToStep(step) {
-            if (step <= this.currentStep || step === this.currentStep + 1) {
-                this.currentStep = step;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-
-        /**
-         * แสดงตัวอย่าง logo
-         */
-        previewLogo(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.logoPreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        },
-
-        /**
-         * ส่งฟอร์ม
-         */
-        submitForm() {
-            // Form จะถูก submit ตามปกติผ่าน Laravel
-            document.getElementById('createTokenForm').submit();
-        }
-    };
-}
+            },
+            flagSummary() {
+                const names = { is_mintable: 'Mintable', is_burnable: 'Burnable', is_pausable: 'Pausable', is_freezable: 'Freezable' };
+                const on = Object.keys(names).filter((k) => this.f[k]).map((k) => names[k]);
+                return on.length ? on.join(' · ') : 'ไม่มี';
+            },
+            submit(e) {
+                for (let i = 1; i <= 3; i++) {
+                    if (! this.stepValid(i)) { e.preventDefault(); return; }
+                }
+                if (! this.agreed || this.submitting) { e.preventDefault(); return; }
+                this.submitting = true;
+            },
+        };
+    }
 </script>
 @endpush
 @endsection

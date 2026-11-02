@@ -1,13 +1,13 @@
-{{-- ป้ายสถานะรายการ TPIX — รับ $status --}}
+{{-- ป้ายสถานะรายการ TPIX (ธีมโนวา) — รับ $status --}}
 @php
-    [$statusLabel, $statusColor] = [
-        'pending' => ['รอดำเนินการ', 'var(--accent1)'],
-        'broadcasted' => ['ส่งเข้าเครือข่ายแล้ว', 'var(--accent1)'],
-        'confirming' => ['รอยืนยันบนเครือข่าย', 'var(--accent1)'],
-        'confirmed' => ['สำเร็จ', '#5aa07e'],
-        'completed' => ['สำเร็จ', '#5aa07e'],
-        'failed' => ['ไม่สำเร็จ', '#d9534f'],
-        'cancelled' => ['ยกเลิกแล้ว', '#d9534f'],
-    ][$status] ?? [$status, 'var(--ink2)'];
+    [$statusLabel, $statusTone] = [
+        'pending' => ['รอดำเนินการ', 'warn'],
+        'broadcasted' => ['ส่งเข้าเครือข่ายแล้ว', 'warn'],
+        'confirming' => ['รอยืนยันบนเครือข่าย', 'warn'],
+        'confirmed' => ['สำเร็จ', 'ok'],
+        'completed' => ['สำเร็จ', 'ok'],
+        'failed' => ['ไม่สำเร็จ', 'bad'],
+        'cancelled' => ['ยกเลิกแล้ว', 'bad'],
+    ][$status] ?? [$status, ''];
 @endphp
-<span class="tp-pill" style="background:color-mix(in srgb, {{ $statusColor }} 16%, transparent); color:{{ $statusColor }}; font-size:11.5px; font-weight:700;">{{ $statusLabel }}</span>
+<span class="nvm-chip {{ $statusTone ? 'nvm-chip--'.$statusTone : '' }}">{{ $statusLabel }}</span>

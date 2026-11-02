@@ -1,6 +1,13 @@
-@extends('layouts.user-v4')
+{{--
+    รายละเอียดธุรกรรม TPIX (ธีมโนวาเต็ม)
+    - controller ดึงด้วย where('user_id', ผู้ใช้) + findOrFail จึงเปิดรายการของคนอื่นไม่ได้ (404)
+    - ไม่แสดง metadata/บันทึกภายใน/ข้อความ error ดิบ
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'รายละเอียดธุรกรรม TPIX - กระเป๋าเงิน TPIX')
+@section('title', 'รายละเอียดธุรกรรม TPIX')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/tpix-tokens.css') }}?v={{ filemtime(public_path('theme-nova/member/tpix-tokens.css')) }}">@endpush
 
 @php
     // รายการของสมาชิกอาจเป็นเหรียญอื่น — controller กรองแค่เจ้าของ ไม่ได้กรองสกุลเงิน
@@ -22,65 +29,65 @@
         'วันที่ทำรายการ' => $transaction->created_at->format('d/m/Y H:i'),
         'วันที่สำเร็จ' => ($transaction->completed_at ?? $transaction->confirmed_at)?->format('d/m/Y H:i'),
     ], fn ($value) => filled($value));
+    $monoRows = ['จากที่อยู่', 'ไปยังที่อยู่', 'เลขธุรกรรมบนเชน', 'เลขที่รายการ'];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:720px; margin-inline:auto; width:100%;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="min-width:0;">
-                <h1 style="font-size:clamp(20px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">รายละเอียดธุรกรรม</h1>
-                <div style="font-size:13px; color:var(--ink2); margin-top:2px;">{{ $transaction->typeLabel() }}</div>
-            </div>
-            <a href="{{ route('user.tpix.transactions') }}" class="tp-btn" style="display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:13px; background:var(--surf); box-shadow:var(--inset-sm); color:var(--ink); font-weight:600; font-size:13.5px; text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> <span>กลับประวัติ</span>
-            </a>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-tpx-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.tpix.transactions') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>กลับประวัติ</a>
+            <div class="nvm-eyebrow nvm-latin">Transaction</div>
+            <h1 id="nvm-tpx-h">รายละเอียดธุรกรรม</h1>
+            <p class="nvm-ph__lead">{{ $transaction->typeLabel() }}</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── จำนวนและสถานะ ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px 24px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
-            <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; min-width:0;">
-                <div class="tp-num" style="font-size:clamp(24px,6vw,34px); font-weight:800; color:{{ $incoming ? '#5aa07e' : 'var(--deep1)' }}; line-height:1.1; overflow-wrap:anywhere;">{{ $incoming ? '+' : '-' }}{{ number_format((float) $transaction->amount, 8) }}</div>
-                <div style="font-size:16px; color:var(--ink2);">{{ $code }}</div>
-            </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-tpx-i-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Amount</small><h2 id="nvm-tpx-i-h">จำนวนและสถานะ</h2></div>
             @include('user.tpix.partials.status-pill', ['status' => $transaction->status])
         </div>
+        <div class="nvm-tx-big nvm-num {{ $incoming ? 'is-in' : '' }}">{{ $incoming ? '+' : '-' }}{{ number_format((float) $transaction->amount, 8) }}<span>{{ $code }}</span></div>
 
         @if($transaction->tx_hash && $transaction->isPending())
-            <div style="font-size:13px; color:var(--ink2); margin-top:12px;">ยืนยันแล้ว {{ (int) $transaction->confirmations }} จาก {{ (int) $transaction->confirmations_required }} บล็อก</div>
+            <p class="nvm-help nvm-gap-t">ยืนยันแล้ว <span class="nvm-num">{{ (int) $transaction->confirmations }}</span> จาก <span class="nvm-num">{{ (int) $transaction->confirmations_required }}</span> บล็อก</p>
         @endif
-    </div>
 
-    {{-- ── ข้อมูลรายการ ──────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:8px 22px;">
-        @foreach($rows as $label => $value)
-            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 16px; padding:12px 0; {{ $loop->last ? '' : 'border-bottom:1px solid color-mix(in srgb, var(--ink2) 10%, transparent);' }}">
-                <div style="font-size:13px; color:var(--ink2);">{{ $label }}</div>
-                <div style="font-size:13.5px; font-weight:600; color:var(--ink); overflow-wrap:anywhere; min-width:0; text-align:right; margin-left:auto;">{{ $value }}</div>
-            </div>
-        @endforeach
-    </div>
+        <dl class="nvm-kv nvm-gap-t">
+            @foreach($rows as $label => $value)
+                <dt>{{ $label }}</dt>
+                <dd class="{{ in_array($label, $monoRows, true) ? 'nvm-tx-mono' : 'nvm-num' }}">{{ $value }}</dd>
+            @endforeach
+        </dl>
+    </section>
 
-    {{-- ── ข้อมูลบนเชน ───────────────────────────────────────── --}}
     @if($transaction->tx_hash)
-        <div class="tp-card" style="padding:20px 22px;">
-            <h2 style="font-size:15px; font-weight:800; color:var(--ink); margin:0 0 12px;">ข้อมูลบนเครือข่าย</h2>
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-tpx-c-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">On chain</small><h2 id="nvm-tpx-c-h">ข้อมูลบนเครือข่าย</h2></div></div>
             @if($blockchainData)
-                <div style="display:flex; justify-content:space-between; gap:16px; font-size:13.5px; margin-bottom:12px;">
-                    <span style="color:var(--ink2);">บล็อก</span>
-                    <span class="tp-num" style="font-weight:600; color:var(--ink);">{{ $blockchainData['blockNumber'] ?? 'ยังไม่เข้าบล็อก' }}</span>
-                </div>
+                <dl class="nvm-kv">
+                    <dt>บล็อก</dt>
+                    <dd class="nvm-num">{{ $blockchainData['blockNumber'] ?? 'ยังไม่เข้าบล็อก' }}</dd>
+                </dl>
             @else
-                <p style="font-size:13px; color:var(--ink2); margin:0 0 12px;">ขณะนี้เชื่อมต่อเครือข่ายไม่ได้ ข้อมูลรายการด้านบนยังถูกต้องตามระบบ</p>
+                <div class="nvm-status is-warn">
+                    <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                    <span>ขณะนี้เชื่อมต่อเครือข่ายไม่ได้<small>ข้อมูลรายการด้านซ้ายยังถูกต้องตามระบบ</small></span>
+                </div>
             @endif
             @if($explorerUrl)
-                <a href="{{ $explorerUrl }}" target="_blank" rel="noopener noreferrer" style="color:var(--deep1); font-size:13px; font-weight:700; text-decoration:none;">ดูบน Explorer <i class="fas fa-external-link-alt"></i></a>
+                <a class="nvm-btn nvm-btn--line nvm-w-full nvm-gap-t" href="{{ $explorerUrl }}" target="_blank" rel="noopener noreferrer"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>ดูบน Explorer</a>
             @endif
-        </div>
+        </aside>
     @endif
+</div>
+
 </div>
 @endsection

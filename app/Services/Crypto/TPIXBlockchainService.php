@@ -347,6 +347,12 @@ class TPIXBlockchainService
 
             $data = $response->json();
 
+            // โหนดตอบกลับไม่ใช่ JSON (เช่นหน้า HTML 502 ของ proxy) — เดิมคืน null แล้วชน return type เป็น TypeError
+            // ซึ่ง catch (Exception) ของผู้เรียกจับไม่ได้ หน้ากระเป๋า TPIX / หน้าสร้างเหรียญจึง 500
+            if (! is_array($data)) {
+                throw new Exception('Invalid RPC response from TPIX node');
+            }
+
             if (isset($data['error'])) {
                 throw new Exception('RPC error: '.($data['error']['message'] ?? 'Unknown error'));
             }

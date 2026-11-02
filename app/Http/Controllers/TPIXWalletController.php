@@ -6,6 +6,7 @@ use App\Models\CryptoAddress;
 use App\Models\CryptoCurrency;
 use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
+use App\Models\TPIXTokenBalance;
 use App\Services\Crypto\CryptoWalletService;
 use App\Services\Crypto\TPIXBlockchainService;
 use App\Services\NotificationService;
@@ -110,6 +111,14 @@ class TPIXWalletController extends Controller
                 ->count(),
         ];
 
+        // เหรียญลูกที่สมาชิกถืออยู่ (เฉพาะของตัวเอง ยอดมากกว่า 0) — เดิมหน้านี้หมุนโหลดค้างตลอดเพราะไม่มีข้อมูลส่งมา
+        $tokenHoldings = TPIXTokenBalance::with('token:id,name,symbol,logo')
+            ->where('user_id', $user->id)
+            ->where('balance', '>', 0)
+            ->orderByDesc('balance')
+            ->limit(10)
+            ->get();
+
         // Network info
         try {
             $networkInfo = $this->tpixService->getNetworkInfo();
@@ -124,7 +133,8 @@ class TPIXWalletController extends Controller
             'recentTransactions',
             'stats',
             'tpixCurrency',
-            'networkInfo'
+            'networkInfo',
+            'tokenHoldings'
         ));
     }
 
