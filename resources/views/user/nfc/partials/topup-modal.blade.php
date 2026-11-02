@@ -4,7 +4,8 @@
       $walletBalance  ยอดกระเป๋าเงินที่ใช้เติมได้
       $action         URL ของการ์ดใบนี้ (หน้ารายละเอียด) — ไม่ส่ง = ใช้ topUpAction/topUpName จาก Alpine (หน้ารวมการ์ด)
       $cardName       ชื่อการ์ด (ใช้คู่กับ $action)
-    ต้องอยู่ใต้ x-data ที่มี topUp (เปิด/ปิด) — ช่องจำนวนเงินอ้างด้วย x-ref="topUpAmount"
+    ต้องอยู่ใต้ x-data ที่มี topUp (เปิด/ปิด) — ช่องจำนวนเงินโฟกัสตัวเองเมื่อ topUp เป็นจริง
+    (ห้ามใช้ $refs จาก x-data ชั้นนอก: x-ref ลงทะเบียนกับ x-data ของฟอร์มซึ่งใกล้กว่า ชั้นนอกจึงหาไม่เจอ)
 --}}
 @php
     $action = $action ?? null;
@@ -26,7 +27,7 @@
                 <label class="nvm-label" for="nvm-nfc-top-amt">จำนวนเงิน (บาท) <em>*</em></label>
                 <div class="nvm-amount">
                     <span aria-hidden="true">฿</span>
-                    <input id="nvm-nfc-top-amt" class="nvm-input nvm-num" type="number" name="amount" required min="1" max="100000" step="0.01" inputmode="decimal" x-ref="topUpAmount" value="{{ old('amount') }}">
+                    <input id="nvm-nfc-top-amt" class="nvm-input nvm-num" type="number" name="amount" required min="1" max="100000" step="0.01" inputmode="decimal" x-effect="if (topUp) $nextTick(() => $el.focus())" value="{{ old('amount') }}">
                 </div>
                 <small class="nvm-note nvm-num">ยอดกระเป๋าเงินคงเหลือ ฿{{ number_format((float) $walletBalance, 2) }}</small>
                 @error('amount')<span class="nvm-err">{{ $message }}</span>@enderror

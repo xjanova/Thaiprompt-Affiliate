@@ -3,6 +3,7 @@
 namespace Tests\Feature\User;
 
 use App\Models\NFCCard;
+use App\Models\NFCReader;
 use App\Models\NFCTransaction;
 use App\Models\Service;
 use App\Models\ServiceBooking;
@@ -10,6 +11,7 @@ use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -424,5 +426,57 @@ class NovaServicesNfcPagesTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertFalse((bool) $card->fresh()->auto_topup_enabled);
+    }
+
+    public function test_topup_amount_field_focuses_itself_instead_of_an_unreachable_ref(): void
+    {
+        $member = $this->member();
+        $wallet = app(WalletService::class)->getOrCreateWallet($member);
+        $card = $this->card($member, ['wallet_id' => $wallet->id]);
+
+        foreach ([route('user.nfc.index'), route('user.nfc.show', $card)] as $url) {
+            $html = $this->actingAs($member)->get($url)->assertOk()->getContent();
+            // x-ref ในฟอร์มลงทะเบียนกับ x-data ของฟอร์ม ปุ่มชั้นนอกจึงหาไม่เจอ (เดิม TypeError ทุกครั้งที่กด)
+            $this->assertStringNotContainsString('$refs.topUpAmount', $html, $url);
+            $this->assertStringContainsString('x-effect="if (topUp) $nextTick(() => $el.focus())"', $html, $url);
+        }
+    }
+
+    public function test_nfc_transaction_rows_eager_load_their_readers(): void
+    {
+        $member = $this->member();
+        $card = $this->card($member);
+        foreach (['เครื่องอ่าน A', 'เครื่องอ่าน B', 'เครื่องอ่าน C'] as $i => $name) {
+            $reader = NFCReader::forceCreate([
+                'name' => $name,
+                'reader_id' => 'RD-'.$i.'-'.Str::random(6),
+                'serial_number' => 'SN-'.$i.'-'.Str::random(6),
+                'status' => 'active',
+            ]);
+            NFCTransaction::forceCreate([
+                'nfc_card_id' => $card->id,
+                'user_id' => $member->id,
+                'nfc_reader_id' => $reader->id,
+                'type' => 'payment',
+                'amount' => 10,
+                'balance_before' => 500,
+                'balance_after' => 490,
+                'status' => 'completed',
+                'card_data_hash' => 'h',
+            ]);
+        }
+
+        foreach ([route('user.nfc.index'), route('user.nfc.show', $card)] as $url) {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $html = $this->actingAs($member)->get($url)->assertOk()->getContent();
+            $readerQueries = collect(DB::getQueryLog())
+                ->filter(fn ($q) => str_contains($q['query'], 'nfc_readers'))
+                ->count();
+            DB::disableQueryLog();
+
+            $this->assertStringContainsString('เครื่องอ่าน B', $html, $url);
+            $this->assertLessThanOrEqual(1, $readerQueries, $url.' โหลดเครื่องอ่านทีละแถว (N+1)');
+        }
     }
 }

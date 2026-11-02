@@ -164,8 +164,8 @@ function nvmNfcCards() {
         openTopUp(action, name) {
             this.topUpAction = action;
             this.topUpName = name;
+            // ช่องจำนวนเงินในโมดัลโฟกัสตัวเองผ่าน x-effect
             this.topUp = true;
-            this.$nextTick(() => { this.$refs.topUpAmount && this.$refs.topUpAmount.focus(); });
         },
     };
 }

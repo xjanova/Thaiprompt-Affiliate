@@ -70,7 +70,7 @@
             </div>
             <div class="nvm-sn-acts">
                 @if($card->hasLinkedWallet())
-                    <button type="button" class="nvm-btn nvm-btn--gold" @click="topUp = true; $nextTick(() => $refs.topUpAmount.focus())"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เติมเงินจากกระเป๋า</button>
+                    <button type="button" class="nvm-btn nvm-btn--gold" @click="topUp = true"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เติมเงินจากกระเป๋า</button>
                 @else
                     <form action="{{ route('user.nfc.wallet.link', $card) }}" method="POST">
                         @csrf

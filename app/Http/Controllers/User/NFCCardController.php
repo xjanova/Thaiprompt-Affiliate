@@ -47,7 +47,8 @@ class NFCCardController extends Controller
         // ดึงการ์ดทั้งหมดของ user พร้อม relationships
         $cards = NFCCard::where('user_id', $user->id)
             ->with(['wallet', 'transactions' => function ($query) {
-                $query->latest()->limit(5);
+                // โหลดเครื่องอ่านไปด้วย กัน N+1 ในแถวธุรกรรม
+                $query->with('nfcReader')->latest()->limit(5);
             }])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -83,7 +84,8 @@ class NFCCardController extends Controller
 
         // โหลด relationships
         $card->load(['wallet', 'transactions' => function ($query) {
-            $query->latest()->limit(20);
+            // โหลดเครื่องอ่านไปด้วย กัน N+1 ในแถวธุรกรรม
+            $query->with('nfcReader')->latest()->limit(20);
         }]);
 
         // สถิติการใช้งาน
