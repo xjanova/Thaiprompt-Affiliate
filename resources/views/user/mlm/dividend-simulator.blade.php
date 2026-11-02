@@ -1,662 +1,240 @@
-@extends('layouts.user-v4')
+{{--
+    เครื่องคำนวณ TPIX Staking (ธีมโนวาเต็ม) — route closure user.mlm.dividend-simulator (คำนวณในเบราว์เซอร์ ไม่แตะเงินจริง)
+    ตัวแปร: $pools (pool ที่เปิดอยู่จริง: id/name/apy/days/min) — ว่างได้ ถ้าว่างใช้ค่าตัวอย่างและบอกผู้ใช้ตรงๆ
+    🐛 แก้จากหน้าเดิม:
+       - APY 30/60/90/120% ฮาร์ดโค้ดและโฆษณา "ผลตอบแทนสูงสุด 120% ต่อปี" ทั้งที่ระบบจริงอ่าน APY จาก tpix_staking_pools
+         → ใช้ pool จริง, ถ้าไม่มีบอกว่าเป็นตัวเลขตัวอย่าง
+       - ระบบจริงคิดผลตอบแทนแบบไม่ทบต้น (TPIXStakingPool::calculateRewards) แต่หน้านี้เปิดทบต้นเป็นค่าเริ่มต้น → ปิดเป็นค่าเริ่มต้นและอธิบาย
+       - select ระยะล็อกได้ค่าเป็นสตริง ทำให้ day === lockPeriod ไม่ตรง → x-model.number
+       - ปุ่ม "เริ่มต้น Stake" พาไปหน้า dashboard → ไปหน้า staking จริง
+       - รีเซ็ตระหว่างจำลองแล้ว loop ยังวิ่ง และต้องรอ 7 วินาทีทุกครั้ง → คำนวณทันที
+       - Chart.js ไม่ปักเวอร์ชัน → 4.4.1
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'เครื่องคำนวณ TPIX Staking')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/mlm.css') }}?v={{ filemtime(public_path('theme-nova/member/mlm.css')) }}">@endpush
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $pools = collect($pools ?? []);
+    $isExample = $pools->isEmpty();
+    $options = $isExample
+        ? collect([[30, 30], [90, 60], [180, 90], [365, 120]])->map(fn ($o, $i) => ['id' => 'ex'.$i, 'name' => 'ตัวอย่าง '.$o[0].' วัน', 'apy' => $o[1], 'days' => $o[0], 'min' => 100])->values()
+        : $pools;
+    $stakeUrl = $nvR('user.staking.index') ? route('user.staking.index') : null;
+@endphp
+
 @section('content')
-{{--
-    TPIX Staking Calculator (Theme V4 "นวลทองคำ")
-    ============================================
-    หน้าคำนวณผลตอบแทนจากการ Staking เหรียญ TPIX
-    - คำนวณ staking rewards ตามเวลา
-    - Lock period options (30, 90, 180, 365 วัน)
-    - APY แตกต่างกันตาม lock period (30% - 120%)
-    - Auto-compound option + Real-time animation
-    - กราฟใช้ Chart.js (กราฟจริงเพื่อ core functionality — คงไว้ตามกฎ V4)
 
-    APY Structure (ตามเอกสาร TPIX):
-    - 30 วัน → 30% APY
-    - 90 วัน → 60% APY
-    - 180 วัน → 90% APY
-    - 365 วัน → 120% APY (Max)
---}}
+<div class="nvm-stack nvm-ml-page" x-data="nvmMlStaking(@js($options))">
 
-<div style="display:flex; flex-direction:column; gap:18px;"
-     x-data="tpixStakingCalculator()"
-     x-init="init()">
-
-    {{-- ── Hero ───────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <span class="tp-tile" style="width:56px; height:56px; border-radius:18px; font-size:26px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
-                    <div>
-                        <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">🪙 เครื่องคำนวณ TPIX Staking</h1>
-                        <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">คำนวณผลตอบแทนจากการ Staking เหรียญ TPIX ของคุณ</div>
-                    </div>
-                </div>
-                <a href="{{ route('user.dashboard') }}" class="tp-icon-btn" title="กลับหน้าหลัก" style="text-decoration:none;">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-            </div>
+<section class="nvm-ph" aria-labelledby="nvm-mld-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.mlm.dashboard'))
+                <a class="nvm-ph__back" href="{{ route('user.mlm.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>แดชบอร์ด MLM</a>
+            @endif
+            <div class="nvm-eyebrow nvm-latin">TPIX staking calculator</div>
+            <h1 id="nvm-mld-h">เครื่องคำนวณ TPIX Staking</h1>
+            <p class="nvm-ph__lead">ลองใส่จำนวน TPIX และระยะล็อก ดูผลตอบแทนโดยประมาณ</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── แผงตั้งค่าการคำนวณ ─────────────────────────────────── --}}
-    <div class="tp-card" style="padding:20px 22px;">
-        <div class="tp-section-h" style="margin-bottom:16px;">
-            <i class="fas fa-sliders-h" style="color:var(--deep1); margin-right:6px;"></i> ตั้งค่าการคำนวณ
-        </div>
+@if($isExample)
+    <div class="nvm-alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ตอนนี้ยังไม่มี pool staking ที่เปิดอยู่</b><small>APY ในหน้านี้เป็นตัวเลขตัวอย่างเพื่อดูวิธีคิดเท่านั้น ไม่ใช่อัตราจริงและไม่ใช่การรับประกันผลตอบแทน</small></div>
+    </div>
+@else
+    <div class="nvm-alert nvm-alert--info">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ใช้ APY จาก pool ที่เปิดอยู่จริง</b><small>ผลลัพธ์เป็นการประมาณ APY อาจเปลี่ยนตามที่ระบบประกาศ และมูลค่าเหรียญขึ้นลงได้</small></div>
+    </div>
+@endif
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;">
-
-            {{-- จำนวน TPIX ที่ Stake --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
-                    <i class="fas fa-coins" style="color:var(--deep1); margin-right:6px;"></i> จำนวน TPIX ที่ Stake
-                </label>
-                <div style="position:relative;">
-                    <input type="number"
-                           x-model.number="config.stakingAmount"
-                           @input="calculateRewards()"
-                           step="100"
-                           min="0"
-                           class="tp-input tp-num"
-                           style="width:100%; padding-right:56px; font-size:16px; font-weight:700;">
-                    <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; color:var(--deep1);">TPIX</span>
-                </div>
-                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">ขั้นต่ำ: 100 TPIX</div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-mld-in-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Inputs</small><h2 id="nvm-mld-in-h">ตั้งค่าการคำนวณ</h2></div></div>
+    <div class="nvm-form">
+        <div class="nvm-ml-inputs">
+            <div class="nvm-field">
+                <label class="nvm-label" for="mld-amt">จำนวน TPIX ที่ Stake</label>
+                <input id="mld-amt" type="number" inputmode="decimal" min="0" step="100" class="nvm-input nvm-num" x-model.number="amount" @input.debounce.250ms="calc()">
+                <span class="nvm-help">ขั้นต่ำ <span class="nvm-num" x-text="fmt(pool?.min || 0)"></span> TPIX</span>
             </div>
-
-            {{-- Lock Period --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
-                    <i class="fas fa-lock" style="color:#5689b8; margin-right:6px;"></i> ระยะเวลา Lock
-                </label>
-                <select x-model="config.lockPeriod"
-                        @change="updateAPY(); calculateRewards()"
-                        class="tp-input"
-                        style="width:100%; font-size:15px; font-weight:700;">
-                    <option value="30">30 วัน (APY 30%)</option>
-                    <option value="90">90 วัน (APY 60%)</option>
-                    <option value="180">180 วัน (APY 90%)</option>
-                    <option value="365">365 วัน (APY 120%)</option>
+            <div class="nvm-field">
+                <label class="nvm-label" for="mld-pool">{{ $isExample ? 'ระยะเวลาล็อก (ตัวอย่าง)' : 'Pool / ระยะเวลาล็อก' }}</label>
+                <select id="mld-pool" class="nvm-input" x-model="poolId" @change="calc()">
+                    <template x-for="p in pools" :key="p.id">
+                        <option :value="String(p.id)" :selected="String(p.id) === poolId" x-text="p.name + ' · ' + p.days + ' วัน · APY ' + Number(p.apy).toFixed(2) + '%'"></option>
+                    </template>
                 </select>
-                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">ระยะเวลาที่ล็อค TPIX</div>
-            </div>
-
-            {{-- APY (Auto-calculated) --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
-                    <i class="fas fa-chart-line" style="color:#5aa07e; margin-right:6px;"></i> อัตราผลตอบแทน (APY)
-                </label>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px; border-radius:13px; box-shadow:var(--inset-sm); font-size:16px; font-weight:800; color:#5aa07e;">
-                    <span class="tp-num" x-text="config.apy"></span>
-                    <span style="font-size:13px;">%</span>
-                </div>
-                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">คำนวณอัตโนมัติตาม Lock Period</div>
-            </div>
-
-            {{-- Auto Compound --}}
-            <div>
-                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;">
-                    <i class="fas fa-sync-alt" style="color:var(--accent2); margin-right:6px;"></i> Auto-Compound
-                </label>
-                <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:11px 14px; border-radius:13px; box-shadow:var(--inset-sm);">
-                    <input type="checkbox"
-                           x-model="config.autoCompound"
-                           @change="calculateRewards()"
-                           style="position:absolute; opacity:0; width:0; height:0;">
-                    <span style="position:relative; flex-shrink:0; width:48px; height:26px; border-radius:20px; transition:background .25s; box-shadow:var(--inset-sm);"
-                          :style="config.autoCompound ? 'background:linear-gradient(90deg,var(--accent1),var(--accent2));' : 'background:color-mix(in srgb,var(--ink2) 28%,transparent);'">
-                        <span style="position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .25s; display:flex; align-items:center; justify-content:center; font-size:10px;"
-                              :style="config.autoCompound ? 'transform:translateX(22px);' : ''">
-                            <i class="fas" :class="config.autoCompound ? 'fa-check' : 'fa-times'" :style="config.autoCompound ? 'color:var(--deep1);' : 'color:var(--ink2);'"></i>
-                        </span>
-                    </span>
-                    <span style="font-size:13px; font-weight:700;" x-text="config.autoCompound ? 'เปิดใช้งาน' : 'ปิดใช้งาน'"></span>
-                </label>
-                <div style="margin-top:6px; font-size:11px; color:var(--ink2);">นำรางวัลกลับไป stake อัตโนมัติ</div>
             </div>
         </div>
-
-        {{-- ปุ่มดำเนินการ --}}
-        <div style="margin-top:18px; display:flex; flex-wrap:wrap; gap:12px;">
-            <button @click="startSimulation()"
-                    :disabled="isSimulating"
-                    class="tp-btn tp-btn-primary"
-                    style="flex:1; min-width:200px; justify-content:center; font-size:15px; padding:13px 24px;"
-                    :style="isSimulating ? 'opacity:.6; cursor:not-allowed;' : ''">
-                <i class="fas" :class="isSimulating ? 'fa-spinner fa-spin' : 'fa-play'"></i>
-                <span x-text="isSimulating ? 'กำลังคำนวณ...' : '▶️ เริ่มคำนวณ'"></span>
-            </button>
-
-            <button @click="resetSimulation()"
-                    class="tp-btn"
-                    style="justify-content:center; font-size:15px; padding:13px 24px;">
-                <i class="fas fa-redo"></i> รีเซ็ต
-            </button>
+        <div class="nvm-minis nvm-ml-minis3">
+            <div class="nvm-mini"><small>APY</small><b class="nvm-num is-in"><span x-text="Number(pool?.apy || 0).toFixed(2)"></span>%</b></div>
+            <div class="nvm-mini"><small>ระยะล็อก</small><b class="nvm-num"><span x-text="pool?.days || 0"></span> วัน</b></div>
+            <div class="nvm-mini"><small>ผลตอบแทนต่อวัน</small><b class="nvm-num"><span x-text="(Number(pool?.apy || 0) / 365).toFixed(4)"></span>%</b></div>
         </div>
+        <label class="nvm-ml-swrow">
+            <span><b>คิดแบบทบต้น (สมมติ)</b><small>ระบบจริงจ่ายผลตอบแทนแบบไม่ทบต้น เปิดเพื่อเปรียบเทียบเท่านั้น</small></span>
+            <span class="nvm-sw"><input type="checkbox" x-model="compound" @change="calc()" aria-label="คิดแบบทบต้น"><i></i></span>
+        </label>
+        <p class="nvm-err" x-show="error" x-cloak x-text="error"></p>
+    </div>
+</section>
+
+<template x-if="result">
+<div class="nvm-stack">
+    <section class="nvm-kpis" aria-label="ผลการคำนวณ">
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">TPIX ที่ Stake</div><div class="nvm-kpi__en nvm-latin">Principal</div>
+            <div class="nvm-kpi__val nvm-num" x-text="fmt(amount)"></div>
+        </div>
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/gift.webp') }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">ผลตอบแทนรวม</div><div class="nvm-kpi__en nvm-latin">Rewards</div>
+            <div class="nvm-kpi__val nvm-num" x-text="fmt(result.rewards)"></div>
+        </div>
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset('images/nova/deco/lantern.webp') }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">ผลตอบแทนตลอดระยะล็อก</div><div class="nvm-kpi__en nvm-latin">Return</div>
+            <div class="nvm-kpi__val nvm-num"><span x-text="result.roi.toFixed(2)"></span>%</div>
+        </div>
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset('images/nova/wallet/hero.webp') }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">TPIX เมื่อครบกำหนด</div><div class="nvm-kpi__en nvm-latin">At maturity</div>
+            <div class="nvm-kpi__val nvm-num" x-text="fmt(result.final)"></div>
+        </div>
+    </section>
+
+    <div class="nvm-split">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mld-c1-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Growth</small><h2 id="nvm-mld-c1-h">TPIX ตามเวลา</h2></div></div>
+            <div class="nvm-ml-chart"><canvas x-ref="growth" role="img" aria-label="กราฟ TPIX รวมตามจำนวนวัน"></canvas></div>
+        </section>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mld-c2-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Split</small><h2 id="nvm-mld-c2-h">เงินต้นกับผลตอบแทน</h2></div></div>
+            <div class="nvm-ml-chart"><canvas x-ref="split" role="img" aria-label="กราฟสัดส่วนเงินต้นและผลตอบแทน"></canvas></div>
+        </section>
     </div>
 
-    {{-- ── ระหว่างจำลอง (Animation) ───────────────────────────── --}}
-    <div x-show="isSimulating"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-cloak
-         style="display:flex; flex-direction:column; gap:16px;">
-
-        {{-- การ์ดความคืบหน้า --}}
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:28px 24px; text-align:center; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
-                <div style="font-size:16px; font-weight:700; margin-bottom:10px;">กำลังคำนวณ...</div>
-                <div class="tp-num" style="font-size:clamp(38px,8vw,60px); font-weight:800; line-height:1.1; color:var(--deep1);">
-                    วันที่ <span x-text="simulation.currentDay"></span>
-                </div>
-                <div style="font-size:14px; color:var(--ink2); margin-top:4px;">
-                    จาก <span x-text="config.lockPeriod"></span> วัน
-                </div>
-
-                {{-- Progress Bar --}}
-                <div style="margin-top:18px; height:14px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
-                    <div style="height:100%; border-radius:20px; background:linear-gradient(90deg,var(--accent1),var(--accent2)); transition:width .5s ease;"
-                         :style="`width:${(simulation.currentDay / config.lockPeriod) * 100}%`"></div>
-                </div>
-                <div style="margin-top:8px; font-size:12px; color:var(--ink2);">
-                    ความคืบหน้า: <span x-text="Math.floor((simulation.currentDay / config.lockPeriod) * 100)"></span>%
-                </div>
-            </div>
-        </div>
-
-        {{-- สถิติ Real-time 4 ใบ --}}
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
-
-            {{-- TPIX ที่ Stake --}}
-            <div class="tp-card" style="padding:18px;">
-                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
-                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.currentStake)"></span></div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">TPIX ที่ Stake</div>
-            </div>
-
-            {{-- รางวัลวันนี้ --}}
-            <div class="tp-card" style="padding:18px;">
-                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #5aa07e 18%, transparent);"><i class="fas fa-gift" style="color:#5aa07e;"></i></span>
-                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.dailyReward)"></span></div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">รางวัลวันนี้</div>
-            </div>
-
-            {{-- รางวัลสะสม --}}
-            <div class="tp-card" style="padding:18px;">
-                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #5689b8 18%, transparent);"><i class="fas fa-chart-line" style="color:#5689b8;"></i></span>
-                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px;"><span x-text="formatNumber(simulation.totalRewards)"></span></div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">รางวัลสะสมทั้งหมด</div>
-            </div>
-
-            {{-- TPIX รวม --}}
-            <div class="tp-card" style="padding:18px;">
-                <span class="tp-tile" style="width:42px; height:42px; border-radius:13px; font-size:17px; background:color-mix(in srgb, #e0a52e 18%, transparent);"><i class="fas fa-wallet" style="color:#e0a52e;"></i></span>
-                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:12px; color:var(--deep1);"><span x-text="formatNumber(simulation.totalTPIX)"></span></div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">TPIX รวมทั้งหมด</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── ผลลัพธ์ ─────────────────────────────────────────────── --}}
-    <div x-show="showResults"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-cloak
-         style="display:flex; flex-direction:column; gap:18px;">
-
-        {{-- สรุปผล 4 ใบ --}}
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
-
-            {{-- TPIX ที่ Stake --}}
-            <div class="tp-card" style="padding:20px; text-align:center;">
-                <div style="font-size:40px;">💰</div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1); margin-top:8px;"><span x-text="formatNumber(config.stakingAmount)"></span></div>
-                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">TPIX ที่ Stake</div>
-            </div>
-
-            {{-- รางวัลทั้งหมด --}}
-            <div class="tp-card" style="padding:20px; text-align:center;">
-                <div style="font-size:40px;">🎁</div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e; margin-top:8px;"><span x-text="formatNumber(results.totalRewards)"></span></div>
-                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">รางวัลทั้งหมด</div>
-            </div>
-
-            {{-- ROI --}}
-            <div class="tp-card" style="padding:20px; text-align:center;">
-                <div style="font-size:40px;">📈</div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; color:#5689b8; margin-top:8px;"><span x-text="formatNumber(results.roi)"></span>%</div>
-                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">ผลตอบแทน (ROI)</div>
-            </div>
-
-            {{-- TPIX ที่ได้รับ --}}
-            <div class="tp-card" style="padding:20px; text-align:center;">
-                <div style="font-size:40px;">🚀</div>
-                <div class="tp-num" style="font-size:26px; font-weight:800; color:#e0a52e; margin-top:8px;"><span x-text="formatNumber(results.finalTPIX)"></span></div>
-                <div style="font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:2px;">TPIX ทั้งหมดที่ได้</div>
-            </div>
-        </div>
-
-        {{-- ตารางรายละเอียดรายวัน --}}
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                <div class="tp-section-h"><i class="fas fa-table" style="color:var(--deep1); margin-right:6px;"></i> รายละเอียดรางวัลแต่ละวัน</div>
-            </div>
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
-                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;">วันที่</th>
-                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">TPIX ที่ Stake</th>
-                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">รางวัลวันนี้</th>
-                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">รางวัลสะสม</th>
-                            <th style="padding:12px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; text-align:right;">TPIX รวม</th>
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-mld-t-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Checkpoints</small><h2 id="nvm-mld-t-h">ผลตอบแทนตามช่วงเวลา</h2></div></div>
+        <div class="nvm-table-wrap">
+            <table class="nvm-table">
+                <thead><tr><th>วันที่</th><th class="r">TPIX ที่ Stake</th><th class="r">ผลตอบแทนวันนั้น</th><th class="r">ผลตอบแทนสะสม</th><th class="r">TPIX รวม</th></tr></thead>
+                <tbody>
+                    <template x-for="row in result.rows" :key="row.day">
+                        <tr>
+                            <td class="nvm-ml-nowrap">วันที่ <span class="nvm-num" x-text="row.day"></span></td>
+                            <td class="r nvm-num" x-text="fmt(row.stake)"></td>
+                            <td class="r nvm-num" x-text="fmt(row.daily, 4)"></td>
+                            <td class="r nvm-num nvm-ml-in" x-text="fmt(row.rewards)"></td>
+                            <td class="r nvm-num"><b x-text="fmt(row.total)"></b></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="(day, index) in results.dailyBreakdown" :key="index">
-                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                                <td style="padding:12px 16px; white-space:nowrap; font-weight:600;">วันที่ <span class="tp-num" x-text="day.day"></span></td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:var(--deep1);"><span x-text="formatNumber(day.stake)"></span></td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#5aa07e;"><span x-text="formatNumber(day.dailyReward)"></span></td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#5689b8;"><span x-text="formatNumber(day.totalRewards)"></span></td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:#e0a52e;"><span x-text="formatNumber(day.totalTPIX)"></span></td>
-                            </tr>
-                        </template>
-                    </tbody>
-                    <tfoot>
-                        <tr style="border-top:2px solid color-mix(in srgb, var(--ink2) 20%, transparent); box-shadow:var(--inset-sm);">
-                            <td colspan="3" style="padding:14px 16px; text-align:right; font-size:13px; font-weight:700;">รวมทั้งหมด:</td>
-                            <td class="tp-num" style="padding:14px 16px; text-align:right; font-size:15px; font-weight:800; color:#5aa07e;"><span x-text="formatNumber(results.totalRewards)"></span></td>
-                            <td class="tp-num" style="padding:14px 16px; text-align:right; font-size:15px; font-weight:800; color:#e0a52e;"><span x-text="formatNumber(results.finalTPIX)"></span></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+                    </template>
+                </tbody>
+            </table>
         </div>
+    </section>
 
-        {{-- กราฟ (Chart.js — กราฟจริงเพื่อ core functionality) --}}
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
-
-            {{-- Growth Chart --}}
-            <div class="tp-card" style="padding:20px;">
-                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-chart-area" style="color:var(--deep1); margin-right:6px;"></i> กราฟการเติบโตของ TPIX</div>
-                <div style="position:relative; height:300px;">
-                    <canvas id="growth-chart"></canvas>
-                </div>
-            </div>
-
-            {{-- Rewards Distribution --}}
-            <div class="tp-card" style="padding:20px;">
-                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-chart-pie" style="color:var(--accent2); margin-right:6px;"></i> สัดส่วนผลตอบแทน</div>
-                <div style="position:relative; height:300px;">
-                    <canvas id="distribution-chart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        {{-- Call to Action --}}
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:28px 24px; text-align:center; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 20%, transparent), transparent 74%);">
-                <h3 style="font-size:clamp(22px,5vw,30px); font-weight:800; margin:0;">🎉 เริ่ม Stake TPIX วันนี้!</h3>
-                <p style="font-size:14px; color:var(--ink2); margin:10px 0 18px;">รับผลตอบแทนสูงสุด 120% ต่อปี ด้วยระบบ TPIX Staking</p>
-                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                    <button @click="window.location.href='{{ route('user.dashboard') }}'" class="tp-btn tp-btn-primary" style="font-size:15px; padding:13px 24px;">
-                        <i class="fas fa-rocket"></i> เริ่มต้น Stake!
-                    </button>
-                    <button @click="resetSimulation(); startSimulation()" class="tp-btn" style="font-size:15px; padding:13px 24px;">
-                        <i class="fas fa-redo"></i> คำนวณอีกครั้ง
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    @if($stakeUrl)
+        <section class="nvm-card nvm-box nvm-ml-cta">
+            <h2>{{ $isExample ? 'ดูหน้า TPIX Staking' : 'พร้อม Stake จริงแล้วหรือยัง' }}</h2>
+            <p class="nvm-desc">ตรวจเงื่อนไขของแต่ละ pool ให้ครบก่อนตัดสินใจ</p>
+            <div class="nvm-filter__btns"><a class="nvm-btn nvm-btn--gold" href="{{ $stakeUrl }}"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>ไปหน้า TPIX Staking</a></div>
+        </section>
+    @endif
 </div>
+</template>
 
-{{-- JavaScript with Alpine.js + Chart.js --}}
+</div>
+@endsection
+
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 /**
- * TPIX Staking Calculator Component
- * ===================================
- * คำนวณผลตอบแทนจากการ Staking TPIX
- *
- * Features:
- * - รองรับ Lock Period 30, 90, 180, 365 วัน
- * - APY แตกต่างกันตาม Lock Period (30% - 120%)
- * - Auto-compound option
- * - Real-time animation
- * - Charts visualization (Chart.js)
- *
- * @returns object Alpine.js component
+ * เครื่องคำนวณ TPIX Staking — Alpine + Chart.js
+ * แบบไม่ทบต้น: ผลตอบแทน = เงินต้น × APY × วัน / 36500 (ตรงกับ TPIXStakingPool::calculateRewards)
  */
-function tpixStakingCalculator() {
+function nvmMlStaking(pools) {
+    const css = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
+    const charts = {};
+    const CHECKPOINTS = [1, 7, 14, 30, 60, 90, 180, 270, 365, 730];
+
     return {
-        // ===== State Management =====
+        pools,
+        poolId: pools.length ? String(pools[pools.length - 1].id) : '',
+        amount: 10000,
+        compound: false,
+        error: '',
+        result: null,
 
-        // การตั้งค่าการคำนวณ
-        config: {
-            stakingAmount: 10000,    // จำนวน TPIX ที่ stake
-            lockPeriod: 365,         // ระยะเวลา lock (วัน)
-            apy: 120,                // APY (%) - Max 120% สำหรับ 365 วัน
-            autoCompound: true,      // auto-compound รางวัลหรือไม่
-        },
+        get pool() { return this.pools.find(p => String(p.id) === String(this.poolId)) || null; },
 
-        // ข้อมูลการจำลอง (ระหว่างคำนวณ)
-        simulation: {
-            currentDay: 0,           // วันที่กำลังคำนวณ
-            currentStake: 0,         // TPIX ที่ stake ปัจจุบัน
-            dailyReward: 0,          // รางวัลวันนี้
-            totalRewards: 0,         // รางวัลสะสม
-            totalTPIX: 0,            // TPIX รวมทั้งหมด
-        },
+        init() { this.calc(); },
 
-        // ผลลัพธ์การคำนวณ
-        results: {
-            totalRewards: 0,         // รางวัลทั้งหมด
-            roi: 0,                  // ผลตอบแทน (%)
-            finalTPIX: 0,            // TPIX ทั้งหมดที่ได้
-            dailyBreakdown: [],      // รายละเอียดแต่ละวัน
-        },
+        calc() {
+            const p = this.pool;
+            const amount = Number(this.amount);
+            if (! p) { this.result = null; return; }
+            if (! Number.isFinite(amount) || amount <= 0) { this.error = 'กรุณากรอกจำนวน TPIX มากกว่า 0'; this.result = null; return; }
+            const min = Number(p.min) || 0;
+            if (amount < min) { this.error = 'จำนวนขั้นต่ำของ pool นี้คือ ' + this.fmt(min) + ' TPIX'; this.result = null; return; }
+            this.error = '';
 
-        // สถานะของ UI
-        isSimulating: false,         // กำลังจำลองหรือไม่
-        showResults: false,          // แสดงผลลัพธ์หรือไม่
-
-        // Chart instances
-        growthChart: null,
-        distributionChart: null,
-
-        // ===== Lifecycle Methods =====
-
-        // เริ่มต้น component
-        init() {
-            // อัพเดท APY ตาม lock period เริ่มต้น
-            this.updateAPY();
-
-            console.log('🪙 TPIX Staking Calculator initialized');
-        },
-
-        // ===== Methods =====
-
-        /**
-         * อัพเดท APY ตาม Lock Period
-         *
-         * ตามเอกสาร TPIX:
-         * - 30 วัน = 30% APY
-         * - 90 วัน = 60% APY
-         * - 180 วัน = 90% APY
-         * - 365 วัน = 120% APY (Max)
-         */
-        updateAPY() {
-            const apyMap = {
-                30: 30,      // 30 วัน = 30% APY
-                90: 60,      // 90 วัน = 60% APY
-                180: 90,     // 180 วัน = 90% APY
-                365: 120,    // 365 วัน = 120% APY (Max)
-            };
-
-            this.config.apy = apyMap[this.config.lockPeriod] || 120;
-        },
-
-        // คำนวณรางวัลรายวัน
-        calculateDailyReward(currentStake) {
-            // Daily APY = APY / 365
-            const dailyAPY = this.config.apy / 365 / 100;
-            return currentStake * dailyAPY;
-        },
-
-        // เริ่มการจำลอง
-        async startSimulation() {
-            // ป้องกันการกดซ้ำ
-            if (this.isSimulating) return;
-
-            // Validation
-            if (this.config.stakingAmount < 100) {
-                if (window.showNotification) {
-                    window.showNotification('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX', 'error');
-                } else {
-                    alert('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX');
-                }
-                return;
+            const days = Math.max(1, parseInt(p.days, 10) || 1);
+            const daily = (Number(p.apy) || 0) / 365 / 100;
+            let stake = amount;
+            let rewards = 0;
+            const rows = [];
+            const series = [];
+            const every = Math.max(1, Math.ceil(days / 60));
+            for (let day = 1; day <= days; day++) {
+                const r = stake * daily;
+                rewards += r;
+                if (this.compound) stake += r;
+                const total = this.compound ? stake : amount + rewards;
+                if (CHECKPOINTS.includes(day) || day === days) rows.push({ day, stake, daily: r, rewards, total });
+                if (day % every === 0 || day === days) series.push({ day, total });
             }
-
-            // เริ่มจำลอง
-            this.isSimulating = true;
-            this.showResults = false;
-
-            // Reset simulation data
-            this.simulation.currentDay = 0;
-            this.simulation.currentStake = this.config.stakingAmount;
-            this.simulation.dailyReward = 0;
-            this.simulation.totalRewards = 0;
-            this.simulation.totalTPIX = this.config.stakingAmount;
-
-            // Reset results
-            this.results.dailyBreakdown = [];
-
-            // จำลองแต่ละวัน
-            for (let day = 1; day <= this.config.lockPeriod; day++) {
-                this.simulation.currentDay = day;
-
-                // คำนวณรางวัลวันนี้
-                const dailyReward = this.calculateDailyReward(this.simulation.currentStake);
-                this.simulation.dailyReward = dailyReward;
-                this.simulation.totalRewards += dailyReward;
-
-                // Auto-compound: นำรางวัลกลับไป stake
-                if (this.config.autoCompound) {
-                    this.simulation.currentStake += dailyReward;
-                }
-
-                // คำนวณ TPIX รวม
-                this.simulation.totalTPIX = this.simulation.currentStake +
-                    (this.config.autoCompound ? 0 : this.simulation.totalRewards);
-
-                // บันทึกข้อมูลรายวัน (เฉพาะบางวันเพื่อประสิทธิภาพ)
-                if (day === 1 ||
-                    day === 7 ||
-                    day === 14 ||
-                    day === 30 ||
-                    day === 60 ||
-                    day === 90 ||
-                    day === 180 ||
-                    day === 365 ||
-                    day === this.config.lockPeriod) {
-
-                    this.results.dailyBreakdown.push({
-                        day: day,
-                        stake: this.simulation.currentStake,
-                        dailyReward: dailyReward,
-                        totalRewards: this.simulation.totalRewards,
-                        totalTPIX: this.simulation.totalTPIX,
-                    });
-                }
-
-                // หน่วงเวลาเพื่อให้เห็น animation (ปรับความเร็วตาม lock period)
-                const delay = this.config.lockPeriod > 90 ? 20 : 50;
-                await this.sleep(delay);
-            }
-
-            // คำนวณผลลัพธ์สุดท้าย
-            this.results.totalRewards = this.simulation.totalRewards;
-            this.results.finalTPIX = this.simulation.totalTPIX;
-            this.results.roi = ((this.results.finalTPIX - this.config.stakingAmount) /
-                                this.config.stakingAmount) * 100;
-
-            // แสดงผลลัพธ์
-            this.isSimulating = false;
-            this.showResults = true;
-
-            // สร้าง charts
-            await this.$nextTick();
-            this.createCharts();
+            const final = this.compound ? stake : amount + rewards;
+            this.result = { rewards, final, roi: rewards / amount * 100, rows, series };
+            this.$nextTick(() => this.draw());
         },
 
-        // สร้าง Charts (Chart.js)
-        createCharts() {
-            // Growth Chart
-            const ctx1 = document.getElementById('growth-chart');
-            if (this.growthChart) {
-                this.growthChart.destroy();
-            }
-
-            this.growthChart = new Chart(ctx1, {
+        draw() {
+            if (typeof Chart === 'undefined' || ! this.result || ! this.$refs.growth) return;
+            const gold = css('--nv-gold-500', '#c9a24a');
+            const good = css('--nvm-good', '#2f9e6a');
+            const info = css('--nvm-info', '#3b6fd8');
+            const ink = css('--nvm-ink-3', '#6b7280');
+            const line = css('--nvm-line', 'rgba(0,0,0,.08)');
+            const s = this.result.series;
+            charts.growth?.destroy();
+            charts.split?.destroy();
+            charts.growth = new Chart(this.$refs.growth, {
                 type: 'line',
-                data: {
-                    labels: this.results.dailyBreakdown.map(d => `วันที่ ${d.day}`),
-                    datasets: [
-                        {
-                            label: 'TPIX ที่ Stake',
-                            data: this.results.dailyBreakdown.map(d => d.stake),
-                            borderColor: 'rgb(147, 51, 234)',
-                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                        },
-                        {
-                            label: 'รางวัลสะสม',
-                            data: this.results.dailyBreakdown.map(d => d.totalRewards),
-                            borderColor: 'rgb(34, 197, 94)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                        },
-                        {
-                            label: 'TPIX รวม',
-                            data: this.results.dailyBreakdown.map(d => d.totalTPIX),
-                            borderColor: 'rgb(249, 115, 22)',
-                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: value => this.formatNumber(value) + ' TPIX'
-                            }
-                        }
-                    }
-                }
+                data: { labels: s.map(x => 'วัน ' + x.day), datasets: [{ data: s.map(x => x.total), borderColor: gold, backgroundColor: gold + '22', tension: .3, fill: true, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => this.fmt(c.parsed.y) + ' TPIX' } } }, scales: { x: { ticks: { color: ink, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks: { color: ink, callback: v => this.fmt(v) }, grid: { color: line } } } },
             });
-
-            // Distribution Chart
-            const ctx2 = document.getElementById('distribution-chart');
-            if (this.distributionChart) {
-                this.distributionChart.destroy();
-            }
-
-            this.distributionChart = new Chart(ctx2, {
+            charts.split = new Chart(this.$refs.split, {
                 type: 'doughnut',
-                data: {
-                    labels: ['TPIX เริ่มต้น', 'รางวัลที่ได้รับ'],
-                    datasets: [{
-                        data: [
-                            this.config.stakingAmount,
-                            this.results.totalRewards
-                        ],
-                        backgroundColor: [
-                            'rgb(147, 51, 234)',
-                            'rgb(34, 197, 94)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
+                data: { labels: ['เงินต้น', 'ผลตอบแทน'], datasets: [{ data: [Number(this.amount), this.result.rewards], backgroundColor: [info, good], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: ink } }, tooltip: { callbacks: { label: c => c.label + ': ' + this.fmt(c.parsed) + ' TPIX' } } } },
             });
         },
 
-        // รีเซ็ตการจำลอง
-        resetSimulation() {
-            this.isSimulating = false;
-            this.showResults = false;
-
-            this.simulation.currentDay = 0;
-            this.simulation.currentStake = 0;
-            this.simulation.dailyReward = 0;
-            this.simulation.totalRewards = 0;
-            this.simulation.totalTPIX = 0;
-
-            this.results.totalRewards = 0;
-            this.results.roi = 0;
-            this.results.finalTPIX = 0;
-            this.results.dailyBreakdown = [];
-
-            // ทำลาย charts
-            if (this.growthChart) {
-                this.growthChart.destroy();
-                this.growthChart = null;
-            }
-            if (this.distributionChart) {
-                this.distributionChart.destroy();
-                this.distributionChart = null;
-            }
-        },
-
-        // คำนวณรางวัล (ไม่แสดง animation)
-        calculateRewards() {
-            // คำนวณแบบง่ายเพื่อแสดงตัวอย่าง
-            const dailyAPY = this.config.apy / 365 / 100;
-            let stake = this.config.stakingAmount;
-            let totalRewards = 0;
-
-            for (let day = 1; day <= this.config.lockPeriod; day++) {
-                const dailyReward = stake * dailyAPY;
-                totalRewards += dailyReward;
-
-                if (this.config.autoCompound) {
-                    stake += dailyReward;
-                }
-            }
-
-            // อัพเดท simulation preview (ไม่แสดง animation)
-            this.simulation.totalRewards = totalRewards;
-            this.simulation.totalTPIX = stake + (this.config.autoCompound ? 0 : totalRewards);
-        },
-
-        // ===== Utility Methods =====
-
-        // จัดรูปแบบตัวเลข (เพิ่ม comma)
-        formatNumber(num) {
-            return Math.floor(num).toLocaleString('en-US', {
-                maximumFractionDigits: 2
-            });
-        },
-
-        // หน่วงเวลา (สำหรับ animation)
-        sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+        fmt(n, digits = 2) {
+            return (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: digits });
         },
     };
 }
-
-// Export สำหรับใช้ใน Alpine.js
-window.tpixStakingCalculator = tpixStakingCalculator;
 </script>
 @endpush
-@endsection

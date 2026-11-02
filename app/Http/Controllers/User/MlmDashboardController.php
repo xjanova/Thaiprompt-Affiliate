@@ -4,27 +4,66 @@ namespace App\Http\Controllers\User;
 
 use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
-use App\Services\MlmCalculationService;
+use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
+use App\Models\Rank;
 use App\Services\MlmGenealogyService;
-use App\Services\MlmPvService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
+/**
+ * หน้า MLM ฝั่งสมาชิก (ธีมโนวาเต็ม) + API อ่านอย่างเดียวของผังสายงาน/เครื่องจำลองรายได้
+ *
+ * ⚠️ หน้าที่ต้องรู้ว่า "ใครเป็นเจ้าของ" ดึงสมาชิกจาก Auth::user()->mlmMembers() เสมอ
+ *    ไม่รับรหัสสมาชิกจาก URL (หน้าแบบ {memberCode} เดิมไม่มี route และถูกลบไปแล้ว)
+ */
 class MlmDashboardController extends Controller
 {
-    protected $calculationService;
+    /**
+     * ประเภทคอมมิชชั่นที่มีจริงใน mlm_commissions.type => ป้ายภาษาไทย
+     * (ตัวกรองเดิมส่ง direct_referral/unilevel/generation/bonus ซึ่งไม่มีใน enum → กรองแล้วว่างทุกครั้ง)
+     */
+    public const COMMISSION_TYPES = [
+        'unilevel_direct' => 'แนะนำตรง (ชั้น 1)',
+        'unilevel_indirect' => 'Unilevel ชั้นลึก',
+        'unilevel_rollup' => 'Unilevel โรลอัพ',
+        'binary_pair' => 'Binary จับคู่',
+        'binary_matching' => 'Binary Matching',
+        'sponsor_bonus' => 'โบนัสผู้แนะนำ',
+        'rank_bonus' => 'โบนัสยศ',
+        'leadership_bonus' => 'โบนัสผู้นำ',
+        'matching_bonus' => 'Matching Bonus',
+        'pool_bonus' => 'โบนัสกองกลาง',
+    ];
+
+    /**
+     * สถานะคอมมิชชั่นที่มีจริงใน mlm_commissions.status => ป้ายภาษาไทย
+     */
+    public const COMMISSION_STATUSES = [
+        'pending' => 'รอดำเนินการ',
+        'approved' => 'อนุมัติแล้ว',
+        'paid' => 'จ่ายแล้ว',
+        'rejected' => 'ไม่อนุมัติ',
+        'cancelled' => 'ยกเลิก',
+        'clawback' => 'เรียกคืน',
+    ];
+
+    /**
+     * สถานะที่ไม่นับเป็นรายได้ (ใช้ตอนรวมยอดรายขา)
+     */
+    private const VOID_STATUSES = ['rejected', 'cancelled', 'clawback'];
 
     protected $genealogyService;
 
-    protected $pvService;
-
     public function __construct()
     {
-        $this->calculationService = new MlmCalculationService;
         $this->genealogyService = new MlmGenealogyService;
-        $this->pvService = new MlmPvService;
     }
 
+    /**
+     * แดชบอร์ด MLM ของสมาชิก
+     */
     public function index()
     {
         $user = Auth::user();
@@ -33,10 +72,10 @@ class MlmDashboardController extends Controller
 
         if (! $member) {
             return redirect()->route('user.dashboard')
-                ->with('info', 'You are not enrolled in any MLM plan yet.');
+                ->with('info', 'คุณยังไม่ได้เข้าร่วมแผน MLM');
         }
 
-        // Get recent commissions
+        // คอมมิชชั่นล่าสุด 5 รายการ
         $recentCommissions = $member->commissions()
             ->with('plan')
             ->orderBy('created_at', 'desc')
@@ -46,20 +85,21 @@ class MlmDashboardController extends Controller
         // ดึงสถานะรักษายอด (Volume Retention)
         $retentionStatus = MlmRetentionHelper::getRetentionStatus($member);
 
-        return view('user.mlm.dashboard', compact('member', 'recentCommissions', 'retentionStatus'));
+        // ยศจริงของสมาชิก (เดิมหน้านี้โชว์ 65% / Silver / 5,000 PV แบบตายตัว ไม่ใช่ข้อมูลจริง)
+        $rankInfo = $this->rankInfo($user);
+
+        $referralUrl = $this->referralUrlFor($member);
+        $commissionTypes = self::COMMISSION_TYPES;
+        $commissionStatuses = self::COMMISSION_STATUSES;
+
+        return view('user.mlm.dashboard', compact(
+            'member', 'recentCommissions', 'retentionStatus', 'rankInfo', 'referralUrl', 'commissionTypes', 'commissionStatuses'
+        ));
     }
 
-    public function plan($memberCode)
-    {
-        $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
-
-        $statistics = $this->calculationService->getMemberStatistics($member);
-        $pvStats = $this->pvService->getMemberPvStatistics($member);
-
-        return view('user.mlm.plan-dashboard', compact('member', 'statistics', 'pvStats'));
-    }
-
+    /**
+     * ประวัติคอมมิชชั่น MLM (ของผู้ใช้ที่ล็อกอินเท่านั้น)
+     */
     public function commissions(Request $request)
     {
         $user = Auth::user();
@@ -68,67 +108,82 @@ class MlmDashboardController extends Controller
             ->with(['plan', 'member', 'fromMember.user'])
             ->orderBy('created_at', 'desc');
 
-        // Filters
-        if ($request->has('plan_id')) {
-            $query->where('mlm_plan_id', $request->plan_id);
+        // ตัวกรอง — ใช้ filled() เพราะฟอร์มส่ง type= / status= ว่างเมื่อเลือก "ทั้งหมด"
+        // (has() เดิมทำให้ where type = '' → ไม่พบรายการเลย)
+        if ($request->filled('plan_id')) {
+            $query->where('mlm_plan_id', (int) $request->input('plan_id'));
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        $status = $request->input('status');
+        if ($request->filled('status') && array_key_exists($status, self::COMMISSION_STATUSES)) {
+            $query->where('status', $status);
         }
 
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
+        $type = $request->input('type');
+        if ($request->filled('type') && array_key_exists($type, self::COMMISSION_TYPES)) {
+            $query->where('type', $type);
         }
 
-        $commissions = $query->paginate(20);
+        $commissions = $query->paginate(20)->withQueryString();
 
-        // Statistics
+        // สถิติ — "เดือนนี้" ต้องเช็คปีด้วย (whereMonth อย่างเดียวรวมเดือนเดียวกันของปีก่อน ๆ)
         $stats = [
             'pending' => $user->mlmCommissions()->where('status', 'pending')->sum('commission_amount'),
             'approved' => $user->mlmCommissions()->where('status', 'approved')->sum('commission_amount'),
             'paid' => $user->mlmCommissions()->where('status', 'paid')->sum('commission_amount'),
             'this_month' => $user->mlmCommissions()
                 ->where('status', 'paid')
+                ->whereYear('paid_at', now()->year)
                 ->whereMonth('paid_at', now()->month)
                 ->sum('commission_amount'),
         ];
 
-        return view('user.mlm.commissions', compact('commissions', 'stats'));
+        $commissionTypes = self::COMMISSION_TYPES;
+        $commissionStatuses = self::COMMISSION_STATUSES;
+
+        return view('user.mlm.commissions', compact('commissions', 'stats', 'commissionTypes', 'commissionStatuses'));
     }
 
+    /**
+     * ผังสายงาน (ตัวแสดงผลดึงข้อมูลจาก genealogyData)
+     */
     public function genealogy(Request $request)
     {
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
         if (! $member) {
-            return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'You are not enrolled in any MLM plan yet.');
+            return redirect()->route('user.dashboard')
+                ->with('info', 'คุณยังไม่ได้เข้าร่วมแผน MLM');
         }
 
-        $treeType = $request->get('type', $member->plan->type === 'binary' || $member->plan->type === 'hybrid' ? 'binary' : 'unilevel');
+        $treeType = in_array($member->plan?->type, ['binary', 'hybrid'], true) ? 'binary' : 'unilevel';
+        $referralUrl = $this->referralUrlFor($member);
 
-        return view('user.mlm.genealogy', compact('member', 'treeType'));
+        return view('user.mlm.genealogy', compact('member', 'treeType', 'referralUrl'));
     }
 
+    /**
+     * ลิงก์แนะนำ + QR
+     */
     public function referral()
     {
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
         if (! $member) {
-            return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'You are not enrolled in any MLM plan yet.');
+            return redirect()->route('user.dashboard')
+                ->with('info', 'คุณยังไม่ได้เข้าร่วมแผน MLM');
         }
 
-        // ใช้หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA ก่อน (แทนระบบ LINE Membership Signup เดิมที่ถูกลบไปแล้ว)
-        // Register/LineRegistration อ่าน ?ref= เป็น member_code เพื่อผูกผู้แนะนำ
-        $referralUrl = route('line.registration.register', ['ref' => $member->member_code]);
+        $referralUrl = $this->referralUrlFor($member);
 
         return view('user.mlm.referral', compact('member', 'referralUrl'));
     }
 
+    /**
+     * ทีมแนะนำตรงของฉัน
+     */
     public function team()
     {
         $user = Auth::user();
@@ -139,18 +194,31 @@ class MlmDashboardController extends Controller
             return view('user.mlm.team', [
                 'member' => null,
                 'directReferrals' => collect([]),
+                'teamStats' => null,
                 'notMlmMember' => true,
             ]);
         }
 
         $directReferrals = $member->unilevelChildren()
-            ->with('user')
+            ->with('user.currentRank')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('user.mlm.team', compact('member', 'directReferrals'));
+        // สถิตินับจากทั้งทีม (เดิมนับจากหน้าปัจจุบัน 20 แถว และนับสถานะ pending ที่ไม่มีใน enum)
+        $base = fn () => $member->unilevelChildren();
+        $teamStats = [
+            'total' => $directReferrals->total(),
+            'active' => $base()->where('status', 'active')->count(),
+            'inactive' => $base()->whereIn('status', ['inactive', 'suspended'])->count(),
+            'this_month' => $base()->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+        ];
+
+        return view('user.mlm.team', compact('member', 'directReferrals', 'teamStats'));
     }
 
+    /**
+     * API ผังสายงานตามรหัสสมาชิก (ยังไม่มี route — เก็บไว้ให้แอป/ของเดิม)
+     */
     public function getTreeData(Request $request, $memberCode)
     {
         $user = Auth::user();
@@ -164,71 +232,13 @@ class MlmDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $treeData,
+            'data' => $this->stripPrivateNodeData($treeData),
         ]);
-    }
-
-    public function referrals($memberCode)
-    {
-        $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
-
-        $directReferrals = $member->unilevelChildren()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        return view('user.mlm.referrals', compact('member', 'directReferrals'));
-    }
-
-    public function referralLink($memberCode)
-    {
-        $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
-
-        // ใช้หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA ก่อน (แทนระบบ LINE Membership Signup เดิมที่ถูกลบไปแล้ว)
-        // Register/LineRegistration อ่าน ?ref= เป็น member_code เพื่อผูกผู้แนะนำ
-        $referralUrl = route('line.registration.register', ['ref' => $member->member_code]);
-
-        return view('user.mlm.referral-link', compact('member', 'referralUrl'));
-    }
-
-    public function pvHistory(Request $request, $memberCode)
-    {
-        $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
-
-        $query = $member->pvTransactions()
-            ->with(['order', 'product'])
-            ->orderBy('created_at', 'desc');
-
-        if ($request->has('type')) {
-            $query->where('transaction_type', $request->type);
-        }
-
-        $transactions = $query->paginate(20);
-
-        return view('user.mlm.pv-history', compact('member', 'transactions'));
-    }
-
-    public function binaryPosition($memberCode)
-    {
-        $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
-
-        if ($member->plan->type !== 'binary' && $member->plan->type !== 'hybrid') {
-            return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'This plan does not support binary structure');
-        }
-
-        $position = $this->genealogyService->getMemberPosition($member, 'binary');
-
-        return view('user.mlm.binary-position', compact('member', 'position'));
     }
 
     /**
      * API สำหรับดึงข้อมูลผังสายงาน MLM (Binary/Unilevel Tree Data)
-     * ใช้สำหรับ mlm-genealogy-premium.js
+     * ใช้สำหรับ resources/js/mlm-genealogy-v3.js
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -246,14 +256,15 @@ class MlmDashboardController extends Controller
         }
 
         $treeType = $request->get('type', $member->plan->type === 'binary' || $member->plan->type === 'hybrid' ? 'binary' : 'unilevel');
-        $maxDepth = min((int) $request->get('depth', 5), 10); // จำกัดสูงสุด 10 ชั้น
+        $treeType = in_array($treeType, ['binary', 'unilevel'], true) ? $treeType : 'unilevel';
+        $maxDepth = max(1, min((int) $request->get('depth', 5), 10)); // จำกัดสูงสุด 10 ชั้น
 
         try {
             $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
 
             return response()->json([
                 'success' => true,
-                'data' => $treeData,
+                'data' => $this->stripPrivateNodeData($treeData),
                 'member' => [
                     'id' => $member->id,
                     'member_code' => $member->member_code,
@@ -279,7 +290,10 @@ class MlmDashboardController extends Controller
     }
 
     /**
-     * แสดงหน้าตำแหน่งใน Binary Tree (ไม่ต้องระบุ memberCode)
+     * แสดงหน้าตำแหน่งใน Binary Tree ของสมาชิกที่ล็อกอิน
+     *
+     * 🐛 หน้าเดิมอ่าน $position['left_count'/'left_pv'/...] ซึ่ง getMemberPosition() ไม่เคยส่งมา
+     *    → ทุกช่องเป็น 0 เสมอ ตอนนี้อ่านยอดจริงจาก mlm_members + รวมคอมมิชชั่นรายขาจาก mlm_commissions
      *
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
@@ -289,18 +303,133 @@ class MlmDashboardController extends Controller
         $member = $user->mlmMembers()->with('plan')->first();
 
         if (! $member) {
-            return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+            return redirect()->route('user.dashboard')
+                ->with('info', 'คุณยังไม่ได้เข้าร่วมแผน MLM');
         }
 
-        if ($member->plan->type !== 'binary' && $member->plan->type !== 'hybrid') {
+        if (! in_array($member->plan?->type, ['binary', 'hybrid'], true)) {
             return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'แผนของคุณไม่รองรับโครงสร้าง Binary');
+                ->with('info', 'แผนของคุณไม่รองรับโครงสร้าง Binary');
         }
 
         $position = $this->genealogyService->getMemberPosition($member, 'binary');
 
-        return view('user.mlm.binary-position', compact('member', 'position'));
+        // คอมมิชชั่นรายขา (ไม่นับรายการที่ถูกปฏิเสธ/ยกเลิก/เรียกคืน)
+        $legCommission = $member->commissions()
+            ->whereNotIn('status', self::VOID_STATUSES)
+            ->whereIn('leg', ['left', 'right'])
+            ->selectRaw('leg, SUM(commission_amount) as total')
+            ->groupBy('leg')
+            ->pluck('total', 'leg');
+
+        $binaryEarned = (float) $member->commissions()
+            ->whereNotIn('status', self::VOID_STATUSES)
+            ->whereIn('type', ['binary_pair', 'binary_matching'])
+            ->sum('commission_amount');
+
+        $legs = [
+            'left' => [
+                'members' => (int) $member->left_leg_members,
+                'pv' => (float) $member->left_leg_pv,
+                'carried_pv' => (float) $member->carried_left_pv,
+                'sales' => (float) $member->left_leg_sales,
+                'commission' => (float) ($legCommission['left'] ?? 0),
+                'child' => $position['left_child'] ?? null,
+            ],
+            'right' => [
+                'members' => (int) $member->right_leg_members,
+                'pv' => (float) $member->right_leg_pv,
+                'carried_pv' => (float) $member->carried_right_pv,
+                'sales' => (float) $member->right_leg_sales,
+                'commission' => (float) ($legCommission['right'] ?? 0),
+                'child' => $position['right_child'] ?? null,
+            ],
+        ];
+
+        $binarySettings = [
+            'pair_commission' => (float) MlmGlobalSetting::get('binary_pair_commission', 100),
+            'pairing_type' => (string) MlmGlobalSetting::get('binary_pairing_type', '1:1'),
+        ];
+
+        $referralUrl = $this->referralUrlFor($member);
+
+        return view('user.mlm.binary-position', compact('member', 'position', 'legs', 'binaryEarned', 'binarySettings', 'referralUrl'));
+    }
+
+    /**
+     * ลิงก์สมัครที่ผูกผู้แนะนำ — ใช้หน้าสมัครแบบบังคับเพิ่มเพื่อน LINE OA ก่อน
+     * (Register/LineRegistration อ่าน ?ref= เป็น member_code เพื่อผูกผู้แนะนำ)
+     * ทุกหน้าใช้ฟังก์ชันนี้ชุดเดียว — เดิมแดชบอร์ด/ผังสายงานใช้ /register แต่หน้าลิงก์แนะนำใช้ LINE
+     */
+    private function referralUrlFor(MlmMember $member): string
+    {
+        foreach (['line.registration.register', 'register'] as $name) {
+            if (Route::has($name)) {
+                return route($name, ['ref' => $member->member_code]);
+            }
+        }
+
+        return url('/register?ref='.urlencode($member->member_code));
+    }
+
+    /**
+     * ยศปัจจุบัน/ถัดไป + ความคืบหน้าคะแนน (สูตรเดียวกับการ์ดยศในแดชบอร์ดสมาชิก)
+     *
+     * @return array{current: ?Rank, next: ?Rank, percent: float, points: int, needed: int}
+     */
+    private function rankInfo($user): array
+    {
+        $current = $user->currentRank;
+        $points = (int) ($user->rank_points ?? 0);
+
+        $next = Rank::where('is_active', true)
+            ->when($current, fn ($q) => $q->where('level', '>', $current->level))
+            ->orderBy('level')
+            ->first();
+
+        $percent = 0.0;
+        $needed = 0;
+        if ($next) {
+            $from = $current ? (int) $current->min_points : 0;
+            $span = (int) $next->min_points - $from;
+            $percent = $span > 0 ? min(100, max(0, ($points - $from) / $span * 100)) : 0;
+            $needed = max(0, (int) $next->min_points - $points);
+        }
+
+        return ['current' => $current, 'next' => $next, 'percent' => round($percent, 1), 'points' => $points, 'needed' => $needed];
+    }
+
+    /**
+     * ตัดข้อมูลส่วนตัวของสมาชิกคนอื่นออกจากผังสายงานก่อนส่งให้เบราว์เซอร์
+     * - อีเมล: ไม่ส่งของใครเลย (ผังเป็นของสมาชิกทั่วไป ไม่ใช่แอดมิน)
+     * - รายได้สะสม (total_earnings): ส่งเฉพาะของตัวเอง (โหนดราก)
+     *
+     * @param  mixed  $node
+     * @return mixed
+     */
+    private function stripPrivateNodeData($node, bool $isRoot = true)
+    {
+        if (! is_array($node)) {
+            return $node;
+        }
+
+        unset($node['email'], $node['phone']);
+        if (! $isRoot) {
+            unset($node['total_earnings']);
+        }
+
+        foreach (['children', 'left', 'right'] as $key) {
+            if (! array_key_exists($key, $node) || ! is_array($node[$key])) {
+                continue;
+            }
+            if ($key === 'children') {
+                $node[$key] = array_map(fn ($child) => $this->stripPrivateNodeData($child, false), $node[$key]);
+            } else {
+                $node[$key] = $this->stripPrivateNodeData($node[$key], false);
+            }
+        }
+
+        return $node;
     }
 
     /**
@@ -320,10 +449,12 @@ class MlmDashboardController extends Controller
                 'settings' => $settings,
             ]);
         } catch (\Exception $e) {
+            // ไม่ส่งข้อความ exception ให้เบราว์เซอร์ (อาจมีชื่อตาราง/คิวรี) — เก็บไว้ใน log แทน
+            \Log::error('MLM settings load failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถโหลดการตั้งค่าได้',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -377,7 +508,8 @@ class MlmDashboardController extends Controller
             $binaryEnabled = \App\Models\MlmGlobalSetting::get('binary_enabled', true);
 
             // คำนวณ PV
-            $totalPv = $salesAmount / $pvRate;
+            // กันหารศูนย์เมื่อแอดมินตั้งอัตรา PV เป็น 0
+            $totalPv = $salesAmount / ((float) $pvRate > 0 ? (float) $pvRate : 1.0);
 
             // ==== UNILEVEL CALCULATION ====
             $unilevelTotal = 0;
@@ -523,10 +655,11 @@ class MlmDashboardController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
+            \Log::error('MLM preview calculation failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาดในการคำนวณ',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

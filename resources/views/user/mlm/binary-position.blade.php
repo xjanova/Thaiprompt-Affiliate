@@ -1,234 +1,130 @@
-@extends('layouts.user-v4')
+{{--
+    ตำแหน่งในระบบ Binary (ธีมโนวาเต็ม) — MlmDashboardController::binaryPositionPage
+    ตัวแปร: $member, $position (getMemberPosition: parent/position/left_child/right_child/depth),
+            $legs[left|right] (members/pv/carried_pv/sales/commission/child), $binaryEarned, $binarySettings, $referralUrl
+    🐛 หน้าเดิมอ่าน $position['left_count'/'left_pv'/'left_commission'/...] ที่ไม่มีอยู่จริง → ทุกช่องเป็น 0 เสมอ
+    🐛 "ลิงก์วางตำแหน่ง" ซ้าย/ขวาเดิมแนบ ?position= ที่หน้าสมัครไม่ได้อ่าน (ระบบวางตำแหน่งให้อัตโนมัติ)
+       จึงเหลือลิงก์แนะนำลิงก์เดียว และบอกตามจริงว่าระบบเป็นผู้เลือกขาให้
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ตำแหน่งในระบบ Binary')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/mlm.css') }}?v={{ filemtime(public_path('theme-nova/member/mlm.css')) }}">@endpush
+
 @php
-    // ── ดึงค่าตำแหน่งจาก controller (genealogyService->getMemberPosition) ──
-    $leftCount  = $position['left_count'] ?? 0;
-    $rightCount = $position['right_count'] ?? 0;
-    $leftPv     = $position['left_pv'] ?? 0;
-    $rightPv    = $position['right_pv'] ?? 0;
-    $leftCom    = $position['left_commission'] ?? 0;
-    $rightCom   = $position['right_commission'] ?? 0;
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $baht = fn ($n) => '฿'.number_format((float) $n, 2);
 
-    // ── คำนวณความสมดุลของทีม ───────────────────────────────────
-    $totalPv        = $leftPv + $rightPv;
-    $leftPercentage = $totalPv > 0 ? ($leftPv / $totalPv) * 100 : 50;
-    $rightPercentage = $totalPv > 0 ? ($rightPv / $totalPv) * 100 : 50;
-    $isBalanced     = abs($leftPv - $rightPv) / max($leftPv, $rightPv, 1) <= 0.3;
+    $leftPv = $legs['left']['pv'];
+    $rightPv = $legs['right']['pv'];
+    $totalPv = $leftPv + $rightPv;
+    $leftPct = $totalPv > 0 ? round($leftPv / $totalPv * 100, 1) : 50;
+    $rightPct = round(100 - $leftPct, 1);
+    $isBalanced = abs($leftPv - $rightPv) / max($leftPv, $rightPv, 1) <= 0.3;
+    $weakPv = min($leftPv, $rightPv);
+    $weakSide = $leftPv <= $rightPv ? 'ขาซ้าย' : 'ขาขวา';
 
-    // ── โบนัส Binary Matching ───────────────────────────────────
-    $smallerPv     = min($leftPv, $rightPv) > 0 ? min($leftPv, $rightPv) : 0;
-    $matchingRate  = $position['matching_rate'] ?? 10;
-    $matchingBonus = $position['matching_bonus'] ?? 0;
-
-    // ── สีฝั่งซ้าย/ขวา (hex คงที่ — ไม่ใช้ dynamic tailwind) ──────
-    $cLeft    = '#5689b8';  // ซ้าย (info)
-    $cRight   = '#8e6fb8';  // ขวา (ม่วงนวล)
-    $cSuccess = '#5aa07e';
-    $cWarn    = '#e0a52e';
-
-    // ── ลิงก์วางตำแหน่ง (route guard) ───────────────────────────
-    $leftLink  = \Illuminate\Support\Facades\Route::has('register')
-        ? route('register', ['ref' => $member->member_code, 'position' => 'left'])
-        : '';
-    $rightLink = \Illuminate\Support\Facades\Route::has('register')
-        ? route('register', ['ref' => $member->member_code, 'position' => 'right'])
-        : '';
+    $parent = $position['parent'] ?? null;
+    $sideLabel = ['left' => 'ขาซ้าย', 'right' => 'ขาขวา'];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            @if(\Illuminate\Support\Facades\Route::has('user.mlm.dashboard'))
-                <a href="{{ route('user.mlm.dashboard') }}" class="tp-icon-btn" title="กลับ"><i class="fas fa-arrow-left"></i></a>
+<div class="nvm-stack nvm-ml-page">
+
+<section class="nvm-ph" aria-labelledby="nvm-mlb-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            @if($nvR('user.mlm.dashboard'))
+                <a class="nvm-ph__back" href="{{ route('user.mlm.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>แดชบอร์ด MLM</a>
             @endif
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-sitemap" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ตำแหน่งในระบบ Binary</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">โครงสร้างทีมแบบ Binary Tree</div>
+            <div class="nvm-eyebrow nvm-latin">Binary position</div>
+            <h1 id="nvm-mlb-h">ตำแหน่งในระบบ Binary</h1>
+            <p class="nvm-ph__lead">ยอดสมาชิก PV และรายได้ของขาซ้ายและขาขวา</p>
+            <div class="nvm-pills">
+                @if($member->binary_position)
+                    <span class="nvm-pill nvm-pill--gold"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>คุณอยู่{{ $sideLabel[$member->binary_position] ?? '' }}ของผู้วาง</span>
+                @else
+                    <span class="nvm-pill nvm-pill--gold"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>ต้นสายงาน</span>
+                @endif
+                <span class="nvm-pill nvm-pill--glass">ชั้นที่ <span class="nvm-num">{{ (int) ($position['depth'] ?? 0) }}</span></span>
+                @if($parent)
+                    <span class="nvm-pill nvm-pill--glass">อยู่ใต้ <span class="nvm-num">{{ $parent->member_code }}</span></span>
+                @endif
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/scale.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── ข้อมูลตำแหน่งของคุณ (ซ้าย/ขวา) ─────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">📍 ข้อมูลตำแหน่งของคุณ</div>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;">
-            {{-- ฝั่งซ้าย --}}
-            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cLeft }};">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;">
-                    <div style="font-size:15px; font-weight:700;">👈 ทีมซ้าย (Left)</div>
-                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:18px; font-weight:800; color:#fff; background:{{ $cLeft }};">L</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                        <span style="font-size:12.5px; color:var(--ink2);">จำนวนสมาชิก:</span>
-                        <span class="tp-num" style="font-weight:700;">{{ $leftCount }}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                        <span style="font-size:12.5px; color:var(--ink2);">PV รวม:</span>
-                        <span class="tp-num" style="font-weight:700; color:{{ $cLeft }};">{{ number_format($leftPv, 0) }}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0;">
-                        <span style="font-size:12.5px; color:var(--ink2);">รายได้สะสม:</span>
-                        <span class="tp-num" style="font-weight:700; color:{{ $cSuccess }};">฿{{ number_format($leftCom, 2) }}</span>
-                    </div>
-                </div>
+<section class="nvm-ml-legs" aria-label="ยอดแต่ละขา">
+    @foreach(['left', 'right'] as $side)
+        @php $leg = $legs[$side]; @endphp
+        <div class="nvm-card nvm-box nvm-ml-leg nvm-ml-leg--{{ $side }}">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">{{ $side === 'left' ? 'Left leg' : 'Right leg' }}</small><h2>{{ $sideLabel[$side] }}</h2></div>
+                <span class="nvm-ml-leg__badge nvm-latin">{{ $side === 'left' ? 'L' : 'R' }}</span>
             </div>
-
-            {{-- ฝั่งขวา --}}
-            <div style="padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cRight }};">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;">
-                    <div style="font-size:15px; font-weight:700;">👉 ทีมขวา (Right)</div>
-                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:18px; font-weight:800; color:#fff; background:{{ $cRight }};">R</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                        <span style="font-size:12.5px; color:var(--ink2);">จำนวนสมาชิก:</span>
-                        <span class="tp-num" style="font-weight:700;">{{ $rightCount }}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                        <span style="font-size:12.5px; color:var(--ink2);">PV รวม:</span>
-                        <span class="tp-num" style="font-weight:700; color:{{ $cRight }};">{{ number_format($rightPv, 0) }}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0;">
-                        <span style="font-size:12.5px; color:var(--ink2);">รายได้สะสม:</span>
-                        <span class="tp-num" style="font-weight:700; color:{{ $cSuccess }};">฿{{ number_format($rightCom, 2) }}</span>
-                    </div>
-                </div>
-            </div>
+            <dl class="nvm-kv">
+                <dt>จำนวนสมาชิก</dt><dd class="nvm-num">{{ number_format($leg['members']) }} คน</dd>
+                <dt>PV คงเหลือ</dt><dd class="nvm-num">{{ number_format($leg['pv']) }}</dd>
+                <dt>PV ยกยอด</dt><dd class="nvm-num">{{ number_format($leg['carried_pv']) }}</dd>
+                <dt>ยอดขายสะสม</dt><dd class="nvm-num">{{ $baht($leg['sales']) }}</dd>
+                <dt>คอมมิชชั่นจากขานี้</dt><dd class="nvm-num nvm-ml-in">{{ $baht($leg['commission']) }}</dd>
+                <dt>สมาชิกที่อยู่ใต้คุณโดยตรง</dt><dd>@if($leg['child'])<span class="nvm-num">{{ $leg['child']->member_code }}</span>@else<span class="nvm-ml-mute">ยังว่าง</span>@endif</dd>
+            </dl>
         </div>
+    @endforeach
+</section>
 
-        {{-- Binary Matching Bonus --}}
-        <div style="margin-top:16px; padding:18px; border-radius:16px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cSuccess }};">
-            <div style="font-size:15px; font-weight:700; margin-bottom:14px;">⚖️ Binary Matching Bonus</div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px;">
-                <div style="text-align:center;">
-                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">ทีมเล็กกว่า</div>
-                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cWarn }};">{{ number_format($smallerPv, 0) }} PV</div>
-                </div>
-                <div style="text-align:center;">
-                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">อัตราจับคู่</div>
-                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cLeft }};">{{ $matchingRate }}%</div>
-                </div>
-                <div style="text-align:center;">
-                    <div style="font-size:12px; color:var(--ink2); margin-bottom:4px;">โบนัสที่ได้</div>
-                    <div class="tp-num" style="font-size:24px; font-weight:800; color:{{ $cSuccess }};">฿{{ number_format($matchingBonus, 2) }}</div>
-                </div>
-            </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-mlb-bal-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Balance</small><h2 id="nvm-mlb-bal-h">ความสมดุลของทีม</h2></div></div>
+        <div class="nvm-meter__row"><span>ซ้าย <b class="nvm-num">{{ number_format($leftPct, 1) }}%</b></span><span>ขวา <b class="nvm-num">{{ number_format($rightPct, 1) }}%</b></span></div>
+        <div class="nvm-ml-balance" role="img" aria-label="สัดส่วน PV ขาซ้าย {{ $leftPct }}% ขาขวา {{ $rightPct }}%" style="--l: {{ $leftPct }}%">
+            <i class="is-left"></i><i class="is-right"></i>
         </div>
-    </div>
-
-    {{-- ── สถานะความสมดุล ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">📊 สถานะความสมดุล</div>
-
-        <div style="margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; gap:8px; font-size:12.5px; color:var(--ink2); margin-bottom:8px;">
-                <span>👈 ซ้าย: {{ number_format($leftPv, 0) }} PV ({{ number_format($leftPercentage, 1) }}%)</span>
-                <span>👉 ขวา: {{ number_format($rightPv, 0) }} PV ({{ number_format($rightPercentage, 1) }}%)</span>
+        @if($isBalanced)
+            <div class="nvm-status nvm-gap-t">
+                <svg class="nvm-ico"><use href="#nvm-i-check"/></svg>
+                <span>ทีมสมดุลดี<small>PV สองขาต่างกันไม่เกิน 30% เหมาะกับการจับคู่ Binary</small></span>
             </div>
-            {{-- แถบสมดุล ซ้าย/ขวา --}}
-            <div style="display:flex; height:30px; border-radius:20px; box-shadow:var(--inset-sm); overflow:hidden;">
-                <div style="width:{{ $leftPercentage }}%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700;
-                            background:linear-gradient(90deg, color-mix(in srgb, {{ $cLeft }} 80%, #000 0%), {{ $cLeft }});">
-                    @if($leftPercentage > 15){{ number_format($leftPercentage, 0) }}%@endif
-                </div>
-                <div style="width:{{ $rightPercentage }}%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700;
-                            background:linear-gradient(90deg, {{ $cRight }}, color-mix(in srgb, {{ $cRight }} 80%, #000 0%));">
-                    @if($rightPercentage > 15){{ number_format($rightPercentage, 0) }}%@endif
-                </div>
+        @else
+            <div class="nvm-status is-warn nvm-gap-t">
+                <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+                <span>ทีมยังไม่สมดุล<small>เพิ่ม PV ใน{{ $weakSide }} (ขาอ่อน) เพื่อจับคู่ได้มากขึ้น</small></span>
             </div>
+        @endif
+
+        <div class="nvm-minis nvm-ml-minis3 nvm-gap-t">
+            <div class="nvm-mini"><small>PV ขาอ่อน</small><b class="nvm-num">{{ number_format($weakPv) }}</b></div>
+            <div class="nvm-mini"><small>ค่าคอมต่อคู่ ({{ $binarySettings['pairing_type'] }})</small><b class="nvm-num">{{ $baht($binarySettings['pair_commission']) }}</b></div>
+            <div class="nvm-mini"><small>รายได้ Binary สะสม</small><b class="nvm-num is-in">{{ $baht($binaryEarned) }}</b></div>
         </div>
+    </section>
 
-        <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);
-                    border-left:4px solid {{ $isBalanced ? $cSuccess : $cWarn }};">
-            <span style="font-size:30px;">{{ $isBalanced ? '✅' : '⚠️' }}</span>
-            <div>
-                <div style="font-weight:700;">{{ $isBalanced ? 'ทีมสมดุล!' : 'ทีมไม่สมดุล' }}</div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">
-                    @if($isBalanced)
-                        ทีมของคุณมีความสมดุลดี เหมาะสำหรับรับ Binary Matching Bonus สูงสุด
-                    @else
-                        ควรเพิ่มสมาชิกในทีมที่มี PV น้อยกว่า เพื่อเพิ่ม Binary Matching Bonus
-                    @endif
-                </div>
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlb-link-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Invite</small><h2 id="nvm-mlb-link-h">ชวนสมาชิกเข้าทีม</h2></div></div>
+            <p class="nvm-desc">ระบบเลือกขาและตำแหน่งว่างให้สมาชิกใหม่อัตโนมัติ ใช้ลิงก์แนะนำนี้ได้ทั้งสองขา</p>
+            <div class="nvm-copy nvm-copy--box">
+                <code>{{ $referralUrl }}</code>
+                <button type="button" x-data @click="nvmCopy(@js($referralUrl), 'คัดลอกลิงก์แนะนำแล้ว')"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg>คัดลอก</button>
             </div>
-        </div>
-    </div>
+        </section>
 
-    {{-- ── ลิงก์วางตำแหน่ง ─────────────────────────────────────── --}}
-    @if($leftLink || $rightLink)
-    <div class="tp-card" style="padding:18px;">
-        <div class="tp-section-h" style="margin-bottom:14px;">🔗 ลิงก์วางตำแหน่ง</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
-            @if($leftLink)
-            <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cLeft }};">
-                <div style="font-weight:700; margin-bottom:8px;">วางซ้าย (Left)</div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="leftLink" value="{{ $leftLink }}" readonly
-                           class="tp-input tp-num" style="flex:1; min-width:0; font-size:12px;">
-                    <button type="button" onclick="copyLink('leftLink')" class="tp-icon-btn" title="คัดลอกลิงก์ซ้าย"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-            @endif
-
-            @if($rightLink)
-            <div style="padding:14px; border-radius:14px; box-shadow:var(--inset-sm); border-left:4px solid {{ $cRight }};">
-                <div style="font-weight:700; margin-bottom:8px;">วางขวา (Right)</div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="rightLink" value="{{ $rightLink }}" readonly
-                           class="tp-input tp-num" style="flex:1; min-width:0; font-size:12px;">
-                    <button type="button" onclick="copyLink('rightLink')" class="tp-icon-btn" title="คัดลอกลิงก์ขวา"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-            @endif
-        </div>
-    </div>
-    @endif
-
-    {{-- ── เคล็ดลับ Binary System ───────────────────────────────── --}}
-    <div class="tp-card" style="padding:18px; border-left:4px solid {{ $cWarn }};">
-        <div class="tp-section-h" style="margin-bottom:14px;">💡 เคล็ดลับ Binary System</div>
-        <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;">
-            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
-                <span>✅</span>
-                <span><strong>รักษาความสมดุล:</strong> พยายามเพิ่มสมาชิกทั้งสองฝั่งให้สมดุล</span>
-            </li>
-            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
-                <span>✅</span>
-                <span><strong>Binary Matching:</strong> โบนัสคำนวณจากทีมที่เล็กกว่า</span>
-            </li>
-            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
-                <span>✅</span>
-                <span><strong>Spillover:</strong> สมาชิกใหม่อาจถูกวางในตำแหน่งที่เหมาะสม</span>
-            </li>
-            <li style="display:flex; gap:8px; font-size:13px; color:var(--ink);">
-                <span>✅</span>
-                <span><strong>PV สำคัญ:</strong> ไม่ใช่แค่จำนวนคน แต่ PV ก็สำคัญเช่นกัน</span>
-            </li>
-        </ul>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-mlb-tip-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Tips</small><h2 id="nvm-mlb-tip-h">เคล็ดลับระบบ Binary</h2></div></div>
+            <ol class="nvm-steps">
+                <li>รักษาความสมดุล เพิ่มสมาชิกทั้งสองขาให้ใกล้เคียงกัน</li>
+                <li>โบนัสจับคู่คิดจาก PV ของขาที่น้อยกว่า</li>
+                <li>PV ส่วนเกินของขาแข็งยกยอดไปรอบถัดไปตามระยะที่กำหนด</li>
+                <li>ไม่ใช่แค่จำนวนคน PV ของทีมสำคัญเช่นกัน</li>
+            </ol>
+        </section>
     </div>
 </div>
 
-@push('scripts')
-<script>
-function copyLink(inputId) {
-    var input = document.getElementById(inputId);
-    if (!input) return;
-    input.select();
-    navigator.clipboard.writeText(input.value).then(function () {
-        if (window.showNotification) window.showNotification('คัดลอกลิงก์แล้ว', 'success');
-    }).catch(function () {
-        if (window.showNotification) window.showNotification('คัดลอกไม่สำเร็จ', 'error');
-    });
-}
-</script>
-@endpush
+</div>
 @endsection
