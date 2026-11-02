@@ -1,5 +1,5 @@
 {{--
-    บทเรียน (user.classroom.lesson) — เล่นวิดีโอ YouTube (IFrame API) + ส่ง heartbeat ทุก 10 วิ ระหว่างเล่น
+    บทเรียน (user.classroom.lesson) — เล่นวิดีโอ YouTube (IFrame API) + ส่ง heartbeat ทุก 10 วิ ระหว่างเล่น · ธีมโนวาเต็ม
     Controller: User\ClassroomController@lesson
     ตัวแปร: course (ClassroomCourse), lesson (ClassroomPresenter::lessonPayload), lessonNumber, lessonTotal,
             previousLesson|null, nextLesson|null (ClassroomLesson), quizUnlocked, pageTitle
@@ -7,12 +7,12 @@
     กันกดข้าม = ฝั่งเซิร์ฟเวอร์ (ClassroomProgressService) — หน้านี้แค่รายงานตำแหน่งตามจริง
     heartbeat: เริ่มเล่น / ทุก 10 วิระหว่างเล่น / หยุด / จบ · ปิดแท็บระหว่างเล่น = ส่งครั้งสุดท้ายด้วย sendBeacon
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'บทเรียน')
 
 @push('styles')
-    @include('user.classroom.partials.styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/classroom-video.css') }}?v={{ filemtime(public_path('theme-nova/member/classroom-video.css')) }}">
 @endpush
 
 @php
@@ -27,54 +27,60 @@
         'startAt' => $lesson['completed'] ? 0 : $lesson['last_position_seconds'],
         'quizUnlocked' => $quizUnlocked,
     ];
+    $startPct = $lesson['completed'] ? 100 : min(100, (int) floor($lesson['watched_seconds'] * 100 / max(1, $lesson['required_seconds'])));
 @endphp
 
 @section('content')
-<div class="cr-scope" x-data="crLessonPlayer({{ \Illuminate\Support\Js::from($playerCfg) }})" x-init="boot()">
-    <div class="cr-row cr-between">
-        <a href="{{ route('user.classroom.course', $course->id) }}" class="cr-btn-ghost"><i class="fas fa-arrow-left"></i> {{ \Illuminate\Support\Str::limit($course->title, 40) }}</a>
+<div class="nvm-stack nvm-cv" x-data="crLessonPlayer({{ \Illuminate\Support\Js::from($playerCfg) }})" x-init="boot()">
+    <div class="nvm-cv-row nvm-cv-row--between">
+        <a href="{{ route('user.classroom.course', $course->id) }}" class="nvm-btn nvm-btn--line nvm-btn--sm nvm-cv-back"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>{{ \Illuminate\Support\Str::limit($course->title, 40) }}</a>
         @if($lessonNumber)
-            <span class="cr-pill cr-tone-navy">บทที่ {{ $lessonNumber }}/{{ $lessonTotal }}</span>
+            <span class="nvm-chip nvm-chip--gold">บทที่ {{ $lessonNumber }}/{{ $lessonTotal }}</span>
         @endif
     </div>
 
-    <div class="cr-player">
+    <div class="nvm-cv-player">
         <div id="cr-yt-player"></div>
     </div>
 
-    <section class="tp-card cr-stack cr-sticky">
-        <h1 class="cr-h2" style="font-size:18px; line-height:1.45;">{{ $lesson['title'] }}</h1>
-        <div>
-            <div class="cr-row cr-between cr-small" style="margin-bottom:6px;">
-                <span class="cr-muted">
-                    ดูแล้ว <span class="cr-num" x-text="fmt(watched)">{{ \App\Models\ClassroomLesson::formatDuration($lesson['watched_seconds']) }}</span>
-                    จากที่ต้องดู <span class="cr-num">{{ \App\Models\ClassroomLesson::formatDuration($lesson['required_seconds']) }}</span>
+    <section class="nvm-card nvm-box nvm-cv-sticky" aria-labelledby="nvm-cv-ls-h">
+        <h1 id="nvm-cv-ls-h" class="nvm-cv-title">{{ $lesson['title'] }}</h1>
+
+        <div class="nvm-meter nvm-cv-bar" :class="{ 'is-ok': completed }">
+            <div class="nvm-meter__row">
+                <span>
+                    ดูแล้ว <b class="nvm-num" x-text="fmt(watched)">{{ \App\Models\ClassroomLesson::formatDuration($lesson['watched_seconds']) }}</b>
+                    จากที่ต้องดู <b class="nvm-num">{{ \App\Models\ClassroomLesson::formatDuration($lesson['required_seconds']) }}</b>
                 </span>
-                <span class="cr-num" x-text="pct() + '%'"></span>
+                <b class="nvm-num" x-text="pct() + '%'">{{ $startPct }}%</b>
             </div>
-            <div class="cr-bar" :class="{ ok: completed }"><span :style="'width:' + pct() + '%'"></span></div>
+            <div class="nvm-meter__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="pct()" aria-label="เวลาดูบทนี้"><i style="--w: {{ $startPct }}%" :style="'--w: ' + pct() + '%'"></i></div>
         </div>
 
-        <div x-show="completed" x-cloak class="cr-alert cr-tone-ok"><i class="fas fa-circle-check"></i> ดูบทนี้ครบแล้ว</div>
-        <div x-show="!completed" class="cr-muted cr-small">ระบบนับเวลาตามที่ดูจริง กดข้ามไปข้างหน้าจะไม่ได้เวลาเพิ่ม · ต้องเปิดหน้านี้ไว้ระหว่างดู</div>
-        <div x-show="error" x-cloak class="cr-alert cr-tone-bad" x-text="error"></div>
+        <div class="nvm-stack nvm-gap-t">
+            <div x-show="completed" x-cloak class="nvm-status">
+                <svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span>ดูบทนี้ครบแล้ว</span>
+            </div>
+            <p x-show="!completed" class="nvm-help">ระบบนับเวลาตามที่ดูจริง กดข้ามไปข้างหน้าจะไม่ได้เวลาเพิ่ม · ต้องเปิดหน้านี้ไว้ระหว่างดู</p>
+            <p x-show="error" x-cloak class="nvm-err" role="alert" x-text="error"></p>
 
-        <div class="cr-row cr-between">
-            @if($previousLesson)
-                <a href="{{ route('user.classroom.lesson', $previousLesson->id) }}" class="cr-btn-ghost"><i class="fas fa-backward-step"></i> บทก่อนหน้า</a>
-            @else
-                <span></span>
-            @endif
+            <div class="nvm-cv-row nvm-cv-row--between nvm-cv-nav">
+                @if($previousLesson)
+                    <a href="{{ route('user.classroom.lesson', $previousLesson->id) }}" class="nvm-btn nvm-btn--line nvm-cv-back"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>บทก่อนหน้า</a>
+                @else
+                    <span></span>
+                @endif
 
-            @if($nextLesson)
-                <a href="{{ route('user.classroom.lesson', $nextLesson->id) }}" class="cr-btn cr-tone-navy" :class="{ 'is-disabled': !completed }">
-                    บทถัดไป <i class="fas fa-forward-step"></i>
-                </a>
-            @else
-                <a href="{{ route('user.classroom.course', $course->id) }}" class="cr-btn" :class="quizUnlocked ? 'cr-tone-ok' : 'cr-tone-navy'">
-                    <span x-text="quizUnlocked ? 'ไปทำแบบทดสอบ' : 'กลับหน้าคอร์ส'">กลับหน้าคอร์ส</span> <i class="fas fa-arrow-right"></i>
-                </a>
-            @endif
+                @if($nextLesson)
+                    <a href="{{ route('user.classroom.lesson', $nextLesson->id) }}" class="nvm-btn nvm-btn--gold" :class="{ 'is-disabled': !completed }">
+                        บทถัดไป<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg>
+                    </a>
+                @else
+                    <a href="{{ route('user.classroom.course', $course->id) }}" class="nvm-btn" :class="quizUnlocked ? 'nvm-btn--gold' : 'nvm-btn--line'">
+                        <span x-text="quizUnlocked ? 'ไปทำแบบทดสอบ' : 'กลับหน้าคอร์ส'">กลับหน้าคอร์ส</span><svg class="nvm-ico"><use href="#nvm-i-chev"/></svg>
+                    </a>
+                @endif
+            </div>
         </div>
     </section>
 </div>

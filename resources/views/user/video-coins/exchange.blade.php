@@ -1,179 +1,149 @@
-@extends('layouts.user-v4')
+{{--
+    แลก Coins เป็นเงิน (user.video-coins.exchange) — เลือกแพคเกจ + ประวัติการแลก · ธีมโนวาเต็ม
+    Controller: User\VideoCoinController@exchange · ส่งฟอร์ม → POST user.video-coins.exchange.submit (exchange_rate_id)
+    ตัวแปร: videoCoin, exchangeRates, exchangeHistory, pageTitle
+    กดแลก = หัก Coins ทันที (รอแอดมินอนุมัติ / ปฏิเสธแล้วคืน Coins) จึงต้องยืนยันก่อนส่ง + กันกดซ้ำ
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'แลก Coins เป็นเงิน')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/classroom-video.css') }}?v={{ filemtime(public_path('theme-nova/member/classroom-video.css')) }}">
+@endpush
+
 @php
-    // ── แมพสถานะการแลก → ข้อความ + สี hex (ใช้ใน V4 แทน dynamic tailwind class) ──
-    // pending = อำพัน / approved+completed = เขียว / rejected = แดง / อื่น ๆ = neutral
+    $vcNum = fn ($n, int $d = 0) => number_format((float) $n, $d);
+    [$balInt, $balDec] = explode('.', number_format((float) ($videoCoin->balance ?? 0), 2));
+
+    // สถานะคำขอแลก → [ข้อความ, โทนชิป]
     $exStatusMap = [
-        'pending'   => ['รอดำเนินการ', '#e0a52e', 'fa-clock'],
-        'approved'  => ['อนุมัติแล้ว',  '#5aa07e', 'fa-check'],
-        'completed' => ['สำเร็จ',       '#5aa07e', 'fa-check-double'],
-        'rejected'  => ['ปฏิเสธ',       '#d9534f', 'fa-times'],
+        'pending' => ['รอดำเนินการ', 'nvm-chip--warn'],
+        'approved' => ['อนุมัติแล้ว', 'nvm-chip--ok'],
+        'completed' => ['สำเร็จ', 'nvm-chip--ok'],
+        'rejected' => ['ปฏิเสธ (คืน Coins แล้ว)', 'nvm-chip--bad'],
+    ];
+
+    $flashes = [
+        'success' => ['ok', 'check', 'สำเร็จ'],
+        'error' => ['bad', 'info', 'ทำรายการไม่สำเร็จ'],
     ];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
+<div class="nvm-stack nvm-cv">
 
-    {{-- ── หัวข้อ + ปุ่มย้อนกลับ (Hero) ─────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            @if(\Illuminate\Support\Facades\Route::has('user.video-coins.index'))
-                <a href="{{ route('user.video-coins.index') }}" class="tp-icon-btn" title="ย้อนกลับ"><i class="fas fa-arrow-left"></i></a>
-            @endif
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-exchange-alt" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">แลก Coins เป็นเงิน</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">แลก Video Coins เป็นเงินบาทเข้ากระเป๋าเงิน</div>
+<section class="nvm-ph" aria-labelledby="nvm-cv-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.video-coins.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>Video Coins</a>
+            <div class="nvm-eyebrow nvm-latin">Exchange</div>
+            <h1 id="nvm-cv-h">แลก Coins เป็นเงิน</h1>
+            <p class="nvm-ph__lead">แลก Video Coins เป็นเงินบาทเข้ากระเป๋าเงิน หลังแอดมินอนุมัติ</p>
+            <div class="nvm-bal">
+                <small>ยอด Coins ของคุณ</small>
+                <b class="nvm-foil nvm-num">{{ $balInt }}<span>.{{ $balDec }}</span></b><em>VC</em>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/transfer.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── การ์ดยอด Coins คงเหลือ ───────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
-            <div style="display:flex; align-items:center; gap:14px;">
-                <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
-                <div>
-                    <div style="font-size:12.5px; color:var(--ink2);">ยอด Coins ของคุณ</div>
-                    <div class="tp-num" style="font-size:clamp(32px,7vw,48px); font-weight:800; line-height:1.1; margin-top:2px; color:var(--deep1);">
-                        {{ number_format($videoCoin->balance, 2) }}
-                        <span style="font-size:18px; font-weight:600; color:var(--ink2);">VC</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── ข้อความแจ้งเตือน (Flash) ─────────────────────────── --}}
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #5aa07e;">
-            <i class="fas fa-check-circle" style="color:#5aa07e; font-size:18px;"></i>
-            <div style="font-size:13px; font-weight:600; color:var(--ink);">{{ session('success') }}</div>
-        </div>
+@foreach($flashes as $key => [$tone, $icon, $heading])
+    @if(session($key))
+        <section class="nvm-card nvm-alert nvm-alert--{{ $tone }}" role="{{ $tone === 'bad' ? 'alert' : 'status' }}">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-{{ $icon }}"/></svg></span>
+            <div class="nvm-alert__txt"><b>{{ $heading }}</b><p>{{ session($key) }}</p></div>
+        </section>
     @endif
+@endforeach
 
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:var(--inset-sm); border-left:4px solid #d9534f;">
-            <i class="fas fa-exclamation-circle" style="color:#d9534f; font-size:18px;"></i>
-            <div style="font-size:13px; font-weight:600; color:var(--ink);">{{ session('error') }}</div>
-        </div>
-    @endif
+@if($errors->any())
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ $errors->first() }}</p></div>
+    </section>
+@endif
 
-    {{-- ── เลือกอัตราแลกเปลี่ยน ──────────────────────────────── --}}
-    @if($exchangeRates->count() > 0)
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                <div class="tp-section-h">🔄 เลือกจำนวนที่ต้องการแลก</div>
-                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">กดเลือกแพคเกจที่ต้องการเพื่อยืนยันการแลก</div>
-            </div>
-
-            <div style="padding:18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
-                @foreach($exchangeRates as $rate)
-                    @php
-                        // เช็คว่ายอด Coins พอแลกหรือไม่
-                        $canExchange = $videoCoin->balance >= $rate->coins_amount;
-                    @endphp
-                    <form action="{{ route('user.video-coins.exchange.submit') }}" method="POST" style="margin:0;">
-                        @csrf
-                        <input type="hidden" name="exchange_rate_id" value="{{ $rate->id }}">
-                        <button type="submit"
-                                @if(!$canExchange) disabled @endif
-                                style="width:100%; text-align:left; cursor:{{ $canExchange ? 'pointer' : 'not-allowed' }};
-                                       opacity:{{ $canExchange ? '1' : '.55' }}; border:none; background:transparent; padding:0; font:inherit;">
-                            <div class="{{ $canExchange ? 'tp-card tp-card-hover' : 'tp-card' }}" style="padding:18px; height:100%;">
-                                {{-- จำนวน Coins → จำนวนเงิน --}}
-                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;">
-                                    <div style="display:flex; align-items:baseline; gap:5px;">
-                                        <span class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">{{ number_format($rate->coins_amount, 0) }}</span>
-                                        <span style="font-size:12px; font-weight:600; color:var(--ink2);">VC</span>
-                                    </div>
-                                    <i class="fas fa-arrow-right" style="color:var(--ink2); font-size:15px;"></i>
-                                    <div style="display:flex; align-items:baseline; gap:3px;">
-                                        <span class="tp-num" style="font-size:26px; font-weight:800; color:#5aa07e;">{{ number_format($rate->money_amount, 0) }}</span>
-                                        <span style="font-size:14px; color:var(--ink2);">฿</span>
-                                    </div>
-                                </div>
-
-                                {{-- รายละเอียดอัตรา --}}
-                                <div style="font-size:12px; color:var(--ink2); display:flex; flex-direction:column; gap:4px;">
-                                    <div>อัตรา: 1 Coin = <span class="tp-num">{{ number_format($rate->rate, 4) }}</span> บาท</div>
-                                    @if($rate->min_level)
-                                        <div><i class="fas fa-star" style="color:var(--accent1); margin-right:4px;"></i>ต้องมี Level {{ $rate->min_level }}+</div>
-                                    @endif
-                                </div>
-
-                                {{-- ปุ่มสถานะ --}}
-                                @if($canExchange)
-                                    <div style="margin-top:14px; padding:9px; text-align:center; border-radius:12px; font-size:13px; font-weight:700; color:#fff; background:#5aa07e;">
-                                        <i class="fas fa-exchange-alt" style="margin-right:6px;"></i>แลกเลย
-                                    </div>
-                                @else
-                                    <div style="margin-top:14px; padding:9px; text-align:center; border-radius:12px; font-size:13px; font-weight:700; color:var(--ink2); box-shadow:var(--inset-sm);">
-                                        <i class="fas fa-lock" style="margin-right:6px;"></i>Coins ไม่พอ
-                                    </div>
-                                @endif
-                            </div>
-                        </button>
-                    </form>
-                @endforeach
-            </div>
+<section class="nvm-card nvm-box" aria-labelledby="nvm-cv-pk-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Packages</small><h2 id="nvm-cv-pk-h">เลือกจำนวนที่ต้องการแลก</h2></div></div>
+    @if($exchangeRates->isNotEmpty())
+        <p class="nvm-help">กดเลือกแพคเกจแล้วยืนยัน ระบบจะหัก Coins ทันทีและส่งคำขอให้แอดมินอนุมัติ (ถ้าถูกปฏิเสธจะคืน Coins ให้)</p>
+        <div class="nvm-cv-rates nvm-gap-t">
+            @foreach($exchangeRates as $rate)
+                @php
+                    // เช็คว่ายอด Coins พอแลกหรือไม่
+                    $canExchange = (float) $videoCoin->balance >= (float) $rate->coins_amount;
+                    $confirmText = 'ยืนยันแลก '.$vcNum($rate->coins_amount).' VC เป็นเงิน '.$vcNum($rate->money_amount, 2).' บาท? ระบบจะหัก Coins ทันที';
+                @endphp
+                <form action="{{ route('user.video-coins.exchange.submit') }}" method="POST" class="nvm-cv-form"
+                      data-confirm="{{ $confirmText }}"
+                      x-data="{ busy: false, go(e) { if (this.busy || ! window.confirm(e.target.dataset.confirm)) { e.preventDefault(); return; } this.busy = true; } }"
+                      x-on:submit="go($event)"
+                      x-on:pageshow.window="if ($event.persisted) busy = false">
+                    @csrf
+                    <input type="hidden" name="exchange_rate_id" value="{{ $rate->id }}">
+                    <button type="submit" class="nvm-cv-rate" @disabled(! $canExchange) :disabled="busy || {{ $canExchange ? 'false' : 'true' }}">
+                        <span class="nvm-cv-rate__pair">
+                            <span><b class="nvm-num">{{ $vcNum($rate->coins_amount) }}</b> <small>VC</small></span>
+                            <svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>
+                            <span><b class="nvm-num is-in">{{ $vcNum($rate->money_amount) }}</b> <small>บาท</small></span>
+                        </span>
+                        <span class="nvm-cv-rate__info">
+                            <span class="nvm-num">อัตรา: 1 Coin = {{ number_format((float) $rate->rate, 4) }} บาท</span>
+                            @if($rate->min_level)
+                                <span>ต้องมี Level {{ $rate->min_level }} ขึ้นไป</span>
+                            @endif
+                            @if($rate->max_coins_per_day)
+                                <span class="nvm-num">แลกได้สูงสุด {{ $vcNum($rate->max_coins_per_day) }} VC ต่อวัน</span>
+                            @endif
+                            @if($rate->max_coins_per_month)
+                                <span class="nvm-num">แลกได้สูงสุด {{ $vcNum($rate->max_coins_per_month) }} VC ต่อเดือน</span>
+                            @endif
+                        </span>
+                        @if($canExchange)
+                            <span class="nvm-cv-rate__cta"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg><span x-text="busy ? 'กำลังส่งคำขอ...' : 'แลกเลย'">แลกเลย</span></span>
+                        @else
+                            <span class="nvm-cv-rate__cta is-off"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>Coins ไม่พอ</span>
+                        @endif
+                    </button>
+                </form>
+            @endforeach
         </div>
     @else
-        <div class="tp-card" style="text-align:center; padding:56px 20px;">
-            <div style="font-size:52px; opacity:.5;">🔄</div>
-            <div style="font-weight:700; font-size:17px; margin-top:10px;">ยังไม่มีอัตราแลกเปลี่ยน</div>
-            <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เมื่อแอดมินเปิดอัตราแลกเปลี่ยนจะแสดงที่นี่</div>
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีอัตราแลกเปลี่ยน</b>
+            เมื่อแอดมินเปิดอัตราแลกเปลี่ยนจะแสดงที่นี่
         </div>
     @endif
+</section>
 
-    {{-- ── ประวัติการแลก ─────────────────────────────────────── --}}
-    @if($exchangeHistory->count() > 0)
-        <div class="tp-card" style="padding:0; overflow:hidden;">
-            <div style="padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                <div class="tp-section-h">🕑 ประวัติการแลก</div>
-                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">10 รายการล่าสุด</div>
-            </div>
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    <thead>
-                        <tr style="text-align:left; color:var(--ink2); box-shadow:var(--inset-sm);">
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">รายการ</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; text-align:right;">จำนวนเงิน</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; text-align:center;">สถานะ</th>
-                            <th style="padding:13px 16px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; text-align:right;">วันที่</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($exchangeHistory as $exchange)
-                            @php
-                                // หาข้อมูลสถานะจากแมพ — ถ้าไม่พบใช้ค่า status ดิบ + สี neutral
-                                $exInfo = $exStatusMap[$exchange->status] ?? [$exchange->status, 'var(--ink2)', 'fa-exchange-alt'];
-                            @endphp
-                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                                <td style="padding:12px 16px; white-space:nowrap;">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <span class="tp-num" style="font-weight:700; color:var(--deep1);">{{ number_format($exchange->coins_amount, 0) }} VC</span>
-                                        <i class="fas fa-arrow-right" style="color:var(--ink2); font-size:11px;"></i>
-                                        <span class="tp-num" style="font-weight:700; color:#5aa07e;">{{ number_format($exchange->money_amount, 0) }} ฿</span>
-                                    </div>
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; font-weight:700; color:var(--ink);">฿{{ number_format($exchange->money_amount, 2) }}</td>
-                                <td style="padding:12px 16px; text-align:center; white-space:nowrap;">
-                                    <span class="tp-pill" style="color:{{ $exInfo[1] }}; background:color-mix(in srgb, {{ $exInfo[1] }} 16%, transparent);"><i class="fas {{ $exInfo[2] }}" style="font-size:10px;"></i> {{ $exInfo[0] }}</span>
-                                </td>
-                                <td class="tp-num" style="padding:12px 16px; text-align:right; white-space:nowrap; color:var(--ink2);">
-                                    <div style="color:var(--ink);">{{ $exchange->created_at->format('d/m/Y') }}</div>
-                                    <div style="font-size:11px;">{{ $exchange->created_at->format('H:i') }}</div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    @endif
+@if($exchangeHistory->isNotEmpty())
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-cv-hs-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">History</small><h2 id="nvm-cv-hs-h">ประวัติการแลก</h2></div><span class="nvm-chip">10 รายการล่าสุด</span></div>
+        <ul class="nvm-txs">
+            @foreach($exchangeHistory as $exchange)
+                @php
+                    // สถานะที่ไม่รู้จัก → แสดงค่าดิบด้วยโทนกลาง
+                    [$exLabel, $exTone] = $exStatusMap[$exchange->status] ?? [(string) $exchange->status, ''];
+                    $exDone = in_array($exchange->status, ['approved', 'completed'], true);
+                @endphp
+                <li class="nvm-tx">
+                    <span class="nvm-tx__ic {{ $exDone ? 'is-in' : '' }}"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg></span>
+                    <div class="nvm-tx__t">
+                        <b class="nvm-num">{{ $vcNum($exchange->coins_amount) }} VC → ฿{{ $vcNum($exchange->money_amount, 2) }}</b>
+                        <small class="nvm-num">{{ $exchange->created_at?->format('d/m/Y H:i') }}</small>
+                    </div>
+                    <div class="nvm-tx__r">
+                        <span class="nvm-tx__amt nvm-num {{ $exDone ? 'is-in' : '' }}">฿{{ $vcNum($exchange->money_amount, 2) }}</span>
+                        <span class="nvm-chip {{ $exTone }}">{{ $exLabel }}</span>
+                    </div>
+                </li>
+            @endforeach
+        </ul>
+    </section>
+@endif
+
 </div>
 @endsection

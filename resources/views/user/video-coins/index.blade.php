@@ -1,175 +1,112 @@
-@extends('layouts.user-v4')
+{{--
+    Video Coins (user.video-coins.index) — ยอดเหรียญ + ธุรกรรมล่าสุด + อัตราแลก · ธีมโนวาเต็ม
+    Controller: User\VideoCoinController@index
+    ตัวแปร: videoCoin, earnedToday, spentToday, recentTransactions, exchangeRates, pageTitle
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'Video Coins')
 
-@php
-    // ── ตัวช่วยเช็คว่าธุรกรรมเป็นรายรับ (earned*) หรือรายจ่าย ──────
-    $isIncome = fn ($t) => \Illuminate\Support\Str::startsWith((string) $t, 'earned');
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('theme-nova/member/classroom-video.css') }}?v={{ filemtime(public_path('theme-nova/member/classroom-video.css')) }}">
+@endpush
 
-    // ── ปุ่มเมนูด่วน 4 ใบ (ป้าย / ป้ายย่อย / route / ไอคอน) ──────
-    $vcActions = [
-        ['แลกเงิน',  'ถอนเงินบาท',    'user.video-coins.exchange', 'fa-exchange-alt'],
-        ['ประวัติ',  'ดูธุรกรรม',     'user.video-coins.transactions', 'fa-history'],
+@php
+    $vcNum = fn ($n, int $d = 0) => number_format((float) $n, $d);
+    [$balInt, $balDec] = explode('.', number_format((float) ($videoCoin->balance ?? 0), 2));
+
+    // การ์ดตัวเลข: [ป้ายไทย, ป้ายอังกฤษ, ค่า, ภาพ, ท้ายการ์ด]
+    $kpis = [
+        ['ได้รับวันนี้', 'Earned today', $vcNum($earnedToday ?? 0, 2), 'images/nova/deco/coins.webp', 'Coins ที่ได้วันนี้'],
+        ['ใช้ไปวันนี้', 'Spent today', $vcNum($spentToday ?? 0, 2), 'images/nova/deco/bag.webp', 'แลกเงิน · ซื้อสินค้า'],
+        ['สะสมทั้งหมด', 'Lifetime earned', $vcNum($videoCoin->lifetime_earned ?? 0), 'images/nova/deco/crystal.webp', 'ตั้งแต่เริ่มใช้งาน'],
+        ['แลกไปแล้ว', 'Exchanged', $vcNum($videoCoin->lifetime_exchanged ?? 0), 'images/nova/wallet/transfer.webp', 'ใช้ไปทั้งหมด '.$vcNum($videoCoin->lifetime_spent ?? 0)],
     ];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
+<div class="nvm-stack nvm-cv">
 
-    {{-- ── หัวข้อ + ปุ่มลัด ────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-coins" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">Video Coins</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">จัดการและใช้งาน Video Coins ของคุณ</div>
+<section class="nvm-ph" aria-labelledby="nvm-cv-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">Video Coins</div>
+            <h1 id="nvm-cv-h">Video Coins ของฉัน</h1>
+            <div class="nvm-bal">
+                <small>ยอด Video Coins คงเหลือ</small>
+                <b class="nvm-foil nvm-num">{{ $balInt }}<span>.{{ $balDec }}</span></b><em>VC</em>
             </div>
-            <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                <a href="{{ route('user.video-coins.exchange') }}" class="tp-btn tp-btn-primary">
-                    <i class="fas fa-exchange-alt"></i> แลกเงิน
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── การ์ดยอด Coins (Hero) — native V4 แทน x-video-reward.coin-balance ─ --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 72%);">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:18px;">
-                {{-- ไอคอนเหรียญ "C" --}}
-                <span class="tp-tile" style="width:72px; height:72px; border-radius:50%; flex-shrink:0;">
-                    <span class="tp-num" style="color:#fff; font-weight:900; font-size:38px;">C</span>
-                </span>
-                <div style="min-width:0;">
-                    <div style="font-size:13px; color:var(--ink2);">ยอด Video Coins คงเหลือ</div>
-                    <div class="tp-num" style="font-size:clamp(36px,8vw,56px); font-weight:800; line-height:1.05; margin-top:2px; color:var(--deep1);">
-                        {{ number_format($videoCoin->balance ?? 0, 2) }}
-                    </div>
-                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">Coins</div>
-                </div>
-                {{-- สถิติสะสมด้านขวา --}}
-                <div style="display:flex; gap:22px; margin-left:auto; flex-wrap:wrap;">
-                    <div>
-                        <div style="font-size:11px; color:var(--ink2);">สะสมทั้งหมด</div>
-                        <div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">{{ number_format($videoCoin->lifetime_earned ?? 0, 0) }}</div>
-                    </div>
-                    <div>
-                        <div style="font-size:11px; color:var(--ink2);">ใช้ไปทั้งหมด</div>
-                        <div class="tp-num" style="font-size:20px; font-weight:800; color:#d9534f;">{{ number_format($videoCoin->lifetime_spent ?? 0, 0) }}</div>
-                    </div>
-                </div>
+            <div class="nvm-pills">
+                <a class="nvm-pill nvm-pill--gold" href="{{ route('user.video-coins.exchange') }}"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg>แลกเป็นเงิน</a>
+                <a class="nvm-pill nvm-pill--glass" href="{{ route('user.video-coins.transactions') }}"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ประวัติธุรกรรม</a>
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── สถิติด่วน 4 ใบ ───────────────────────────────────────── --}}
-    @php
-        $vcStats = [
-            ['ได้รับวันนี้', number_format($videoCoin->earned_today ?? 0, 0),    'fa-arrow-down', '#5aa07e'],
-            ['ใช้ไปวันนี้',  number_format($videoCoin->spent_today ?? 0, 0),     'fa-arrow-up',   '#d9534f'],
-            ['แลกไปแล้ว',    number_format($videoCoin->lifetime_exchanged ?? 0, 0), 'fa-coins',    '#5689b8'],
-            ['ยอดคงเหลือ',   number_format($videoCoin->balance ?? 0, 2),         'C',             '#e0a52e'],
-        ];
-    @endphp
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px;">
-        @foreach($vcStats as [$label, $val, $icon, $color])
-            <div class="tp-card" style="padding:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <div style="font-size:12.5px; color:var(--ink2); font-weight:600;">{{ $label }}</div>
-                    <span class="tp-tile" style="width:38px; height:38px; border-radius:11px; font-size:15px; background:color-mix(in srgb, {{ $color }} 18%, transparent);">
-                        @if($icon === 'C')
-                            <span class="tp-num" style="color:{{ $color }}; font-weight:900; font-size:17px;">C</span>
-                        @else
-                            <i class="fas {{ $icon }}" style="color:{{ $color }};"></i>
-                        @endif
-                    </span>
-                </div>
-                <div class="tp-num" style="font-size:24px; font-weight:800; margin-top:10px;">{{ $val }}</div>
-            </div>
-        @endforeach
-    </div>
-
-    {{-- ── เมนูด่วน 4 ปุ่ม ──────────────────────────────────────── --}}
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
-        @foreach($vcActions as [$label, $sub, $route, $icon])
-            <a href="{{ route($route) }}" class="tp-card tp-card-hover" style="display:flex; flex-direction:column; align-items:center; gap:9px; padding:20px 12px; text-decoration:none; color:inherit;">
-                <span class="tp-tile" style="width:54px; height:54px; border-radius:17px; font-size:24px;"><i class="fas {{ $icon }}" style="color:#fff;"></i></span>
-                <span style="font-size:14px; font-weight:700; text-align:center;">{{ $label }}</span>
-                <span style="font-size:11px; color:var(--ink2);">{{ $sub }}</span>
-            </a>
-        @endforeach
-    </div>
-
-    {{-- ── ธุรกรรมล่าสุด ────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:18px 20px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-            <div>
-                <div class="tp-section-h">🕑 ธุรกรรมล่าสุด</div>
-                <div style="font-size:11px; color:var(--ink2); margin-top:2px;">10 รายการล่าสุด</div>
-            </div>
-            <a href="{{ route('user.video-coins.transactions') }}" class="tp-btn tp-btn-sm">ดูทั้งหมด →</a>
+<section class="nvm-kpis" aria-label="สรุป Video Coins">
+    @foreach($kpis as [$label, $en, $value, $img, $foot])
+        <div class="nvm-card nvm-kpi">
+            <img class="nvm-kpi__img" src="{{ asset($img) }}" alt="" width="78" height="78" loading="lazy">
+            <div class="nvm-kpi__lbl">{{ $label }}</div>
+            <div class="nvm-kpi__en nvm-latin">{{ $en }}</div>
+            <div class="nvm-kpi__val nvm-num">{{ $value }}</div>
+            <div class="nvm-kpi__foot"><small>{{ $foot }}</small></div>
         </div>
+    @endforeach
+</section>
 
-        @if($recentTransactions->count() > 0)
-            <div>
-                @foreach($recentTransactions as $transaction)
-                    @php $inc = $isIncome($transaction->type); @endphp
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 20px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
-                        <div style="display:flex; align-items:center; gap:13px; min-width:0;">
-                            <span class="tp-tile" style="width:40px; height:40px; border-radius:13px; font-size:15px; flex-shrink:0; background:color-mix(in srgb, {{ $inc ? '#5aa07e' : '#d9534f' }} 18%, transparent);">
-                                <i class="fas {{ $inc ? 'fa-arrow-down' : 'fa-arrow-up' }}" style="color:{{ $inc ? '#5aa07e' : '#d9534f' }};"></i>
-                            </span>
-                            <div style="min-width:0;">
-                                <div style="font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $transaction->description ?? $transaction->type }}</div>
-                                <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $transaction->created_at->diffForHumans() }}</div>
-                            </div>
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-cv-tx-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Recent activity</small><h2 id="nvm-cv-tx-h">ธุรกรรมล่าสุด</h2></div>
+            <a href="{{ route('user.video-coins.transactions') }}">ดูทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+        </div>
+        @if($recentTransactions->isNotEmpty())
+            <ul class="nvm-txs">
+                @foreach($recentTransactions as $tx)
+                    @include('user.video-coins.partials.nova-tx', ['tx' => $tx])
+                @endforeach
+            </ul>
+        @else
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีประวัติธุรกรรม</b>
+                เริ่มดูวิดีโอเพื่อรับ Coins ฟรี
+            </div>
+        @endif
+    </section>
+
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-cv-rt-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Exchange rates</small><h2 id="nvm-cv-rt-h">อัตราแลกเปลี่ยน</h2></div>
+            @if($exchangeRates->isNotEmpty())
+                <a href="{{ route('user.video-coins.exchange') }}">แลก Coins<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
+            @endif
+        </div>
+        @if($exchangeRates->isNotEmpty())
+            <div class="nvm-cv-rates">
+                @foreach($exchangeRates as $rate)
+                    <div class="nvm-cv-rate">
+                        <div class="nvm-cv-rate__pair">
+                            <span><b class="nvm-num">{{ $vcNum($rate->coins_amount) }}</b> <small>VC</small></span>
+                            <svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>
+                            <span><b class="nvm-num is-in">{{ $vcNum($rate->money_amount) }}</b> <small>บาท</small></span>
                         </div>
-                        <div style="text-align:right; white-space:nowrap;">
-                            <div class="tp-num" style="font-size:14.5px; font-weight:800; color:{{ $inc ? '#5aa07e' : '#d9534f' }};">
-                                {{ $inc ? '+' : '-' }}{{ number_format(abs($transaction->amount), 2) }}
-                            </div>
-                            <div class="tp-num" style="font-size:11px; color:var(--ink2);">คงเหลือ {{ number_format($transaction->balance_after, 2) }}</div>
-                        </div>
+                        <div class="nvm-cv-rate__info"><span class="nvm-num">อัตรา: 1 Coin = {{ number_format((float) $rate->rate, 4) }} บาท</span></div>
                     </div>
                 @endforeach
             </div>
         @else
-            <div style="text-align:center; padding:48px 20px;">
-                <div style="font-size:46px; opacity:.5;">🪙</div>
-                <div style="font-weight:700; font-size:16px; margin-top:10px;">ยังไม่มีประวัติธุรกรรม</div>
-                <div style="font-size:13px; color:var(--ink2); margin-top:4px;">เริ่มดูวิดีโอเพื่อรับ Coins ฟรี</div>
+            <div class="nvm-empty">
+                <img src="{{ asset('images/nova/deco/coins.webp') }}" alt="" width="86" height="86" loading="lazy">
+                <b>ยังไม่มีอัตราแลกเปลี่ยน</b>
+                เมื่อแอดมินเปิดอัตราแลกเปลี่ยนจะแสดงที่นี่
             </div>
         @endif
-    </div>
-
-    {{-- ── อัตราแลกเปลี่ยน ──────────────────────────────────────── --}}
-    @if($exchangeRates->count() > 0)
-    <div class="tp-card" style="padding:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
-            <div class="tp-section-h">💱 อัตราแลกเปลี่ยน</div>
-            <a href="{{ route('user.video-coins.exchange') }}" class="tp-btn tp-btn-sm">แลก Coins →</a>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
-            @foreach($exchangeRates as $rate)
-                <div style="padding:16px; border-radius:14px; box-shadow:var(--inset-sm);">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-                        <div style="display:flex; align-items:center; gap:7px;">
-                            <span class="tp-num" style="font-size:22px; font-weight:900; color:#e0a52e;">C</span>
-                            <span class="tp-num" style="font-size:20px; font-weight:800;">{{ number_format($rate->coins_amount, 0) }}</span>
-                        </div>
-                        <i class="fas fa-arrow-right" style="color:var(--ink2); font-size:13px;"></i>
-                        <div style="display:flex; align-items:baseline; gap:3px;">
-                            <span class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">{{ number_format($rate->money_amount, 0) }}</span>
-                            <span style="font-size:13px; color:var(--ink2);">฿</span>
-                        </div>
-                    </div>
-                    <div class="tp-num" style="font-size:11px; color:var(--ink2);">อัตรา: 1 Coin = {{ number_format($rate->rate, 4) }} บาท</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
+    </section>
+</div>
 
 </div>
 @endsection
