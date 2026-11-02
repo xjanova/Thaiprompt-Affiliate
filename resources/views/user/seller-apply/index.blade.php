@@ -1,184 +1,230 @@
 {{--
- | สมัครเปิดร้านค้า (สมาชิกทั่วไป) — SELLER-07
+ | สมัครเปิดร้านค้า (สมาชิกทั่วไป) — SELLER-07 · ธีมโนวาเต็ม
  | ตัวแปร: $user, $store (VendorStore|null), $state (can_apply|pending|rejected|approved|seller|role_not_eligible), $kycApproved (bool)
- | ฟอร์ม POST → route('user.seller-apply.store')
+ | ฟอร์ม POST → route('user.seller-apply.store') — ชื่อช่องต้องตรงกับ SellerApplicationService::rules()
  --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'สมัครเปิดร้านค้า')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/user-misc.css') }}?v={{ filemtime(public_path('theme-nova/member/user-misc.css')) }}">@endpush
+
+@php
+    $nvR = fn ($name) => \Illuminate\Support\Facades\Route::has($name);
+    $canApply = in_array($state, ['can_apply', 'rejected'], true);
+
+    $pill = match ($state) {
+        'seller', 'approved' => ['ok', 'check', 'คุณเป็นผู้ขายแล้ว'],
+        'pending' => ['warn', 'clock', 'รอทีมงานตรวจสอบ'],
+        'rejected' => ['bad', 'x', 'คำขอครั้งก่อนยังไม่ผ่าน'],
+        'role_not_eligible' => ['glass', 'info', 'บัญชีประเภทนี้สมัครเองไม่ได้'],
+        default => ['glass', 'store', 'ยังไม่ได้ยื่นคำขอ'],
+    };
+
+    // ค่าในช่อง: กรอกค้างจากการส่งที่ไม่ผ่าน > ค่าในคำขอเดิม (ยื่นใหม่หลังถูกปฏิเสธ) > ค่าตั้งต้น
+    $field = fn (string $name, $fallback = null) => old($name, $store?->{$name} ?? $fallback);
+@endphp
+
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px; max-width:820px;">
 
-    {{-- ── Hero ─────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 18%, transparent), transparent 70%);">
-            <div style="display:flex; align-items:center; gap:14px;">
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;">🏪</span>
-                <div>
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0; color:var(--ink);">เปิดร้านค้าบนไทยพร๊อมท์</h1>
-                    <div style="font-size:13px; color:var(--ink2); margin-top:3px;">ขายสินค้าให้สมาชิกทั่วประเทศ ส่งพัสดุหรือให้ไรเดอร์ในพื้นที่ไปส่งก็ได้</div>
-                </div>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-um-sa-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.dashboard') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>แดชบอร์ด</a>
+            <div class="nvm-eyebrow nvm-latin">Open your store</div>
+            <h1 id="nvm-um-sa-h">เปิดร้านค้าบนไทยพร๊อมท์</h1>
+            <p class="nvm-ph__lead">ขายสินค้าให้สมาชิกทั่วประเทศ ส่งพัสดุหรือให้ไรเดอร์ในพื้นที่ไปส่งก็ได้</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--{{ $pill[0] }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $pill[1] }}"/></svg>{{ $pill[2] }}</span>
+                @if($kycApproved)
+                    <span class="nvm-pill nvm-pill--ok"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ยืนยันตัวตนแล้ว</span>
+                @endif
             </div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/earn/store.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ── สถานะคำขอ ─────────────────────────────────────── --}}
-    @if(in_array($state, ['seller', 'approved'], true))
-        <div class="tp-card" style="padding:22px 24px;">
-            <div class="tp-section-h" style="margin-bottom:8px;">✅ คุณเป็นผู้ขายแล้ว</div>
-            <p style="font-size:14px; color:var(--ink2); margin:0 0 14px;">
-                ร้านของคุณได้รับการอนุมัติแล้ว เข้าหลังร้านเพื่อยืนยันตัวตน (KYC) และเริ่มลงสินค้า
-            </p>
-            <a href="{{ route('seller.onboarding.index') }}" class="tp-btn tp-btn-primary" style="text-decoration:none;">
-                <i class="fas fa-store"></i> <span>ไปหลังร้าน</span>
-            </a>
-        </div>
-    @elseif($state === 'pending')
-        <div class="tp-card" style="padding:22px 24px;">
-            <div class="tp-section-h" style="margin-bottom:8px;">⏳ คำขอของคุณกำลังรอตรวจสอบ</div>
-            <p style="font-size:14px; color:var(--ink2); margin:0 0 6px;">
-                ร้าน <strong style="color:var(--ink);">{{ $store->store_name }}</strong>
-                ส่งคำขอเมื่อ {{ $store->updated_at?->format('d/m/Y H:i') }}
-            </p>
-            <p style="font-size:13px; color:var(--ink2); margin:0;">ทีมงานจะแจ้งผลผ่านการแจ้งเตือน (ในเว็บและแอป)</p>
-            @unless($kycApproved)
-                <div class="tp-inset-sm" style="margin-top:14px; padding:12px 14px; border-radius:12px; font-size:13px; color:var(--ink2);">
-                    💡 ระหว่างรอ ยืนยันตัวตน (KYC) ไว้ก่อนได้เลย ร้านจะเปิดขายได้ทันทีหลังอนุมัติ
-                    <a href="{{ route('user.kyc.index') }}" style="color:var(--deep1); font-weight:600;">ยืนยันตัวตน</a>
-                </div>
-            @endunless
-        </div>
-    @elseif($state === 'role_not_eligible')
-        <div class="tp-card" style="padding:22px 24px;">
-            <div class="tp-section-h" style="margin-bottom:8px;">ℹ️ บัญชีประเภทนี้สมัครเปิดร้านเองไม่ได้</div>
-            <p style="font-size:14px; color:var(--ink2); margin:0 0 14px;">
-                บัญชีของคุณมีบทบาทเฉพาะอยู่แล้ว หากต้องการเปิดร้านค้าด้วย กรุณาติดต่อทีมงาน
-            </p>
-            <a href="{{ route('user.tickets.index') }}" class="tp-btn tp-btn-sm" style="text-decoration:none;">
-                <i class="fas fa-headset"></i> <span>ติดต่อทีมงาน</span>
-            </a>
-        </div>
-    @endif
+{{-- ข้อผิดพลาดตอนส่ง (session error) แสดงเป็น toast จาก layouts.user-nova อยู่แล้ว — ไม่ซ้ำในหน้า --}}
 
-    {{-- ── ฟอร์มสมัคร (ยื่นครั้งแรก หรือยื่นใหม่หลังถูกปฏิเสธ) ── --}}
-    @if(in_array($state, ['can_apply', 'rejected'], true))
-        @if($state === 'rejected' && $store?->suspension_reason)
-            <div class="tp-card" style="padding:18px 22px; border-left:4px solid #d9534f;">
-                <div style="font-weight:700; color:var(--ink); margin-bottom:4px;">คำขอครั้งก่อนยังไม่ผ่านการอนุมัติ</div>
-                <div style="font-size:13.5px; color:var(--ink2);">เหตุผล: {{ $store->suspension_reason }}</div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:6px;">แก้ไขข้อมูลด้านล่างแล้วยื่นใหม่ได้เลย</div>
-            </div>
+{{-- ── สถานะคำขอ ─────────────────────────────────────── --}}
+@if(in_array($state, ['seller', 'approved'], true))
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-um-sa-ok">
+        <div class="nvm-status">
+            <svg class="nvm-ico"><use href="#nvm-i-check"/></svg>
+            <span id="nvm-um-sa-ok">คุณเป็นผู้ขายแล้ว<small>ร้านของคุณได้รับการอนุมัติแล้ว เข้าหลังร้านเพื่อยืนยันตัวตน (KYC) และเริ่มลงสินค้า</small></span>
+        </div>
+        @if($nvR('seller.onboarding.index'))
+            <a class="nvm-btn nvm-btn--gold nvm-gap-t" href="{{ route('seller.onboarding.index') }}"><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>ไปหลังร้าน</a>
         @endif
+    </section>
+@elseif($state === 'pending')
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-um-sa-wait">
+        <div class="nvm-status is-warn">
+            <svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>
+            <span id="nvm-um-sa-wait">คำขอของคุณกำลังรอตรวจสอบ<small>ทีมงานจะแจ้งผลผ่านการแจ้งเตือน (ในเว็บและแอป)</small></span>
+        </div>
+        @if($store)
+            <dl class="nvm-kv nvm-gap-t">
+                <dt>ชื่อร้าน</dt><dd>{{ $store->store_name }}</dd>
+                <dt>ส่งคำขอเมื่อ</dt><dd class="nvm-num">{{ $store->updated_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+            </dl>
+        @endif
+        @unless($kycApproved)
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg><span>ระหว่างรอ ยืนยันตัวตน (KYC) ไว้ก่อนได้เลย ร้านจะเปิดขายได้ทันทีหลังอนุมัติ <a class="nvm-link" href="{{ route('user.kyc.index') }}">ยืนยันตัวตน</a></span></p>
+        @endunless
+    </section>
+@elseif($state === 'role_not_eligible')
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-um-sa-role">
+        <div class="nvm-status is-warn">
+            <svg class="nvm-ico"><use href="#nvm-i-info"/></svg>
+            <span id="nvm-um-sa-role">บัญชีประเภทนี้สมัครเปิดร้านเองไม่ได้<small>บัญชีของคุณมีบทบาทเฉพาะอยู่แล้ว หากต้องการเปิดร้านค้าด้วย กรุณาติดต่อทีมงาน</small></span>
+        </div>
+        @if($nvR('user.tickets.index'))
+            <a class="nvm-btn nvm-btn--line nvm-gap-t" href="{{ route('user.tickets.index') }}"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg>ติดต่อทีมงาน</a>
+        @endif
+    </section>
+@endif
 
-        <form method="POST" action="{{ route('user.seller-apply.store') }}" class="tp-card" style="padding:22px 24px; display:flex; flex-direction:column; gap:16px;"
-              x-data="{ businessType: @js(old('business_type', $store?->business_type ?? 'individual')), submitting: false }"
-              @submit="submitting = true">
-            @csrf
-
-            @if($errors->any())
-                <div style="padding:12px 14px; border-radius:12px; background:color-mix(in srgb, #d9534f 12%, transparent); color:#b43c38; font-size:13.5px;">
-                    <ul style="margin:0; padding-left:18px;">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <div class="tp-section-h">ข้อมูลร้านค้า</div>
-
-            <label style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:13px; font-weight:600; color:var(--ink);">ชื่อร้าน *</span>
-                <input type="text" name="store_name" class="tp-input" maxlength="100" required
-                       value="{{ old('store_name', $store?->store_name) }}" placeholder="เช่น ร้านผักป้าแดง">
-            </label>
-
-            <div style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:13px; font-weight:600; color:var(--ink);">ประเภทผู้ขาย *</span>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <label class="tp-inset-sm" style="display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; cursor:pointer; min-height:44px;">
-                        <input type="radio" name="business_type" value="individual" x-model="businessType"> <span>บุคคลธรรมดา</span>
-                    </label>
-                    <label class="tp-inset-sm" style="display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; cursor:pointer; min-height:44px;">
-                        <input type="radio" name="business_type" value="company" x-model="businessType"> <span>นิติบุคคล (บริษัท/หจก.)</span>
-                    </label>
-                </div>
+{{-- ── ฟอร์มสมัคร (ยื่นครั้งแรก หรือยื่นใหม่หลังถูกปฏิเสธ) ── --}}
+@if($canApply)
+    @if($state === 'rejected' && $store?->suspension_reason)
+        <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b>คำขอครั้งก่อนยังไม่ผ่านการอนุมัติ</b>
+                <p>เหตุผล: {{ $store->suspension_reason }}</p>
+                <p>แก้ไขข้อมูลด้านล่างแล้วยื่นใหม่ได้เลย</p>
             </div>
-
-            <div x-show="businessType === 'company'" x-cloak style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
-                <label style="display:flex; flex-direction:column; gap:6px;">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">ชื่อบริษัท *</span>
-                    <input type="text" name="company_name" class="tp-input" maxlength="255"
-                           value="{{ old('company_name', $store?->company_name) }}">
-                </label>
-                <label style="display:flex; flex-direction:column; gap:6px;">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">เลขประจำตัวผู้เสียภาษี (13 หลัก) *</span>
-                    <input type="text" name="tax_id" class="tp-input" inputmode="numeric" maxlength="13"
-                           value="{{ old('tax_id', $store?->tax_id) }}">
-                </label>
-            </div>
-
-            <label style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:13px; font-weight:600; color:var(--ink);">เบอร์โทรร้าน *</span>
-                <input type="tel" name="store_phone" class="tp-input" inputmode="numeric" maxlength="10" required
-                       value="{{ old('store_phone', $store?->store_phone ?? $user->phone) }}" placeholder="0812345678">
-            </label>
-
-            <label style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:13px; font-weight:600; color:var(--ink);">รายละเอียดร้าน</span>
-                <textarea name="store_description" class="tp-input" rows="3" maxlength="1000"
-                          placeholder="ขายอะไร จุดเด่นของร้าน">{{ old('store_description', $store?->store_description) }}</textarea>
-            </label>
-
-            <div class="tp-section-h" style="margin-top:6px;">ที่อยู่ร้าน / จุดรับสินค้า</div>
-
-            <label style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:13px; font-weight:600; color:var(--ink);">ที่อยู่ *</span>
-                <textarea name="store_address" class="tp-input" rows="2" maxlength="500" required
-                          placeholder="บ้านเลขที่ ถนน ตำบล">{{ old('store_address', $store?->store_address) }}</textarea>
-            </label>
-
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
-                <label style="display:flex; flex-direction:column; gap:6px;">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">อำเภอ/เขต *</span>
-                    <input type="text" name="store_city" class="tp-input" maxlength="100" required
-                           value="{{ old('store_city', $store?->store_city) }}">
-                </label>
-                <label style="display:flex; flex-direction:column; gap:6px;">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">จังหวัด *</span>
-                    <input type="text" name="store_state" class="tp-input" maxlength="100" required
-                           value="{{ old('store_state', $store?->store_state) }}">
-                </label>
-                <label style="display:flex; flex-direction:column; gap:6px;">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">รหัสไปรษณีย์ *</span>
-                    <input type="text" name="store_postal_code" class="tp-input" inputmode="numeric" maxlength="5" required
-                           value="{{ old('store_postal_code', $store?->store_postal_code) }}">
-                </label>
-            </div>
-
-            <div class="tp-inset-sm" style="padding:12px 14px; border-radius:12px; font-size:13px; color:var(--ink2); line-height:1.7;">
-                ขั้นตอนหลังส่งคำขอ: ทีมงานตรวจสอบ → อนุมัติ → คุณยืนยันตัวตน (KYC) ที่หลังร้าน → เริ่มลงสินค้าได้
-                @unless($kycApproved)
-                    <br>💡 ยืนยันตัวตนไว้ก่อนได้ที่ <a href="{{ route('user.kyc.index') }}" style="color:var(--deep1); font-weight:600;">หน้า KYC</a>
-                @endunless
-            </div>
-
-            <label style="display:flex; align-items:flex-start; gap:10px; font-size:13.5px; color:var(--ink); cursor:pointer;">
-                <input type="checkbox" name="accept_terms" value="1" style="width:18px; height:18px; margin-top:2px;" {{ old('accept_terms') ? 'checked' : '' }} required>
-                <span>ฉันยืนยันว่าข้อมูลถูกต้อง และยอมรับ
-                    <a href="{{ route('terms-of-service') }}" target="_blank" style="color:var(--deep1);">ข้อกำหนดการใช้บริการ</a>
-                    และ <a href="{{ route('privacy-policy') }}" target="_blank" style="color:var(--deep1);">นโยบายความเป็นส่วนตัว</a>
-                </span>
-            </label>
-
-            <div>
-                <button type="submit" class="tp-btn tp-btn-primary" style="min-height:44px;" :disabled="submitting">
-                    <i class="fas fa-paper-plane"></i>
-                    <span x-text="submitting ? 'กำลังส่ง...' : @js($state === 'rejected' ? 'ยื่นคำขอใหม่' : 'ส่งคำขอเปิดร้าน')"></span>
-                </button>
-            </div>
-        </form>
+        </section>
     @endif
+
+    <div class="nvm-split">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-um-sa-form">
+            <form method="POST" action="{{ route('user.seller-apply.store') }}" class="nvm-form"
+                  x-data="{ businessType: @js(old('business_type', $store?->business_type ?? 'individual')), submitting: false }"
+                  @submit="submitting = true" @pageshow.window="submitting = false">
+                @csrf
+
+                @if($errors->any())
+                    <div class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+                        <div class="nvm-alert__txt">
+                            <b>กรุณาตรวจสอบข้อมูลอีกครั้ง</b>
+                            @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Store details</small><h2 id="nvm-um-sa-form">ข้อมูลร้านค้า</h2></div></div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="sa-store_name">ชื่อร้าน <em>*</em></label>
+                    <input type="text" id="sa-store_name" name="store_name" class="nvm-input @error('store_name') is-bad @enderror" maxlength="100" required value="{{ $field('store_name') }}" placeholder="เช่น ร้านผักป้าแดง">
+                    @error('store_name')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-field">
+                    <span class="nvm-label" id="sa-bt-lbl">ประเภทผู้ขาย <em>*</em></span>
+                    <div class="nvm-opts nvm-opts--2" role="radiogroup" aria-labelledby="sa-bt-lbl">
+                        <label class="nvm-opt">
+                            <input type="radio" name="business_type" value="individual" x-model="businessType">
+                            <span class="nvm-um-ic"><svg class="nvm-ico"><use href="#nvm-i-user"/></svg></span>
+                            <span><b>บุคคลธรรมดา</b><small>ขายในนามตัวเอง</small></span>
+                        </label>
+                        <label class="nvm-opt">
+                            <input type="radio" name="business_type" value="company" x-model="businessType">
+                            <span class="nvm-um-ic"><svg class="nvm-ico"><use href="#nvm-i-bank"/></svg></span>
+                            <span><b>นิติบุคคล</b><small>บริษัท / หจก.</small></span>
+                        </label>
+                    </div>
+                    @error('business_type')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-um-2col" x-show="businessType === 'company'" x-cloak>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="sa-company_name">ชื่อบริษัท <em>*</em></label>
+                        <input type="text" id="sa-company_name" name="company_name" class="nvm-input @error('company_name') is-bad @enderror" maxlength="255" value="{{ $field('company_name') }}">
+                        @error('company_name')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="sa-tax_id">เลขประจำตัวผู้เสียภาษี (13 หลัก) <em>*</em></label>
+                        <input type="text" id="sa-tax_id" name="tax_id" class="nvm-input nvm-num @error('tax_id') is-bad @enderror" inputmode="numeric" maxlength="13" value="{{ $field('tax_id') }}">
+                        @error('tax_id')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="sa-store_phone">เบอร์โทรร้าน <em>*</em></label>
+                    <input type="tel" id="sa-store_phone" name="store_phone" class="nvm-input nvm-num @error('store_phone') is-bad @enderror" inputmode="numeric" maxlength="10" required value="{{ $field('store_phone', $user->phone) }}" placeholder="0812345678">
+                    @error('store_phone')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="sa-store_description">รายละเอียดร้าน</label>
+                    <textarea id="sa-store_description" name="store_description" class="nvm-input nvm-textarea @error('store_description') is-bad @enderror" rows="3" maxlength="1000" placeholder="ขายอะไร จุดเด่นของร้าน">{{ $field('store_description') }}</textarea>
+                    @error('store_description')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-sec-h nvm-gap-t"><div><small class="nvm-latin">Pickup address</small><h2>ที่อยู่ร้าน / จุดรับสินค้า</h2></div></div>
+
+                <div class="nvm-field">
+                    <label class="nvm-label" for="sa-store_address">ที่อยู่ <em>*</em></label>
+                    <textarea id="sa-store_address" name="store_address" class="nvm-input nvm-textarea nvm-um-textarea-sm @error('store_address') is-bad @enderror" rows="2" maxlength="500" required placeholder="บ้านเลขที่ ถนน ตำบล">{{ $field('store_address') }}</textarea>
+                    @error('store_address')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="nvm-um-3col">
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="sa-store_city">อำเภอ/เขต <em>*</em></label>
+                        <input type="text" id="sa-store_city" name="store_city" class="nvm-input @error('store_city') is-bad @enderror" maxlength="100" required value="{{ $field('store_city') }}">
+                        @error('store_city')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="sa-store_state">จังหวัด <em>*</em></label>
+                        <input type="text" id="sa-store_state" name="store_state" class="nvm-input @error('store_state') is-bad @enderror" maxlength="100" required value="{{ $field('store_state') }}">
+                        @error('store_state')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="sa-store_postal_code">รหัสไปรษณีย์ <em>*</em></label>
+                        <input type="text" id="sa-store_postal_code" name="store_postal_code" class="nvm-input nvm-num @error('store_postal_code') is-bad @enderror" inputmode="numeric" maxlength="5" required value="{{ $field('store_postal_code') }}">
+                        @error('store_postal_code')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+
+                <label class="nvm-check nvm-um-terms">
+                    <input type="checkbox" name="accept_terms" value="1" {{ old('accept_terms') ? 'checked' : '' }} required>
+                    <span>ฉันยืนยันว่าข้อมูลถูกต้อง และยอมรับ
+                        <a class="nvm-link" href="{{ route('terms-of-service') }}" target="_blank" rel="noopener">ข้อกำหนดการใช้บริการ</a>
+                        และ <a class="nvm-link" href="{{ route('privacy-policy') }}" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a>
+                    </span>
+                </label>
+                @error('accept_terms')<span class="nvm-err">{{ $message }}</span>@enderror
+
+                <div>
+                    <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="submitting">
+                        <svg class="nvm-ico"><use href="#nvm-i-send"/></svg>
+                        <span x-text="submitting ? 'กำลังส่ง…' : @js($state === 'rejected' ? 'ยื่นคำขอใหม่' : 'ส่งคำขอเปิดร้าน')">{{ $state === 'rejected' ? 'ยื่นคำขอใหม่' : 'ส่งคำขอเปิดร้าน' }}</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="nvm-card nvm-box" aria-labelledby="nvm-um-sa-how">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">How it works</small><h2 id="nvm-um-sa-how">ขั้นตอนหลังส่งคำขอ</h2></div></div>
+            <ol class="nvm-steps">
+                <li>ทีมงานตรวจสอบข้อมูลร้านของคุณ</li>
+                <li>อนุมัติ แล้วแจ้งผลผ่านการแจ้งเตือน</li>
+                <li>ยืนยันตัวตน (KYC) ที่หลังร้าน</li>
+                <li>เริ่มลงสินค้าและเปิดขายได้เลย</li>
+            </ol>
+            @unless($kycApproved)
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg><span>ยืนยันตัวตนไว้ก่อนได้ที่ <a class="nvm-link" href="{{ route('user.kyc.index') }}">หน้า KYC</a></span></p>
+            @endunless
+        </aside>
+    </div>
+@endif
+
 </div>
 @endsection

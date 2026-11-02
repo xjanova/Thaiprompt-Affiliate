@@ -22,7 +22,7 @@ class MarketplaceController extends Controller
             ->with(['category', 'seller', 'images']);
 
         // Search filter
-        if ($request->filled('search')) {
+        if ($request->filled('search') && is_string($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -32,27 +32,32 @@ class MarketplaceController extends Controller
         }
 
         // Category filter
-        if ($request->filled('category')) {
+        if ($request->filled('category') && is_numeric($request->category)) {
             $query->where('category_id', $request->category);
         }
 
         // Price range filter
-        if ($request->filled('min_price')) {
+        if (is_numeric($request->min_price)) {
             $query->where('price', '>=', $request->min_price);
         }
 
-        if ($request->filled('max_price')) {
+        if (is_numeric($request->max_price)) {
             $query->where('price', '<=', $request->max_price);
         }
 
         // Commission rate filter
-        if ($request->filled('min_commission')) {
+        if (is_numeric($request->min_commission)) {
             $query->where('commission_rate', '>=', $request->min_commission);
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortDir = $request->get('sort_dir', 'desc');
+        // เรียงลำดับ — รับเฉพาะค่าที่รู้จัก
+        // 🐛 เดิมส่ง sort_by/sort_dir จาก URL เข้า orderBy() ตรงๆ:
+        //    sort_dir แปลกๆ = InvalidArgumentException (500) · sort_by ชื่อคอลัมน์ที่ไม่มีจริง = SQL error (500)
+        $sortBy = is_string($request->get('sort_by')) ? $request->get('sort_by') : 'newest';
+        $sortDir = $request->get('sort_dir') === 'asc' ? 'asc' : 'desc';
+        if (! in_array($sortBy, ['price_low', 'price_high', 'commission_high', 'popular', 'newest', 'created_at', 'price', 'name'], true)) {
+            $sortBy = 'newest';
+        }
 
         switch ($sortBy) {
             case 'price_low':

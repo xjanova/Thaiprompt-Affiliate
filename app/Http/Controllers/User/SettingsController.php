@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\TwoFactorUserSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,47 +16,31 @@ class SettingsController extends Controller
     /**
      * แสดงหน้าการตั้งค่าของ User
      *
+     * 🐛 (2026-11-02) หน้านี้เดิมมีสวิตช์แจ้งเตือน/ความเป็นส่วนตัว/ธีม/เขตเวลา/สกุลเงิน ที่ "บันทึกแล้วไม่ติด"
+     *    ตาราง users ไม่มีคอลัมน์เหล่านั้น และไม่อยู่ใน $fillable → update() ทิ้งค่าเงียบๆ ทุกครั้ง
+     *    ตอนนี้เหลือเฉพาะค่าที่บันทึกได้จริง (ภาษา) ส่วนที่เหลือชี้ไปหน้าที่ทำงานจริง
+     *    (ตั้งค่าอีเมล · การแจ้งเตือน · 2FA) และสถานะ 2FA อ่านจาก two_factor_user_settings
+     *    (เดิมอ่าน $user->two_factor_enabled ที่ไม่มีอยู่จริง = ขึ้น "ยังไม่เปิด" ให้ทุกคน)
+     *
      * @return \Illuminate\View\View
      */
     public function index()
     {
         $user = Auth::user();
 
+        $twoFactor = TwoFactorUserSetting::where('user_id', $user->id)->first();
+
         // ดึงข้อมูลการตั้งค่าปัจจุบัน
         $settings = [
-            // ตั้งค่าทั่วไป
+            // ตั้งค่าทั่วไป (บันทึกได้จริง — SetLocale อ่านค่านี้)
             'preferences' => [
-                'language' => $user->preferred_language ?? 'th',
-                'timezone' => $user->timezone ?? 'Asia/Bangkok',
-                'currency' => $user->preferred_currency ?? 'THB',
-            ],
-
-            // การแจ้งเตือน
-            'notifications' => [
-                'email_enabled' => $user->email_notifications ?? true,
-                'email_commission' => $user->email_commission_notifications ?? true,
-                'email_team' => $user->email_team_notifications ?? true,
-                'email_marketing' => $user->email_marketing_notifications ?? false,
-                'line_enabled' => $user->line_notifications ?? false,
-                'push_enabled' => $user->push_notifications ?? true,
-            ],
-
-            // ความเป็นส่วนตัว
-            'privacy' => [
-                'profile_visibility' => $user->profile_visibility ?? 'public',
-                'show_stats' => $user->show_stats ?? true,
-                'show_team' => $user->show_team ?? true,
-            ],
-
-            // รูปลักษณ์
-            'appearance' => [
-                'theme' => $user->theme_preference ?? 'auto',
-                'reduced_motion' => $user->reduced_motion ?? false,
+                'language' => $user->preferred_language ?: 'th',
             ],
 
             // ความปลอดภัย
             'security' => [
-                'two_factor_enabled' => $user->two_factor_enabled ?? false,
+                'two_factor_enabled' => (bool) ($twoFactor?->enabled),
+                'two_factor_method' => $twoFactor?->enabled ? $twoFactor->preferred_method : null,
                 'active_sessions_count' => $this->getActiveSessionsCount(),
             ],
         ];
@@ -66,58 +51,25 @@ class SettingsController extends Controller
     /**
      * อัปเดตการตั้งค่าของ User
      *
+     * บันทึกได้เฉพาะภาษา — ช่องเก่า (แจ้งเตือน/ความเป็นส่วนตัว/ธีม ฯลฯ) ไม่มีคอลัมน์รองรับ จึงไม่รับอีกต่อไป
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
     {
         $user = Auth::user();
 
-        // Validate input
         $validated = $request->validate([
-            // ตั้งค่าทั่วไป
-            'preferred_language' => 'nullable|in:th,en',
-            'timezone' => 'nullable|timezone',
-            'preferred_currency' => 'nullable|in:THB,USD,EUR',
-
-            // การแจ้งเตือน
-            'email_notifications' => 'nullable|boolean',
-            'email_commission_notifications' => 'nullable|boolean',
-            'email_team_notifications' => 'nullable|boolean',
-            'email_marketing_notifications' => 'nullable|boolean',
-            'line_notifications' => 'nullable|boolean',
-            'push_notifications' => 'nullable|boolean',
-
-            // ความเป็นส่วนตัว
-            'profile_visibility' => 'nullable|in:public,private,friends',
-            'show_stats' => 'nullable|boolean',
-            'show_team' => 'nullable|boolean',
-
-            // รูปลักษณ์
-            'theme_preference' => 'nullable|in:light,dark,auto',
-            'reduced_motion' => 'nullable|boolean',
+            'preferred_language' => 'required|in:th,en',
+        ], [
+            'preferred_language.required' => 'กรุณาเลือกภาษา',
+            'preferred_language.in' => 'ภาษาที่เลือกไม่ถูกต้อง',
         ]);
 
-        // แปลง checkbox values เป็น boolean
-        $booleanFields = [
-            'email_notifications',
-            'email_commission_notifications',
-            'email_team_notifications',
-            'email_marketing_notifications',
-            'line_notifications',
-            'push_notifications',
-            'show_stats',
-            'show_team',
-            'reduced_motion',
-        ];
-
-        foreach ($booleanFields as $field) {
-            if (! isset($validated[$field])) {
-                $validated[$field] = false;
-            }
-        }
-
-        // อัปเดตข้อมูล
         $user->update($validated);
+
+        // เปลี่ยนภาษาของ session ทันที (SetLocale อ่าน session ก่อนค่าในบัญชี)
+        session(['locale' => $validated['preferred_language']]);
 
         return redirect()
             ->route('user.settings')

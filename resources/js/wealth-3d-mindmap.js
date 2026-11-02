@@ -517,32 +517,28 @@ export class Wealth3DMindMap {
     }
 
     showTooltip(event, nodeData) {
+        // ป้ายลอยตอนชี้โหนด — หน้าตาอยู่ที่ .nvm-um-3d__tip ใน user-misc.css สร้างด้วย textContent
         let tooltip = document.getElementById('mindmap-tooltip');
         if (!tooltip) {
             tooltip = document.createElement('div');
             tooltip.id = 'mindmap-tooltip';
-            tooltip.style.cssText = `
-                position: fixed;
-                background: rgba(0, 0, 0, 0.9);
-                color: white;
-                padding: 12px 16px;
-                border-radius: 8px;
-                font-size: 14px;
-                pointer-events: none;
-                z-index: 1000;
-                max-width: 250px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 215, 0, 0.3);
-            `;
+            tooltip.className = 'nvm-um-3d__tip';
+            tooltip.setAttribute('role', 'tooltip');
             document.body.appendChild(tooltip);
         }
 
-        tooltip.innerHTML = `
-            <div style="font-size: 20px; margin-bottom: 8px;">${nodeData.icon}</div>
-            <div style="font-weight: bold; margin-bottom: 4px;">${nodeData.data.title}</div>
-            <div style="opacity: 0.8; font-size: 12px; margin-bottom: 4px;">${nodeData.data.description}</div>
-            <div style="color: #ffd700; font-weight: bold;">${nodeData.data.amount || ''}</div>
-        `;
+        const rows = [
+            ['nvm-um-3d__tip-ic', nodeData.icon],
+            ['nvm-um-3d__tip-t', nodeData.data.title],
+            ['nvm-um-3d__tip-d', nodeData.data.description],
+            ['nvm-um-3d__tip-a', nodeData.data.amount || ''],
+        ];
+        tooltip.replaceChildren(...rows.map(([cls, text]) => {
+            const el = document.createElement('div');
+            el.className = cls;
+            el.textContent = text ?? '';
+            return el;
+        }));
 
         tooltip.style.left = `${event.clientX + 15}px`;
         tooltip.style.top = `${event.clientY + 15}px`;
