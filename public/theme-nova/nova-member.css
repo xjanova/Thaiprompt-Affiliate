@@ -1015,3 +1015,46 @@ input[type="file"].nvm-input::file-selector-button { margin-right: 12px; height:
     .nvm-pf-save > .nvm-filter__btns, .nvm-pf-save .nvm-btn--gold { flex: 1; }
     .nvm-pf-pwfoot .nvm-btn { width: 100%; }
 }
+
+/* =====================================================================
+   ยืนยันตัวตน KYC (user/kyc/*) — คลาส nvm-ky-* (nvm-kyc-* เป็นแถบเตือนบนแดชบอร์ด อย่าใช้ซ้ำ)
+   ===================================================================== */
+.nvm-ky-perks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.nvm-ky-perks li { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); font-size: 12.5px; font-weight: 600; text-align: center; color: var(--nvm-ink-2); }
+.nvm-ky-perks .nvm-ico { width: 22px; height: 22px; color: var(--nvm-good); }
+.nvm-ky-reason { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: var(--nvm-bad-bg); box-shadow: inset 4px 0 0 var(--nvm-bad); }
+.nvm-ky-reason b { display: block; font-size: 13px; color: var(--nvm-bad); }
+.nvm-ky-reason p { margin: 4px 0 0; font-size: 14px; line-height: 1.6; color: var(--nvm-ink); overflow-wrap: anywhere; white-space: pre-line; }
+
+/* กล่องเลือกรูป: ยังไม่เลือก = ภาพประกอบ · เลือกแล้ว = ตัวอย่างรูปจริง */
+.nvm-ky-drop { min-height: 190px; justify-content: center; }
+.nvm-ky-drop.has-file { padding: 12px; box-shadow: inset 0 0 0 2px var(--nvm-good); }
+.nvm-ky-drop.is-bad { box-shadow: inset 0 0 0 2px var(--nvm-bad); }
+.nvm-ky-drop__idle, .nvm-ky-drop__pick { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+.nvm-ky-drop__pick img { width: 100%; height: auto; max-height: 260px; margin: 0; object-fit: contain; border-radius: 12px; background: var(--nvm-track); }
+.nvm-ky-drop__pick small { margin-top: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-ky-drop__acts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* เอกสารที่ส่ง */
+.nvm-ky-docs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.nvm-ky-doc { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nvm-ky-doc figcaption { font-size: 13.5px; font-weight: 600; color: var(--nvm-ink-2); }
+.nvm-ky-doc__img { display: block; width: 100%; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: zoom-in; background: var(--nvm-track); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-ky-doc__img img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transition: transform .4s var(--nv-ease); }
+.nvm-ky-doc__img:hover img, .nvm-ky-doc__img:focus-visible img { transform: scale(1.03); }
+.nvm-ky-doc__miss { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: 4 / 3; padding: 16px; border-radius: 16px; text-align: center; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 2px var(--nvm-line-2); }
+.nvm-ky-doc__miss .nvm-ico { width: 26px; height: 26px; color: var(--nvm-warn); }
+.nvm-ky-doc__miss b { font-size: 14px; color: var(--nvm-ink); }
+.nvm-ky-doc__miss small { font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-ky-retry h2 { margin: 0 0 4px; font-family: var(--nvm-font-display); font-size: 18px; color: var(--nvm-ink); }
+
+/* ดูรูปขนาดเต็ม */
+.nvm-ky-zoom { position: relative; max-width: min(960px, 100%); max-height: 100%; }
+.nvm-ky-zoom img { display: block; max-width: 100%; max-height: calc(100vh - 48px); border-radius: 14px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .8); }
+.nvm-ky-zoom .nvm-ibtn { position: absolute; top: 10px; right: 10px; background: rgba(4, 8, 22, .6); }
+
+@media (max-width: 560px) {
+    .nvm-ky-docs { grid-template-columns: minmax(0, 1fr); }
+    .nvm-ky-perks { gap: 8px; }
+    .nvm-ky-perks li { padding: 12px 4px; font-size: 11.5px; }
+}
