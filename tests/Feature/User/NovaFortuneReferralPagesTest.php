@@ -162,7 +162,8 @@ class NovaFortuneReferralPagesTest extends TestCase
 
     public function test_recruit_page_shows_package_rates_when_enabled(): void
     {
-        FortuneTellingSetting::create([
+        // ตั้งค่าบนแถวกลางที่ getSettings() อ่าน (first()) — บน CI อาจมีแถวตั้งต้นอยู่แล้ว สร้างแถวใหม่จึงไม่ถูกอ่าน
+        FortuneTellingSetting::getGlobalSettings()->forceFill([
             'facebook_app_id' => 'test-app-'.uniqid(),
             'facebook_page_id' => 'test-page-'.uniqid(),
             'is_enabled' => true,
@@ -180,7 +181,7 @@ class NovaFortuneReferralPagesTest extends TestCase
             'fortune_celtic_l1_amount' => 10,
             'fortune_celtic_l2_enabled' => true,
             'fortune_celtic_l2_amount' => 2,
-        ]);
+        ])->save();
         FortuneTellingSetting::clearSettingsCache();
 
         $response = $this->actingAs($this->member())->get(route('user.fortune-referral.recruit'));
