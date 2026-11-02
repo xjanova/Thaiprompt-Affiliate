@@ -1,400 +1,243 @@
-@extends('layouts.user-v4')
+{{--
+    รายละเอียดการ์ด NFC (ธีมโนวาเต็ม) — NFCCardController::show (ตรวจว่าเป็นการ์ดของสมาชิกเองแล้ว ไม่ใช่ = 403)
+    $card (โหลด wallet + ธุรกรรมล่าสุด 20 รายการ) · $statistics จาก NFCCardService::getCardStatistics
+    โมดัล 3 ตัว: เติมเงิน (POST topup) · วงเงิน (PUT limits) · เติมเงินอัตโนมัติ (PUT auto-topup)
+    - เติมเงินอัตโนมัติ: เดิมติ๊กออกแล้วฟอร์มไม่ส่งช่อง enabled เลย → ตก validation (required) ปิดไม่ได้
+      ตอนนี้มี hidden enabled=0 นำหน้าช่องติ๊ก
+    - ธุรกรรมล่าสุดที่ controller โหลดมาแล้วแต่หน้าเดิมไม่แสดง → แสดง 10 รายการแรก
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'รายละเอียดการ์ด NFC - ' . ($card->card_name ?? 'การ์ด NFC'))
+@section('title', ($card->card_name ?? 'การ์ด NFC').' · การ์ด NFC')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/services-nfc.css') }}?v={{ filemtime(public_path('theme-nova/member/services-nfc.css')) }}">@endpush
+
+@php
+    $baht = fn ($n) => '฿'.number_format((float) $n, 2);
+    $enabled = $card->isEnabled();
+    $pct = fn ($used, $limit) => (float) $limit > 0 ? min(100, ((float) $used / (float) $limit) * 100) : 0;
+    $tone = fn ($p) => $p >= 90 ? 'is-bad' : ($p >= 70 ? 'is-warn' : '');
+    $dailyPct = $pct($card->daily_spent, $card->daily_spending_limit);
+    $monthlyPct = $pct($card->monthly_spent, $card->monthly_spending_limit);
+    $statusChip = match ($card->status_badge_color) {
+        'green' => 'ok', 'red' => 'bad', 'orange', 'yellow' => 'warn', default => '',
+    };
+    $stats = is_array($statistics ?? null) ? $statistics : [];
+    $thDate = fn ($d) => $d ? $d->copy()->locale('th')->translatedFormat('j M Y') : null;
+
+    // เปิดโมดัลที่ส่งไม่ผ่าน validation ค้างไว้ ให้เห็นข้อความผิดพลาดทันที
+    $reopen = match (true) {
+        $errors->hasAny(['daily_limit', 'monthly_limit', 'transaction_limit']) => 'limits',
+        $errors->hasAny(['threshold', 'enabled']) || ($errors->has('amount') && old('threshold') !== null) => 'auto',
+        $errors->hasAny(['amount', 'pin']) => 'topup',
+        default => null,
+    };
+@endphp
 
 @section('content')
-{{-- ⚠️ ต้องมี x-data ที่ root ไม่งั้น Alpine ไม่ wire subtree นี้เลย
-     ปุ่มเปิดโมดัลทั้ง 3 ตัว (เติมเงิน/วงเงิน/เติมอัตโนมัติ) จะกดไม่ติด --}}
-<div x-data="nfcCardDetail()" class="space-y-6 pb-20 lg:pb-6">
-    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+<div class="nvm-stack" x-data="{ topUp: @js($reopen === 'topup'), limits: @js($reopen === 'limits'), auto: @js($reopen === 'auto'), autoOn: @js((bool) old('enabled', $card->auto_topup_enabled)) }">
+
+<section class="nvm-ph" aria-labelledby="nvm-nfcs-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.nfc.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>การ์ดทั้งหมด</a>
+            <div class="nvm-eyebrow nvm-latin">NFC card</div>
+            <h1 id="nvm-nfcs-h">{{ $card->card_name ?? 'การ์ด NFC' }}</h1>
+            <p class="nvm-ph__lead nvm-num">{{ $card->masked_card_number }} · {{ $card->card_type_label }}</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--{{ $enabled ? 'ok' : 'bad' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $enabled ? 'check' : 'x' }}"/></svg>{{ $enabled ? 'เปิดใช้งาน' : 'ปิดใช้งานอยู่' }}</span>
+                <span class="nvm-pill nvm-pill--glass">{{ $card->status_label }}</span>
+            </div>
         </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-credit-card"></i></div>
-        </div>
-        <div class="relative z-10"><div class="flex items-center gap-4">
-            <a href="{{ route('user.nfc.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all"><i class="fas fa-arrow-left mr-2"></i>กลับ</a>
-            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-id-card text-4xl text-white drop-shadow-lg"></i></div>
-            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">NFC Card Details</h1>
-            <p class="text-green-100 text-lg mt-1">รายละเอียดบัตร NFC</p></div>
-        </div></div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/card.webp') }}" alt="" width="200" height="200">
     </div>
-                <div class="relative perspective-1000">
-                    <div class="relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-6 shadow-2xl transform transition-transform duration-500 hover:scale-105"
-                         style="transform-style: preserve-3d;">
-                        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent backdrop-blur-xl"></div>
+</section>
 
-                        <div class="relative h-full flex flex-col justify-between text-white">
-                            {{-- Chip --}}
-                            <div>
-                                <div class="w-12 h-10 rounded bg-gradient-to-br from-yellow-200 to-yellow-400 mb-4"></div>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-wifi text-2xl"></i>
-                                    <span class="text-sm font-medium">NFC</span>
-                                </div>
-                            </div>
-
-                            {{-- Card Info --}}
-                            <div>
-                                <p class="text-2xl font-mono tracking-wider mb-2">
-                                    {{ $card->masked_card_number }}
-                                </p>
-                                <div class="flex justify-between items-end">
-                                    <div>
-                                        <p class="text-xs opacity-75 mb-1">ชื่อบัตร</p>
-                                        <p class="font-medium">{{ $card->card_name ?? 'NFC CARD' }}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-xs opacity-75 mb-1">ประเภท</p>
-                                        <p class="font-medium uppercase">{{ $card->card_type }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="nvm-split">
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-nfcs-bal-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Balance</small><h2 id="nvm-nfcs-bal-h">ยอดเงินในการ์ด</h2></div></div>
+            <div class="nvm-sn-nfc {{ $enabled ? '' : 'is-off' }}">
+                <div class="nvm-sn-nfc__top">
+                    <span class="nvm-sn-nfc__chip" aria-hidden="true"></span>
+                    <span class="nvm-sn-nfc__brand nvm-latin">NFC · {{ $card->card_type_label }}</span>
                 </div>
-
-                {{-- Card Status --}}
-                <div class="tp-card mt-6 p-4 rounded-xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">สถานะการ์ด</span>
-                        <form action="{{ $card->isEnabled() ? route('user.nfc.disable', $card) : route('user.nfc.enable', $card) }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                    class="relative inline-flex h-8 w-16 items-center rounded-full transition-colors {{ $card->isEnabled() ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600' }}">
-                                <span class="inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform {{ $card->isEnabled() ? 'translate-x-9' : 'translate-x-1' }}"></span>
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">สถานะ</span>
-                            <span class="px-2 py-1 rounded-full bg-{{ $card->status_badge_color }}-100 text-{{ $card->status_badge_color }}-700 dark:bg-{{ $card->status_badge_color }}-900/30 dark:text-{{ $card->status_badge_color }}-400 text-xs">
-                                {{ $card->status_label }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">ใช้งานล่าสุด</span>
-                            <span class="text-gray-900 dark:text-white">
-                                {{ $card->last_used_at ? $card->last_used_at->diffForHumans() : 'ยังไม่เคยใช้' }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">หมดอายุ</span>
-                            <span class="text-gray-900 dark:text-white">
-                                {{ $card->expires_at ? $card->expires_at->format('d/m/Y') : 'ไม่มี' }}
-                            </span>
-                        </div>
-                    </div>
+                <div class="nvm-sn-nfc__no">{{ $card->masked_card_number }}</div>
+                <div class="nvm-sn-nfc__foot">
+                    <div><small>ชื่อบัตร</small><b>{{ $card->card_name ?? 'การ์ด NFC' }}</b></div>
+                    <div class="nvm-sn-nfc__bal"><small>ยอดคงเหลือ</small><b class="nvm-num">{{ $baht($card->balance) }}</b></div>
                 </div>
             </div>
-        </div>
-
-        {{-- Card Details & Settings --}}
-        <div class="lg:col-span-2 space-y-6">
-            {{-- Balance Card --}}
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-100 mb-2">ยอดเงินคงเหลือ</p>
-                        <p class="text-5xl font-bold">฿{{ number_format($card->balance, 2) }}</p>
-                        @if($card->hasLinkedWallet())
-                            <p class="text-sm text-blue-100 mt-2">
-                                <i class="fas fa-link mr-1"></i>
-                                ผูกกับ Wallet (฿{{ number_format($card->wallet->balance ?? 0, 2) }})
-                            </p>
-                        @endif
-                    </div>
-                    <div>
-                        @if($card->hasLinkedWallet())
-                            <button @click="showTopUpModal = true"
-                                    class="px-6 py-3 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition shadow-lg">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                เติมเงิน
-                            </button>
-                        @else
-                            <form action="{{ route('user.nfc.wallet.link', $card) }}" method="POST">
-                                @csrf
-                                <button type="submit"
-                                        class="px-6 py-3 bg-white text-purple-600 rounded-lg font-medium hover:bg-purple-50 transition shadow-lg">
-                                    <i class="fas fa-link mr-2"></i>
-                                    ผูก Wallet
-                                </button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            {{-- Statistics --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="tp-card rounded-xl p-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ธุรกรรมทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $statistics['total_transactions'] ?? 0 }}</p>
-                </div>
-                <div class="tp-card rounded-xl p-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ยอดใช้จ่ายรวม</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($statistics['total_spent'] ?? 0, 0) }}</p>
-                </div>
-                <div class="tp-card rounded-xl p-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เติมเงินรวม</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($statistics['total_topped_up'] ?? 0, 0) }}</p>
-                </div>
-                <div class="tp-card rounded-xl p-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ธุรกรรมสำเร็จ</p>
-                    <p class="text-2xl font-bold text-green-600">{{ $statistics['completed_transactions'] ?? 0 }}</p>
-                </div>
-            </div>
-
-            {{-- Spending Limits --}}
-            <div class="tp-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-chart-line text-blue-500 mr-2"></i>
-                        วงเงินการใช้จ่าย
-                    </h3>
-                    <button @click="showLimitsModal = true"
-                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition">
-                        <i class="fas fa-edit mr-2"></i>
-                        แก้ไข
-                    </button>
-                </div>
-
-                <div class="space-y-6">
-                    {{-- Daily Limit --}}
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">วงเงินรายวัน</span>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">
-                                ฿{{ number_format($card->daily_spent, 2) }} / ฿{{ number_format($card->daily_spending_limit, 2) }}
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
-                            @php
-                                $dailyPercent = $card->daily_spending_limit > 0 ? ($card->daily_spent / $card->daily_spending_limit) * 100 : 0;
-                                $dailyColor = $dailyPercent >= 90 ? 'red' : ($dailyPercent >= 70 ? 'yellow' : 'blue');
-                            @endphp
-                            <div class="h-3 rounded-full bg-gradient-to-r from-{{ $dailyColor }}-400 to-{{ $dailyColor }}-600 transition-all duration-500"
-                                 style="width: {{ min($dailyPercent, 100) }}%"></div>
-                        </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            คงเหลือ ฿{{ number_format($card->daily_remaining, 2) }} ({{ number_format(100 - $dailyPercent, 1) }}%)
-                        </p>
-                    </div>
-
-                    {{-- Monthly Limit --}}
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">วงเงินรายเดือน</span>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">
-                                ฿{{ number_format($card->monthly_spent, 2) }} / ฿{{ number_format($card->monthly_spending_limit, 2) }}
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
-                            @php
-                                $monthlyPercent = $card->monthly_spending_limit > 0 ? ($card->monthly_spent / $card->monthly_spending_limit) * 100 : 0;
-                                $monthlyColor = $monthlyPercent >= 90 ? 'red' : ($monthlyPercent >= 70 ? 'yellow' : 'purple');
-                            @endphp
-                            <div class="h-3 rounded-full bg-gradient-to-r from-{{ $monthlyColor }}-400 to-{{ $monthlyColor }}-600 transition-all duration-500"
-                                 style="width: {{ min($monthlyPercent, 100) }}%"></div>
-                        </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            คงเหลือ ฿{{ number_format($card->monthly_remaining, 2) }} ({{ number_format(100 - $monthlyPercent, 1) }}%)
-                        </p>
-                    </div>
-
-                    {{-- Transaction Limit --}}
-                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex justify-between">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">วงเงินต่อธุรกรรม</span>
-                            <span class="text-lg font-bold text-gray-900 dark:text-white">
-                                ฿{{ number_format($card->transaction_limit, 2) }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Auto Top-up Settings --}}
-            <div class="tp-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-sync-alt text-green-500 mr-2"></i>
-                        Auto Top-up
-                    </h3>
-                    <button @click="showAutoTopupModal = true"
-                            class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition">
-                        <i class="fas fa-cog mr-2"></i>
-                        ตั้งค่า
-                    </button>
-                </div>
-
-                @if($card->auto_topup_enabled)
-                    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-white"></i>
-                            </div>
-                            <div class="flex-1">
-                                <p class="font-medium text-green-900 dark:text-green-100 mb-2">Auto Top-up เปิดใช้งาน</p>
-                                <div class="text-sm text-green-700 dark:text-green-300 space-y-1">
-                                    <p>• เติมเงินอัตโนมัติเมื่อยอดต่ำกว่า ฿{{ number_format($card->auto_topup_threshold, 2) }}</p>
-                                    <p>• จำนวนที่เติมแต่ละครั้ง ฿{{ number_format($card->auto_topup_amount, 2) }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="nvm-sn-acts">
+                @if($card->hasLinkedWallet())
+                    <button type="button" class="nvm-btn nvm-btn--gold" @click="topUp = true"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เติมเงินจากกระเป๋า</button>
                 @else
-                    <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-power-off text-3xl mb-2"></i>
-                        <p>Auto Top-up ปิดอยู่</p>
-                    </div>
+                    <form action="{{ route('user.nfc.wallet.link', $card) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>ผูกกระเป๋าเงิน</button>
+                    </form>
+                @endif
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.nfc.transactions', $card) }}"><svg class="nvm-ico"><use href="#nvm-i-history"/></svg>ประวัติทั้งหมด</a>
+            </div>
+            @if($card->hasLinkedWallet())
+                <p class="nvm-note nvm-num"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>ผูกกับกระเป๋าเงินแล้ว · ยอดกระเป๋า {{ $baht($card->wallet->balance ?? 0) }}</p>
+            @endif
+            <div class="nvm-minis nvm-gap-t">
+                <div class="nvm-mini"><small>ธุรกรรมทั้งหมด</small><b class="nvm-num">{{ number_format((int) ($stats['total_transactions'] ?? 0)) }}</b></div>
+                <div class="nvm-mini"><small>ธุรกรรมสำเร็จ</small><b class="nvm-num">{{ number_format((int) ($stats['completed_transactions'] ?? 0)) }}</b></div>
+                <div class="nvm-mini"><small>ยอดใช้จ่ายรวม</small><b class="nvm-num is-out">{{ $baht($stats['total_spent'] ?? 0) }}</b></div>
+                <div class="nvm-mini"><small>เติมเงินรวม</small><b class="nvm-num is-in">{{ $baht($stats['total_topped_up'] ?? 0) }}</b></div>
+            </div>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-nfcs-tx-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">Recent activity</small><h2 id="nvm-nfcs-tx-h">ธุรกรรมล่าสุด</h2></div>
+                @if($card->transactions->isNotEmpty())
+                    <a href="{{ route('user.nfc.transactions', $card) }}">ดูทั้งหมด<svg class="nvm-ico"><use href="#nvm-i-chev"/></svg></a>
                 @endif
             </div>
-        </div>
+            @if($card->transactions->isNotEmpty())
+                <ul class="nvm-txs">
+                    @foreach($card->transactions->take(10) as $tx)
+                        @include('user.nfc.partials.tx', ['tx' => $tx])
+                    @endforeach
+                </ul>
+            @else
+                <div class="nvm-empty">
+                    <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                    <b>ยังไม่มีธุรกรรม</b>
+                    เมื่อแตะจ่ายหรือเติมเงิน รายการจะแสดงที่นี่
+                </div>
+            @endif
+        </section>
     </div>
 
-    {{-- Top Up Modal --}}
-    <div x-show="showTopUpModal"
-         x-cloak
-         @click.self="showTopUpModal = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="tp-card rounded-2xl max-w-md w-full p-6">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">เติมเงินจาก Wallet</h3>
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-nfcs-st-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Status</small><h2 id="nvm-nfcs-st-h">สถานะการ์ด</h2></div></div>
+            <dl class="nvm-kv">
+                <dt>สถานะ</dt><dd><span class="nvm-chip {{ $statusChip ? 'nvm-chip--'.$statusChip : '' }}">{{ $card->status_label }}</span></dd>
+                <dt>การใช้งาน</dt><dd>{{ $enabled ? 'เปิดอยู่' : 'ปิดอยู่' }}</dd>
+                <dt>ใช้งานล่าสุด</dt><dd>{{ $card->last_used_at ? $card->last_used_at->copy()->locale('th')->diffForHumans() : 'ยังไม่เคยใช้' }}</dd>
+                <dt>หมดอายุ</dt><dd class="nvm-num">{{ $thDate($card->expires_at) ?? 'ไม่มีวันหมดอายุ' }}</dd>
+            </dl>
+            <div class="nvm-gap-t">
+                @if($enabled)
+                    <form action="{{ route('user.nfc.disable', $card) }}" method="POST" @submit="if (! confirm('ปิดการใช้งานการ์ดนี้? ระหว่างปิดจะแตะจ่ายไม่ได้ เปิดกลับได้ทุกเมื่อ')) $event.preventDefault()">
+                        @csrf
+                        <button type="submit" class="nvm-btn nvm-btn--line nvm-w-full"><svg class="nvm-ico"><use href="#nvm-i-lock"/></svg>ปิดการใช้งานการ์ด</button>
+                    </form>
+                @else
+                    <form action="{{ route('user.nfc.enable', $card) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="nvm-btn nvm-btn--gold nvm-w-full"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>เปิดใช้งานการ์ด</button>
+                    </form>
+                @endif
+            </div>
+        </section>
 
-            <form action="{{ route('user.nfc.topup', $card) }}" method="POST">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (฿)</label>
-                        <input type="number" name="amount" required min="1" step="0.01"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <p class="text-xs text-gray-500 mt-1">Wallet คงเหลือ: ฿{{ number_format($card->wallet->balance ?? 0, 2) }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PIN (6 หลัก)</label>
-                        <input type="password" name="pin" required maxlength="6" pattern="[0-9]{6}"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div class="flex gap-3 pt-4">
-                        <button type="button" @click="showTopUpModal = false"
-                                class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg">
-                            ยกเลิก
-                        </button>
-                        <button type="submit"
-                                class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
-                            เติมเงิน
-                        </button>
-                    </div>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-nfcs-lim-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">Limits</small><h2 id="nvm-nfcs-lim-h">วงเงินการใช้จ่าย</h2></div>
+                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="limits = true"><svg class="nvm-ico"><use href="#nvm-i-gear"/></svg>แก้ไข</button>
+            </div>
+            <div class="nvm-meter">
+                <div class="nvm-meter__row"><span>รายวัน</span><b class="nvm-num">{{ $baht($card->daily_spent) }} / {{ $baht($card->daily_spending_limit) }}</b></div>
+                <div class="nvm-meter__bar nvm-sn-w {{ $tone($dailyPct) }}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($dailyPct) }}" aria-label="วงเงินรายวันที่ใช้ไป" style="--w: {{ round($dailyPct, 1) }}%"><i></i></div>
+                <small class="nvm-num">คงเหลือ {{ $baht($card->daily_remaining) }}</small>
+            </div>
+            <div class="nvm-meter">
+                <div class="nvm-meter__row"><span>รายเดือน</span><b class="nvm-num">{{ $baht($card->monthly_spent) }} / {{ $baht($card->monthly_spending_limit) }}</b></div>
+                <div class="nvm-meter__bar nvm-sn-w {{ $tone($monthlyPct) }}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($monthlyPct) }}" aria-label="วงเงินรายเดือนที่ใช้ไป" style="--w: {{ round($monthlyPct, 1) }}%"><i></i></div>
+                <small class="nvm-num">คงเหลือ {{ $baht($card->monthly_remaining) }}</small>
+            </div>
+            <dl class="nvm-kv nvm-gap-t"><dt>วงเงินต่อรายการ</dt><dd class="nvm-num">{{ $baht($card->transaction_limit) }}</dd></dl>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-nfcs-auto-h">
+            <div class="nvm-sec-h">
+                <div><small class="nvm-latin">Auto top-up</small><h2 id="nvm-nfcs-auto-h">เติมเงินอัตโนมัติ</h2></div>
+                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="auto = true"><svg class="nvm-ico"><use href="#nvm-i-gear"/></svg>ตั้งค่า</button>
+            </div>
+            @if($card->auto_topup_enabled)
+                <div class="nvm-status">
+                    <svg class="nvm-ico"><use href="#nvm-i-check"/></svg>
+                    <span>เปิดใช้งานอยู่<small class="nvm-num">ยอดต่ำกว่า {{ $baht($card->auto_topup_threshold) }} เติมให้ครั้งละ {{ $baht($card->auto_topup_amount) }}</small></span>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Edit Limits Modal --}}
-    <div x-show="showLimitsModal"
-         x-cloak
-         @click.self="showLimitsModal = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="tp-card rounded-2xl max-w-md w-full p-6">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">แก้ไขวงเงิน</h3>
-
-            <form action="{{ route('user.nfc.limits.update', $card) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วงเงินรายวัน (฿)</label>
-                        <input type="number" name="daily_limit" value="{{ $card->daily_spending_limit }}" required min="0"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วงเงินรายเดือน (฿)</label>
-                        <input type="number" name="monthly_limit" value="{{ $card->monthly_spending_limit }}" required min="0"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วงเงินต่อธุรกรรม (฿)</label>
-                        <input type="number" name="transaction_limit" value="{{ $card->transaction_limit }}" required min="0"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div class="flex gap-3 pt-4">
-                        <button type="button" @click="showLimitsModal = false"
-                                class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg">
-                            ยกเลิก
-                        </button>
-                        <button type="submit"
-                                class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
-                            บันทึก
-                        </button>
-                    </div>
+            @else
+                <div class="nvm-status is-warn">
+                    <svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>
+                    <span>ปิดอยู่<small>เปิดไว้ ระบบจะเติมเงินจากกระเป๋าให้เมื่อยอดในการ์ดต่ำ</small></span>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Auto Top-up Modal --}}
-    <div x-show="showAutoTopupModal"
-         x-cloak
-         @click.self="showAutoTopupModal = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="tp-card rounded-2xl max-w-md w-full p-6">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">ตั้งค่า Auto Top-up</h3>
-
-            <form action="{{ route('user.nfc.auto-topup.configure', $card) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="space-y-4">
-                    <div>
-                        <label class="flex items-center gap-3">
-                            <input type="checkbox" name="enabled" value="1" {{ $card->auto_topup_enabled ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน Auto Top-up</span>
-                        </label>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เติมเมื่อยอดต่ำกว่า (฿)</label>
-                        <input type="number" name="threshold" value="{{ $card->auto_topup_threshold }}" min="0"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนที่เติมแต่ละครั้ง (฿)</label>
-                        <input type="number" name="amount" value="{{ $card->auto_topup_amount }}" min="100"
-                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    <div class="flex gap-3 pt-4">
-                        <button type="button" @click="showAutoTopupModal = false"
-                                class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg">
-                            ยกเลิก
-                        </button>
-                        <button type="submit"
-                                class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg">
-                            บันทึก
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
+            @endif
+        </section>
     </div>
 </div>
 
-@push('scripts')
-<script>
-/**
- * NFC Card Detail Component
- *
- * จัดการ modals และ UI interactions
- */
-function nfcCardDetail() {
-    return {
-        showTopUpModal: false,
-        showLimitsModal: false,
-        showAutoTopupModal: false
-    };
-}
-</script>
-@endpush
+@if($card->hasLinkedWallet())
+    @include('user.nfc.partials.topup-modal', [
+        'walletBalance' => $card->wallet->balance ?? 0,
+        'action' => route('user.nfc.topup', $card),
+        'cardName' => $card->card_name ?? 'การ์ด NFC',
+    ])
+@endif
+
+<div class="nvm-modal" x-show="limits" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-nfcs-lm-h" @click.self="limits = false" @keydown.escape.window="limits = false">
+    <div class="nvm-card nvm-modal__box nvm-sn-modal">
+        <h2 id="nvm-nfcs-lm-h">แก้ไขวงเงิน</h2>
+        <form class="nvm-form nvm-gap-t" action="{{ route('user.nfc.limits.update', $card) }}" method="POST">
+            @csrf
+            @method('PUT')
+            @foreach([
+                ['daily_limit', 'วงเงินรายวัน (บาท)', $card->daily_spending_limit, 1000000],
+                ['monthly_limit', 'วงเงินรายเดือน (บาท)', $card->monthly_spending_limit, 10000000],
+                ['transaction_limit', 'วงเงินต่อรายการ (บาท)', $card->transaction_limit, 100000],
+            ] as [$name, $label, $value, $max])
+                <div class="nvm-field">
+                    <label class="nvm-label" for="nvm-nfcs-{{ $name }}">{{ $label }} <em>*</em></label>
+                    <input id="nvm-nfcs-{{ $name }}" class="nvm-input nvm-num @error($name) is-bad @enderror" type="number" name="{{ $name }}" required min="0" max="{{ $max }}" step="0.01" inputmode="decimal" value="{{ old($name, $value) }}">
+                    @error($name)<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+            @endforeach
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="limits = false">ยกเลิก</button>
+                <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="nvm-modal" x-show="auto" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-nfcs-at-h" @click.self="auto = false" @keydown.escape.window="auto = false">
+    <div class="nvm-card nvm-modal__box nvm-sn-modal">
+        <h2 id="nvm-nfcs-at-h">ตั้งค่าเติมเงินอัตโนมัติ</h2>
+        <form class="nvm-form nvm-gap-t" action="{{ route('user.nfc.auto-topup.configure', $card) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="enabled" value="0">
+            <label class="nvm-check">
+                <input type="checkbox" name="enabled" value="1" x-model="autoOn">
+                <span>เปิดใช้งานเติมเงินอัตโนมัติ</span>
+            </label>
+            @error('enabled')<span class="nvm-err">{{ $message }}</span>@enderror
+            <div class="nvm-field">
+                <label class="nvm-label" for="nvm-nfcs-th">เติมเมื่อยอดในการ์ดต่ำกว่า (บาท)</label>
+                <input id="nvm-nfcs-th" class="nvm-input nvm-num @error('threshold') is-bad @enderror" type="number" name="threshold" min="0" max="10000" step="0.01" inputmode="decimal" value="{{ old('threshold', $card->auto_topup_threshold) }}" :required="autoOn" :disabled="! autoOn">
+                @error('threshold')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+            <div class="nvm-field">
+                <label class="nvm-label" for="nvm-nfcs-aa">จำนวนที่เติมแต่ละครั้ง (บาท)</label>
+                <input id="nvm-nfcs-aa" class="nvm-input nvm-num @error('amount') is-bad @enderror" type="number" name="amount" min="100" max="100000" step="0.01" inputmode="decimal" value="{{ old('amount', $card->auto_topup_amount) }}" :required="autoOn" :disabled="! autoOn">
+                @error('amount')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>เติมขั้นต่ำครั้งละ ฿100 ระบบตัดเงินจากกระเป๋าเงินที่ผูกไว้</p>
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="auto = false">ยกเลิก</button>
+                <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
 @endsection

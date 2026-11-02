@@ -1,0 +1,165 @@
+/* =====================================================================
+   ชุดหน้า "บริการ · รีวิวบริการ · การ์ด NFC" ของสมาชิก (ธีมโนวาเต็ม)
+   ใช้คู่กับ theme-nova/nova-member.css เท่านั้น — คลาสขึ้นต้น nvm-sn- ทั้งหมด
+   สีทุกจุดอ้างตัวแปร --nvm-* / --nv-* จึงสลับโหมดสว่าง/มืด (html.dark) ตามเปลือกเอง
+   ===================================================================== */
+
+/* ── แถบค้นหาบนฮีโร่ ─────────────────────────────────── */
+.nvm-sn-search { display: flex; gap: 8px; margin-top: 18px; max-width: 560px; }
+.nvm-sn-search .nvm-input { flex: 1; min-width: 0; background: rgba(255, 255, 255, .94); color: #141a2b; }
+html.dark .nvm-sn-search .nvm-input { background: rgba(13, 25, 52, .92); color: var(--nv-on-night); }
+.nvm-sn-search .nvm-btn { height: 48px; flex: none; }
+
+/* ── ชิปหมวดหมู่ (เลื่อนแนวนอน) ───────────────────────── */
+.nvm-sn-cats { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: none; }
+.nvm-sn-cats::-webkit-scrollbar { display: none; }
+.nvm-sn-cat { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 92px; padding: 12px 6px; border-radius: 18px; text-align: center; text-decoration: none; color: var(--nvm-ink) !important; background: var(--nvm-paper); box-shadow: var(--nvm-shadow), inset 0 0 0 1px var(--nvm-line); transition: transform .25s var(--nv-ease), box-shadow .25s; }
+.nvm-sn-cat:hover { transform: translateY(-2px); }
+.nvm-sn-cat.is-on { box-shadow: inset 0 0 0 2px var(--nv-gold-500), 0 10px 22px -14px rgba(184, 134, 43, .8); }
+.nvm-sn-cat b { font-size: 12.5px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nvm-sn-cat small { font-size: 11px; color: var(--nvm-ink-3); }
+.nvm-sn-cat__ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; overflow: hidden; color: var(--c, var(--nvm-gold-ink)); background: color-mix(in srgb, var(--c, #d4a64a) 16%, transparent); }
+.nvm-sn-cat__ic img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-sn-cat__ic .nvm-ico { width: 22px; height: 22px; }
+
+/* ── การ์ดบริการ (กริด / รายการ) ───────────────────────── */
+.nvm-sn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.nvm-sn-svc { display: flex; flex-direction: column; overflow: hidden; }
+.nvm-sn-svc__img { position: relative; aspect-ratio: 16/10; overflow: hidden; display: grid; place-items: center; background: radial-gradient(80% 90% at 70% 10%, color-mix(in srgb, var(--c, #d4a64a) 30%, transparent), transparent 70%), linear-gradient(150deg, var(--nv-navy-700), var(--nv-navy-900)); }
+.nvm-sn-svc__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--nv-ease); }
+.nvm-sn-svc__img img.is-art { width: 58%; height: 78%; object-fit: contain; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .45)); }
+a.nvm-sn-svc:hover .nvm-sn-svc__img img { transform: scale(1.05); }
+.nvm-sn-svc__tag { position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 20px); padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--nvm-ink); background: color-mix(in srgb, var(--nvm-paper) 92%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-sn-svc__hot { position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-sn-svc__body { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
+.nvm-sn-svc__body b { font-size: 15.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nvm-sn-svc__body p { margin: 0; font-size: 13px; color: var(--nvm-ink-3); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nvm-sn-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-sn-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.nvm-sn-meta .nvm-ico { width: 14px; height: 14px; }
+.nvm-sn-svc__foot { margin-top: auto; padding-top: 8px; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.nvm-sn-price { font-family: var(--nvm-font-display); font-weight: 700; font-size: 19px; color: var(--nvm-gold-ink); white-space: nowrap; }
+.nvm-sn-price small { display: block; font-family: var(--nvm-font-ui); font-size: 11px; font-weight: 500; color: var(--nvm-ink-3); }
+.nvm-sn-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.nvm-sn-price .tpx-price { display: flex; width: max-content; margin-top: 4px; font-family: var(--nvm-font-ui); }
+.nvm-mini .tpx-price { margin-top: 6px; }
+/* ช่องห่อการ์ดในหน้าหมวด (ให้ x-show ซ่อนทั้งช่องได้) */
+.nvm-sn-cell { display: flex; min-width: 0; }
+.nvm-sn-cell > .nvm-sn-svc { flex: 1; min-width: 0; }
+/* fieldset ในฟอร์มจอง — ล้างกรอบ/ระยะของเบราว์เซอร์ */
+fieldset.nvm-field { margin: 0; padding: 0; border: 0; min-width: 0; }
+fieldset.nvm-field > legend { padding: 0; margin-bottom: 6px; }
+
+/* มุมมองแบบรายการ — สลับด้วยปุ่มบนหัวผลลัพธ์ */
+.nvm-sn-grid.is-list { grid-template-columns: minmax(0, 1fr); }
+.nvm-sn-grid.is-list .nvm-sn-svc { flex-direction: row; }
+.nvm-sn-grid.is-list .nvm-sn-svc__img { flex: none; width: 200px; aspect-ratio: auto; }
+
+/* ── ดาวคะแนน ─────────────────────────────────────────── */
+.nvm-sn-stars { display: inline-flex; align-items: center; gap: 1px; font-size: 14px; line-height: 1; color: var(--nvm-track); letter-spacing: 0; }
+.nvm-sn-stars .is-on { color: var(--nv-gold-500); }
+.nvm-sn-stars b { margin-left: 5px; font-size: 13px; color: var(--nvm-ink); }
+.nvm-sn-stars small { margin-left: 3px; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-sn-stars--lg { font-size: 20px; }
+
+/* ให้คะแนน (ฟอร์มแก้ไขรีวิว) */
+.nvm-sn-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.nvm-sn-rate button { width: 46px; height: 46px; border: 0; border-radius: 12px; font-size: 30px; line-height: 1; cursor: pointer; color: var(--nvm-line-2); background: transparent; transition: transform .15s, color .15s; }
+.nvm-sn-rate button.is-on { color: var(--nv-gold-500); }
+.nvm-sn-rate button:hover { transform: scale(1.12); }
+.nvm-sn-rate button:focus-visible { outline: 2px solid var(--nv-gold-500); outline-offset: 2px; }
+.nvm-sn-rate output { margin-left: 8px; font-family: var(--nvm-font-display); font-size: 22px; font-weight: 700; }
+
+/* ── หน้ารายละเอียดบริการ ─────────────────────────────── */
+.nvm-sn-hero-img { overflow: hidden; padding: 0; }
+.nvm-sn-hero-img .nvm-sn-svc__img { aspect-ratio: 16/8; }
+.nvm-sn-sticky { position: sticky; top: 84px; }
+.nvm-sn-optrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.nvm-sn-optrow em { font-style: normal; font-weight: 700; color: var(--nvm-gold-ink); white-space: nowrap; }
+.nvm-sn-earn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--nvm-good-bg); }
+.nvm-sn-earn .nvm-ico { width: 22px; height: 22px; color: var(--nvm-good); }
+.nvm-sn-earn > div { flex: 1; min-width: 0; }
+.nvm-sn-earn b { display: block; font-size: 14px; }
+.nvm-sn-earn small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-sn-earn strong { font-family: var(--nvm-font-display); font-size: 20px; color: var(--nvm-good); white-space: nowrap; }
+.nvm-sn-earn.is-pv { background: var(--nvm-warn-bg); }
+.nvm-sn-earn.is-pv .nvm-ico, .nvm-sn-earn.is-pv strong { color: var(--nvm-gold-ink); }
+.nvm-sn-loc { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-sn-loc .nvm-chip { align-self: flex-start; }
+
+/* แถวสองช่องในฟอร์ม — มือถือยุบเหลือคอลัมน์เดียว */
+.nvm-sn-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+/* ── การ์ด NFC (หน้าตาบัตรจริง) ───────────────────────── */
+.nvm-sn-nfc { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 170px; padding: 20px 22px; border-radius: 20px; color: var(--nv-on-night); background: radial-gradient(90% 120% at 100% 0%, rgba(245, 210, 127, .22), transparent 60%), linear-gradient(140deg, var(--nv-navy-600), var(--nv-navy-900)); box-shadow: var(--nvm-shadow-lg), inset 0 0 0 1px rgba(245, 210, 127, .3); }
+.nvm-sn-nfc.is-off { filter: grayscale(.75); opacity: .85; }
+.nvm-sn-nfc__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nvm-sn-nfc__chip { width: 44px; height: 32px; border-radius: 7px; background: var(--nv-btn-gold); box-shadow: inset 0 0 0 1px rgba(120, 80, 10, .35); }
+.nvm-sn-nfc__brand { font-size: 11px; color: var(--nv-gold-300); }
+.nvm-sn-nfc__no { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 17px; letter-spacing: .12em; overflow-wrap: anywhere; }
+.nvm-sn-nfc__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.nvm-sn-nfc__foot small { display: block; font-size: 10.5px; color: var(--nv-on-night-3); }
+.nvm-sn-nfc__foot b { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.nvm-sn-nfc__bal { text-align: right; }
+.nvm-sn-nfc__bal b { font-family: var(--nvm-font-display); font-size: 22px; color: var(--nv-gold-200); white-space: nowrap; }
+.nvm-sn-nfc .nvm-pill { margin: 0; }
+
+/* รายการบัตรในหน้าแรก NFC */
+.nvm-sn-cardrow { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.nvm-sn-cardrow .nvm-minis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.nvm-sn-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.nvm-sn-acts form { display: contents; }
+
+/* แถบวงเงิน: ความกว้างมาจากตัวแปร --w บนตัวแท่ง (ไม่ใช้ width แบบ inline) */
+.nvm-sn-w i { width: var(--w, 0%); }
+.nvm-sn-w.is-warn i { background: linear-gradient(180deg, #f5c66b, #d98e1f); }
+.nvm-sn-w.is-bad i { background: linear-gradient(180deg, #f08a84, #c2453f); }
+.nvm-sn-w + small { display: block; margin-top: 6px; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ฟอร์มในโมดัลชิดซ้าย อ่านง่ายกว่าแบบจัดกลาง */
+.nvm-sn-modal { text-align: left; }
+.nvm-sn-modal h2 { text-align: center; }
+
+/* ── ตารางธุรกรรม NFC ─────────────────────────────────── */
+.nvm-sn-amt { font-weight: 700; white-space: nowrap; }
+.nvm-sn-amt.is-in { color: var(--nvm-good); }
+.nvm-sn-amt.is-out { color: var(--nvm-bad); }
+.nvm-sn-sub { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+
+/* ── รีวิว ────────────────────────────────────────────── */
+.nvm-sn-review { display: flex; flex-direction: column; gap: 12px; }
+.nvm-sn-review__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.nvm-sn-review__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nvm-sn-review__av { width: 46px; height: 46px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--nvm-font-display); font-weight: 700; font-size: 18px; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-sn-review__who b { display: block; font-size: 15.5px; overflow-wrap: anywhere; }
+.nvm-sn-review__who small { display: block; font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-sn-review__rate { text-align: right; }
+.nvm-sn-review__rate time { display: block; margin-top: 4px; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-sn-review blockquote { margin: 0; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.6; color: var(--nvm-ink-2); background: var(--nvm-paper-2); white-space: pre-line; overflow-wrap: anywhere; }
+.nvm-sn-review__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+/* ── จอแคบ ────────────────────────────────────────────── */
+@media (max-width: 1099px) {
+    .nvm-sn-sticky { position: static; }
+    .nvm-sn-cardrow { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+    .nvm-sn-search { flex-direction: column; }
+    .nvm-sn-search .nvm-btn { width: 100%; }
+    .nvm-sn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .nvm-sn-svc__body { padding: 12px; }
+    .nvm-sn-svc__body p { display: none; }
+    .nvm-sn-svc__foot { flex-direction: column; align-items: flex-start; }
+    .nvm-sn-grid.is-list .nvm-sn-svc__img { width: 120px; }
+    .nvm-sn-cardrow .nvm-minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-sn-acts .nvm-btn { flex: 1 1 140px; }
+    .nvm-sn-review__rate { text-align: left; }
+    .nvm-sn-review__acts .nvm-btn { flex: 1; }
+}
+@media (max-width: 420px) {
+    .nvm-sn-grid { grid-template-columns: minmax(0, 1fr); }
+    .nvm-sn-2col { grid-template-columns: minmax(0, 1fr); }
+    .nvm-sn-nfc { padding: 18px; }
+    .nvm-sn-nfc__no { font-size: 15px; }
+}

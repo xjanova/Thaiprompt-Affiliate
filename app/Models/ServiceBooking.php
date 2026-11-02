@@ -115,6 +115,11 @@ class ServiceBooking extends Model
         'user_live_latitude',
         'user_live_longitude',
         'user_location_updated_at',
+        // รีวิวจากลูกค้า — เดิมไม่อยู่ใน fillable ทำให้ update() ของ storeReview/updateReview/deleteReview
+        // ทิ้งค่าเงียบ ๆ (บันทึก/แก้/ลบรีวิวจากหน้าสมาชิกไม่เคยมีผล)
+        'rating',
+        'review',
+        'rated_at',
     ];
 
     protected $casts = [
@@ -145,6 +150,8 @@ class ServiceBooking extends Model
         'confirmed_at' => 'datetime',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        // เวลารีวิว — ไม่มี cast ทำให้หน้า /user/service-reviews ล่ม (->format() บน string)
+        'rated_at' => 'datetime',
         'metadata' => 'array',
         // User Live Location
         'user_live_latitude' => 'decimal:8',

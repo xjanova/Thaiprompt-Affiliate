@@ -1,80 +1,85 @@
 {{--
-    หน้าแก้ไขรีวิวบริการ
-    ผู้ใช้สามารถแก้ไขคะแนนและความคิดเห็นได้
+    แก้ไขรีวิวบริการ (ธีมโนวาเต็ม) — ServiceBookingController::editReview
+    $booking = การจองของสมาชิกเองที่รีวิวไว้แล้ว (controller ตอบ 403/404 ให้ก่อนถึงหน้านี้)
+    ส่งไป PUT user.service-reviews.update: rating (1-5) · review (ไม่เกิน 1000 ตัวอักษร)
+    - ปุ่มดาวเป็นตัวช่วยเลือก ค่าจริงอยู่ใน <input type="hidden" name="rating"> ที่มีค่าเริ่มต้นจากเซิร์ฟเวอร์
+      (ไม่มี JavaScript ก็ยังส่งคะแนนเดิมได้)
 --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', $pageTitle ?? 'แก้ไขรีวิว')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/services-nfc.css') }}?v={{ filemtime(public_path('theme-nova/member/services-nfc.css')) }}">@endpush
+
+@php
+    $initial = (int) old('rating', $booking->rating ?? 5);
+    $initial = max(1, min(5, $initial));
+    $providerName = $booking->provider?->display_name ?: ($booking->provider?->name ?? null);
+    $labels = [1 => 'ต้องปรับปรุง', 2 => 'พอใช้', 3 => 'ดี', 4 => 'ดีมาก', 5 => 'ยอดเยี่ยม'];
+@endphp
+
 @section('content')
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    {{-- Header --}}
-    <div class="mb-6 p-6 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-xl">
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 bg-clip-text text-transparent">
-            <i class="fas fa-edit mr-3"></i>{{ $pageTitle ?? 'แก้ไขรีวิว' }}
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">แก้ไขคะแนนและความคิดเห็นสำหรับบริการนี้</p>
-    </div>
+<div class="nvm-stack">
 
-    {{-- Booking Info --}}
-    <div class="mb-6 p-6 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-xl">
-        <div class="flex items-start gap-4">
-            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">
-                {{ substr($booking->provider->name ?? 'P', 0, 1) }}
-            </div>
-            <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $booking->service->name ?? 'บริการ' }}</h3>
-                <p class="text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-user mr-1"></i>{{ $booking->provider->name ?? '-' }}
-                </p>
-                <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                    <i class="fas fa-hashtag mr-1"></i>{{ $booking->booking_number }}
-                    <span class="mx-2">•</span>
-                    <i class="fas fa-calendar mr-1"></i>{{ $booking->completed_at ? $booking->completed_at->format('d/m/Y') : '-' }}
-                </p>
-            </div>
+<section class="nvm-ph" aria-labelledby="nvm-sne-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.service-reviews.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>รีวิวของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Edit review</div>
+            <h1 id="nvm-sne-h">{{ $pageTitle ?? 'แก้ไขรีวิว' }}</h1>
+            <p class="nvm-ph__lead">ปรับคะแนนและความคิดเห็นสำหรับ {{ $booking->service->name ?? 'บริการนี้' }}</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/account/chat.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- Review Form --}}
-    <form action="{{ route('user.service-reviews.update', $booking) }}" method="POST" class="space-y-6">
-        @csrf
-        @method('PUT')
+<div class="nvm-split">
+    <section class="nvm-card nvm-box" aria-labelledby="nvm-sne-f-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Your review</small><h2 id="nvm-sne-f-h">คะแนนและความคิดเห็น</h2></div></div>
 
-        <div class="p-6 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-xl">
-            {{-- Rating --}}
-            <div class="mb-6" x-data="{ rating: {{ old('rating', $booking->rating ?? 5) }} }">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">ให้คะแนน <span class="text-red-500">*</span></label>
-                <div class="flex items-center gap-2">
+        <form class="nvm-form" action="{{ route('user.service-reviews.update', $booking) }}" method="POST"
+              x-data="{ rating: {{ $initial }}, labels: @js($labels), busy: false }" @submit="if (busy) { $event.preventDefault() } else { busy = true }" @pageshow.window="busy = false">
+            @csrf
+            @method('PUT')
+
+            <div class="nvm-field">
+                <span class="nvm-label" id="nvm-sne-r">ให้คะแนน <em>*</em></span>
+                <div class="nvm-sn-rate" role="radiogroup" aria-labelledby="nvm-sne-r">
                     @for($i = 1; $i <= 5; $i++)
-                        <button type="button" @click="rating = {{ $i }}" class="transition-transform hover:scale-110 focus:outline-none">
-                            <i class="fas fa-star text-3xl transition-colors" :class="rating >= {{ $i }} ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'"></i>
-                        </button>
+                        <button type="button" role="radio" :aria-checked="(rating === {{ $i }}).toString()" aria-label="{{ $i }} ดาว · {{ $labels[$i] }}"
+                                class="{{ $i <= $initial ? 'is-on' : '' }}" :class="{ 'is-on': rating >= {{ $i }} }" @click="rating = {{ $i }}">★</button>
                     @endfor
-                    <span class="ml-4 text-2xl font-bold text-gray-900 dark:text-white" x-text="rating + '/5'"></span>
+                    <output class="nvm-num" x-text="rating + '/5 · ' + labels[rating]">{{ $initial }}/5 · {{ $labels[$initial] }}</output>
                 </div>
-                <input type="hidden" name="rating" :value="rating">
-                @error('rating')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                <input type="hidden" name="rating" value="{{ $initial }}" :value="rating">
+                @error('rating')<span class="nvm-err">{{ $message }}</span>@enderror
             </div>
 
-            {{-- Review Text --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความคิดเห็น</label>
-                <textarea name="review" rows="5" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('review') border-red-500 @enderror" placeholder="เขียนรีวิวเกี่ยวกับบริการที่คุณได้รับ...">{{ old('review', $booking->review) }}</textarea>
-                @error('review')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                <p class="text-xs text-gray-500 mt-1">สูงสุด 1000 ตัวอักษร</p>
+            <div class="nvm-field">
+                <label class="nvm-label" for="nvm-sne-t">ความคิดเห็น</label>
+                <textarea id="nvm-sne-t" class="nvm-input nvm-textarea @error('review') is-bad @enderror" name="review" rows="5" maxlength="1000" placeholder="เล่าประสบการณ์การใช้บริการของคุณ">{{ old('review', $booking->review) }}</textarea>
+                @error('review')<span class="nvm-err">{{ $message }}</span>@else<small class="nvm-note">ไม่เกิน 1,000 ตัวอักษร</small>@enderror
             </div>
-        </div>
 
-        {{-- Submit --}}
-        <div class="flex gap-4">
-            <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium">
-                <i class="fas fa-save mr-2"></i>บันทึกการแก้ไข
-            </button>
-            <a href="{{ route('user.service-reviews.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition text-center">
-                ยกเลิก
-            </a>
-        </div>
-    </form>
+            <div class="nvm-filter__btns">
+                <a class="nvm-btn nvm-btn--line" href="{{ route('user.service-reviews.index') }}">ยกเลิก</a>
+                <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="busy ? 'กำลังบันทึก…' : 'บันทึกการแก้ไข'">บันทึกการแก้ไข</span></button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-sne-b-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Booking</small><h2 id="nvm-sne-b-h">ข้อมูลการจอง</h2></div></div>
+        <dl class="nvm-kv">
+            <dt>บริการ</dt><dd>{{ $booking->service->name ?? '-' }}</dd>
+            <dt>ผู้ให้บริการ</dt><dd>{{ $providerName ?? '-' }}</dd>
+            <dt>เลขที่จอง</dt><dd class="nvm-num">{{ $booking->booking_number }}</dd>
+            <dt>ใช้บริการเสร็จ</dt><dd class="nvm-num">{{ $booking->completed_at ? $booking->completed_at->copy()->locale('th')->translatedFormat('j M Y') : '-' }}</dd>
+            <dt>รีวิวเมื่อ</dt><dd class="nvm-num">{{ $booking->rated_at ? $booking->rated_at->copy()->locale('th')->translatedFormat('j M Y · H:i') : '-' }}</dd>
+        </dl>
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>คะแนนของคุณนำไปคิดคะแนนเฉลี่ยของผู้ให้บริการทันทีที่บันทึก</p>
+    </aside>
+</div>
+
 </div>
 @endsection

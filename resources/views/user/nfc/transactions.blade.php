@@ -1,160 +1,90 @@
-@extends('layouts.user-v4')
+{{--
+    ประวัติธุรกรรมการ์ด NFC (ธีมโนวาเต็ม) — NFCCardController::transactions (การ์ดของสมาชิกเองเท่านั้น ไม่ใช่ = 403)
+    $transactions แบ่งหน้า 20 พร้อมจุดรับชำระ (nfcReader) · ตารางอยู่ใน nvm-table-wrap เลื่อนแนวนอนได้บนมือถือ
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ประวัติการใช้งาน - ' . ($card->card_name ?? 'การ์ด NFC'))
+@section('title', 'ประวัติการใช้งาน · '.($card->card_name ?? 'การ์ด NFC'))
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/services-nfc.css') }}?v={{ filemtime(public_path('theme-nova/member/services-nfc.css')) }}">@endpush
+
+@php
+    $baht = fn ($n) => '฿'.number_format((float) $n, 2);
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-exchange-alt"></i></div>
-        </div>
-        <div class="relative z-10"><div class="flex items-center gap-4">
-            <a href="{{ route('user.nfc.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all"><i class="fas fa-arrow-left mr-2"></i>กลับ</a>
-            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-receipt text-4xl text-white drop-shadow-lg"></i></div>
-            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">NFC Transactions</h1>
-            <p class="text-indigo-100 text-lg mt-1">ประวัติการใช้งาน NFC</p></div>
-        </div></div>
-    </div>
-                    ประวัติการทำธุรกรรม
-                </h1>
-                <p class="text-blue-100">{{ $card->card_name ?? 'การ์ด NFC' }} • {{ $card->masked_card_number }}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-blue-100 text-sm mb-1">ยอดคงเหลือ</p>
-                <p class="text-4xl font-bold">฿{{ number_format($card->balance, 2) }}</p>
-            </div>
-        </div>
-    </div>
+<div class="nvm-stack">
 
-    {{-- Transactions List --}}
-    <div class="tp-card rounded-2xl overflow-hidden">
-        @if($transactions->count() > 0)
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+<section class="nvm-ph" aria-labelledby="nvm-nfct-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.nfc.show', $card) }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>{{ $card->card_name ?? 'การ์ด NFC' }}</a>
+            <div class="nvm-eyebrow nvm-latin">Card history</div>
+            <h1 id="nvm-nfct-h">ประวัติการทำธุรกรรม</h1>
+            <p class="nvm-ph__lead nvm-num">{{ $card->card_name ?? 'การ์ด NFC' }} · {{ $card->masked_card_number }}</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--gold nvm-num">ยอดคงเหลือ {{ $baht($card->balance) }}</span>
+                <span class="nvm-pill nvm-pill--glass"><span class="nvm-num">{{ number_format($transactions->total()) }}</span>&nbsp;รายการ</span>
+            </div>
+        </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-nfct-l-h">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Transactions</small><h2 id="nvm-nfct-l-h">รายการทั้งหมด</h2></div></div>
+
+    @if($transactions->count() > 0)
+        <div class="nvm-table-wrap">
+            <table class="nvm-table">
+                <thead>
+                    <tr>
+                        <th scope="col">เวลา</th>
+                        <th scope="col">ประเภท</th>
+                        <th scope="col">สถานที่</th>
+                        <th scope="col" class="r">จำนวนเงิน</th>
+                        <th scope="col" class="r">ยอดคงเหลือ</th>
+                        <th scope="col" class="c">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($transactions as $tx)
+                        @php
+                            $out = $tx->type === 'payment';
+                            $tone = match ($tx->status) {
+                                'completed' => 'ok', 'failed' => 'bad', 'pending', 'processing' => 'warn', 'refunded' => 'info', default => '',
+                            };
+                        @endphp
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                เวลา
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                ประเภท
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                สถานที่
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                จำนวนเงิน
-                            </th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                ยอดคงเหลือ
-                            </th>
-                            <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                สถานะ
-                            </th>
+                            <td class="nvm-num">
+                                {{ $tx->created_at?->format('d/m/Y') }}
+                                <span class="nvm-sn-sub">{{ $tx->created_at?->format('H:i:s') }}</span>
+                            </td>
+                            <td>
+                                {{ $tx->type_label }}
+                                <span class="nvm-sn-sub nvm-num">#{{ $tx->transaction_id }}</span>
+                            </td>
+                            <td>{{ $tx->nfcReader->name ?? ($tx->location ?: '-') }}</td>
+                            <td class="r"><span class="nvm-sn-amt nvm-num {{ $out ? 'is-out' : 'is-in' }}">{{ $out ? '-' : '+' }}{{ $baht($tx->amount) }}</span></td>
+                            <td class="r nvm-num">{{ $baht($tx->balance_after) }}</td>
+                            <td class="c"><span class="nvm-chip {{ $tone ? 'nvm-chip--'.$tone : '' }}">{{ $tx->status_label }}</span></td>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        @foreach($transactions as $transaction)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                {{-- Date/Time --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900 dark:text-white font-medium">
-                                        {{ $transaction->created_at->format('d/m/Y') }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ $transaction->created_at->format('H:i:s') }}
-                                    </div>
-                                </td>
-
-                                {{-- Type --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-10 h-10 rounded-full bg-{{ $transaction->type === 'payment' ? 'red' : 'green' }}-100 dark:bg-{{ $transaction->type === 'payment' ? 'red' : 'green' }}-900/30 flex items-center justify-center">
-                                            <i class="fas fa-{{ $transaction->type === 'payment' ? 'arrow-up' : 'arrow-down' }} text-{{ $transaction->type === 'payment' ? 'red' : 'green' }}-600"></i>
-                                        </div>
-                                        <div>
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                {{ $transaction->type_label }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                #{{ $transaction->transaction_id }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                {{-- Location --}}
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900 dark:text-white">
-                                        @if($transaction->nfcReader)
-                                            <i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>
-                                            {{ $transaction->nfcReader->name }}
-                                        @elseif($transaction->location)
-                                            <i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>
-                                            {{ $transaction->location }}
-                                        @else
-                                            <span class="text-gray-400">-</span>
-                                        @endif
-                                    </div>
-                                </td>
-
-                                {{-- Amount --}}
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <div class="text-lg font-bold {{ $transaction->type === 'payment' ? 'text-red-600' : 'text-green-600' }}">
-                                        {{ $transaction->type === 'payment' ? '-' : '+' }}฿{{ number_format($transaction->amount, 2) }}
-                                    </div>
-                                </td>
-
-                                {{-- Balance After --}}
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <div class="text-sm text-gray-900 dark:text-white">
-                                        ฿{{ number_format($transaction->balance_after, 2) }}
-                                    </div>
-                                </td>
-
-                                {{-- Status --}}
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-{{ $transaction->status_badge_color }}-100 text-{{ $transaction->status_badge_color }}-700 dark:bg-{{ $transaction->status_badge_color }}-900/30 dark:text-{{ $transaction->status_badge_color }}-400">
-                                        @if($transaction->status === 'completed')
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                        @elseif($transaction->status === 'failed')
-                                            <i class="fas fa-times-circle mr-1"></i>
-                                        @elseif($transaction->status === 'processing')
-                                            <i class="fas fa-spinner fa-spin mr-1"></i>
-                                        @endif
-                                        {{ $transaction->status_label }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Pagination --}}
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/30">
-                {{ $transactions->links() }}
-            </div>
-        @else
-            {{-- Empty State --}}
-            <div class="text-center py-16">
-                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-6">
-                    <i class="fas fa-receipt text-5xl text-gray-400"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มีธุรกรรม</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">
-                    ยังไม่มีประวัติการทำธุรกรรมสำหรับการ์ดนี้
-                </p>
-                <a href="{{ route('user.nfc.show', $card) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>กลับไปหน้าการ์ด</span>
-                </a>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @if($transactions->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $transactions->links() }}</div>
         @endif
-    </div>
+    @else
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            <b>ยังไม่มีธุรกรรม</b>
+            ยังไม่มีประวัติการทำธุรกรรมสำหรับการ์ดนี้
+            <div><a class="nvm-btn nvm-btn--gold" href="{{ route('user.nfc.show', $card) }}">กลับไปหน้าการ์ด</a></div>
+        </div>
+    @endif
+</section>
+
 </div>
 @endsection
