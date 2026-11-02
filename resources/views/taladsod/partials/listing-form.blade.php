@@ -1,5 +1,5 @@
 {{--
- | ฟอร์มสินค้าตลาดสด (ใช้ร่วมกันระหว่างลงขายใหม่และแก้ไข) — ธีม V4
+ | ฟอร์มสินค้าตลาดสด (ใช้ร่วมกันระหว่างลงขายใหม่และแก้ไข) — ธีมโนวา (layouts.user-nova)
  | ใช้: @include('taladsod.partials.listing-form', ['mode' => 'create'|'edit', 'listing' => ?FreshMarketListing, 'categories', 'maxCashbackPercent', 'gpRate', 'gpFree', 'optionGroups' => array])
  |
  | ฟิลด์ (ตรงกับ HomeController@storeListing / @updateListing):
@@ -74,268 +74,265 @@
     $units = ['จาน', 'กล่อง', 'ถุง', 'ชุด', 'แก้ว', 'ชิ้น', 'กก.', 'ขีด', 'กำ', 'ห่อ', 'ลูก', 'แพ็ค'];
 @endphp
 
-<div class="ts-stack" style="gap:16px;" x-data="tsListingForm({{ \Illuminate\Support\Js::from($formCfg) }})">
+<div class="nvm-stack" x-data="tsListingForm({{ \Illuminate\Support\Js::from($formCfg) }})">
     @if($errors->any())
-        <div class="sf-note sf-note-err" role="alert">
-            <b><i class="fas fa-circle-exclamation" aria-hidden="true"></i> บันทึกไม่สำเร็จ กรุณาตรวจสอบ</b>
-            <ul style="margin:6px 0 0; padding-left:18px;">
-                @foreach($errors->all() as $message)
-                    <li>{{ $message }}</li>
-                @endforeach
-            </ul>
-        </div>
+        <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b>บันทึกไม่สำเร็จ กรุณาตรวจสอบ</b>
+                @foreach($errors->all() as $message)<p>{{ $message }}</p>@endforeach
+            </div>
+        </section>
     @endif
 
     {{-- ════════ ข้อมูลสินค้า ════════ --}}
-    <section class="tp-card ts-stack" aria-labelledby="lf-info-h">
-        <h2 id="lf-info-h" class="ts-h2"><i class="fas fa-bowl-food" style="color:var(--accent2);" aria-hidden="true"></i> ข้อมูลสินค้า</h2>
-        <div>
-            <label class="ts-label" for="lf-title">ชื่อสินค้า/เมนู <span class="req">*</span></label>
-            <input id="lf-title" type="text" name="title" class="tp-input" required maxlength="200" value="{{ old('title', $lf->title ?? '') }}" placeholder="เช่น ผัดกะเพราราดข้าว, ผักบุ้งจีนปลอดสาร">
-            @error('title')<p class="ts-err">{{ $message }}</p>@enderror
-        </div>
-        <div>
-            <label class="ts-label" for="lf-desc">รายละเอียด</label>
-            <textarea id="lf-desc" name="description" class="tp-input" rows="3" maxlength="2000" placeholder="วัตถุดิบ ปริมาณ จุดเด่น เช่น ผัดไฟแรง หอมใบกะเพรา">{{ old('description', $lf->description ?? '') }}</textarea>
-        </div>
-        <div class="ts-grid" style="--ts-min:200px;">
-            <div>
-                <label class="ts-label" for="lf-cat">หมวดหมู่ <span class="req">*</span></label>
-                <select id="lf-cat" name="category_id" class="tp-input" required>
-                    <option value="">เลือกหมวดหมู่</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" @selected((string) old('category_id', $lf->category_id ?? '') === (string) $cat->id)>{{ $cat->icon }} {{ $cat->name }}</option>
-                    @endforeach
-                </select>
-                @error('category_id')<p class="ts-err">{{ $message }}</p>@enderror
+    <section class="nvm-card nvm-box" aria-labelledby="lf-info-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Product</small><h2 id="lf-info-h">ข้อมูลสินค้า</h2></div></div>
+        <div class="nvm-form">
+            <div class="nvm-field">
+                <label class="nvm-label" for="lf-title">ชื่อสินค้า/เมนู <em>*</em></label>
+                <input id="lf-title" type="text" name="title" class="nvm-input @error('title') is-bad @enderror" required maxlength="200" value="{{ old('title', $lf->title ?? '') }}" placeholder="เช่น ผัดกะเพราราดข้าว, ผักบุ้งจีนปลอดสาร">
+                @error('title')<span class="nvm-err">{{ $message }}</span>@enderror
             </div>
-            <div>
-                <label class="ts-label" for="lf-fresh">ความสด</label>
-                <select id="lf-fresh" name="freshness_level" class="tp-input">
-                    <option value="">ไม่ระบุ</option>
-                    @foreach(['สด', 'สดมาก', 'ผลิตวันนี้'] as $level)
-                        <option value="{{ $level }}" @selected(old('freshness_level', $lf->freshness_level ?? '') === $level)>{{ $level }}</option>
-                    @endforeach
-                </select>
+            <div class="nvm-field">
+                <label class="nvm-label" for="lf-desc">รายละเอียด</label>
+                <textarea id="lf-desc" name="description" class="nvm-input nvm-textarea" rows="3" maxlength="2000" placeholder="วัตถุดิบ ปริมาณ จุดเด่น เช่น ผัดไฟแรง หอมใบกะเพรา">{{ old('description', $lf->description ?? '') }}</textarea>
             </div>
+            <div class="nvm-td-cols">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-cat">หมวดหมู่ <em>*</em></label>
+                    <select id="lf-cat" name="category_id" class="nvm-input @error('category_id') is-bad @enderror" required>
+                        <option value="">เลือกหมวดหมู่</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}" @selected((string) old('category_id', $lf->category_id ?? '') === (string) $cat->id)>{{ $cat->icon }} {{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('category_id')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-fresh">ความสด</label>
+                    <select id="lf-fresh" name="freshness_level" class="nvm-input">
+                        <option value="">ไม่ระบุ</option>
+                        @foreach(['สด', 'สดมาก', 'ผลิตวันนี้'] as $level)
+                            <option value="{{ $level }}" @selected(old('freshness_level', $lf->freshness_level ?? '') === $level)>{{ $level }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <label class="nvm-td-switch">
+                <input type="hidden" name="is_organic" value="0">
+                <span class="nvm-sw"><input type="checkbox" name="is_organic" value="1" @checked(old('is_organic', $lf->is_organic ?? false))><i></i></span>
+                สินค้าอินทรีย์/ปลอดสาร
+            </label>
         </div>
-        <label class="ts-switch">
-            <input type="hidden" name="is_organic" value="0">
-            <input type="checkbox" name="is_organic" value="1" @checked(old('is_organic', $lf->is_organic ?? false))>
-            <span class="track"></span>
-            <span style="font-size:13.5px; font-weight:700;"><i class="fas fa-leaf" style="color:var(--ts-ok);" aria-hidden="true"></i> สินค้าอินทรีย์/ปลอดสาร</span>
-        </label>
     </section>
 
     {{-- ════════ ราคา + สต็อก ════════ --}}
-    <section class="tp-card ts-stack" aria-labelledby="lf-price-h">
-        <h2 id="lf-price-h" class="ts-h2"><i class="fas fa-tag" style="color:var(--accent2);" aria-hidden="true"></i> ราคาและจำนวน</h2>
-        <div class="ts-grid" style="--ts-min:170px;">
-            <div>
-                <label class="ts-label" for="lf-price">ราคาขาย (บาท) <span class="req">*</span></label>
-                <input id="lf-price" type="number" name="price" class="tp-input" required min="1" max="1000000" step="0.01" inputmode="decimal" x-model.number="price" value="{{ old('price', $lf->price ?? '') }}">
-                @error('price')<p class="ts-err">{{ $message }}</p>@enderror
+    <section class="nvm-card nvm-box" aria-labelledby="lf-price-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Price & stock</small><h2 id="lf-price-h">ราคาและจำนวน</h2></div></div>
+        <div class="nvm-form">
+            <div class="nvm-td-cols">
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-price">ราคาขาย (บาท) <em>*</em></label>
+                    <input id="lf-price" type="number" name="price" class="nvm-input @error('price') is-bad @enderror" required min="1" max="1000000" step="0.01" inputmode="decimal" x-model.number="price" value="{{ old('price', $lf->price ?? '') }}">
+                    @error('price')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-compare">ราคาก่อนลด (ไม่บังคับ)</label>
+                    <input id="lf-compare" type="number" name="compare_at_price" class="nvm-input @error('compare_at_price') is-bad @enderror" min="1" step="0.01" inputmode="decimal" value="{{ old('compare_at_price', $lf->compare_at_price ?? '') }}">
+                    @error('compare_at_price')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-unit">หน่วยขาย <em>*</em></label>
+                    <input id="lf-unit" type="text" name="unit" class="nvm-input @error('unit') is-bad @enderror" required maxlength="50" list="lf-units" value="{{ old('unit', $lf->unit ?? 'จาน') }}">
+                    <datalist id="lf-units">
+                        @foreach($units as $u)
+                            <option value="{{ $u }}">
+                        @endforeach
+                    </datalist>
+                    @error('unit')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
             </div>
-            <div>
-                <label class="ts-label" for="lf-compare">ราคาก่อนลด <span class="ts-muted" style="font-weight:600;">(ไม่บังคับ)</span></label>
-                <input id="lf-compare" type="number" name="compare_at_price" class="tp-input" min="1" step="0.01" inputmode="decimal" value="{{ old('compare_at_price', $lf->compare_at_price ?? '') }}">
-                @error('compare_at_price')<p class="ts-err">{{ $message }}</p>@enderror
-            </div>
-            <div>
-                <label class="ts-label" for="lf-unit">หน่วยขาย <span class="req">*</span></label>
-                <input id="lf-unit" type="text" name="unit" class="tp-input" required maxlength="50" list="lf-units" value="{{ old('unit', $lf->unit ?? 'จาน') }}">
-                <datalist id="lf-units">
-                    @foreach($units as $u)
-                        <option value="{{ $u }}">
-                    @endforeach
-                </datalist>
-                @error('unit')<p class="ts-err">{{ $message }}</p>@enderror
-            </div>
-        </div>
 
-        {{-- ราคา − GP = รับจริง --}}
-        <div class="sf-note {{ $gpFree ? 'sf-note-ok' : 'sf-note-info' }}" x-show="price > 0">
-            <i class="fas fa-calculator" aria-hidden="true"></i>
-            ราคา ฿<b x-text="money(price)"></b> − GP {{ rtrim(rtrim(number_format((float) $gpRate, 2), '0'), '.') }}% (฿<span x-text="money(gpAmount)"></span>)
-            = <b>ร้านรับจริง ฿<span x-text="money(net)"></span></b> ต่อ{{ $lf->unit ?? 'ชิ้น' }}
-            @if($gpFree)
-                <span class="ts-pill solid ts-tone-ok" style="margin-left:6px;"><i class="fas fa-gift" aria-hidden="true"></i> ฟรี GP ช่วงเปิดตัว</span>
+            {{-- ราคา − GP = รับจริง --}}
+            <div class="nvm-td-calc" x-show="price > 0" @if(! $formCfg['price']) x-cloak @endif>
+                ราคา ฿<b x-text="money(price)"></b> − GP {{ rtrim(rtrim(number_format((float) $gpRate, 2), '0'), '.') }}% (฿<span x-text="money(gpAmount)"></span>)
+                = <b>ร้านรับจริง ฿<span x-text="money(net)"></span></b> ต่อ{{ $lf->unit ?? 'ชิ้น' }}
+                @if($gpFree)
+                    <span class="nvm-chip nvm-chip--ok"><svg class="nvm-ico"><use href="#nvm-i-gift"/></svg>ฟรี GP ช่วงเปิดตัว</span>
+                @endif
+                <small>ราคาตัวเลือก (เช่น +฿20 กุ้ง) คิด GP อัตราเดียวกัน · ค่าส่งลูกค้าจ่ายให้ไรเดอร์ ไม่หักจากร้าน</small>
+            </div>
+
+            <div class="nvm-opts nvm-opts--2" role="radiogroup" aria-label="วิธีนับจำนวนสินค้า">
+                <label class="nvm-opt">
+                    <input type="radio" value="0" :checked="!trackStock" x-on:change="trackStock = false" @checked(! $formCfg['trackStock'])>
+                    <span><b>ทำตามสั่ง / ไม่จำกัดจำนวน</b><small>เหมาะกับอาหารปรุงสด</small></span>
+                </label>
+                <label class="nvm-opt">
+                    <input type="radio" value="1" :checked="trackStock" x-on:change="trackStock = true" @checked($formCfg['trackStock'])>
+                    <span><b>นับสต็อก</b><small>ของหมดแล้วปิดขายอัตโนมัติ</small></span>
+                </label>
+            </div>
+            <input type="hidden" name="track_stock" :value="trackStock ? 1 : 0" value="{{ $formCfg['trackStock'] ? 1 : 0 }}">
+            <div class="nvm-field" x-show="trackStock" @if(! $formCfg['trackStock']) x-cloak @endif>
+                <label class="nvm-label" for="lf-qty">จำนวนที่มีขาย <em>*</em></label>
+                <div class="nvm-td-affix">
+                    <input id="lf-qty" type="number" name="quantity_available" class="nvm-input @error('quantity_available') is-bad @enderror" min="{{ $isEdit ? 0 : 1 }}" max="100000" inputmode="numeric" :required="trackStock" :disabled="!trackStock"
+                           value="{{ old('quantity_available', $lf ? (int) $lf->quantity_available : '') }}">
+                    <span>{{ $lf->unit ?? 'ชิ้น' }}</span>
+                </div>
+                @error('quantity_available')<span class="nvm-err">{{ $message }}</span>@enderror
+            </div>
+
+            @if($isEdit)
+                <label class="nvm-td-switch {{ $lf->status === 'suspended' ? 'is-dim' : '' }}">
+                    <input type="hidden" name="is_available" value="0">
+                    <span class="nvm-sw"><input type="checkbox" name="is_available" value="1" @checked(old('is_available', $lf->is_available)) @disabled($lf->status === 'suspended')><i></i></span>
+                    เปิดขายสินค้านี้
+                </label>
+                @if($lf->status === 'suspended')
+                    <span class="nvm-err">สินค้าถูกระงับโดยแอดมิน — เปิดขายเองไม่ได้ กรุณาติดต่อทีมงาน</span>
+                @endif
             @endif
-            <div class="ts-small ts-muted" style="margin-top:4px;">ราคาตัวเลือก (เช่น +฿20 กุ้ง) คิด GP อัตราเดียวกัน · ค่าส่งลูกค้าจ่ายให้ไรเดอร์ ไม่หักจากร้าน</div>
-        </div>
 
-        <div class="ts-grid" style="--ts-min:220px; gap:10px;">
-            <button type="button" class="ts-choice" :class="!trackStock ? 'is-on' : ''" x-on:click="trackStock = false" :aria-pressed="!trackStock ? 'true' : 'false'">
-                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
-                <span class="name">ทำตามสั่ง / ไม่จำกัดจำนวน<span class="ts-muted ts-small" style="display:block; font-weight:600;">เหมาะกับอาหารปรุงสด</span></span>
-            </button>
-            <button type="button" class="ts-choice" :class="trackStock ? 'is-on' : ''" x-on:click="trackStock = true" :aria-pressed="trackStock ? 'true' : 'false'">
-                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
-                <span class="name">นับสต็อก<span class="ts-muted ts-small" style="display:block; font-weight:600;">ของหมดแล้วปิดขายอัตโนมัติ</span></span>
-            </button>
-        </div>
-        <input type="hidden" name="track_stock" :value="trackStock ? 1 : 0" value="{{ $formCfg['trackStock'] ? 1 : 0 }}">
-        <div x-show="trackStock" @if(! $formCfg['trackStock']) x-cloak @endif>
-            <label class="ts-label" for="lf-qty">จำนวนที่มีขาย <span class="req">*</span></label>
-            <div class="ts-input-group">
-                <input id="lf-qty" type="number" name="quantity_available" class="tp-input" min="{{ $isEdit ? 0 : 1 }}" max="100000" inputmode="numeric" :required="trackStock" :disabled="!trackStock"
-                       value="{{ old('quantity_available', $lf ? (int) $lf->quantity_available : '') }}">
-                <span class="suffix">{{ $lf->unit ?? 'ชิ้น' }}</span>
-            </div>
-            @error('quantity_available')<p class="ts-err">{{ $message }}</p>@enderror
-        </div>
-
-        @if($isEdit)
-            <label class="ts-switch">
-                <input type="hidden" name="is_available" value="0">
-                <input type="checkbox" name="is_available" value="1" @checked(old('is_available', $lf->is_available)) @disabled($lf->status === 'suspended')>
-                <span class="track"></span>
-                <span style="font-size:13.5px; font-weight:700;">เปิดขายสินค้านี้</span>
-            </label>
-            @if($lf->status === 'suspended')
-                <p class="ts-err" style="margin:0;">สินค้าถูกระงับโดยแอดมิน — เปิดขายเองไม่ได้ กรุณาติดต่อทีมงาน</p>
+            @if((float) $maxCashbackPercent > 0)
+                <div class="nvm-field">
+                    <label class="nvm-label" for="lf-cashback">เงินคืนให้ลูกค้า (%) · ไม่เกิน {{ rtrim(rtrim(number_format((float) $maxCashbackPercent, 2), '0'), '.') }}%</label>
+                    <input id="lf-cashback" type="number" name="cashback_percentage" class="nvm-input @error('cashback_percentage') is-bad @enderror" min="0" max="{{ $maxCashbackPercent }}" step="0.5" value="{{ old('cashback_percentage', $lf->cashback_percentage ?? 0) }}">
+                    <span class="nvm-help">เงินคืนจ่ายจากค่า GP ของแพลตฟอร์ม ไม่หักจากรายรับร้าน</span>
+                    @error('cashback_percentage')<span class="nvm-err">{{ $message }}</span>@enderror
+                </div>
             @endif
-        @endif
-
-        @if((float) $maxCashbackPercent > 0)
-            <div>
-                <label class="ts-label" for="lf-cashback">เงินคืนให้ลูกค้า (%) <span class="ts-muted" style="font-weight:600;">ไม่เกิน {{ rtrim(rtrim(number_format((float) $maxCashbackPercent, 2), '0'), '.') }}%</span></label>
-                <input id="lf-cashback" type="number" name="cashback_percentage" class="tp-input" min="0" max="{{ $maxCashbackPercent }}" step="0.5" value="{{ old('cashback_percentage', $lf->cashback_percentage ?? 0) }}">
-                <p class="ts-help">เงินคืนจ่ายจากค่า GP ของแพลตฟอร์ม ไม่หักจากรายรับร้าน</p>
-                @error('cashback_percentage')<p class="ts-err">{{ $message }}</p>@enderror
-            </div>
-        @endif
+        </div>
     </section>
 
     {{-- ════════ รูปสินค้า ════════ --}}
-    <section class="tp-card ts-stack" aria-labelledby="lf-img-h">
-        <h2 id="lf-img-h" class="ts-h2"><i class="fas fa-camera" style="color:var(--accent2);" aria-hidden="true"></i> รูปสินค้า <span class="ts-muted ts-small" style="font-weight:600;">(สูงสุด 5 รูป · รูปละไม่เกิน 5MB)</span></h2>
-        @if($isEdit && count($currentImages) > 0)
-            <div style="display:grid; gap:10px; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr));">
-                <template x-for="img in currentImages" :key="img">
-                    <div class="tp-inset" style="border-radius:16px; padding:8px; position:relative;" :style="{ opacity: removed.includes(img) ? 0.35 : 1 }">
-                        <img :src="img" alt="" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:12px;">
-                        <div class="ts-row" style="gap:6px; margin-top:6px; justify-content:space-between;">
-                            <button type="button" class="tp-btn tp-btn-sm" :class="mainImage === img ? 'tp-btn-primary' : ''" x-on:click="mainImage = img" :disabled="removed.includes(img)" style="padding:0 8px; font-size:11px;">
-                                <i class="fas fa-star" aria-hidden="true"></i> <span x-text="mainImage === img ? 'รูปหลัก' : 'ตั้งเป็นหลัก'"></span>
-                            </button>
-                            <button type="button" class="ts-icon-btn" style="width:34px; height:34px; color:var(--ts-bad);" x-on:click="toggleRemove(img)" :aria-label="removed.includes(img) ? 'เก็บรูปนี้ไว้' : 'ลบรูปนี้'">
-                                <i class="fas" :class="removed.includes(img) ? 'fa-rotate-left' : 'fa-trash-can'" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </template>
-            </div>
-            <template x-for="img in removed" :key="'rm' + img"><input type="hidden" name="remove_images[]" :value="img"></template>
-            <input type="hidden" name="main_image" :value="mainImage || ''">
-        @endif
-        <label class="tp-inset" style="border-radius:18px; padding:18px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; text-align:center;">
-            <span class="tp-tile" style="width:48px; height:48px; border-radius:16px; font-size:20px;"><i class="fas fa-cloud-arrow-up" aria-hidden="true"></i></span>
-            <b style="font-size:14px;">{{ $isEdit ? 'เพิ่มรูปใหม่' : 'เลือกรูปสินค้า' }}</b>
-            <span class="ts-muted ts-small">แตะเพื่อถ่ายรูปหรือเลือกจากเครื่อง (เหลือเพิ่มได้ <span x-text="slotsLeft"></span> รูป)</span>
-            <input type="file" name="images[]" accept="image/*" multiple class="sr-only" style="position:absolute; width:1px; height:1px; opacity:0;" x-ref="images" x-on:change="previewNew($event)">
-        </label>
-        <div class="ts-row" style="gap:8px;" x-show="newPreviews.length > 0">
-            <template x-for="(src, i) in newPreviews" :key="i">
-                <img :src="src" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:12px; box-shadow:var(--inset-sm);">
-            </template>
-        </div>
-        <p class="ts-err" x-show="imageError" x-text="imageError" x-cloak></p>
-        @error('images')<p class="ts-err">{{ $message }}</p>@enderror
-        @error('images.*')<p class="ts-err">{{ $message }}</p>@enderror
-    </section>
-
-    {{-- ════════ ตัวเลือกสินค้า ════════ --}}
-    <section class="tp-card ts-stack" aria-labelledby="lf-opt-h">
-        <div class="ts-row" style="justify-content:space-between;">
-            <h2 id="lf-opt-h" class="ts-h2"><i class="fas fa-sliders" style="color:var(--accent2);" aria-hidden="true"></i> ตัวเลือกสินค้า <span class="ts-muted ts-small" style="font-weight:600;">(ไม่บังคับ)</span></h2>
-            <span class="ts-muted ts-small" x-text="groups.length + '/10 กลุ่ม'"></span>
-        </div>
-        <p class="ts-help" style="margin:0;">เช่น "เลือกเนื้อสัตว์" ให้ลูกค้าเลือก 1 อย่าง, "เพิ่มเติม" เลือกได้หลายอย่าง — ตั้งราคาเพิ่มต่อชิ้นได้ (ใส่ 0 = ไม่บวกเพิ่ม)</p>
-        @if($isEdit)
-            <input type="hidden" name="option_groups_present" value="1">
-        @endif
-
-        <div class="ts-row" style="gap:8px;">
-            <span class="ts-muted ts-small">เพิ่มด่วน:</span>
-            <button type="button" class="sf-chip" x-on:click="addTemplate('meat')" :disabled="groups.length >= 10"><i class="fas fa-drumstick-bite" aria-hidden="true"></i> เลือกเนื้อสัตว์</button>
-            <button type="button" class="sf-chip" x-on:click="addTemplate('spicy')" :disabled="groups.length >= 10"><i class="fas fa-pepper-hot" aria-hidden="true"></i> ความเผ็ด</button>
-            <button type="button" class="sf-chip" x-on:click="addTemplate('extra')" :disabled="groups.length >= 10"><i class="fas fa-egg" aria-hidden="true"></i> ท็อปปิ้ง</button>
-            <button type="button" class="sf-chip" x-on:click="addTemplate('size')" :disabled="groups.length >= 10"><i class="fas fa-up-right-and-down-left-from-center" aria-hidden="true"></i> ขนาด</button>
-            <button type="button" class="sf-chip" x-on:click="addGroup()" :disabled="groups.length >= 10"><i class="fas fa-plus" aria-hidden="true"></i> กลุ่มเปล่า</button>
-        </div>
-        @error('option_groups')<p class="ts-err">{{ $message }}</p>@enderror
-
-        <template x-for="(g, gi) in groups" :key="g.key">
-            <div class="tp-inset ts-stack" style="border-radius:18px; padding:14px; gap:12px;">
-                <input type="hidden" :name="'option_groups[' + g.key + '][id]'" :value="g.id" :disabled="!g.id">
-                <div class="ts-row" style="gap:8px; flex-wrap:nowrap;">
-                    <input type="text" class="tp-input" :name="'option_groups[' + g.key + '][name]'" x-model="g.name" maxlength="100" required placeholder="ชื่อกลุ่ม เช่น เลือกเนื้อสัตว์" style="flex:1; min-width:0;" aria-label="ชื่อกลุ่มตัวเลือก">
-                    <button type="button" class="ts-icon-btn" x-on:click="move(gi, -1)" :disabled="gi === 0" aria-label="เลื่อนกลุ่มขึ้น"><i class="fas fa-arrow-up" aria-hidden="true"></i></button>
-                    <button type="button" class="ts-icon-btn" x-on:click="move(gi, 1)" :disabled="gi === groups.length - 1" aria-label="เลื่อนกลุ่มลง"><i class="fas fa-arrow-down" aria-hidden="true"></i></button>
-                    <button type="button" class="ts-icon-btn" style="color:var(--ts-bad);" x-on:click="removeGroup(gi)" :aria-label="g.confirmDelete ? 'แตะอีกครั้งเพื่อยืนยันลบกลุ่ม' : 'ลบกลุ่ม'">
-                        <i class="fas" :class="g.confirmDelete ? 'fa-check' : 'fa-trash-can'" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <p class="ts-err" style="margin:0;" x-show="g.confirmDelete">แตะปุ่มถังขยะอีกครั้งเพื่อลบกลุ่มนี้</p>
-
-                <div class="ts-row" style="gap:8px;">
-                    <div class="sf-tabs" style="flex:1 1 260px; padding:4px;">
-                        <button type="button" class="sf-tab" :class="g.selection_type === 'single' ? 'is-on' : ''" x-on:click="g.selection_type = 'single'">เลือกได้ 1 อย่าง</button>
-                        <button type="button" class="sf-tab" :class="g.selection_type === 'multi' ? 'is-on' : ''" x-on:click="g.selection_type = 'multi'">เลือกได้หลายอย่าง</button>
-                    </div>
-                    <input type="hidden" :name="'option_groups[' + g.key + '][selection_type]'" :value="g.selection_type">
-                    <label class="ts-switch">
-                        <input type="checkbox" x-model="g.is_required">
-                        <span class="track"></span>
-                        <span style="font-size:13px; font-weight:700;">บังคับเลือก</span>
-                    </label>
-                    <input type="hidden" :name="'option_groups[' + g.key + '][is_required]'" :value="g.is_required ? 1 : 0">
-                </div>
-
-                <div class="ts-row" style="gap:10px;" x-show="g.selection_type === 'multi'">
-                    <label class="ts-row" style="gap:6px; font-size:12.5px; font-weight:700;">ขั้นต่ำ
-                        <input type="number" class="tp-input" style="width:84px; min-height:40px;" min="0" max="30" :name="'option_groups[' + g.key + '][min_select]'" x-model="g.min_select" :disabled="g.selection_type !== 'multi'" placeholder="0">
-                    </label>
-                    <label class="ts-row" style="gap:6px; font-size:12.5px; font-weight:700;">สูงสุด
-                        <input type="number" class="tp-input" style="width:84px; min-height:40px;" min="0" max="30" :name="'option_groups[' + g.key + '][max_select]'" x-model="g.max_select" :disabled="g.selection_type !== 'multi'" placeholder="ไม่จำกัด">
-                    </label>
-                </div>
-                <span class="ts-pill ts-tone-info" style="align-self:flex-start;" x-text="'ลูกค้าเห็น: ' + ruleLabel(g)"></span>
-
-                <div class="ts-stack" style="gap:8px;">
-                    <template x-for="(o, oi) in g.options" :key="o.key">
-                        <div class="ts-row" style="gap:8px; align-items:center; padding:8px; border-radius:14px; background:var(--card-bg);" :style="{ opacity: o.is_available ? 1 : 0.6 }">
-                            <input type="hidden" :name="'option_groups[' + g.key + '][options][' + o.key + '][id]'" :value="o.id" :disabled="!o.id">
-                            <label class="sf-thumb" style="width:48px; height:48px; cursor:pointer; flex:none; position:relative;" :title="o.previewUrl || o.image_url ? 'เปลี่ยนรูปตัวเลือก' : 'เพิ่มรูปตัวเลือก'">
-                                <template x-if="o.previewUrl || o.image_url"><img :src="o.previewUrl || o.image_url" alt=""></template>
-                                <template x-if="!o.previewUrl && !o.image_url"><i class="fas fa-camera ts-muted" aria-hidden="true"></i></template>
-                                <input type="file" accept="image/*" :name="'option_groups[' + g.key + '][options][' + o.key + '][image]'" style="position:absolute; width:1px; height:1px; opacity:0;" x-on:change="previewOption(o, $event)" aria-label="รูปตัวเลือก">
-                            </label>
-                            <input type="text" class="tp-input" style="flex:1 1 150px; min-width:0;" :name="'option_groups[' + g.key + '][options][' + o.key + '][name]'" x-model="o.name" maxlength="100" required placeholder="ชื่อตัวเลือก" aria-label="ชื่อตัวเลือก">
-                            <div class="ts-row" style="gap:8px; flex:none; flex-wrap:nowrap;">
-                                <div class="ts-input-group" style="width:108px;">
-                                    <span class="suffix">+฿</span>
-                                    <input type="number" class="tp-input" style="padding:11px 8px;" min="0" max="100000" step="0.5" :name="'option_groups[' + g.key + '][options][' + o.key + '][price_delta]'" x-model="o.price_delta" aria-label="ราคาเพิ่ม">
-                                </div>
-                                <button type="button" class="ts-icon-btn" :style="{ color: o.is_available ? 'var(--ts-ok)' : 'var(--ink2)' }" x-on:click="o.is_available = !o.is_available" :aria-label="o.is_available ? 'มีขาย (แตะเพื่อตั้งเป็นหมด)' : 'หมดชั่วคราว (แตะเพื่อเปิดขาย)'" :title="o.is_available ? 'มีขาย' : 'หมดชั่วคราว'">
-                                    <i class="fas" :class="o.is_available ? 'fa-eye' : 'fa-eye-slash'" aria-hidden="true"></i>
+    <section class="nvm-card nvm-box" aria-labelledby="lf-img-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Photos · สูงสุด 5 รูป รูปละไม่เกิน 5MB</small><h2 id="lf-img-h">รูปสินค้า</h2></div></div>
+        <div class="nvm-form">
+            @if($isEdit && count($currentImages) > 0)
+                <div class="nvm-td-imgs">
+                    <template x-for="img in currentImages" :key="img">
+                        <div class="nvm-td-img" :class="{ 'is-off': removed.includes(img), 'is-main': mainImage === img && ! removed.includes(img) }">
+                            <img :src="img" alt="">
+                            <div>
+                                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" x-on:click="mainImage = img" :disabled="removed.includes(img)">
+                                    <span x-text="mainImage === img ? 'รูปหลัก' : 'ตั้งเป็นหลัก'"></span>
                                 </button>
-                                <input type="hidden" :name="'option_groups[' + g.key + '][options][' + o.key + '][is_available]'" :value="o.is_available ? 1 : 0">
-                                <button type="button" class="ts-icon-btn" style="color:var(--ts-bad);" x-on:click="removeOption(g, oi)" :disabled="g.options.length <= 1" aria-label="ลบตัวเลือก"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+                                <button type="button" class="nvm-td-ib is-bad" x-on:click="toggleRemove(img)" :aria-label="removed.includes(img) ? 'เก็บรูปนี้ไว้' : 'ลบรูปนี้'">
+                                    <svg class="nvm-ico"><use :href="removed.includes(img) ? '#nvm-i-swap' : '#nvm-i-x'"/></svg>
+                                </button>
                             </div>
                         </div>
                     </template>
-                    <button type="button" class="tp-btn tp-btn-sm" style="align-self:flex-start;" x-on:click="addOption(g)" :disabled="g.options.length >= 30"><i class="fas fa-plus" aria-hidden="true"></i> เพิ่มตัวเลือก</button>
                 </div>
+                <template x-for="img in removed" :key="'rm' + img"><input type="hidden" name="remove_images[]" :value="img"></template>
+                <input type="hidden" name="main_image" :value="mainImage || ''">
+            @endif
+            <label class="nvm-drop-zone">
+                <img src="{{ asset('images/nova/deco/bag.webp') }}" alt="" width="72" height="72" loading="lazy">
+                <b>{{ $isEdit ? 'เพิ่มรูปใหม่' : 'เลือกรูปสินค้า' }}</b>
+                <small>แตะเพื่อถ่ายรูปหรือเลือกจากเครื่อง (เหลือเพิ่มได้ <span x-text="slotsLeft"></span> รูป)</small>
+                <input type="file" name="images[]" accept="image/*" multiple class="nvm-sr" x-ref="images" x-on:change="previewNew($event)">
+            </label>
+            <div class="nvm-td-new" x-show="newPreviews.length > 0" x-cloak>
+                <template x-for="(src, i) in newPreviews" :key="i">
+                    <img :src="src" alt="">
+                </template>
             </div>
-        </template>
+            <span class="nvm-err" x-show="imageError" x-text="imageError" x-cloak></span>
+            @error('images')<span class="nvm-err">{{ $message }}</span>@enderror
+            @error('images.*')<span class="nvm-err">{{ $message }}</span>@enderror
+        </div>
+    </section>
 
-        <div class="ts-empty" style="padding:14px;" x-show="groups.length === 0">
-            <span class="ts-muted ts-small">ยังไม่มีตัวเลือก — สินค้าขายราคาเดียว</span>
+    {{-- ════════ ตัวเลือกสินค้า ════════ --}}
+    <section class="nvm-card nvm-box" aria-labelledby="lf-opt-h">
+        <div class="nvm-sec-h">
+            <div><small class="nvm-latin">Options · ไม่บังคับ</small><h2 id="lf-opt-h">ตัวเลือกสินค้า</h2></div>
+            <span class="nvm-chip" x-text="groups.length + '/10 กลุ่ม'"></span>
+        </div>
+        <div class="nvm-form">
+            <p class="nvm-desc">เช่น "เลือกเนื้อสัตว์" ให้ลูกค้าเลือก 1 อย่าง, "เพิ่มเติม" เลือกได้หลายอย่าง — ตั้งราคาเพิ่มต่อชิ้นได้ (ใส่ 0 = ไม่บวกเพิ่ม)</p>
+            @if($isEdit)
+                <input type="hidden" name="option_groups_present" value="1">
+            @endif
+
+            <div class="nvm-picks" aria-label="เพิ่มกลุ่มตัวเลือกด่วน">
+                <button type="button" x-on:click="addTemplate('meat')" :disabled="groups.length >= 10">+ เลือกเนื้อสัตว์</button>
+                <button type="button" x-on:click="addTemplate('spicy')" :disabled="groups.length >= 10">+ ความเผ็ด</button>
+                <button type="button" x-on:click="addTemplate('extra')" :disabled="groups.length >= 10">+ ท็อปปิ้ง</button>
+                <button type="button" x-on:click="addTemplate('size')" :disabled="groups.length >= 10">+ ขนาด</button>
+                <button type="button" x-on:click="addGroup()" :disabled="groups.length >= 10">+ กลุ่มเปล่า</button>
+            </div>
+            @error('option_groups')<span class="nvm-err">{{ $message }}</span>@enderror
+
+            <template x-for="(g, gi) in groups" :key="g.key">
+                <div class="nvm-td-group">
+                    <input type="hidden" :name="'option_groups[' + g.key + '][id]'" :value="g.id" :disabled="!g.id">
+                    <div class="nvm-td-group__head">
+                        <input type="text" class="nvm-input" :name="'option_groups[' + g.key + '][name]'" x-model="g.name" maxlength="100" required placeholder="ชื่อกลุ่ม เช่น เลือกเนื้อสัตว์" aria-label="ชื่อกลุ่มตัวเลือก">
+                        <button type="button" class="nvm-td-ib" x-on:click="move(gi, -1)" :disabled="gi === 0" aria-label="เลื่อนกลุ่มขึ้น"><svg class="nvm-ico"><use href="#nvm-i-up"/></svg></button>
+                        <button type="button" class="nvm-td-ib" x-on:click="move(gi, 1)" :disabled="gi === groups.length - 1" aria-label="เลื่อนกลุ่มลง"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg></button>
+                        <button type="button" class="nvm-td-ib is-bad" x-on:click="removeGroup(gi)" :aria-label="g.confirmDelete ? 'แตะอีกครั้งเพื่อยืนยันลบกลุ่ม' : 'ลบกลุ่ม'">
+                            <svg class="nvm-ico"><use :href="g.confirmDelete ? '#nvm-i-check' : '#nvm-i-x'"/></svg>
+                        </button>
+                    </div>
+                    <span class="nvm-err" x-show="g.confirmDelete">แตะปุ่มลบอีกครั้งเพื่อลบกลุ่มนี้</span>
+
+                    <div class="nvm-td-group__rule">
+                        <div class="nvm-seg" role="group" aria-label="จำนวนที่เลือกได้">
+                            <button type="button" :class="g.selection_type === 'single' ? 'is-on' : ''" :aria-pressed="g.selection_type === 'single'" x-on:click="g.selection_type = 'single'">เลือกได้ 1 อย่าง</button>
+                            <button type="button" :class="g.selection_type === 'multi' ? 'is-on' : ''" :aria-pressed="g.selection_type === 'multi'" x-on:click="g.selection_type = 'multi'">เลือกได้หลายอย่าง</button>
+                        </div>
+                        <input type="hidden" :name="'option_groups[' + g.key + '][selection_type]'" :value="g.selection_type">
+                        <label class="nvm-td-switch">
+                            <span class="nvm-sw"><input type="checkbox" x-model="g.is_required"><i></i></span>
+                            บังคับเลือก
+                        </label>
+                        <input type="hidden" :name="'option_groups[' + g.key + '][is_required]'" :value="g.is_required ? 1 : 0">
+                    </div>
+
+                    <div class="nvm-td-group__rule" x-show="g.selection_type === 'multi'">
+                        <label>ขั้นต่ำ
+                            <input type="number" class="nvm-input" min="0" max="30" :name="'option_groups[' + g.key + '][min_select]'" x-model="g.min_select" :disabled="g.selection_type !== 'multi'" placeholder="0">
+                        </label>
+                        <label>สูงสุด
+                            <input type="number" class="nvm-input" min="0" max="30" :name="'option_groups[' + g.key + '][max_select]'" x-model="g.max_select" :disabled="g.selection_type !== 'multi'" placeholder="ไม่จำกัด">
+                        </label>
+                    </div>
+                    <div><span class="nvm-chip nvm-chip--info" x-text="'ลูกค้าเห็น: ' + ruleLabel(g)"></span></div>
+
+                    <template x-for="(o, oi) in g.options" :key="o.key">
+                        <div class="nvm-td-optrow" :class="o.is_available ? '' : 'is-off'">
+                            <input type="hidden" :name="'option_groups[' + g.key + '][options][' + o.key + '][id]'" :value="o.id" :disabled="!o.id">
+                            <label class="nvm-td-thumb nvm-td-thumb--sm" :title="o.previewUrl || o.image_url ? 'เปลี่ยนรูปตัวเลือก' : 'เพิ่มรูปตัวเลือก'">
+                                <template x-if="o.previewUrl || o.image_url"><img :src="o.previewUrl || o.image_url" alt=""></template>
+                                <template x-if="!o.previewUrl && !o.image_url"><svg class="nvm-ico"><use href="#nvm-i-camera"/></svg></template>
+                                <input type="file" accept="image/*" class="nvm-sr" :name="'option_groups[' + g.key + '][options][' + o.key + '][image]'" x-on:change="previewOption(o, $event)" aria-label="รูปตัวเลือก">
+                            </label>
+                            <input type="text" class="nvm-input" :name="'option_groups[' + g.key + '][options][' + o.key + '][name]'" x-model="o.name" maxlength="100" required placeholder="ชื่อตัวเลือก" aria-label="ชื่อตัวเลือก">
+                            <div class="nvm-td-optrow__r">
+                                <div class="nvm-td-affix nvm-td-affix--pre">
+                                    <span>+฿</span>
+                                    <input type="number" class="nvm-input" min="0" max="100000" step="0.5" :name="'option_groups[' + g.key + '][options][' + o.key + '][price_delta]'" x-model="o.price_delta" aria-label="ราคาเพิ่ม">
+                                </div>
+                                <button type="button" class="nvm-td-avail" :class="o.is_available ? '' : 'is-off'" x-on:click="o.is_available = !o.is_available" :aria-label="o.is_available ? 'มีขาย (แตะเพื่อตั้งเป็นหมด)' : 'หมดชั่วคราว (แตะเพื่อเปิดขาย)'" x-text="o.is_available ? 'มีขาย' : 'หมด'"></button>
+                                <input type="hidden" :name="'option_groups[' + g.key + '][options][' + o.key + '][is_available]'" :value="o.is_available ? 1 : 0">
+                                <button type="button" class="nvm-td-ib is-bad" x-on:click="removeOption(g, oi)" :disabled="g.options.length <= 1" aria-label="ลบตัวเลือก"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg></button>
+                            </div>
+                        </div>
+                    </template>
+                    <div><button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" x-on:click="addOption(g)" :disabled="g.options.length >= 30"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เพิ่มตัวเลือก</button></div>
+                </div>
+            </template>
+
+            <p class="nvm-help" x-show="groups.length === 0">ยังไม่มีตัวเลือก — สินค้าขายราคาเดียว</p>
         </div>
     </section>
 </div>
+
 
 @push('scripts')
 <script>

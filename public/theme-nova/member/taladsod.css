@@ -1,0 +1,181 @@
+/* =====================================================================
+   หน้าผู้ขายตลาดสด (ธีมโนวาเต็ม — layouts.user-nova)
+   ใช้คู่กับ public/theme-nova/nova-member.css (คลาสกลาง nvm-*) — ไฟล์นี้มีเฉพาะคลาส nvm-td-*
+   สีทั้งหมดอ้างตัวแปร --nvm-* / --nv-* จึงเปลี่ยนตามโหมดมืด (html.dark) ให้เอง
+   ===================================================================== */
+
+/* ── แถบเมนูร้าน (ใช้ nvm-tabs) ─────────────────────────── */
+.nvm-td-nav { width: 100%; }
+.nvm-td-nav .nvm-ico { width: 16px; height: 16px; }
+
+/* ── รูปร้านในหัวหน้า (แทนภาพตลาด) ─────────────────────── */
+.nvm-ph__art.nvm-td-logo { object-fit: cover; border-radius: 32px; filter: none; animation: none; box-shadow: var(--nvm-shadow), 0 0 0 3px var(--nv-gold-500); background: var(--nvm-paper-2); }
+
+/* ── ปุ่มหลายปุ่มเรียงกัน / ป้ายเรียงกัน ─────────────────── */
+.nvm-td-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nvm-td-acts--end { justify-content: flex-end; }
+.nvm-td-acts--split { justify-content: space-between; }
+.nvm-td-acts form { margin: 0; }
+.nvm-td-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.nvm-td-grow { flex: 1 1 200px; }
+.nvm-td-grow .nvm-btn { width: 100%; }
+
+/* ── จุดสถานะ (กระพริบเมื่อสด) ─────────────────────────── */
+.nvm-td-dot { display: inline-block; width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--nvm-ink-3); box-shadow: 0 0 0 4px var(--nvm-track); vertical-align: middle; }
+.nvm-td-dot.is-ok { background: var(--nvm-good); box-shadow: 0 0 0 4px var(--nvm-good-bg); }
+.nvm-td-dot.is-warn { background: var(--nvm-warn); box-shadow: 0 0 0 4px var(--nvm-warn-bg); }
+.nvm-td-dot.is-live { animation: nvm-td-pulse 1.6s ease-in-out infinite; }
+@keyframes nvm-td-pulse { 50% { opacity: .45; } }
+
+/* ── การ์ดเปิด/ปิดร้าน ─────────────────────────────────── */
+.nvm-td-presence { overflow: hidden; }
+.nvm-td-presence.is-open { background: linear-gradient(135deg, var(--nvm-good-bg), transparent 65%), var(--nvm-paper); }
+.nvm-td-presence__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.nvm-td-presence__head h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--nvm-font-display); font-size: 20px; color: var(--nvm-ink); }
+.nvm-td-presence__head p { margin: 6px 0 0; font-size: 13px; color: var(--nvm-ink-3); }
+.nvm-td-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px; align-items: start; }
+.nvm-td-live { padding: 10px 12px; border-radius: 14px; font-size: 13px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-td-live p { margin: 4px 0 0; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── แผนที่ (Leaflet) ───────────────────────────────────── */
+.nvm-td-map { position: relative; z-index: 0; width: 100%; height: 240px; border-radius: 16px; overflow: hidden; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-td-map .leaflet-container { font-family: var(--nvm-font-ui); }
+/* หมุดจาก <x-theme-v4.leaflet /> อ้างตัวแปรธีม V4 ที่ไม่มีในเปลือกโนวา → ตั้งสีชุดโนวาแทน */
+.nvm-td-map .tp-map-pin { color: #1a1405; border-color: #fff; background: linear-gradient(135deg, var(--nv-gold-300), var(--nv-gold-600)); }
+.nvm-td-map .tp-map-pin.is-shop { color: var(--nvm-paper); background: linear-gradient(135deg, var(--nvm-good), color-mix(in srgb, var(--nvm-good) 70%, var(--nvm-ink))); }
+.nvm-td-map .tp-map-pin.is-rider { color: #fff; background: linear-gradient(135deg, var(--nv-navy-600), var(--nv-navy-900)); }
+
+/* ── สวิตช์ + ข้อความ ───────────────────────────────────── */
+.nvm-td-switch { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; color: var(--nvm-ink-2); cursor: pointer; }
+.nvm-td-switch.is-dim { opacity: .55; cursor: not-allowed; }
+
+/* ── ช่องกรอกพร้อมหน่วย ──────────────────────────────────── */
+.nvm-td-affix { position: relative; display: flex; align-items: center; }
+.nvm-td-affix .nvm-input { padding-right: 64px; }
+.nvm-td-affix > span { position: absolute; right: 14px; font-size: 13px; font-weight: 600; color: var(--nvm-ink-3); pointer-events: none; }
+.nvm-td-affix--pre .nvm-input { padding-right: 10px; padding-left: 38px; }
+.nvm-td-affix--pre > span { right: auto; left: 12px; }
+
+/* ── ภาพย่อสินค้า ───────────────────────────────────────── */
+.nvm-td-thumb { position: relative; width: 56px; height: 56px; flex: none; display: grid; place-items: center; overflow: hidden; border-radius: 14px; color: var(--nvm-gold-ink); background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); text-decoration: none; }
+.nvm-td-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.nvm-td-thumb .nvm-ico { width: 22px; height: 22px; opacity: .7; }
+.nvm-td-thumb--lg { width: 76px; height: 76px; border-radius: 16px; }
+.nvm-td-thumb--sm { width: 46px; height: 46px; border-radius: 12px; cursor: pointer; }
+
+/* ── รายการสินค้า/เมนูแบบการ์ด ───────────────────────────── */
+.nvm-td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.nvm-td-grid--sm { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+.nvm-td-item { display: flex; flex-direction: column; gap: 12px; padding: 14px; min-width: 0; }
+.nvm-td-item__top { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.nvm-td-item__txt { flex: 1; min-width: 0; }
+.nvm-td-item__txt > b { display: block; font-size: 14.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.nvm-td-item__meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-td-price { font-family: var(--nvm-font-display); font-weight: 700; font-size: 17px; color: var(--nvm-gold-ink); }
+.nvm-td-price small { font-family: var(--nvm-font-ui); font-weight: 500; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-td-mini { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 16px; text-decoration: none; color: inherit; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); transition: box-shadow .2s; min-width: 0; }
+.nvm-td-mini:hover { box-shadow: inset 0 0 0 1px var(--nv-gold-500); }
+.nvm-td-mini b { display: block; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── การ์ดออเดอร์ ───────────────────────────────────────── */
+.nvm-td-order { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.nvm-td-order.is-new { box-shadow: var(--nvm-shadow), inset 0 0 0 2px var(--nvm-warn); }
+.nvm-td-order__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.nvm-td-order__head a { font-family: var(--nvm-font-display); font-weight: 700; font-size: 16px; color: var(--nvm-gold-ink); text-decoration: none; }
+.nvm-td-order__head small { display: block; margin-top: 2px; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-td-order__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.nvm-td-order__foot small { font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-td-lines { padding: 10px 12px; border-radius: 14px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-td-line { display: flex; gap: 10px; align-items: flex-start; padding: 4px 0; }
+.nvm-td-line > b { min-width: 30px; font-family: var(--nvm-font-display); color: var(--nvm-gold-ink); }
+.nvm-td-line > div { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.nvm-td-opt-txt { display: block; font-size: 13px; font-weight: 600; color: var(--nvm-info); }
+.nvm-td-note { display: block; font-size: 12.5px; font-weight: 700; color: var(--nvm-bad); }
+.nvm-td-muted { display: block; font-size: 12.5px; color: var(--nvm-ink-3); }
+
+/* รายการที่ต้องเตรียม (หน้ารายละเอียด) */
+.nvm-td-prep { list-style: none; margin: 0; padding: 0; }
+.nvm-td-prep li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--nvm-line); }
+.nvm-td-prep li:first-child { border-top: 0; }
+.nvm-td-prep li > div { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.nvm-td-prep li > div > b em { font-style: normal; color: var(--nvm-gold-ink); }
+.nvm-td-prep li > b { font-family: var(--nvm-font-display); white-space: nowrap; }
+
+/* ── ไทม์ไลน์ออเดอร์ ───────────────────────────────────── */
+.nvm-td-tl { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.nvm-td-tl li { position: relative; display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 13.5px; }
+.nvm-td-tl li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 38px; bottom: -6px; width: 2px; background: var(--nvm-line-2); }
+.nvm-td-tl__dot { position: relative; z-index: 1; width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 50%; color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-td-tl__dot .nvm-ico { width: 16px; height: 16px; }
+.nvm-td-tl li.is-todo { color: var(--nvm-ink-3); }
+.nvm-td-tl li.is-todo .nvm-td-tl__dot { color: var(--nvm-ink-3); background: var(--nvm-track); }
+.nvm-td-tl li.is-now .nvm-td-tl__dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--nv-gold-400) 30%, transparent); }
+.nvm-td-tl li.is-now b { color: var(--nvm-gold-ink); }
+.nvm-td-tl li.is-stopped .nvm-td-tl__dot { color: #fff; background: var(--nvm-bad); }
+.nvm-td-tl small { font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── ฟอร์ม: ส่วนย่อย / แถบบันทึกติดล่าง ─────────────────── */
+.nvm-td-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; }
+.nvm-td-bar { position: sticky; bottom: 12px; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; }
+.nvm-td-bar > span { font-size: 12.5px; color: var(--nvm-ink-3); }
+.nvm-td-calc { padding: 12px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.6; background: var(--nvm-good-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nvm-good) 30%, transparent); }
+.nvm-td-calc small { display: block; margin-top: 4px; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* รูปสินค้าเดิม (หน้าแก้ไข) */
+.nvm-td-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.nvm-td-img { padding: 8px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); transition: opacity .2s; }
+.nvm-td-img.is-off { opacity: .35; }
+.nvm-td-img.is-main { box-shadow: inset 0 0 0 2px var(--nv-gold-500); }
+.nvm-td-img img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 12px; }
+.nvm-td-img > div { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; }
+.nvm-td-new { display: flex; flex-wrap: wrap; gap: 8px; }
+.nvm-td-new img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--nvm-line); }
+
+/* ปุ่มไอคอนกลม */
+.nvm-td-ib { width: 38px; height: 38px; flex: none; display: grid; text-decoration: none; place-items: center; padding: 0; border: 0; border-radius: 12px; cursor: pointer; color: var(--nvm-ink-2); background: var(--nvm-track); transition: background .2s, color .2s; }
+.nvm-td-ib:hover:not(:disabled) { color: #1a1405; background: var(--nv-btn-gold); }
+.nvm-td-ib:disabled { opacity: .4; cursor: not-allowed; }
+.nvm-td-ib .nvm-ico { width: 17px; height: 17px; }
+.nvm-td-ib.is-bad { color: var(--nvm-bad); background: var(--nvm-bad-bg); }
+.nvm-td-ib.is-bad:hover:not(:disabled) { color: #fff; background: var(--nvm-bad); }
+
+/* ตัวแก้ไขกลุ่มตัวเลือก */
+.nvm-td-group { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line-2); }
+.nvm-td-group__head { display: flex; align-items: center; gap: 8px; }
+.nvm-td-group__head .nvm-input { flex: 1; min-width: 0; }
+.nvm-td-group__rule { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.nvm-td-group__rule label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--nvm-ink-2); }
+.nvm-td-group__rule .nvm-input { width: 92px; height: 40px; }
+.nvm-td-optrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; border-radius: 14px; background: var(--nvm-paper); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-td-optrow.is-off { opacity: .6; }
+.nvm-td-optrow > .nvm-input { flex: 1 1 150px; min-width: 0; height: 42px; }
+.nvm-td-optrow__r { display: flex; align-items: center; gap: 8px; flex: none; }
+.nvm-td-optrow__r .nvm-td-affix { width: 112px; }
+.nvm-td-optrow__r .nvm-input { height: 42px; }
+.nvm-td-avail { height: 34px; padding: 0 10px; border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--nvm-good); background: var(--nvm-good-bg); }
+.nvm-td-avail.is-off { color: var(--nvm-ink-3); background: var(--nvm-track); }
+
+/* ── กราฟรายได้ 14 วัน (ใช้ nvm-bars) ──────────────────── */
+.nvm-td-bars { height: 190px; }
+.nvm-td-bars .nvm-bar.is-zero i { opacity: .25; }
+
+/* ── ยินยอมเงื่อนไข ──────────────────────────────────────── */
+.nvm-td-agree { display: flex; align-items: flex-start; gap: 12px; font-size: 13.5px; line-height: 1.65; cursor: pointer; }
+.nvm-td-agree input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--nv-gold-500); }
+.nvm-td-agree a { color: var(--nvm-gold-ink); font-weight: 700; }
+
+/* ── มือถือ ────────────────────────────────────────────── */
+@media (max-width: 767px) {
+    /* แถบบันทึกต้องลอยพ้นแถบล่างของเปลือกโนวา (nvm-tabbar) */
+    .nvm-td-bar { bottom: calc(84px + env(safe-area-inset-bottom)); padding: 10px 12px; }
+    .nvm-td-bar .nvm-btn { flex: 1; }
+    .nvm-td-map { height: 210px; }
+    .nvm-td-order { padding: 14px; }
+    .nvm-td-order__foot .nvm-td-acts { width: 100%; }
+    .nvm-td-order__foot .nvm-td-acts form, .nvm-td-order__foot .nvm-td-acts .nvm-btn { flex: 1 1 auto; }
+    .nvm-td-order__foot .nvm-td-acts form .nvm-btn { width: 100%; }
+    .nvm-td-optrow__r { width: 100%; justify-content: flex-end; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nvm-td-dot.is-live { animation: none; }
+}

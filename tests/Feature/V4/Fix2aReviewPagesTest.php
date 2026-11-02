@@ -171,7 +171,11 @@ class Fix2aReviewPagesTest extends TestCase
         $html = $this->assertV4($this->actingAs($this->buyer)->get(route('taladsod.track.show', $job->fresh()->tracking_token)));
         $this->assertStringContainsString('toggleShare($event.target)', $html);
 
-        $html = $this->assertV4($this->actingAs($this->sellerUser)->get(route('taladsod.seller.dashboard')));
+        // แดชบอร์ดผู้ขายย้ายไปธีม Nova แล้ว — ยังต้องส่ง element ให้ setLive ย้อนสวิตช์ได้เหมือนเดิม
+        $response = $this->actingAs($this->sellerUser)->get(route('taladsod.seller.dashboard'));
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('nvm-body', $html);
         $this->assertStringContainsString('setLive($event.target)', $html);
     }
 

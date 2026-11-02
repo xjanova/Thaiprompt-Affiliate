@@ -132,6 +132,58 @@ class TaladsodWebUi
         };
     }
 
+    // ===== ธีมโนวา (หน้าผู้ขาย layouts.user-nova) =====
+
+    /**
+     * คลาสป้าย nvm-chip ตามโทน (muted = ป้ายเทาพื้นฐาน)
+     */
+    public static function novaChip(string $tone): string
+    {
+        return in_array($tone, ['ok', 'warn', 'bad', 'info', 'gold'], true) ? 'nvm-chip nvm-chip--'.$tone : 'nvm-chip';
+    }
+
+    /**
+     * ไอคอนชุดโนวา (#nvm-i-*) ของสถานะออเดอร์
+     */
+    public static function novaOrderIcon(?string $status): string
+    {
+        return match ($status) {
+            FreshMarketOrder::STATUS_PENDING => 'clock',
+            FreshMarketOrder::STATUS_ACCEPTED => 'check',
+            FreshMarketOrder::STATUS_PREPARING => 'basket',
+            FreshMarketOrder::STATUS_READY => 'bag',
+            FreshMarketOrder::STATUS_DELIVERING => 'scooter',
+            FreshMarketOrder::STATUS_DELIVERED => 'home',
+            FreshMarketOrder::STATUS_COMPLETED => 'award',
+            FreshMarketOrder::STATUS_CANCELLED => 'x',
+            FreshMarketOrder::STATUS_DELIVERY_FAILED => 'info',
+            default => 'history',
+        };
+    }
+
+    /**
+     * ไอคอนชุดโนวาของปุ่ม action
+     */
+    public static function novaActionIcon(string $action): string
+    {
+        return match ($action) {
+            'accept', 'confirm' => 'check',
+            'prepare' => 'basket',
+            'ready' => 'bag',
+            'handover' => 'send',
+            'cancel' => 'x',
+            default => 'arrow',
+        };
+    }
+
+    /**
+     * ไอคอนชุดโนวาของขั้นในไทม์ไลน์ออเดอร์ (ใช้คู่กับ orderSteps())
+     */
+    public static function novaStepIcon(string $stepKey): string
+    {
+        return $stepKey === FreshMarketOrder::STATUS_PENDING ? 'history' : self::novaOrderIcon($stepKey);
+    }
+
     /**
      * ป้ายวิธีรับสินค้า
      */

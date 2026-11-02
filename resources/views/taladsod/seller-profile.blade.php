@@ -1,11 +1,11 @@
 {{--
- | ตั้งค่าร้านตลาดสด (taladsod.seller.profile) — ธีม V4 (user-v4)
+ | ตั้งค่าร้านตลาดสด (taladsod.seller.profile) — ธีมโนวาเต็ม (layouts.user-nova)
  | Controller: FreshMarket\HomeController@sellerProfile
  | ตัวแปร: $seller
  | ส่งฟอร์ม PUT taladsod.seller.profile.update: shop_name*, phone*, address*, latitude*, longitude*, shop_description, province, district, sub_district
- | โหมดร้าน: POST taladsod.seller.mobile-mode {is_mobile} (JSON)
+ | โหมดร้าน: POST taladsod.seller.mobile-mode {is_mobile} (JSON ผ่าน window.ts.post)
  --}}
-@extends('layouts.user-v4')
+@extends('layouts.user-nova')
 
 @section('title', 'ตั้งค่าร้าน · '.$seller->shop_name)
 
@@ -14,78 +14,98 @@
         'isMobile' => $seller->isMobileShop(),
         'url' => route('taladsod.seller.mobile-mode'),
     ];
+    $statusMessage = $seller->sellingStatusMessage();
 @endphp
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/taladsod.css') }}?v={{ filemtime(public_path('theme-nova/member/taladsod.css')) }}">@endpush
+
 @section('content')
-<x-theme-v4.shop-kit />
-@include('taladsod.partials.kit')
+@include('taladsod.partials.kit-js')
 <x-theme-v4.leaflet />
 
-<div class="ts-scope ts-stack" style="gap:16px; max-width:880px; margin:0 auto;">
-    @include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'profile'])
+<div class="nvm-stack">
 
-    <div class="ts-row" style="justify-content:space-between;">
-        <div>
-            <h1 class="ts-h1">ตั้งค่าร้าน</h1>
-            <p class="ts-muted" style="margin:6px 0 0; font-size:13.5px;">สถานะร้าน: <b>{{ $seller->status_label }}</b> · รหัสแนะนำร้าน {{ $seller->referral_code }}</p>
-            {{-- 🪪 ร้านยังขายไม่ได้ (รอยืนยันตัวตนในแอป / รอแอดมิน / ถูกระงับ) — ข้อความเดียวกับแดชบอร์ด แอป และ LINE --}}
-            @if($statusMessage = $seller->sellingStatusMessage())
-                <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                    {{ $statusMessage }}
-                    @if($seller->needsOwnerKyc())
-                        · <a href="{{ \App\Services\Ekyc\EkycGate::downloadUrl() }}" class="font-semibold underline">ดาวน์โหลดแอปเพื่อยืนยันตัวตน</a>
-                    @endif
-                </p>
-            @endif
+<section class="nvm-ph" aria-labelledby="nvm-td-sp-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <div class="nvm-eyebrow nvm-latin">Shop settings</div>
+            <h1 id="nvm-td-sp-h">ตั้งค่าร้าน</h1>
+            <p class="nvm-ph__lead">{{ $seller->shop_name }} · รหัสแนะนำร้าน <span class="nvm-num">{{ $seller->referral_code }}</span></p>
+            <div class="nvm-pills">
+                <span class="nvm-pill {{ $seller->status_key === 'active' ? 'nvm-pill--ok' : ($seller->status_key === 'unverified' ? 'nvm-pill--warn' : 'nvm-pill--bad') }}">สถานะร้าน: {{ $seller->status_label }}</span>
+            </div>
+            <div class="nvm-hero__actions nvm-td-acts">
+                <a class="nvm-btn nvm-btn--ghost nvm-btn--sm" href="{{ route('taladsod.seller', $seller->id) }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-store"/></svg>ดูหน้าร้าน</a>
+            </div>
         </div>
-        <a href="{{ route('taladsod.seller', $seller->id) }}" class="tp-btn" target="_blank" rel="noopener"><i class="fas fa-store" aria-hidden="true"></i> ดูหน้าร้าน</a>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/icons/store.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    {{-- ประเภทร้าน --}}
-    <section class="tp-card ts-stack" x-data="{ isMobile: {{ $modeCfg['isMobile'] ? 'true' : 'false' }}, busy: false,
+@include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'profile'])
+
+{{-- 🪪 ร้านยังขายไม่ได้ (รอยืนยันตัวตนในแอป / รอแอดมิน / ถูกระงับ) — ข้อความเดียวกับแดชบอร์ด แอป และ LINE --}}
+@if($statusMessage)
+    <section class="nvm-card nvm-alert" role="status">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg></span>
+        <div class="nvm-alert__txt"><b>ร้านยังขายไม่ได้</b><p>{{ $statusMessage }}</p></div>
+        @if($seller->needsOwnerKyc())
+            <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ \App\Services\Ekyc\EkycGate::downloadUrl() }}"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>ดาวน์โหลดแอปเพื่อยืนยันตัวตน</a>
+        @endif
+    </section>
+@endif
+
+{{-- ประเภทร้าน (บันทึกทันทีผ่าน AJAX) --}}
+<section class="nvm-card nvm-box" aria-labelledby="sp-mode-h"
+         x-data="{ isMobile: {{ $modeCfg['isMobile'] ? 'true' : 'false' }}, busy: false,
             async save(on) {
+                if (on === this.isMobile || this.busy) { return; }
                 this.busy = true;
                 const r = await window.ts.post(@js($modeCfg['url']), { is_mobile: on ? 1 : 0 });
                 this.busy = false;
-                if (!r.ok) { window.ts.notify(r.message, 'error'); return; }
-                this.isMobile = !!(r.data && r.data.is_mobile);
-                window.ts.notify(r.message, 'success');
-            } }" aria-labelledby="sp-mode-h">
-        <h2 id="sp-mode-h" class="ts-h2"><i class="fas fa-cart-flatbed" style="color:var(--accent2);" aria-hidden="true"></i> ประเภทร้าน</h2>
-        <div class="ts-grid" style="--ts-min:230px; gap:10px;">
-            <button type="button" class="ts-choice" :class="!isMobile ? 'is-on' : ''" x-on:click="isMobile && save(false)" :disabled="busy" :aria-pressed="!isMobile ? 'true' : 'false'">
-                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
-                <span class="name">ร้านประจำที่<span class="ts-muted ts-small" style="display:block; font-weight:600;">ลูกค้าเห็นร้านตามที่อยู่ด้านล่าง</span></span>
-            </button>
-            <button type="button" class="ts-choice" :class="isMobile ? 'is-on' : ''" x-on:click="!isMobile && save(true)" :disabled="busy" :aria-pressed="isMobile ? 'true' : 'false'">
-                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
-                <span class="name">ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด)<span class="ts-muted ts-small" style="display:block; font-weight:600;">กด "เปิดร้านที่นี่วันนี้" ทุกครั้งที่ไปขาย</span></span>
-            </button>
-        </div>
-        <p class="ts-help" style="margin:0;" x-show="isMobile">เปลี่ยนเป็นร้านเคลื่อนที่แล้วร้านจะปิดไว้ก่อน ไปเปิดร้านได้ที่ <a href="{{ route('taladsod.seller.dashboard') }}" class="ts-link">หน้าร้านวันนี้</a></p>
-    </section>
+                if (r.ok) { this.isMobile = !!(r.data && r.data.is_mobile); }
+                // บันทึกไม่สำเร็จ = ตั้งปุ่มเลือกกลับตามสถานะจริง (ค่าเดิมไม่เปลี่ยน Alpine จึงไม่วาดใหม่ให้เอง)
+                this.$root.querySelectorAll('input[name=sp_mode]').forEach((el) => { el.checked = (el.value === 'mobile') === this.isMobile; });
+                window.ts.notify(r.message, r.ok ? 'success' : 'error');
+            } }">
+    <div class="nvm-sec-h"><div><small class="nvm-latin">Shop type</small><h2 id="sp-mode-h">ประเภทร้าน</h2></div></div>
+    <div class="nvm-opts nvm-opts--2" role="radiogroup" aria-labelledby="sp-mode-h">
+        <label class="nvm-opt" :class="busy ? 'is-off' : ''">
+            <input type="radio" name="sp_mode" value="fixed" :checked="!isMobile" x-on:change="save(false)" :disabled="busy" @checked(! $modeCfg['isMobile'])>
+            <img src="{{ asset('images/nova/icons/store.webp') }}" alt="" width="44" height="44" loading="lazy">
+            <span><b>ร้านประจำที่</b><small>ลูกค้าเห็นร้านตามที่อยู่ด้านล่าง</small></span>
+        </label>
+        <label class="nvm-opt" :class="busy ? 'is-off' : ''">
+            <input type="radio" name="sp_mode" value="mobile" :checked="isMobile" x-on:change="save(true)" :disabled="busy" @checked($modeCfg['isMobile'])>
+            <img src="{{ asset('images/nova/icons/basket.webp') }}" alt="" width="44" height="44" loading="lazy">
+            <span><b>ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด)</b><small>กด "เปิดร้านที่นี่วันนี้" ทุกครั้งที่ไปขาย</small></span>
+        </label>
+    </div>
+    <p class="nvm-note" x-show="isMobile" @if(! $modeCfg['isMobile']) x-cloak @endif><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span>เปลี่ยนเป็นร้านเคลื่อนที่แล้วร้านจะปิดไว้ก่อน ไปเปิดร้านได้ที่ <a class="nvm-link" href="{{ route('taladsod.seller.dashboard') }}">หน้าร้านวันนี้</a></span></p>
+</section>
 
-    <form method="POST" action="{{ route('taladsod.seller.profile.update') }}" class="ts-stack" style="gap:16px;" x-data="{ sending: false }" x-on:submit="sending = true">
-        @csrf
-        @method('PUT')
-        @if($errors->any())
-            <div class="sf-note sf-note-err" role="alert">
-                <b><i class="fas fa-circle-exclamation" aria-hidden="true"></i> บันทึกไม่สำเร็จ กรุณาตรวจสอบ</b>
-                <ul style="margin:6px 0 0; padding-left:18px;">
-                    @foreach($errors->all() as $message)
-                        <li>{{ $message }}</li>
-                    @endforeach
-                </ul>
+<form method="POST" action="{{ route('taladsod.seller.profile.update') }}" class="nvm-stack" x-data="{ sending: false }" x-on:submit="sending = true" @pageshow.window="sending = false">
+    @csrf
+    @method('PUT')
+    @if($errors->any())
+        <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+            <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+            <div class="nvm-alert__txt">
+                <b>บันทึกไม่สำเร็จ กรุณาตรวจสอบ</b>
+                @foreach($errors->all() as $message)<p>{{ $message }}</p>@endforeach
             </div>
-        @endif
+        </section>
+    @endif
 
-        @include('taladsod.partials.shop-form', ['shopData' => $seller])
+    @include('taladsod.partials.shop-form', ['shopData' => $seller])
 
-        <div class="tp-card ts-row" style="justify-content:flex-end; position:sticky; bottom:12px; z-index:20;">
-            <button type="submit" class="ts-btn3d ts-tone-gold" :disabled="sending">
-                <i class="fas" :class="sending ? 'fa-circle-notch ts-spin' : 'fa-floppy-disk'" aria-hidden="true"></i> บันทึกข้อมูลร้าน
-            </button>
-        </div>
-    </form>
+    <div class="nvm-card nvm-td-bar">
+        <span>ข้อมูลร้านแสดงให้ลูกค้าเห็นทันทีหลังบันทึก</span>
+        <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="sending">
+            <svg class="nvm-ico"><use href="#nvm-i-check"/></svg><span x-text="sending ? 'กำลังบันทึก…' : 'บันทึกข้อมูลร้าน'">บันทึกข้อมูลร้าน</span>
+        </button>
+    </div>
+</form>
+
 </div>
 @endsection
