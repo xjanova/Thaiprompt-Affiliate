@@ -1,0 +1,156 @@
+/* =====================================================================
+   ชุดหน้า "ย้ายทีม · หน้าแนะนำสมาชิก (Recruit) · ผู้มุ่งหวัง" ธีมโนวาเต็ม
+   - ใช้คู่กับ nova-member.css (คลาสกลาง nvm-*) — ไฟล์นี้เก็บเฉพาะชิ้นที่หน้าในชุดนี้ใช้
+   - ทุกคลาสขึ้นต้นด้วย nvm-tr- · สีอ่านจากตัวแปร --nvm-* จึงสลับโหมดมืด (html.dark) ได้เอง
+   - ออกแบบจากจอมือถือ (375px) ก่อน แล้วค่อยขยายคอลัมน์เมื่อจอกว้าง
+   ===================================================================== */
+
+/* ── แถวปุ่มจัดการ (ตัดบรรทัดเองบนจอแคบ) ─────────────── */
+.nvm-tr-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.nvm-tr-acts form { display: contents; }
+.nvm-tr-acts .nvm-btn { flex: 1 1 140px; }
+
+/* ── ตัวเลขสรุป 4 ช่อง (มือถือ 2 คอลัมน์ · จอกว้าง 4 คอลัมน์) ── */
+.nvm-tr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nvm-tr-stats--5 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+.nvm-tr-stats .nvm-mini b.is-gold { color: var(--nvm-gold-ink); }
+.nvm-tr-stats .nvm-mini b.is-info { color: var(--nvm-info); }
+.nvm-tr-stats .nvm-mini b.is-warn { color: var(--nvm-warn); }
+.nvm-tr-stats .nvm-mini b.is-mute { color: var(--nvm-ink-3); }
+@media (min-width: 768px) {
+    .nvm-tr-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .nvm-tr-stats--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .nvm-tr-stats--5 > :last-child:nth-child(odd) { grid-column: auto; }
+}
+
+/* ── การ์ดคำขอย้ายทีม (รายการ) ──────────────────────── */
+.nvm-tr-list { display: flex; flex-direction: column; gap: 14px; }
+.nvm-tr-req__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 14px; }
+.nvm-tr-req__head h3 { margin: 0; font-family: var(--nvm-font-display); font-size: 17px; }
+.nvm-tr-req__head small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-tr-req.is-pending { box-shadow: var(--nvm-shadow), inset 3px 0 0 var(--nvm-warn), inset 0 0 0 1px var(--nvm-line); }
+
+/* ── จากแม่ทีมเดิม → แม่ทีมใหม่ ────────────────────── */
+.nvm-tr-flow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: center; }
+.nvm-tr-flow__arrow { justify-self: center; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #1a1405; background: var(--nv-btn-gold); transform: rotate(90deg); }
+.nvm-tr-flow__arrow .nvm-ico { width: 17px; height: 17px; }
+@media (min-width: 560px) {
+    .nvm-tr-flow { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+    .nvm-tr-flow__arrow { transform: none; }
+}
+.nvm-tr-person { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-tr-person > div { min-width: 0; }
+.nvm-tr-person small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-tr-person b { display: block; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nvm-tr-person code { display: block; font-family: var(--nvm-font-ui); font-size: 12px; color: var(--nvm-ink-2); overflow-wrap: anywhere; }
+.nvm-tr-person.is-old .nvm-avatar { color: var(--nvm-bad); background: var(--nvm-bad-bg); }
+.nvm-tr-person.is-new { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nvm-good) 45%, transparent); }
+.nvm-tr-person.is-new .nvm-avatar { color: var(--nvm-good); background: var(--nvm-good-bg); }
+
+/* ── กล่องข้อความ (เหตุผล / หมายเหตุ) ──────────────── */
+.nvm-tr-quote { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); }
+.nvm-tr-quote small { display: block; font-size: 11.5px; font-weight: 600; color: var(--nvm-ink-3); margin-bottom: 2px; }
+.nvm-tr-quote p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--nvm-ink); overflow-wrap: anywhere; white-space: pre-line; }
+.nvm-tr-quote.is-bad { background: var(--nvm-bad-bg); box-shadow: inset 3px 0 0 var(--nvm-bad); }
+.nvm-tr-quote.is-bad small { color: var(--nvm-bad); }
+.nvm-tr-quote.is-info { background: var(--nvm-info-bg); box-shadow: inset 3px 0 0 var(--nvm-info); }
+.nvm-tr-quote.is-info small { color: var(--nvm-info); }
+
+/* ── ไทม์ไลน์คำขอ ───────────────────────────────────── */
+.nvm-tr-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.nvm-tr-timeline li { position: relative; display: flex; gap: 12px; align-items: flex-start; }
+.nvm-tr-timeline li + li::before { content: ""; position: absolute; left: 15px; top: -14px; height: 14px; width: 2px; background: var(--nvm-line-2); }
+.nvm-tr-timeline__dot { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--nvm-good); background: var(--nvm-good-bg); }
+.nvm-tr-timeline__dot .nvm-ico { width: 15px; height: 15px; }
+.nvm-tr-timeline b { display: block; font-size: 13.5px; }
+.nvm-tr-timeline small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+
+/* ── แท็บในหน้า (ปุ่ม Alpine) ใต้หัวการ์ด ──────────── */
+.nvm-tr-tabs { margin-bottom: 14px; }
+
+/* ── หน้าต่างกรอกเหตุผลปฏิเสธ ─────────────────────── */
+.nvm-tr-modal { text-align: left; }
+.nvm-tr-modal h2 { text-align: center; }
+.nvm-tr-modal .nvm-form { margin-top: 12px; }
+
+/* ── ฟอร์ม 2 คอลัมน์ (มือถือ 1 คอลัมน์) ─────────────── */
+.nvm-tr-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 768px) {
+    .nvm-tr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nvm-tr-grid .is-wide { grid-column: 1 / -1; }
+}
+.nvm-tr-count { align-self: flex-end; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-tr-thumb { width: 112px; height: 112px; border-radius: 18px; object-fit: cover; box-shadow: inset 0 0 0 1px var(--nvm-line-2), var(--nvm-shadow); }
+.nvm-tr-switch { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border-radius: 16px; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); cursor: pointer; }
+.nvm-tr-switch b { display: block; font-size: 14px; }
+.nvm-tr-switch small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+
+/* ── QR + ช่องลิงก์ + ปุ่มแชร์ ───────────────────────── */
+.nvm-tr-share { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (min-width: 768px) {
+    .nvm-tr-share { grid-template-columns: auto minmax(0, 1fr); }
+}
+.nvm-tr-share .nvm-qr__box { margin-top: 4px; }
+.nvm-tr-share .nvm-qr__box > div { display: block; }
+.nvm-tr-share .nvm-qr .nvm-btn { margin-top: 22px; }
+.nvm-tr-share .nvm-copy--box { margin-top: 6px; }
+.nvm-tr-share .nvm-copy--box code { font-size: 13px; font-weight: 600; }
+.nvm-tr-channels { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+.nvm-tr-channels .nvm-btn { width: 100%; }
+.nvm-tr-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 560px) {
+    .nvm-tr-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.nvm-tr-tools form { display: contents; }
+.nvm-tr-tool { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 0; border-radius: 16px; font: inherit; text-align: left; cursor: pointer; color: inherit; background: var(--nvm-paper-2); box-shadow: inset 0 0 0 1px var(--nvm-line); transition: box-shadow .2s; }
+.nvm-tr-tool:hover { box-shadow: inset 0 0 0 1.5px var(--nv-gold-500); }
+.nvm-tr-tool b { display: block; font-size: 13.5px; }
+.nvm-tr-tool small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-tr-tool .nvm-tx__ic { flex: none; }
+
+/* ── กรวย Conversion ────────────────────────────────── */
+.nvm-tr-funnel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 768px) {
+    .nvm-tr-funnel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.nvm-tr-funnel .nvm-mini { text-align: center; }
+.nvm-tr-funnel .nvm-mini .nvm-tx__ic { margin: 0 auto 6px; }
+.nvm-tr-funnel .nvm-mini em { display: block; margin-top: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: var(--nvm-gold-ink); }
+
+/* ── กราฟแท่งรายวัน 2 ชุด (เข้าชม / ผู้มุ่งหวัง) — เลื่อนแนวนอนในกรอบเมื่อวันเยอะ ── */
+.nvm-tr-chart { overflow-x: auto; padding-bottom: 4px; }
+.nvm-tr-chart__in { position: relative; height: 200px; width: max-content; min-width: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12px, 1fr); gap: 4px; align-items: end; padding-top: 10px; }
+.nvm-tr-chart__in::before { content: ""; position: absolute; inset: 10px 0 22px; background: repeating-linear-gradient(to bottom, var(--nvm-track) 0 1px, transparent 1px 25%); pointer-events: none; }
+.nvm-tr-day { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.nvm-tr-day__bars { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.nvm-tr-day__bars i { width: min(45%, 12px); min-height: 2px; border-radius: 4px 4px 2px 2px; height: var(--h); background: var(--nvm-bar); }
+.nvm-tr-day__bars i.is-lead { background: var(--nv-btn-gold); }
+.nvm-tr-day span { height: 18px; font-size: 9.5px; color: var(--nvm-ink-3); white-space: nowrap; }
+.nvm-tr-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; font-size: 12.5px; color: var(--nvm-ink-2); }
+.nvm-tr-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.nvm-tr-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--nvm-bar); }
+.nvm-tr-legend i.is-lead { background: var(--nv-btn-gold); }
+
+/* แถบสัดส่วนอุปกรณ์: ความกว้างส่งมาเป็นตัวแปร --w จาก Blade */
+.nvm-tr-meter i { width: var(--w, 0%); }
+
+/* ── ตารางผู้มุ่งหวัง ───────────────────────────────── */
+.nvm-tr-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nvm-tr-who > div { min-width: 0; }
+.nvm-tr-who b { display: block; font-size: 13.5px; }
+.nvm-tr-who small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-tr-who .nvm-avatar { width: 36px; height: 36px; font-size: 15px; }
+.nvm-tr-cell small { display: block; font-size: 11.5px; color: var(--nvm-ink-3); }
+.nvm-tr-rowacts { display: flex; gap: 6px; }
+.nvm-tr-rowacts form { display: inline-flex; }
+.nvm-tr-rowacts .nvm-btn { height: 32px; padding: 0 12px; font-size: 12.5px; }
+
+/* ── โปรไฟล์ผู้มุ่งหวัง (หน้ารายละเอียด) ──────────────── */
+.nvm-tr-profile { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.nvm-tr-profile .nvm-avatar { width: 60px; height: 60px; font-size: 24px; }
+.nvm-tr-profile b { display: block; font-family: var(--nvm-font-display); font-size: 19px; overflow-wrap: anywhere; }
+.nvm-tr-profile small { display: block; font-size: 12px; color: var(--nvm-ink-3); }
+.nvm-tr-token { display: block; font-family: var(--nvm-font-ui); font-size: 12px; font-weight: 500; word-break: break-all; text-align: right; }
+
+/* ── ตัวกรองแบบฟอร์ม GET ────────────────────────────── */
+.nvm-tr-filter .nvm-filter__btns .nvm-btn { flex: 1 1 0; }

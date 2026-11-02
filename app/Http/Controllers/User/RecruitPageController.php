@@ -140,9 +140,10 @@ class RecruitPageController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
+            // ไม่ส่งข้อความ exception ดิบให้สมาชิกเห็น (อาจมีพาธ/ข้อมูลภายในระบบ) — รายละเอียดอยู่ใน log แล้ว
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         }
     }
 
@@ -161,15 +162,28 @@ class RecruitPageController extends Controller
         $query = LeadLock::where('team_leader_id', $user->id)
             ->with('mlmMember.user');
 
+        // หมดอายุ = ถูกตั้งสถานะ expired แล้ว หรือยังล็อกอยู่แต่เลยเวลาหมดอายุ
+        // 🐛 (2026-11-02) เดิมใช้ scope expired() ซึ่งนับแค่แบบหลัง → ลีดที่ระบบตั้ง status=expired แล้วหายจากทุกแท็บ
+        $expiredScope = function ($q) {
+            $q->where('status', LeadLock::STATUS_EXPIRED)
+                ->orWhere(function ($q2) {
+                    $q2->where('status', LeadLock::STATUS_LOCKED)
+                        ->where('expires_at', '<=', now());
+                });
+        };
+
         if ($status === 'active') {
             $query->locked();
         } elseif ($status === 'converted') {
             $query->converted();
         } elseif ($status === 'expired') {
-            $query->expired();
+            $query->where($expiredScope);
+        } else {
+            $status = 'all';
         }
 
-        $leads = $query->latest('locked_at')->paginate(20);
+        // withQueryString: กดหน้าถัดไปแล้วตัวกรองสถานะไม่หลุด
+        $leads = $query->latest('locked_at')->paginate(20)->withQueryString();
 
         // สถิติ
         $stats = [
@@ -177,8 +191,7 @@ class RecruitPageController extends Controller
             'active' => LeadLock::where('team_leader_id', $user->id)->locked()->count(),
             'converted' => LeadLock::where('team_leader_id', $user->id)->converted()->count(),
             'expired' => LeadLock::where('team_leader_id', $user->id)
-                ->where('status', LeadLock::STATUS_LOCKED)
-                ->where('expires_at', '<=', now())
+                ->where($expiredScope)
                 ->count(),
         ];
 
@@ -199,9 +212,13 @@ class RecruitPageController extends Controller
     {
         $user = Auth::user();
 
-        // ระยะเวลา (default: 30 วัน)
-        $days = $request->get('days', 30);
-        $startDate = now()->subDays($days);
+        // ระยะเวลา (default: 30 วัน) — รับเฉพาะ 7/30/90
+        // 🐛 (2026-11-02) เดิมส่งค่าจาก URL เข้า subDays() ตรงๆ → ?days=abc = TypeError (500), ?days=100000 = คิวรีหนัก
+        $days = (int) $request->get('days', 30);
+        if (! in_array($days, [7, 30, 90], true)) {
+            $days = 30;
+        }
+        $startDate = now()->subDays($days)->startOfDay();
 
         // Visits per day
         $visitsPerDay = RecruitPageVisit::where('team_leader_id', $user->id)
@@ -258,6 +275,20 @@ class RecruitPageController extends Controller
             ->converted()
             ->count();
 
+        // ชุดข้อมูลรายวันครบทุกวันในช่วง (วันที่ไม่มีข้อมูล = 0)
+        // 🐛 (2026-11-02) เดิมกราฟใช้แกนวันจาก "การเข้าชม" อย่างเดียว → ลีดในวันที่ไม่มีคนเข้าชมหายจากกราฟ
+        $visitsByDate = $visitsPerDay->pluck('count', 'date');
+        $leadsByDate = $leadsPerDay->pluck('count', 'date');
+        $daily = [];
+        for ($d = $startDate->copy(); $d->lte(now()); $d->addDay()) {
+            $key = $d->toDateString();
+            $daily[] = [
+                'date' => $d->copy(),
+                'visits' => (int) ($visitsByDate[$key] ?? 0),
+                'leads' => (int) ($leadsByDate[$key] ?? 0),
+            ];
+        }
+
         $funnel = [
             'visits' => $totalVisits,
             'clicked_register' => $clickedRegister,
@@ -268,6 +299,7 @@ class RecruitPageController extends Controller
         return view('user.recruit.analytics', [
             'visitsPerDay' => $visitsPerDay,
             'leadsPerDay' => $leadsPerDay,
+            'daily' => $daily,
             'deviceBreakdown' => $deviceBreakdown,
             'topReferrers' => $topReferrers,
             'funnel' => $funnel,

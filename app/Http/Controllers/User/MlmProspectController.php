@@ -36,13 +36,26 @@ class MlmProspectController extends Controller
             ]);
         }
 
-        $status = $request->input('status');
-        $type = $request->input('type');
+        // รับเฉพาะค่าที่รู้จัก — ค่าแปลกจาก URL ถือว่า "ทั้งหมด"
+        $status = in_array($request->input('status'), ['pending', 'in_progress', 'completed', 'expired', 'cancelled'], true)
+            ? $request->input('status') : null;
+        $type = $request->input('type') === 'fortune' ? 'fortune' : null;
+
+        // 🐛 (2026-11-02) ฟอร์มกรองมีช่องค้นหา/ช่วงวันที่มานาน แต่ controller ไม่เคยอ่าน → กดกรองแล้วไม่มีอะไรเปลี่ยน
+        $isDate = fn ($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && strtotime($v) !== false;
+        $filters = [
+            'search' => is_string($request->input('search')) ? mb_substr(trim($request->input('search')), 0, 100) : null,
+            'date_from' => $isDate($request->input('date_from')) ? $request->input('date_from') : null,
+            'date_to' => $isDate($request->input('date_to')) ? $request->input('date_to') : null,
+        ];
+
         $prospects = $this->prospectService->getProspectsForSponsor(
             $mlmMember->id,
             $status,
-            $type
-        );
+            $type,
+            15,
+            $filters
+        )->withQueryString();
 
         $stats = $this->prospectService->getProspectStats($mlmMember->id);
 
@@ -169,14 +182,26 @@ class MlmProspectController extends Controller
                 ->with('error', 'ไม่สามารถต่ออายุลิงก์เชิญที่มีการใช้งานแล้ว');
         }
 
-        // ต่ออายุลิงก์เพิ่มอีก 7 วัน
+        // 🐛 (2026-11-02) เดิมเขียน expires_at ซึ่งไม่มีคอลัมน์นี้ (ไม่อยู่ใน fillable → ถูกทิ้งเงียบ)
+        //    ลิงก์ที่ล็อกหมดเวลาแล้วจึงกลับเป็น "หมดอายุ" ทันทีที่เปิดดู (isLocked() เห็น locked_until เก่า)
+        //    ตอนนี้: เคยมีคนกดลิงก์แล้ว → ต่อเวลาล็อกตามการตั้งค่ากลาง (เหมือนตอนคลิกครั้งแรกใน MlmProspectService)
+        //    ยังไม่เคยมีใครกด → ปลดล็อกรอคนกดใหม่
+        //    ⚙️ แอดมินปิดการล็อกผู้มุ่งหวัง (enable_prospect_lock = false) → ไม่ล็อก แต่ยังตั้งเวลาหมดอายุใหม่ให้ลิงก์
+        $globalSettings = \App\Models\MlmGlobalSetting::first();
+        $lockEnabled = (bool) ($globalSettings->enable_prospect_lock ?? true);
+        $lockHours = (int) ($globalSettings->prospect_lock_duration_hours ?? 24);
+        if ($lockHours <= 0) {
+            $lockHours = 24;
+        }
+
         $prospect->update([
             'status' => 'pending',
-            'expires_at' => now()->addDays(7),
+            'is_locked' => $prospect->clicked_at ? $lockEnabled : false,
+            'locked_until' => $prospect->clicked_at ? now()->addHours($lockHours) : null,
         ]);
 
         return redirect()->route('user.prospects.show', $id)
-            ->with('success', 'ต่ออายุลิงก์เชิญเรียบร้อยแล้ว (เพิ่มอีก 7 วัน)');
+            ->with('success', 'ต่ออายุลิงก์เชิญเรียบร้อยแล้ว');
     }
 
     /**
@@ -203,10 +228,9 @@ class MlmProspectController extends Controller
                 ->with('error', 'ผู้มุ่งหวังนี้สมัครสมาชิกแล้ว ไม่จำเป็นต้องส่งลิงก์อีก');
         }
 
-        // อัพเดท last_reminded_at
-        $prospect->update([
-            'last_reminded_at' => now(),
-        ]);
+        // 🐛 (2026-11-02) เดิมอัพเดท last_reminded_at ซึ่งไม่มีคอลัมน์ (ถูกทิ้งเงียบ ไม่มีอะไรถูกบันทึก)
+        //    ใช้เวลาอัพเดทล่าสุดของเรคคอร์ดเป็นเวลาติดตามล่าสุดแทน (หน้ารายละเอียดแสดง "อัพเดทล่าสุด")
+        $prospect->touch();
 
         return redirect()->route('user.prospects.show', $id)
             ->with('success', 'บันทึกการติดตามเรียบร้อยแล้ว');

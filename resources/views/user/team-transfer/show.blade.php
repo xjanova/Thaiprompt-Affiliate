@@ -1,175 +1,167 @@
-@extends('layouts.user-v4')
+{{--
+    รายละเอียดคำขอย้ายทีม (ธีมโนวาเต็ม)
+    - TeamTransferController::show ตรวจแล้วว่าเป็นเจ้าของคำขอ (อื่น = 403)
+    - วันที่ทุกช่องอาจว่าง (ข้อมูลเก่า/แอดมินแก้มือ) → ผ่าน $thDate ที่รับ null เสมอ
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'รายละเอียดคำขอย้ายทีม #' . $request->id)
+@section('title', 'รายละเอียดคำขอย้ายทีม #'.$request->id)
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/team-recruit.css') }}?v={{ filemtime(public_path('theme-nova/member/team-recruit.css')) }}">@endpush
+
+@php
+    $thDate = fn ($d) => $d ? $d->copy()->locale('th')->translatedFormat('j M Y · H:i') : '-';
+    $baht = fn ($v) => number_format((float) $v, 2).' บาท';
+    $initial = fn (?string $name) => $name ? mb_substr($name, 0, 1) : '?';
+    $pill = match ($request->status) {
+        'pending' => 'warn',
+        'approved', 'completed' => 'ok',
+        'rejected', 'cancelled' => 'bad',
+        default => 'glass',
+    };
+    $timeline = array_values(array_filter([
+        ['สร้างคำขอ', $request->created_at],
+        $request->approved_at ? ['แม่ทีมเดิมอนุมัติ', $request->approved_at] : null,
+        $request->rejected_at ? ['แม่ทีมเดิมปฏิเสธ', $request->rejected_at] : null,
+        $request->paid_at ? ['ชำระค่าธรรมเนียม', $request->paid_at] : null,
+        $request->processed_at ? ['ดำเนินการย้ายทีมเสร็จ', $request->processed_at] : null,
+    ]));
+@endphp
 
 @section('content')
-@php
-    $stColor = match($request->status) {
-        'pending' => '#d9a441', 'approved', 'completed' => '#5aa07e',
-        'rejected' => '#d9534f', 'paid' => '#5689b8', 'processing' => '#7c5cbf',
-        default => '#8a8a8a',
-    };
-@endphp
-<div style="display:flex; flex-direction:column; gap:18px; max-width:1000px; margin-inline:auto; width:100%;">
+<div class="nvm-stack">
 
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="padding:20px 24px; background:linear-gradient(120deg, color-mix(in srgb, #7c5cbf 18%, transparent), transparent 70%);">
-            <a href="{{ route('user.team-transfer.index') }}" style="display:inline-flex; align-items:center; gap:6px; color:var(--ink2); text-decoration:none; font-size:13px; margin-bottom:12px;"><i class="fas fa-arrow-left"></i> กลับไปรายการคำขอ</a>
-            <div style="display:flex; align-items:center; gap:14px;">
-                <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:22px; background:#7c5cbf;"><i class="fas fa-exchange-alt" style="color:#fff;"></i></span>
-                <div>
-                    <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">📄 รายละเอียดคำขอย้ายทีม</h1>
-                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">#{{ $request->id }}</div>
-                </div>
-            </div>
+<section class="nvm-ph" aria-labelledby="nvm-trs-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.team-transfer.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>คำขอย้ายทีมของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Request #{{ $request->id }}</div>
+            <h1 id="nvm-trs-h">รายละเอียดคำขอย้ายทีม</h1>
+            <p class="nvm-ph__lead">สร้างเมื่อ <span class="nvm-num">{{ $thDate($request->created_at) }}</span></p>
+            <div class="nvm-pills"><span class="nvm-pill nvm-pill--{{ $pill }}">{{ $request->status_label }}</span></div>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/wallet/transfer.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    @if(session('success'))
-        <div class="tp-card" style="padding:14px 16px; border-left:4px solid #5aa07e;" x-data="{ show: true }" x-show="show" x-transition>
-            <span style="color:var(--ink); font-weight:600;"><i class="fas fa-check-circle" style="color:#5aa07e; margin-right:8px;"></i>{{ session('success') }}</span>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="tp-card" style="padding:14px 16px; border-left:4px solid #d9534f;" x-data="{ show: true }" x-show="show" x-transition>
-            <span style="color:var(--ink); font-weight:600;"><i class="fas fa-exclamation-circle" style="color:#d9534f; margin-right:8px;"></i>{{ session('error') }}</span>
-        </div>
-    @endif
+@if(session('error'))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
+    </section>
+@endif
 
-    {{-- ── หัวข้อ + สถานะ ─────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:24px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
-            <div style="display:flex; align-items:flex-start; gap:14px;">
-                <span class="tp-tile" style="width:48px; height:48px; border-radius:14px; font-size:20px; background:#5689b8;"><i class="fas fa-exchange-alt" style="color:#fff;"></i></span>
-                <div>
-                    <h2 style="font-size:20px; font-weight:800; color:var(--ink); margin:0 0 2px;">คำขอย้ายทีม #{{ $request->id }}</h2>
-                    <p style="font-size:12px; color:var(--ink2); margin:0;">สร้างเมื่อ {{ $request->created_at->locale('th')->isoFormat('D MMMM YYYY HH:mm น.') }}</p>
-                </div>
-            </div>
-            <span style="display:inline-flex; align-items:center; padding:8px 18px; border-radius:999px; font-size:14px; font-weight:800; color:{{ $stColor }}; background:color-mix(in srgb, {{ $stColor }} 16%, transparent);">
-                <span style="width:10px; height:10px; border-radius:50%; margin-right:8px; background:{{ $stColor }};"></span>{{ $request->status_label }}
-            </span>
-        </div>
-    </div>
-
-    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
-        {{-- ── Main ──────────────────────────────────────────── --}}
-        <div style="flex:2; min-width:320px; display:flex; flex-direction:column; gap:16px;">
-            <div class="tp-card" style="padding:24px;">
-                <div class="tp-section-h" style="margin-bottom:18px;">รายละเอียดการย้าย</div>
-                <div style="position:relative; margin-bottom:8px;">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                        <div style="border-radius:14px; box-shadow:var(--inset-sm); padding:20px; text-align:center; border:2px solid color-mix(in srgb, #d9534f 25%, transparent);">
-                            <div style="width:48px; height:48px; margin:0 auto 12px; background:#d9534f; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fas fa-user" style="color:#fff;"></i></div>
-                            <p style="font-size:11px; color:#d9534f; margin:0 0 6px; font-weight:700;">แม่ทีมเดิม</p>
-                            <p style="font-weight:800; color:var(--ink); margin:0 0 2px;">{{ $request->oldSponsor->user->name ?? 'N/A' }}</p>
-                            <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $request->oldSponsor->member_code ?? 'N/A' }}</p>
-                        </div>
-                        <div style="border-radius:14px; box-shadow:var(--inset-sm); padding:20px; text-align:center; border:2px solid color-mix(in srgb, #5aa07e 25%, transparent);">
-                            <div style="width:48px; height:48px; margin:0 auto 12px; background:#5aa07e; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fas fa-user" style="color:#fff;"></i></div>
-                            <p style="font-size:11px; color:#5aa07e; margin:0 0 6px; font-weight:700;">แม่ทีมใหม่</p>
-                            <p style="font-weight:800; color:var(--ink); margin:0 0 2px;">{{ $request->newSponsor->user->name ?? 'N/A' }}</p>
-                            <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $request->newSponsor->member_code ?? 'N/A' }}</p>
-                        </div>
+<div class="nvm-split">
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-trs-flow-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Transfer</small><h2 id="nvm-trs-flow-h">รายละเอียดการย้าย</h2></div></div>
+            <div class="nvm-tr-flow">
+                <div class="nvm-tr-person is-old">
+                    <span class="nvm-avatar">{{ $initial($request->oldSponsor?->user?->name) }}</span>
+                    <div>
+                        <small>แม่ทีมเดิม</small>
+                        <b>{{ $request->oldSponsor?->user?->name ?? 'ไม่พบข้อมูล' }}</b>
+                        <code>{{ $request->oldSponsor?->member_code ?? '-' }}</code>
                     </div>
                 </div>
-
-                @if($request->reason)
-                    <div style="margin-top:18px;">
-                        <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px;">เหตุผลในการย้าย</div>
-                        <div style="padding:14px; border-radius:10px; box-shadow:var(--inset-sm);"><p style="color:var(--ink); margin:0;">{{ $request->reason }}</p></div>
+                <span class="nvm-tr-flow__arrow" aria-hidden="true"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg></span>
+                <div class="nvm-tr-person is-new">
+                    <span class="nvm-avatar">{{ $initial($request->newSponsor?->user?->name) }}</span>
+                    <div>
+                        <small>แม่ทีมใหม่</small>
+                        <b>{{ $request->newSponsor?->user?->name ?? 'ไม่พบข้อมูล' }}</b>
+                        <code>{{ $request->newSponsor?->member_code ?? '-' }}</code>
                     </div>
-                @endif
-                @if($request->notes)
-                    <div style="margin-top:18px;">
-                        <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px;">หมายเหตุ</div>
-                        <div style="padding:14px; border-radius:10px; box-shadow:var(--inset-sm);"><p style="color:var(--ink); margin:0;">{{ $request->notes }}</p></div>
-                    </div>
-                @endif
+                </div>
             </div>
 
+            @if($request->reason)
+                <div class="nvm-tr-quote"><small>เหตุผลในการย้าย</small><p>{{ $request->reason }}</p></div>
+            @endif
+            @if($request->notes)
+                <div class="nvm-tr-quote"><small>หมายเหตุ</small><p>{{ $request->notes }}</p></div>
+            @endif
             @if($request->status === 'rejected' && $request->rejection_reason)
-                <div class="tp-card" style="padding:24px; border-left:4px solid #d9534f;">
-                    <div style="font-size:18px; font-weight:800; color:#d9534f; margin-bottom:8px;"><i class="fas fa-times-circle" style="margin-right:6px;"></i>เหตุผลที่ปฏิเสธ</div>
-                    <p style="color:var(--ink); margin:0;">{{ $request->rejection_reason }}</p>
-                    @if($request->rejecter)
-                        <p style="font-size:13px; color:var(--ink2); margin:8px 0 0;">โดย: {{ $request->rejecter->name }} • {{ $request->rejected_at->locale('th')->diffForHumans() }}</p>
-                    @endif
+                <div class="nvm-tr-quote is-bad">
+                    <small>เหตุผลที่ปฏิเสธ@if($request->rejecter) · โดย {{ $request->rejecter->name }}@endif</small>
+                    <p>{{ $request->rejection_reason }}</p>
                 </div>
             @endif
-
             @if($request->admin_notes)
-                <div class="tp-card" style="padding:24px; border-left:4px solid #5689b8;">
-                    <div style="font-size:18px; font-weight:800; color:#5689b8; margin-bottom:8px;">หมายเหตุจาก Admin</div>
-                    <p style="color:var(--ink); margin:0;">{{ $request->admin_notes }}</p>
-                    @if($request->processor)
-                        <p style="font-size:13px; color:var(--ink2); margin:8px 0 0;">โดย: {{ $request->processor->name }} • {{ $request->processed_at->locale('th')->diffForHumans() }}</p>
-                    @endif
+                <div class="nvm-tr-quote is-info">
+                    <small>หมายเหตุจากทีมงาน@if($request->processor) · โดย {{ $request->processor->name }}@endif</small>
+                    <p>{{ $request->admin_notes }}</p>
                 </div>
             @endif
-        </div>
+        </section>
 
-        {{-- ── Sidebar ───────────────────────────────────────── --}}
-        <div style="flex:1; min-width:280px; display:flex; flex-direction:column; gap:16px;">
-            <div class="tp-card" style="padding:20px;">
-                <div style="font-size:17px; font-weight:800; color:var(--ink); margin-bottom:14px;">ข้อมูลการชำระเงิน</div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:var(--ink2);">ค่าธรรมเนียม</span>
-                    <span style="font-weight:800; color:var(--ink);">{{ number_format($request->transfer_fee, 2) }} บาท</span>
-                </div>
-                <div style="padding-top:12px; margin-top:12px; border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-trs-tl-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Timeline</small><h2 id="nvm-trs-tl-h">ความคืบหน้า</h2></div></div>
+            <ol class="nvm-tr-timeline">
+                @foreach($timeline as [$label, $at])
+                    <li>
+                        <span class="nvm-tr-timeline__dot"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg></span>
+                        <div><b>{{ $label }}</b><small class="nvm-num">{{ $thDate($at) }}</small></div>
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+    </div>
+
+    <aside class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-trs-pay-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Payment</small><h2 id="nvm-trs-pay-h">ค่าธรรมเนียม</h2></div></div>
+            <dl class="nvm-kv">
+                <dt>ยอดที่ต้องชำระ</dt><dd class="nvm-num">{{ $baht($request->transfer_fee) }}</dd>
+                <dt>สถานะ</dt>
+                <dd>
                     @if($request->paid_at)
-                        <div style="display:flex; align-items:center; color:#5aa07e; margin-bottom:6px;"><i class="fas fa-check-circle" style="margin-right:8px;"></i><span style="font-weight:700;">ชำระเงินแล้ว</span></div>
-                        <p style="font-size:13px; color:var(--ink2); margin:0;">{{ $request->paid_at->locale('th')->isoFormat('D MMM YYYY HH:mm น.') }}</p>
+                        <span class="nvm-chip nvm-chip--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ชำระแล้ว</span>
                     @else
-                        <div style="display:flex; align-items:center; color:#d9a441;"><i class="fas fa-clock" style="margin-right:8px;"></i><span style="font-weight:700;">ยังไม่ชำระเงิน</span></div>
+                        <span class="nvm-chip nvm-chip--warn"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>ยังไม่ชำระ</span>
                     @endif
-                </div>
-            </div>
+                </dd>
+                @if($request->paid_at)
+                    <dt>ชำระเมื่อ</dt><dd class="nvm-num">{{ $thDate($request->paid_at) }}</dd>
+                @endif
+            </dl>
+        </section>
 
-            <div class="tp-card" style="padding:20px;">
-                <div style="font-size:17px; font-weight:800; color:var(--ink); margin-bottom:14px;">Timeline</div>
-                <div style="display:flex; flex-direction:column; gap:16px;">
-                    @php
-                        $timeline = [['สร้างคำขอ', $request->created_at, '#5689b8']];
-                        if ($request->approved_at) $timeline[] = ['อนุมัติโดยแม่ทีมเดิม', $request->approved_at, '#5aa07e'];
-                        if ($request->paid_at) $timeline[] = ['ชำระค่าธรรมเนียม', $request->paid_at, '#5689b8'];
-                        if ($request->processed_at) $timeline[] = ['ดำเนินการเสร็จสิ้น', $request->processed_at, '#7c5cbf'];
-                    @endphp
-                    @foreach($timeline as $t)
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <div style="flex-shrink:0; width:32px; height:32px; background:color-mix(in srgb, {{ $t[2] }} 16%, transparent); border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fas fa-circle-check" style="color:{{ $t[2] }}; font-size:13px;"></i></div>
-                            <div><p style="font-size:13px; font-weight:700; color:var(--ink); margin:0;">{{ $t[0] }}</p><p style="font-size:11px; color:var(--ink2); margin:0;">{{ $t[1]->locale('th')->isoFormat('D MMM YYYY HH:mm น.') }}</p></div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-trs-act-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Actions</small><h2 id="nvm-trs-act-h">การจัดการ</h2></div></div>
 
-            <div class="tp-card" style="padding:20px;">
-                <div style="font-size:17px; font-weight:800; color:var(--ink); margin-bottom:14px;">การจัดการ</div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
+            @if($request->status === 'completed')
+                <div class="nvm-status">
+                    <svg class="nvm-ico"><use href="#nvm-i-check"/></svg>
+                    <span>ย้ายทีมเสร็จสมบูรณ์<small>คุณอยู่ในทีมของแม่ทีมใหม่แล้ว</small></span>
+                </div>
+            @elseif($request->canBePaid() || $request->canBeCancelled())
+                <div class="nvm-stack">
                     @if($request->canBePaid())
-                        <form method="POST" action="{{ route('user.team-transfer.pay', $request) }}">
+                        <form method="POST" action="{{ route('user.team-transfer.pay', $request) }}" x-data @submit="if (! confirm(@js('ยืนยันชำระค่าธรรมเนียม '.$baht($request->transfer_fee).' จาก Wallet?'))) $event.preventDefault()">
                             @csrf
-                            <button type="submit" class="tp-btn tp-btn-primary" style="width:100%; justify-content:center; background:#5aa07e; border-color:#5aa07e;" onclick="return confirm('คุณต้องการชำระค่าธรรมเนียม {{ number_format($request->transfer_fee, 2) }} บาทใช่หรือไม่?')"><i class="fas fa-credit-card"></i> ชำระเงิน {{ number_format($request->transfer_fee, 2) }} บาท</button>
+                            <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block"><svg class="nvm-ico"><use href="#nvm-i-cash"/></svg>ชำระ {{ $baht($request->transfer_fee) }}</button>
                         </form>
                     @endif
                     @if($request->canBeCancelled())
-                        <form method="POST" action="{{ route('user.team-transfer.cancel', $request) }}">
+                        <form method="POST" action="{{ route('user.team-transfer.cancel', $request) }}" x-data @submit="if (! confirm(@js('ต้องการยกเลิกคำขอนี้ใช่หรือไม่?'.($request->paid_at ? ' เงินจะถูกคืนเข้า Wallet ของคุณ' : '')))) $event.preventDefault()">
                             @csrf
-                            <button type="submit" class="tp-btn" style="width:100%; justify-content:center; color:#d9534f;" onclick="return confirm('คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่?{{ $request->paid_at ? '\n\nเงินจะถูกคืนเข้า Wallet ของคุณ' : '' }}')"><i class="fas fa-times"></i> ยกเลิกคำขอ</button>
+                            <button type="submit" class="nvm-btn nvm-btn--line nvm-btn--block"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยกเลิกคำขอ</button>
                         </form>
                     @endif
-                    @if($request->status === 'completed')
-                        <div style="padding:16px; border-radius:10px; box-shadow:var(--inset-sm); text-align:center; border-left:4px solid #5aa07e;">
-                            <i class="fas fa-check-circle" style="font-size:36px; color:#5aa07e; display:block; margin-bottom:8px;"></i>
-                            <p style="font-size:13px; font-weight:700; color:#5aa07e; margin:0;">การย้ายทีมเสร็จสมบูรณ์</p>
-                        </div>
-                    @endif
                 </div>
-            </div>
-        </div>
-    </div>
+            @else
+                <p class="nvm-desc">ไม่มีรายการที่ต้องทำในขั้นตอนนี้</p>
+            @endif
+
+            @if($request->status === 'pending')
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>รอแม่ทีมเดิมพิจารณา เมื่ออนุมัติแล้วจะชำระค่าธรรมเนียมได้ที่หน้านี้</p>
+            @elseif($request->status === 'paid' || $request->status === 'processing')
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-clock"/></svg>ชำระแล้ว รอทีมงานดำเนินการย้ายทีมให้</p>
+            @endif
+        </section>
+    </aside>
+</div>
+
 </div>
 @endsection
