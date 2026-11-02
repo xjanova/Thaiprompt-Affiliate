@@ -158,7 +158,8 @@ class StorefrontV4PagesTest extends TestCase
         $this->assertV4Public($this->get(route('shop.show', $product->slug)));
     }
 
-    public function test_order_pages_render_v4_for_owner(): void
+    // หน้าออเดอร์ของสมาชิกย้ายไปธีม Nova แล้ว (checkout.success ยังเป็นหน้าสาธารณะ V4)
+    public function test_order_pages_render_for_owner(): void
     {
         [, , $product] = $this->catalog();
         $buyer = $this->makeBuyer(0);
@@ -173,10 +174,10 @@ class StorefrontV4PagesTest extends TestCase
         $this->actingAs($buyer);
 
         $index = $this->get(route('orders.index'));
-        $index->assertOk()->assertSee('tp-card', false)->assertSee($order->order_number);
+        $index->assertOk()->assertSee('nvm-body', false)->assertSee($order->order_number);
 
         $show = $this->get(route('orders.show', $order->id));
-        $show->assertOk()->assertSee('tp-card', false)->assertSee($order->order_number);
+        $show->assertOk()->assertSee('nvm-body', false)->assertSee($order->order_number);
 
         // โพลสถานะจากหน้า QR ยังได้ JSON
         $this->getJson(route('orders.show', $order->id))
@@ -189,7 +190,7 @@ class StorefrontV4PagesTest extends TestCase
         $order->forceFill(['status' => 'delivered', 'delivered_at' => now()])->save();
         $item = OrderItem::where('order_id', $order->id)->firstOrFail();
         $review = $this->get(route('orders.review.form', [$order->id, $item->id]));
-        $review->assertOk()->assertSee('tp-card', false)->assertSee('name="rating"', false);
+        $review->assertOk()->assertSee('nvm-body', false)->assertSee('name="rating"', false);
     }
 
     public function test_rider_order_page_shows_live_map_and_tracking_link(): void
@@ -214,7 +215,7 @@ class StorefrontV4PagesTest extends TestCase
         $this->actingAs($buyer)->get(route('orders.show', $order->id))
             ->assertOk()
             ->assertSee('รอร้านเรียกไรเดอร์')
-            ->assertDontSee('x-data="tpRiderLive(', false);
+            ->assertDontSee('x-data="nvmOsRiderLive(', false);
 
         $riderUser = User::factory()->create();
         $rider = \App\Models\Rider::create([
@@ -238,7 +239,7 @@ class StorefrontV4PagesTest extends TestCase
 
         $html = $this->actingAs($buyer)->get(route('orders.show', $order->id))
             ->assertOk()
-            ->assertSee('x-data="tpRiderLive(', false)
+            ->assertSee('x-data="nvmOsRiderLive(', false)
             ->assertSee('หน้าติดตามไรเดอร์')
             ->getContent();
 
