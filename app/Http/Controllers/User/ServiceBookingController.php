@@ -17,6 +17,21 @@ use Illuminate\Http\Request;
  */
 class ServiceBookingController extends Controller
 {
+    /**
+     * กลุ่มสถานะการจองสำหรับแท็บกรองในหน้ารายการจองของสมาชิก
+     */
+    private const BOOKING_GROUPS = [
+        'waiting' => ['pending', 'paid', 'notifying_provider', 'waiting_provider'],
+        'active' => ['provider_accepted', 'provider_on_way', 'in_progress'],
+        'completed' => ['completed'],
+        'cancelled' => ['cancelled', 'provider_rejected'],
+    ];
+
+    /**
+     * สถานะที่ลูกค้าเปิดหน้าติดตามแบบสด/แชร์ตำแหน่งได้ (ผู้ให้บริการรับงานแล้ว จนถึงกำลังให้บริการ)
+     */
+    private const TRACKABLE_STATUSES = ['provider_accepted', 'provider_on_way', 'in_progress'];
+
     public function __construct(
         protected ServiceBookingService $bookingService,
         protected ServicePricingService $pricingService
@@ -265,18 +280,36 @@ class ServiceBookingController extends Controller
      */
     public function myBookings(Request $request)
     {
-        $query = ServiceBooking::where('user_id', auth()->id())
-            ->with(['service', 'provider']);
+        $userId = auth()->id();
+        $query = ServiceBooking::where('user_id', $userId)
+            ->with(['service.category', 'provider']);
 
-        // กรองตามสถานะ
-        if ($request->filled('status')) {
-            $query->status($request->status);
+        // กรองตามกลุ่มสถานะ (แท็บ) หรือสถานะเดี่ยว (ลิงก์เดิม ?status=pending)
+        // 🐛 เดิมส่ง ?status[]=x แล้ว scopeStatus(string) โยน TypeError = 500 · แท็บ "กำลังทำ" เห็นแค่ in_progress
+        //    ทั้งที่งานที่ผู้ให้บริการรับแล้ว/กำลังเดินทางก็อยู่ระหว่างทำ → รับเฉพาะข้อความ + กรองเป็นกลุ่ม
+        $status = is_string($request->query('status')) ? $request->query('status') : '';
+        if (isset(self::BOOKING_GROUPS[$status])) {
+            $query->whereIn('status', self::BOOKING_GROUPS[$status]);
+        } elseif ($status !== '') {
+            $query->status($status);
         }
 
-        $bookings = $query->latest()->paginate(10);
+        $bookings = $query->latest()->paginate(10)->withQueryString();
+
+        // 🐛 หน้าเดิมแสดง $stats แต่ไม่เคยถูกส่งมา (ตัวเลขบนหัวหน้าเป็น 0 เสมอ)
+        $counts = ServiceBooking::where('user_id', $userId)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+        $stats = ['total' => (int) $counts->sum()];
+        foreach (self::BOOKING_GROUPS as $group => $statuses) {
+            $stats[$group] = (int) $counts->only($statuses)->sum();
+        }
 
         return view('user.bookings.index', [
             'bookings' => $bookings,
+            'stats' => $stats,
+            'status' => $status,
             'pageTitle' => 'การจองของฉัน',
         ]);
     }
@@ -289,12 +322,12 @@ class ServiceBookingController extends Controller
     public function showBooking(ServiceBooking $booking)
     {
         // ตรวจสอบว่าเป็นเจ้าของการจอง
-        if ($booking->user_id !== auth()->id()) {
+        if ((int) $booking->user_id !== (int) auth()->id()) {
             abort(403);
         }
 
         $booking->load([
-            'service',
+            'service.category',
             'provider',
             'items',
             'locations',
@@ -315,7 +348,7 @@ class ServiceBookingController extends Controller
     public function cancelBooking(Request $request, ServiceBooking $booking)
     {
         // ตรวจสอบว่าเป็นเจ้าของการจอง
-        if ($booking->user_id !== auth()->id()) {
+        if ((int) $booking->user_id !== (int) auth()->id()) {
             abort(403);
         }
 
@@ -378,19 +411,38 @@ class ServiceBookingController extends Controller
     }
 
     /**
-     * ติดตามสถานะแบบ Real-time (API)
+     * ติดตามสถานะแบบ Real-time
      *
-     * @return \Illuminate\Http\JsonResponse
+     * - เปิดจากเบราว์เซอร์ (ลิงก์ "ติดตาม") → หน้าแผนที่ติดตาม user.bookings.track
+     *   🐛 เดิมคืน JSON อย่างเดียว ปุ่ม "ติดตาม" ในหน้ารายการ/รายละเอียดเลยพาไปหน้าข้อความ JSON ดิบ
+     *   และหน้า track.blade.php ไม่มีใคร render
+     * - เรียกแบบ AJAX (Accept: application/json) → JSON ตำแหน่ง/สถานะ (หน้าติดตามโพลทุก 15 วินาที)
+     *
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\View\View
      */
-    public function trackBooking(ServiceBooking $booking)
+    public function trackBooking(Request $request, ServiceBooking $booking)
     {
         // ตรวจสอบว่าเป็นเจ้าของการจอง
-        if ($booking->user_id !== auth()->id()) {
+        if ((int) $booking->user_id !== (int) auth()->id()) {
             abort(403);
         }
 
+        $booking->loadMissing(['service.category', 'provider', 'locations']);
+        $trackable = in_array($booking->status, self::TRACKABLE_STATUSES, true);
+
+        if (! $request->expectsJson()) {
+            return view('user.bookings.track', [
+                'booking' => $booking,
+                'serviceLocation' => $booking->locations->firstWhere('type', 'service_location'),
+                'trackable' => $trackable,
+                'pageTitle' => 'ติดตามการจอง #'.$booking->booking_number,
+            ]);
+        }
+
         $latestTracking = $booking->trackings()->latest()->first();
-        $providerLocation = $booking->provider ? [
+
+        // 🔒 ตำแหน่งผู้ให้บริการส่งเฉพาะช่วงที่รับงานแล้วจนถึงกำลังให้บริการ (ก่อนรับงาน/จบงานแล้วไม่ต้องรู้ตำแหน่ง)
+        $providerLocation = $booking->provider && $trackable && $booking->provider->current_latitude ? [
             'latitude' => $booking->provider->current_latitude,
             'longitude' => $booking->provider->current_longitude,
             'updated_at' => $booking->provider->last_location_update,
@@ -403,14 +455,58 @@ class ServiceBookingController extends Controller
                 'booking_number' => $booking->booking_number,
                 'status' => $booking->status,
                 'status_text' => $booking->status_text,
+                'trackable' => $trackable,
             ],
+            // 🔒 เบอร์ที่ผู้ให้บริการตั้งไว้สำหรับติดต่องาน (เดิมส่งเบอร์ส่วนตัวในบัญชีผู้ใช้ของผู้ให้บริการ)
             'provider' => $booking->provider ? [
-                'name' => $booking->provider->name,
-                'phone' => $booking->provider->user->phone ?? null,
+                'name' => $booking->provider->display_name ?: $booking->provider->name,
+                'phone' => $booking->provider->phone,
             ] : null,
-            'latest_tracking' => $latestTracking,
+            // 🔒 ส่งเฉพาะฟิลด์ที่หน้าติดตามใช้ (เดิมส่งทั้งแถว รวมความเร็ว/แบตเตอรี่เครื่องผู้ให้บริการ)
+            'latest_tracking' => $latestTracking ? [
+                'status' => $latestTracking->status,
+                'distance_to_customer_km' => $latestTracking->distance_to_customer_km,
+                'estimated_arrival_minutes' => $latestTracking->estimated_arrival_minutes,
+                'notes' => $latestTracking->notes,
+                'created_at' => $latestTracking->created_at,
+            ] : null,
             'provider_location' => $providerLocation,
         ]);
+    }
+
+    /**
+     * ลูกค้าแชร์ตำแหน่งตัวเองให้ผู้ให้บริการ (จากหน้าติดตาม — เลือกเปิดเอง)
+     *
+     * 🐛 หน้าติดตามเดิมยิง /api/v1/bookings/{id}/update-location ซึ่งต้องใช้โทเคน Sanctum
+     *    (เว็บไม่ได้เปิด stateful API) จึงตอบ 401 ทุกครั้ง → เส้นทางเว็บที่ใช้ session เดียวกับหน้า
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function shareLocation(Request $request, ServiceBooking $booking)
+    {
+        if ((int) $booking->user_id !== (int) auth()->id()) {
+            abort(403);
+        }
+
+        if (! in_array($booking->status, self::TRACKABLE_STATUSES, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'การจองนี้ไม่อยู่ในช่วงที่แชร์ตำแหน่งได้แล้ว',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        $booking->update([
+            'user_live_latitude' => $validated['latitude'],
+            'user_live_longitude' => $validated['longitude'],
+            'user_location_updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     /**

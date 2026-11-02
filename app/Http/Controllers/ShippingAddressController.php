@@ -91,7 +91,7 @@ class ShippingAddressController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', $this->failMessage($e));
         }
     }
 
@@ -165,7 +165,7 @@ class ShippingAddressController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', $this->failMessage($e));
         }
     }
 
@@ -203,8 +203,19 @@ class ShippingAddressController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', $this->failMessage($e));
         }
+    }
+
+    /**
+     * ข้อความผิดพลาดที่แสดงให้สมาชิก — บันทึกรายละเอียดจริงลง log แทนการโชว์ข้อความดิบของฐานข้อมูล
+     * (เดิมต่อท้าย $e->getMessage() ทำให้ชื่อตาราง/คอลัมน์/SQL หลุดไปถึงหน้าจอผู้ใช้)
+     */
+    private function failMessage(\Throwable $e): string
+    {
+        report($e);
+
+        return 'ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
     }
 
     /**
@@ -235,7 +246,7 @@ class ShippingAddressController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', $this->failMessage($e));
         }
     }
 }

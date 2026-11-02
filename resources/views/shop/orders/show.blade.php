@@ -1,16 +1,22 @@
 {{--
- | รายละเอียดคำสั่งซื้อ (ผู้ซื้อ) — ธีม V4 (user-v4)
- | ข้อมูลจาก OrderController@show: $order (items.product, items.reviews, shippingAddress, shippingProviderRelation, trackingHistory)
- | - ไทม์ไลน์สถานะ · ลิงก์ติดตามพัสดุ · ติดตามพัสดุแบบเรียลไทม์ (orders.tracking.realtime)
- | - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ + ลิงก์หน้าติดตาม + แผนที่ตำแหน่งไรเดอร์แบบสด (โพล taladsod.track.location ด้วย token ของงาน
- |   ซึ่งตรวจสิทธิ์/ความยินยอมแชร์ตำแหน่งของไรเดอร์ที่ฝั่งเซิร์ฟเวอร์แล้ว)
- | - ชำระใหม่ POST orders.retry-payment · ยืนยันรับของ POST orders.confirm-received · ยกเลิก POST orders.cancel {reason}
- --}}
-@extends('layouts.user-v4')
+    รายละเอียดคำสั่งซื้อ (ผู้ซื้อ) — ธีมโนวาเต็ม
+    ข้อมูลจาก OrderController::show: $order (items.product, items.reviews, shippingAddress, shippingProviderRelation, trackingHistory)
+    - ไทม์ไลน์สถานะ · ลิงก์ติดตามพัสดุที่เว็บขนส่ง · ติดตามพัสดุเรียลไทม์ (orders.tracking.realtime)
+    - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ + ลิงก์หน้าติดตาม + แผนที่ตำแหน่งไรเดอร์แบบสด
+      (API ของผู้ซื้อ taladsod.delivery.rider-location ตรวจเจ้าของออเดอร์ + ความยินยอมแชร์ตำแหน่งของไรเดอร์ฝั่งเซิร์ฟเวอร์
+       ไม่มี route นี้ → สำรองด้วย taladsod.track.location ผ่าน token ของงาน)
+    - ชำระใหม่ POST orders.retry-payment · จ่ายด้วย TPIX POST tpix-pay.order · ยืนยันรับของ POST orders.confirm-received
+    - ยกเลิก POST orders.cancel {reason} (ชำระแล้ว = คืนเงินเข้ากระเป๋าอัตโนมัติ)
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'คำสั่งซื้อ #'.$order->order_number)
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/orders-shipping.css') }}?v={{ filemtime(public_path('theme-nova/member/orders-shipping.css')) }}">@endpush
+
 @php
+    use Illuminate\Support\Facades\Route as RouteFacade;
+
     $odShipping = \App\Services\Shop\ShopPresenter::shipping($order);
     $odRider = \App\Services\Shop\ShopPresenter::riderSummary($order);
     $odIsCod = $order->isCod();
@@ -18,13 +24,11 @@
     $odCancelled = in_array($order->status, ['cancelled', 'refunded'], true);
 
     // งานไรเดอร์ที่ยังวิ่งอยู่ → แผนที่สด
-    //   ใช้ API ติดตามของผู้ซื้อ (session, ตรวจเจ้าของออเดอร์ + ความยินยอมแชร์ตำแหน่งของไรเดอร์) ถ้ามี
-    //   ไม่มี → สำรองด้วย endpoint ของลิงก์ติดตาม (token ของงาน)
     $odJob = $order->isRiderDelivery() ? \App\Models\RiderJob::forSource($order)->latest('id')->first() : null;
     $odActiveStatuses = ['accepted', 'picking_up', 'picked_up', 'delivering'];
     $odLive = $odJob && $odJob->isTrackable() && in_array($odJob->status, $odActiveStatuses, true);
     $odStore = $order->store;
-    $odHasApi = \Illuminate\Support\Facades\Route::has('taladsod.delivery.rider-location');
+    $odHasApi = RouteFacade::has('taladsod.delivery.rider-location');
     $odMapCfg = null;
     if ($odLive && ($odHasApi || $odJob->tracking_token)) {
         $odMapCfg = [
@@ -32,7 +36,7 @@
             'locationUrl' => $odHasApi
                 ? route('taladsod.delivery.rider-location', ['source' => 'shop', 'id' => $order->id])
                 : route('taladsod.track.location', $odJob->tracking_token),
-            'shareUrl' => \Illuminate\Support\Facades\Route::has('taladsod.delivery.share-location')
+            'shareUrl' => RouteFacade::has('taladsod.delivery.share-location')
                 ? route('taladsod.delivery.share-location', ['source' => 'shop', 'id' => $order->id])
                 : null,
             'drop' => ($odShipping && $odShipping['latitude'] !== null) ? [$odShipping['latitude'], $odShipping['longitude']] : null,
@@ -53,310 +57,328 @@
             : ($order->tracking_url ?: null);
     }
     $odTransitLabels = ['in_transit' => 'กำลังขนส่ง', 'at_sorting_center' => 'ถึงศูนย์กระจายสินค้า', 'out_for_delivery' => 'กำลังนำส่ง'];
-    $odFmt = fn ($d) => $d ? $d->timezone('Asia/Bangkok')->format('d/m/Y H:i') : null;
+    $odFmt = fn ($d) => $d ? $d->copy()->timezone('Asia/Bangkok')->format('d/m/Y H:i') : null;
 
+    // ขั้นตอน: icon = ชื่อไอคอนในสไปรต์ #nvm-i-*
     $odSteps = [];
-    $odSteps[] = ['icon' => 'fa-file-circle-plus', 'title' => 'สร้างคำสั่งซื้อ', 'time' => $odFmt($order->created_at), 'done' => true];
+    $odSteps[] = ['icon' => 'plus', 'title' => 'สร้างคำสั่งซื้อ', 'time' => $odFmt($order->created_at), 'done' => true];
     if ($odIsCod) {
-        $odSteps[] = ['icon' => 'fa-money-bill-wave', 'title' => $order->payment_status === 'paid' ? 'ชำระเงินปลายทางแล้ว' : 'ชำระเงินปลายทาง (จ่ายกับไรเดอร์)', 'time' => $odFmt($order->paid_at), 'done' => $order->payment_status === 'paid'];
+        $odSteps[] = ['icon' => 'cash', 'title' => $order->payment_status === 'paid' ? 'ชำระเงินปลายทางแล้ว' : 'ชำระเงินปลายทาง (จ่ายตอนรับของ)', 'time' => $odFmt($order->paid_at), 'done' => $order->payment_status === 'paid'];
     } else {
-        $odSteps[] = ['icon' => 'fa-wallet', 'title' => $order->paid_at ? 'ชำระเงินแล้ว' : 'รอชำระเงิน', 'time' => $odFmt($order->paid_at), 'done' => (bool) $order->paid_at, 'sub' => $order->payment_reference ? 'อ้างอิง: '.$order->payment_reference : null];
+        $odSteps[] = ['icon' => 'wallet', 'title' => $order->paid_at ? 'ชำระเงินแล้ว' : 'รอชำระเงิน', 'time' => $odFmt($order->paid_at), 'done' => (bool) $order->paid_at, 'sub' => $order->payment_reference ? 'อ้างอิง: '.$order->payment_reference : null];
     }
-    $odSteps[] = ['icon' => 'fa-box-open', 'title' => 'ร้านกำลังเตรียมสินค้า', 'time' => $odIsPrepared ? $odFmt($odProcessingAt) : null, 'done' => $odIsPrepared];
+    $odSteps[] = ['icon' => 'store', 'title' => 'ร้านกำลังเตรียมสินค้า', 'time' => $odIsPrepared ? $odFmt($odProcessingAt) : null, 'done' => $odIsPrepared];
     if ($order->isRiderDelivery()) {
         $odRiderStarted = $odJob && in_array($odJob->status, ['picked_up', 'delivering', 'awaiting_release', 'delivered', 'completed'], true);
-        $odSteps[] = ['icon' => 'fa-motorcycle', 'title' => $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์', 'time' => $odJob ? $odFmt($odJob->accepted_at) : null, 'done' => $odRiderStarted, 'now' => $odLive];
+        $odSteps[] = ['icon' => 'scooter', 'title' => $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์', 'time' => $odJob ? $odFmt($odJob->accepted_at) : null, 'done' => $odRiderStarted, 'now' => $odLive];
     } else {
-        $odSteps[] = ['icon' => 'fa-truck-fast', 'title' => $order->shipped_at ? 'จัดส่งสินค้าแล้ว' : 'รอจัดส่ง', 'time' => $odFmt($order->shipped_at), 'done' => (bool) $order->shipped_at,
+        $odSteps[] = ['icon' => 'send', 'title' => $order->shipped_at ? 'จัดส่งสินค้าแล้ว' : 'รอจัดส่ง', 'time' => $odFmt($order->shipped_at), 'done' => (bool) $order->shipped_at,
             'sub' => $order->tracking_number ? 'เลขพัสดุ '.$order->tracking_number.($order->shippingProviderRelation ? ' · '.$order->shippingProviderRelation->name : '') : null];
         foreach ($odTransit as $u) {
-            $odSteps[] = ['icon' => 'fa-route', 'title' => $u->title ?: ($odTransitLabels[$u->status] ?? $u->status), 'time' => $odFmt($u->tracked_at), 'done' => true, 'sub' => trim(($u->description ?? '').' '.($u->location ? '· '.$u->location : '')) ?: null, 'small' => true];
+            $odSteps[] = ['icon' => 'pin', 'title' => $u->title ?: ($odTransitLabels[$u->status] ?? $u->status), 'time' => $odFmt($u->tracked_at), 'done' => true, 'sub' => trim(($u->description ?? '').' '.($u->location ? '· '.$u->location : '')) ?: null, 'small' => true];
         }
     }
-    $odSteps[] = ['icon' => 'fa-house-circle-check', 'title' => 'ส่งถึงแล้ว', 'time' => $odFmt($order->delivered_at), 'done' => (bool) $order->delivered_at];
-    $odSteps[] = ['icon' => 'fa-star', 'title' => 'สำเร็จ', 'time' => $order->status === 'completed' ? $odFmt($order->completed_at ?? $order->updated_at) : null, 'done' => $order->status === 'completed'];
+    $odSteps[] = ['icon' => 'home', 'title' => 'ส่งถึงแล้ว', 'time' => $odFmt($order->delivered_at), 'done' => (bool) $order->delivered_at];
+    $odSteps[] = ['icon' => 'award', 'title' => 'สำเร็จ', 'time' => $order->status === 'completed' ? $odFmt($order->completed_at ?? $order->updated_at) : null, 'done' => $order->status === 'completed'];
 
-    $odTone = match ((string) $order->status) {
-        'pending' => 'color:var(--deep2); background:var(--a2soft);',
-        'delivered', 'completed' => 'color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--sf-ok, #4f9e7e), var(--sf-ok2, #3b8467));',
-        'cancelled', 'refunded' => 'color:var(--on-accent, #fff); background:color-mix(in srgb, var(--ink2) 80%, transparent);',
-        default => 'color:var(--deep1); background:var(--a1soft);',
+    $odPill = match ((string) $order->status) {
+        'pending' => 'warn',
+        'delivered', 'completed' => 'ok',
+        'cancelled', 'refunded' => 'bad',
+        default => 'glass',
     };
+    $odPaidLabel = $odIsCod && $order->payment_status !== 'paid' ? 'จ่ายเมื่อรับของ' : \App\Services\Shop\ShopPresenter::paymentStatusLabel($order->payment_status);
 @endphp
 
 @section('content')
-<x-theme-v4.shop-kit />
 @if($odLive)
-    <x-theme-v4.leaflet />
+    @include('shop.orders.partials.map')
 @endif
 
-<div style="max-width:1140px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
-    <nav class="sf-breadcrumb" aria-label="เส้นทาง">
-        <a href="{{ route('orders.index') }}">คำสั่งซื้อของฉัน</a>
-        <span aria-hidden="true">/</span>
-        <span style="color:var(--ink); font-weight:600;">#{{ $order->order_number }}</span>
-    </nav>
-
-    <div class="tp-card" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; background:linear-gradient(135deg, var(--a1soft), var(--a2soft));">
-        <div style="min-width:0;">
-            <div class="tp-muted" style="font-size:12.5px;">คำสั่งซื้อ</div>
-            <h1 class="tp-num" style="margin:2px 0 6px; font-size:clamp(20px, 3.6vw, 28px); font-weight:800; color:var(--ink); overflow-wrap:anywhere;">#{{ $order->order_number }}</h1>
-            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-                <span class="tp-pill" style="{{ $odTone }} padding:6px 12px;">{{ $order->status_label }}</span>
-                <span class="tp-muted" style="font-size:12.5px;">{{ $odFmt($order->created_at) }}</span>
+<section class="nvm-ph" aria-labelledby="nvm-os-od-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('orders.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>คำสั่งซื้อของฉัน</a>
+            <div class="nvm-eyebrow nvm-latin">Order detail</div>
+            <h1 id="nvm-os-od-h" class="nvm-num">#{{ $order->order_number }}</h1>
+            <p class="nvm-ph__lead nvm-num">สั่งเมื่อ {{ $odFmt($order->created_at) }}</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--{{ $odPill }}">{{ $order->status_label }}</span>
                 @if($order->isRiderDelivery())
-                    <span class="tp-pill tp-pill-soft" style="padding:6px 12px;"><i class="fas fa-motorcycle"></i> ส่งด่วนด้วยไรเดอร์</span>
+                    <span class="nvm-pill nvm-pill--glass"><svg class="nvm-ico"><use href="#nvm-i-scooter"/></svg>ส่งด่วนด้วยไรเดอร์</span>
                 @endif
             </div>
+            <div class="nvm-os-ph-amt">
+                <small>ยอดรวมทั้งหมด</small>
+                <b class="nvm-foil nvm-num">฿{{ number_format((float) $order->total_amount, 2) }}</b>
+            </div>
         </div>
-        <div style="text-align:right;">
-            <div class="tp-muted" style="font-size:12.5px;">ยอดรวมทั้งหมด</div>
-            <div class="tp-num" style="font-size:clamp(24px, 4vw, 32px); font-weight:800; color:var(--deep1);">฿{{ number_format((float) $order->total_amount, 2) }}</div>
-        </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/icons/bag.webp') }}" alt="" width="200" height="200">
     </div>
+</section>
 
-    @if(session('error'))
-        <div class="sf-note sf-note-err" role="alert"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
-    @endif
-    @if(session('success'))
-        <div class="sf-note sf-note-ok" role="status"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
-    @endif
+@if(session('error'))
+    <section class="nvm-card nvm-alert nvm-alert--bad" role="alert">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg></span>
+        <div class="nvm-alert__txt"><b>ทำรายการไม่สำเร็จ</b><p>{{ session('error') }}</p></div>
+    </section>
+@endif
+@if(session('success'))
+    <section class="nvm-card nvm-alert nvm-alert--ok" role="status">
+        <span class="nvm-alert__ic"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg></span>
+        <div class="nvm-alert__txt"><b>สำเร็จ</b><p>{{ session('success') }}</p></div>
+    </section>
+@endif
 
-    <div class="sf-2col">
-        <div class="sf-stack">
+<div class="nvm-split">
+    <div class="nvm-stack">
 
-            {{-- ── ไรเดอร์ (ส่งด่วน) ── --}}
-            @if($odRider)
-                <div class="tp-card sf-stack" style="gap:12px;">
-                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                        <span class="tp-tile" style="width:48px; height:48px; font-size:20px; background:linear-gradient(135deg, var(--accent2), var(--deep2));"><i class="fas fa-motorcycle"></i></span>
-                        <div style="flex:1; min-width:200px;">
-                            <div style="font-weight:800; color:var(--ink);">{{ $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์' }}</div>
-                            @if(! empty($odRider['rider']))
-                                <div class="tp-muted" style="font-size:12.5px;">
-                                    {{ $odRider['rider']['name'] ?? 'ไรเดอร์' }}
-                                    @if(! empty($odRider['rider']['vehicle_plate'])) · ทะเบียน {{ $odRider['rider']['vehicle_plate'] }} @endif
-                                </div>
-                            @elseif(($odRider['status'] ?? '') === 'not_requested')
-                                <div class="tp-muted" style="font-size:12.5px;">ร้านจะเรียกไรเดอร์เมื่อเตรียมสินค้าเสร็จ</div>
-                            @endif
-                        </div>
+        {{-- ── ไรเดอร์ (ส่งด่วน) ── --}}
+        @if($odRider)
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-rd-h">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Rider</small><h2 id="nvm-os-od-rd-h">ไรเดอร์ส่งของ</h2></div></div>
+                <div class="nvm-os-who">
+                    <span class="nvm-os-who__av"><svg class="nvm-ico"><use href="#nvm-i-scooter"/></svg></span>
+                    <div class="nvm-os-who__t">
+                        <b>{{ $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์' }}</b>
+                        @if(! empty($odRider['rider']))
+                            <small>
+                                {{ $odRider['rider']['name'] ?? 'ไรเดอร์' }}
+                                @if(! empty($odRider['rider']['vehicle_plate'])) · ทะเบียน {{ $odRider['rider']['vehicle_plate'] }} @endif
+                            </small>
+                        @elseif(($odRider['status'] ?? '') === 'not_requested')
+                            <small>ร้านจะเรียกไรเดอร์เมื่อเตรียมสินค้าเสร็จ</small>
+                        @endif
+                    </div>
+                </div>
+                @if(! empty($odRider['rider']['phone']) || ! empty($odRider['tracking_url']))
+                    <div class="nvm-os-acts nvm-gap-t">
                         @if(! empty($odRider['rider']['phone']))
-                            <a href="tel:{{ preg_replace('/[^0-9+]/', '', (string) $odRider['rider']['phone']) }}" class="tp-btn" style="text-decoration:none; height:44px;"><i class="fas fa-phone"></i> โทรหาไรเดอร์</a>
+                            <a class="nvm-btn nvm-btn--line nvm-btn--sm" href="tel:{{ preg_replace('/[^0-9+]/', '', (string) $odRider['rider']['phone']) }}"><svg class="nvm-ico"><use href="#nvm-i-id"/></svg>โทรหาไรเดอร์</a>
                         @endif
                         @if(! empty($odRider['tracking_url']))
-                            <a href="{{ $odRider['tracking_url'] }}" class="sf-btn3d is-alt" style="min-height:44px;" target="_blank" rel="noopener"><i class="fas fa-location-arrow"></i> หน้าติดตามไรเดอร์</a>
+                            <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ $odRider['tracking_url'] }}" target="_blank" rel="noopener"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>หน้าติดตามไรเดอร์</a>
                         @endif
                     </div>
+                @endif
 
-                    @if($odLive)
-                        <div x-data="tpRiderLive({{ \Illuminate\Support\Js::from($odMapCfg) }})">
-                            <div id="od-rider-map" class="sf-map" style="height:300px;"></div>
-                            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-top:8px; font-size:12.5px;">
-                                <span class="tp-muted"><i class="fas fa-circle" :style="live ? 'color:var(--sf-ok, #4f9e7e)' : 'color:var(--ink2)'"></i> <span x-text="statusText"></span></span>
-                                <span class="tp-muted" x-show="updatedAgo" x-text="'อัปเดต ' + updatedAgo"></span>
-                            </div>
-
-                            {{-- ผู้ซื้อเลือกแชร์ตำแหน่งตัวเองให้ไรเดอร์ (หยุดเองเมื่อส่งเสร็จ/ยกเลิก) --}}
-                            <template x-if="cfg.shareUrl && canShare">
-                                <div style="margin-top:12px; padding:12px 14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                                    <span style="flex:1; min-width:200px;">
-                                        <strong style="display:block; color:var(--ink); font-size:13.5px;"><i class="fas fa-location-crosshairs" style="color:var(--deep1);"></i> แชร์ตำแหน่งของฉันให้ไรเดอร์</strong>
-                                        <span class="tp-muted" style="font-size:12px;" x-text="sharing ? 'ไรเดอร์เห็นตำแหน่งของคุณระหว่างมาส่ง · หยุดแชร์เองเมื่อส่งเสร็จ' : 'ช่วยให้ไรเดอร์หาคุณเจอง่ายขึ้น (ส่งเฉพาะตอนเปิดหน้านี้)'"></span>
-                                    </span>
-                                    <button type="button" class="tp-btn" :class="sharing && 'tp-btn-primary'" style="height:44px;" @click="toggleShare()" :disabled="shareBusy">
-                                        <i class="fas" :class="shareBusy ? 'fa-spinner fa-spin' : (sharing ? 'fa-toggle-on' : 'fa-toggle-off')"></i>
-                                        <span x-text="sharing ? 'กำลังแชร์ — หยุด' : 'เปิดแชร์ตำแหน่ง'"></span>
-                                    </button>
-                                </div>
-                            </template>
+                @if($odLive)
+                    <div class="nvm-gap-t" x-data="nvmOsRiderLive(@js($odMapCfg))">
+                        <div class="nvm-os-map" x-ref="map" role="img" aria-label="แผนที่ตำแหน่งไรเดอร์"></div>
+                        <div class="nvm-os-live">
+                            <span><i class="nvm-os-dot" :class="live && 'is-on'"></i><span x-text="statusText"></span></span>
+                            <span x-show="updatedAgo" x-cloak x-text="'อัปเดต ' + updatedAgo"></span>
                         </div>
-                    @endif
+
+                        {{-- ผู้ซื้อเลือกแชร์ตำแหน่งตัวเองให้ไรเดอร์ (หยุดเองเมื่อส่งเสร็จ/ยกเลิก) --}}
+                        <template x-if="cfg.shareUrl && canShare">
+                            <div class="nvm-os-share">
+                                <div>
+                                    <b><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg>แชร์ตำแหน่งของฉันให้ไรเดอร์</b>
+                                    <small x-text="sharing ? 'ไรเดอร์เห็นตำแหน่งของคุณระหว่างมาส่ง · หยุดแชร์เองเมื่อส่งเสร็จ' : 'ช่วยให้ไรเดอร์หาคุณเจอง่ายขึ้น (ส่งเฉพาะตอนเปิดหน้านี้)'"></small>
+                                </div>
+                                <button type="button" class="nvm-btn nvm-btn--sm" :class="sharing ? 'nvm-btn--gold' : 'nvm-btn--line'" @click="toggleShare()" :disabled="shareBusy">
+                                    <span x-text="shareBusy ? 'กำลังดำเนินการ…' : (sharing ? 'กำลังแชร์ — หยุด' : 'เปิดแชร์ตำแหน่ง')"></span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                @endif
+            </section>
+        @endif
+
+        {{-- ── ไทม์ไลน์ ── --}}
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-tl-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Status</small><h2 id="nvm-os-od-tl-h">สถานะคำสั่งซื้อ</h2></div></div>
+            @if($odCancelled)
+                <div class="nvm-status is-bad">
+                    <svg class="nvm-ico"><use href="#nvm-i-x"/></svg>
+                    <span>{{ $order->status === 'refunded' ? 'คืนเงินแล้ว' : 'ยกเลิกคำสั่งซื้อแล้ว' }}@if($order->cancelled_at) · <span class="nvm-num">{{ $odFmt($order->cancelled_at) }}</span>@endif
+                        @if($order->cancellation_reason)<small>เหตุผล: {{ $order->cancellation_reason }}</small>@endif
+                    </span>
                 </div>
             @endif
-
-            {{-- ── ไทม์ไลน์ ── --}}
-            <div class="tp-card">
-                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-timeline" style="color:var(--deep1);"></i> สถานะคำสั่งซื้อ</div>
-                @if($odCancelled)
-                    <div class="sf-note sf-note-err" style="margin-bottom:14px;">
-                        <strong>{{ $order->status === 'refunded' ? 'คืนเงินแล้ว' : 'ยกเลิกคำสั่งซื้อแล้ว' }}</strong>
-                        @if($order->cancelled_at) · {{ $odFmt($order->cancelled_at) }} @endif
-                        @if($order->cancellation_reason)<br>เหตุผล: {{ $order->cancellation_reason }}@endif
-                    </div>
-                @endif
-                <ol class="sf-tl">
-                    @foreach($odSteps as $i => $step)
-                        @php $odNext = ! $step['done'] && ($i === 0 || $odSteps[$i - 1]['done']) && ! $odCancelled; @endphp
-                        <li class="sf-tl-item {{ $step['done'] ? '' : 'is-todo' }} {{ ! empty($step['now']) || $odNext ? 'is-now' : '' }}">
-                            <span class="sf-tl-dot" style="{{ ! empty($step['small']) ? 'width:32px; height:32px; margin:4px;' : '' }}"><i class="fas {{ $step['icon'] }}"></i></span>
-                            <div style="min-width:0; padding-top:8px;">
-                                <div style="font-weight:{{ $step['done'] ? 800 : 600 }}; color:{{ $step['done'] ? 'var(--ink)' : 'var(--ink2)' }}; font-size:{{ ! empty($step['small']) ? '13px' : '14px' }};">{{ $step['title'] }}</div>
-                                @if(! empty($step['time']))<div class="tp-muted tp-num" style="font-size:12px;">{{ $step['time'] }}</div>@endif
-                                @if(! empty($step['sub']))<div class="tp-muted" style="font-size:12px; overflow-wrap:anywhere;">{{ $step['sub'] }}</div>@endif
-                            </div>
-                        </li>
-                    @endforeach
-                </ol>
-
-                @if($odTrackingUrl)
-                    <a href="{{ $odTrackingUrl }}" target="_blank" rel="noopener noreferrer" class="tp-btn" style="text-decoration:none; height:44px;"><i class="fas fa-up-right-from-square"></i> ติดตามพัสดุที่เว็บขนส่ง</a>
-                @endif
-                @if($order->status === 'delivered')
-                    <form method="POST" action="{{ route('orders.confirm-received', $order->id) }}" style="margin:12px 0 0;" onsubmit="return confirm(@js('ยืนยันว่าได้รับสินค้าครบถ้วนแล้ว?'))">
-                        @csrf
-                        <button type="submit" class="sf-btn3d"><i class="fas fa-check"></i> ยืนยันว่าได้รับสินค้าแล้ว</button>
-                    </form>
-                @endif
-            </div>
-
-            {{-- ── ติดตามพัสดุเรียลไทม์ (มีเลขพัสดุ) ── --}}
-            @if($order->tracking_number && in_array($order->status, ['shipped', 'in_transit', 'out_for_delivery', 'delivered'], true))
-                <div class="tp-card sf-stack" style="gap:10px;" x-data="tpParcelTracking(@js(route('orders.tracking.realtime', $order->id)))">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                        <div class="tp-section-h"><i class="fas fa-map-location-dot" style="color:var(--deep1);"></i> ติดตามพัสดุเรียลไทม์</div>
-                        <button type="button" class="tp-icon-btn" @click="load(true)" :disabled="loading" aria-label="รีเฟรช"><i class="fas fa-rotate" :class="loading && 'fa-spin'"></i></button>
-                    </div>
-                    <p x-show="loading && !data" class="tp-muted" style="margin:0; font-size:13px;"><i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูลจากขนส่ง...</p>
-                    <p x-show="error" x-cloak x-text="error" class="sf-note sf-note-err" style="margin:0;"></p>
-                    <template x-if="data">
-                        <div class="sf-stack" style="gap:10px;">
-                            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-                                <span class="tp-pill tp-pill-gold" x-text="data.current_status_label || 'กำลังตรวจสอบ'"></span>
-                                <span class="tp-muted" style="font-size:12.5px;" x-text="(data.provider && data.provider.name) ? data.provider.name : ''"></span>
-                            </div>
-                            <template x-if="data.carrier_data && data.carrier_data.message">
-                                <div class="sf-note sf-note-warn" style="font-size:12.5px;" x-text="data.carrier_data.message"></div>
-                            </template>
-                            <ol class="sf-tl" style="max-height:280px; overflow-y:auto;">
-                                <template x-for="(ev, k) in (data.timeline || [])" :key="k">
-                                    <li class="sf-tl-item">
-                                        <span class="sf-tl-dot" style="width:28px; height:28px; margin:6px;"><i class="fas fa-circle" style="font-size:8px;"></i></span>
-                                        <div style="padding-top:6px; min-width:0;">
-                                            <div style="font-weight:700; font-size:13px; color:var(--ink);" x-text="ev.title"></div>
-                                            <div class="tp-muted" style="font-size:12px;" x-show="ev.description" x-text="ev.description"></div>
-                                            <div class="tp-muted" style="font-size:12px;" x-show="ev.location" x-text="ev.location"></div>
-                                            <div class="tp-muted tp-num" style="font-size:11.5px;" x-text="ev.timestamp_display || ev.timestamp"></div>
-                                        </div>
-                                    </li>
-                                </template>
-                            </ol>
+            <ol class="nvm-os-tl {{ $odCancelled ? 'nvm-gap-t' : '' }}">
+                @foreach($odSteps as $i => $step)
+                    @php $odNext = ! $step['done'] && ($i === 0 || $odSteps[$i - 1]['done']) && ! $odCancelled; @endphp
+                    <li class="{{ $step['done'] ? 'is-done' : '' }} {{ ! empty($step['now']) || $odNext ? 'is-now' : '' }} {{ ! empty($step['small']) ? 'is-small' : '' }}">
+                        <span class="nvm-os-tl__dot"><svg class="nvm-ico"><use href="#nvm-i-{{ $step['done'] ? ($step['icon'] === 'award' ? 'award' : 'check') : $step['icon'] }}"/></svg></span>
+                        <div class="nvm-os-tl__b">
+                            <b>{{ $step['title'] }}</b>
+                            @if(! empty($step['time']))<small class="nvm-num">{{ $step['time'] }}</small>@endif
+                            @if(! empty($step['sub']))<small>{{ $step['sub'] }}</small>@endif
                         </div>
-                    </template>
-                </div>
-            @endif
-
-            {{-- ── รายการสินค้า ── --}}
-            <div class="tp-card sf-stack" style="gap:12px;">
-                <div class="tp-section-h"><i class="fas fa-bag-shopping" style="color:var(--deep1);"></i> รายการสินค้า ({{ $order->items->count() }})</div>
-                @foreach($order->items as $item)
-                    @php
-                        $odImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image);
-                        $odReviewed = $item->relationLoaded('reviews') ? $item->reviews->isNotEmpty() : $item->hasReview();
-                    @endphp
-                    <div style="display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:16px; background:var(--surf); box-shadow:var(--raise);">
-                        <span class="sf-thumb" style="width:70px; height:70px;">@if($odImg)<img src="{{ $odImg }}" alt="" loading="lazy">@else 📦 @endif</span>
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-weight:700; color:var(--ink); overflow-wrap:anywhere;">{{ $item->product_name }}</div>
-                            @if(is_array($item->product_attributes) && $item->product_attributes !== [])
-                                <div class="tp-muted" style="font-size:12px;">
-                                    @foreach($item->product_attributes as $ak => $av)
-                                        @if(is_scalar($av)){{ $ak }}: {{ $av }}@if(! $loop->last), @endif @endif
-                                    @endforeach
-                                </div>
-                            @endif
-                            <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-top:4px;">
-                                <span class="tp-muted tp-num" style="font-size:12.5px;">{{ (int) $item->quantity }} × ฿{{ number_format((float) $item->unit_price, 2) }}</span>
-                                <strong class="tp-num" style="color:var(--deep1);">฿{{ number_format((float) $item->total, 2) }}</strong>
-                            </div>
-                            @if(in_array($order->status, ['delivered', 'completed'], true))
-                                <div style="margin-top:8px;">
-                                    @if($odReviewed)
-                                        <span class="tp-pill tp-pill-soft"><i class="fas fa-circle-check"></i> รีวิวแล้ว</span>
-                                    @else
-                                        <a href="{{ route('orders.review.form', [$order->id, $item->id]) }}" class="tp-btn tp-btn-sm tp-btn-primary" style="text-decoration:none;"><i class="fas fa-star"></i> รีวิวสินค้า</a>
-                                    @endif
-                                </div>
-                            @endif
-                        </div>
-                    </div>
+                    </li>
                 @endforeach
-            </div>
-        </div>
+            </ol>
 
-        {{-- ── สรุป / ที่อยู่ / ชำระ / ยกเลิก ── --}}
-        <aside class="sf-sticky sf-stack">
-            <div class="tp-card sf-stack" style="gap:10px;">
-                <div class="tp-section-h">สรุปคำสั่งซื้อ</div>
-                <div class="sf-row"><span>ยอดรวมสินค้า</span><strong class="tp-num">฿{{ number_format((float) $order->subtotal, 2) }}</strong></div>
-                @if((float) $order->discount_amount > 0)
-                    <div class="sf-row"><span>ส่วนลด</span><strong class="tp-num" style="color:var(--sf-ok, #4f9e7e);">-฿{{ number_format((float) $order->discount_amount, 2) }}</strong></div>
-                @endif
-                <div class="sf-row"><span>ค่าจัดส่ง</span><strong class="tp-num">{{ (float) $order->shipping_fee > 0 ? '฿'.number_format((float) $order->shipping_fee, 2) : 'ฟรี' }}</strong></div>
-                @if((float) ($order->tax_amount ?? 0) > 0)
-                    <div class="sf-row"><span>ภาษี</span><strong class="tp-num">฿{{ number_format((float) $order->tax_amount, 2) }}</strong></div>
-                @endif
-                <div class="sf-total"><span style="font-weight:800; color:var(--ink);">รวมทั้งหมด</span><span class="tp-num">฿{{ number_format((float) $order->total_amount, 2) }}</span></div>
-                <div class="sf-row" style="font-size:12.5px;"><span>ชำระด้วย</span><strong>{{ \App\Support\Shop\PaymentMethod::labelTh($order->payment_method) }}</strong></div>
-                <div class="sf-row" style="font-size:12.5px;"><span>สถานะการชำระ</span><strong>{{ $odIsCod && $order->payment_status !== 'paid' ? 'จ่ายเมื่อรับของ' : \App\Services\Shop\ShopPresenter::paymentStatusLabel($order->payment_status) }}</strong></div>
-            </div>
-
-            <div class="tp-card">
-                <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-location-dot" style="color:var(--deep1);"></i> ที่อยู่จัดส่ง</div>
-                @if($odShipping)
-                    <div style="font-size:13.5px; line-height:1.65; color:var(--ink2); overflow-wrap:anywhere;">
-                        <strong style="color:var(--ink);">{{ $odShipping['name'] }}</strong><br>
-                        {{ $odShipping['phone'] }}<br>
-                        {{ $odShipping['full_address'] ?: trim(implode(' ', array_filter([$odShipping['address'], $odShipping['address_line_2'], $odShipping['subdistrict'], $odShipping['district'], $odShipping['province'], $odShipping['postal_code']]))) }}
-                        @if($odShipping['notes'])<br><span style="font-size:12.5px;">หมายเหตุ: {{ $odShipping['notes'] }}</span>@endif
-                    </div>
-                @else
-                    <div class="tp-muted" style="font-size:13px;"><i class="fas fa-cloud-arrow-down"></i> สินค้าดิจิทัล — ไม่ต้องจัดส่ง</div>
-                @endif
-                @if($order->customer_notes)
-                    <div class="sf-note sf-note-info" style="margin-top:10px; font-size:12.5px; overflow-wrap:anywhere;"><strong>หมายเหตุถึงร้าน:</strong> {{ $order->customer_notes }}</div>
-                @endif
-            </div>
-
-            @if($odCanPay)
-                <div class="tp-card sf-stack" style="gap:10px;">
-                    <div class="tp-section-h"><i class="fas fa-hourglass-half" style="color:var(--deep2);"></i> รอชำระเงิน</div>
-                    <p class="tp-muted" style="margin:0; font-size:13px;">คำสั่งซื้อนี้ยังไม่ได้ชำระ กดเพื่อชำระเงินต่อ</p>
-                    <form method="POST" action="{{ route('orders.retry-payment', $order->id) }}" style="margin:0;" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
-                        @csrf
-                        <button type="submit" class="sf-btn3d is-block" :disabled="busy"><i class="fas fa-credit-card"></i> ชำระเงินตอนนี้</button>
-                    </form>
-                    {{-- 🪙 จ่ายด้วยเหรียญ TPIX (แสดงเมื่อแอดมินเปิดรับ) — ยอดคิดตามราคาจริงจากพูล TPIX DEX --}}
-                    @if(! $order->isCod() && app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled())
-                        <form method="POST" action="{{ route('tpix-pay.order', $order->id) }}" style="margin:0;" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+            @if($odTrackingUrl || $order->status === 'delivered')
+                <div class="nvm-os-acts nvm-gap-t">
+                    @if($odTrackingUrl)
+                        <a class="nvm-btn nvm-btn--line" href="{{ $odTrackingUrl }}" target="_blank" rel="noopener noreferrer"><svg class="nvm-ico"><use href="#nvm-i-out"/></svg>ติดตามพัสดุที่เว็บขนส่ง</a>
+                    @endif
+                    @if($order->status === 'delivered')
+                        <form method="POST" action="{{ route('orders.confirm-received', $order->id) }}" x-data="{ busy: false }"
+                              @submit="if (busy || ! confirm(@js('ยืนยันว่าได้รับสินค้าครบถ้วนแล้ว?'))) { $event.preventDefault(); return; } busy = true">
                             @csrf
-                            <button type="submit" class="sf-btn3d is-block is-soft" :disabled="busy">จ่ายด้วยเหรียญ TPIX</button>
+                            <button type="submit" class="nvm-btn nvm-btn--gold" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>ยืนยันว่าได้รับสินค้าแล้ว</button>
                         </form>
-                        <x-tpix-price :thb="$order->total_amount" size="lg" />
                     @endif
                 </div>
             @endif
+        </section>
 
-            @if($order->canBeCancelled())
-                <div class="tp-card sf-stack" id="cancel" style="gap:10px;" x-data="{ reason: @js(old('reason', '')), busy: false }">
-                    <div class="tp-section-h" style="color:var(--sf-sale, #e0564f);"><i class="fas fa-ban"></i> ยกเลิกคำสั่งซื้อ</div>
-                    @if($order->payment_status === 'paid')
-                        <div class="sf-note sf-note-warn" style="font-size:12.5px;">คำสั่งซื้อนี้ชำระเงินแล้ว — หากยกเลิก ระบบจะคืนเงินเข้ากระเป๋าเงินอัตโนมัติ</div>
-                    @endif
-                    <form method="POST" action="{{ route('orders.cancel', $order->id) }}" class="sf-stack" style="gap:10px;"
-                          @submit="if (busy || !confirm(@js($order->payment_status === 'paid' ? 'ยืนยันยกเลิกคำสั่งซื้อ? ระบบจะคืนเงินเข้ากระเป๋าให้อัตโนมัติ' : 'ยืนยันยกเลิกคำสั่งซื้อนี้?'))) { $event.preventDefault(); return; } busy = true">
-                        @csrf
-                        <label for="od-cancel-reason" class="tp-muted" style="font-size:12.5px; font-weight:600;">เหตุผลในการยกเลิก <span style="color:var(--sf-sale, #e0564f);">*</span></label>
-                        <textarea id="od-cancel-reason" name="reason" rows="3" maxlength="500" required class="tp-input" x-model="reason" placeholder="เช่น สั่งผิด ต้องการเปลี่ยนที่อยู่"></textarea>
-                        @error('reason')
-                            <div class="sf-note sf-note-err" style="padding:8px 12px;">{{ $message }}</div>
-                        @enderror
-                        <button type="submit" class="tp-btn" style="height:46px; color:var(--sf-sale, #e0564f);" :disabled="busy || reason.trim().length === 0"><i class="fas fa-ban"></i> ยืนยันยกเลิก</button>
-                    </form>
+        {{-- ── ติดตามพัสดุเรียลไทม์ (มีเลขพัสดุ) ── --}}
+        @if($order->tracking_number && in_array($order->status, ['shipped', 'in_transit', 'out_for_delivery', 'delivered'], true))
+            <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-pt-h" x-data="nvmOsParcel(@js(route('orders.tracking.realtime', $order->id)))">
+                <div class="nvm-sec-h">
+                    <div><small class="nvm-latin">Parcel tracking</small><h2 id="nvm-os-od-pt-h">ติดตามพัสดุเรียลไทม์</h2></div>
+                    <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="load(true)" :disabled="loading"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg><span x-text="loading ? 'กำลังโหลด…' : 'รีเฟรช'">รีเฟรช</span></button>
                 </div>
-            @endif
-        </aside>
+                <p class="nvm-help" x-show="loading && ! data">กำลังดึงข้อมูลจากขนส่ง…</p>
+                <p class="nvm-note is-bad" x-show="error" x-cloak><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span x-text="error"></span></p>
+                <template x-if="data">
+                    <div>
+                        <div class="nvm-os-acts">
+                            <span class="nvm-chip nvm-chip--gold" x-text="data.current_status_label || 'กำลังตรวจสอบ'"></span>
+                            <span class="nvm-help" x-text="(data.provider && data.provider.name) ? data.provider.name : ''"></span>
+                        </div>
+                        <template x-if="data.carrier_data && data.carrier_data.message">
+                            <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span x-text="data.carrier_data.message"></span></p>
+                        </template>
+                        <ol class="nvm-os-tl nvm-os-tl--scroll nvm-gap-t">
+                            <template x-for="(ev, k) in (data.timeline || [])" :key="k">
+                                <li class="is-done is-small">
+                                    <span class="nvm-os-tl__dot"><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg></span>
+                                    <div class="nvm-os-tl__b">
+                                        <b x-text="ev.title"></b>
+                                        <small x-show="ev.description" x-text="ev.description"></small>
+                                        <small x-show="ev.location" x-text="ev.location"></small>
+                                        <small class="nvm-num" x-text="ev.timestamp_display || ev.timestamp"></small>
+                                    </div>
+                                </li>
+                            </template>
+                        </ol>
+                    </div>
+                </template>
+            </section>
+        @endif
+
+        {{-- ── รายการสินค้า ── --}}
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-it-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Items</small><h2 id="nvm-os-od-it-h">รายการสินค้า ({{ $order->items->count() }})</h2></div></div>
+            @foreach($order->items as $item)
+                @php
+                    $odImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image);
+                    $odReviewed = $item->relationLoaded('reviews') ? $item->reviews->isNotEmpty() : $item->hasReview();
+                @endphp
+                <div class="nvm-os-lineitem">
+                    <span class="nvm-os-thumb nvm-os-thumb--lg">@if($odImg)<img src="{{ $odImg }}" alt="" loading="lazy">@else<svg class="nvm-ico"><use href="#nvm-i-bag"/></svg>@endif</span>
+                    <div class="nvm-os-lineitem__b">
+                        <b>{{ $item->product_name }}</b>
+                        @if(is_array($item->product_attributes) && $item->product_attributes !== [])
+                            <small>
+                                @foreach($item->product_attributes as $ak => $av)
+                                    @if(is_scalar($av)){{ $ak }}: {{ $av }}@if(! $loop->last), @endif @endif
+                                @endforeach
+                            </small>
+                        @endif
+                        <div class="nvm-os-lineitem__p">
+                            <span class="nvm-num">{{ (int) $item->quantity }} × ฿{{ number_format((float) $item->unit_price, 2) }}</span>
+                            <b class="nvm-num">฿{{ number_format((float) $item->total, 2) }}</b>
+                        </div>
+                        @if(in_array($order->status, ['delivered', 'completed'], true))
+                            <div class="nvm-os-acts">
+                                @if($odReviewed)
+                                    <span class="nvm-chip nvm-chip--ok"><svg class="nvm-ico"><use href="#nvm-i-check"/></svg>รีวิวแล้ว</span>
+                                @else
+                                    <a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('orders.review.form', [$order->id, $item->id]) }}"><svg class="nvm-ico"><use href="#nvm-i-award"/></svg>รีวิวสินค้า</a>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </section>
     </div>
+
+    {{-- ── สรุป / ที่อยู่ / ชำระ / ยกเลิก ── --}}
+    <aside class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-sum-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Summary</small><h2 id="nvm-os-od-sum-h">สรุปคำสั่งซื้อ</h2></div></div>
+            <dl class="nvm-kv">
+                <dt>ยอดรวมสินค้า</dt><dd class="nvm-num">฿{{ number_format((float) $order->subtotal, 2) }}</dd>
+                @if((float) $order->discount_amount > 0)
+                    <dt>ส่วนลด</dt><dd class="nvm-num">-฿{{ number_format((float) $order->discount_amount, 2) }}</dd>
+                @endif
+                <dt>ค่าจัดส่ง</dt><dd class="nvm-num">{{ (float) $order->shipping_fee > 0 ? '฿'.number_format((float) $order->shipping_fee, 2) : 'ฟรี' }}</dd>
+                @if((float) ($order->tax_amount ?? 0) > 0)
+                    <dt>ภาษี</dt><dd class="nvm-num">฿{{ number_format((float) $order->tax_amount, 2) }}</dd>
+                @endif
+                <dt class="nvm-kv__total">รวมทั้งหมด</dt><dd class="nvm-kv__total nvm-num">฿{{ number_format((float) $order->total_amount, 2) }}</dd>
+                <dt>ชำระด้วย</dt><dd>{{ \App\Support\Shop\PaymentMethod::labelTh($order->payment_method) }}</dd>
+                <dt>สถานะการชำระ</dt><dd>{{ $odPaidLabel }}</dd>
+            </dl>
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-os-od-ad-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Ship to</small><h2 id="nvm-os-od-ad-h">ที่อยู่จัดส่ง</h2></div></div>
+            @if($odShipping)
+                <ul class="nvm-os-lines">
+                    <li><svg class="nvm-ico"><use href="#nvm-i-user"/></svg><b>{{ $odShipping['name'] }}</b></li>
+                    @if($odShipping['phone'])<li><svg class="nvm-ico"><use href="#nvm-i-id"/></svg><span class="nvm-num">{{ $odShipping['phone'] }}</span></li>@endif
+                    <li><svg class="nvm-ico"><use href="#nvm-i-pin"/></svg><span>{{ $odShipping['full_address'] ?: trim(implode(' ', array_filter([$odShipping['address'], $odShipping['address_line_2'] ?? null, $odShipping['subdistrict'], $odShipping['district'], $odShipping['province'], $odShipping['postal_code']]))) }}</span></li>
+                    @if($odShipping['notes'])<li class="is-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg><span>หมายเหตุ: {{ $odShipping['notes'] }}</span></li>@endif
+                </ul>
+            @else
+                <p class="nvm-desc">สินค้าดิจิทัล — ไม่ต้องจัดส่ง</p>
+            @endif
+            @if($order->customer_notes)
+                <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-send"/></svg><span><b>หมายเหตุถึงร้าน:</b> {{ $order->customer_notes }}</span></p>
+            @endif
+        </section>
+
+        @if($odCanPay)
+            <section class="nvm-card nvm-alert" aria-labelledby="nvm-os-od-pay-h">
+                <img class="nvm-alert__img" src="{{ asset('images/nova/wallet/hourglass.webp') }}" alt="" width="56" height="56" loading="lazy">
+                <div class="nvm-alert__txt">
+                    <b id="nvm-os-od-pay-h">รอชำระเงิน</b>
+                    <p>คำสั่งซื้อนี้ยังไม่ได้ชำระ กดเพื่อชำระเงินต่อ</p>
+                </div>
+                <form class="nvm-w-full" method="POST" action="{{ route('orders.retry-payment', $order->id) }}" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+                    @csrf
+                    <button type="submit" class="nvm-btn nvm-btn--gold nvm-btn--block" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-card"/></svg>ชำระเงินตอนนี้</button>
+                </form>
+                {{-- 🪙 จ่ายด้วยเหรียญ TPIX (แสดงเมื่อแอดมินเปิดรับ) — ยอดคิดตามราคาจริงจากพูล TPIX DEX --}}
+                @if(! $odIsCod && RouteFacade::has('tpix-pay.order') && app(\App\Services\TpixPay\TpixPaySettings::class)->paymentsEnabled())
+                    <form class="nvm-w-full" method="POST" action="{{ route('tpix-pay.order', $order->id) }}" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+                        @csrf
+                        <button type="submit" class="nvm-btn nvm-btn--line nvm-btn--block" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-wallet"/></svg>จ่ายด้วยเหรียญ TPIX</button>
+                    </form>
+                    <x-tpix-price :thb="$order->total_amount" size="lg" />
+                @endif
+            </section>
+        @endif
+
+        @if($order->canBeCancelled())
+            <section class="nvm-card nvm-box" id="cancel" aria-labelledby="nvm-os-od-cc-h" x-data="{ reason: @js((string) old('reason', '')), busy: false }">
+                <div class="nvm-sec-h"><div><small class="nvm-latin">Cancel</small><h2 id="nvm-os-od-cc-h">ยกเลิกคำสั่งซื้อ</h2></div></div>
+                @if($order->payment_status === 'paid')
+                    <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>คำสั่งซื้อนี้ชำระเงินแล้ว — หากยกเลิก ระบบจะคืนเงินเข้ากระเป๋าเงินอัตโนมัติ</p>
+                @endif
+                <form method="POST" action="{{ route('orders.cancel', $order->id) }}" class="nvm-form nvm-gap-t"
+                      @submit="if (busy || ! confirm(@js($order->payment_status === 'paid' ? 'ยืนยันยกเลิกคำสั่งซื้อ? ระบบจะคืนเงินเข้ากระเป๋าให้อัตโนมัติ' : 'ยืนยันยกเลิกคำสั่งซื้อนี้?'))) { $event.preventDefault(); return; } busy = true">
+                    @csrf
+                    <div class="nvm-field">
+                        <label class="nvm-label" for="od-cancel-reason">เหตุผลในการยกเลิก <em>*</em></label>
+                        <textarea id="od-cancel-reason" name="reason" rows="3" maxlength="500" required class="nvm-input @error('reason') is-bad @enderror" x-model="reason" placeholder="เช่น สั่งผิด ต้องการเปลี่ยนที่อยู่"></textarea>
+                        @error('reason')<span class="nvm-err">{{ $message }}</span>@enderror
+                    </div>
+                    <button type="submit" class="nvm-btn nvm-btn--bad" :disabled="busy || reason.trim().length === 0"><svg class="nvm-ico"><use href="#nvm-i-x"/></svg>ยืนยันยกเลิก</button>
+                </form>
+            </section>
+        @endif
+    </aside>
 </div>
 @endsection
 
@@ -365,13 +387,14 @@
     /**
      * ติดตามพัสดุเรียลไทม์จากขนส่ง (orders.tracking.realtime)
      */
-    function tpParcelTracking(url) {
+    function nvmOsParcel(url) {
         return {
             loading: false,
             data: null,
             error: '',
             init() { this.load(false); },
             async load(force) {
+                if (this.loading) { return; }
                 this.loading = true;
                 this.error = '';
                 try {
@@ -388,16 +411,19 @@
     }
 
     /**
-     * แผนที่ไรเดอร์แบบสด — โพลตำแหน่งทุก 10 วินาทีระหว่างงานยังวิ่งอยู่
+     * แผนที่ไรเดอร์แบบสด — โพลตำแหน่งทุก 15 วินาทีระหว่างงานยังวิ่งอยู่
      * (เซิร์ฟเวอร์ส่งตำแหน่งเฉพาะเมื่อไรเดอร์ยินยอมแชร์และงานยังไม่จบ)
      */
-    function tpRiderLive(cfg) {
+    function nvmOsRiderLive(cfg) {
+        const csrf = () => (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+        const notify = (message, type) => window.dispatchEvent(new CustomEvent('notify', { detail: { message: message, type: type || 'info' } }));
+
         return {
             cfg: cfg,
             map: null,
             riderMarker: null,
             live: false,
-            statusText: 'กำลังค้นหาตำแหน่งไรเดอร์...',
+            statusText: 'กำลังค้นหาตำแหน่งไรเดอร์…',
             updatedAgo: '',
             timer: null,
             canShare: false,
@@ -406,20 +432,21 @@
             shareTimer: null,
             init() {
                 this.$nextTick(() => {
-                    if (!window.tpMap || !window.tpMap.ready()) { this.statusText = 'โหลดแผนที่ไม่สำเร็จ'; return; }
+                    if (! window.nvmOsMap || ! window.nvmOsMap.ready()) { this.statusText = 'โหลดแผนที่ไม่สำเร็จ'; return; }
                     const center = cfg.drop || cfg.pickup || [13.7563, 100.5018];
-                    this.map = window.tpMap.create(document.getElementById('od-rider-map'), center[0], center[1], 14);
-                    if (cfg.drop) { window.tpMap.pin(this.map, cfg.drop[0], cfg.drop[1], 'home'); }
-                    if (cfg.pickup) { window.tpMap.pin(this.map, cfg.pickup[0], cfg.pickup[1], 'shop'); }
+                    this.map = window.nvmOsMap.create(this.$refs.map, center[0], center[1], 14);
+                    if (cfg.drop) { window.nvmOsMap.pin(this.map, cfg.drop[0], cfg.drop[1], 'home'); }
+                    if (cfg.pickup) { window.nvmOsMap.pin(this.map, cfg.pickup[0], cfg.pickup[1], 'shop'); }
                     this.poll();
                     this.timer = setInterval(() => this.poll(), 15000);
                 });
-                window.addEventListener('beforeunload', () => { clearInterval(this.shareTimer); });
+                // ออกจากหน้า → หยุดโพลและหยุดส่งตำแหน่ง
+                window.addEventListener('pagehide', () => { clearInterval(this.timer); this.stopSharingTimer(); });
             },
             placeRider(lat, lng) {
                 const ll = [Number(lat), Number(lng)];
-                if (!this.riderMarker) {
-                    this.riderMarker = window.tpMap.pin(this.map, ll[0], ll[1], 'rider');
+                if (! this.riderMarker) {
+                    this.riderMarker = window.nvmOsMap.pin(this.map, ll[0], ll[1], 'rider');
                     const pts = [ll];
                     if (cfg.drop) { pts.push(cfg.drop); }
                     this.map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
@@ -438,23 +465,22 @@
                 try {
                     const res = await fetch(cfg.locationUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                     const d = await res.json().catch(() => null);
-                    if (!res.ok || !d || !d.success) {
+                    if (! res.ok || ! d || ! d.success) {
                         this.stop((d && d.message) || 'ดึงตำแหน่งไรเดอร์ไม่สำเร็จ');
                         return;
                     }
                     if (cfg.mode === 'order') {
-                        // API ติดตามของผู้ซื้อ: {job{is_active,status_text}, rider_location{latitude,longitude,is_stale}, reason_text, customer_sharing, can_share_location}
+                        // API ติดตามของผู้ซื้อ: {job{is_active,status_text}, rider_location{latitude,longitude}, reason_text, customer_sharing, can_share_location}
                         const data = d.data || {};
                         const job = data.job || {};
                         this.statusText = data.reason_text || job.status_text || '';
-                        this.canShare = !!data.can_share_location;
-                        this.sharing = !!(data.customer_sharing && data.customer_sharing.enabled);
-                        if (this.sharing && !this.shareTimer) { this.startSharingTimer(); }
+                        this.canShare = !! data.can_share_location;
+                        this.sharing = !! (data.customer_sharing && data.customer_sharing.enabled);
+                        if (this.sharing && ! this.shareTimer) { this.startSharingTimer(); }
                         if (data.rider_location && data.rider_location.latitude) {
                             this.placeRider(data.rider_location.latitude, data.rider_location.longitude);
-                            this.live = !!data.location_available;
+                            this.live = !! data.location_available;
                             this.updatedAgo = data.rider_location.updated_at ? new Date(data.rider_location.updated_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' : '';
-                            if (!this.statusText) { this.statusText = job.status_text || ''; }
                         } else {
                             this.live = false;
                         }
@@ -466,14 +492,14 @@
                     this.statusText = d.job_status_text || loc.job_status_text || '';
                     if (loc.latitude && loc.longitude) {
                         this.placeRider(loc.latitude, loc.longitude);
-                        this.live = !!loc.available;
+                        this.live = !! loc.available;
                         this.updatedAgo = loc.updated_ago || '';
-                        if (!loc.available) { this.statusText += ' · สัญญาณ GPS ของไรเดอร์ขาดช่วง'; }
+                        if (! loc.available) { this.statusText += ' · สัญญาณ GPS ของไรเดอร์ขาดช่วง'; }
                     } else {
                         this.live = false;
                         if (loc.reason === 'consent_missing') { this.statusText = 'ไรเดอร์ยังไม่ได้ยินยอมแชร์ตำแหน่ง'; }
                     }
-                    if (!d.is_active) { this.stop(this.statusText); }
+                    if (! d.is_active) { this.stop(this.statusText); }
                 } catch (e) {
                     this.live = false;
                 }
@@ -481,7 +507,7 @@
             // ── แชร์ตำแหน่งของผู้ซื้อ ──
             position() {
                 return new Promise((resolve, reject) => {
-                    if (!navigator.geolocation) { reject(new Error('no_geo')); return; }
+                    if (! navigator.geolocation) { reject(new Error('no_geo')); return; }
                     navigator.geolocation.getCurrentPosition(
                         (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
                         () => reject(new Error('denied')),
@@ -493,11 +519,11 @@
                 const body = Object.assign({ share: share }, point || {});
                 const res = await fetch(cfg.shareUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': window.tpShop.csrf(), 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' },
                     body: JSON.stringify(body)
                 });
                 const d = await res.json().catch(() => null);
-                if (!res.ok || !d || !d.success) { throw new Error((d && d.message) || 'แชร์ตำแหน่งไม่สำเร็จ กรุณาลองใหม่'); }
+                if (! res.ok || ! d || ! d.success) { throw new Error((d && d.message) || 'แชร์ตำแหน่งไม่สำเร็จ กรุณาลองใหม่'); }
                 return d;
             },
             startSharingTimer() {
@@ -507,7 +533,7 @@
                         const point = await this.position();
                         await this.sendShare(true, point);
                     } catch (e) {
-                        // งานจบ/ไม่อนุญาต GPS → หยุดส่งเงียบๆ
+                        // งานจบ/ไม่อนุญาต → หยุดส่งเงียบๆ (GPS ปิดชั่วคราวไม่หยุด)
                         if (e && e.message && e.message !== 'denied' && e.message !== 'no_geo') { this.stopSharingTimer(); this.sharing = false; }
                     }
                 }, 30000);
@@ -521,20 +547,20 @@
                         await this.sendShare(false);
                         this.sharing = false;
                         this.stopSharingTimer();
-                        window.tpShop.notify('หยุดแชร์ตำแหน่งแล้ว', 'success');
+                        notify('หยุดแชร์ตำแหน่งแล้ว', 'success');
                     } else {
                         let point = null;
                         try { point = await this.position(); } catch (e) {
-                            window.tpShop.notify('เปิดสิทธิ์ตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน แล้วลองใหม่', 'error');
+                            notify('เปิดสิทธิ์ตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน แล้วลองใหม่', 'error');
                             return;
                         }
                         await this.sendShare(true, point);
                         this.sharing = true;
                         this.startSharingTimer();
-                        window.tpShop.notify('ไรเดอร์เห็นตำแหน่งของคุณแล้ว', 'success');
+                        notify('ไรเดอร์เห็นตำแหน่งของคุณแล้ว', 'success');
                     }
                 } catch (e) {
-                    window.tpShop.notify(e.message || 'แชร์ตำแหน่งไม่สำเร็จ', 'error');
+                    notify(e.message || 'แชร์ตำแหน่งไม่สำเร็จ', 'error');
                 } finally {
                     this.shareBusy = false;
                 }
