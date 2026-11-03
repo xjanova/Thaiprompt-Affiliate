@@ -1673,6 +1673,16 @@ Route::prefix('v1/juntra/server')
                 ->name('chat.send');
         });
 
+        // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
+        //   on-demand + แคช — เว็บขอเฉพาะตอนลูกค้ากดฟัง ข้อความเดิม = ไฟล์เดิม · เพดานตัวอักษรต่อวันอยู่ใน service
+        Route::middleware('throttle:jwvoice')->prefix('voice')->name('voice.')->group(function () {
+            Route::post('/speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'speak'])
+                ->name('speak');
+            Route::get('/clips/{clip}', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'show'])
+                ->whereNumber('clip')
+                ->name('clips.show');
+        });
+
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า
         //   🔴 (2026-09-15) เดิมมีแต่ทาง token → ลูกค้าที่สมัครด้วยเบอร์/อีเมล (ส่วนใหญ่) จ่ายเปิดไพ่
         //      แล้วได้ข้อความประกอบจากความหมายไพ่แทนคำทำนายจริง ส่วนดูดวงเชิงลึกถูกคืนเงินทุกครั้ง

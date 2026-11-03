@@ -547,6 +547,7 @@ return [
                 ['label' => '⚙️ โหราศาสตร์', 'route' => 'admin.fortune.astrology.index', 'description' => 'ตารางเจ้าชนะ ดาวเคราะห์ ทดสอบ Birth Chart'],
                 ['label' => '⚙️ ระบบไพ่ทาโรต์', 'route' => 'admin.tarot.index', 'description' => 'จัดการไพ่และความหมาย'],
                 ['label' => '⚙️ จัดการเสียง (Voice)', 'route' => 'admin.fortune.voice.index', 'description' => 'ตั้งค่าโมเดล/เสียง · คลังเสียงระบบ · เสียงทำนาย · ตรวจระบบ'],
+                ['label' => '🎭 เสียงพากย์ตัวละคร', 'route' => 'admin.fortune.character-voices.index', 'description' => 'แม่หมอจันทรา / น้องบุษบา — ElevenLabs V3 ผ่าน X-DREAMER · ฟังเสียงตัวอย่างแล้วเลือก'],
                 ['label' => '⚙️ SlipOK Account Pool', 'route' => 'admin.fortune.slipok-accounts.index', 'description' => 'หลายบัญชี SlipOK หมุนเวียนกัน quota ฟรีตัน — failover + balance'],
                 ['label' => '⚙️ Rich Menu Editor', 'route' => 'admin.fortune.rich-menu.editor', 'description' => 'แก้ไขปุ่ม สี ข้อความ Rich Menu + อัปโหลดภาพเอง'],
                 ['label' => '⚙️ Rich Menu Deploy', 'route' => 'admin.fortune.rich-menu.index', 'description' => 'Deploy Rich Menu ไป LINE'],

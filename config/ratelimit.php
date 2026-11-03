@@ -59,6 +59,7 @@ return [
         'pay' => env('RATE_LIMIT_JUNTRA_PAY', 120),
         'read' => env('RATE_LIMIT_JUNTRA_READ', 60),
         'affiliate' => env('RATE_LIMIT_JUNTRA_AFFILIATE', 300),
+        'voice' => env('RATE_LIMIT_JUNTRA_VOICE', 120),
     ],
 
     /*

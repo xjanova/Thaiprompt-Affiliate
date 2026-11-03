@@ -10,6 +10,8 @@
         'openai_tts' => '🎙️ OpenAI TTS',
         'google_tts' => '🎙️ Google Cloud TTS (ฟรี 1M/เดือน)',
         'gtts' => '🆓 gTTS (ฟรี ไม่ต้องตั้ง key)',
+        // 🎭 (2026-11-03) ตั้ง key + เลือกเสียงที่หน้า "เสียงพากย์ตัวละคร"
+        'xdreamer' => '🎭 X-DREAMER · ElevenLabs V3',
     ];
     $openaiVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
     $fallbacks = is_array($settings->voice_summary_fallback_providers) ? $settings->voice_summary_fallback_providers : [];
@@ -28,7 +30,10 @@
                 <span style="color:var(--deep1); font-weight:600;">เสียงระบบส่งเฉพาะ Facebook</span>
             </p>
         </div>
-        <a href="#diagnostic" class="tp-btn">🩺 ตรวจระบบ ↓</a>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <a href="{{ route('admin.fortune.character-voices.index') }}" class="tp-btn">🎭 เสียงพากย์ตัวละคร</a>
+            <a href="#diagnostic" class="tp-btn">🩺 ตรวจระบบ ↓</a>
+        </div>
     </div>
 
     {{-- Flash --}}
