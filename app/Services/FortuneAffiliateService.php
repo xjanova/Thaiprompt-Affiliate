@@ -239,8 +239,10 @@ class FortuneAffiliateService
      * ค้นหาหลายช่องทาง: line_user_id, facebook_user_id, platform_user_id ใน FortuneReading
      *
      * @param  FortuneReading|null  $reading  ไม่บังคับ — ทางเข้าเว็บ (Magic Link) ไม่มี reading
+     *
+     * public (F34): webhook ลิงก์เชิญใช้ตัวนี้เช็คว่าคนที่กดลิงก์เป็นสมาชิก/ลูกค้าเดิมหรือเจ้าของลิงก์เอง
      */
-    protected function findExistingUser(string $platformUserId, string $platform, ?FortuneReading $reading = null): ?User
+    public function findExistingUser(string $platformUserId, string $platform, ?FortuneReading $reading = null): ?User
     {
         // 1. ค้นหาตาม platform-specific column
         if ($platform === 'line') {

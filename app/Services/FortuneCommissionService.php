@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\Wallet;
+use App\Models\WalletDebt;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -101,6 +102,34 @@ class FortuneCommissionService
             $readingPrice = (float) ($settings->deep_reading_price ?? 0);
         }
 
+        // 💰 (F23/M13) จ่ายค่าแนะนำเฉพาะบิลที่รับเงินครบราคาแพคเกจ
+        //   เดิมเช็คแค่ amount_paid > 0 → แอดมินมาร์คจ่าย 0.50 บาทกับบิล Celtic ก็จ่าย 10 + 2 บาท
+        //   เผื่อโอนขาดได้ไม่เกิน fuzzy_underpay_max_baht (ค่าเดียวกับที่ระบบจับคู่ SMS ยอมรับว่าจ่ายครบ)
+        //   บิลที่ไม่มีราคาแพคเกจในตั้งค่า (เช่นบิลจันทราซึ่งคิดเป็น % ของยอด) ไม่ถูกด่านนี้ — ยังโดนเพดานยอดรับด้านล่าง
+        //   บิลโอนขาด/โอนเติม และบิลสลับแพคเกจที่เก็บเงินเพิ่ม: amount_paid = แค่ยอดก้อนหลัง
+        //   เงินก้อนก่อนอยู่ใน partial_paid_total → ใช้ moneyReceived() ไม่ใช่ amount_paid ตรง ๆ
+        $expectedPrice = $this->expectedBillPrice($reading, $settings);
+        $underpayTolerance = max(0.0, (float) ($settings->fuzzy_underpay_max_baht ?? 1.00));
+        $amountPaid = $this->moneyReceived($reading, $expectedPrice);
+        if ($expectedPrice > 0 && $amountPaid + $underpayTolerance < $expectedPrice) {
+            Log::warning('FortuneCommission: ยอดที่รับต่ำกว่าราคาแพคเกจ → ไม่จ่ายค่าแนะนำ', [
+                'reading_id' => $reading->id,
+                'reading_type' => $reading->reading_type,
+                'amount_paid' => (float) ($reading->amount_paid ?? 0),
+                'partial_paid_total' => (float) ($reading->partial_paid_total ?? 0),
+                'money_received' => $amountPaid,
+                'expected_price' => $expectedPrice,
+                'underpay_tolerance' => $underpayTolerance,
+                'reason' => 'underpaid_below_package_price',
+            ]);
+
+            return;
+        }
+
+        // 💰 (F23) ฐานเพดานค่าแนะนำรวม — บิลโอนขาด/โอนเติมใช้เงินที่รับจริงทั้งหมด (ไม่ใช่แค่ยอดก้อนหลัง)
+        //   บิลปกติ = $readingPrice เดิม (ตัดค่าธรรมเนียมบัตรออกแล้ว)
+        $revenueBase = $this->hasPartialCredit($reading) ? max($readingPrice, $amountPaid) : $readingPrice;
+
         // 🐛 Fix 2026-06-12: เช็คจ่ายซ้ำแยกราย level (เดิมเช็ครวมทั้งบิล —
         // ถ้า L1 สำเร็จแต่ L2 fail การ retry จะถูกข้ามทั้งบิล L2 ไม่มีวันได้จ่าย)
         // + แยก try/catch ราย level — L1 ล้มเหลวต้องไม่บล็อก L2
@@ -111,7 +140,7 @@ class FortuneCommissionService
             Log::info('FortuneCommission [L1]: บิลนี้จ่าย L1 ไปแล้ว ข้าม', ['reading_id' => $reading->id]);
         } else {
             try {
-                $this->payLevel1($reading, $mlmMember, $settings, $readingPrice);
+                $this->payLevel1($reading, $mlmMember, $settings, $readingPrice, $revenueBase);
             } catch (\Throwable $l1Err) {
                 Log::error('FortuneCommission [L1]: จ่ายล้มเหลว (ไม่บล็อก L2)', [
                     'reading_id' => $reading->id,
@@ -128,7 +157,7 @@ class FortuneCommissionService
                 Log::info('FortuneCommission [L2]: บิลนี้จ่าย L2 ไปแล้ว ข้าม', ['reading_id' => $reading->id]);
             } else {
                 try {
-                    $this->payLevel2($reading, $mlmMember, $settings, $readingPrice);
+                    $this->payLevel2($reading, $mlmMember, $settings, $readingPrice, $revenueBase);
                 } catch (\Throwable $l2Err) {
                     Log::error('FortuneCommission [L2]: จ่ายล้มเหลว', [
                         'reading_id' => $reading->id,
@@ -176,12 +205,102 @@ class FortuneCommissionService
 
     /**
      * ตรวจว่าบิลนี้จ่ายคอมมิชชั่น level นี้ไปแล้วหรือยัง (กันจ่ายซ้ำราย level)
+     *
+     * ♻️ (F24) ไม่นับเฉพาะแถวที่ถูกดึงคืนตอน void บิล — บิลที่ void แล้วลูกค้าจ่ายจริงรอบใหม่ต้องได้ค่าแนะนำอีกครั้ง
+     *   เดิมนับทุกแถว → ผู้แนะนำไม่ได้ค่าแนะนำของบิลนั้นอีกเลย
+     *   ⚠️ แถวที่แอดมินกดปฏิเสธเอง (reject) / จันทรายกเลิก ยังนับว่าจ่ายแล้ว — ห้ามปลุกกลับมาจ่าย
      */
     protected function levelAlreadyPaid(FortuneReading $reading, int $level): bool
     {
+        $voidReversedIds = FortuneCommission::where('fortune_reading_id', $reading->id)
+            ->where('level', $level)
+            ->reversedByVoid()
+            ->pluck('id');
+
         return FortuneCommission::where('fortune_reading_id', $reading->id)
             ->where('level', $level)
+            ->whereNotIn('id', $voidReversedIds)
             ->exists();
+    }
+
+    /**
+     * 💰 (F23) บิลนี้มีเงินโอนขาด/เงินที่รับไว้ก่อนสะสมอยู่ไหม (partial_paid_total)
+     */
+    protected function hasPartialCredit(FortuneReading $reading): bool
+    {
+        return (float) ($reading->partial_paid_total ?? 0) > 0;
+    }
+
+    /**
+     * 💰 (F23) เงินที่บิลนี้รับจริงทั้งหมด (ใช้ตัดสินด่านยอดขั้นต่ำ + ฐานเพดานค่าแนะนำ)
+     *
+     * บิลปกติ = amount_paid
+     * บิลที่มี partial_paid_total (โอนขาดแล้วโอนเติม / สลับแพคเกจแล้วเก็บเงินเพิ่ม) — amount_paid เป็นแค่ยอดก้อนหลัง
+     *   ⚠️ ความหมายของ partial_paid_total ไม่เหมือนกันทุกทาง: ทางสลิปที่ยอดสะสมครบ = รวมก้อนสุดท้ายแล้ว,
+     *      ทาง UPA ตรงเป๊ะ/สลับแพคเกจ = ยังไม่รวมก้อนหลัง → บวกกันได้ แต่ห้ามเกินยอดเป้าหมายของบิล
+     *      (partial_target_total หรือราคาแพคเกจ) กันนับเงินก้อนเดียวกันสองรอบ
+     */
+    protected function moneyReceived(FortuneReading $reading, float $expectedPrice): float
+    {
+        $amountPaid = (float) ($reading->amount_paid ?? 0);
+        if (! $this->hasPartialCredit($reading)) {
+            return $amountPaid;
+        }
+
+        $partial = (float) $reading->partial_paid_total;
+        $ceiling = max((float) ($reading->partial_target_total ?? 0), $expectedPrice);
+        $sum = round($partial + $amountPaid, 2);
+        if ($ceiling > 0) {
+            $sum = min($sum, $ceiling);
+        }
+
+        return round(max($amountPaid, $partial, $sum), 2);
+    }
+
+    /**
+     * 💰 (F23) ราคาแพคเกจของบิล ตามตั้งค่าแม่หมอ — 0 = ไม่มีราคาแพคเกจ (ไม่ใช้ด่านยอดขั้นต่ำ)
+     *
+     * ลำดับเดียวกับ Api\Admin\Fortune\FortuneReadingsController::billAmountFor (deep / celtic / basic)
+     */
+    protected function expectedBillPrice(FortuneReading $reading, FortuneTellingSetting $settings): float
+    {
+        return match ($reading->reading_type) {
+            FortuneReading::READING_TYPE_DEEP => (float) ($settings->deep_reading_price ?? 0),
+            FortuneReading::READING_TYPE_CELTIC_CROSS => (float) ($settings->celtic_cross_price ?? 0),
+            FortuneReading::READING_TYPE_BASIC, null => (float) ($settings->reading_price ?? 0),
+            default => 0.0,
+        };
+    }
+
+    /**
+     * 💰 (F23) ตัดค่าแนะนำของ level นี้ไม่ให้ยอดรวมของบิล (แถวที่ยังไม่ถูกดึงคืน) เกินฐานรายรับของบิล
+     *
+     * ฐาน = ยอดที่ร้านได้จริง (ตัดค่าธรรมเนียมบัตรออกแล้ว · บิลโอนขาดรวมเงินทุกก้อน ดู moneyReceived)
+     *
+     * @return float ยอดที่จ่ายได้ (0 = เต็มเพดานแล้ว ข้าม level นี้)
+     */
+    protected function capToBillRevenue(FortuneReading $reading, float $readingPrice, float $amount, int $level): float
+    {
+        $alreadyPaid = (float) FortuneCommission::where('fortune_reading_id', $reading->id)
+            ->where('status', '!=', FortuneCommission::STATUS_REJECTED)
+            ->sum('amount');
+        $room = round(max(0.0, $readingPrice - $alreadyPaid), 2);
+
+        if ($amount <= $room) {
+            return $amount;
+        }
+
+        Log::warning("FortuneCommission [L{$level}]: ค่าแนะนำเกินยอดที่รับของบิล → ตัดลงให้ไม่เกินยอดรับ", [
+            'reading_id' => $reading->id,
+            'reading_type' => $reading->reading_type,
+            'reading_price' => $readingPrice,
+            'already_paid' => $alreadyPaid,
+            'requested' => $amount,
+            'capped_to' => $room,
+            'reason' => 'commission_exceeds_bill_revenue',
+        ]);
+
+        return $room;
     }
 
     /**
@@ -194,12 +313,19 @@ class FortuneCommissionService
         FortuneReading $reading,
         MlmMember $mlmMember,
         FortuneTellingSetting $settings,
-        float $readingPrice
+        float $readingPrice,
+        ?float $revenueBase = null
     ): void {
         // คำนวณ amount ก่อน — ใช้ทั้ง path sponsor และ central fallback
         // 📦 (2026-07-15) reading_type ตัดสินอัตราเมื่อเปิดโหมดแยกแพคเกจ
         $readingType = $reading->reading_type;
         $commissionAmount = $settings->getFortuneLevel1Amount($readingPrice, $readingType);
+        if ($commissionAmount <= 0) {
+            return;
+        }
+
+        // 💰 (F23) ค่าแนะนำรวมของบิลห้ามเกินยอดที่รับ
+        $commissionAmount = $this->capToBillRevenue($reading, $revenueBase ?? $readingPrice, $commissionAmount, 1);
         if ($commissionAmount <= 0) {
             return;
         }
@@ -300,12 +426,19 @@ class FortuneCommissionService
         FortuneReading $reading,
         MlmMember $mlmMember,
         FortuneTellingSetting $settings,
-        float $readingPrice
+        float $readingPrice,
+        ?float $revenueBase = null
     ): void {
         // คำนวณ amount ก่อน — ใช้ทั้ง path grandparent และ central fallback
         // 📦 (2026-07-15) reading_type ตัดสินอัตราเมื่อเปิดโหมดแยกแพคเกจ
         $readingType = $reading->reading_type;
         $commissionAmount = $settings->getFortuneLevel2Amount($readingPrice, $readingType);
+        if ($commissionAmount <= 0) {
+            return;
+        }
+
+        // 💰 (F23) ค่าแนะนำรวมของบิลห้ามเกินยอดที่รับ (หักส่วนที่ L1 ได้ไปแล้ว)
+        $commissionAmount = $this->capToBillRevenue($reading, $revenueBase ?? $readingPrice, $commissionAmount, 2);
         if ($commissionAmount <= 0) {
             return;
         }
@@ -569,7 +702,7 @@ class FortuneCommissionService
             $levelName = $level === 1 ? 'สายตรง' : 'ชั้นหลาน';
             $reasonNote = $this->reasonToThaiNote($reason);
 
-            $commission = FortuneCommission::create([
+            $commission = $this->createOrRestoreCommissionRow([
                 'user_id' => $centralMember->user_id,
                 'from_user_id' => $reading->user_id,
                 'fortune_reading_id' => $reading->id,
@@ -586,6 +719,10 @@ class FortuneCommissionService
             ]);
 
             $this->depositToWallet($centralMember, $commission, $reading, $level, $amount);
+
+            if (! $commission->wasRecentlyCreated) {
+                $this->settleClawbackDebt($commission, $reading);
+            }
         });
 
         Log::info('FortuneCommission [Central/กระเป๋ากลาง]: จ่ายสำเร็จ', [
@@ -690,8 +827,8 @@ class FortuneCommissionService
         ) {
             $levelName = $level === 1 ? 'สายตรง' : 'ชั้นหลาน';
 
-            // สร้าง FortuneCommission record
-            $commission = FortuneCommission::create([
+            // สร้าง FortuneCommission record (หรือใช้แถว rejected เดิมของบิลที่ void แล้วจ่ายใหม่ — F24)
+            $commission = $this->createOrRestoreCommissionRow([
                 'user_id' => $recipientMember->user_id,
                 'from_user_id' => $reading->user_id,
                 'fortune_reading_id' => $reading->id,
@@ -709,7 +846,116 @@ class FortuneCommissionService
 
             // เพิ่มเงินเข้า wallet
             $this->depositToWallet($recipientMember, $commission, $reading, $level, $amount);
+
+            // 🧾 (F25/F24) แถวที่นำกลับมาจ่ายใหม่ เคยดึงคืนไม่ครบจนเป็นหนี้ → หักหนี้ของแถวนี้จากยอดที่เพิ่งเข้า
+            if (! $commission->wasRecentlyCreated) {
+                $this->settleClawbackDebt($commission, $reading);
+            }
         });
+    }
+
+    /**
+     * ♻️ (F24) สร้างแถวค่าแนะนำ หรือนำแถว rejected เดิมของบิล+level นี้กลับมาใช้
+     *
+     * บิลที่ถูก void แล้วลูกค้าจ่ายจริงรอบใหม่ มีแถวเดิมสถานะ rejected ค้างอยู่ — สร้างแถวใหม่ให้ผู้รับคนเดิม
+     * จะชน unique fc_reading_user_level_unique (fortune_reading_id, user_id, level) → ใช้แถวเดิมแทน
+     * และต่อท้าย notes ไว้ตรวจย้อนหลัง
+     *   - ใช้เฉพาะแถวที่ถูกดึงคืนตอน void (FortuneCommission::scopeReversedByVoid) — แถวที่แอดมินปฏิเสธเองห้ามปลุก
+     *   - ใช้เฉพาะแถวของผู้รับคนเดิม — ผู้รับเปลี่ยน (ย้ายสาย) สร้างแถวใหม่ ไม่ทับประวัติการดึงคืน/หนี้ของคนเก่า
+     * ⚠️ เรียกภายใน DB::transaction เท่านั้น (ล็อกแถวที่จะนำกลับมาใช้)
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createOrRestoreCommissionRow(array $attributes): FortuneCommission
+    {
+        $rejected = FortuneCommission::where('fortune_reading_id', $attributes['fortune_reading_id'])
+            ->where('level', $attributes['level'])
+            ->where('user_id', $attributes['user_id'])
+            ->reversedByVoid()
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $rejected) {
+            return FortuneCommission::create($attributes);
+        }
+
+        $rejected->update(array_merge($attributes, [
+            'wallet_transaction_id' => null,
+            'chat_notified_at' => null,
+            'rejected_at' => null,
+            'notes' => trim((string) ($rejected->notes ?? '')).' | ♻️ จ่ายใหม่หลังยกเลิก: '.($attributes['notes'] ?? ''),
+        ]));
+
+        return $rejected;
+    }
+
+    /**
+     * 🧾 (F25/F24) หักหนี้ FortuneClawback ของแถวค่าแนะนำนี้ จากเงินที่เพิ่งจ่ายเข้ากระเป๋า
+     *
+     * void บิลตอนผู้รับถอนเงินไปแล้ว → ดึงคืนได้ไม่ครบ ส่วนที่ขาดเป็น WalletDebt(source_id = แถวนี้)
+     * ระบบเก็บหนี้ที่มีอยู่ (DebtCollectionService/PayoutService) หักจาก EarningsLedger/ตอนถอนเท่านั้น
+     * ค่าแนะนำดูดวงเข้ากระเป๋าตรง → ถ้าไม่หักตรงนี้ บิลที่จ่ายใหม่จะได้เงินซ้ำทั้งที่หนี้ยังค้าง
+     * ⚠️ เรียกภายใน DB::transaction เดียวกับการจ่าย (ล็อกกระเป๋า + หนี้) · ไม่ส่งข้อความหาผู้ใช้ทาง LINE
+     */
+    protected function settleClawbackDebt(FortuneCommission $commission, FortuneReading $reading): void
+    {
+        $debts = WalletDebt::where('user_id', $commission->user_id)
+            ->where('source_type', 'FortuneClawback')
+            ->where('source_id', $commission->id)
+            ->active()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        if ($debts->isEmpty()) {
+            return;
+        }
+
+        $wallet = Wallet::where('user_id', $commission->user_id)->lockForUpdate()->first();
+        if (! $wallet) {
+            return;
+        }
+
+        $budget = round((float) $commission->amount, 2);
+        foreach ($debts as $debt) {
+            $before = round((float) ($wallet->balance ?? 0), 2);
+            $take = round(min((float) $debt->remaining_amount, $budget, max(0.0, $before)), 2);
+            if ($take <= 0) {
+                break;
+            }
+
+            $after = round($before - $take, 2);
+            WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $wallet->user_id,
+                'type' => 'fee',
+                'amount' => $take,
+                'balance_before' => $before,
+                'balance_after' => $after,
+                'currency' => $wallet->currency,
+                'description' => "หักหนี้ดึงคืนค่าแนะนำดูดวง — บิล #{$reading->id} (หนี้ #{$debt->id})",
+                'reference_type' => WalletDebt::class,
+                'reference_id' => $debt->id,
+                'status' => 'completed',
+                'metadata' => [
+                    'reading_id' => $reading->id,
+                    'commission_id' => $commission->id,
+                    'mode' => 'fortune_clawback_debt_collect',
+                ],
+                'completed_at' => now(),
+            ]);
+            // หักแค่ยอดคงเหลือ — total_income ถูกหักเต็มจำนวนไปแล้วตอนดึงคืน ห้ามหักซ้ำ
+            $wallet->update(['balance' => $after, 'last_transaction_at' => now()]);
+            $debt->deduct($take);
+            $budget = round($budget - $take, 2);
+
+            Log::warning('FortuneCommission: หักหนี้ดึงคืนค่าแนะนำจากค่าแนะนำที่จ่ายใหม่', [
+                'reading_id' => $reading->id,
+                'commission_id' => $commission->id,
+                'debt_id' => $debt->id,
+                'deducted' => $take,
+            ]);
+        }
     }
 
     /**

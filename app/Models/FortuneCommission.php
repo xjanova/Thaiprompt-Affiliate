@@ -46,6 +46,13 @@ class FortuneCommission extends Model
     const STATUS_REJECTED = 'rejected';
 
     /**
+     * ♻️ (F24) ข้อความที่ FortuneReading::reverseCommissionRow ใส่ใน notes ตอนดึงค่าแนะนำคืนเพราะ void บิล
+     * ใช้แยก "ถูกดึงคืนตอน void" ออกจาก "แอดมินกดปฏิเสธเอง" (reject ตั้ง rejected_at — void ไม่ตั้ง)
+     * ⚠️ ห้ามเปลี่ยนข้อความ — แถวเก่าบน prod ใช้ข้อความนี้อยู่แล้ว
+     */
+    const VOID_REVERSAL_NOTE = 'REVERSED: void approval';
+
+    /**
      * ชื่อตาราง
      */
     protected $table = 'fortune_commissions';
@@ -189,6 +196,16 @@ class FortuneCommission extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', self::STATUS_REJECTED);
+    }
+
+    /**
+     * ♻️ (F24) แถวที่ถูกดึงคืนเพราะ void บิล (ไม่ใช่แอดมินปฏิเสธเอง) — นำกลับมาจ่ายใหม่ได้เมื่อบิลถูกจ่ายรอบใหม่
+     */
+    public function scopeReversedByVoid($query)
+    {
+        return $query->where('status', self::STATUS_REJECTED)
+            ->whereNull('rejected_at')
+            ->where('notes', 'like', '%'.self::VOID_REVERSAL_NOTE.'%');
     }
 
     // ===== Helper Methods =====

@@ -3807,8 +3807,8 @@ class FortuneReading extends Model
 
         foreach ($commissions as $comm) {
             try {
-                \Illuminate\Support\Facades\DB::transaction(function () use ($comm) {
-                    $this->reverseCommissionRow($comm);
+                \Illuminate\Support\Facades\DB::transaction(function () use ($comm, $adminId) {
+                    $this->reverseCommissionRow($comm, $adminId);
                 });
                 $reverted[] = "commission#{$comm->id} (-{$comm->amount})";
             } catch (\Illuminate\Database\DeadlockException $e) {
@@ -3896,54 +3896,85 @@ class FortuneReading extends Model
      * mirror ของ FortuneCommissionService::depositToWallet (ทำกลับด้าน)
      * ⚠️ เรียกภายใน DB::transaction จาก voidApproval เท่านั้น
      */
-    protected function reverseCommissionRow(FortuneCommission $comm): void
+    protected function reverseCommissionRow(FortuneCommission $comm, ?int $adminId = null): void
     {
         // ดึงเงินคืนจาก wallet (ถ้าเคยจ่ายเข้า wallet จริง)
         // 🔒 (2026-09-21) lockForUpdate แบบเดียวกับฝั่งจ่าย (depositToWallet) — เดิมอ่านยอดโดยไม่ล็อก
         //   คอมเข้ากระเป๋าเดียวกันพร้อมกับการดึงคืน = ยอดหนึ่งในสองหายไป
         $wallet = Wallet::where('user_id', $comm->user_id)->lockForUpdate()->first();
+        $amount = round((float) $comm->amount, 2);
+        $taken = 0.0;
         if ($wallet) {
             $before = (float) ($wallet->balance ?? 0);
-            $after = $before - (float) $comm->amount;
+            // 🧾 (F25/M7) ดึงเท่าที่ยอดมี — ห้ามทำกระเป๋าติดลบ ส่วนที่ขาดเป็น WalletDebt ด้านล่าง
+            $taken = round(max(0.0, min($before, $amount)), 2);
+            $after = round($before - $taken, 2);
 
-            WalletTransaction::create([
-                'wallet_id' => $wallet->id,
-                'user_id' => $wallet->user_id,
-                'type' => 'withdrawal',
-                'amount' => (float) $comm->amount,
-                'balance_before' => $before,
-                'balance_after' => $after,
-                'currency' => $wallet->currency,
-                'description' => "ดึงคืนค่าแนะนำดูดวง — บิล #{$this->id} ถูกยกเลิกการอนุมัติ",
-                'reference_type' => FortuneCommission::class,
-                'reference_id' => $comm->id,
-                'status' => 'completed',
-                'metadata' => [
-                    'reading_id' => $this->id,
-                    'mode' => 'fortune_commission_reversal',
-                ],
-                'completed_at' => now(),
-            ]);
-
-            if ($after < 0) {
-                \Illuminate\Support\Facades\Log::warning('FortuneReading::reverseCommissionRow — wallet ติดลบหลังดึงคืน (ลูกค้าใช้เงินไปแล้ว)', [
-                    'reading_id' => $this->id,
+            if ($taken > 0) {
+                // type 'fee' แบบเดียวกับการดึงคืนคอม MLM (MlmCommissionClawbackService → WalletService::deductForService)
+                //   เดิมบันทึกเป็น 'withdrawal' → รายงานนับเป็น "ถอนเงิน" ทั้งที่ไม่ใช่
+                WalletTransaction::create([
                     'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'type' => 'fee',
+                    'amount' => $taken,
+                    'balance_before' => $before,
                     'balance_after' => $after,
+                    'currency' => $wallet->currency,
+                    'description' => "ดึงคืนค่าแนะนำดูดวง — บิล #{$this->id} ถูกยกเลิกการอนุมัติ",
+                    'reference_type' => FortuneCommission::class,
+                    'reference_id' => $comm->id,
+                    'status' => 'completed',
+                    'metadata' => [
+                        'reading_id' => $this->id,
+                        'mode' => 'fortune_commission_reversal',
+                        'commission_amount' => $amount,
+                    ],
+                    'completed_at' => now(),
                 ]);
             }
 
             $wallet->update([
                 'balance' => $after,
-                'total_income' => max(0, (float) ($wallet->total_income ?? 0) - (float) $comm->amount),
+                'total_income' => max(0, (float) ($wallet->total_income ?? 0) - $amount),
                 'last_transaction_at' => now(),
+            ]);
+        }
+
+        // 🧾 (F25/M7) ส่วนที่ดึงจากกระเป๋าไม่ได้ (ผู้รับถอน/ใช้ไปแล้ว) → หนี้ WalletDebt แบบเดียวกับคอม MLM
+        $debtAmount = round($amount - $taken, 2);
+        if ($debtAmount > 0) {
+            $debt = WalletDebt::createDebt(
+                (int) $comm->user_id,
+                $debtAmount,
+                'FortuneClawback',
+                (int) $comm->id,
+                "ดึงคืนค่าแนะนำดูดวงไม่ครบ — บิล #{$this->id} ถูกยกเลิกการอนุมัติ",
+                $adminId,
+                1,
+                [
+                    'reading_id' => $this->id,
+                    'bill_reference' => $this->bill_reference,
+                    'clawback_type' => 'fortune_commission',
+                    'commission_amount' => $amount,
+                    'deducted_from_wallet' => $taken,
+                ]
+            );
+
+            \Illuminate\Support\Facades\Log::warning('FortuneReading::reverseCommissionRow — ยอดในกระเป๋าไม่พอดึงคืน บันทึกเป็นหนี้', [
+                'reading_id' => $this->id,
+                'commission_id' => $comm->id,
+                'user_id' => $comm->user_id,
+                'taken_from_wallet' => $taken,
+                'debt_id' => $debt->id,
+                'debt_amount' => $debtAmount,
             ]);
         }
 
         // mark commission เป็น rejected (= ยกเลิก) + บันทึกเหตุผล
         $comm->update([
             'status' => FortuneCommission::STATUS_REJECTED,
-            'notes' => trim((string) ($comm->notes ?? '')).' | ⛔ REVERSED: void approval บิล #'.$this->id,
+            'notes' => trim((string) ($comm->notes ?? '')).' | ⛔ '.FortuneCommission::VOID_REVERSAL_NOTE.' บิล #'.$this->id,
         ]);
     }
 

@@ -210,12 +210,30 @@ class FortuneReadingsController extends Controller
         //    their reading. Failures here don't roll back the mark-paid — the
         //    customer is paid in DB; if dispatch fails the operator can retry
         //    from /workers or by /chat send. Logged at error level for ops.
-        $this->triggerFortuneFlowAfterPayment($reading->fresh());
+        //
+        // ♻️ (F24) บิลที่เคยถูก void แล้วลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) → ไม่ส่งซ้ำ
+        //    แต่จ่ายค่าแนะนำคืนให้ผู้แนะนำ (เดิม flow ถูกข้ามเพราะสถานะ completed → ไม่มีค่าแนะนำเลย)
+        //    บิลที่ void ก่อนลูกค้าได้ใช้บริการ → triggerFortuneFlowAfterPayment เริ่ม flow ให้เหมือนอนุมัติครั้งแรก
+        $fresh = $reading->fresh();
+        $skipReason = $this->flowSkipReason($fresh);
+        if ($skipReason === 'already_used') {
+            $this->payCommissionForReapprovedBill($fresh);
+        } else {
+            $this->triggerFortuneFlowAfterPayment($fresh);
+        }
+
+        // ข้อความตามจริง — ห้ามบอกว่าส่งคำทำนายแล้วเมื่อระบบข้ามการส่ง
+        $message = match ($skipReason) {
+            'already_used' => 'มาร์คจ่ายเรียบร้อย — บิลนี้ลูกค้าได้ใช้บริการไปแล้วก่อนถูกยกเลิก ระบบไม่ได้ส่งคำทำนายซ้ำ (คำนวณค่าแนะนำของบิลนี้ใหม่ตามกติกาแล้ว)',
+            'in_flight' => 'มาร์คจ่ายเรียบร้อย — บิลนี้อยู่ในขั้นตอนดูดวงอยู่แล้ว ระบบไม่ได้เริ่มส่งคำทำนายใหม่',
+            'completed' => 'มาร์คจ่ายเรียบร้อย — บิลนี้ปิดไปแล้ว ระบบไม่ได้เริ่มส่งคำทำนาย กรุณาตรวจและส่งเองจากหน้าแชท',
+            default => 'มาร์คจ่ายเรียบร้อย — ส่งคำทำนายให้ลูกค้าแล้ว',
+        };
 
         return response()->json([
             'success' => true,
             'data' => new FortuneReadingResource($reading->fresh()),
-            'message' => 'มาร์คจ่ายเรียบร้อย — ส่งคำทำนายให้ลูกค้าแล้ว',
+            'message' => $message,
         ]);
     }
 
@@ -254,6 +272,83 @@ class FortuneReadingsController extends Controller
     }
 
     /**
+     * ♻️ (F24) เหตุที่ไม่เริ่ม flow ดูดวงหลังมาร์คจ่าย — null = เริ่ม flow ได้
+     *
+     *   'in_flight'    = บิลอยู่ในขั้นตอนดูดวงอยู่แล้ว (จ่ายแล้ว/กำลังเปิดไพ่) — กันยิงซ้ำ
+     *   'already_used' = บิลเคยถูก void หลังลูกค้าใช้บริการไปแล้ว (เปิดไพ่/ได้คำทำนาย) — ห้ามส่งซ้ำ
+     *   'completed'    = บิลปิดไปแล้วด้วยเหตุอื่น (เช่นหมดอายุ) — คงพฤติกรรมเดิม: ไม่เริ่ม flow
+     *   บิลที่ถูก void ก่อนลูกค้าได้ใช้บริการ → null (เริ่ม flow เหมือนอนุมัติครั้งแรก)
+     */
+    private function flowSkipReason(FortuneReading $reading): ?string
+    {
+        if (! in_array($reading->conversation_status, [
+            FortuneReading::STATUS_PAID,
+            FortuneReading::STATUS_COMPLETED,
+            FortuneReading::STATUS_CELTIC_PICKING,
+            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            FortuneReading::STATUS_CELTIC_GENERATING,
+            FortuneReading::STATUS_CELTIC_QA_PROMPT,
+        ], true)) {
+            return null;
+        }
+
+        if ($reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
+            return 'in_flight';
+        }
+
+        $voided = $reading->getConversationState('approval_voided');
+        $voided = $voided === true || in_array(strtolower((string) $voided), ['true', '1'], true);
+        if (! $voided) {
+            return 'completed';
+        }
+
+        // นิยาม "ใช้บริการไปแล้ว" เดียวกับ SmsPaymentController::executeFortuneVoidAction
+        $used = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? ($reading->getCelticPickedCount() > 0 || (int) ($reading->celtic_questions_used ?? 0) > 0)
+            : ! empty($reading->deep_response);
+
+        return $used ? 'already_used' : null;
+    }
+
+    /**
+     * ♻️ (F24) จ่ายค่าแนะนำของบิลที่ void แล้วอนุมัติใหม่ โดยไม่ส่งคำทำนายซ้ำ
+     *
+     * เรียก FortuneCommissionService ตรง (ไม่ผ่าน processAffiliateAndCommissions) — ไม่มีการส่งข้อความหาลูกค้าเลย
+     * บิลนี้เคยอนุมัติแล้วรอบหนึ่ง = ลูกค้ามี user/สมาชิกอยู่แล้ว · กันจ่ายซ้ำราย level อยู่ใน service
+     */
+    private function payCommissionForReapprovedBill(FortuneReading $reading): void
+    {
+        try {
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            if (! $settings->isFortuneAffiliateEnabled() || $settings->getFortuneCommissionMode() !== 'static') {
+                return;
+            }
+
+            $member = $reading->user_id
+                ? \App\Models\MlmMember::where('user_id', $reading->user_id)->first()
+                : null;
+            if (! $member) {
+                Log::warning('FortuneReading: mark-paid บิลที่ void แล้ว — ไม่พบสมาชิกของลูกค้า ข้ามค่าแนะนำ', [
+                    'reading_id' => $reading->id,
+                    'user_id' => $reading->user_id,
+                ]);
+
+                return;
+            }
+
+            app(\App\Services\FortuneCommissionService::class)->distributeCommissions($reading, $member, $settings);
+            Log::info('FortuneReading: mark-paid บิลที่ void แล้ว (ลูกค้าใช้บริการไปแล้ว) — จ่ายค่าแนะนำ ไม่ส่งคำทำนายซ้ำ', [
+                'reading_id' => $reading->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('FortuneReading: จ่ายค่าแนะนำของบิลที่อนุมัติใหม่ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 💸 (2026-05-24) Mirror of FortuneStripeWebhookController::triggerFortuneFlow
      * for the admin manual-approve path. Kept inline (not a shared service) to
      * avoid threading a new dependency through the controller — the logic is
@@ -264,14 +359,8 @@ class FortuneReadingsController extends Controller
     {
         // Idempotency — if the reading is already in a downstream state, skip.
         // Same guard as the Stripe webhook so re-triggering is safe.
-        if (in_array($reading->conversation_status, [
-            FortuneReading::STATUS_PAID,
-            FortuneReading::STATUS_COMPLETED,
-            FortuneReading::STATUS_CELTIC_PICKING,
-            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-            FortuneReading::STATUS_CELTIC_GENERATING,
-            FortuneReading::STATUS_CELTIC_QA_PROMPT,
-        ], true)) {
+        // ♻️ (F24) ยกเว้นบิลที่ถูก void ก่อนลูกค้าได้ใช้บริการ — เริ่ม flow ใหม่เหมือนอนุมัติครั้งแรก
+        if ($this->flowSkipReason($reading) !== null) {
             Log::info('FortuneReading: mark-paid skip trigger — already in flight', [
                 'reading_id' => $reading->id,
                 'status' => $reading->conversation_status,
