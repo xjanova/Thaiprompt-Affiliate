@@ -144,8 +144,12 @@ class TarotInterpretController extends Controller
         //   ปฏิเสธ (ไม่ใช่คำตอบสำเร็จรูป) — juntraweb จะคืนเงิน ลูกค้าไม่ต้องจ่ายเพื่อได้ข้อความปัด
         if ($question !== '' && ($attack = FortuneAIService::detectAdversarialInput($question)) !== null) {
             Log::warning('Juntra tarot profile: question rejected by adversarial guard', ['attack' => $attack, 'profile' => $profile['key']]);
+            FortuneAIService::reportSelfHarmSignal($attack, $question, 'juntraweb (ไพ่บนเว็บ) #'.substr(md5($question), 0, 8));
 
-            return response()->json(['message' => 'คำถามนี้แม่หมอทำนายให้ไม่ได้', 'reason_code' => 'question_rejected'], 422);
+            // 🤍 (2026-11-03) คำถามที่ส่งสัญญาณอยากทำร้ายตัวเอง → ไม่ทำนาย แต่ตอบห่วงใย + สายด่วนใจ 1323 แทนข้อความปัด
+            $message = $attack === 'self_harm' ? FortuneAIService::buildAdversarialReply($attack) : 'คำถามนี้แม่หมอทำนายให้ไม่ได้';
+
+            return response()->json(['message' => $message, 'reason_code' => 'question_rejected'], 422);
         }
 
         $blocks = ['knowledge' => $this->knowledgeBlock($kb, $cards, $question, $profile['key'])];

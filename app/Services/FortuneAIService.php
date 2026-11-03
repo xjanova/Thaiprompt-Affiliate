@@ -1061,6 +1061,7 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         //     เท่านั้น — กัน guard false-positive บนคำสั่ง/แท็กภายในพรอมต์ (PROD-DOWN 2026-06-27)
         $attackType = self::detectAdversarialInput($guardText ?? $messageText);
         if ($attackType !== null) {
+            self::reportSelfHarmSignal($attackType, $guardText ?? $messageText);
             Log::warning('FortuneAIService: ตรวจพบ adversarial input — block + canned reply', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),
@@ -1440,6 +1441,14 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         }
         $textLower = mb_strtolower($textTrim);
 
+        // 🤍 (2026-11-03 HOTFIX) สัญญาณอยากทำร้ายตัวเอง — ตรวจก่อนด่านอื่นทั้งหมด (รวม cost_attack)
+        //   เดิม "ฆ่าตัวเอง/kill myself" ตกไปอยู่ off_topic_violence → ได้คำตอบปัด "ไม่ตอบเรื่องแบบนั้น"
+        //   และ "ฆ่าตัวตาย" จับไม่ได้เลย · คนที่ระบายยาวเกิน 2000 ตัวก็ต้องได้คำตอบห่วงใย ไม่ใช่ "ข้อความยาวเกินไป"
+        //   ⚠️ นี่ไม่ใช่การโจมตี — ผู้เรียกต้องไม่นับ strike/แบน (ดู buildAdversarialReply + reportSelfHarmSignal)
+        if (self::isSelfHarmStatement($textTrim)) {
+            return 'self_harm';
+        }
+
         // 6. Cost attack — overlong input (check on CLEAN text — system tags ไม่นับ)
         if (mb_strlen($textTrim) > 2000) {
             return 'cost_attack';
@@ -1516,11 +1525,92 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
             return 'off_topic_political';
         }
         // Off-topic violence/weapon/drug/illegal
-        if (preg_match('/(วิธี(?:ทำ|สร้าง|ประกอบ)(?:ระเบิด|ปืน|อาวุธ|ยาบ้า|ยาเสพติด)|how\s+to\s+(?:make|build|create)\s+(?:a\s+)?(?:bomb|weapon|gun|drug|poison|virus|malware|exploit|ransomware)|child\s+(?:porn|sex|abuse)|ฆ่า(?:ตัวเอง|ตัวตน|คน)|kill\s+(?:yourself|myself|someone|me))/iu', $textLower)) {
+        //   (ฆ่าตัวเอง / kill myself / kill me ย้ายไปกลุ่ม self_harm ด้านบนแล้ว — ห้ามใส่กลับมา)
+        if (preg_match('/(วิธี(?:ทำ|สร้าง|ประกอบ)(?:ระเบิด|ปืน|อาวุธ|ยาบ้า|ยาเสพติด)|how\s+to\s+(?:make|build|create)\s+(?:a\s+)?(?:bomb|weapon|gun|drug|poison|virus|malware|exploit|ransomware)|child\s+(?:porn|sex|abuse)|ฆ่า(?:ตัวตน|คน)|kill\s+(?:yourself|someone))/iu', $textLower)) {
             return 'off_topic_violence';
         }
 
         return null;
+    }
+
+    /**
+     * 🤍 (2026-11-03) ข้อความนี้ "พูดถึงการทำร้าย/จบชีวิตตัวเอง" ตรง ๆ หรือไม่ (ไทย + อังกฤษ)
+     *
+     * แคบกว่า CustomerPersonaService::hasSelfHarmSignal() โดยตั้งใจ —
+     * ตัวนั้นรวม "หมดหวัง/ไม่ไหวแล้ว" ไว้ใช้ปรับน้ำเสียง AI ส่วนตัวนี้ใช้ "แทนคำตอบของ AI ทั้งเทิร์น"
+     * จึงจับเฉพาะคำที่ชัดว่าหมายถึงตัวเอง ความทุกข์ทั่วไปปล่อยให้ AI ตอบตามกฎใน system prompt
+     *
+     * ไม่จับ (กันจับผิด):
+     *   - ปฏิเสธ: "ไม่อยากตาย" / "don't want to die"
+     *   - ความฝัน: "ฝันว่าฆ่าตัวตาย" — เป็นคำถามทำนายฝันจริง
+     *   - "จบชีวิตคู่/จบชีวิตโสด" · "ไม่อยากอยู่บ้านนี้/กับแฟน" · "ร้อนจะตาย" · "ปีนี้จะตายไหม"
+     *   - "kill yourself" (ด่าบอท) → ยังเป็น off_topic_violence
+     */
+    public static function isSelfHarmStatement(string $text): bool
+    {
+        // ลอกแท็กระบบที่ผู้เรียกแปะหน้าข้อความออกทั้งหมด (ตัวลอกใน detectAdversarialInput รู้จักไม่ครบทุกแท็ก)
+        $t = mb_strtolower(trim((string) preg_replace('/^(?:\s*\[[^\]\n]{0,600}\])+/u', '', $text)));
+        if ($t === '') {
+            return false;
+        }
+
+        // ตัดวลีปฏิเสธออกก่อน — "ไม่อยากตาย" ต้องไม่ถูกนับเป็น "อยากตาย"
+        $t = (string) preg_replace('/ไม่\s*(?:ได้\s*)?(?:อยาก|คิด(?:จะ)?)\s*(?:ฆ่าตัวตาย|ตาย)|(?:do\s*n[o\']?t|never|not)\s+(?:want|wanna|going)\s+(?:to\s+)?(?:die|kill\s+my\s*self)/iu', ' ', $t);
+
+        // ทำนายฝัน — ปล่อยให้ AI ตอบ (มีกฎดูแลคนวิกฤตใน system prompt อยู่แล้ว)
+        if (mb_strpos($t, 'ฝัน') !== false) {
+            return false;
+        }
+
+        $thai = '/ฆ่าตัวตาย|ฆ่าตัวเอง|ทำร้ายตัวเอง|ทําร้ายตัวเอง|ปลิดชีพ|อยากตาย|ขอตาย|อยากหายไปจากโลก'
+            .'|ไม่อยากมีชีวิต|ไม่อยากอยู่(?:บน|ใน)?โลก|ไม่อยากอยู่(?:ต่อ)?(?:ไป)?แล้ว|ไม่อยากอยู่(?:ต่อ)?\s*(?:ค่ะ|คะ|ครับ|นะ|อะ)?\s*(?:[.!?…]|$)'
+            .'|(?:อยาก|คิด|จะ|ขอ|พยายาม)\s*จบชีวิต(?!คู่|โสด|สมรส|การ|นัก|ราชการ)|จบชีวิตตัวเอง'
+            .'|กรีดข้อมือ|กรีดแขน|กินยาตาย|กินยาฆ่าตัว|ผูกคอตาย|กระโดดตึก|โดดตึกตาย/u';
+
+        $english = '/\bsuicid(?:e|al)\b|\bkill(?:ing)?\s+my\s*self\b|\b(?:just|please|someone|somebody)\s+kill\s+me\b'
+            .'|\b(?:want|wanna)\s+(?:to\s+)?die\b|\bend\s+(?:my\s+(?:own\s+)?life|it\s+all)\b'
+            .'|\b(?:hurt|harm|cut)(?:ing)?\s+my\s*self\b|\bself[\s-]?harm\b'
+            .'|\bdon\'?t\s+want\s+to\s+(?:live|be\s+alive|exist)\b|\bno\s+reason\s+to\s+live\b/i';
+
+        return preg_match($thai, $t) === 1 || preg_match($english, $t) === 1;
+    }
+
+    /**
+     * 🤍 (2026-11-03) ลูกค้าส่งสัญญาณอยากทำร้ายตัวเอง → แจ้งแอดมินทาง Telegram
+     *
+     * - Telegram อย่างเดียว — ❌ ห้ามตกไป LINE push (โควตา 300/เดือน สงวนให้ลูกค้าที่จ่ายแล้ว)
+     * - คนเดิมแจ้งซ้ำได้ทุก 6 ชม. (ข้อความถัด ๆ ไปในบทสนทนาเดียวกันไม่รัวแจ้ง)
+     * - best-effort ห้าม throw ขวางคำตอบถึงลูกค้า
+     * เรียกได้ทุกด่าน — ถ้า $attackType ไม่ใช่ self_harm จะไม่ทำอะไร
+     */
+    public static function reportSelfHarmSignal(string $attackType, string $text, ?string $userRef = null): void
+    {
+        if ($attackType !== 'self_harm') {
+            return;
+        }
+
+        try {
+            // ข้อความในด่าน pool มีแท็กระบบ [TURN n] ฯลฯ นำหน้า — แอดมินควรเห็นแค่สิ่งที่ลูกค้าพิมพ์
+            $text = trim((string) preg_replace('/^(?:\s*\[[^\]\n]{0,600}\])+/u', '', $text));
+
+            Log::warning('FortuneAIService: ลูกค้าส่งสัญญาณอยากทำร้ายตัวเอง — ตอบห่วงใย + สายด่วนใจ 1323', [
+                'user_ref' => $userRef,
+                'input_preview' => mb_substr($text, 0, 120),
+            ]);
+
+            app(TelegramAlertService::class)->send(
+                "🤍 ลูกค้าส่งสัญญาณอยากทำร้ายตัวเอง\n"
+                .'ผู้ใช้: '.($userRef ?? '(ไม่ทราบ — ดูแชทล่าสุดในวอร์รูม)')."\n"
+                .'ข้อความ: '.mb_substr(trim($text), 0, 300)."\n\n"
+                .'บอทตอบห่วงใย + ให้สายด่วนใจ 1323 แล้ว (ไม่ทำนาย ไม่ขาย) — ถ้าสะดวกช่วยเข้าไปดูแลต่อในแชทนะคะ',
+                'fortune_self_harm:'.($userRef ?? md5($text)),
+                360
+            );
+        } catch (\Throwable $e) {
+            Log::debug('FortuneAIService: แจ้งแอดมินเรื่องสัญญาณทำร้ายตัวเองไม่สำเร็จ (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -1533,6 +1623,16 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
      */
     public static function buildAdversarialReply(string $attackType): string
     {
+        // 🤍 (2026-11-03) self_harm ไม่ใช่การโจมตี — ตอบด้วยความห่วงใย ไม่ทำนาย ไม่ขาย และเปิดให้คุยต่อ
+        //   ใช้ "สายด่วนใจ 1323" ให้ตรงกับที่ persona/prompt ใช้อยู่ (❌ ห้ามคำว่า "สุขภาพจิต/โรคจิต" — ทำให้รู้สึกถูกตราหน้า)
+        //   1669 = เหตุฉุกเฉินทางการแพทย์ สำหรับคนที่อยู่ในอันตรายตอนนั้น
+        if ($attackType === 'self_harm') {
+            return "🤍 แม่หมออ่านแล้วรู้เลยว่าตอนนี้ใจลูกหนักมาก ขอบใจนะคะที่ยอมเล่าให้แม่หมอฟัง ลูกไม่ต้องแบกเรื่องนี้ไว้คนเดียวนะ\n\n"
+                .'ถ้าอยากมีคนรับฟังตอนนี้ โทรสายด่วนใจ 1323 ได้เลยค่ะ มีคนพร้อมคุยเป็นเพื่อน 24 ชม. ฟรี '
+                ."(ถ้ากำลังอยู่ในอันตรายตอนนี้ โทร 1669 ทันทีนะคะ)\n\n"
+                .'แม่หมอยังอยู่ตรงนี้ อยากเล่าอะไรให้ฟังต่อ พิมพ์มาได้เลยนะคะ';
+        }
+
         return match ($attackType) {
             'prompt_injection', 'role_hijack', 'leak_attempt' => 'หมอจันทราคือหมอดูค่ะ ไม่มี script หรือคำสั่งภายในอะไรหรอก ? มีเรื่องดวงอะไรอยากให้ช่วยดูไหม?',
             'code_request', 'code_fence' => 'แม่หมอเชี่ยวชาญดูดวงอย่างเดียวค่ะ เขียนโค้ดให้ไม่ได้นะ ? อยากให้ดูดวงเรื่องอะไรไหม?',
@@ -1738,6 +1838,7 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         if ($guardText !== null && trim($guardText) !== '') {
             $attackType = self::detectAdversarialInput($guardText);
             if ($attackType !== null) {
+                self::reportSelfHarmSignal($attackType, $guardText);
                 Log::warning('FortuneAIService: ตรวจพบ adversarial input (custom prompt) — block + canned reply', [
                     'attack_type' => $attackType,
                     'input_len' => mb_strlen($guardText),
@@ -2777,6 +2878,7 @@ PROMPT;
         // 🛡 (2026-05-26) Input sanitizer — same guard
         $attackType = self::detectAdversarialInput($messageText);
         if ($attackType !== null) {
+            self::reportSelfHarmSignal($attackType, $messageText);
             Log::warning('FortuneAIService: ตรวจพบ adversarial input (with-history path) — block', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),
@@ -3564,6 +3666,7 @@ PROMPT;
         //   ต้องมี guard ที่นี่เพราะ Step 1 (direct call) อาจไม่ถูก trigger
         $attackType = self::detectAdversarialInput($messageText);
         if ($attackType !== null) {
+            self::reportSelfHarmSignal($attackType, $messageText, $userContext);
             Log::warning('FortuneAIService: ตรวจพบ adversarial input (pool path) — block', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),
