@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\RunsDataMigrations;
 use Tests\TestCase;
 
 /**
@@ -31,6 +32,7 @@ use Tests\TestCase;
 class FortuneFbWebOnlyCutoverTest extends TestCase
 {
     use RefreshDatabase;
+    use RunsDataMigrations;
 
     private const PSID = '61550000000077';
 
@@ -55,6 +57,10 @@ class FortuneFbWebOnlyCutoverTest extends TestCase
         $this->app->forgetInstance('encrypter');
 
         Cache::flush();
+
+        // CI โหลด schema dump ที่ไม่มีข้อมูล → ชุดข้อความชวน web ที่ migration seed ไว้หายไป ต้องรันซ้ำเอง
+        $this->runDataMigration('2026_11_03_151100_seed_fortune_web_only_invite_messages.php');
+        $this->runDataMigration('2026_11_03_160100_retire_old_web_only_invite_copy.php');
 
         // ตัวปลอม HTTP ตัวเดียวทั้งเทสต์ — Http::fake ซ้อนกันจะต่อท้ายและตัวแรกชนะ จึงอ่านค่าจาก property แทน
         Http::fake(function ($request) {
