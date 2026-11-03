@@ -21,8 +21,9 @@ return new class extends Migration
             $this->safeAddColumn($table, 'fortune_telling_settings', 'elevenlabs_api_key', function ($table) {
                 $table->text('elevenlabs_api_key')->nullable();
             });
+            // ⚠️ text ไม่ใช่ string — ตารางนี้ชนเพดาน row size 65,535 ไบต์ของ MySQL แล้ว (varchar นับเต็มความยาว, text นับแค่ตัวชี้)
             $this->safeAddColumn($table, 'fortune_telling_settings', 'elevenlabs_tts_model', function ($table) {
-                $table->string('elevenlabs_tts_model', 64)->nullable();
+                $table->text('elevenlabs_tts_model')->nullable();
             });
         });
     }
