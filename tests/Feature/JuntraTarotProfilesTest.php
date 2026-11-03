@@ -163,6 +163,16 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringContainsString('1323', $call['prompt']);
         $this->assertStringContainsString('ห้ามพิมพ์ตัวบท', $call['prompt']);
         $this->assertStringNotContainsString('ตาชั่งใช่/ไม่ใช่', $call['prompt']);
+        // QA prod 2026-11-03: คำทำนายคุณไสยเขียนว่า "ตำราที่แนบมา…" — กฎห้ามพูดถึงวัตถุดิบต้องอยู่ใน prompt เสมอ
+        $this->assertStringContainsString(JuntraSpreadProfiles::NO_SOURCE_TALK, $call['prompt']);
+    }
+
+    public function test_every_package_forbids_mentioning_the_attached_knowledge(): void
+    {
+        foreach (JuntraSpreadProfiles::keys() as $key) {
+            $prompt = JuntraSpreadProfiles::userPrompt(JuntraSpreadProfiles::get($key), [1 => $this->card(1, 'ตำแหน่ง 1', 'The Sun', 'พระอาทิตย์')], 'งานจะดีไหม');
+            $this->assertStringContainsString('ห้ามเอ่ยถึง "ตำราที่แนบมา"', $prompt, $key);
+        }
     }
 
     public function test_year_uses_real_month_names_and_never_guesses_a_calendar(): void
