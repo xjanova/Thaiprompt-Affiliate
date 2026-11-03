@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\Fortune\FortunePageContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * FortuneTellingSetting Model
@@ -3706,5 +3707,88 @@ PROMPT;
         $prefix = str_starts_with($key, 'axm-') ? 'axm-' : '';
 
         return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /** 🎭 (2026-11-04) แถวในตาราง settings (key/value) ที่เก็บค่า ElevenLabs ของเสียงตัวละคร */
+    public const ELEVENLABS_KEY_SETTING = 'fortune_elevenlabs_api_key';
+
+    public const ELEVENLABS_MODEL_SETTING = 'fortune_elevenlabs_tts_model';
+
+    /**
+     * 🎭 (2026-11-04) key ElevenLabs สำหรับเสียงตัวละคร — เก็บเข้ารหัสในตาราง settings
+     *
+     * ⚠️ ห้ามเพิ่มคอลัมน์ในตารางนี้อีก: ชนเพดาน row size 8,126 ไบต์ของ InnoDB แล้ว (แม้คอลัมน์ text ก็เพิ่มไม่ได้)
+     * ถอดรหัสไม่ได้ (APP_KEY เปลี่ยน) หรือไม่มีตาราง = ถือว่ายังไม่ได้ตั้ง key — ห้ามโยน exception ต่อ
+     */
+    public function getElevenlabsApiKey(): ?string
+    {
+        try {
+            $stored = Setting::get(self::ELEVENLABS_KEY_SETTING);
+            $key = is_string($stored) && $stored !== '' ? Crypt::decryptString($stored) : '';
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = trim($key);
+
+        return $key !== '' ? $key : null;
+    }
+
+    /**
+     * บันทึก/ลบ key ElevenLabs (null = ลบ)
+     */
+    public function setElevenlabsApiKey(?string $key): void
+    {
+        $key = $key !== null ? trim($key) : '';
+
+        if ($key === '') {
+            Setting::where('key', self::ELEVENLABS_KEY_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_KEY_SETTING, Crypt::encryptString($key), 'encrypted', 'fortune_voice');
+    }
+
+    /**
+     * key ElevenLabs แบบปิดบัง สำหรับแสดงในหน้าแอดมิน เช่น "sk_••••••••3f9a"
+     */
+    public function getElevenlabsApiKeyMasked(): ?string
+    {
+        $key = $this->getElevenlabsApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'sk_') ? 'sk_' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /**
+     * โมเดลเสียง ElevenLabs ที่แอดมินตั้ง (null = ใช้ค่าเริ่มต้นของ provider)
+     */
+    public function getElevenlabsTtsModel(): ?string
+    {
+        try {
+            $model = trim((string) Setting::get(self::ELEVENLABS_MODEL_SETTING, ''));
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $model !== '' ? $model : null;
+    }
+
+    public function setElevenlabsTtsModel(?string $model): void
+    {
+        $model = $model !== null ? trim($model) : '';
+
+        if ($model === '') {
+            Setting::where('key', self::ELEVENLABS_MODEL_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_MODEL_SETTING, $model, 'string', 'fortune_voice');
     }
 }

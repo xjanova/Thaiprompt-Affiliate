@@ -24,7 +24,7 @@
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wide">หลังบ้าน · ระบบดูดวง · จัดการเสียง</div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">🎭 เสียงพากย์ตัวละคร</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย · ElevenLabs V3 ผ่าน X-DREAMER (ai.xman4289.com) ·
+                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย · ElevenLabs v3 (ต่อตรงด้วย key ของเรา) ·
                 สร้างเสียงเฉพาะตอนมีคนกดฟัง แล้วเก็บไฟล์ไว้ใช้ซ้ำ
             </p>
         </div>
@@ -50,14 +50,14 @@
         </div>
     @endif
 
-    {{-- ════════════════ X-DREAMER key ════════════════ --}}
+    {{-- ════════════════ ElevenLabs key ════════════════ --}}
     <div class="tp-card p-5 md:p-6 mb-6">
         <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">🔑 X-DREAMER API key</h2>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">🔑 ElevenLabs API key</h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    สร้าง key ได้ที่ <a href="https://ai.xman4289.com/developer" target="_blank" rel="noopener" class="text-sky-600 dark:text-sky-400 underline">ai.xman4289.com/developer</a>
-                    · เก็บแบบเข้ารหัส ไม่แสดง key เต็มที่ไหนอีก · ใช้เครดิตของบัญชี X-DREAMER
+                    สร้าง key ได้ที่ <a href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener" class="text-sky-600 dark:text-sky-400 underline">elevenlabs.io → Developers → API Keys</a>
+                    (เปิดสิทธิ์ Text to Speech + Voices read) · เก็บแบบเข้ารหัส ไม่แสดง key เต็มที่ไหนอีก · ใช้โควต้าตัวอักษรของบัญชี ElevenLabs
                 </p>
             </div>
             <div class="text-right">
@@ -76,16 +76,16 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {{ $hasKey ? 'เปลี่ยน key (เว้นว่าง = ใช้ key เดิม)' : 'วาง key ที่นี่' }}
                 </label>
-                <input type="password" name="xdreamer_api_key" autocomplete="new-password" spellcheck="false"
-                       placeholder="axm-…"
+                <input type="password" name="elevenlabs_api_key" autocomplete="new-password" spellcheck="false"
+                       placeholder="sk_…"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ระบบทดสอบ key กับ X-DREAMER (เช็คเครดิต ไม่เสียเครดิต) ก่อนบันทึก</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ระบบทดสอบ key กับ ElevenLabs (เช็คโควต้า ไม่เสียโควต้า) ก่อนบันทึก</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โมเดลเสียง</label>
-                <input type="text" name="xdreamer_tts_model" value="{{ old('xdreamer_tts_model', $model) }}"
+                <input type="text" name="elevenlabs_tts_model" value="{{ old('elevenlabs_tts_model', $model) }}"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าเริ่มต้น <code>xd/elevenlabs-v3</code> (พูดไทยได้ ใส่แท็กอารมณ์ได้)</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าเริ่มต้น <code>eleven_v3</code> (พูดไทยได้ ใส่แท็กอารมณ์ได้)</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เพดานตัวอักษรต่อวัน (ห้องแชท)</label>
@@ -97,7 +97,7 @@
                 <button type="submit" class="tp-btn w-full justify-center">💾 บันทึก</button>
                 @if($hasKey)
                     <button type="button" @click="checkCredits()" class="tp-btn w-full justify-center" :disabled="creditsLoading">
-                        <span x-text="creditsLoading ? 'กำลังเช็ค…' : '💳 เช็คเครดิต'"></span>
+                        <span x-text="creditsLoading ? 'กำลังเช็ค…' : '💳 เช็คโควต้า'"></span>
                     </button>
                 @endif
             </div>
@@ -110,7 +110,7 @@
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                     ไฟล์เสียงในห้องแชทที่เก็บไว้แล้ว {{ number_format($chatClipCount) }} ไฟล์ ·
-                    รายชื่อเสียง: {{ $voices['live'] ? 'ดึงสดจาก X-DREAMER' : 'รายชื่อสำรอง (ดึงสดไม่ได้)' }}
+                    รายชื่อเสียง: {{ $voices['live'] ? 'ดึงสดจากบัญชี ElevenLabs' : 'รายชื่อสำรอง (ดึงสดไม่ได้)' }}
                 </p>
                 <div class="flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('admin.fortune.character-voices.refresh-voices') }}">
@@ -118,7 +118,7 @@
                         <button type="submit" class="tp-btn">🔄 รีเฟรชรายชื่อเสียง</button>
                     </form>
                     <form method="POST" action="{{ route('admin.fortune.character-voices.key.delete') }}"
-                          onsubmit="return confirm('ลบ X-DREAMER key ใช่ไหมคะ? เสียงตัวละครจะหยุดสร้างใหม่ (ไฟล์ที่เก็บไว้ยังเล่นได้)')">
+                          onsubmit="return confirm('ลบ ElevenLabs key ใช่ไหมคะ? เสียงตัวละครจะหยุดสร้างใหม่ (ไฟล์ที่เก็บไว้ยังเล่นได้)')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/40 transition">🗑️ ลบ key</button>
@@ -141,7 +141,7 @@
 
     @unless($hasKey)
         <div class="mb-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm">
-            ตั้ง X-DREAMER key ด้านบนก่อน จึงจะสร้างเสียงตัวอย่างได้ (ระหว่างนี้กดฟังเสียงต้นฉบับภาษาอังกฤษได้ฟรี)
+            ตั้ง ElevenLabs key ด้านบนก่อน จึงจะสร้างเสียงตัวอย่างได้ (ระหว่างนี้กดฟังเสียงต้นฉบับภาษาอังกฤษได้ฟรี)
         </div>
     @endunless
 
@@ -163,7 +163,7 @@
                           class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"></textarea>
                 <div class="flex flex-wrap items-center justify-between gap-2 mt-2 mb-4">
                     <span class="text-xs text-gray-500 dark:text-gray-400">
-                        <span x-text="[...p.text].length"></span> ตัวอักษร/เสียง · ข้อความ+เสียงเดิมกดซ้ำไม่เสียเครดิตซ้ำ
+                        <span x-text="[...p.text].length"></span> ตัวอักษร/เสียง · ข้อความ+เสียงเดิมกดซ้ำไม่เสียโควต้าซ้ำ
                     </span>
                     @if($hasKey)
                         <button type="button" class="tp-btn" @click="generateAll(pKey)" :disabled="p.busyAll">
@@ -199,7 +199,7 @@
                             <template x-if="sample(pKey, v.id)?.url">
                                 <audio controls preload="none" class="w-full mt-2 h-10" :src="sample(pKey, v.id).url"></audio>
                             </template>
-                            <p x-show="sample(pKey, v.id)?.status === 'pending'" class="text-xs text-amber-700 dark:text-amber-300 mt-1">⏳ X-DREAMER กำลังสร้างเสียง…</p>
+                            <p x-show="sample(pKey, v.id)?.status === 'pending'" class="text-xs text-amber-700 dark:text-amber-300 mt-1">⏳ ElevenLabs กำลังสร้างเสียง…</p>
                             <p x-show="sample(pKey, v.id)?.error" class="text-xs text-red-700 dark:text-red-300 mt-1" x-text="sample(pKey, v.id)?.error"></p>
                         </div>
                     </template>
@@ -265,7 +265,9 @@
                 try {
                     const { ok, body } = await this.request(@json(route('admin.fortune.character-voices.credits')), { method: 'POST' });
                     this.creditsOk = ok;
-                    this.creditsText = ok ? `💳 เครดิตคงเหลือ ${Number(body.balance).toLocaleString('th-TH')} เครดิต` : (body.error || 'เช็คเครดิตไม่สำเร็จ');
+                    this.creditsText = ok
+                        ? (body.balance === null ? '💳 key นี้ไม่มีสิทธิ์ดูโควต้า (สร้างเสียงได้ตามปกติ)' : `💳 เหลือ ${Number(body.balance).toLocaleString('th-TH')} / ${Number(body.limit).toLocaleString('th-TH')} ตัวอักษรในรอบบิลนี้`)
+                        : (body.error || 'เช็คโควต้าไม่สำเร็จ');
                 } catch (e) {
                     this.creditsOk = false;
                     this.creditsText = 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';
@@ -289,14 +291,15 @@
                     }
                     p.samples[voiceId] = clip;
 
-                    // ยังไม่เสร็จ → poll ต่อ (ฝั่งเซิร์ฟเวอร์รอให้รอบละ ~20 วิ) สูงสุดราว 4 นาที
-                    for (let i = 0; i < 12 && clip.status === 'pending'; i++) {
+                    // ยังไม่เสร็จ (อีกคำขอกำลังสร้างข้อความเดียวกันอยู่) → เช็คซ้ำทุก 3 วิ สูงสุดราว 3 นาที
+                    for (let i = 0; i < 60 && clip.status === 'pending'; i++) {
+                        await new Promise((resolve) => setTimeout(resolve, 3000));
                         const r = await this.request(@json(url('/admin/fortune/character-voices/clips')) + '/' + clip.clip_id);
                         clip = r.body.data || { status: 'failed', error: r.body.error || 'เช็คสถานะไม่สำเร็จ' };
                         p.samples[voiceId] = clip;
                     }
                     if (clip.status === 'pending') {
-                        p.samples[voiceId] = { ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดสร้างอีกครั้งเพื่อเช็คผล (ไม่เสียเครดิตซ้ำ)' };
+                        p.samples[voiceId] = { ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดสร้างอีกครั้งเพื่อเช็คผล (ไม่เสียโควต้าซ้ำ)' };
                     }
                 } catch (e) {
                     p.samples[voiceId] = { status: 'failed', error: 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง' };
@@ -309,7 +312,7 @@
                 if (p.busyAll) return;
                 p.busyAll = true;
                 try {
-                    // ทีละเสียง — ไม่ยิงพร้อมกัน (X-DREAMER จำกัด 60 ครั้ง/นาที และกันเครดิตไหลรวดเดียว)
+                    // ทีละเสียง — ไม่ยิงพร้อมกัน (ElevenLabs จำกัดคำขอพร้อมกันตามแพ็กเกจ และกันโควต้าไหลรวดเดียว)
                     for (const v of this.visibleVoices()) {
                         await this.generate(pKey, v.id);
                     }
