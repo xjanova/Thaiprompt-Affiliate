@@ -89,6 +89,10 @@ class FortunePagesController extends Controller
             ->selectRaw('SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid_bills')
             ->selectRaw('SUM(CASE WHEN is_paid = 1 THEN COALESCE(amount_received, amount_paid) ELSE 0 END) as revenue')
             ->selectRaw('COUNT(DISTINCT platform_user_id) as customers')
+            // 🌙 (2026-11-03) บิลเว็บจันทราของลูกค้าที่มาจากสาขานี้ (recordBill ติดป้ายสาขาให้) — FB web-only
+            //    รวมอยู่ใน total/paid/revenue แล้ว แยกให้เห็นว่าเป็นยอดจากเว็บเท่าไร
+            ->selectRaw('SUM(CASE WHEN reading_type = ? AND is_paid = 1 THEN 1 ELSE 0 END) as juntra_paid_bills', [FortuneReading::READING_TYPE_JUNTRA])
+            ->selectRaw('SUM(CASE WHEN reading_type = ? AND is_paid = 1 THEN COALESCE(amount_received, amount_paid) ELSE 0 END) as juntra_revenue', [FortuneReading::READING_TYPE_JUNTRA])
             ->whereNotNull('fortune_page_id')
             ->groupBy('fortune_page_id')
             ->get()
@@ -96,7 +100,16 @@ class FortunePagesController extends Controller
 
         // บิลที่ยังไม่มีสาขา — ต้องมองเห็น ไม่ใช่ซ่อน
         // (แยกคิวรีออกมาเพราะ keyBy(null) กลายเป็นคีย์ '' อ่านยากและพลาดง่าย)
-        $orphanBills = FortuneReading::query()->whereNull('fortune_page_id')->count();
+        //    🌙 บิลเว็บจันทราที่ไม่มีสาขา = ลูกค้าที่เริ่มบนเว็บเอง ไม่ใช่บิลหลงสาขา → นับแยก ไม่ปนในคำเตือน
+        $orphanBills = FortuneReading::query()
+            ->whereNull('fortune_page_id')
+            ->where(fn ($q) => $q->whereNull('reading_type')->orWhere('reading_type', '!=', FortuneReading::READING_TYPE_JUNTRA))
+            ->count();
+        $webOnlyBills = FortuneReading::query()
+            ->whereNull('fortune_page_id')
+            ->where('reading_type', FortuneReading::READING_TYPE_JUNTRA)
+            ->where('is_paid', true)
+            ->count();
 
         // 📡 สาขาที่เปิดอยู่ ต่อสายเว็บฮุกไว้จริงหรือยัง
         //    ตรวจเฉพาะสาขาที่เปิด (ปิดอยู่ก็ไม่ต้องรู้) และเฉพาะ Facebook (LINE ไม่มีระบบนี้)
@@ -133,6 +146,7 @@ class FortunePagesController extends Controller
             'pages' => $pages,
             'stats' => $stats,
             'orphanBills' => $orphanBills,
+            'webOnlyBills' => $webOnlyBills,
             'webhookStatus' => $webhookStatus,
             // 🔑 เชื่อมบัญชีเจ้าของแล้วหรือยัง — ตัดสินว่าจะโชว์กล่อง "ใส่แค่ไอดีเพจ" หรือกล่องเชื่อมบัญชี
             'hasUserToken' => $this->userToken() !== null,

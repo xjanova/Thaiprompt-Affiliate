@@ -96,6 +96,13 @@ class ProcessFortuneTelling implements ShouldQueue
         $isComment = $this->data['is_comment'] ?? false;
         $isDeep = $this->data['is_deep'] ?? false;
 
+        // 🌐 (2026-11-03) FB web-only — งานทำนายจากคอมเมนต์/ข้อความที่ค้างคิวตั้งแต่ก่อนสลับธง ต้องไม่ทำงานต่อ
+        //   job นี้เป็นของ FB ล้วน (ไม่มีเส้นจ่ายเงินแล้ว dispatch ตัวนี้ — is_paid=false เสมอ)
+        //   ⇒ ไม่เรียก AI · ไม่สร้างใบดูดวง · ไม่ส่ง typing/คำทำนาย/ปุ่มราคา ถึง FB เลย
+        if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks('facebook', $fromId !== null ? (string) $fromId : null, null, 'process_fortune_telling_job')) {
+            return;
+        }
+
         try {
             Log::info('🔮 Processing fortune telling job', [
                 'facebook_user_id' => $fromId,

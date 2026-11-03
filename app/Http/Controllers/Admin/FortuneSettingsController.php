@@ -10,6 +10,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
 use App\Services\FortuneConversationService;
+use App\Services\FortuneWebLinkService;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -188,8 +189,67 @@ class FortuneSettingsController extends Controller
             'defaultDeepPrompt' => FortuneConversationService::getDefaultDeepPrompt(),
             'googleTtsDiag' => $googleTtsDiag,
             'sensitiveKeys' => $sensitiveKeys,
+            // 🌐 (2026-11-03) สถานะประกอบการ์ด "ย้ายลูกค้า Facebook ไปเว็บ"
+            'fbWebOnlyStatus' => $this->fbWebOnlyStatus(),
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
+    }
+
+    /**
+     * 🌐 (2026-11-03) ตัวเลขสั้น ๆ ให้แอดมินเห็นก่อนกดเปิดธง FB web-only
+     *
+     * ทุกข้อ try/catch แยก — นับไม่ได้ = null (การ์ดแสดง "—") ห้ามทำหน้าตั้งค่าพัง
+     *
+     * @return array{open_fb_bills:int|null, web_invites:int|null, override_pages:int|null}
+     */
+    protected function fbWebOnlyStatus(): array
+    {
+        $status = ['open_fb_bills' => null, 'web_invites' => null, 'override_pages' => null];
+
+        try {
+            $status['open_fb_bills'] = FortuneReading::query()
+                ->whereRaw("COALESCE(platform, 'facebook') = 'facebook'")
+                ->withoutJuntra()
+                ->where('is_paid', false)
+                ->whereIn('conversation_status', \App\Console\Commands\FortuneFbWebOnlyPreflight::PENDING_BILL_STATUSES)
+                ->where('updated_at', '>=', now()->subMinutes(FortuneReading::billTimeoutMinutes()))
+                ->count();
+        } catch (\Throwable $e) {
+            // ปล่อย null
+        }
+
+        try {
+            $status['web_invites'] = \App\Models\FortuneInviteMessage::query()
+                ->where('mode', \App\Models\FortuneInviteMessage::MODE_WEB)
+                ->where('is_active', true)
+                ->get(['message'])
+                ->filter(fn ($r) => \App\Models\FortuneInviteMessage::isWebSafeText($r->message))
+                ->count();
+        } catch (\Throwable $e) {
+            // ปล่อย null
+        }
+
+        try {
+            $status['override_pages'] = \App\Models\FortunePage::query()
+                ->active()
+                ->get(['id', 'settings_override'])
+                ->filter(function ($page) {
+                    $keys = array_keys(is_array($page->settings_override) ? $page->settings_override : []);
+                    foreach ($keys as $key) {
+                        if (preg_match(\App\Console\Commands\FortuneFbWebOnlyPreflight::AFFILIATE_OVERRIDE_REGEX, (string) $key) === 1
+                            || $key === 'respond_in_comment') {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })
+                ->count();
+        } catch (\Throwable $e) {
+            // ปล่อย null
+        }
+
+        return $status;
     }
 
     /**
@@ -235,6 +295,10 @@ class FortuneSettingsController extends Controller
             'free_card_max_chars' => 'nullable|integer|min:0|max:2000',
             'free_card_regrant_at' => 'nullable|date',
             'enable_web_fortune_button' => 'boolean',
+            // 🌐 (2026-11-03) FB web-only — ห้ามดูดวง/รับเงินในแชท FB ย้ายทุกคนไปเว็บจันทรา (LINE ไม่เกี่ยว)
+            //    ⚠️ จงใจไม่ใส่ใน $checkboxFields — ฟอร์มอื่นที่ยิงมา route นี้โดยไม่มีช่องนี้
+            //    ต้องไม่ปิดธงเงียบ ๆ (ปิดธง = บิล/สลิปกลับเข้า FB = เสี่ยงเพจโดนแบน) ⇒ ใช้ hidden-0 ในฟอร์มแทน
+            'facebook_web_only' => 'boolean',
             'web_fortune_sso_url' => 'nullable|url|max:500',
             'is_enabled' => 'boolean',
             'respond_in_comment' => 'boolean',
@@ -618,6 +682,9 @@ class FortuneSettingsController extends Controller
             }
         }
 
+        // 🌐 (2026-11-03) ด่านธง FB web-only (fb_web_only_since ประทับเองใน FortuneTellingSetting::booted ตอน save)
+        $this->guardFacebookWebOnly($validated, $settings);
+
         // อัพโหลด QR Code ถ้ามี
         if ($request->hasFile('payment_qr_image')) {
             // ลบรูปเก่า
@@ -635,6 +702,86 @@ class FortuneSettingsController extends Controller
         return redirect()
             ->route('admin.fortune.settings.index')
             ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
+    }
+
+    /**
+     * 🌐 (2026-11-03) ด่านก่อนบันทึกธง facebook_web_only
+     *
+     * - เปิดธง: ลิงก์เว็บของ FB ต้องสร้างได้จริง (SSO เป็น https + token verify กลับได้)
+     *   ไม่งั้นลูกค้า FB ทุกคนเจอทางตันทันที ⇒ บังคับคงค่าเดิม (ปิด) + แจ้งเตือน (แบบเดียวกับ sensitive_ai_mode)
+     * - ปิดธง: ทำได้ (เป็น kill switch ของ ops) แต่แจ้งเตือนว่าบิล/สลิปจะกลับเข้าแชท FB
+     * - ไม่ส่งคีย์มา = ไม่แตะค่าเดิม
+     *
+     * @param  array  $validated  ค่าที่ผ่าน validation (แก้ในที่)
+     * @param  FortuneTellingSetting  $settings  แถวกลางก่อนบันทึก
+     */
+    protected function guardFacebookWebOnly(array &$validated, FortuneTellingSetting $settings): void
+    {
+        if (! array_key_exists('facebook_web_only', $validated)) {
+            return;
+        }
+
+        $wasOn = (bool) ($settings->facebook_web_only ?? false);
+        $wantOn = (bool) $validated['facebook_web_only'];
+        $validated['facebook_web_only'] = $wantOn;
+
+        if ($wantOn && ! $wasOn) {
+            $problem = null;
+
+            try {
+                // จำลองค่าหลังบันทึก (รวม SSO URL ที่แอดมินแก้มาพร้อมกัน) — replicate ไม่ save
+                $probe = $settings->replicate();
+                $probe->setAttribute('facebook_web_only', true);
+                if (array_key_exists('web_fortune_sso_url', $validated)) {
+                    $probe->setAttribute('web_fortune_sso_url', $validated['web_fortune_sso_url']);
+                }
+
+                $link = app()->makeWith(FortuneWebLinkService::class, ['settings' => $probe]);
+                $ssoUrl = $link->getSsoUrl();
+
+                if (! $link->isEnabledFor('facebook')) {
+                    $problem = 'สร้างลิงก์เว็บให้ลูกค้า FB ไม่ได้';
+                } elseif (! str_starts_with(strtolower($ssoUrl), 'https://')) {
+                    $problem = 'URL ปลายทางเว็บจันทราต้องเป็น https';
+                } else {
+                    $payload = $link->verifyToken($link->generateToken('facebook', '9000000000000001', '/chat'));
+                    if (! is_array($payload) || ($payload['p'] ?? null) !== 'facebook') {
+                        $problem = 'สร้างลิงก์แล้วตรวจกลับไม่ผ่าน (ตรวจ APP_KEY)';
+                    }
+                }
+            } catch (\Throwable $e) {
+                $problem = 'ตรวจลิงก์เว็บไม่ได้';
+                \Log::error('🌐 Admin: ตรวจลิงก์เว็บก่อนเปิด FB web-only ล้มเหลว', ['error' => SafeLog::exceptionMessage($e)]);
+            }
+
+            if ($problem !== null) {
+                $validated['facebook_web_only'] = false;
+                session()->flash(
+                    'warning',
+                    '⚠️ ยังไม่เปิด "ย้ายลูกค้า Facebook ไปเว็บ" — '.$problem
+                    .' (ลูกค้าจะเจอทางตัน) · ตรวจด้วย php artisan fortune:fb-web-only-preflight'
+                );
+
+                return;
+            }
+
+            \Log::warning('🌐 Admin: เปิด FB web-only แล้ว — ลูกค้า FB ทุกคนไปเว็บจันทรา', ['admin_id' => auth()->id()]);
+            session()->flash(
+                'warning',
+                '🌐 เปิด "ย้ายลูกค้า Facebook ไปเว็บ" แล้ว — อย่าลืมรัน php artisan fortune:web-only-cutover --refresh-profile เพื่ออัปเดตเมนู Messenger ทุกเพจ'
+            );
+
+            return;
+        }
+
+        if (! $wantOn && $wasOn) {
+            \Log::critical('🌐 Admin: ปิด FB web-only (kill switch) — บิล/สลิปกลับเข้าแชท FB ได้อีก', ['admin_id' => auth()->id()]);
+            session()->flash(
+                'warning',
+                '⚠️ ปิด "ย้ายลูกค้า Facebook ไปเว็บ" แล้ว — บอทกลับไปออกบิล/รับสลิปในแชท FB ได้อีก (เสี่ยงเพจโดนแบน)'
+                    .' และเมนู Messenger ยังเป็นแบบเว็บจนกว่าจะรัน fortune:setup-messenger ใหม่'
+            );
+        }
     }
 
     // ============================================================

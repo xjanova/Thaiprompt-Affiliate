@@ -237,6 +237,13 @@ class SmsPaymentService
                     if (! $orphanFortuneFlagged) {
                         $closedBillReview = $notification->flagIfPaidToClosedBill();
                     }
+
+                    // 🌐 (2026-11-03 FB web-only) หลังจุดตัด T0 รูป QR เก่ายังค้างในแชท FB → ลูกค้าโอนยอดแพ็กเกจไหนก็ได้
+                    //   (Celtic 99 / ดูดวงเชิงลึก / สมาชิก) ทั้งที่ไม่มีบิลแล้ว → ปักธงให้แอดมินทุกราคาแพ็กเกจ
+                    //   วาง "หลัง" ด่านบิลอีคอมเมิร์ซที่ปิดแล้ว — ยอดของร้านค้าที่ตรงราคาแพ็กเกจต้องชี้ไปที่ออเดอร์ก่อน
+                    if (! $orphanFortuneFlagged && ! $closedBillReview) {
+                        $orphanFortuneFlagged = $this->flagFbWebOnlyPackageOrphan($notification);
+                    }
                 }
             }
 
@@ -828,7 +835,7 @@ class SmsPaymentService
      *                                       แบบ "ไม่มี log ไม่มี push" เลย เพราะไม่อยู่ในช่วงราคาเต็ม
      * @return bool true = ปักธงเงินดูดวงกำพร้าแล้ว · false = ยอดไม่อยู่ในช่วงดูดวง (ไม่ได้ทำอะไร)
      */
-    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification, ?string $reasonOverride = null): bool
+    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification, ?string $reasonOverride = null, ?float $expectedPriceOverride = null): bool
     {
         $amount = (float) $notification->amount;
 
@@ -847,6 +854,11 @@ class SmsPaymentService
             $fortunePrice = 39.0; // default
         }
 
+        // 🌐 (2026-11-03 FB web-only) ผู้เรียกระบุราคาแพ็กเกจที่ยอดนี้ตรงมาเอง (เช่น Celtic 99) → ใช้เป็นช่วงที่คาด/แจ้งแอดมิน
+        if ($expectedPriceOverride !== null && $expectedPriceOverride > 0) {
+            $fortunePrice = $expectedPriceOverride;
+        }
+
         // Range check: amount ต้องอยู่ในช่วง [price, price + 1]
         // เช่น price=39 → match 39.00 ถึง 39.99 (รองรับ unique decimal suffix)
         // กัน edge: ถ้า admin ตั้งราคา 40 → match 40.00 ถึง 40.99
@@ -858,17 +870,25 @@ class SmsPaymentService
         // 🩹 (2026-05-05) Defensive: enum 'requires_admin_review' อาจยังไม่ถูก migrate
         //                  → ลอง update เต็ม → ถ้า SQL truncation error → fallback แค่ raw_data
         //                  → กัน exception bubble up ทำให้ payment flow พัง
-        $rawDataMerged = array_merge((array) ($notification->raw_data ?? []), [
+        // 🩹 (2026-11-03) ตารางนี้ไม่มีคอลัมน์ raw_data (และไม่อยู่ใน $fillable) → ธง/เหตุผลเดิมถูกทิ้งเงียบมาตลอด
+        //    เก็บลง raw_payload (JSON) แบบเดียวกับ CLOSED_BILL_REVIEW_KEY แทน — แอดมินจะเห็นเหตุผล
+        //    เช่น fb_web_only_orphan_package_price (เงินกำพร้าหลังเปิดโหมด FB ดูดวงบนเว็บเท่านั้น)
+        $rawPayload = json_decode((string) ($notification->raw_payload ?? ''), true);
+        if (! is_array($rawPayload)) {
+            $rawPayload = ($notification->raw_payload ?? '') === '' ? [] : ['original' => $notification->raw_payload];
+        }
+        $rawDataMerged = array_merge($rawPayload, [
             'orphan_fortune_payment' => true,
             'orphan_reason' => $reasonOverride ?: 'amount_in_fortune_range_but_no_matching_bill',
             'expected_price_range' => [$fortunePrice, $fortunePrice + 0.99],
             'flagged_at' => now()->toIso8601String(),
         ]);
+        $rawPayloadJson = json_encode($rawDataMerged, JSON_UNESCAPED_UNICODE);
 
         try {
             $notification->update([
                 'status' => 'requires_admin_review',
-                'raw_data' => $rawDataMerged,
+                'raw_payload' => $rawPayloadJson,
             ]);
         } catch (\Illuminate\Database\QueryException $sqlErr) {
             // เคสจริง production (2026-05-05): enum status ยังไม่มี 'requires_admin_review'
@@ -880,7 +900,7 @@ class SmsPaymentService
                 'hint' => 'ต้องรัน migration 2026_05_05_000100_add_requires_admin_review_to_sms_notifications_status_enum',
             ]);
             try {
-                $notification->update(['raw_data' => $rawDataMerged]);
+                $notification->update(['raw_payload' => $rawPayloadJson]);
             } catch (\Throwable $rawErr) {
                 Log::critical('SMS Payment: fallback raw_data update ก็ล้ม — admin ต้อง check log', [
                     'notification_id' => $notification->id,
@@ -909,6 +929,92 @@ class SmsPaymentService
         }
 
         return true;
+    }
+
+    /**
+     * 🌐 (2026-11-03 FB web-only) ปักธงเงินกำพร้า "ทุกราคาแพ็กเกจ" ที่เข้ามาหลังจุดตัด T0
+     *
+     * เหตุผล: เมื่อเปิดธง facebook_web_only แชท FB เลิกออกบิลแล้ว แต่รูป QR / ยอดเดิมยังอยู่ในประวัติแชท
+     *   ลูกค้าบางคนจะโอนตามรูปเก่า (Celtic 99, เชิงลึก 39, สมาชิกรายเดือน/รายปี) → ไม่มีบิลให้จับคู่
+     *   ด่านเดิม flagOrphanFortunePayment() รับแค่ช่วงราคาเชิงลึก → ยอด Celtic 99 ตกร่องเงียบ ไม่มีใครรู้
+     *
+     * เงื่อนไข (ทุกข้อ):
+     *   1. ธง FB web-only เปิดอยู่ (อ่านธงพัง = ถือว่าเปิด — ปักธงเกินดีกว่าเงินหายเงียบ)
+     *   2. เวลาของ SMS (sms_timestamp → created_at) ไม่ก่อน fb_web_only_since
+     *      (ไม่มีเวลาจุดตัด = ถือว่าผ่าน — fail-closed เช่นกัน)
+     *   3. ยอดอยู่ในช่วง [ราคา, ราคา+1) ของแพ็กเกจใดก็ได้ที่ราคา > 0
+     *
+     * ⚠️ แค่ปักธงให้แอดมินตรวจ (requires_admin_review + FCM) — ไม่สร้างบิล ไม่ revive บิล FB ไม่ส่งอะไรหาลูกค้า
+     *    LINE ไม่กระทบ: เส้นนี้ทำงานเฉพาะเงินที่ไม่มีบิลจับคู่ได้อยู่แล้ว (บิล LINE ที่ยังเปิดอยู่ถูกจับคู่ไปก่อนถึงตรงนี้)
+     *
+     * @return bool true = ปักธงแล้ว
+     *
+     * @example
+     * // ธงเปิดตั้งแต่เมื่อวาน · SMS ยอด 99.37 เข้าวันนี้ ไม่มีบิล → ปักธง reason=fb_web_only_orphan_package_price
+     */
+    protected function flagFbWebOnlyPackageOrphan(SmsPaymentNotification $notification): bool
+    {
+        try {
+            if ($notification->type !== null && $notification->type !== 'credit') {
+                return false;
+            }
+
+            $settings = FortuneTellingSetting::getSettings();
+            $mode = new \App\Services\Fortune\FortuneBotMode($settings);
+
+            if (! $mode->fbWebOnly()) {
+                return false;
+            }
+
+            $since = $mode->fbWebOnlySince();
+            $receivedAt = $notification->sms_timestamp ?? $notification->created_at;
+            if ($since !== null && $receivedAt !== null) {
+                $receivedAt = $receivedAt instanceof \Carbon\CarbonInterface ? $receivedAt : \Illuminate\Support\Carbon::parse($receivedAt);
+                if ($receivedAt->lt($since)) {
+                    return false; // เงินก่อนจุดตัด — ด่านเดิมดูแลตามปกติ
+                }
+            }
+
+            $price = $this->matchFortunePackagePrice((float) $notification->amount, $settings);
+            if ($price === null) {
+                return false;
+            }
+
+            return $this->flagOrphanFortunePayment($notification, 'fb_web_only_orphan_package_price', $price);
+        } catch (\Throwable $e) {
+            Log::warning('🌐 SMS Payment: ตรวจเงินกำพร้าแพ็กเกจ (FB web-only) ล้ม — ข้าม', [
+                'notification_id' => $notification->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🌐 หาราคาแพ็กเกจที่ยอดนี้ตกอยู่ในช่วง [ราคา, ราคา+1) — รองรับเศษสตางค์ของยอดเฉพาะ
+     *
+     * แพ็กเกจที่นับ: ดูดวงเชิงลึก · ดูดวงปกติ (ถ้ามีราคา) · Celtic Cross · สมาชิกรายเดือน · สมาชิกรายปี
+     *
+     * @return float|null ราคาแพ็กเกจที่ตรง · null = ไม่ตรงแพ็กเกจไหน
+     */
+    protected function matchFortunePackagePrice(float $amount, FortuneTellingSetting $settings): ?float
+    {
+        $prices = [
+            (float) ($settings->deep_reading_price ?? 0),
+            (float) ($settings->reading_price ?? 0),
+            (float) ($settings->celtic_cross_price ?? 99.0),
+            (float) ($settings->subscription_monthly_price ?? 0),
+            (float) ($settings->subscription_yearly_price ?? 0),
+        ];
+
+        foreach ($prices as $price) {
+            if ($price > 0 && $amount >= $price && $amount < $price + 1.0) {
+                return $price;
+            }
+        }
+
+        return null;
     }
 
     /**

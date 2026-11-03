@@ -55,6 +55,71 @@ class FortuneChannelManager
     /** 🖼️ (2026-10-12) ท้ายชุดตัวอย่างตอนลูกค้ากำลังจะยกเลิก — ยังต้องบอกทางยืนยันยกเลิก (คำสั่งเดียวกับข้อความถามเดิม) */
     private const SHOWCASE_CANCEL_TAIL = 'บิลเดิมยังโอนได้ตามปกตินะคะ ถ้ายังต้องการยกเลิก พิมพ์ "ยืนยันยกเลิก" ได้เลยค่ะ 🙏';
 
+    // ============================================================
+    // 🌐 (2026-11-03) FB web-only — ด่าน egress ของ ChannelManager (T8)
+    // ============================================================
+    //
+    // ด่านหลักอยู่ขาเข้า (WebOnlyGate ใน FCS) — ตรงนี้คือชั้นกันรั่วก่อนเรนเดอร์
+    // ถ้า action เรื่องเงิน/ทำนายหลุดมาถึงนี่ใต้ FB web-only = ต้นทางมีรู
+    //   → ไม่เรนเดอร์ของเดิม ส่ง "กล่องพาไปห้องแม่หมอ" แทน + Log::critical
+    // ทำงานเฉพาะผู้รับ facebook ที่ fbWebOnlyFor() = true — LINE/Telegram ไม่ผ่านด่านนี้เลย
+
+    /**
+     * 🌐 action ขาย/เรื่องเงิน — บล็อก **เสมอ** ใต้ FB web-only
+     *    (แม้ลูกค้ามีของที่จ่ายแล้วค้างส่ง: เจ้าของสั่ง "ส่งของให้จบอย่างเดียว" ห้ามขายเพิ่มใน FB)
+     */
+    public const FB_WEB_ONLY_SALE_ACTIONS = [
+        'pending_payment', 'celtic_pending_payment', 'celtic_pending_payment_reuse',
+        'payment_lock_pending', 'payment_lock_revived', 'payment_lock_admin',
+        'deliver_with_qr', 'awaiting_payment_method',
+        'pending_stripe_payment', 'pending_stripe_payment_reminder',
+        'waiting_payment', 'waiting_payment_reply',
+        'payment_info', 'bank_account_info', 'international_payment_info',
+        'foreign_card_confirm', 'foreign_service_confirm',
+        'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat',
+        'pricing_menu', 'prepay_package_choice', 'consent_gate', 'deep_promo_ended',
+        'payment_expired', 'payment_check_pending', 'payment_check_expired',
+        'cancel_dialog_ask', 'cancel_reason_prompt', 'cancelled_to_chat',
+        'ai_limit', 'check_remaining', 'check_status', 'my_bills_list',
+        'view_reading_celtic_pending', 'view_reading_deep_pending',
+        'transfer_box', 'transfer_stay_confirm', 'line_add_friend',
+        'share_link', 'downline_info', 'earnings_info', 'ai_rebuttal',
+    ];
+
+    /**
+     * 🌐 action ที่ "เริ่ม/เดินโฟลดูดวง" — บล็อกถ้าลูกค้าไม่ใช่ legacy-paid
+     *    (ของที่จ่ายแล้วกำลังส่ง = ปล่อยผ่านให้ส่งจนจบตามเดิม)
+     */
+    public const FB_WEB_ONLY_READING_ACTIONS = [
+        'awaiting_confirmation', 'collecting_birthdate',
+        'collecting_questions', 'need_more_questions', 'retry_question',
+        'basic_done', 'ai_redirect_deep_reading', 'draw_tarot_card',
+        'free_card_drawn', 'free_card_declined', 'free_card_chitchat',
+        'free_card_draw_failed', 'free_card_ai_failed',
+        'awaiting_tarot_intention', 'awaiting_tarot_draw',
+        'awaiting_birthdate_confirmation', 'awaiting_question_confirmation',
+        'deep_card_drawn', 'daily_horoscope_sent', 'declined', 'cancelled', 'help',
+    ];
+
+    /**
+     * 🔐 (รีวิว) action ที่ "เริ่มของใหม่" (ดวงพื้นฐานฟรี + upsell / ไพ่ฟรี / ดวงรายวัน / ชวนดูลึก)
+     *    ระดับ A ไม่ปลดล็อกให้ — ปลดเฉพาะเมื่อบิลในผลเป็นบิลที่จ่ายแล้วจริง (= การส่งของที่จ่ายแล้ว)
+     *    เดิม basic_done ของลูกค้าระดับ A ส่ง upsell มีราคา + ปุ่ม DEEP_READING_ACCEPT ออกไปบน FB
+     */
+    public const FB_WEB_ONLY_NEW_READING_ACTIONS = [
+        'basic_done', 'ai_redirect_deep_reading', 'draw_tarot_card',
+        'free_card_drawn', 'free_card_declined', 'free_card_chitchat',
+        'free_card_draw_failed', 'free_card_ai_failed', 'daily_horoscope_sent',
+    ];
+
+    /**
+     * 🌐 payload ปุ่ม quick reply ที่พาไปขาย/เริ่มดูดวงในแชท — ใต้ FB web-only ตัดทิ้งแล้วแทนด้วย WEB_ROOM
+     */
+    public const FB_WEB_ONLY_SALE_PAYLOAD_PATTERN = '/^(?:TIER_|PAY_METHOD_|STRIPE_|START_FORTUNE|DEEP_FORTUNE|MENU_FORTUNE|MENU_DEEP|FREE_CARD_|FORTUNE_BASIC|TRANSFER_|LINE_INVITE|FORTUNE_EARN_INFO|AFFILIATE_SHARE|SHOW_BANK_ACCOUNT|REPORT_PAYMENT|FOREIGN_CONFIRM_PAY|CARD_CONFIRM_|INVITE_READ_NOW|INVITE_FREE_WEB|CANCEL_HELP_TRANSFER)/';
+
+    /** 🌐 ป้ายปุ่มที่มีราคา/คำเรื่องเงิน (ปุ่มที่ไม่มี payload ชัด เช่น ลูกค้าพิมพ์ตามป้าย) */
+    public const FB_WEB_ONLY_SALE_TITLE_PATTERN = '/(?:\d\s*(?:บาท|฿)|฿|ค่าครู|โอน|ดูดวง)/u';
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
@@ -720,6 +785,13 @@ class FortuneChannelManager
         $message = $result['message'] ?? '';
         $reading = $result['reading'] ?? null;
 
+        // 🌐 (2026-11-03) FB web-only egress guard — action เงิน/ทำนายที่หลุดมา → กล่องพาไปห้องแม่หมอแทน
+        //    คืน null = ไม่เกี่ยว (ธงปิด / LINE / Telegram / action ปกติ / ของที่จ่ายแล้ว) → เรนเดอร์ตามเดิม
+        $guarded = $this->maybeBlockFbWebOnlyEgress($fbService, $userId, $result, $extra);
+        if ($guarded !== null) {
+            return $guarded;
+        }
+
         // 🔔 (2026-05-03 v2) Apply payment warning prefix if set by PayFirstGateTrait
         //    ยกเว้น actions ที่เกี่ยวกับ payment โดยตรง (ไม่ต้องเตือนซ้ำ)
         $message = $this->maybeApplyPaymentWarning($message, $action);
@@ -1245,9 +1317,14 @@ class FortuneChannelManager
 
                     // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
                     // Delay 4s ให้กล่องราคาขึ้นก่อน — graceful degradation ถ้า queue ไม่รัน
+                    //   🌐 (2026-11-03) FB web-only → ห้าม dispatch (job อธิบาย "ค่าครู" = ข้อความเรื่องเงินเข้า Messenger)
+                    //      ปกติไม่ถึงตรงนี้เพราะ egress guard ตัด pricing_menu ไปแล้ว — ชั้นนี้กันกรณีหลุด
+                    //      (job ที่ค้างคิวก่อนสลับธง = T10 เช็คซ้ำใน handle())
                     try {
-                        \App\Jobs\SendPricingFollowUpJob::dispatch($fbService->getPlatformName(), $userId, $pricing)
-                            ->delay(now()->addSeconds(4));
+                        if (! $this->fbWebOnlyEgressActive($fbService, $userId)) {
+                            \App\Jobs\SendPricingFollowUpJob::dispatch($fbService->getPlatformName(), $userId, $pricing)
+                                ->delay(now()->addSeconds(4));
+                        }
                     } catch (\Throwable $e) {
                         \Illuminate\Support\Facades\Log::warning('Pricing followup dispatch fail', ['err' => $e->getMessage()]);
                     }
@@ -2526,9 +2603,29 @@ class FortuneChannelManager
             $quickReplies = $transferQr;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ปุ่มขาย/เริ่มดูดวงในแชท (รวม [OFFER_FORTUNE]) → WEB_ROOM
+        //    ⚠️ ทำหลังทุกขั้นที่ประกอบปุ่ม — ปุ่มจาก RichMessageService/fallback/transfer ต้องผ่านตัวกรองหมด
+        if ($this->fbWebOnlyEgressActive($fbService, $userId)) {
+            $quickReplies = $this->filterFbWebOnlyQuickReplies((array) $quickReplies, $offerFortune);
+        }
+
         $sent = ! empty($quickReplies)
             ? $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra)
             : $fbService->sendMessage($userId, $message, $extra);
+
+        // 🔐 (รีวิว) FB web-only: ข้อความมีคำเรื่องเงิน → ด่านชั้นส่ง (T9) บล็อกทั้งข้อความ = ลูกค้าได้ความเงียบ
+        //    → ส่งกล่องพาไปห้องแม่หมอแทน (ไม่มีคำเงิน) ให้ลูกค้ามีทางไปต่อเสมอ · LINE/Telegram ไม่เข้าเงื่อนไขนี้
+        if (! $sent
+            && empty($result['web_handoff'])
+            && \App\Services\FacebookWebhookService::containsMoneyText($message)
+            && $this->fbWebOnlyEgressActive($fbService, $userId, $result['reading'] ?? null)) {
+            Log::warning('🌐 FB web-only: ข้อความถูกด่านเงินชั้นส่งบล็อก — ส่งกล่องห้องแม่หมอแทนความเงียบ', [
+                'user_id' => $userId,
+                'action' => $action,
+            ]);
+
+            return $this->sendFbWebOnlyEgressHandoff($fbService, $userId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, $action, $extra);
+        }
 
         // 🌙 (2026-05-22) Pro Session follow-up — กล่องที่ 2 บอก "หมออยู่ตอบเพิ่ม 10 นาที"
         //   User spec 2026-05-22: "กล่องข้อความต่อท้ายคำทำนายเพิ่มว่า
@@ -2562,6 +2659,18 @@ class FortuneChannelManager
             return null;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ปุ่มท้ายข้อความคุยเล่น = "🌙 เข้าห้องแม่หมอ" ปุ่มเดียว
+        //    (ไม่มี TRANSFER_GO / TRANSFER_GO_LINE — ไม่มีทางไป LINE และไม่มี "ดูดวงฟรี")
+        //    ไม่สนโหมด/rollout/ทางถอย — web-only ครอบลูกค้า FB 100%
+        try {
+            if ((new \App\Services\Fortune\FortuneBotMode($this->settings))->fbWebOnlyFor(self::PLATFORM_FACEBOOK, $userId)) {
+                return \App\Services\Fortune\WebHandoffCopy::webRoomQuickReply();
+            }
+        } catch (\Throwable $e) {
+            // fail-closed ในบริบท FB: เช็คไม่ได้ = ใช้ปุ่มห้องแม่หมอ (ไม่ตกไปปุ่มขาย)
+            return \App\Services\Fortune\WebHandoffCopy::webRoomQuickReply();
+        }
+
         try {
             $mode = new \App\Services\Fortune\FortuneBotMode($this->settings);
 
@@ -2578,6 +2687,218 @@ class FortuneChannelManager
 
             return null;
         }
+    }
+
+    /**
+     * 🌐 (2026-11-03) ผู้รับ FB คนนี้อยู่ใต้ FB web-only ไหม (ระดับ egress)
+     *
+     * - sender ไม่ใช่ facebook (Telegram ที่ใช้ตัวเรนเดอร์เดียวกัน) → false เสมอ
+     * - ตัดสินด้วย FortuneBotMode::fbWebOnlyFor (id LINE/tg_ = false, PSID = ดูธง)
+     * - เช็คพังในบริบท FB → true (fail-closed ห้ามตกไปเรนเดอร์ของขาย)
+     *
+     * @param  mixed  $reading  บิลที่เกี่ยวข้อง (ถ้ามี — platform ของบิลใช้ประกอบการ resolve)
+     */
+    protected function fbWebOnlyEgressActive(FortuneMessengerSender $fbService, string $userId, mixed $reading = null): bool
+    {
+        if ($fbService->getPlatformName() !== self::PLATFORM_FACEBOOK) {
+            return false;
+        }
+
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode($this->settings))->fbWebOnlyFor(
+                self::PLATFORM_FACEBOOK,
+                $userId,
+                $reading instanceof FortuneReading ? $reading : null
+            );
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only egress: เช็คธงไม่ได้ — ถือว่าเปิด (fail-closed)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * 🌐 (2026-11-03) ด่าน egress — action เงิน/ทำนายใต้ FB web-only → ส่งกล่องพาไปห้องแม่หมอแทน
+     *
+     * กติกา:
+     *  - ผลที่มาจาก sendWebHandoff (web_handoff=true) → ผ่านเสมอ
+     *  - action ใน FB_WEB_ONLY_SALE_ACTIONS หรือผลที่พก QR จ่ายเงิน → บล็อกเสมอ (แม้ legacy-paid)
+     *  - action ใน FB_WEB_ONLY_READING_ACTIONS → บล็อกเว้นแต่บิลในผลจ่ายแล้ว หรือ fbLegacyPaidInFlight
+     *  - อื่น ๆ (คุยเล่น, ยืนยันสลิป, PDPA, ส่งคำทำนายที่จ่ายแล้ว ฯลฯ) → ผ่าน
+     *
+     * @return bool|null null = ไม่บล็อก (ให้เรนเดอร์ตามเดิม) · bool = บล็อกแล้ว ผลการส่งกล่องแทน
+     */
+    protected function maybeBlockFbWebOnlyEgress(FortuneMessengerSender $fbService, string $userId, array $result, array $extra = []): ?bool
+    {
+        if (! empty($result['web_handoff'])) {
+            return null;
+        }
+
+        $action = (string) ($result['action'] ?? 'unknown');
+        $carriesPaymentQr = ! empty($result['payment_qr_url']);
+        $isSale = $carriesPaymentQr || in_array($action, self::FB_WEB_ONLY_SALE_ACTIONS, true);
+        $isReading = in_array($action, self::FB_WEB_ONLY_READING_ACTIONS, true);
+
+        if (! $isSale && ! $isReading) {
+            return null;
+        }
+
+        $reading = $result['reading'] ?? null;
+        if (! $this->fbWebOnlyEgressActive($fbService, $userId, $reading)) {
+            return null;
+        }
+
+        // ของที่จ่ายแล้ว (ระดับ A) → ส่งต่อให้จบ — เฉพาะโฟลทำนาย ไม่ปลดล็อกการขาย
+        // 🔐 (รีวิว) action "เริ่มของใหม่" ปลดได้เฉพาะเมื่อบิลในผลจ่ายแล้วจริง (ไม่ใช่แค่ลูกค้าเคยจ่ายบิลอื่น)
+        if (! $isSale) {
+            $startsSomethingNew = in_array($action, self::FB_WEB_ONLY_NEW_READING_ACTIONS, true);
+            $paidReading = $reading instanceof FortuneReading && $reading->is_paid;
+            if ($paidReading || (! $startsSomethingNew && $this->fbWebOnlyEgressLegacyPaid($userId, $reading))) {
+                return null;
+            }
+        }
+
+        Log::critical('🌐 FB web-only egress: action เงิน/ทำนายหลุดมาถึงทางออก FB — ส่งกล่องห้องแม่หมอแทน', [
+            'action' => $action,
+            'user_id' => $userId,
+            'reading_id' => $reading instanceof FortuneReading ? $reading->id : null,
+            'kind' => $isSale ? 'sale' : 'reading',
+            'payment_qr' => $carriesPaymentQr,
+        ]);
+
+        return $this->sendFbWebOnlyEgressHandoff($fbService, $userId, $this->fbWebOnlyEgressKind($action, $isSale), $action, $extra);
+    }
+
+    /**
+     * 🌐 ลูกค้าระดับ A (ของที่จ่ายแล้วกำลังส่ง) ไหม — บิลในผลจ่ายแล้ว หรือ FortuneBotMode::fbLegacyPaidInFlight
+     *    เช็คพัง → false (fail-closed: ไม่ปลดล็อก)
+     */
+    protected function fbWebOnlyEgressLegacyPaid(string $userId, mixed $reading = null): bool
+    {
+        try {
+            if ($reading instanceof FortuneReading && $reading->is_paid) {
+                return true;
+            }
+
+            return (new \App\Services\Fortune\FortuneBotMode($this->settings))->fbLegacyPaidInFlight($userId);
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only egress: เช็ค legacy-paid ไม่ได้ — ถือว่าไม่ใช่ (fail-closed)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🌐 ชนิดข้อความในกล่อง (WebHandoffCopy::KIND_*) ตาม action ที่ถูกบล็อก
+     */
+    protected function fbWebOnlyEgressKind(string $action, bool $isSale): string
+    {
+        if (! $isSale) {
+            return \App\Services\Fortune\WebHandoffCopy::KIND_READING;
+        }
+
+        return in_array($action, [
+            'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat', 'pricing_menu',
+            'prepay_package_choice', 'deep_promo_ended', 'consent_gate',
+            'payment_info', 'bank_account_info', 'international_payment_info',
+        ], true)
+            ? \App\Services\Fortune\WebHandoffCopy::KIND_PRICE
+            : \App\Services\Fortune\WebHandoffCopy::KIND_ROOM;
+    }
+
+    /**
+     * 🌐 ส่งกล่องพาไปห้องแม่หมอแทนของที่ถูกบล็อก
+     *
+     * ใช้ sendWebHandoff (สร้าง handoff + บันทึกบทสนทนา + fail-closed ในตัว) แล้วส่งเองผ่าน sender ของรอบนี้
+     * ⚠️ ห้ามตกกลับไปส่ง $message เดิม — ทุกทางที่พังจบที่ข้อความ FAIL_CLOSED + ปุ่ม WEB_ROOM
+     */
+    protected function sendFbWebOnlyEgressHandoff(FortuneMessengerSender $fbService, string $userId, string $kind, string $action, array $extra = []): bool
+    {
+        $payload = null;
+
+        try {
+            $handoff = $this->conversationService->sendWebHandoff($userId, null, [
+                'kind' => $kind,
+                'source' => 'egress_guard',
+                'save_user_message' => false,
+            ]);
+            if (is_array($handoff) && ! empty($handoff['fb_template']) && is_array($handoff['fb_template'])) {
+                $payload = $handoff['fb_template'];
+            }
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only egress: sendWebHandoff พัง — ส่งข้อความ fail-closed แทน', [
+                'action' => $action,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $payload ??= [
+            'text' => \App\Services\Fortune\WebHandoffCopy::FAIL_CLOSED,
+            'quick_replies' => \App\Services\Fortune\WebHandoffCopy::webRoomQuickReply(),
+        ];
+
+        try {
+            return (bool) $fbService->sendButtonTemplate($userId, $payload, $extra);
+        } catch (\Throwable $e) {
+            Log::error('🌐 FB web-only egress: ส่งกล่องห้องแม่หมอไม่สำเร็จ', [
+                'action' => $action,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🌐 (2026-11-03) กรองปุ่ม quick reply ใต้ FB web-only
+     *
+     * ตัดปุ่มขาย/เริ่มดูดวงในแชท (payload ตาม FB_WEB_ONLY_SALE_PAYLOAD_PATTERN หรือป้ายมีราคา)
+     * ถ้าตัดไปอย่างน้อย 1 ปุ่ม หรือ AI ใส่ [OFFER_FORTUNE] → แนบ "🌙 เข้าห้องแม่หมอ" (ไม่ซ้ำ)
+     *
+     * @param  array<int, array<string, mixed>>  $quickReplies
+     * @return array<int, array<string, mixed>>
+     */
+    protected function filterFbWebOnlyQuickReplies(array $quickReplies, bool $offerFortune = false): array
+    {
+        $kept = [];
+        $removed = 0;
+        $hasWebRoom = false;
+
+        foreach ($quickReplies as $qr) {
+            $payload = is_array($qr) ? (string) ($qr['payload'] ?? '') : '';
+            $title = is_array($qr) ? (string) ($qr['title'] ?? '') : (string) $qr;
+
+            if ($payload === \App\Services\Fortune\WebHandoffCopy::PAYLOAD_WEB_ROOM) {
+                $hasWebRoom = true;
+                $kept[] = $qr;
+
+                continue;
+            }
+
+            if (($payload !== '' && preg_match(self::FB_WEB_ONLY_SALE_PAYLOAD_PATTERN, $payload) === 1)
+                || preg_match(self::FB_WEB_ONLY_SALE_TITLE_PATTERN, $title) === 1) {
+                $removed++;
+
+                continue;
+            }
+
+            $kept[] = $qr;
+        }
+
+        if (($removed > 0 || $offerFortune) && ! $hasWebRoom) {
+            $kept = array_merge($kept, \App\Services\Fortune\WebHandoffCopy::webRoomQuickReply());
+        }
+
+        // FB รับ quick reply ได้ไม่เกิน 13 ปุ่ม
+        return array_slice(array_values($kept), 0, 13);
     }
 
     /**

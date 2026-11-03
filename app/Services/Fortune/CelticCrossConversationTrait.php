@@ -492,7 +492,8 @@ trait CelticCrossConversationTrait
 
             return [
                 'action' => 'cancelled',
-                'message' => "🙏 ยกเลิกแล้วค่ะ\n\nหากเปลี่ยนใจอยากให้หมอจันทราดูดวงให้\nพิมพ์ *\"ดูดวง\"* ได้ตลอดเลยนะคะ 🔮✨",
+                // 🌐 (2026-11-03) FB web-only → ชวนเข้าห้องแม่หมอแทน 'พิมพ์ "ดูดวง"' (LINE/ธงปิด = ข้อความเดิม)
+                'message' => "🙏 ยกเลิกแล้วค่ะ\n\n".RepurchaseCta::forReading($reading, "หากเปลี่ยนใจอยากให้หมอจันทราดูดวงให้\nพิมพ์ *\"ดูดวง\"* ได้ตลอดเลยนะคะ 🔮✨"),
                 'reading' => $reading,
             ];
         }
@@ -1011,6 +1012,20 @@ trait CelticCrossConversationTrait
      */
     protected function doStartCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามออกบิล Celtic/UPA/เมนูจ่ายเงินบน FB (ด่านสุดท้ายก่อน UPA)
+        //   ข้อยกเว้นเดียว: Celtic ที่ "จ่ายแล้ว" ยังไม่ได้ใช้สิทธิ์ → resume ให้จบ (ส่งของ ไม่ใช่เก็บเงิน)
+        //   บิลค้างจ่ายเดิม → ห้ามส่ง QR ซ้ำ (ไม่ใช้ buildCelticPendingPaymentReuseResponse)
+        if (FbBillingGuard::blocks($reading, null, $this->currentPlatform ?? null, 'doStartCelticCrossFlow')) {
+            $resumable = $this->findResumableCelticReading($reading);
+            if ($resumable && $resumable->is_paid && $resumable->id !== $reading->id) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return $this->buildCelticResumeResponse($resumable, false);
+            }
+
+            return $this->webOnlyBillBlockedResponse($reading, 'doStartCelticCrossFlow');
+        }
+
         // 🌍 (2026-06-03) Foreign-customer gate (defense ที่ chokepoint สร้างบิล Celtic)
         //   ครอบ path ที่ไม่ผ่าน startDeepReadingFlow (เช่น พิมพ์ "99" ตอน TIER_CHOICE)
         $fcUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
@@ -3618,7 +3633,8 @@ trait CelticCrossConversationTrait
                 ."ไพ่ชุดเดิม (10 ใบ) ที่แม่หมอเปิดให้ — *พลังงานผูกไว้กับเรื่องที่เจ้าชะตามาดูตอนแรก*\n"
                 ."ถ้าตอบเรื่องราวใหม่ๆ ที่ต่างออกไป *อาจตอบได้ไม่ครบ ไม่ลึก ไม่ตรง* เท่าที่ควรค่ะ\n\n"
                 ."🔮 ถ้าอยากให้แม่หมอดูเรื่องใหม่ให้แม่นยำ — *ต้องจับไพ่ใหม่* นะคะ\n"
-                ."   พิมพ์ *\"ดูดวง\"* เมื่อพร้อม แม่หมอจะเปิดประตูพลังให้ใหม่อีกครั้ง\n\n"
+                // 🌐 (2026-11-03) FB web-only → ชวนเข้าห้องแม่หมอแทน 'พิมพ์ "ดูดวง"' (LINE/ธงปิด = ข้อความเดิม)
+                .'   '.RepurchaseCta::forReading($reading, 'พิมพ์ *"ดูดวง"* เมื่อพร้อม แม่หมอจะเปิดประตูพลังให้ใหม่อีกครั้ง')."\n\n"
                 .'🙏 ขอบคุณที่ไว้วางใจแม่หมอจันทรานะคะ ✨';
 
             // จบ session — exit Pro Session + status COMPLETED

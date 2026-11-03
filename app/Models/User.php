@@ -365,6 +365,7 @@ class User extends Authenticatable
      * และฝั่ง FB OAuth (FacebookLoginController) — แก้สูตรที่นี่ที่เดียว
      *
      * ลำดับ: คอลัมน์ facebook_psid ก่อน (backfill แล้วใน migration)
+     * → 🪪 (2026-11-03) ตาราง PSID สำรอง fortune_messenger_psids (PSID ของเพจสาขาอื่นของคนเดิม)
      * → fallback อีเมล fb_{PSID}@thaiprompt.local เผื่อแถวช่วงคาบเกี่ยว deploy
      * เฉพาะแถวที่ไม่เคยผูก OAuth เพราะบัญชีที่ OAuth สร้างใช้สูตรอีเมลเดียวกัน
      * แต่ข้างในเป็น ASID (คนละ ID space) — กัน match ข้ามคน
@@ -373,6 +374,15 @@ class User extends Authenticatable
     {
         if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'facebook_psid')) {
             $user = static::where('facebook_psid', $psid)->first();
+            if ($user) {
+                return $user;
+            }
+        }
+
+        // PSID สำรอง (ลูกค้าคนเดิมทักจากเพจสาขาอื่น) — คนเดียว = บัญชีเดียว ข้ามสาขา
+        $aliasOwnerId = \App\Models\FortuneMessengerPsid::ownerIdOf($psid);
+        if ($aliasOwnerId !== null) {
+            $user = static::find($aliasOwnerId);
             if ($user) {
                 return $user;
             }

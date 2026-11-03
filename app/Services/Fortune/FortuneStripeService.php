@@ -161,6 +161,16 @@ class FortuneStripeService
      */
     public function createCheckoutSession(FortuneReading $reading, ?string $tier = null): array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามสร้างลิงก์จ่ายบัตรให้บิล FB (ทุกผู้เรียก: เลนบัตรไทย/ต่างประเทศ)
+        //   ผู้เรียกใน FCS เช็คก่อนแล้วพาไปห้องแม่หมอ — ตรงนี้คือด่านสุดท้ายก่อนยิง Stripe API
+        if (! $reading->is_paid && FbBillingGuard::blocks($reading, null, null, 'createCheckoutSession')) {
+            return [
+                'success' => false,
+                'error' => 'fb_web_only',
+                'web_only_blocked' => true,
+            ];
+        }
+
         if (! $this->isEnabled()) {
             return [
                 'success' => false,
@@ -624,6 +634,19 @@ class FortuneStripeService
 
         if ($reading->is_paid) {
             return; // จ่ายแล้ว — ไม่แตะ
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ลูกค้า FB ทิ้งหน้าจ่ายบัตร: ห้ามจองยอด QR ไทยใหม่/คืนเมนูจ่ายเงิน
+        //   ปิดบิลเป็น moved_to_web (ไม่ส่งข้อความหาลูกค้า — ลูกค้าคุยต่อที่ห้องแม่หมอบนเว็บ)
+        if (FbBillingGuard::blocks($reading, null, null, 'restoreAfterCheckoutAbandoned')) {
+            FbBillingGuard::closeAsMovedToWeb($reading);
+
+            Log::info('FortuneStripeService: FB web-only — ปิดบิลที่ทิ้ง checkout เป็น moved_to_web (ไม่ reissue QR)', [
+                'reading_id' => $reading->id,
+                'trigger' => $trigger,
+            ]);
+
+            return;
         }
 
         $hasOpenBill = ! empty($reading->bill_reference) && ! $this->isMenuEnabled();

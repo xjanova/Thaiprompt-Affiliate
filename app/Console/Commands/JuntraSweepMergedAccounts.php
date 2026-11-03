@@ -34,6 +34,21 @@ class JuntraSweepMergedAccounts extends Command
                 }
             });
 
+        // 🔐 (รีวิว) ประวัติการรวมของแถวที่ถูกแทนที่ (บัญชีจันทราใหม่รับ Thaiprompt คนเดิม) — ยังต้องเก็บตกต่อ
+        if (\Illuminate\Support\Facades\Schema::hasTable('juntra_account_merge_aliases')) {
+            \Illuminate\Support\Facades\DB::table('juntra_account_merge_aliases')
+                ->where('merged_at', '>=', now()->subDays(max(1, (int) $this->option('days'))))
+                ->orderBy('id')
+                ->get()
+                ->each(function ($alias) use ($merger, &$moved) {
+                    try {
+                        $moved += $merger->sweepUsers((int) $alias->merged_from_user_id, (int) $alias->user_id) ? 1 : 0;
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                });
+        }
+
         $this->info("เก็บตก {$moved} บัญชี");
 
         return self::SUCCESS;

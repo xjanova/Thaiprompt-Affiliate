@@ -309,6 +309,8 @@ class FacebookLoginController extends Controller
                 if (! $user->facebook_psid && Schema::hasColumn('users', 'facebook_psid')) {
                     $user->update(['facebook_psid' => $psid]);
                 }
+                // PSID ที่ Graph ยืนยันแล้ว → ลงตาราง alias (เพจหลัก) ด้วย
+                $this->bindVerifiedPsid($user, $psid);
 
                 Log::info('Facebook OAuth: matched บัญชีที่บอทสมัครให้ ผ่าน ids_for_pages', [
                     'user_id' => $user->id,
@@ -320,9 +322,94 @@ class FacebookLoginController extends Controller
             }
         }
 
+        // 3.5 🔒 (2026-11-03 รีวิว) hint จาก Magic Link (wf_psid / wf_psid_weak) = "อ่อน" เท่านั้น
+        //    เดิมผูก ASID เข้าบัญชีของ PSID ใน session ถาวร — แต่เส้น /auth/facebook อยู่ใต้ guest
+        //    ลูกค้าที่ล็อกอินจากลิงก์แล้วจึงมาถึงตรงนี้ไม่ได้ เหลือแต่ลำดับ "เริ่ม OAuth ก่อน แล้วใช้ลิงก์ของคนอื่น"
+        //    ซึ่งคือการยึดบัญชี (FB ของคนถือ session ถูกผูกเข้าบัญชีเจ้าของลิงก์ตลอดไป)
+        //    ⇒ ไม่ผูกตัวตนจาก session แล้ว ใช้ hint แค่ "ไม่ต่อสายงานตอนสมัคร" ให้บิลแรกเป็นตัวตัดสินผู้แนะนำ
+        //    (ไม่ล็อกลูกค้า FB ใต้ผู้แนะนำเริ่มต้น — M5) · การผูกตัวตนข้าม PSID ต้องยืนยันผ่าน Graph (ขั้น 3) เท่านั้น
+        //    🔁 เฉพาะธง facebook_web_only เปิด — ธงปิด = ต่อสายงานตอนสมัครเสมอ (พฤติกรรมเดิม)
+        $hasWebFortuneHint = $this->fbWebOnlyOn() && $this->webFortuneHintPsid() !== null;
+
         // 4. สร้าง user ใหม่ + wallet + MLM (เก็บ PSID ด้วยถ้า map ได้
         //    — เผื่อลูกค้า login เว็บก่อนเคยคุยกับบอท ให้บอทหาบัญชีนี้เจอทีหลัง)
-        return $this->createNewUserFromFacebook($fbUser, $psid);
+        //    มี hint → ไม่ต่อสายงานตอนสมัคร
+        return $this->createNewUserFromFacebook($fbUser, $psid, ! $hasWebFortuneHint);
+    }
+
+    /**
+     * PSID ที่ gateway/หน้า expired ฝากไว้ใน session (เฉพาะ FB · ตัวเลขล้วน) — null = ไม่มี hint
+     *
+     * ใช้เป็นสัญญาณ "อ่อน" เท่านั้น (ไม่ต่อสายงานตอนสมัคร) — ห้ามใช้ผูกตัวตน
+     */
+    protected function webFortuneHintPsid(): ?string
+    {
+        // ธงปิด = ไม่มี hint (session ที่ค้างจากตอนธงเปิดก็ไม่นับ)
+        if (! $this->fbWebOnlyOn()) {
+            return null;
+        }
+
+        foreach (['wf_psid', 'wf_psid_weak'] as $key) {
+            try {
+                $psid = Session::get($key);
+            } catch (\Throwable) {
+                continue;
+            }
+            if (is_string($psid) && $psid !== '' && ctype_digit($psid)) {
+                return $psid;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🌐 ธง facebook_web_only เปิดอยู่ไหม (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     *
+     * ธงปิด = ล็อกอิน Facebook ทำงานเหมือนก่อนมีโหมด FB web-only ทุกประการ
+     */
+    protected function fbWebOnlyOn(): bool
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode)->fbWebOnly();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 🪪 ผูก PSID ที่ Graph (ids_for_pages) ยืนยันแล้วว่าเป็นของ ASID นี้ ลงตาราง alias ของ user
+     *
+     * ids_for_pages ใช้กับเพจหลักเท่านั้น → ใส่ fortune_page_id ของเพจหลัก (is_default)
+     * bind ไม่ย้ายเจ้าของเด็ดขาด (PSID ของคนอื่น = คืน false เฉย ๆ)
+     */
+    protected function bindVerifiedPsid(User $user, string $psid): bool
+    {
+        // 🔁 ตาราง alias เขียนเฉพาะตอนธง facebook_web_only เปิด — ธงปิด = ไม่แตะ (พฤติกรรมเดิม)
+        if (! $this->fbWebOnlyOn()) {
+            return false;
+        }
+
+        try {
+            $pageId = null;
+            if (Schema::hasTable('fortune_pages')) {
+                $pageId = \App\Models\FortunePage::query()->where('is_default', true)->value('id');
+            }
+
+            return \App\Models\FortuneMessengerPsid::bind(
+                (int) $user->id,
+                $psid,
+                $pageId !== null ? (int) $pageId : null,
+                'oauth_hint'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Facebook OAuth: ผูก PSID ที่ยืนยันแล้วลงตาราง alias ไม่สำเร็จ', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
@@ -442,7 +529,17 @@ class FacebookLoginController extends Controller
     protected function reconcileMissingPsid(User $user, string $appScopedId): void
     {
         try {
-            if ($user->facebook_psid || ! Schema::hasColumn('users', 'facebook_psid')) {
+            // 🔐 (รีวิว) ธงเปิด: ทำต่อแม้คอลัมน์มี PSID แล้ว — บัญชีที่เกิดจากลิงก์เพจสาขามี PSID สาขาในคอลัมน์
+            //    แต่ PSID เพจหลักของคนเดียวกัน (Graph ยืนยัน) ต้องลงตาราง alias ด้วย ไม่งั้นลิงก์จากเพจหลัก
+            //    ครั้งหน้าจะได้บัญชีใบที่สอง · จำผลไว้ 7 วันกันยิง Graph ทุกครั้งที่ล็อกอิน
+            // 🔁 ธง facebook_web_only ปิด = พฤติกรรมเดิม: มี PSID ในคอลัมน์แล้ว (หรือไม่มีคอลัมน์) → ข้าม
+            $webOnly = $this->fbWebOnlyOn();
+            $doneKey = 'fb_oauth:psid_reconciled:'.$user->id.':'.$appScopedId;
+            if (! $webOnly) {
+                if ($user->facebook_psid || ! Schema::hasColumn('users', 'facebook_psid')) {
+                    return;
+                }
+            } elseif (Cache::has($doneKey)) {
                 return;
             }
 
@@ -458,17 +555,26 @@ class FacebookLoginController extends Controller
                     'bot_user_id' => $botUser->id,
                     'psid' => $psid,
                 ]);
+                if ($webOnly) {
+                    Cache::put($doneKey, true, now()->addDays(7));
+                }
 
                 return;
             }
 
-            $user->update(['facebook_psid' => $psid]);
+            if (! $user->facebook_psid && Schema::hasColumn('users', 'facebook_psid')) {
+                $user->update(['facebook_psid' => $psid]);
+            }
+            if ($webOnly) {
+                $this->bindVerifiedPsid($user, $psid);
+                Cache::put($doneKey, true, now()->addDays(7));
+            }
 
-            Log::info('Facebook OAuth: เติม PSID ให้บัญชีที่ link แล้ว', [
+            Log::info('Facebook OAuth: เติม PSID (ยืนยันผ่าน Graph) ให้บัญชีที่ link แล้ว', [
                 'user_id' => $user->id,
                 'psid' => $psid,
             ]);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::warning('Facebook OAuth: reconcile PSID ล้มเหลว (ไม่กระทบ login)', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
@@ -525,7 +631,7 @@ class FacebookLoginController extends Controller
      * ใช้ FortuneAffiliateService::ensureWalletExists pattern
      * ผูก sponsor เป็น Super Admin (user_id=1) เป็น default
      */
-    protected function createNewUserFromFacebook($fbUser, ?string $psid = null): User
+    protected function createNewUserFromFacebook($fbUser, ?string $psid = null, bool $enrolMlm = true): User
     {
         // ไม่มีอีเมลจริงจาก FB → placeholder ใช้ prefix "fboauth_" แยก namespace
         // จากของบอท (fb_{PSID}@) — ข้างในนี้เป็น ASID คนละ ID space กับ PSID
@@ -538,7 +644,7 @@ class FacebookLoginController extends Controller
             ? $providerEmail
             : 'fboauth_'.$fbUser->getId().'@thaiprompt.local';
 
-        return DB::transaction(function () use ($fbUser, $email, $psid) {
+        return DB::transaction(function () use ($fbUser, $email, $psid, $enrolMlm) {
             $userData = [
                 'name' => $fbUser->getName() ?: 'Facebook User',
                 'email' => $email,
@@ -568,17 +674,25 @@ class FacebookLoginController extends Controller
             );
 
             // สร้าง MlmMember ผ่าน FortuneAffiliateService (มี logic ผูก sponsor + binary)
-            try {
-                $affiliateService = app(FortuneAffiliateService::class);
-                // ใช้ reflection เรียก protected method (หรือเปิด method เป็น public ในอนาคต)
-                $createMethod = new \ReflectionMethod($affiliateService, 'createMlmMember');
-                $createMethod->setAccessible(true);
-                $createMethod->invoke($affiliateService, $user, $fbUser->getId());
-            } catch (Exception $mlmErr) {
-                Log::warning('Facebook OAuth: createMlmMember failed (non-blocking)', [
+            // 🪪 (2026-11-03) มาจาก Magic Link (มี wf_psid) แต่ผูกบัญชีเดิมไม่ได้ → ไม่ต่อสายงานตอนนี้
+            //    สายงานต่อแล้วย้ายไม่ได้ — ให้บิลแรกเป็นตัวตัดสินผู้แนะนำ (M5) · กรณีอื่นคงพฤติกรรมเดิม
+            if (! $enrolMlm) {
+                Log::info('Facebook OAuth: ข้ามการต่อสายงานตอนสมัคร (มี hint จาก Magic Link)', [
                     'user_id' => $user->id,
-                    'error' => $mlmErr->getMessage(),
                 ]);
+            } else {
+                try {
+                    $affiliateService = app(FortuneAffiliateService::class);
+                    // ใช้ reflection เรียก protected method (หรือเปิด method เป็น public ในอนาคต)
+                    $createMethod = new \ReflectionMethod($affiliateService, 'createMlmMember');
+                    $createMethod->setAccessible(true);
+                    $createMethod->invoke($affiliateService, $user, $fbUser->getId());
+                } catch (Exception $mlmErr) {
+                    Log::warning('Facebook OAuth: createMlmMember failed (non-blocking)', [
+                        'user_id' => $user->id,
+                        'error' => $mlmErr->getMessage(),
+                    ]);
+                }
             }
 
             Log::info('Facebook OAuth: new user created', [

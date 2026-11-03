@@ -346,6 +346,13 @@ PROMPT;
                     continue;
                 }
 
+                // 🌐 (2026-11-03) FB web-only — ห้ามยิงแคมเปญเข้า Messenger (LINE ส่งตามเดิม)
+                if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($platform, $uid, null, 'marketing_campaign')) {
+                    $skipped++;
+
+                    continue;
+                }
+
                 // 🔕 (2026-09-01) เคารพ opt-out — คนกด "ไม่ต้องส่งอีก" ห้ามโดนแคมเปญ
                 //   (เลน DM อื่นทุกเลนเช็คด่านนี้อยู่แล้ว เลนแคมเปญเคยหลุด)
                 if (! \App\Models\FortuneUserCredit::canReceiveOutbound($uid, $platform)) {

@@ -564,6 +564,22 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🌐 (2026-11-03) FB web-only — ref แคมเปญ (MONTHLY_CLAIM ฯลฯ) ห้ามจบที่ 'ทำนายฟรี' ในแชท
+            //    → ไม่ claim สิทธิ์ ไม่เปิดไพ่ ส่งกล่องห้องแม่หมอแทน
+            //    มากับ postback/ข้อความ (เช่น GET_STARTED) = ด่านปุ่ม/ข้อความส่งกล่องไปแล้ว → ไม่ส่งซ้ำ
+            if ($this->isFbWebOnlyCustomer($senderId)) {
+                if (! isset($messaging['postback']) && ! isset($messaging['message'])) {
+                    $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'referral:'.mb_substr($ref, 0, 40));
+                }
+
+                Log::info('🌐 FB web-only: referral → ห้องแม่หมอ (ไม่ claim ไม่ทำนายในแชท)', [
+                    'sender_id' => $senderId,
+                    'ref' => $ref,
+                ]);
+
+                return;
+            }
+
             $claimService = app(FortuneMonthlyClaimService::class);
             $monthKey = $claimService->parseRefForCurrentMonth($ref);
 
@@ -694,6 +710,14 @@ class FacebookWebhookController extends Controller
         if (! $event->inbound_at || $event->inbound_at->lte(now()->subHours(24))
             || $event->inbound_at->gt(now()->addMinutes(5))) {
             return false;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ห้ามชวน "บอกวันเกิด" ในแชท (คือการเริ่มดูดวงบน FB) → ห้องแม่หมอ
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'story_welcome');
+            $event->update(['welcomed_at' => now()]);
+
+            return true;
         }
 
         if (! $this->facebookService->sendMessage($senderId,
@@ -923,6 +947,16 @@ class FacebookWebhookController extends Controller
      */
     protected function dailyModeDmOverride(string $userId, string $name): ?array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามชวนบอกวันเกิด/รับดวงฟรีในแชท
+        //    ปุ่มเป็นชุดห้องแม่หมอ [เข้าห้องแม่หมอ][พัก 7 วัน][ไม่ต้องส่งอีก] ข้อความคงของผู้เรียก (ชุด web)
+        //    (ผู้เรียกทั้ง 2 จุดแยกเส้น web-only ออกไปก่อนแล้ว — ตรงนี้คือกันพลาดชั้นที่สอง)
+        if ($this->isFbWebOnlyCustomer($userId)) {
+            return [
+                'message' => null,
+                'quick_replies' => \App\Services\Fortune\WebHandoffCopy::inviteQuickReplies(),
+            ];
+        }
+
         try {
             // ⏰ ยังไม่มีบทความของวันนี้ (ก่อน 06:00 / job พัง) → DM กลับไปแบบ classic
             //    ชวน "บอกวันเกิดรับดวงฟรี" ตอนที่ยังไม่มีของ = สัญญาแล้วส่งไม่ได้
@@ -1316,6 +1350,15 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🌐 (2026-11-03) FB web-only — DM ชวนเข้าห้องแม่หมอเท่านั้น
+            //    ไม่มีกล่องดวงรายวัน ไม่มีแบนเนอร์ (อาจมีราคา) ไม่ตั้งธงรอวันเกิด
+            if ($this->isFbWebOnlyCustomer($userId)) {
+                $reaction->dm_success = $this->sendFbWebOnlyReactionInvite($userId, $userName);
+                $reaction->save();
+
+                return;
+            }
+
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
             $message = $greetingService->buildDailyHoroscopeGreeting($userId, $userName ?? 'คุณ');
 
@@ -1555,6 +1598,19 @@ class FacebookWebhookController extends Controller
         if (empty($questions)) {
             // ไม่ใช่คำสั่งดูดวง → ลอง engage ชวนดูดวง
             $this->handleCommentEngagement($comment);
+
+            return;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — คอมเมนต์ "ดูดวง ..." ห้าม dispatch ProcessFortuneTelling
+        //    (ทำนายใต้คอมเมนต์/ใน inbox = ดูดวงบน FB) → Private Reply ชวนเข้าห้องแม่หมอแทน
+        //    ข้ามคอมเมนต์ที่ถูกลบ (verb=remove) และคอมเมนต์ของเพจเอง
+        if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+            if (! empty($commentId)
+                && ($comment['verb'] ?? 'add') !== 'remove'
+                && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+                $this->sendFbWebOnlyCommentEngagement($comment, true, $this->commentReplyAllowedForCurrentPage(), true);
+            }
 
             return;
         }
@@ -2166,6 +2222,14 @@ class FacebookWebhookController extends Controller
             // → ชวนเข้าร่วม affiliate (ได้ค่าชวน 10 บาท/คน) + 2 ปุ่ม อยาก/ไม่อยาก
             //    ⚠️ เส้นนี้เป็น DM ล้วน — DM ติด cooldown เมื่อไหร่ต้องข้าม ไม่งั้นสิทธิ์
             //       "ตอบคอมเมนต์อย่างเดียว" จะกลายเป็นช่องยิง DM ชวน affiliate ทะลุ cooldown
+            // 🌐 (2026-11-03) FB web-only — ปิดเส้นชวน affiliate ('ค่าชวน 10 บาท', 'เรื่องเงินมาถูกทาง')
+            //    และไม่ใช้ AI เขียน DM (อาจพูดราคา) → ข้อความชวนชุด web + ตอบใต้คอมเมนต์แบบกลาง
+            if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+                $this->sendFbWebOnlyCommentEngagement($comment, $allowDm, $allowPublicReply);
+
+                return;
+            }
+
             if ($allowDm && $this->isMoneyRelatedComment($message)) {
                 Log::info('💰 Comment Engagement: detected money keyword → affiliate pitch', [
                     'user_id' => $fromId,
@@ -2234,6 +2298,13 @@ class FacebookWebhookController extends Controller
         $postId = $comment['post_id'];
         $commentText = $comment['message'] ?? '';
         $fromName = $comment['from']['name'] ?? 'คุณ';
+
+        // 🌐 (2026-11-03) FB web-only — ใช้ชุดชวนเข้าห้องแม่หมอ (กันพลาด: ผู้เรียกแยกเส้นไปก่อนแล้ว)
+        if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+            $this->sendFbWebOnlyCommentEngagement($comment, $allowDm, $allowPublicReply);
+
+            return;
+        }
 
         // 🚫 (2026-07-31) ห้าม DM ขายซ้ำลูกค้าที่เพิ่งดูดวงแบบจ่ายเงิน
         //   ⚠️ เส้นทางนี้ (โหมด template / queue=sync fallback) **ไม่เคยมีด่านนี้เลย**
@@ -2526,6 +2597,13 @@ class FacebookWebhookController extends Controller
         $postId = $comment['post_id'];
         $commentText = $comment['message'] ?? '';
         $fromName = $comment['from']['name'] ?? 'คุณ';
+
+        // 🌐 (2026-11-03) FB web-only — ห้ามชวน affiliate ('ค่าชวน', 'เรื่องเงินมาถูกทาง') → ชุดห้องแม่หมอ
+        if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+            $this->sendFbWebOnlyCommentEngagement($comment, true, $this->commentReplyAllowedForCurrentPage());
+
+            return;
+        }
 
         // ดึง user profile (fallback ใช้ชื่อจาก comment payload)
         $userProfile = $this->facebookService->getUserProfile($fromId);
@@ -3482,6 +3560,15 @@ class FacebookWebhookController extends Controller
                 }
             }
 
+            // 🌐 (2026-11-03) FB web-only — ด่านรูปภาพ (design 1.4)
+            //    ระดับ A (ของจ่ายแล้วกำลังส่ง) → เดินโฟลเดิมด้านล่าง
+            //    ระดับ B (บิลค้างก่อนสลับธง) → ตรวจสลิปของบิลเดิม ตอบสั้น ไม่ออกบิลใหม่
+            //    ระดับ C → ห้ามเรียก SlipOK: คล้ายสลิป = เก็บหลักฐาน+แจ้งแอดมิน / รูปอื่น = กล่องห้องแม่หมอ
+            //    ⚠️ อยู่หลังด่านสแปมรูป (คนยิงรูปรัวยังโดนเงียบ) และก่อน classifier/slip/returning-slip ทุกเส้น
+            if ($userImageUrl && $this->fbWebOnlyImageGate($senderId, $userImageUrl)) {
+                return;
+            }
+
             // 🆕 (2026-05-20 Phase 3b.5) Classify image intent ก่อน routing
             // ⚠️ (2026-05-24) Gate classify ที่ $hasActiveFortune เท่านั้น
             //    User spec: "ห้ามใช้ image_vision กับระบบ chat ทั่วไป เพราะมันเปลืองโควต้า"
@@ -3903,6 +3990,23 @@ class FacebookWebhookController extends Controller
     protected function handleSlipImageOnly(string $senderId, ?string $imageUrl = null, bool $hasSticker = false): void
     {
         try {
+            // 🌐 (2026-11-03) FB web-only — แยกระดับก่อนทุกอย่าง (design 1.4)
+            //    A = ของจ่ายแล้วกำลังส่ง → เดินเส้นเดิมทั้งหมดด้านล่าง
+            //    B = บิลค้างจ่ายก่อนสลับธง → ตรวจสลิปของบิลเดิม (ห้ามออก QR/บิลใหม่/revive)
+            //    C = อื่น ๆ → ห้ามเรียก SlipOK / returning-slip (ทางนั้นกู้บิลเก่า = ออกบิลบน FB)
+            $webOnlyTier = $this->fbWebOnlyTier($senderId);
+            if ($webOnlyTier !== null && $webOnlyTier !== self::FB_WEB_ONLY_TIER_PAID) {
+                if (empty($imageUrl) || $hasSticker) {
+                    $this->sendFbWebOnlyImageBox($senderId, 'sticker_web_only');
+                } elseif ($webOnlyTier === self::FB_WEB_ONLY_TIER_PENDING) {
+                    $this->handleFbWebOnlySlipTierB($senderId, $imageUrl);
+                } else {
+                    $this->handleFbWebOnlyImageTierC($senderId, $imageUrl);
+                }
+
+                return;
+            }
+
             // หา reading ที่ user กำลังใช้งานอยู่
             //   🔮 (2026-05-04) ครอบคลุม Celtic active states ด้วย — กันลูกค้าส่งสลิประหว่างเปิดไพ่
             //   แล้วโดนข้อความ "แม่หมอกำลังคำนวณ" ที่ผิดความจริง (ที่จริงต้องเปิดไพ่ต่อ)
@@ -4302,6 +4406,11 @@ class FacebookWebhookController extends Controller
 
     protected function offerProductsOnGesture(string $senderId, string $gestureType): bool
     {
+        // 🌐 (2026-11-03) FB web-only — การ์ดสินค้ามีราคา/ปุ่มซื้อ = ขายในแชท FB → ไม่ยื่น
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            return false;
+        }
+
         try {
             return app(\App\Services\Fortune\FortuneMuOfferService::class)->send(
                 'facebook',
@@ -4536,6 +4645,13 @@ class FacebookWebhookController extends Controller
         }
         \Illuminate\Support\Facades\Cache::put($throttleKey, true, now()->addHours(6));
 
+        // 🌐 (2026-11-03) FB web-only — ทักกลับด้วยกล่องห้องแม่หมอ (เดิมเป็นปุ่ม "ดูดวงเลย" ในแชท)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'gesture_'.$gestureType);
+
+            return true;
+        }
+
         try {
             // 👋 (2026-09-27) ลูกค้าส่งสติกเกอร์/อีโมจิมาทัก → แม่หมอโบกมือกลับเป็นสติกเกอร์ก่อนคำทักทาย
             //    ส่ง "ก่อน" กล่องปุ่ม — ปุ่มต้องอยู่กล่องสุดท้าย (quick reply หายเมื่อมีข้อความตามหลัง)
@@ -4613,6 +4729,14 @@ class FacebookWebhookController extends Controller
      */
     protected function sendFacebookAffiliateInvite(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ข้อความเดิมพูด "บิล/กระเป๋าเงิน/สายงาน" และพาไป /auth/facebook
+        //    (ตัวตนแตกเป็นหลายบัญชี) → พาเข้าห้องแม่หมอ (สมัครอัตโนมัติด้วยตัวตน FB เดียวกัน)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'affiliate_interest');
+
+            return;
+        }
+
         // กันส่งซ้ำถี่ — 6 ชม. ต่อ user
         $cacheKey = "fortune:fb_affiliate_invite:{$senderId}";
         if (Cache::has($cacheKey)) {
@@ -4901,6 +5025,13 @@ class FacebookWebhookController extends Controller
         //   sendTypingIndicator(on/off) ยิงหลังจากนี้ ⇒ เบรกที่หัวประหยัด Graph call
         //   2 ครั้งต่อการกด 1 ครั้ง (กด 10 ครั้ง = ประหยัด 20 call เปล่า)
         if ($this->buttonBlockedByFlood($senderId, $payload)) {
+            return;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — whitelist ปุ่มที่หัวเส้น postback
+        //    ปุ่มที่ไม่อยู่ใน whitelist (รวมปุ่มเก่าในประวัติแชท) → กล่องพาไปห้องแม่หมอ
+        //    ⚠️ ทำงานเฉพาะลูกค้า FB และธงเปิดเท่านั้น — ธงปิด = พฤติกรรมเดิมทุกปุ่ม
+        if ($this->fbWebOnlyButtonGate($senderId, (string) $payload)) {
             return;
         }
 
@@ -5234,6 +5365,23 @@ class FacebookWebhookController extends Controller
             ."📍 https://xman4289.com\n\n"
             .'💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio';
 
+        // 🌐 (2026-11-03) FB web-only — เวอร์ชันไม่มีราคา: ปุ่มดูดวง/VIP 99/ชวนเพื่อน → "เข้าห้องแม่หมอ"
+        //    (postback WEB_ROOM — ลิงก์ต่อคนออกตอนกด ใส่ URL ต่อคนในปุ่มนี้ไม่ได้)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendButtons($senderId, $message, [
+                ['type' => 'web_url', 'title' => '🌐 เยี่ยมชม xman studio', 'url' => 'https://xman4289.com'],
+                [
+                    'type' => 'postback',
+                    'title' => \App\Services\Fortune\WebHandoffCopy::LABEL_WEB_ROOM,
+                    'payload' => \App\Services\Fortune\WebHandoffCopy::PAYLOAD_WEB_ROOM,
+                ],
+            ]);
+
+            Log::info('🔍 About Us shown (web-only)', ['user_id' => $senderId]);
+
+            return;
+        }
+
         // 🌙 (2026-05-23) Deep ปิด → swap ปุ่ม Deep เป็น Celtic ถ้าเปิด ไม่งั้นซ่อน
         $deepEnabledAu = $this->settings->isDeepReadingEnabled();
         $celticEnabledAu = (bool) ($this->settings->enable_celtic_cross ?? false);
@@ -5260,6 +5408,13 @@ class FacebookWebhookController extends Controller
      */
     protected function handleRegisterMenu(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามส่ง /auth/facebook (ตัวตนแตกหลายบัญชี) → ห้องแม่หมอสมัครให้เอง
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'menu_register');
+
+            return;
+        }
+
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
         $registerUrl = $appUrl.'/auth/facebook';
 
@@ -5296,6 +5451,13 @@ class FacebookWebhookController extends Controller
      */
     protected function handleReferralMenu(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ข้อความเดิมมีราคา/ค่าแนะนำ/ถอนเงิน → ห้องแม่หมอ (ลิงก์ชวนอยู่บนเว็บ)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'menu_referral');
+
+            return;
+        }
+
         // ตรวจ membership: มี FortuneReading ที่ is_paid=true หรือไม่
         $isMember = FortuneReading::where('facebook_user_id', $senderId)
             ->where('is_paid', true)
@@ -5401,6 +5563,16 @@ class FacebookWebhookController extends Controller
      */
     protected function handleGetStarted(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ต้อนรับด้วยกล่องห้องแม่หมอทันที (แตะเดียว)
+        //    ไม่มีแบนเนอร์ (อาจมีราคา) / ไม่มีข้อความ 'พิมพ์ ดูดวง'
+        //    ปกติด่านปุ่ม (fbWebOnlyButtonGate) รับ GET_STARTED ไปก่อนแล้ว — ตรงนี้กันพลาดชั้นที่สอง
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            Cache::forget("fb_user_unreachable:{$senderId}:".now()->format('Y-m-d'));
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'get_started');
+
+            return;
+        }
+
         try {
             // ส่ง typing indicator
             $this->facebookService->sendTypingIndicator($senderId);
@@ -5962,6 +6134,16 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ห้ามทำนายบน FB ทุกเส้น (กันพลาดชั้นสุดท้ายก่อน dispatch)
+        if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+            Log::warning('🌐 FB web-only: processFortuneTelling ถูกเรียกใต้ web-only → ไม่ dispatch', [
+                'facebook_user_id' => $fromId,
+                'is_comment' => $isComment,
+            ]);
+
+            return;
+        }
+
         // เตรียมข้อมูลสำหรับ job
         $jobData = [
             'facebook_user_id' => $fromId,
@@ -6153,6 +6335,744 @@ class FacebookWebhookController extends Controller
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // 🌐 (2026-11-03) FB web-only — whitelist ปุ่ม (postback + quick reply)
+    // ═══════════════════════════════════════════════════════════════
+    //   เจ้าของสั่ง: FB แบนเพจที่มีสลิปในแชท ⇒ ห้ามดูดวง/ห้ามรับเงินใน Messenger
+    //   ทุกปุ่มที่ไม่อยู่ใน whitelist (รวมปุ่มเก่าในประวัติแชท + default passthrough)
+    //   ต้องได้ "กล่องพาไปห้องแม่หมอ" เท่านั้น — ไม่มีทางถอยกลับไปออกบิล
+    //   ธงปิด / ลูกค้า LINE = ไม่แตะอะไรเลย
+
+    /**
+     * ปุ่มที่กดได้เสมอใต้ web-only (ไม่เกี่ยวกับเงิน/การทำนาย — design 1.2 ข้อ 5)
+     *
+     * ⚠️ MENU_ABOUT_US / ICEBREAKER_ABOUT พึ่ง T7 ให้ handleAboutUs เป็นเวอร์ชันไม่มีราคา
+     */
+    protected const FB_WEB_ONLY_ALWAYS_ALLOWED = [
+        'INVITE_SNOOZE_7D', 'INVITE_OPTOUT',
+        'LANG_PICKER', 'LANG_TH', 'LANG_LO',
+        'FOLLOW_CONFIRMED',
+        'MENU_ABOUT_US', 'ICEBREAKER_ABOUT',
+    ];
+
+    /**
+     * ปุ่มของโฟลที่ "จ่ายเงินแล้ว" — กดได้เฉพาะลูกค้าที่มีของจ่ายแล้วกำลังส่ง (ระดับ A)
+     *
+     * ลูกค้าที่จ่ายแล้วต้องได้ของจนจบบน FB (เจ้าของสั่ง) — ปุ่มพวกนี้ไม่สร้างบิล
+     * ไม่มีของจ่ายแล้ว = ปุ่มเก่าในประวัติแชท → กล่องห้องแม่หมอ
+     */
+    protected const FB_WEB_ONLY_PAID_FLOW_PAYLOADS = [
+        'CELTIC_READY', 'CELTIC_RESET', 'CELTIC_CONTINUE',
+        'CELTIC_SUGGQ_1', 'CELTIC_SUGGQ_2',
+        'CELTIC_END_ASK', 'CELTIC_END_YES', 'CELTIC_END_NO', 'CELTIC_DONE',
+        'CELTIC_VIEW_LIST',
+        'CELTIC_VIEW_Q1', 'CELTIC_VIEW_Q2', 'CELTIC_VIEW_Q3', 'CELTIC_VIEW_Q4', 'CELTIC_VIEW_Q5',
+        'CELTIC_VIEW_Q6', 'CELTIC_VIEW_Q7', 'CELTIC_VIEW_Q8', 'CELTIC_VIEW_Q9', 'CELTIC_VIEW_Q10',
+        'CELTIC_PREDICT_NOW', 'CELTIC_START_Q',
+        'READ_PREDICTION', 'VIEW_READING', 'VIEW_LAST_READING', 'VIEW_LATER',
+        'BIRTHDATE_CONFIRM_YES', 'BIRTHDATE_CONFIRM_NO',
+        'QUESTION_CONFIRM_YES', 'QUESTION_CONFIRM_NO',
+        'QUESTION_LOVE', 'QUESTION_WORK', 'QUESTION_MONEY', 'QUESTION_HEALTH', 'QUESTION_CUSTOM',
+        'CHECK_STATUS',
+    ];
+
+    /**
+     * ปุ่มที่พาไปเรื่องราคา/จ่ายเงิน → ใช้ข้อความชนิด price ("รายละเอียดแพ็กเกจอยู่ในห้อง")
+     */
+    protected const FB_WEB_ONLY_PRICE_PAYLOADS = [
+        'SHOW_BANK_ACCOUNT', 'REPORT_PAYMENT', 'FOREIGN_CONFIRM_PAY', 'CANCEL_HELP_TRANSFER',
+        'DAILY_VIP_PACKAGES', 'SUBSCRIBE', 'AFFILIATE_RECRUIT_YES',
+        'DELIVERY_CONFIRM_YES', 'DELIVERY_CONFIRM_NO', 'PAY_LATER_ACK_YES', 'PAY_LATER_ACK_NO',
+        'CARD_CONFIRM_YES', 'CARD_CONFIRM_NO',
+    ];
+
+    /** prefix ของปุ่มราคา/จ่ายเงิน */
+    protected const FB_WEB_ONLY_PRICE_PREFIXES = ['TIER_', 'PAY_METHOD_', 'STRIPE_'];
+
+    /**
+     * 🌐 ลูกค้า FB คนนี้อยู่ใต้ web-only ไหม (ใช้ FortuneBotMode::fbWebOnlyFor จุดเดียว)
+     *
+     * fail-closed: เช็คพัง → true (controller นี้รับเฉพาะ FB อยู่แล้ว — ห้ามปล่อยไปออกบิล)
+     * id ที่ไม่ใช่ FB (LINE/tg) → fbWebOnlyFor คืน false เสมอ
+     */
+    protected function isFbWebOnlyCustomer(string $senderId): bool
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode)->fbWebOnlyFor('facebook', $senderId);
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: เช็คธงที่ webhook พัง — ถือว่าเปิด (fail-closed)', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * 🌐 ด่าน whitelist ปุ่มใต้ FB web-only — เรียกที่หัว processPostback / handleQuickReply
+     *
+     * @param  string  $senderId  PSID ของลูกค้า
+     * @param  string  $payload  payload ของปุ่ม (postback / quick reply / ป้ายปุ่มที่พิมพ์เอง)
+     * @return bool true = จัดการแล้ว (ส่งกล่องห้องแม่หมอ) ให้ caller return ทันที
+     *              false = ปล่อยไปตาม handler เดิม (ธงปิด / ปุ่มใน whitelist)
+     */
+    protected function fbWebOnlyButtonGate(string $senderId, string $payload): bool
+    {
+        if (! $this->isFbWebOnlyCustomer($senderId)) {
+            return false;
+        }
+
+        $kind = $this->fbWebOnlyButtonKind($senderId, $payload);
+        if ($kind === null) {
+            return false;
+        }
+
+        Log::info('🌐 FB web-only: ปุ่มนอก whitelist → กล่องห้องแม่หมอ', [
+            'user_id' => $senderId,
+            'payload' => mb_substr($payload, 0, 60),
+            'kind' => $kind,
+        ]);
+
+        $this->sendFbWebHandoff($senderId, $kind, 'button:'.$payload);
+
+        return true;
+    }
+
+    /**
+     * 🌐 ตัดสินปุ่มหนึ่งใบใต้ web-only
+     *
+     * @return string|null null = ปล่อยผ่าน (whitelist) / ชนิดข้อความของ WebHandoffCopy = ส่งกล่อง
+     */
+    protected function fbWebOnlyButtonKind(string $senderId, string $payload): ?string
+    {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+
+        // ปุ่มห้องแม่หมอ / ทางเดิมที่ "พาไปเว็บ" → ห้องแม่หมอ
+        if ($payload === $copy::PAYLOAD_WEB_ROOM_HOWTO) {
+            return $copy::KIND_HOWTO;
+        }
+        if (in_array($payload, [$copy::PAYLOAD_WEB_ROOM, 'INVITE_FREE_WEB', 'TRANSFER_GO', 'TRANSFER_GO_LINE', 'GET_STARTED', 'get_started'], true)) {
+            return $copy::KIND_ROOM;
+        }
+
+        // ทางถอย "ทำไม่เป็น / ขอดูในแชทนี้" → ข้อความช่วยเข้าห้อง (ไม่มีทางถอยแล้ว)
+        if (str_starts_with($payload, 'TRANSFER_STAY')) {
+            return $copy::KIND_CANNOT;
+        }
+        if (str_starts_with($payload, 'TRANSFER_')) {
+            return $copy::KIND_ROOM;
+        }
+
+        if (in_array($payload, self::FB_WEB_ONLY_ALWAYS_ALLOWED, true)) {
+            return null;
+        }
+
+        if (in_array($payload, self::FB_WEB_ONLY_PAID_FLOW_PAYLOADS, true)) {
+            try {
+                if ((new \App\Services\Fortune\FortuneBotMode)->fbLegacyPaidInFlight($senderId)) {
+                    return null;
+                }
+            } catch (\Throwable $e) {
+                // fail-closed: เช็คไม่ได้ = ไม่ใช่ legacy → ห้องแม่หมอ
+                Log::critical('🌐 FB web-only: เช็ค legacy-paid ที่ปุ่มพัง → ห้องแม่หมอ', [
+                    'user_id' => $senderId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return $copy::KIND_READING;
+        }
+
+        if (in_array($payload, self::FB_WEB_ONLY_PRICE_PAYLOADS, true)) {
+            return $copy::KIND_PRICE;
+        }
+        foreach (self::FB_WEB_ONLY_PRICE_PREFIXES as $prefix) {
+            if (str_starts_with($payload, $prefix)) {
+                return $copy::KIND_PRICE;
+            }
+        }
+
+        // 🔐 (รีวิว) payload ที่เป็น "ข้อความพิมพ์" (ภาษาไทย/มีช่องว่าง เช่นชิป PDPA "ยืนยันลบข้อมูลถาวร")
+        //    ไม่ใช่รหัสปุ่ม → ปล่อยให้ handler เดิมจัดการเป็นข้อความ (ไปเจอด่าน web-only ใน processMessage ต่อ)
+        //    เดิมกลืนเป็นกล่องห้องแม่หมอ = ลูกค้าใช้สิทธิ์ PDPA บน FB ไม่ได้ (design 1.2 ข้อ 5)
+        //    รหัสปุ่มราคา/จ่ายเงินถูกตัดสินไปแล้วข้างบน — ทางนี้ไม่เปิดช่องขาย
+        if (preg_match('/^[\x21-\x7E]+$/', $payload) !== 1) {
+            return null;
+        }
+
+        // ที่เหลือทั้งหมด (MENU_*, DAILY_*, FORTUNE_*, CANCEL_*, default passthrough ...) → ห้องแม่หมอ
+        return $copy::KIND_READING;
+    }
+
+    /**
+     * 🌐 ส่งกล่องห้องแม่หมอ (sendWebHandoff ของ T3) — ไม่มีทางถอยไปออกบิลเด็ดขาด
+     *
+     * sendWebHandoff ส่งเอง (deliver=true) และ fail-closed ในตัวอยู่แล้ว
+     * ชั้นนี้กันเคส conversationService ไม่พร้อม/throw → ส่งข้อความ fail-closed + ปุ่ม WEB_ROOM
+     */
+    protected function sendFbWebHandoff(string $senderId, string $kind, string $source): void
+    {
+        try {
+            $result = $this->conversationService?->sendWebHandoff($senderId, null, [
+                'kind' => $kind,
+                'source' => mb_substr($source, 0, 60),
+                'deliver' => true,
+                'sender' => $this->facebookService,
+            ]);
+
+            if (is_array($result)) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: sendWebHandoff พังที่ webhook → ส่งข้อความ fail-closed', [
+                'user_id' => $senderId,
+                'source' => $source,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $this->facebookService->sendButtonTemplate($senderId, [
+                'text' => \App\Services\Fortune\WebHandoffCopy::FAIL_CLOSED,
+                'quick_replies' => \App\Services\Fortune\WebHandoffCopy::webRoomQuickReply(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: ส่งข้อความ fail-closed ไม่สำเร็จ', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // ============================================================
+    // 🌐 (2026-11-03) T7 — รูป/สลิป · คอมเมนต์ · DM ชวน · เมนู ใต้ FB web-only
+    //   ทุกเมธอดชุดนี้ทำงานเฉพาะเมื่อ isFbWebOnlyCustomer() = true (ธงเปิด + id เป็น FB)
+    //   LINE / ธงปิด = ไม่แตะ (ผู้เรียกเช็คก่อนเสมอ)
+    // ============================================================
+
+    /** ระดับ A — มีของที่จ่ายแล้วกำลังส่ง (ทำงานเหมือนเดิมทั้งหมด) */
+    protected const FB_WEB_ONLY_TIER_PAID = 'A';
+
+    /** ระดับ B — มีบิลค้างจ่ายก่อนสลับธง (รับสลิปของบิลเดิม ห้ามออกบิล/QR ใหม่) */
+    protected const FB_WEB_ONLY_TIER_PENDING = 'B';
+
+    /** ระดับ C — อื่น ๆ ทั้งหมด (ไม่เรียก SlipOK เก็บหลักฐานอย่างเดียว) */
+    protected const FB_WEB_ONLY_TIER_OTHER = 'C';
+
+    /** กันส่งกล่องห้องแม่หมอซ้ำจากรูป/สติกเกอร์ที่ส่งติดกัน (วินาที) */
+    protected const FB_WEB_ONLY_IMAGE_BOX_COOLDOWN = 600;
+
+    /** กันแจ้งแอดมินเรื่องสลิปซ้ำต่อคน (นาที) */
+    protected const FB_WEB_ONLY_SLIP_ALERT_COOLDOWN_MINUTES = 30;
+
+    /**
+     * 🌐 ระดับของลูกค้าใต้ FB web-only (design 1.4)
+     *
+     * @return string|null null = ไม่ใช่ web-only (ธงปิด / LINE) → ผู้เรียกเดินโฟลเดิม
+     *                     'A' = legacy paid in-flight · 'B' = บิลค้างจ่ายยังไม่หมดอายุ · 'C' = อื่น ๆ
+     */
+    protected function fbWebOnlyTier(string $senderId): ?string
+    {
+        if (! $this->isFbWebOnlyCustomer($senderId)) {
+            return null;
+        }
+
+        try {
+            $mode = new \App\Services\Fortune\FortuneBotMode;
+            if ($mode->fbLegacyPaidInFlight($senderId)) {
+                return self::FB_WEB_ONLY_TIER_PAID;
+            }
+            if ($mode->fbPendingBillOpen($senderId)) {
+                return self::FB_WEB_ONLY_TIER_PENDING;
+            }
+        } catch (\Throwable $e) {
+            // fail-closed: เช็คไม่ได้ = ระดับ C (เก็บหลักฐาน ไม่เรียก SlipOK ไม่ออกบิล)
+            Log::critical('🌐 FB web-only: เช็คระดับลูกค้าพัง → ระดับ C', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return self::FB_WEB_ONLY_TIER_OTHER;
+    }
+
+    /**
+     * 🌐 ด่านรูปภาพใต้ web-only — เรียกในเส้นรูปของ processMessage
+     *
+     * ระดับ A → false (ปล่อยโฟลเดิม: vision Celtic / สลิปของบิลที่จ่ายแล้ว ฯลฯ)
+     * ระดับ B/C → จัดการใน handleSlipImageOnly แล้วคืน true (caller return ทันที)
+     *
+     * @return bool true = จัดการแล้ว
+     */
+    protected function fbWebOnlyImageGate(string $senderId, string $imageUrl): bool
+    {
+        $tier = $this->fbWebOnlyTier($senderId);
+        if ($tier === null || $tier === self::FB_WEB_ONLY_TIER_PAID) {
+            return false;
+        }
+
+        $this->handleSlipImageOnly($senderId, $imageUrl, false);
+
+        return true;
+    }
+
+    /**
+     * 🅱️ สลิปของบิลค้างจ่ายก่อนสลับธง — ตรวจตามเดิม แต่ตอบสั้น ไม่ขาย ไม่ออกบิล/QR ใหม่
+     *
+     * ลำดับ: fuzzy match (ตัดบิลได้ = ส่งต่อตามเดิม) → ด่านสลิปรัว → เก็บสลิปรอ SlipOK
+     *        → ตอบ "แม่หมอได้รับแล้ว กำลังเช็คให้" + แจ้งแอดมิน
+     * รูปที่ไม่ใช่สลิป → กล่องห้องแม่หมอ
+     */
+    /**
+     * 🔐 (รีวิว) ทิ้งคำถามยืนยันยอด fuzzy ที่ไม่ได้ส่ง (ระดับ B) + แจ้งทีมตรวจยอดเอง
+     */
+    protected function dropFbWebOnlyFuzzyAsk(string $senderId, \App\Models\FortuneReading $bill): void
+    {
+        try {
+            $matcher = new \App\Services\Fortune\FortunePaymentFuzzyMatcher($this->settings);
+            foreach (array_unique(array_filter([$senderId, (string) ($bill->facebook_user_id ?? '')])) as $id) {
+                $matcher->clearPendingConfirmation('facebook', $id);
+            }
+            if ($bill->uniquePaymentAmount) {
+                $matcher->pushAdminAlert($bill, $bill->uniquePaymentAmount, [
+                    'reason' => 'fb_web_only_tier_b_fuzzy_ask — ยอด/ชื่อไม่ตรงพอ ไม่ถามลูกค้าบน FB ตรวจเองในหลังบ้าน',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: ล้าง fuzzy pending ระดับ B ไม่สำเร็จ', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function handleFbWebOnlySlipTierB(string $senderId, string $imageUrl): void
+    {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+        $bill = (new \App\Services\Fortune\FortuneBotMode)->findFbPendingBill($senderId);
+        if (! $bill) {
+            // บิลหมดอายุระหว่างทาง → ระดับ C
+            $this->handleFbWebOnlyImageTierC($senderId, $imageUrl);
+
+            return;
+        }
+
+        // 1️⃣ fuzzy match — ตัดบิลได้จริงเท่านั้นถึงส่งผลต่อ (กลายเป็นของที่จ่ายแล้ว = ส่งของตามเดิม)
+        //    ผลแบบอื่น (ถามยืนยันยอด/ขอโอนเพิ่ม) ห้ามส่ง — ข้อความพวกนั้นพูดเรื่องเงินในแชท
+        try {
+            $fuzzy = $this->conversationService?->tryFuzzyMatchForSlip($bill);
+
+            // 🔐 (รีวิว) ผล "ถามยืนยันยอด" ถูกเก็บเป็น pending ใน cache แต่เราไม่ส่งคำถาม (มีเรื่องเงิน)
+            //    ถ้าไม่ล้าง "โอเค/ใช่/โอนแล้ว" ครั้งถัดไปจะอนุมัติ SMS ที่ยอด/ชื่อไม่ตรงเข้าบิลโดยลูกค้าไม่รู้ตัว
+            //    → ล้าง pending แล้วส่งให้ทีมตรวจแทน
+            if (is_array($fuzzy) && ($fuzzy['action'] ?? null) === 'fuzzy_ask_confirmation') {
+                $this->dropFbWebOnlyFuzzyAsk($senderId, $bill);
+                $fuzzy = null;
+            }
+
+            if ($fuzzy !== null && (bool) ($bill->fresh()?->is_paid)) {
+                $this->channelManager->sendResponse('facebook', $senderId, $fuzzy, [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+
+                Log::info('🌐 FB web-only: สลิประดับ B → fuzzy ตัดบิลสำเร็จ ส่งของตามเดิม', [
+                    'user_id' => $senderId,
+                    'reading_id' => $bill->id,
+                ]);
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: fuzzy สลิประดับ B ล้มเหลว (non-blocking)', [
+                'user_id' => $senderId,
+                'reading_id' => $bill->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 2️⃣ ด่านสลิปรัว — เงียบ (ข้อความของด่านเดิมพูดเรื่องสลิป/บิล)
+        try {
+            $floodGate = $this->conversationService?->slipFloodGate('facebook', $senderId, $bill, 'active_bill');
+            if ($floodGate !== null) {
+                Log::info('🌐 FB web-only: สลิประดับ B ติดด่านสลิปรัว → เงียบ', [
+                    'user_id' => $senderId,
+                    'reading_id' => $bill->id,
+                    'action' => $floodGate['action'] ?? null,
+                ]);
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::debug('🌐 FB web-only: slipFloodGate ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+        }
+
+        // 3️⃣ เก็บสลิปรอ SlipOK ตามเดิม (บิลเดิม — ไม่สร้างบิลใหม่)
+        $stored = null;
+        try {
+            $slipSvc = new \App\Services\Fortune\SlipOkService($this->settings);
+            if ($slipSvc->isEnabled() && ! $bill->is_paid && empty($bill->slipok_verified_at)) {
+                $stored = $this->conversationService?->storeIncomingSlipFromUrl($bill, $imageUrl);
+            } else {
+                // SlipOK ปิด → เก็บไว้เงียบ ๆ เผื่อลูกค้าพิมพ์ "โอนแล้ว" (fuzzy ข้อความเดิมย้อนมาใช้)
+                $this->conversationService?->capturePendingSlipFromImage('facebook', $senderId, $imageUrl, null);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: เก็บสลิประดับ B ล้มเหลว (non-blocking)', [
+                'user_id' => $senderId,
+                'reading_id' => $bill->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        if ($stored === FortuneConversationService::SLIP_STORE_NOT_SLIP) {
+            $this->sendFbWebOnlyImageBox($senderId, 'image_tier_b');
+
+            return;
+        }
+
+        // 4️⃣ ตอบสั้น ไม่ขาย + แจ้งแอดมิน
+        try {
+            $this->facebookService->sendMessage($senderId, $copy::SLIP_RECEIVED);
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: ส่งข้อความรับสลิประดับ B ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        $this->alertAdminFbWebOnlySlip($senderId, self::FB_WEB_ONLY_TIER_PENDING, $bill->id, $bill->slip_image_path ?? null);
+
+        Log::info('🌐 FB web-only: รับสลิประดับ B (บิลก่อนสลับธง)', [
+            'user_id' => $senderId,
+            'reading_id' => $bill->id,
+            'stored' => $stored,
+        ]);
+    }
+
+    /**
+     * 🅲 รูปจากลูกค้าที่ไม่มีบิลค้าง/ของค้าง — **ห้ามเรียก SlipOK**
+     *
+     * ดูเหมือนสลิป → เก็บรูปเป็นหลักฐาน + เข้าคิวแอดมิน + แจ้งแอดมิน + กล่อง "ส่งเรื่องให้ทีมแล้ว"
+     * รูปอื่น → กล่องห้องแม่หมอ (กันรัว 10 นาที)
+     */
+    protected function handleFbWebOnlyImageTierC(string $senderId, string $imageUrl): void
+    {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+
+        if ($this->fbWebOnlyImageLooksLikeSlip($imageUrl)) {
+            $path = $this->storeFbWebOnlySlipEvidence($senderId, $imageUrl);
+            $this->alertAdminFbWebOnlySlip($senderId, self::FB_WEB_ONLY_TIER_OTHER, null, $path);
+            $this->sendFbWebHandoff($senderId, $copy::KIND_SLIP_FORWARDED, 'slip_tier_c');
+
+            Log::warning('🌐 FB web-only: รูปคล้ายสลิประดับ C → เก็บหลักฐาน + แจ้งแอดมิน (ไม่เรียก SlipOK)', [
+                'user_id' => $senderId,
+                'evidence_path' => $path,
+            ]);
+
+            return;
+        }
+
+        $this->sendFbWebOnlyImageBox($senderId, 'image_tier_c');
+    }
+
+    /**
+     * กล่องห้องแม่หมอจากรูป/สติกเกอร์ — กันรัว (ส่งรูป 5 ใบติดกัน = กล่องเดียว)
+     */
+    protected function sendFbWebOnlyImageBox(string $senderId, string $source): void
+    {
+        if (! Cache::add('fbweb:img_box:'.$senderId, 1, self::FB_WEB_ONLY_IMAGE_BOX_COOLDOWN)) {
+            Log::debug('🌐 FB web-only: เพิ่งส่งกล่องจากรูปไป → เงียบ', ['user_id' => $senderId]);
+
+            return;
+        }
+
+        $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, $source);
+    }
+
+    /**
+     * รูปนี้ดูเหมือนสลิปไหม (classifier แบบ reliable)
+     *
+     * fail-closed เรื่องเงิน: classifier ล่ม/ตอบไม่ได้ = ถือว่า "อาจเป็นสลิป" → เก็บหลักฐานไว้ก่อน
+     * (เสียแค่พื้นที่เก็บรูป ดีกว่าทิ้งสลิปของลูกค้าที่โอนมาแล้วเงียบ ๆ)
+     */
+    protected function fbWebOnlyImageLooksLikeSlip(string $imageUrl): bool
+    {
+        try {
+            $result = app(ImageIntentClassifier::class)->classify($imageUrl, 'payment_pending', true);
+            $intent = $result['intent'] ?? null;
+
+            if ($intent === ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
+                return true;
+            }
+
+            // classifier ตอบไม่ได้ (failResult: confidence 0 + reason "fallback: ...")
+            return (float) ($result['confidence'] ?? 0) <= 0.0
+                && str_starts_with((string) ($result['reason'] ?? ''), 'fallback');
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: classify รูปพัง → ถือว่าอาจเป็นสลิป (เก็บหลักฐาน)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * เก็บรูปเป็นหลักฐาน (ไม่ผูกบิล ไม่นัด VerifySlipFallbackJob = ไม่มีทางยิง SlipOK)
+     *
+     * @return string|null path ใน disk local (null = ดาวน์โหลด/เก็บไม่สำเร็จ)
+     */
+    protected function storeFbWebOnlySlipEvidence(string $senderId, string $imageUrl): ?string
+    {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(20)->get($imageUrl);
+            if (! $resp->successful()) {
+                return null;
+            }
+
+            $bytes = $resp->body();
+            if ($bytes === '' || strlen($bytes) > 6 * 1024 * 1024) {
+                return null;
+            }
+
+            $relPath = 'fortune/slips/fbweb_'.md5($senderId).'_'.now()->format('YmdHis').'_'
+                .\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)).'.jpg';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($relPath, $bytes);
+
+            return $relPath;
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: เก็บหลักฐานสลิปไม่สำเร็จ', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * เข้าคิวแอดมิน (fortune_saved_questions) + แจ้งแอดมิน (Telegram ก่อน — LineAlertService)
+     *
+     * แจ้งซ้ำได้ทุก 30 นาทีต่อคน แต่ "คิว" บันทึกทุกครั้งที่มีหลักฐานใหม่
+     */
+    protected function alertAdminFbWebOnlySlip(string $senderId, string $tier, ?int $readingId, ?string $evidencePath): void
+    {
+        $tierLabel = $tier === self::FB_WEB_ONLY_TIER_PENDING
+            ? 'ระดับ B — บิลค้างก่อนย้ายไปเว็บ'
+            : 'ระดับ C — ไม่มีบิลค้าง';
+
+        try {
+            \App\Models\FortuneSavedQuestion::saveQuestion(
+                platformUserId: $senderId,
+                question: "🧾 [FB web-only] ลูกค้าส่งรูปที่อาจเป็นสลิป ({$tierLabel})"
+                    .($readingId ? " · reading #{$readingId}" : '')
+                    .($evidencePath ? " · หลักฐาน: {$evidencePath}" : ' · เก็บรูปไม่สำเร็จ ดูในกล่องข้อความเพจ'),
+                reason: 'fb_web_only_slip',
+                platform: 'facebook'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: เข้าคิวแอดมินเรื่องสลิปไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            if (! Cache::add('fbweb:slip_alert:'.$senderId, 1, now()->addMinutes(self::FB_WEB_ONLY_SLIP_ALERT_COOLDOWN_MINUTES))) {
+                return;
+            }
+
+            app(\App\Services\LineAlertService::class)->alertUnusualActivity(
+                'FB web-only: ลูกค้าส่งรูปที่อาจเป็นสลิปในแชท FB',
+                [
+                    'psid' => $senderId,
+                    'tier' => $tierLabel,
+                    'reading_id' => $readingId ?? '-',
+                    'evidence' => $evidencePath ?? '-',
+                    'admin_action' => 'ตรวจยอดเงินเข้าแล้วเติมให้ลูกค้าบนเว็บจันทรา (ห้ามตอบเรื่องเงินในแชท FB)',
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: แจ้งแอดมินเรื่องสลิปไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🌐 ข้อความชวน "เข้าห้องแม่หมอ" สำหรับ DM ขาออก (กดไลก์ / คอมเมนต์)
+     *
+     * ใช้ชุดข้อความ mode='web' เท่านั้น (pickActive ของ T11) — ชุดว่าง = null (ไม่ส่ง ห้ามตกไปชุด all)
+     * $explicitRequest = ลูกค้าคอมเมนต์ขอดูดวงเอง → ชุดว่างใช้ถ้อยคำกลาง WebHandoffCopy แทน (ต้องตอบ)
+     *
+     * @return array{text:string, invite:?\App\Models\FortuneInviteMessage}|null
+     */
+    protected function fbWebOnlyInviteText(string $userId, ?string $name, bool $explicitRequest = false): ?array
+    {
+        $invite = null;
+        try {
+            $invite = \App\Models\FortuneInviteMessage::pickActive('facebook');
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: หยิบข้อความชวนชุด web ไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        if ($invite !== null) {
+            $text = trim((string) $invite->render((string) ($name ?? ''), $userId, 'facebook'));
+            if ($text !== '' && \App\Models\FortuneInviteMessage::isWebSafeText($text)) {
+                return ['text' => $text, 'invite' => $invite];
+            }
+        }
+
+        if ($explicitRequest) {
+            return [
+                'text' => \App\Services\Fortune\WebHandoffCopy::pickInvite($name, null, false, null, crc32($userId)),
+                'invite' => null,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * 🌐 ตอบคอมเมนต์ใต้ web-only — DM ชวน (Private Reply) + ตอบใต้คอมเมนต์ "แม่หมอทักไปใน inbox แล้ว"
+     *
+     * ห้ามชวนดูดวงในแชท / ห้ามแตะเงิน / ห้ามสร้างลิงก์จาก comment.from.id (ลิงก์ออกตอนลูกค้ากด WEB_ROOM)
+     *
+     * @param  bool  $explicitRequest  คอมเมนต์ขอดูดวงเอง (processComment) — ไม่ข้ามเพราะชุดข้อความว่าง
+     * @return bool true = ส่ง DM ถึงลูกค้า
+     */
+    protected function sendFbWebOnlyCommentEngagement(array $comment, bool $allowDm, bool $allowPublicReply, bool $explicitRequest = false): bool
+    {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+        $fromId = (string) ($comment['from']['id'] ?? '');
+        $commentId = (string) ($comment['comment_id'] ?? '');
+        $postId = $comment['post_id'] ?? null;
+        $commentText = (string) ($comment['message'] ?? '');
+        $name = $comment['from']['name'] ?? null;
+
+        if ($fromId === '' || $commentId === '') {
+            return false;
+        }
+
+        // webhook retry / คอมเมนต์เดิม → ไม่ส่งซ้ำ
+        try {
+            if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            Log::debug('🌐 FB web-only: เช็คคอมเมนต์ซ้ำไม่ได้ (ไปต่อ)', ['error' => $e->getMessage()]);
+        }
+
+        if (is_string($name) && $name !== '') {
+            try {
+                FortuneUserCredit::rememberName($fromId, 'facebook', $name);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
+
+        $dmSent = false;
+        $invite = null;
+        $dmText = null;
+        if ($allowDm) {
+            $picked = $this->fbWebOnlyInviteText($fromId, is_string($name) ? $name : null, $explicitRequest);
+            if ($picked !== null) {
+                $dmText = $picked['text'];
+                $invite = $picked['invite'];
+                try {
+                    // Private Reply (comment_id) — ข้ามกรอบ 24 ชม. ได้ · ปุ่ม WEB_ROOM / พัก / ไม่ต้องส่ง
+                    $dmSent = (bool) $this->facebookService->sendQuickReplies($fromId, $dmText, $copy::inviteQuickReplies(), [
+                        'from_comment_engagement' => true,
+                        'comment_id' => $commentId,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('🌐 FB web-only: DM ชวนจากคอมเมนต์ไม่สำเร็จ', [
+                        'user_id' => $fromId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::info('🌐 FB web-only: ไม่มีข้อความชวนชุด web → ไม่ DM (ไม่ตกไปชุดเดิม)', ['user_id' => $fromId]);
+            }
+        }
+
+        // ตอบใต้คอมเมนต์ — พูดว่า "ทักไปใน inbox แล้ว" ได้เฉพาะเมื่อมี DM จริง (เพิ่งส่ง/ติด cooldown เพราะเพิ่งส่ง)
+        $publicReplySent = false;
+        $replyOnceKey = 'fcr:replied:'.$commentId;
+        if ($allowPublicReply && ($dmSent || ! $allowDm) && ! Cache::has($replyOnceKey)) {
+            try {
+                $this->facebookService->replyToComment($commentId, $copy::COMMENT_REPLY);
+                $publicReplySent = true;
+                Cache::put($replyOnceKey, 1, 86400);
+            } catch (\Throwable $e) {
+                Log::warning('🌐 FB web-only: ตอบใต้คอมเมนต์ไม่สำเร็จ', [
+                    'comment_id' => $commentId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($dmSent || $publicReplySent) {
+            try {
+                FortuneCommentEngagement::create([
+                    'facebook_user_id' => $fromId,
+                    'facebook_post_id' => $postId,
+                    'facebook_comment_id' => $commentId,
+                    'comment_text' => $commentText,
+                    'comment_reply' => $publicReplySent ? $copy::COMMENT_REPLY : null,
+                    'dm_message' => $dmSent ? $dmText : null,
+                    'engaged_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('🌐 FB web-only: บันทึก engagement ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        if ($dmSent && $invite !== null) {
+            try {
+                $invite->recordSend();
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
+
+        Log::info('🌐 FB web-only: ตอบคอมเมนต์แบบชวนเข้าห้องแม่หมอ', [
+            'user_id' => $fromId,
+            'comment_id' => $commentId,
+            'explicit_request' => $explicitRequest,
+            'dm_sent' => $dmSent,
+            'public_reply_sent' => $publicReplySent,
+        ]);
+
+        return $dmSent;
+    }
+
+    /**
+     * 🌐 DM ชวนจากการกดไลก์/รีแอคชันใต้ web-only (ส่งในกรอบ 24 ชม. เท่านั้น — caller เช็คแล้ว)
+     *
+     * @return bool true = ส่งถึงลูกค้า
+     */
+    protected function sendFbWebOnlyReactionInvite(string $userId, ?string $name): bool
+    {
+        $picked = $this->fbWebOnlyInviteText($userId, $name);
+        if ($picked === null) {
+            Log::info('🌐 FB web-only: ไม่มีข้อความชวนชุด web → ไม่ DM จากรีแอคชัน', ['user_id' => $userId]);
+
+            return false;
+        }
+
+        $sent = (bool) $this->facebookService->sendQuickReplies(
+            $userId,
+            $picked['text'],
+            \App\Services\Fortune\WebHandoffCopy::inviteQuickReplies(),
+            ['messaging_type' => 'RESPONSE']
+        );
+
+        if ($sent && $picked['invite'] !== null) {
+            try {
+                $picked['invite']->recordSend();
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
+
+        return $sent;
+    }
+
     /**
      * 🔮 (2026-06-06) ปุ่ม "ดูดวงเลย" จากข้อความชวน
      *   re-engage → เคลียร์ opt-out/snooze แล้วเข้า flow ดูดวงปกติ (เหมือน MENU_FORTUNE)
@@ -6189,6 +7109,12 @@ class FacebookWebhookController extends Controller
             return false;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ปิดเส้น transfer (ที่ยังมีทางถอยกลับไปออกบิลบน FB)
+        //   ปุ่มพวกนี้ถูกด่าน fbWebOnlyButtonGate พาไปห้องแม่หมอแล้ว
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            return false;
+        }
+
         try {
             $mode = new \App\Services\Fortune\FortuneBotMode;
 
@@ -6208,6 +7134,14 @@ class FacebookWebhookController extends Controller
      */
     protected function transferGrantStayOnFb(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ไม่มีสิทธิ์ "ดูในแชทนี้" อีกแล้ว → พาไปห้องแม่หมอ
+        //   (ด่าน whitelist ดักไว้ก่อนแล้ว ตรงนี้คือชั้นสำรองกันคนเรียกตรง)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_CANNOT, 'transfer_stay_confirm');
+
+            return;
+        }
+
         try {
             (new \App\Services\Fortune\FortuneBotMode)->grantFbFallback('facebook', $senderId);
         } catch (\Throwable $e) {
@@ -6237,6 +7171,14 @@ class FacebookWebhookController extends Controller
      */
     protected function handleInviteFreeWeb(string $senderId): void
     {
+        // 🌐 (2026-11-03) FB web-only — ส่งกล่องห้องแม่หมอเสมอ **ไม่มีทางถอย**
+        //   (เดิมสร้างลิงก์ไม่ได้ → ตกไป handleInviteReadNow = ดูดวง/ออกบิลในแชท ซึ่งห้ามแล้ว)
+        if ($this->isFbWebOnlyCustomer($senderId)) {
+            $this->sendFbWebHandoff($senderId, \App\Services\Fortune\WebHandoffCopy::KIND_ROOM, 'invite_free_web');
+
+            return;
+        }
+
         $webUrl = null;
 
         try {
@@ -6517,6 +7459,13 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🌐 (2026-11-03) FB web-only — whitelist ที่หัวเส้น quick reply
+        //    ครอบ quick_reply.payload, ป้ายปุ่มที่ลูกค้าพิมพ์เอง (resolveQuickReplyPayloadFromTitle)
+        //    และ postback ที่ตกมาทาง default ของ processPostback
+        if ($this->fbWebOnlyButtonGate($senderId, $payload)) {
+            return;
+        }
+
         // 🔀 (2026-07-26) โหมด transfer — quick reply ที่เริ่มดูดวงต้องเข้าตัวดักหน้า
         //    (ปุ่มพวกนี้ไม่ผ่าน processPostback เพราะเป็น quick_reply ของข้อความ)
         if ($this->transferShouldRoute($senderId, $payload)) {
@@ -6579,6 +7528,11 @@ class FacebookWebhookController extends Controller
             // 🔕 (2026-06-06) ปุ่มในข้อความชวน (invite) — ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
             // 🎁 (2026-07-28) + ดูฟรีที่เว็บ — พาไปห้องแชทแม่หมอบนเว็บจันทรา
             'INVITE_FREE_WEB' => $this->handleInviteFreeWeb($senderId),
+            // 🌐 (2026-11-03) ปุ่มห้องแม่หมอของ FB web-only ที่ค้างในประวัติแชทหลังปิดธง
+            //   ธงเปิด = ด่าน fbWebOnlyButtonGate รับไปก่อนถึงตรงนี้แล้ว
+            //   ธงปิด = ทำเหมือน "ดูฟรีที่เว็บ" เดิม (ห้ามตก default ที่ส่ง payload ดิบเข้า AI)
+            \App\Services\Fortune\WebHandoffCopy::PAYLOAD_WEB_ROOM,
+            \App\Services\Fortune\WebHandoffCopy::PAYLOAD_WEB_ROOM_HOWTO => $this->handleInviteFreeWeb($senderId),
             'INVITE_READ_NOW' => $this->handleInviteReadNow($senderId),
             'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($senderId),
             'INVITE_OPTOUT' => $this->handleInviteOptOut($senderId),
