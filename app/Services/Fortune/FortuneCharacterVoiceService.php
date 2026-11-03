@@ -5,21 +5,22 @@ namespace App\Services\Fortune;
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneVoiceStorageService;
-use App\Services\Tts\XDreamerTtsProvider;
+use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * 🎭 (2026-11-03) เสียงพากย์ตัวละคร "แม่หมอจันทรา" "น้องบุษบา" และ "แม่หมอโหมดคุณไสย" (ElevenLabs V3 ผ่าน X-DREAMER)
+ * 🎭 (2026-11-03) เสียงพากย์ตัวละคร "แม่หมอจันทรา" "น้องบุษบา" และ "แม่หมอโหมดคุณไสย" (ElevenLabs v3)
  *
  * หลักการคุมต้นทุน:
  *   - สร้างเสียงเฉพาะเมื่อมีคนขอ (on-demand) — ไม่สร้างอัตโนมัติทุกข้อความ
  *   - แคชด้วย text_hash: ข้อความ+เสียง+โมเดลเดิม = ไฟล์เดิม กดซ้ำ/หลายคนขอพร้อมกัน = สั่งครั้งเดียว
  *   - เพดานตัวอักษรต่อวันสำหรับเสียงในห้องแชท (เฉพาะที่สั่งใหม่จริง)
  *
- * งานของ X-DREAMER เป็น async → request() คืน clip สถานะ pending ได้ ผู้เรียก poll ต่อด้วย refresh()
+ * (2026-11-04) ต่อ ElevenLabs ตรง (เจ้าของสั่ง — X-DREAMER ยังไม่มีบริการเสียงจริง) ได้ไฟล์ในคำขอเดียว
+ *   clip สถานะ pending มีแค่ระหว่างอีกคำขอกำลังสร้างข้อความเดียวกันอยู่ → ผู้เรียก poll ต่อด้วย refresh()
  */
 class FortuneCharacterVoiceService
 {
@@ -59,30 +60,30 @@ class FortuneCharacterVoiceService
     /** เพดานตัวอักษรที่สั่งใหม่ต่อวัน (เสียงในห้องแชท) ถ้าแอดมินไม่ได้ตั้ง */
     public const DEFAULT_DAILY_CHAR_LIMIT = 30000;
 
-    /** งานค้าง pending นานเกินนี้ (นาที) = ถือว่าล้ม ให้สั่งใหม่ได้ */
-    protected const STALE_PENDING_MINUTES = 15;
+    /** งานค้าง pending นานเกินนี้ (นาที) = ถือว่าล้ม ให้สั่งใหม่ได้ (คำขอ ElevenLabs หมดเวลาที่ 90 วิ + เผื่อเก็บไฟล์) */
+    protected const STALE_PENDING_MINUTES = 3;
 
     /** งานที่ล้มแล้ว ห้องแชทขอซ้ำได้อีกครั้งหลังกี่วินาที (กันกดรัวแล้วสั่งซ้ำ) */
     protected const FAILED_RETRY_AFTER_SECONDS = 120;
 
     protected FortuneTellingSetting $settings;
 
-    protected XDreamerTtsProvider $provider;
+    protected ElevenLabsTtsProvider $provider;
 
     protected FortuneVoiceStorageService $storage;
 
     public function __construct(
         ?FortuneTellingSetting $settings = null,
-        ?XDreamerTtsProvider $provider = null,
+        ?ElevenLabsTtsProvider $provider = null,
         ?FortuneVoiceStorageService $storage = null,
     ) {
         // ค่ากลางเสมอ — เสียงตัวละครไม่ผูกกับเพจสาขา
         $this->settings = $settings ?? FortuneTellingSetting::getGlobalSettings();
-        $this->provider = $provider ?? new XDreamerTtsProvider($this->settings);
+        $this->provider = $provider ?? new ElevenLabsTtsProvider($this->settings);
         $this->storage = $storage ?? new FortuneVoiceStorageService($this->settings);
     }
 
-    public function provider(): XDreamerTtsProvider
+    public function provider(): ElevenLabsTtsProvider
     {
         return $this->provider;
     }
@@ -128,7 +129,7 @@ class FortuneCharacterVoiceService
      * ขอไฟล์เสียงของข้อความ — เจอในแคชคืนทันที ไม่เจอค่อยสั่งสร้าง
      *
      * @param  string  $purpose  'chat' (ห้องแชท — นับเพดานรายวัน) | 'sample' (แอดมินฟังเทียบ)
-     * @param  int  $waitSeconds  รอผลจาก X-DREAMER ในคำขอนี้กี่วินาที (0 = ไม่รอ คืน pending)
+     * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ElevenLabs ตอบไฟล์ในคำขอเดียว ไม่ต้องรอ
      * @return array{success: bool, clip: ?FortuneCharacterVoiceClip, error: ?string, code: int}
      */
     public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0): array
@@ -137,7 +138,7 @@ class FortuneCharacterVoiceService
             return $this->fail('ไม่รู้จักตัวละครนี้', 422);
         }
         if (! $this->provider->isAvailable()) {
-            return $this->fail('ยังไม่ได้ตั้ง X-DREAMER API key', 503);
+            return $this->fail('ยังไม่ได้ตั้ง ElevenLabs API key', 503);
         }
 
         $clean = $this->prepareText($text, $purpose === 'sample' ? self::MAX_SAMPLE_CHARS : self::MAX_CHAT_CHARS);
@@ -148,7 +149,7 @@ class FortuneCharacterVoiceService
         $voice = $voiceId ?: $this->voiceFor($persona);
         $model = $this->provider->model();
         // รวม persona ในกุญแจ — แม่หมอกับโหมดคุณไสยเลือกเสียงเดียวกันได้ ไฟล์ต้องแยกโฟลเดอร์ตามตัวละคร
-        $hash = hash('sha256', implode('|', ['xdreamer', $model, $voice, $persona, $clean]));
+        $hash = hash('sha256', implode('|', ['elevenlabs', $model, $voice, $persona, $clean]));
 
         $clip = FortuneCharacterVoiceClip::where('text_hash', $hash)->first();
 
@@ -159,7 +160,7 @@ class FortuneCharacterVoiceService
         }
 
         if ($clip && $clip->isPending() && ! $this->isStale($clip)) {
-            return $this->ok($waitSeconds > 0 ? $this->refresh($clip, $waitSeconds) : $clip);
+            return $this->ok($clip);
         }
 
         if ($clip && $clip->status === FortuneCharacterVoiceClip::STATUS_FAILED
@@ -168,8 +169,8 @@ class FortuneCharacterVoiceService
             return ['success' => false, 'clip' => $clip, 'error' => $clip->error ?: 'สร้างเสียงไม่สำเร็จ', 'code' => 502];
         }
 
-        // 🔒 กันสองคำขอพร้อมกันสั่งงานซ้ำ (เสียเครดิตสองรอบ)
-        $lock = Cache::lock('fortune:charvoice:'.$hash, 30);
+        // 🔒 กันสองคำขอพร้อมกันสั่งงานซ้ำ (เสียโควต้าสองรอบ) — นานกว่า timeout ของ ElevenLabs (90 วิ)
+        $lock = Cache::lock('fortune:charvoice:'.$hash, 120);
         if (! $lock->get()) {
             $clip = FortuneCharacterVoiceClip::where('text_hash', $hash)->first();
 
@@ -191,33 +192,21 @@ class FortuneCharacterVoiceService
             $clip = $this->upsertPending($clip, $hash, [
                 'persona' => $persona,
                 'purpose' => $purpose,
-                'provider' => 'xdreamer',
+                'provider' => 'elevenlabs',
                 'model' => $model,
                 'voice_id' => $voice,
                 'text' => $clean,
                 'chars' => $chars,
             ]);
 
-            $order = $this->provider->startSpeech($clean, $voice);
-            if (! $order['success'] || empty($order['generation_id'])) {
-                $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($order['error'] ?? 'สั่งงานไม่สำเร็จ')]);
-
-                return ['success' => false, 'clip' => $clip, 'error' => $clip->error, 'code' => 502];
-            }
-
             if ($purpose === 'chat') {
+                // นับก่อนยิง — ล้มกลางทางก็นับ (ElevenLabs อาจคิดไปแล้ว) กันโดนยิงซ้ำจนโควต้าไหล
                 $this->addUsage($chars);
             }
 
-            $clip->update(['remote_generation_id' => $order['generation_id'], 'error' => null]);
-
-            $clip = $this->applyState($clip, $order);
+            $clip = $this->synthesizeInto($clip, $clean, $voice);
         } finally {
             $lock->release();
-        }
-
-        if ($clip->isPending() && $waitSeconds > 0) {
-            $clip = $this->refresh($clip, $waitSeconds);
         }
 
         return $clip->status === FortuneCharacterVoiceClip::STATUS_FAILED
@@ -226,33 +215,19 @@ class FortuneCharacterVoiceService
     }
 
     /**
-     * ถามสถานะงานที่ค้างจาก X-DREAMER แล้วเก็บไฟล์เมื่อเสร็จ
+     * สถานะล่าสุดของ clip — pending = อีกคำขอกำลังสร้างอยู่ · ค้างนานเกิน = ถือว่าล้ม ให้สั่งใหม่ได้
+     *
+     * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ไม่ได้ใช้แล้ว
      */
     public function refresh(FortuneCharacterVoiceClip $clip, int $waitSeconds = 0): FortuneCharacterVoiceClip
     {
-        if (! $clip->isPending()) {
-            return $clip;
+        $clip = $clip->fresh() ?? $clip;
+
+        if ($clip->isPending() && $this->isStale($clip)) {
+            $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => 'สร้างเสียงไม่เสร็จ (ค้างนานเกินไป)']);
         }
 
-        if (empty($clip->remote_generation_id)) {
-            if ($this->isStale($clip)) {
-                $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => 'สั่งงานไม่สำเร็จ']);
-            }
-
-            return $clip;
-        }
-
-        $state = $this->provider->getGeneration((int) $clip->remote_generation_id, $waitSeconds);
-        if (! $state['success']) {
-            // ถามสถานะไม่ได้ (เน็ต/เซิร์ฟเวอร์) — งานอาจยังเดินอยู่ คงไว้ pending จนกว่าจะเก่าเกิน
-            if ($this->isStale($clip)) {
-                $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($state['error'])]);
-            }
-
-            return $clip;
-        }
-
-        return $this->applyState($clip, $state);
+        return $clip;
     }
 
     /**
@@ -295,39 +270,16 @@ class FortuneCharacterVoiceService
     }
 
     /**
-     * นำผลจาก X-DREAMER มาใส่ clip — เสร็จแล้วโหลดไฟล์มาเก็บที่ storage ของเราเอง
-     *   (ลิงก์ของ X-DREAMER มีวันหมดอายุ จึงไม่ใช้ลิงก์นั้นตรงๆ)
+     * สร้างเสียงจาก ElevenLabs แล้วเก็บไฟล์ที่ storage ของเราเอง
      */
-    protected function applyState(FortuneCharacterVoiceClip $clip, array $state): FortuneCharacterVoiceClip
+    protected function synthesizeInto(FortuneCharacterVoiceClip $clip, string $text, string $voice): FortuneCharacterVoiceClip
     {
-        $status = $state['status'] ?? 'pending';
-
-        if (in_array($status, ['failed', 'cancelled'], true)) {
-            $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($state['error'] ?? 'สร้างเสียงไม่สำเร็จ')]);
-
-            return $clip;
-        }
-
-        if ($status !== 'completed') {
-            return $clip;
-        }
-
-        if (empty($state['result_url'])) {
-            $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => 'X-DREAMER ไม่ส่งไฟล์เสียงกลับมา']);
-
-            return $clip;
-        }
-
-        $tempDir = storage_path('app/tmp-voice');
-        $tempPath = $tempDir.'/charvoice-'.Str::random(16).'.mp3';
+        $tempPath = storage_path('app/tmp-voice').'/charvoice-'.Str::random(16).'.mp3';
 
         try {
-            $download = $this->provider->downloadAudio($state['result_url'], $tempPath);
-            if (! $download['success']) {
-                // โหลดไม่ได้ชั่วคราว — คง pending ไว้ให้ poll รอบหน้าลองใหม่ (เกินเวลาค่อยตัดเป็น failed)
-                if ($this->isStale($clip)) {
-                    $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($download['error'])]);
-                }
+            $result = $this->provider->synthesize($text, ['voice' => $voice, 'output_path' => $tempPath]);
+            if (! $result['success']) {
+                $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($result['error'])]);
 
                 return $clip;
             }

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneCharacterVoiceService;
-use App\Services\Tts\XDreamerTtsProvider;
+use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,15 +14,15 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
- * 🎭 (2026-11-03) เสียงพากย์ตัวละคร — แม่หมอจันทรา / น้องบุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
+ * 🎭 (2026-11-03) เสียงพากย์ตัวละคร — แม่หมอจันทรา / น้องบุษบา / แม่หมอโหมดคุณไสย (ElevenLabs v3)
  *
- * - เจ้าของกรอก X-DREAMER API key (axm-…) เอง — เก็บเข้ารหัส แสดงแบบ mask
+ * - (2026-11-04) ต่อ ElevenLabs ตรง — เจ้าของกรอก ElevenLabs API key เอง เก็บเข้ารหัส แสดงแบบ mask
  * - กด "สร้างเสียงตัวอย่าง" ทีละเสียง ฟังเทียบ แล้วเลือกเก็บเป็นเสียงของแต่ละตัวละคร
  * - ไฟล์ตัวอย่างแคชไว้ (ข้อความ+เสียงเดิม = ไฟล์เดิม กดซ้ำไม่เสียเครดิตซ้ำ)
  */
 class FortuneCharacterVoiceController extends Controller
 {
-    protected const VOICES_CACHE_KEY = 'fortune:xdreamer_voices';
+    protected const VOICES_CACHE_KEY = 'fortune:elevenlabs_voices';
 
     public function index(): View
     {
@@ -39,12 +39,12 @@ class FortuneCharacterVoiceController extends Controller
 
         $voices = $service->provider()->isAvailable()
             ? $this->voices($service)
-            : ['voices' => XDreamerTtsProvider::FALLBACK_VOICES, 'live' => false, 'max_chars' => XDreamerTtsProvider::MAX_CHARS];
+            : ['voices' => ElevenLabsTtsProvider::FALLBACK_VOICES, 'live' => false, 'max_chars' => ElevenLabsTtsProvider::MAX_CHARS];
 
         return view('admin.fortune.character-voices.index', [
             'pageTitle' => '🎭 เสียงพากย์ตัวละคร',
-            'hasKey' => $settings->getXdreamerApiKey() !== null,
-            'maskedKey' => $settings->getXdreamerApiKeyMasked(),
+            'hasKey' => $settings->getElevenlabsApiKey() !== null,
+            'maskedKey' => $settings->getElevenlabsApiKeyMasked(),
             'model' => $service->provider()->model(),
             'dailyLimit' => $service->dailyCharLimit(),
             'usedToday' => $service->charsUsedToday(),
@@ -56,39 +56,41 @@ class FortuneCharacterVoiceController extends Controller
 
     /**
      * บันทึก key + ตั้งค่า — ช่อง key เว้นว่าง = ใช้ key เดิม
-     * key ใหม่ต้องผ่านการทดสอบ (เช็คเครดิต ไม่เสียเครดิต) ก่อนบันทึก
+     * key ใหม่ต้องผ่านการทดสอบ (เช็คโควต้า ไม่เสียโควต้า) ก่อนบันทึก
      */
     public function updateSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'xdreamer_api_key' => ['nullable', 'string', 'max:200', 'regex:/^axm-[A-Za-z0-9_\-]{8,}$/'],
-            'xdreamer_tts_model' => ['nullable', 'string', 'max:64', 'regex:/^[a-z0-9][a-z0-9\/\-\.]*$/'],
+            'elevenlabs_api_key' => ['nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_]{20,200}$/'],
+            'elevenlabs_tts_model' => ['nullable', 'string', 'max:64', 'regex:/^[a-z0-9][a-z0-9_\-\.]*$/'],
             'character_voice_daily_char_limit' => 'nullable|integer|min:1000|max:2000000',
         ], [
-            'xdreamer_api_key.regex' => 'รูปแบบ key ไม่ถูกต้อง — ต้องขึ้นต้นด้วย axm- (สร้างได้ที่ ai.xman4289.com/developer)',
-            'xdreamer_tts_model.regex' => 'ชื่อโมเดลไม่ถูกต้อง',
+            'elevenlabs_api_key.regex' => 'รูปแบบ key ไม่ถูกต้อง — คัดลอก key จาก elevenlabs.io → Developers → API Keys (ปกติขึ้นต้นด้วย sk_)',
+            'elevenlabs_tts_model.regex' => 'ชื่อโมเดลไม่ถูกต้อง (เช่น eleven_v3)',
         ]);
 
         $settings = FortuneTellingSetting::getGlobalSettings();
         $update = [
-            'xdreamer_tts_model' => $validated['xdreamer_tts_model'] ?? null,
+            'elevenlabs_tts_model' => $validated['elevenlabs_tts_model'] ?? null,
             'character_voice_daily_char_limit' => $validated['character_voice_daily_char_limit'] ?? null,
         ];
 
-        $newKey = trim((string) ($validated['xdreamer_api_key'] ?? ''));
+        $newKey = trim((string) ($validated['elevenlabs_api_key'] ?? ''));
         $message = '✅ บันทึกการตั้งค่าเสียงตัวละครแล้ว';
 
         if ($newKey !== '') {
-            $check = (new XDreamerTtsProvider($settings, $newKey))->credits();
+            $check = (new ElevenLabsTtsProvider($settings, $newKey))->credits();
             if (! $check['success']) {
                 // ⚠️ ห้ามใส่ key ลงใน error / old input — withInput() ตัดช่อง key ทิ้ง
                 return back()
-                    ->withInput($request->except('xdreamer_api_key'))
-                    ->withErrors(['xdreamer_api_key' => 'ใช้ key นี้ไม่ได้: '.$check['error']]);
+                    ->withInput($request->except('elevenlabs_api_key'))
+                    ->withErrors(['elevenlabs_api_key' => 'ใช้ key นี้ไม่ได้: '.$check['error']]);
             }
 
-            $update['xdreamer_api_key'] = $newKey;
-            $message = '✅ บันทึก X-DREAMER key แล้ว (เครดิตคงเหลือ '.number_format((int) $check['balance']).')';
+            $update['elevenlabs_api_key'] = $newKey;
+            $message = $check['balance'] !== null
+                ? '✅ บันทึก ElevenLabs key แล้ว (เหลือ '.number_format((int) $check['balance']).' ตัวอักษรในรอบบิลนี้)'
+                : '✅ บันทึก ElevenLabs key แล้ว (key นี้ไม่มีสิทธิ์ดูโควต้า แต่สร้างเสียงได้)';
             Cache::forget(self::VOICES_CACHE_KEY);
         }
 
@@ -103,15 +105,15 @@ class FortuneCharacterVoiceController extends Controller
      */
     public function deleteKey(): RedirectResponse
     {
-        FortuneTellingSetting::getGlobalSettings()->update(['xdreamer_api_key' => null]);
+        FortuneTellingSetting::getGlobalSettings()->update(['elevenlabs_api_key' => null]);
         FortuneTellingSetting::clearSettingsCache();
         Cache::forget(self::VOICES_CACHE_KEY);
 
-        return back()->with('success', 'ลบ X-DREAMER key แล้ว — เสียงตัวละครจะหยุดสร้างใหม่ (ไฟล์ที่แคชไว้ยังเล่นได้)');
+        return back()->with('success', 'ลบ ElevenLabs key แล้ว — เสียงตัวละครจะหยุดสร้างใหม่ (ไฟล์ที่แคชไว้ยังเล่นได้)');
     }
 
     /**
-     * AJAX — เครดิตคงเหลือ
+     * AJAX — โควต้าตัวอักษรคงเหลือ
      */
     public function credits(): JsonResponse
     {
@@ -186,8 +188,8 @@ class FortuneCharacterVoiceController extends Controller
         return back()->with(
             $voices['live'] ? 'success' : 'error',
             $voices['live']
-                ? 'ดึงรายชื่อเสียงจาก X-DREAMER แล้ว ('.count($voices['voices']).' เสียง)'
-                : 'ดึงรายชื่อเสียงจาก X-DREAMER ไม่สำเร็จ — ใช้รายชื่อสำรองไปก่อน'
+                ? 'ดึงรายชื่อเสียงจากบัญชี ElevenLabs แล้ว ('.count($voices['voices']).' เสียง)'
+                : 'ดึงรายชื่อเสียงจาก ElevenLabs ไม่สำเร็จ — ใช้รายชื่อสำรองไปก่อน'
         );
     }
 
@@ -209,9 +211,15 @@ class FortuneCharacterVoiceController extends Controller
         return $voices;
     }
 
+    /**
+     * เสียงที่ยอมให้สร้าง/เลือก = เสียงในบัญชี + เสียงมาตรฐานสำรอง (เสียงเริ่มต้นของตัวละครอยู่ในชุดนี้)
+     */
     protected function isKnownVoice(FortuneCharacterVoiceService $service, string $voiceId): bool
     {
-        $list = $service->provider()->isAvailable() ? $this->voices($service)['voices'] : XDreamerTtsProvider::FALLBACK_VOICES;
+        $list = ElevenLabsTtsProvider::FALLBACK_VOICES;
+        if ($service->provider()->isAvailable()) {
+            $list = array_merge($list, $this->voices($service)['voices']);
+        }
 
         return collect($list)->contains(fn ($v) => $v['id'] === $voiceId);
     }
