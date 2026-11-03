@@ -1603,7 +1603,11 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         // Pattern requires: start with emoji `👤` OR English letter [A-Za-z] after `[`
         //   → ปลอดภัยกับข้อความปกติที่ใช้ `[ภาษาไทย]` (เช่น `[หมายเหตุ]`) — ไม่จับ
         $whitelistKeep = '(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE)';
-        $bracketPattern = '/\[(?!'.$whitelistKeep.'\b)(?:👤\s*|[A-Za-z])[^\]\n]{0,300}\]/iu';
+        // 🌐 (2026-11-04) ป้ายการ์ดของห้องแชทเว็บ [[OFFER:หมวด]] — JuntraChatService แยกหลังจากนี้แล้วถอดเอง
+        //    เดิมชั้นนี้ลอก [OFFER:love] ข้างในทิ้งเหลือ "[]" → การ์ดเปิดไพ่ไม่เคยขึ้นตั้งแต่ ก.ย.
+        //    ยกเว้นเฉพาะแบบวงเล็บสองชั้นครบ ตัวที่หลุดมาชั้นเดียวยังถูกลอกเหมือนเดิม
+        $webOfferTag = 'OFFER\s*:\s*[a-z]+\s*\]\]';
+        $bracketPattern = '/\[(?!'.$whitelistKeep.'\b)(?!'.$webOfferTag.')(?:👤\s*|[A-Za-z])[^\]\n]{0,300}\]/iu';
         $cleaned = preg_replace($bracketPattern, '', $text);
 
         // เพิ่มจับ "(ลูกค้าคนนี้: ... / ... )" — AI หลอน paren format
