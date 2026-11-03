@@ -795,11 +795,33 @@ class JuntraServerChatApiTest extends TestCase
 
         $call = end($this->aiCalls);
         $this->assertStringContainsString('น้องบุษบา', $call['system']);
-        $this->assertStringContainsString('น้ำเสียงน้องบุษบา', $call['user']);
+        $this->assertStringContainsString('น้ำเสียงบุษบา (สดใส ตรง กระชับ เรียกตัวเองว่าบุษบา เรียกลูกค้าว่าคุณ)', $call['user']);
+        // 🌸 (2026-11-04) ฉบับรีวิว: เรียกลูกค้าว่า "คุณ" (ตรงกับหน้าเว็บ) · ประวัติแชทติดป้าย "ลูกค้า:" ไม่ใช่ "พี่:"
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ" เสมอ', $call['system']);
+        $this->assertStringContainsString('ลูกค้า: สวัสดีจ้า', $call['user']);
+        $this->assertStringNotContainsString('พี่:', $call['user']);
 
         // ไม่ส่ง = maemor (พรอมต์เดิม)
         $this->start('43');
         $this->startContinuity(['user_ref' => '44'])->assertJsonPath('data.persona', 'maemor');
+    }
+
+    /** 🌸 (2026-11-04) กติกาป้ายของบุษบา "แทนที่" WEB_OFFER_RULES — สองชุดอยู่ด้วยกันจะขัดกัน (ชุดกลางบอก "ห้องนี้คุยฟรี") */
+    public function test_busaba_offer_rules_replace_the_generic_web_rules(): void
+    {
+        $service = app(\App\Services\Fortune\JuntraChatService::class);
+
+        $busaba = $service->start('7', null, 'busaba');
+        $service->send('7', $busaba['session_id'], 'ดูดวงความรักให้หน่อย', [], webOffers: true, fillerOnEmpty: true);
+        $system = end($this->aiCalls)['system'];
+        $this->assertStringContainsString('กติกาของห้องแชทนี้ (ห้องบุษบา', $system);
+        $this->assertStringNotContainsString('ห้องนี้คุยฟรี', $system);
+        $this->assertStringNotContainsString('ดูละเอียดทั้งชีวิต', $system);
+
+        $maemor = $service->start('8', null, 'maemor');
+        $service->send('8', $maemor['session_id'], 'ดูดวงความรักให้หน่อย', [], webOffers: true, fillerOnEmpty: true);
+        $this->assertStringContainsString('ห้องนี้คุยฟรี', end($this->aiCalls)['system']);
+        $this->assertStringContainsString('น้ำเสียงแม่หมอจันทรา', end($this->aiCalls)['user']);
     }
 
     public function test_an_unknown_persona_is_refused(): void
