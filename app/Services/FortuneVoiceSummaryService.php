@@ -272,6 +272,8 @@ class FortuneVoiceSummaryService
             'openai_tts' => new OpenAITtsProvider($this->settings, $this->pool),
             'google_tts' => new GoogleCloudTtsProvider($this->settings),
             'gtts' => new GttsProvider,
+            // 🎭 (2026-11-03) ElevenLabs V3 ผ่าน X-DREAMER — ไม่ระบุเสียง = เสียงแม่หมอที่เลือกไว้
+            'xdreamer' => new \App\Services\Tts\XDreamerTtsProvider($this->settings),
             default => null,
         };
     }

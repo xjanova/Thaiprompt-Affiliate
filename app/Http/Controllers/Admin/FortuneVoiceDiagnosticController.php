@@ -214,6 +214,7 @@ class FortuneVoiceDiagnosticController extends Controller
             ['name' => 'openai_tts', 'label' => '🎙️ OpenAI TTS (paid)'],
             ['name' => 'google_tts', 'label' => '🎙️ Google Cloud TTS (free 1M chars/เดือน)'],
             ['name' => 'gtts', 'label' => '🆓 gTTS (Google Translate, ไม่ต้องตั้ง key)'],
+            ['name' => 'xdreamer', 'label' => '🎭 X-DREAMER · ElevenLabs V3 (เสียงแม่หมอ)'],
         ];
 
         $checks = [];
@@ -232,6 +233,9 @@ class FortuneVoiceDiagnosticController extends Controller
                     ? '✅ Google credentials พร้อม'
                     : '❗ ต้องตั้ง GOOGLE_TTS_API_KEY หรือ GOOGLE_TRANSLATE_API_KEY ใน .env (หรือ service account JSON)',
                 'gtts' => '✅ ไม่ต้องตั้งค่า (ใช้เป็น fallback สุดท้าย)',
+                'xdreamer' => $available
+                    ? '✅ X-DREAMER key ตั้งแล้ว'
+                    : '❗ ตั้ง X-DREAMER key ที่หน้า "เสียงพากย์ตัวละคร"',
                 default => '',
             };
 
@@ -254,6 +258,7 @@ class FortuneVoiceDiagnosticController extends Controller
             'openai_tts' => new OpenAITtsProvider($settings, app(\App\Services\AiApiKeyPoolService::class)),
             'google_tts' => new GoogleCloudTtsProvider($settings),
             'gtts' => new GttsProvider,
+            'xdreamer' => new \App\Services\Tts\XDreamerTtsProvider($settings),
             default => null,
         };
     }

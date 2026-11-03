@@ -2562,6 +2562,20 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/voice-diagnostic/test/{provider}', [FortuneVoiceDiagnosticController::class, 'testProvider'])->name('voice-diagnostic.test');
     Route::post('/voice-diagnostic/regenerate/{reading}', [FortuneVoiceDiagnosticController::class, 'regenerateReading'])->name('voice-diagnostic.regenerate');
 
+    // 🎭 (2026-11-03) เสียงพากย์ตัวละคร แม่หมอจันทรา/น้องบุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
+    Route::prefix('character-voices')->name('character-voices.')->group(function () {
+        $cv = \App\Http\Controllers\Admin\FortuneCharacterVoiceController::class;
+        Route::get('/', [$cv, 'index'])->name('index');
+        Route::put('/settings', [$cv, 'updateSettings'])->name('settings.update');
+        Route::delete('/key', [$cv, 'deleteKey'])->name('key.delete');
+        Route::post('/credits', [$cv, 'credits'])->name('credits');
+        Route::post('/refresh-voices', [$cv, 'refreshVoices'])->name('refresh-voices');
+        // สร้างเสียงตัวอย่างสั่งงานที่เสียเครดิต — จำกัดความถี่กันกดรัว
+        Route::post('/sample', [$cv, 'sample'])->middleware('throttle:30,1')->name('sample');
+        Route::get('/clips/{clip}', [$cv, 'clipStatus'])->name('clips.show');
+        Route::post('/select', [$cv, 'select'])->name('select');
+    });
+
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');
     Route::post('/playground/chat', [FortuneSettingsController::class, 'playgroundChat'])->name('playground.chat');

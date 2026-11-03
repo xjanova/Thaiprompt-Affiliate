@@ -421,6 +421,13 @@ class FortuneTellingSetting extends Model
         'minimax_group_id',
         'minimax_model',
         'minimax_voice_id',
+        // 🎭 (2026-11-03) เสียงตัวละคร แม่หมอจันทรา/น้องบุษบา ผ่าน X-DREAMER (ElevenLabs V3)
+        'xdreamer_api_key',
+        'xdreamer_tts_model',
+        'maemor_voice_id',
+        'busaba_voice_id',
+        'kunsai_voice_id',
+        'character_voice_daily_char_limit',
         'openai_tts_model',
         'openai_tts_voice',
         'google_tts_voice',
@@ -531,6 +538,8 @@ class FortuneTellingSetting extends Model
         //    ⚠️ คอลัมน์นี้ใหม่และมีที่เดียวที่อ่าน — ใส่ cast ได้ปลอดภัย
         //       (ห้ามไปใส่ cast ให้ facebook_page_token ของเดิม ค่าที่บันทึกไว้แล้วเป็น plaintext จะถอดไม่ออก)
         'facebook_user_token' => 'encrypted',
+        // 🎭 (2026-11-03) key X-DREAMER (axm-…) — คอลัมน์ใหม่ อ่านผ่าน getXdreamerApiKey() ที่เดียว
+        'xdreamer_api_key' => 'encrypted',
         'facebook_user_token_checked_at' => 'datetime',
         // ⏳ (2026-08-11) null = ไม่มีวันหมด (Graph คืน 0) ห้ามเก็บ 0 ตรงๆ เดี๋ยวกลายเป็นปี 1970
         'facebook_user_token_expires_at' => 'datetime',
@@ -1162,6 +1171,8 @@ class FortuneTellingSetting extends Model
         // 🏦 (2026-07-14) KBank secrets — ห้าม serialize ออกไป
         'kbank_consumer_secret',
         'kbank_cert_password',
+        // 🎭 (2026-11-03) X-DREAMER key — ห้าม serialize ออกไป
+        'xdreamer_api_key',
     ];
 
     /**
@@ -3530,6 +3541,7 @@ PROMPT;
                 'openai_tts' => ['google_tts', 'gtts'],
                 'google_tts' => ['gtts'],
                 'gtts' => [],
+                'xdreamer' => ['minimax', 'google_tts', 'gtts'],
                 default => ['google_tts', 'gtts'],
             };
         }
@@ -3660,5 +3672,39 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * 🎭 (2026-11-03) key X-DREAMER (axm-…) สำหรับเสียงตัวละคร — อ่านจากค่ากลางเสมอ
+     *
+     * ถอดรหัสใน try/catch: ถ้า APP_KEY เปลี่ยน cast 'encrypted' จะ throw → ถือว่ายังไม่ได้ตั้ง key
+     * (ห้ามโยน exception ต่อ เพราะข้อความ error อาจหลุดไปหน้าเว็บ)
+     */
+    public function getXdreamerApiKey(): ?string
+    {
+        try {
+            $key = $this->xdreamer_api_key;
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = is_string($key) ? trim($key) : '';
+
+        return $key !== '' ? $key : null;
+    }
+
+    /**
+     * key X-DREAMER แบบปิดบัง สำหรับแสดงในหน้าแอดมิน เช่น "axm-••••••••3f9a"
+     */
+    public function getXdreamerApiKeyMasked(): ?string
+    {
+        $key = $this->getXdreamerApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'axm-') ? 'axm-' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
     }
 }
