@@ -179,7 +179,7 @@ class TarotInterpretController extends Controller
                 Log::info('Juntra tarot profile: birth chart skipped', ['err' => $e->getMessage()]);
             }
             if ($birth !== '') {
-                $blocks['birth'] = "🌠 ดวงดาวจากวันเกิดของลูก (ใช้เสริมจังหวะเวลา/จุดแข็ง-จุดอ่อน ห้ามให้ดวงกลบคำตอบของไพ่):\n".$birth;
+                $blocks['birth'] = '🌠 ดวงดาวจากวันเกิดของ'.JuntraSpreadProfiles::customerWord($profile)." (ใช้เสริมจังหวะเวลา/จุดแข็ง-จุดอ่อน ห้ามให้ดวงกลบคำตอบของไพ่):\n".$birth;
             }
         }
 
@@ -194,7 +194,10 @@ class TarotInterpretController extends Controller
         $prompt = JuntraSpreadProfiles::userPrompt($profile, $cards, $question, $months, $blocks);
 
         try {
-            $ai->withReadingOverride(JuntraSpreadProfiles::systemOverride($profile, count($cards)))
+            // 🌸 บล็อกตัวละครต้องอยู่ท้ายสุดในค่าเดียวกัน — เรียก withReadingOverride ซ้ำจะทับ systemOverride ทิ้ง
+            $ai->withReadingOverride(rtrim(JuntraSpreadProfiles::systemOverride($profile, count($cards)).'
+
+'.JuntraSpreadProfiles::personaOverride($profile)))
                 // หน้าเว็บรอได้ ~55 วิ — หยุดวนลอง key ก่อนนั้น (บอทรอได้ 150 วิ)
                 ->withConfigOverride(['max_tokens' => $profile['max_tokens'], 'temperature' => 0.6, 'budget_sec' => 50])
                 ->withCustomerContext(array_filter(['customer_name' => $data['customer_name'] ?? null]));
