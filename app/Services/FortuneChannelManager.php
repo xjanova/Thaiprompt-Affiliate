@@ -334,7 +334,8 @@ class FortuneChannelManager
         $action = $result['action'] ?? '';
         // 🗑️ PDPA actions — ห้ามแทรกโฆษณาคอมมิชชั่นในข้อความลบข้อมูล (ผิดบริบท legal)
         // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — เป็นคำขอสิทธิ์ PDPA เช่นกัน ห้ามแทรกโฆษณา
-        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned',
+        // 🤍 (2026-11-03) crisis_support — คนกำลังคิดทำร้ายตัวเอง ห้ามมีเรื่องเงินแทรก
+        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned', 'crisis_support',
             'pdpa_delete_confirm', 'pdpa_deleted', 'pdpa_delete_cancelled',
             'personal_data_summary', 'personal_data_restricted', 'personal_data_empty', 'personal_data_error',
             'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled', 'personal_name_failed'], true)) {
@@ -939,6 +940,9 @@ class FortuneChannelManager
 
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendFacebookDeepReadingRedirect($fbService, $richService, $userId, $result),
+
+                // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → ข้อความล้วน ❌ ห้ามปุ่มดูดวง/ปุ่มชวนย้าย ❌ ไม่หน่วง 15 วิ
+                'crisis_support' => $fbService->sendMessage($userId, $message, $extra),
 
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
                 'keyword_matched', 'ai_chat_response', 'ai_chat_hold', 'fortune_throttled', 'busy', 'busy_processing',
@@ -3483,6 +3487,9 @@ class FortuneChannelManager
 
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendLineDeepReadingRedirect($lineService, $userId, $result, $replyToken),
+
+                // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → text ล้วน ไม่มี quick reply ดูดวง
+                'crisis_support' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // AI Chat ทั่วไป → ส่ง text + Quick Replies default (ดูดวง / คุยกับแม่หมอ)
                 'ai_chat_response' => $this->sendLineAiChatResponse($lineService, $userId, $message, $replyToken, $result),

@@ -4,11 +4,14 @@ namespace Tests\Feature\Fortune;
 
 use App\Jobs\ProcessBufferedChatMessageJob;
 use App\Models\AiApiKey;
+use App\Models\FortuneCustomerPersona;
+use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneChatLogService;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\Fortune\ReplyTokenVault;
 use App\Services\Fortune\TakeoverSendGuard;
+use App\Services\FortuneChannelManager;
 use App\Services\LineAlertService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -122,6 +125,14 @@ class SelfHarmChatReplyTest extends TestCase
             ->implode("\n");
     }
 
+    private function assertPersonaFlagged(string $platform, string $userId): void
+    {
+        $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
+        $this->assertNotNull($persona, 'ต้องมี persona ไว้จำว่าลูกค้าเปราะบาง');
+        $this->assertTrue($persona->hasRiskFlag('mental_fragile'));
+        $this->assertNotEmpty($persona->risk_flags['crisis_resources_sent'] ?? null, 'ต้องจดว่าให้สายด่วนไปแล้ว');
+    }
+
     public function test_facebook_self_harm_gets_hotline_not_dismissal_and_admin_is_alerted(): void
     {
         Queue::fake();
@@ -131,6 +142,8 @@ class SelfHarmChatReplyTest extends TestCase
         $sent = $this->sentBodies('graph.facebook.com');
         $this->assertStringContainsString('1323', $sent, 'ลูกค้า FB ต้องได้สายด่วนใจ');
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $sent);
+        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มดูดวง/ปุ่มขาย');
+        $this->assertStringNotContainsString('START_FORTUNE', $sent);
         $this->assertSame([], $this->aiCalls, 'ห้ามส่งไปให้ AI ทำนาย');
 
         $alerts = $this->adminAlerts();
@@ -138,6 +151,8 @@ class SelfHarmChatReplyTest extends TestCase
         $this->assertStringContainsString(self::FB_UID, $alerts[0]);
         $this->assertStringContainsString('อยากฆ่าตัวตาย', $alerts[0]);
         $this->assertStringNotContainsString('[TURN', $alerts[0], 'แอดมินเห็นแค่ข้อความลูกค้า');
+
+        $this->assertPersonaFlagged('facebook', self::FB_UID);
     }
 
     public function test_line_self_harm_is_answered_by_reply_never_push(): void
@@ -150,12 +165,71 @@ class SelfHarmChatReplyTest extends TestCase
         $reply = $this->sentBodies('/message/reply');
         $this->assertStringContainsString('1323', $reply);
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
+        $this->assertStringNotContainsString('quickReply', $reply, 'ห้ามมี quick reply ดูดวง');
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
         $this->assertSame([], $this->aiCalls);
 
         $alerts = $this->adminAlerts();
         $this->assertCount(1, $alerts);
         $this->assertStringContainsString(self::LINE_UID, $alerts[0]);
+
+        $this->assertPersonaFlagged('line', self::LINE_UID);
+    }
+
+    public function test_webhook_entry_answers_before_buffering_on_facebook_and_line(): void
+    {
+        Queue::fake();
+        $channels = app(FortuneChannelManager::class);
+
+        $fb = $channels->processMessage('facebook', self::FB_UID, 'อยากจบชีวิตตัวเอง', ['name' => 'ลูกค้าทดสอบ']);
+        $line = $channels->processMessage('line', self::LINE_UID, 'suicide', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-line']);
+
+        $this->assertSame('crisis_support', $fb['action']);
+        $this->assertSame('crisis_support', $line['action']);
+        $this->assertStringContainsString('1323', $this->sentBodies('graph.facebook.com'));
+        $this->assertStringNotContainsString('quick_replies', $this->sentBodies('graph.facebook.com'));
+        $this->assertStringContainsString('1323', $this->sentBodies('/message/reply'));
+        $this->assertStringNotContainsString('quickReply', $this->sentBodies('/message/reply'));
+        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
+        $this->assertSame([], $this->aiCalls);
+        $this->assertCount(2, $this->adminAlerts());
+        $this->assertPersonaFlagged('facebook', self::FB_UID);
+        $this->assertPersonaFlagged('line', self::LINE_UID);
+    }
+
+    public function test_mid_prediction_customer_still_gets_the_hotline_not_silence(): void
+    {
+        Queue::fake();
+        ReplyTokenVault::remember('line', self::LINE_UID, 'rt-fresh');
+        // ระหว่าง AI กำลังทำนาย ปกติบอทเงียบทุกข้อความ (silent_skip)
+        $reading = $this->makeReading([
+            'platform' => 'line',
+            'platform_user_id' => self::LINE_UID,
+            'facebook_user_id' => self::LINE_UID,
+            'conversation_status' => FortuneReading::STATUS_PAID,
+            'is_paid' => true,
+            'amount_paid' => 39,
+        ]);
+
+        $result = app(FortuneChannelManager::class)
+            ->processMessage('line', self::LINE_UID, 'ไม่อยากอยู่แล้ว', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-fresh']);
+
+        $this->assertSame('crisis_support', $result['action']);
+        $this->assertStringContainsString('1323', $this->sentBodies('/message/reply'));
+        $this->assertSame(FortuneReading::STATUS_PAID, $reading->fresh()->conversation_status, 'ห้ามแตะสถานะคำทำนายที่จ่ายแล้ว');
+    }
+
+    public function test_silenced_customer_is_answered_and_unsilenced(): void
+    {
+        Queue::fake();
+        $persona = FortuneCustomerPersona::getOrCreate('facebook', self::FB_UID);
+        $persona->chat_silenced_until = now()->addHours(5);
+        $persona->save();
+
+        $this->runFlush('facebook', self::FB_UID, 'อยากตาย');
+
+        $this->assertStringContainsString('1323', $this->sentBodies('graph.facebook.com'));
+        $this->assertNull($persona->fresh()->chat_silenced_until, 'คนวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป');
     }
 
     public function test_follow_up_messages_still_get_answered_but_admin_is_not_spammed(): void

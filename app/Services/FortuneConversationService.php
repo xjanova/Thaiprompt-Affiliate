@@ -699,6 +699,17 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🤍 (2026-11-03) สัญญาณอยากทำร้ายตัวเอง — ตอบห่วงใย + สายด่วนใจ 1323 ก่อนทุก flow
+            // ═══════════════════════════════════════════════════════════════
+            //   จุดนี้ทุกข้อความ FB/LINE/Telegram ผ่าน ⇒ ครอบทั้งแชท AI, เส้น Pro sensitive (ไม่มี guard),
+            //   partial hold และกลางบททำนาย (ข้อยกเว้นของกฎ "ห้ามแทรกระหว่างทำนาย" — ชีวิตคนมาก่อน)
+            //   ไม่แตะสถานะ reading/บิล — ข้อความถัดไปกลับเข้า flow เดิมได้ตามปกติ
+            $selfHarmReply = $this->maybeHandleSelfHarmMessage($facebookUserId, $messageText, $userProfile);
+            if ($selfHarmReply !== null) {
+                return $selfHarmReply;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🤝 Admin Handover Hard Guard — ใช้ shouldBypassTakeover (DRY)
             // ═══════════════════════════════════════════════════════════════
             try {
@@ -23545,6 +23556,13 @@ PROMPT;
 
     public function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
     {
+        // 🤍 (2026-11-03) ProcessBufferedChatMessageJob เรียกตรงนี้โดยไม่ผ่าน processMessage
+        //   → ดักซ้ำที่นี่ ก่อนด่านปิดปาก rambler (คนวิกฤตห้ามโดนเงียบ)
+        $selfHarmReply = $this->maybeHandleSelfHarmMessage($userId, $messageText, $userProfile);
+        if ($selfHarmReply !== null) {
+            return $selfHarmReply;
+        }
+
         try {
             // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
             //   ถ้าลูกค้าถูก mark "ฟุ้งซ่านไม่ปิดการขาย" + ไม่มี keyword พร้อมซื้อ → return null
@@ -24559,6 +24577,47 @@ PROMPT;
      * ใช้แทน $this->currentPlatform default ('line') ที่อาจไม่ตรงกับ user ID จริง
      * → กัน FB users ติด LINE bucket / LINE users ติด FB bucket
      */
+    /**
+     * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง
+     *
+     * - แจ้งแอดมิน (Telegram) + ติดธง persona mental_fragile/crisis_resources_sent เสมอ
+     * - แอดมินคุยเองอยู่ (takeover) → ไม่แทรก คืน null ให้ flow takeover เดิมทำงาน
+     * - นอกนั้น → คำตอบห่วงใย action `crisis_support` (ส่งข้อความล้วน ไม่มีปุ่มดูดวง/ขาย)
+     *   และบันทึกลงประวัติแชท ให้ AI เทิร์นถัดไปรู้ว่าคุยเรื่องอะไรอยู่
+     *
+     * @return array|null null = ไม่ใช่ข้อความวิกฤต / แอดมินดูแลอยู่
+     */
+    protected function maybeHandleSelfHarmMessage(string $userId, string $messageText, ?array $userProfile): ?array
+    {
+        if (! FortuneAIService::isSelfHarmStatement($messageText)) {
+            return null;
+        }
+
+        $platform = $this->currentPlatform ?? $this->detectPlatformFromUserId($userId);
+
+        FortuneAIService::reportSelfHarmSignal('self_harm', $messageText, $userId);
+        app(\App\Services\Fortune\CustomerPersonaService::class)
+            ->flagCrisis($platform, $userId, $userProfile['name'] ?? null);
+
+        try {
+            if (app(\App\Services\FortuneTakeoverService::class)->isActiveByPlatform($platform, $userId)) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            // เช็ค takeover ไม่ได้ → ตอบลูกค้าไปเลย (เงียบใส่คนวิกฤตแย่กว่าตอบซ้อนแอดมิน)
+        }
+
+        $reply = FortuneAIService::buildAdversarialReply('self_harm');
+        $this->saveConversationMessage($userId, 'user', $messageText);
+        $this->saveConversationMessage($userId, 'assistant', $reply);
+
+        return [
+            'action' => 'crisis_support',
+            'message' => $reply,
+            'reading' => null,
+        ];
+    }
+
     protected function detectPlatformFromUserId(string $userId): string
     {
         // ✈️ (2026-09-13) รวม Telegram ('tg_…') — แหล่งเดียวกับ FortuneRecipient

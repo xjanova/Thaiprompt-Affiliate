@@ -282,6 +282,36 @@ class CustomerPersonaService
     }
 
     /**
+     * 🤍 (2026-11-03) ลูกค้าเพิ่งบอกว่าอยากทำร้ายตัวเอง และบอทเพิ่งให้สายด่วนใจไป
+     *
+     * - mental_fragile = true ทันที (ไม่รอ extraction job) → เทิร์นถัดไป AI ได้ MENTAL_FRAGILE: ตอบสั้น นุ่ม ห้าม pitch
+     * - crisis_resources_sent = ตอนนี้ (เดิม markCrisisResourcesSent() ไม่เคยถูกเรียกจากที่ไหนเลย)
+     * - ล้างธงปิดปาก (rambler silence) — คนกำลังวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป
+     *
+     * best-effort — ห้าม throw ขวางคำตอบถึงลูกค้า
+     */
+    public function flagCrisis(string $platform, string $userId, ?string $displayName = null): void
+    {
+        try {
+            $persona = FortuneCustomerPersona::getOrCreate($platform, $userId, $displayName);
+
+            $flags = $persona->risk_flags ?? [];
+            $flags['mental_fragile'] = true;
+            $persona->risk_flags = $flags;
+            $persona->chat_silenced_until = null;
+            $persona->markCrisisResourcesSent(); // save() อยู่ในนี้
+
+            $this->invalidateCache($platform, $userId);
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: flagCrisis ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 🔊 (2026-07-11) ลูกค้าจ่ายเงินแล้ว → ล้างธง "ปิดปาก" (rambler/time-waster silence) ทิ้ง + invalidate cache
      *
      * เคส FTU-260711-T4317 (reading 9003): ลูกค้าจ่าย Deep 39฿ แต่โดน chat_silenced_until ค้าง
