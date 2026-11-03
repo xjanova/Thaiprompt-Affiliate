@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\Fortune\FortunePageContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * FortuneTellingSetting Model
@@ -424,9 +425,6 @@ class FortuneTellingSetting extends Model
         // 🎭 (2026-11-03) เสียงตัวละคร แม่หมอจันทรา/น้องบุษบา ผ่าน X-DREAMER (ElevenLabs V3)
         'xdreamer_api_key',
         'xdreamer_tts_model',
-        // 🎭 (2026-11-04) ElevenLabs ตรง — เสียงพากย์ตัวละคร
-        'elevenlabs_api_key',
-        'elevenlabs_tts_model',
         'maemor_voice_id',
         'busaba_voice_id',
         'kunsai_voice_id',
@@ -543,7 +541,6 @@ class FortuneTellingSetting extends Model
         'facebook_user_token' => 'encrypted',
         // 🎭 (2026-11-03) key X-DREAMER (axm-…) — คอลัมน์ใหม่ อ่านผ่าน getXdreamerApiKey() ที่เดียว
         'xdreamer_api_key' => 'encrypted',
-        'elevenlabs_api_key' => 'encrypted',
         'facebook_user_token_checked_at' => 'datetime',
         // ⏳ (2026-08-11) null = ไม่มีวันหมด (Graph คืน 0) ห้ามเก็บ 0 ตรงๆ เดี๋ยวกลายเป็นปี 1970
         'facebook_user_token_expires_at' => 'datetime',
@@ -1177,8 +1174,6 @@ class FortuneTellingSetting extends Model
         'kbank_cert_password',
         // 🎭 (2026-11-03) X-DREAMER key — ห้าม serialize ออกไป
         'xdreamer_api_key',
-        // 🎭 (2026-11-04) ElevenLabs key — ห้าม serialize ออกไป
-        'elevenlabs_api_key',
     ];
 
     /**
@@ -3714,22 +3709,45 @@ PROMPT;
         return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
     }
 
+    /** 🎭 (2026-11-04) แถวในตาราง settings (key/value) ที่เก็บค่า ElevenLabs ของเสียงตัวละคร */
+    public const ELEVENLABS_KEY_SETTING = 'fortune_elevenlabs_api_key';
+
+    public const ELEVENLABS_MODEL_SETTING = 'fortune_elevenlabs_tts_model';
+
     /**
-     * 🎭 (2026-11-04) key ElevenLabs สำหรับเสียงตัวละคร — อ่านจากค่ากลางเสมอ
+     * 🎭 (2026-11-04) key ElevenLabs สำหรับเสียงตัวละคร — เก็บเข้ารหัสในตาราง settings
      *
-     * ถอดรหัสใน try/catch: ถ้า APP_KEY เปลี่ยน cast 'encrypted' จะ throw → ถือว่ายังไม่ได้ตั้ง key
+     * ⚠️ ห้ามเพิ่มคอลัมน์ในตารางนี้อีก: ชนเพดาน row size 8,126 ไบต์ของ InnoDB แล้ว (แม้คอลัมน์ text ก็เพิ่มไม่ได้)
+     * ถอดรหัสไม่ได้ (APP_KEY เปลี่ยน) หรือไม่มีตาราง = ถือว่ายังไม่ได้ตั้ง key — ห้ามโยน exception ต่อ
      */
     public function getElevenlabsApiKey(): ?string
     {
         try {
-            $key = $this->elevenlabs_api_key;
+            $stored = Setting::get(self::ELEVENLABS_KEY_SETTING);
+            $key = is_string($stored) && $stored !== '' ? Crypt::decryptString($stored) : '';
         } catch (\Throwable $e) {
             return null;
         }
 
-        $key = is_string($key) ? trim($key) : '';
+        $key = trim($key);
 
         return $key !== '' ? $key : null;
+    }
+
+    /**
+     * บันทึก/ลบ key ElevenLabs (null = ลบ)
+     */
+    public function setElevenlabsApiKey(?string $key): void
+    {
+        $key = $key !== null ? trim($key) : '';
+
+        if ($key === '') {
+            Setting::where('key', self::ELEVENLABS_KEY_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_KEY_SETTING, Crypt::encryptString($key), 'encrypted', 'fortune_voice');
     }
 
     /**
@@ -3745,5 +3763,32 @@ PROMPT;
         $prefix = str_starts_with($key, 'sk_') ? 'sk_' : '';
 
         return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /**
+     * โมเดลเสียง ElevenLabs ที่แอดมินตั้ง (null = ใช้ค่าเริ่มต้นของ provider)
+     */
+    public function getElevenlabsTtsModel(): ?string
+    {
+        try {
+            $model = trim((string) Setting::get(self::ELEVENLABS_MODEL_SETTING, ''));
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $model !== '' ? $model : null;
+    }
+
+    public function setElevenlabsTtsModel(?string $model): void
+    {
+        $model = $model !== null ? trim($model) : '';
+
+        if ($model === '') {
+            Setting::where('key', self::ELEVENLABS_MODEL_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_MODEL_SETTING, $model, 'string', 'fortune_voice');
     }
 }

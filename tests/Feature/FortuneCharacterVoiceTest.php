@@ -4,14 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
+use App\Models\Setting;
 use App\Services\Fortune\FortuneCharacterVoiceService;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use App\Services\Tts\XDreamerTtsProvider;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
@@ -46,7 +49,17 @@ class FortuneCharacterVoiceTest extends TestCase
 
         $this->buildJuntraServerSchema();
         (require database_path('migrations/2026_11_03_100000_create_fortune_character_voices.php'))->up();
-        (require database_path('migrations/2026_11_04_100000_add_elevenlabs_to_fortune_telling_settings.php'))->up();
+        // ตาราง key/value ที่เก็บ key ElevenLabs (สคีมาเดียวกับของจริง)
+        if (! Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('key')->unique();
+                $table->text('value')->nullable();
+                $table->string('type')->default('string');
+                $table->string('group')->default('general');
+                $table->timestamps();
+            });
+        }
         config(['services.juntra.server_client_ids' => []]);
         Cache::flush();
         Storage::fake('public');
@@ -64,8 +77,7 @@ class FortuneCharacterVoiceTest extends TestCase
 
     private function setKey(?string $key = self::KEY): void
     {
-        FortuneTellingSetting::getGlobalSettings()->update(['elevenlabs_api_key' => $key]);
-        FortuneTellingSetting::clearSettingsCache();
+        FortuneTellingSetting::getGlobalSettings()->setElevenlabsApiKey($key);
     }
 
     private function fakeVendors(?callable $override = null): void
@@ -132,24 +144,27 @@ class FortuneCharacterVoiceTest extends TestCase
 
     // ───────────────────────────── key ─────────────────────────────
 
-    public function test_key_is_stored_encrypted_masked_and_never_serialized(): void
+    public function test_key_is_stored_encrypted_in_settings_and_masked(): void
     {
         $this->setKey();
         $settings = FortuneTellingSetting::getGlobalSettings();
 
-        $raw = DB::table('fortune_telling_settings')->value('elevenlabs_api_key');
-        $this->assertNotSame(self::KEY, $raw);
+        $raw = DB::table('settings')->where('key', FortuneTellingSetting::ELEVENLABS_KEY_SETTING)->value('value');
+        $this->assertNotEmpty($raw);
         $this->assertStringNotContainsString('TESTKEY', (string) $raw);
 
         $this->assertSame(self::KEY, $settings->getElevenlabsApiKey());
         $this->assertSame('sk_••••••••6789', $settings->getElevenlabsApiKeyMasked());
-        $this->assertArrayNotHasKey('elevenlabs_api_key', $settings->toArray());
+
+        // ลบ key = ลบแถว
+        $settings->setElevenlabsApiKey(null);
+        $this->assertNull($settings->getElevenlabsApiKey());
+        $this->assertFalse(Setting::where('key', FortuneTellingSetting::ELEVENLABS_KEY_SETTING)->exists());
     }
 
     public function test_unreadable_key_after_app_key_change_counts_as_not_set(): void
     {
-        DB::table('fortune_telling_settings')->update(['elevenlabs_api_key' => 'not-an-encrypted-payload']);
-        FortuneTellingSetting::clearSettingsCache();
+        Setting::set(FortuneTellingSetting::ELEVENLABS_KEY_SETTING, 'not-an-encrypted-payload', 'encrypted', 'fortune_voice');
 
         $this->assertNull(FortuneTellingSetting::getGlobalSettings()->getElevenlabsApiKey());
         $this->assertFalse((new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->isAvailable());
@@ -364,6 +379,7 @@ class FortuneCharacterVoiceTest extends TestCase
 
         $this->from('/admin/fortune/character-voices')->put('/admin/fortune/character-voices/settings', [
             'elevenlabs_api_key' => self::KEY,
+            'elevenlabs_tts_model' => 'eleven_multilingual_v2',
             'character_voice_daily_char_limit' => 50000,
         ])->assertRedirect()->assertSessionHas('success', '✅ บันทึก ElevenLabs key แล้ว (เหลือ 99,000 ตัวอักษรในรอบบิลนี้)');
 
@@ -371,12 +387,14 @@ class FortuneCharacterVoiceTest extends TestCase
         $settings = FortuneTellingSetting::getGlobalSettings();
         $this->assertSame(self::KEY, $settings->getElevenlabsApiKey());
         $this->assertSame(50000, (int) $settings->character_voice_daily_char_limit);
+        $this->assertSame('eleven_multilingual_v2', (new ElevenLabsTtsProvider($settings))->model());
         $this->assertSame([], $this->ttsCalls(), 'ทดสอบ key ไม่เสียโควต้า');
 
-        // บันทึกรอบหน้าเว้นช่อง key ว่าง = key เดิมยังอยู่
+        // บันทึกรอบหน้าเว้นช่อง key ว่าง = key เดิมยังอยู่ · เว้นโมเดลว่าง = กลับไปค่าเริ่มต้น
         $this->put('/admin/fortune/character-voices/settings', ['elevenlabs_api_key' => ''])->assertRedirect();
         FortuneTellingSetting::clearSettingsCache();
         $this->assertSame(self::KEY, FortuneTellingSetting::getGlobalSettings()->getElevenlabsApiKey());
+        $this->assertSame('eleven_v3', (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->model());
     }
 
     public function test_admin_accepts_restricted_key_that_cannot_read_quota(): void

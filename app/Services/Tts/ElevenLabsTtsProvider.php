@@ -70,9 +70,7 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
      */
     public function model(): string
     {
-        $model = trim((string) ($this->settings->elevenlabs_tts_model ?? ''));
-
-        return $model !== '' ? $model : self::DEFAULT_MODEL;
+        return $this->settings->getElevenlabsTtsModel() ?? self::DEFAULT_MODEL;
     }
 
     /**

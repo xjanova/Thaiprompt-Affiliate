@@ -71,7 +71,6 @@ class FortuneCharacterVoiceController extends Controller
 
         $settings = FortuneTellingSetting::getGlobalSettings();
         $update = [
-            'elevenlabs_tts_model' => $validated['elevenlabs_tts_model'] ?? null,
             'character_voice_daily_char_limit' => $validated['character_voice_daily_char_limit'] ?? null,
         ];
 
@@ -87,13 +86,14 @@ class FortuneCharacterVoiceController extends Controller
                     ->withErrors(['elevenlabs_api_key' => 'ใช้ key นี้ไม่ได้: '.$check['error']]);
             }
 
-            $update['elevenlabs_api_key'] = $newKey;
+            $settings->setElevenlabsApiKey($newKey);
             $message = $check['balance'] !== null
                 ? '✅ บันทึก ElevenLabs key แล้ว (เหลือ '.number_format((int) $check['balance']).' ตัวอักษรในรอบบิลนี้)'
                 : '✅ บันทึก ElevenLabs key แล้ว (key นี้ไม่มีสิทธิ์ดูโควต้า แต่สร้างเสียงได้)';
             Cache::forget(self::VOICES_CACHE_KEY);
         }
 
+        $settings->setElevenlabsTtsModel($validated['elevenlabs_tts_model'] ?? null);
         $settings->update($update);
         FortuneTellingSetting::clearSettingsCache();
 
@@ -105,7 +105,7 @@ class FortuneCharacterVoiceController extends Controller
      */
     public function deleteKey(): RedirectResponse
     {
-        FortuneTellingSetting::getGlobalSettings()->update(['elevenlabs_api_key' => null]);
+        FortuneTellingSetting::getGlobalSettings()->setElevenlabsApiKey(null);
         FortuneTellingSetting::clearSettingsCache();
         Cache::forget(self::VOICES_CACHE_KEY);
 
