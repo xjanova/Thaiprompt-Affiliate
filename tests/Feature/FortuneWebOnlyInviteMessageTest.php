@@ -15,6 +15,7 @@ use Database\Seeders\FortuneWebOnlyInviteMessageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
+use Tests\Concerns\RunsDataMigrations;
 use Tests\TestCase;
 
 /**
@@ -31,6 +32,7 @@ use Tests\TestCase;
 class FortuneWebOnlyInviteMessageTest extends TestCase
 {
     use RefreshDatabase;
+    use RunsDataMigrations;
 
     private const PSID = '61550000000111';
 
@@ -43,6 +45,10 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+
+        // CI โหลด schema dump ที่ไม่มีข้อมูล → ชุดข้อความชวน web ที่ migration seed ไว้หายไป ต้องรันซ้ำเอง
+        $this->runDataMigration('2026_11_03_151100_seed_fortune_web_only_invite_messages.php');
+        $this->runDataMigration('2026_11_03_160100_retire_old_web_only_invite_copy.php');
     }
 
     protected function tearDown(): void
