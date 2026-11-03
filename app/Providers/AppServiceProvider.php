@@ -140,6 +140,11 @@ class AppServiceProvider extends ServiceProvider
         // 🔐 คู่กับ Passport::ignoreRoutes() ใน register() — ประกาศเองเฉพาะเส้นที่ใช้
         $this->registerPassportRoutes();
 
+        // 🚦 (2026-11-03 FB web-only) named limiter ของ /api/v1/juntra/server/* (jwsrv/jwchat/jwpay/jwread/jwaff)
+        //   แชทนับต่อลูกค้า (user_ref) + เพดานรวม — ตัวเลขอยู่ที่ config/ratelimit.php → juntra_server
+        //   ⚠️ route อ้างชื่อเหล่านี้ — ไม่ลงทะเบียน = ThrottleRequests แปลงชื่อเป็นเลข 0 = บล็อกทุกคำขอ
+        \App\Support\JuntraServerRateLimits::register();
+
         // 🚫 (2026-09-26) ห้ามรัน migrate ตอนบูตแอป — เคยมี autoRunPendingMigrations() ตรงนี้
         //   ซึ่งรันในทุกโปรเซส (php-fpm / cron / artisan ของ deploy.sh ก่อน composer + migrate:smart)
         //   ร้านลูกค้าที่ต้องการ migrate อัตโนมัติ → APP_AUTO_MIGRATE=true (App\Console\AutoMigrateSchedule)

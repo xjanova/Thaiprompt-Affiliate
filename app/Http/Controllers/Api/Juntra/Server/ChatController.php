@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
 use App\Services\Fortune\JuntraChatService;
+use App\Services\Fortune\WebChatContinuityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,10 +23,17 @@ use Throwable;
  *   - แม่หมอไม่ทำนายเองในแชท ชวนเลือกแพ็กเกจเปิดไพ่แทน (kind=offer + offer_topic)
  *   - AI เงียบ = 503 ai_unavailable (ไม่ส่งข้อความรองรับที่หน้าตาเหมือนคำตอบจริง)
  *   - 💬 (2026-09-21) `context` (ไม่บังคับ) = คำพยากรณ์ที่ห้องนี้คุยต่อ — อยู่ใน system message ทุกรอบ
+ *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ย้ายมาจากแชทเพจ FB
+ *     แม่หมอได้ "ความจำ" จากแชท FB (WebChatContinuityService) วางใน system message เท่านั้น
+ *     ความจำไม่ถูกส่งกลับไปที่เว็บ — ตอบแค่ continued_from / customer.display_name / returning
+ *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
  */
 class ChatController extends Controller
 {
-    public function __construct(private JuntraChatService $chat) {}
+    public function __construct(
+        private JuntraChatService $chat,
+        private WebChatContinuityService $continuity,
+    ) {}
 
     public function start(Request $request): JsonResponse
     {
@@ -35,9 +43,39 @@ class ChatController extends Controller
             //    ไม่ส่ง = ห้องคุยทั่วไปแบบเดิม (เว็บรุ่นก่อนหน้าไม่รู้จักฟิลด์นี้)
             //    รับเฉพาะทางเซิร์ฟเวอร์ของเว็บ — ทาง token ของลูกค้าไม่รับ เพราะบริบทนี้ไปอยู่ใน system message
             'context' => 'sometimes|nullable|string|max:'.JuntraChatService::MAX_CONTEXT_CHARS,
+            // 🌙 (2026-11-03) users.id ฝั่ง Thaiprompt ที่เว็บรู้ (จาก SSO) — เชื่อแบบมีเงื่อนไข (JuntraAccount ชนะเสมอ)
+            'thaiprompt_user_id' => 'sometimes|nullable|integer|min:1',
+            // 🌙 (2026-11-03) nonce ของลิงก์ /chat/continue/{handoff}
+            'handoff' => 'sometimes|nullable|uuid',
+            'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
         ]);
 
-        return response()->json(['data' => $this->chat->start($this->owner($data['user_ref']), $data['context'] ?? null)], 201);
+        $continuity = $this->continuity->begin(
+            $data['user_ref'],
+            isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
+            $data['handoff'] ?? null,
+        );
+
+        $out = $this->chat->start(
+            $this->owner($data['user_ref']),
+            $data['context'] ?? null,
+            $data['persona'] ?? null,
+            $continuity,
+        );
+
+        return response()->json(['data' => [
+            'session_id' => $out['session_id'],
+            'greeting' => $out['greeting'],
+            'persona' => $out['persona'],
+            'display_name' => $out['display_name'],
+            'offer_topic' => $out['offer_topic'],
+            'continued_from' => $out['continued_from'],
+            'handoff_id' => $out['handoff_id'],
+            // 🔐 (รีวิว) true = ครั้งนี้ consume handoff ได้จริง (เว็บเปิดห้อง "คุยต่อจากเพจ" ได้)
+            //    false = ลิงก์ถูกใช้ไปแล้ว/ใช้ไม่ได้ → เว็บพากลับห้องเดิม ไม่เปิดห้องซ้ำ ไม่ทักซ้ำ
+            'handoff_consumed' => (bool) ($out['handoff_consumed'] ?? false),
+            'customer' => $out['customer'],
+        ]], 201);
     }
 
     public function send(Request $request): JsonResponse
@@ -51,23 +89,33 @@ class ChatController extends Controller
             'grounded' => 'sometimes|boolean',
             // 💬 (2026-09-21) ส่งซ้ำได้ทุกรอบ — ห้องหมดอายุ (6 ชม.) / cache ถูกล้าง แม่หมอก็ยังเห็นคำพยากรณ์ครบ
             'context' => 'sometimes|nullable|string|max:'.JuntraChatService::MAX_CONTEXT_CHARS,
+            // 🌙 (2026-11-03) ใช้สร้างความจำใหม่เมื่อห้องหมดอายุ (ไม่ consume handoff)
+            'thaiprompt_user_id' => 'sometimes|nullable|integer|min:1',
+            // 🎭 ใช้เฉพาะห้องที่ยังไม่ล็อกตัวละคร — ห้องที่ล็อกแล้วไม่เปลี่ยน
+            'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
         ]);
+
+        $userRef = $data['user_ref'];
+        $claimed = isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null;
 
         try {
             $out = $this->chat->send(
-                $this->owner($data['user_ref']),
+                $this->owner($userRef),
                 $data['session_id'],
                 trim($data['text']),
                 // ป้ายใน log การใช้ AI — ห้ามใส่ user_id: คอลัมน์เป็นตัวเลขของ users ฝั่ง Thaiprompt
                 // ลูกค้าเว็บไม่มีแถวในนั้น (ใส่ id ฝั่งเว็บไปจะชี้ผิดคน หรือ insert พังบน MySQL strict)
-                ['customer_name' => 'เว็บจันทรา #'.$data['user_ref'].(! empty($data['name']) ? ' '.$data['name'] : '')],
+                ['customer_name' => 'เว็บจันทรา #'.$userRef.(! empty($data['name']) ? ' '.$data['name'] : '')],
                 webOffers: ! $request->boolean('grounded'),
                 fillerOnEmpty: false,
                 context: $data['context'] ?? null,
+                persona: $data['persona'] ?? null,
+                allowMemory: true,
+                memoryLoader: fn () => $this->continuity->rebuildMemory($userRef, $claimed),
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
-                'user_ref' => $data['user_ref'],
+                'user_ref' => $userRef,
                 'error' => $e->getMessage(),
             ]);
 
@@ -83,6 +131,7 @@ class ChatController extends Controller
             'ai_provider' => $out['provider'],
             'kind' => $out['kind'],
             'offer_topic' => $out['offer_topic'],
+            'persona' => $out['persona'],
         ]]);
     }
 

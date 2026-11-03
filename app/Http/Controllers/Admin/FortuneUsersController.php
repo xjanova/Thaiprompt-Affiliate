@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortunePage;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
+use App\Services\FacebookWebhookService;
+use App\Services\Fortune\FbWebOnlyAdminMessageFilter;
+use App\Services\Fortune\FortuneBotMode;
+use App\Services\Fortune\FortunePageContext;
 use App\Services\FortuneChannelManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -160,6 +165,16 @@ class FortuneUsersController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
+        // 🌐 (2026-11-03 FB web-only) ห้ามแอดมินพูดเรื่องเงิน/โอน/เลขบัญชีในแชท FB (LINE ไม่โดน)
+        $blocked = FbWebOnlyAdminMessageFilter::blockReason(
+            $validated['platform'],
+            $validated['facebook_user_id'],
+            $validated['message']
+        );
+        if ($blocked !== null) {
+            return back()->withInput()->with('error', $blocked);
+        }
+
         try {
             $settings = FortuneTellingSetting::getSettings();
             $channelManager = new FortuneChannelManager($settings);
@@ -215,6 +230,15 @@ class FortuneUsersController extends Controller
             $settings = FortuneTellingSetting::getSettings();
             $channelManager = new FortuneChannelManager($settings);
 
+            // 🌐 (2026-11-03 FB web-only) broadcast ที่มีคำเรื่องเงิน
+            //   - เลือก facebook อย่างเดียว → ปฏิเสธทั้งก้อน (ไม่มีใครรับได้)
+            //   - เลือก all → ส่งเฉพาะ LINE/Telegram ข้ามลูกค้า FB (นับไว้แจ้งแอดมิน)
+            $moneyWord = FbWebOnlyAdminMessageFilter::findMoneyWord($validated['message']);
+            $botMode = new FortuneBotMode($settings);
+            if ($moneyWord !== null && $validated['platform'] === 'facebook' && $botMode->fbWebOnlyFor('facebook', null)) {
+                return back()->withInput()->with('error', FbWebOnlyAdminMessageFilter::errorMessage($moneyWord));
+            }
+
             // ดึงรายชื่อผู้ใช้ที่จะส่ง
             $query = FortuneReading::query()
                 ->select('facebook_user_id', 'platform')
@@ -235,6 +259,8 @@ class FortuneUsersController extends Controller
 
             $sent = 0;
             $failed = 0;
+            $skippedFbMoney = 0;   // 🌐 ลูกค้า FB ที่ข้ามเพราะข้อความพูดเรื่องเงิน
+            $skippedFbWindow = 0;  // 🌐 ลูกค้า FB ที่ข้ามเพราะเกินหน้าต่าง 24 ชม.
 
             foreach ($recipients as $recipient) {
                 try {
@@ -244,13 +270,47 @@ class FortuneUsersController extends Controller
 
                         continue;
                     }
+
+                    // 🌐 (2026-11-03 FB web-only) ลูกค้า FB: ห้ามคำเรื่องเงิน + ส่งเฉพาะคนที่ทักมาใน 24 ชม.
+                    //    + ตั้ง page context ของสาขาลูกค้าก่อนส่ง (token ถูกเพจ) · LINE/Telegram ทางเดิมทุกประการ
+                    $uid = (string) $recipient->facebook_user_id;
+                    $fbWebOnly = $botMode->fbWebOnlyFor($recipient->platform, $uid);
+                    if ($fbWebOnly) {
+                        if ($moneyWord !== null) {
+                            $skippedFbMoney++;
+
+                            continue;
+                        }
+                        if (! FbWebOnlyAdminMessageFilter::withinMessagingWindow($uid, 'facebook')) {
+                            $skippedFbWindow++;
+
+                            continue;
+                        }
+                    }
+
                     $platformService = $channelManager->getPlatform($recipient->platform);
                     if ($platformService) {
-                        $success = $platformService->sendMessage(
-                            $recipient->facebook_user_id,
+                        $send = fn () => $platformService->sendMessage(
+                            $uid,
                             $validated['message'],
                             ['from_admin' => true]
                         );
+
+                        if ($fbWebOnly) {
+                            $pageId = FbWebOnlyAdminMessageFilter::latestPageIdFor($uid);
+                            $page = $pageId ? FortunePage::find($pageId) : null;
+                            // ⚠️ ต้องสร้าง FB service ใหม่ "ภายใน" context — ตัวที่แคชใน channelManager ถือ token ค่ากลางไว้
+                            //    (ensurePageContextForRecipient ไม่ดึง token ใหม่เมื่อมีคนตั้ง context ให้แล้ว)
+                            $success = $page
+                                ? FortunePageContext::run($page, fn () => (new FacebookWebhookService(FortuneTellingSetting::getSettings()))->sendMessage(
+                                    $uid,
+                                    $validated['message'],
+                                    ['from_admin' => true]
+                                ))
+                                : $send();
+                        } else {
+                            $success = $send();
+                        }
                         $success ? $sent++ : $failed++;
                     } else {
                         $failed++;
@@ -272,9 +332,19 @@ class FortuneUsersController extends Controller
                 'target' => $validated['target'],
                 'sent' => $sent,
                 'failed' => $failed,
+                'skipped_fb_money' => $skippedFbMoney,
+                'skipped_fb_window' => $skippedFbWindow,
             ]);
 
-            return back()->with('success', "ส่งข้อความสำเร็จ {$sent} คน (ล้มเหลว {$failed} คน)");
+            $note = '';
+            if ($skippedFbMoney > 0) {
+                $note .= " · ข้ามลูกค้า FB {$skippedFbMoney} คน (ข้อความพูดเรื่องเงิน — FB ดูดวงบนเว็บเท่านั้น)";
+            }
+            if ($skippedFbWindow > 0) {
+                $note .= " · ข้ามลูกค้า FB {$skippedFbWindow} คน (ไม่ได้ทักมาใน 24 ชม.)";
+            }
+
+            return back()->with('success', "ส่งข้อความสำเร็จ {$sent} คน (ล้มเหลว {$failed} คน){$note}");
 
         } catch (\Exception $e) {
             Log::error('Admin broadcast message failed', ['error' => $e->getMessage()]);

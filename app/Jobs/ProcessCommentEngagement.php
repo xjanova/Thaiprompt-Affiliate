@@ -6,6 +6,8 @@ use App\Models\FortuneCommentEngagement;
 use App\Models\FortunePostReaction;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\Fortune\FortuneBotMode;
+use App\Services\Fortune\WebHandoffCopy;
 use App\Services\FortuneAIService;
 use App\Services\FortuneBannerService;
 use Illuminate\Bus\Queueable;
@@ -38,6 +40,19 @@ class ProcessCommentEngagement implements ShouldQueue
     public $backoff = [10, 30];
 
     protected array $data;
+
+    /**
+     * 🌐 (2026-11-03) คำตอบใต้คอมเมนต์ตอน FB web-only + DM ติด cooldown (ไม่ได้ทัก inbox รอบนี้)
+     *
+     * ห้ามชวน "ดูดวงในแชท" และห้ามบอกว่าทักไปแล้ว (เพราะรอบนี้ไม่ได้ทักจริง)
+     * ไม่ใช้คลัง FortuneCommentReply เพราะชุดนั้นเขียนไว้ชวนเข้าแชทดูดวง
+     */
+    protected const WEB_ONLY_PUBLIC_REPLIES = [
+        'สาธุค่ะ 🙏 ขอให้สิ่งดี ๆ เข้ามาทุกวันนะคะ',
+        'ขอบคุณค่ะ 🌙 ส่งพลังบวกกลับไปให้นะคะ',
+        'ขอให้ทุกอย่างราบรื่นนะคะ ✨',
+        'น้อมรับพรดี ๆ ค่ะ 💜',
+    ];
 
     /**
      * @param  array  $data  Expected keys:
@@ -119,7 +134,7 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
-            $facebookService = new FacebookWebhookService($settings);
+            $facebookService = $this->makeFacebookService($settings);
 
             // 💸 (2026-08-22) เอา `new FortuneAIService($settings)` ตรงนี้ออก
             //
@@ -172,6 +187,12 @@ class ProcessCommentEngagement implements ShouldQueue
             //       context ถูกคืนค่าให้แล้วตอน job เริ่ม (AppServiceProvider::Queue::before
             //       อ่าน fortune_page_id จาก payload) ⇒ ตรงนี้อ่านได้เลย ไม่ต้องส่งมาใน data
             $pageId = \App\Services\Fortune\FortunePageContext::currentId();
+
+            // 🌐 (2026-11-03) FB web-only — DM ชวนต้องพาเข้าห้องแม่หมอบนเว็บเท่านั้น
+            //    ไม่มีปุ่มราคา/การ์ด VIP/ดวงรายวันฟรี/แบนเนอร์ (ดู sendWebOnlyInvite)
+            //    เช็คใน handle() ทุกครั้ง — job อาจถูก dispatch ก่อนสลับธง
+            //    อ่านธงพัง = ถือว่าเปิด (fail-closed — fbWebOnlyFor จัดการให้)
+            $fbWebOnly = (new FortuneBotMode($settings))->fbWebOnlyFor('facebook', (string) $userId);
 
             $allowDm = ($this->data['allow_dm'] ?? true)
                 && ! (FortuneCommentEngagement::hasDmRecently($userId, 24, $pageId)
@@ -279,7 +300,13 @@ class ProcessCommentEngagement implements ShouldQueue
             }
             $commentReply = '';
 
-            if ($publicReplyEnabled) {
+            if ($publicReplyEnabled && $fbWebOnly) {
+                // 🌐 web-only — ห้ามใช้ AI/คลังชวนดูดวงในแชท ใช้ถ้อยคำกลางที่ตรวจแล้ว
+                //    DM ได้รอบนี้ = บอกว่าทักไปใน inbox / ไม่ได้ = อวยพรสั้น ๆ อย่างเดียว
+                $commentReply = $allowDm
+                    ? WebHandoffCopy::COMMENT_REPLY
+                    : self::WEB_ONLY_PUBLIC_REPLIES[array_rand(self::WEB_ONLY_PUBLIC_REPLIES)];
+            } elseif ($publicReplyEnabled) {
                 // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
                 //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
                 //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
@@ -353,7 +380,8 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 🌙 DM message — ดวงประจำวันสั้นๆ (มีวันเกิด → ดวงวันเกิด, ไม่มี → ชวนดูดวง)
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
-            $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
+            // 🌐 web-only ไม่ใช้ข้อความนี้ (ดวงสั้น ๆ = ทำนายในแชท) — sendWebOnlyInvite สร้างเอง
+            $dmMessage = $fbWebOnly ? '' : $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
             // 🌙 (2026-07-31) กล่องดวงรายวัน (บทความ AI 06:00 ของวันเดียวกัน)
             //   USER SPEC: กล่องดวง → แล้วค่อยข้อความ DM ปกติอีกกล่อง
@@ -364,7 +392,10 @@ class ProcessCommentEngagement implements ShouldQueue
             $horoscopeBox = null;
             $horoscopeMerged = false;   // รวมเนื้อดวงเข้ากับ DM ปกติแล้วหรือยัง (ใช้ตัดสินใจคืนสิทธิ์)
             try {
-                $horoscopeBox = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
+                // 🌐 web-only = ห้ามส่งดวงรายวันในแชท FB (ทำนายย้ายไปเว็บทั้งหมด)
+                $horoscopeBox = $fbWebOnly
+                    ? null
+                    : $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
             } catch (Throwable $e) {
                 Log::warning('🌙 Comment Engagement: สร้างกล่องดวงรายวันล้ม (ข้าม)', [
                     'user_id' => $userId,
@@ -377,7 +408,9 @@ class ProcessCommentEngagement implements ShouldQueue
             //   คนที่ได้รูปแบนเนอร์ไปแล้วในสัปดาห์นี้ → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบเนียน
             //   (สุ่มจาก fortune_invite_messages 100 ข้อความ) แทน
             //   ข้อดีแถม: text+QR ส่งถึงเสถียรกว่า image atomic (FB Reels race ~70% ภาพหาย)
-            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
+            $inviteMessage = $fbWebOnly
+                ? null   // 🌐 web-only หยิบชุด web เองใน sendWebOnlyInvite
+                : \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
                 // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
@@ -494,6 +527,23 @@ class ProcessCommentEngagement implements ShouldQueue
                     'comment_id' => $commentId,
                     'public_reply_sent' => $publicReplySent,
                 ]);
+
+                return;
+            }
+
+            // 🌐 (2026-11-03) FB web-only — ส่งข้อความชวนชุด web + ปุ่ม WEB_ROOM แล้วจบ
+            //    ข้ามทั้งปุ่มราคา (ดูดวง/VIP 99), การ์ดทางเข้า, เส้นดวงรายวัน และแบนเนอร์
+            if ($fbWebOnly) {
+                $this->sendWebOnlyInvite(
+                    $facebookService,
+                    (string) $userId,
+                    (string) $commentId,
+                    (string) $postId,
+                    (string) $commentText,
+                    (string) $name,
+                    $userProfile,
+                    ($publicReplySent || $alreadyRepliedBefore) ? $commentReply : null
+                );
 
                 return;
             }
@@ -879,6 +929,96 @@ class ProcessCommentEngagement implements ShouldQueue
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * สร้างตัวส่งข้อความ Facebook (แยกเป็นเมธอดให้เทสต์สลับเป็นตัวปลอมได้)
+     */
+    protected function makeFacebookService(FortuneTellingSetting $settings): FacebookWebhookService
+    {
+        return new FacebookWebhookService($settings);
+    }
+
+    /**
+     * 🌐 (2026-11-03) ส่ง DM ชวนแบบ FB web-only — ข้อความชุด web + [🌙 เข้าห้องแม่หมอ][🔕][🚫]
+     *
+     * - ข้อความ: FortuneInviteMessage::pickActive('facebook') (ใต้ธงหยิบเฉพาะชุด web)
+     *   ชุดว่าง/ข้อความไม่ผ่าน lint → ใช้ WebHandoffCopy::pickInvite() (ถ้อยคำกลางที่ตรวจแล้ว)
+     * - ไม่มี URL ในข้อความ — ลูกค้ากด WEB_ROOM แล้ว webhook ตอบกล่องลิงก์จาก PSID จริง
+     *   (ห้ามสร้างลิงก์จาก comment.from.id)
+     * - ส่งผ่าน Private Reply (comment_id) เหมือนเส้นเดิม — ข้ามกฎ 24 ชม. ได้
+     * - ส่งไม่ถึง = ไม่บันทึก engagement (ให้ retry ได้ เหมือนเส้นเดิม)
+     *
+     * @param  string|null  $commentReplySent  คำตอบใต้คอมเมนต์ที่ส่งจริง (null = ไม่ได้ตอบ)
+     * @return bool ส่ง DM ถึงหรือไม่
+     */
+    protected function sendWebOnlyInvite(
+        FacebookWebhookService $facebookService,
+        string $userId,
+        string $commentId,
+        string $postId,
+        string $commentText,
+        string $name,
+        $userProfile,
+        ?string $commentReplySent
+    ): bool {
+        $inviteMessage = null;
+        $dmMessage = null;
+
+        try {
+            $inviteMessage = \App\Models\FortuneInviteMessage::pickActive('facebook');
+            if ($inviteMessage !== null) {
+                $dmMessage = $inviteMessage->render($name, $userId, 'facebook');
+            }
+        } catch (Throwable $e) {
+            Log::warning('🌐 Comment Engagement (web-only): หยิบข้อความชุด web ล้ม → ใช้ถ้อยคำกลาง: '.$e->getMessage());
+            $inviteMessage = null;
+        }
+
+        if ($dmMessage === null || ! \App\Models\FortuneInviteMessage::isWebSafeText($dmMessage)) {
+            $inviteMessage = null;
+            $dmMessage = WebHandoffCopy::pickInvite($name, null, false, WebHandoffCopy::detectTopic($commentText));
+        }
+
+        $sent = (bool) $facebookService->sendQuickReplies(
+            $userId,
+            $dmMessage,
+            \App\Models\FortuneInviteMessage::webQuickReplies(),
+            [
+                'from_comment_engagement' => true,
+                'comment_id' => $commentId,
+            ]
+        );
+
+        if (! $sent) {
+            Log::warning('❌ Comment Engagement (web-only): DM ชวนเข้าห้องแม่หมอส่งไม่ถึง — ไม่สร้าง engagement record (allow retry)', [
+                'user_id' => $userId,
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
+
+        $inviteMessage?->recordSend();
+
+        FortuneCommentEngagement::create([
+            'facebook_user_id' => $userId,
+            'facebook_post_id' => $postId,
+            'facebook_comment_id' => $commentId,
+            'comment_text' => $commentText,
+            'comment_reply' => $commentReplySent,
+            'dm_message' => $dmMessage,
+            'user_profile' => $userProfile,
+            'engaged_at' => now(),
+        ]);
+
+        Log::info('🌐 Comment Engagement (web-only): ส่ง DM ชวนเข้าห้องแม่หมอสำเร็จ', [
+            'user_id' => $userId,
+            'comment_id' => $commentId,
+            'invite_id' => $inviteMessage?->id,
+        ]);
+
+        return true;
     }
 
     /**

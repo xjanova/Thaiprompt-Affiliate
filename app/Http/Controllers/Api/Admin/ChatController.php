@@ -53,6 +53,17 @@ class ChatController extends Controller
             ], 422);
         }
 
+        // 🔐 (รีวิว) FB web-only: แอปแอดมินก็ห้ามพูดเรื่องเงิน/โอน/เลขบัญชีในแชท FB (เหมือนแผงเว็บ)
+        //    เช็คก่อนเริ่มเทคโอเวอร์ — บล็อกแล้วต้องไม่ทิ้งเทคโอเวอร์ค้างให้บอทเงียบฟรี ๆ · LINE/Telegram ไม่โดน
+        $blocked = \App\Services\Fortune\FbWebOnlyAdminMessageFilter::blockReason($platform, (string) $userId, $data['text'], $reading);
+        if ($blocked !== null) {
+            return response()->json([
+                'success' => false,
+                'blocked' => \App\Services\Fortune\FbWebOnlyAdminMessageFilter::REASON_MONEY_WORD,
+                'message' => $blocked,
+            ], 422);
+        }
+
         // 🤫 (2026-10-06) แอดมินพิมพ์หาลูกค้า = แอดมินคุยอยู่ → เริ่ม/ต่อเทคโอเวอร์ให้เหมือนแผงเว็บ (บอทหยุดแทรก)
         //    ไม่ได้ส่ง reading_id มา → ใช้บิลล่าสุดของลูกค้าคนนี้ (เทคโอเวอร์ผูกกับบิล แต่ด่านนับทุกบิลของคนนั้น)
         $takeoverMinutes = 0;

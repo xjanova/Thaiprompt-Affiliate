@@ -43,6 +43,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Juntra (จันทรา.online) server-to-server — /api/v1/juntra/server/*
+    |--------------------------------------------------------------------------
+    |
+    | 🚦 (2026-11-03 FB web-only) ใช้โดย App\Support\JuntraServerRateLimits (ต่อนาที)
+    | ทุกคำขอมาจาก IP เดียว (เซิร์ฟเวอร์เว็บ) — แชทจึงนับต่อลูกค้า (user_ref) + เพดานรวม
+    | chat_total ต้อง ≥ peak ข้อความ FB/นาที × 1.5 (fortune:fb-web-only-preflight ตรวจให้)
+    | total = ด่านรวมทั้งกลุ่ม — ระบบใช้ค่าไม่ต่ำกว่าผลรวมของถังย่อยเสมอ
+    |
+    */
+    'juntra_server' => [
+        'total' => env('RATE_LIMIT_JUNTRA_SERVER_TOTAL', 2400),
+        'chat_per_user' => env('RATE_LIMIT_JUNTRA_CHAT_PER_USER', 60),
+        'chat_total' => env('RATE_LIMIT_JUNTRA_CHAT_TOTAL', 1200),
+        'pay' => env('RATE_LIMIT_JUNTRA_PAY', 120),
+        'read' => env('RATE_LIMIT_JUNTRA_READ', 60),
+        'affiliate' => env('RATE_LIMIT_JUNTRA_AFFILIATE', 300),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Form Submission Rate Limiting
     |--------------------------------------------------------------------------
     |

@@ -332,6 +332,306 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         return \App\Services\Fortune\TakeoverSendGuard::blocks('facebook', $recipientId, $method, $preview);
     }
 
+    // ============================================================
+    // 🌐 (2026-11-03) FB web-only — ด่านกรองเรื่องเงินที่ "ชั้นส่ง" (ตาข่ายชั้นสุดท้าย)
+    // ============================================================
+    //
+    // เจ้าของสั่ง: เพจโดน FB แบนเพราะมีสลิป/การจ่ายเงินในแชท ⇒ ห้ามดูดวง/รับเงินใน Messenger
+    // ด่านหลักอยู่ต้นทาง (WebOnlyGate / egress ของ ChannelManager) — ตรงนี้คือชั้นสุดท้าย
+    // ที่ "ทุกข้อความ FB" ต้องผ่าน ถ้ายังมีคำเรื่องเงินหลุดมาถึงนี่ได้ = ต้นทางมีรู → บล็อก + Log::critical
+    //
+    // ทางผ่านที่ตั้งใจ (ของที่ลูกค้าจ่ายเงินแล้วต้องส่งให้จบ — ห้ามหายเด็ดขาด):
+    //   1. caller ส่ง ['paid_delivery' => true] (คำทำนายที่จ่ายแล้ว อาจมีคำว่า "โอนเงิน"/"5,000 บาท" ในเนื้อดวง)
+    //   2. ลูกค้าอยู่ระดับ A (FortuneBotMode::fbLegacyPaidInFlight) — design 1.4 "ทำงานเหมือนเดิมทั้งหมด"
+    //   ⚠️ รูป QR จ่ายเงินผ่านได้ทางเดียวคือข้อ 1 (ระดับ A ไม่ปลดล็อกรูป QR — QR คือสิ่งที่ FB แบนตรง ๆ)
+    //
+    // ธงปิด / ผู้รับไม่ใช่ FB = ไม่แตะอะไรเลย (LINE ใช้ service อื่น ไม่ผ่านไฟล์นี้อยู่แล้ว)
+
+    /**
+     * 🌐 regex คำเรื่องเงินที่ห้ามส่งเข้า Messenger ใต้ FB web-only
+     *
+     * ⚠️ "บาท" ต้องมีตัวเลขนำหน้า — "บทบาท" ห้ามโดน
+     * ⚠️ qr/slip/stripe ใช้ lookaround แทน \b — /u ของ PHP เปิด UCP ทำให้อักษรไทยนับเป็น \w
+     *    ("QRนี้" จะไม่มี \b ระหว่าง R กับ น)
+     * ⚠️ จงใจไม่ใส่ "จ่ายเงิน" เปล่า ๆ — AI คุยเล่นใช้บ่อย ("ระวังการจ่ายเงินช่วงนี้") บล็อกแล้วลูกค้าเงียบหาย
+     */
+    public const FB_WEB_ONLY_MONEY_PATTERN = '/(?:\d[\d,.]*\s*(?:บาท|฿|baht|thb|ກີບ)|฿\s*\d|ค่าครู|ค่าบูชา|ค่ายกครู|ค่าดูดวง|โอนเงิน|โอนมา|โอนแล้ว|โอนเข้า|โอนผ่าน|โอนได้ที่|ยอดโอน|สลิป|(?<![a-z])slips?(?![a-z])|(?<![a-z])qr(?![a-z])|คิวอาร์|พร้อมเพย์|prompt\s*pay|เลขบัญชี|เลขที่บัญชี|ชื่อบัญชี|บัญชีธนาคาร|ชำระเงิน|ยอดชำระ|แจ้งชำระ|วิธีจ่าย|ช่องทางจ่าย|ช่องทางชำระ|บัตรเครดิต|(?<![a-z])stripe(?![a-z])|ราคา\s*\d)/iu';
+
+    /**
+     * 🔐 (รีวิว) คำที่เป็น "การขาย/ทางจ่าย" ชัด ๆ — ระดับ A (legacy paid in-flight) ไม่ปลดล็อกคำเหล่านี้
+     *
+     * ระดับ A มีไว้ส่งคำทำนายที่จ่ายแล้วให้จบ (คำทำนายพูดถึง "รายรับ 20,000 บาท" ได้)
+     * แต่ไม่ใช่ใบผ่านให้ upsell มีราคา / ค่าครู / เลขบัญชี / QR หลุดออกไปบน FB
+     * (paid_delivery ที่ caller ระบุเองยังผ่านได้ตามเดิม)
+     */
+    public const FB_WEB_ONLY_SALE_PATTERN = '/(?:ค่าครู|ค่าบูชา|ค่ายกครู|ค่าดูดวง|ราคา\s*\d|(?<![a-z])qr(?![a-z])|คิวอาร์|พร้อมเพย์|prompt\s*pay|เลขบัญชี|เลขที่บัญชี|ชื่อบัญชี|บัญชีธนาคาร|ยอดชำระ|แจ้งชำระ|วิธีจ่าย|ช่องทางจ่าย|ช่องทางชำระ|บัตรเครดิต|(?<![a-z])stripe(?![a-z]))/iu';
+
+    /** 🌐 URL ปุ่ม/รูปที่เป็นเส้นจ่ายเงิน (QR สร้างสด fortune_pp_*, Stripe checkout, หน้า /payment) */
+    public const FB_WEB_ONLY_MONEY_URL_PATTERN = '#(?:qrcodes?/|fortune_pp_|promptpay|payment[_-]?qr|qr[_-]?code|checkout\.stripe|/payment(?:[/?]|$)|/slips?/)#i';
+
+    /** 🌐 payload postback ของเมนูถาวร / ice breaker แบบเว็บ (T6 รับไปส่งกล่องพาไปห้องแม่หมอ) */
+    public const WEB_ROOM_PAYLOAD = 'WEB_ROOM';
+
+    /** 🌐 CTA ปิดท้ายงานที่จ่ายแล้ว (แทน 'พิมพ์ ดูดวง') — design หัวข้อ 5 */
+    public const WEB_ONLY_PAID_CLOSING_CTA = 'ถ้าอยากให้แม่หมอเปิดไพ่เรื่องอื่นอีก แม่หมอรออยู่ในห้องนะคะ 🌙';
+
+    /**
+     * 🌐 ความลึกของการส่งแบบ paid_delivery ที่กำลังทำอยู่
+     *
+     * เมธอดส่งเรียกกันเองข้างใน (sendQuickReplies → sendMessage / sendButtonTemplate,
+     * sendImage → sendMessage) โดยไม่ส่ง options ต่อ ⇒ ถ้าไม่จำไว้ระดับ instance
+     * ก้อนท้าย ๆ ของคำทำนายที่จ่ายแล้วจะโดนบล็อกกลางทาง (ลูกค้าได้ครึ่งเดียว)
+     */
+    protected int $paidDeliveryDepth = 0;
+
+    /**
+     * 🌐 ข้อความเรื่องเงินไหม (static — ให้ด่านอื่นใช้ regex ชุดเดียวกัน)
+     */
+    public static function containsMoneyText(?string $text): bool
+    {
+        $text = (string) $text;
+
+        return $text !== '' && preg_match(self::FB_WEB_ONLY_MONEY_PATTERN, $text) === 1;
+    }
+
+    /**
+     * 🌐 นโยบาย FB web-only (สร้างใหม่ทุกครั้ง — getSettings() มี memo 5 วิ อยู่แล้ว
+     *    ห้าม memo ไว้ใน instance: worker ที่อยู่นานจะค้างค่าธงเก่าตลอดไป)
+     */
+    protected function webOnlyPolicy(): \App\Services\Fortune\FortuneBotMode
+    {
+        return new \App\Services\Fortune\FortuneBotMode;
+    }
+
+    /**
+     * 🌐 ผู้รับคนนี้อยู่ใต้ FB web-only ไหม (fail-closed ตาม FortuneBotMode::fbWebOnlyFor)
+     */
+    protected function webOnlyActiveFor(?string $recipientId): bool
+    {
+        try {
+            return $this->webOnlyPolicy()->fbWebOnlyFor('facebook', $recipientId);
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: เช็คธงที่ชั้นส่งไม่ได้ — ถือว่าเปิด (fail-closed)', [
+                'recipient' => $recipientId,
+                'error' => SafeLog::exceptionMessage($e),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * 🌐 ห่อการส่งเป็น paid_delivery (ทุกเมธอดส่งที่ถูกเรียกข้างในได้ทางผ่านไปด้วย)
+     *
+     * @template T
+     *
+     * @param  callable(): T  $send
+     * @return T
+     */
+    protected function asPaidDelivery(callable $send)
+    {
+        $this->paidDeliveryDepth++;
+
+        try {
+            return $send();
+        } finally {
+            $this->paidDeliveryDepth--;
+        }
+    }
+
+    /**
+     * 🌐 ข้ามด่านเงินได้ไหม — คืนเหตุผล หรือ null = ต้องตรวจ
+     *
+     * @param  bool  $allowLegacy  false = ระดับ A ไม่ปลดล็อก (ใช้กับรูป QR)
+     */
+    protected function webOnlyMoneyBypassReason(string $recipientId, array $options, bool $allowLegacy = true): ?string
+    {
+        if (! empty($options['paid_delivery']) || $this->paidDeliveryDepth > 0) {
+            return 'paid_delivery';
+        }
+
+        if ($allowLegacy) {
+            try {
+                if ($this->webOnlyPolicy()->fbLegacyPaidInFlight($recipientId)) {
+                    return 'legacy_paid_in_flight';
+                }
+            } catch (\Throwable $e) {
+                // fail-closed: เช็คไม่ได้ = ไม่ปลดล็อก
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🌐 ด่านข้อความ: เจอคำเรื่องเงินใต้ FB web-only = บล็อกทั้งข้อความ
+     *
+     * @param  array<int, string|null>  $texts  ข้อความที่ลูกค้าจะเห็น (ตัวข้อความ/หัวการ์ด)
+     * @return bool true = ห้ามส่ง caller ต้องคืน false ทันที
+     */
+    protected function blockedByWebOnlyMoneyGuard(string $method, string $recipientId, array $texts, array $options = []): bool
+    {
+        $hit = null;
+        foreach ($texts as $text) {
+            if (self::containsMoneyText($text)) {
+                $hit = (string) $text;
+                break;
+            }
+        }
+
+        if ($hit === null || ! $this->webOnlyActiveFor($recipientId)) {
+            return false;
+        }
+
+        $bypass = $this->webOnlyMoneyBypassReason($recipientId, $options);
+        // 🔐 (รีวิว) ระดับ A ปลดเฉพาะเนื้อคำทำนาย — ข้อความขาย/ทางจ่ายยังบล็อก
+        if ($bypass === 'legacy_paid_in_flight' && preg_match(self::FB_WEB_ONLY_SALE_PATTERN, $hit) === 1) {
+            $bypass = null;
+        }
+        if ($bypass !== null) {
+            Log::info('🌐 FB web-only: ข้อความมีคำเรื่องเงินแต่เป็นของที่จ่ายแล้ว — ปล่อยผ่าน', [
+                'method' => $method,
+                'recipient' => $recipientId,
+                'bypass' => $bypass,
+            ]);
+
+            return false;
+        }
+
+        preg_match(self::FB_WEB_ONLY_MONEY_PATTERN, $hit, $m);
+
+        Log::critical('🌐 FB web-only: บล็อกข้อความเรื่องเงินที่ชั้นส่ง (ต้นทางมีรู — ต้องไปปิดที่ต้นทาง)', [
+            'method' => $method,
+            'recipient' => $recipientId,
+            'matched' => $m[0] ?? null,
+            'preview' => mb_substr($hit, 0, 120),
+        ]);
+
+        return true;
+    }
+
+    /**
+     * 🌐 ปุ่มนี้เป็นเรื่องเงินไหม (ดูป้ายที่ลูกค้าเห็น + URL ของปุ่ม web_url)
+     */
+    protected function isMoneyButton(array $button): bool
+    {
+        $label = (string) ($button['title'] ?? $button['label'] ?? $button['question'] ?? '');
+        if (self::containsMoneyText($label)) {
+            return true;
+        }
+
+        $url = (string) ($button['url'] ?? '');
+
+        return $url !== '' && preg_match(self::FB_WEB_ONLY_MONEY_URL_PATTERN, $url) === 1;
+    }
+
+    /**
+     * 🌐 ตัดปุ่มเรื่องเงินทิ้ง (เช่น "ดูดวง 39฿" / "ดู vip ส่วนตัว 99บาท") — ข้อความที่เหลือยังส่งได้
+     *
+     * ตัดแทนการบล็อกทั้งก้อน: ปุ่มราคาหนึ่งปุ่มไม่ควรทำให้ลูกค้าไม่ได้คำตอบเลย
+     *
+     * @param  array<int, array>  $buttons
+     * @return array<int, array>
+     */
+    protected function stripWebOnlyMoneyButtons(string $method, string $recipientId, array $buttons, array $options = []): array
+    {
+        $money = array_filter($buttons, fn ($b) => is_array($b) && $this->isMoneyButton($b));
+        if (empty($money) || ! $this->webOnlyActiveFor($recipientId)) {
+            return $buttons;
+        }
+
+        // 🔐 (รีวิว) ปุ่มเรื่องเงิน = การขายเสมอ → ระดับ A ไม่ปลดล็อก (เฉพาะ paid_delivery ที่ caller ระบุ)
+        if ($this->webOnlyMoneyBypassReason($recipientId, $options, allowLegacy: false) !== null) {
+            return $buttons;
+        }
+
+        Log::critical('🌐 FB web-only: ตัดปุ่มเรื่องเงินที่ชั้นส่ง (ต้นทางมีรู)', [
+            'method' => $method,
+            'recipient' => $recipientId,
+            'titles' => array_values(array_map(fn ($b) => $b['title'] ?? $b['label'] ?? null, $money)),
+            'payloads' => array_values(array_map(fn ($b) => $b['payload'] ?? $b['url'] ?? null, $money)),
+        ]);
+
+        return array_values(array_filter($buttons, fn ($b) => ! (is_array($b) && $this->isMoneyButton($b))));
+    }
+
+    /**
+     * 🌐 รูปนี้คือ QR/สลิปจ่ายเงินไหม (เทียบ URL ตรงกับ QR ที่ตั้งไว้ + รูปทรง path)
+     */
+    protected function isPaymentImageUrl(string $imageUrl): bool
+    {
+        if (preg_match(self::FB_WEB_ONLY_MONEY_URL_PATTERN, $imageUrl) === 1) {
+            return true;
+        }
+
+        try {
+            $known = array_filter([$this->settings?->getPaymentQrUrl()]);
+            foreach ($this->settings?->getFortuneBankAccounts() ?? [] as $account) {
+                if (! empty($account->qr_image_url)) {
+                    $known[] = $account->qr_image_url;
+                }
+            }
+
+            return in_array($imageUrl, $known, true);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * 🌐 ด่านของ button/generic template — หัวการ์ดเรื่องเงิน = บล็อก, ปุ่มเรื่องเงิน = ตัดทิ้ง
+     *
+     * @param  array  $templatePayload  message payload (attachment + quick_replies)
+     * @return array|null payload ที่ผ่านด่านแล้ว · null = ห้ามส่ง
+     */
+    protected function applyWebOnlyGuardToTemplate(string $recipientId, array $templatePayload, array $options): ?array
+    {
+        $inner = $templatePayload['attachment']['payload'] ?? [];
+        // ⚠️ บาง caller ส่ง message แบบข้อความล้วน ({text, quick_replies}) เข้าเมธอดนี้ — ต้องตรวจด้วย
+        $texts = [$inner['text'] ?? null, is_string($templatePayload['text'] ?? null) ? $templatePayload['text'] : null];
+        foreach (($inner['elements'] ?? []) as $el) {
+            $texts[] = $el['title'] ?? null;
+            $texts[] = $el['subtitle'] ?? null;
+        }
+
+        if ($this->blockedByWebOnlyMoneyGuard('sendButtonTemplate', $recipientId, $texts, $options)) {
+            return null;
+        }
+
+        if (isset($inner['buttons']) && is_array($inner['buttons'])) {
+            $kept = $this->stripWebOnlyMoneyButtons('sendButtonTemplate', $recipientId, $inner['buttons'], $options);
+            if (empty($kept) && ! empty($inner['buttons'])) {
+                // button template ที่ไม่มีปุ่ม = FB ปฏิเสธ (400) — ไม่ส่งเลยดีกว่ายิงตกน้ำ
+                Log::critical('🌐 FB web-only: กล่องปุ่มเหลือ 0 ปุ่มหลังตัดเรื่องเงิน — ไม่ส่ง', [
+                    'recipient' => $recipientId,
+                ]);
+
+                return null;
+            }
+            $templatePayload['attachment']['payload']['buttons'] = $kept;
+        }
+
+        if (isset($inner['elements']) && is_array($inner['elements'])) {
+            foreach ($inner['elements'] as $i => $el) {
+                if (isset($el['buttons']) && is_array($el['buttons'])) {
+                    $templatePayload['attachment']['payload']['elements'][$i]['buttons']
+                        = $this->stripWebOnlyMoneyButtons('sendGenericTemplate', $recipientId, $el['buttons'], $options);
+                }
+            }
+        }
+
+        if (isset($templatePayload['quick_replies']) && is_array($templatePayload['quick_replies'])) {
+            $templatePayload['quick_replies'] = $this->stripWebOnlyMoneyButtons(
+                'sendButtonTemplate', $recipientId, $templatePayload['quick_replies'], $options
+            );
+            if (empty($templatePayload['quick_replies'])) {
+                unset($templatePayload['quick_replies']);
+            }
+        }
+
+        return $templatePayload;
+    }
+
     /**
      * 🏬 (2026-08-10) ระบบสาขา — กันส่งข้อความด้วย token ผิดเพจ
      *
@@ -398,6 +698,19 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
         if ($this->shouldSkipSend($recipientId, __FUNCTION__, $message)) {
             return false;
+        }
+
+        // 🌐 (2026-11-03) paid_delivery → ทุกก้อน/ทุกเมธอดที่ถูกเรียกต่อข้างในได้ทางผ่านไปด้วย
+        if (! empty($options['paid_delivery']) && $this->paidDeliveryDepth === 0) {
+            return $this->asPaidDelivery(fn () => $this->sendMessage($recipientId, $message, $options));
+        }
+
+        // 🌐 (2026-11-03) FB web-only — คำเรื่องเงินหลุดมาถึงชั้นส่ง = บล็อก (ปุ่มราคา = ตัดทิ้ง)
+        if ($this->blockedByWebOnlyMoneyGuard(__FUNCTION__, $recipientId, [$message], $options)) {
+            return false;
+        }
+        if (! empty($options['quick_replies']) && is_array($options['quick_replies'])) {
+            $options['quick_replies'] = $this->stripWebOnlyMoneyButtons(__FUNCTION__, $recipientId, $options['quick_replies'], $options);
         }
 
         $this->ensurePageContextForRecipient($recipientId);
@@ -652,6 +965,28 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
         if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
+        // 🌐 (2026-11-03) paid_delivery → ข้อความกำกับรูป (sendMessage ข้างใน) ได้ทางผ่านด้วย
+        if (! empty($options['paid_delivery']) && $this->paidDeliveryDepth === 0) {
+            return $this->asPaidDelivery(fn () => $this->sendImage($recipientId, $imageUrl, $previewUrl, $options));
+        }
+
+        // 🌐 (2026-11-03) FB web-only — รูป QR/สลิปจ่ายเงิน = สิ่งที่ FB แบนตรง ๆ
+        //    ⚠️ ระดับ A ไม่ปลดล็อกรูป QR (ของที่จ่ายแล้วไม่มีเหตุต้องส่ง QR) — ผ่านได้เฉพาะ paid_delivery
+        if ($this->webOnlyActiveFor($recipientId)
+            && $this->webOnlyMoneyBypassReason($recipientId, $options, allowLegacy: false) === null
+            && $this->isPaymentImageUrl($imageUrl)) {
+            Log::critical('🌐 FB web-only: บล็อกรูป QR/จ่ายเงินที่ชั้นส่ง (ต้นทางมีรู)', [
+                'method' => __FUNCTION__,
+                'recipient' => $recipientId,
+                'image_url' => $imageUrl,
+            ]);
+
+            return false;
+        }
+        if ($this->blockedByWebOnlyMoneyGuard(__FUNCTION__, $recipientId, [$previewUrl], $options)) {
             return false;
         }
 
@@ -960,6 +1295,17 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     public function sendPrivateReplyImageWithQuickReplies(string $commentId, string $imageUrl, array $quickReplies): bool
     {
+        // 🌐 (2026-11-03) FB web-only — รูป QR จ่ายเงิน = ไม่ส่ง · ปุ่มราคา = ตัดทิ้ง
+        if ($this->webOnlyActiveFor($commentId) && $this->paidDeliveryDepth === 0 && $this->isPaymentImageUrl($imageUrl)) {
+            Log::critical('🌐 FB web-only: บล็อกรูป QR/จ่ายเงินใน Private Reply (ต้นทางมีรู)', [
+                'comment_id' => $commentId,
+                'image_url' => $imageUrl,
+            ]);
+
+            return false;
+        }
+        $quickReplies = $this->stripWebOnlyMoneyButtons(__FUNCTION__, $commentId, $quickReplies);
+
         // 🪦 comment ตายแล้ว → ไม่ยิงซ้ำ
         if ($this->isDeadComment($commentId)) {
             return false;
@@ -1058,6 +1404,13 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     public function sendPrivateReplyTemplate(string $commentId, array $templatePayload, array $quickReplies = []): bool
     {
+        // 🌐 (2026-11-03) FB web-only — การ์ด/ปุ่มเรื่องเงินใน Private Reply (เช่นการ์ด VIP 'มีค่าครู')
+        $templatePayload = $this->applyWebOnlyGuardToTemplate($commentId, $templatePayload, []) ?? [];
+        if (empty($templatePayload)) {
+            return false;
+        }
+        $quickReplies = $this->stripWebOnlyMoneyButtons(__FUNCTION__, $commentId, $quickReplies);
+
         // 🪦 comment ตายแล้ว → ไม่ยิงซ้ำ
         if ($this->isDeadComment($commentId)) {
             return false;
@@ -1438,6 +1791,17 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         if ($this->shouldSkipSend($recipientId, __FUNCTION__, $message)) {
             return false;
         }
+
+        // 🌐 (2026-11-03) paid_delivery → ก้อนย่อย/กล่องปุ่ม/fallback ข้างในได้ทางผ่านด้วย
+        if (! empty($options['paid_delivery']) && $this->paidDeliveryDepth === 0) {
+            return $this->asPaidDelivery(fn () => $this->sendQuickReplies($recipientId, $message, $quickReplies, $options));
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ข้อความเรื่องเงิน = บล็อก · ปุ่มราคา = ตัดทิ้ง (ที่เหลือส่งได้)
+        if ($this->blockedByWebOnlyMoneyGuard(__FUNCTION__, $recipientId, [$message], $options)) {
+            return false;
+        }
+        $quickReplies = $this->stripWebOnlyMoneyButtons(__FUNCTION__, $recipientId, $quickReplies, $options);
 
         $this->ensurePageContextForRecipient($recipientId);
 
@@ -1955,6 +2319,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     public function replyToComment(string $commentId, string $message): bool
     {
+        // 🌐 (2026-11-03) FB web-only — คอมเมนต์สาธารณะห้ามมีราคา/เลขบัญชีเด็ดขาด (คนทั้งเพจเห็น)
+        if ($this->blockedByWebOnlyMoneyGuard(__FUNCTION__, $commentId, [$message])) {
+            return false;
+        }
+
         try {
             Http::timeout(30)
                 ->post($this->graphUrl("/{$commentId}/comments"), [
@@ -2561,6 +2930,12 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     public function sendPrivateReply(string $commentId, string $message, array $quickReplies = []): bool
     {
+        // 🌐 (2026-11-03) FB web-only — DM ใต้คอมเมนต์ก็ห้ามพูดเรื่องเงิน (ปุ่มราคา = ตัดทิ้ง)
+        if ($this->blockedByWebOnlyMoneyGuard(__FUNCTION__, $commentId, [$message])) {
+            return false;
+        }
+        $quickReplies = $this->stripWebOnlyMoneyButtons(__FUNCTION__, $commentId, $quickReplies);
+
         // 🪦 comment ตายแล้ว (Stage ก่อนหน้า/รอบก่อนเพิ่งล้ม) → ไม่ยิงซ้ำทั้ง 2 endpoint
         if ($this->isDeadComment($commentId)) {
             Log::info('🪦 Private Reply skip — comment ถูก mark ว่าตายแล้ว', [
@@ -3409,6 +3784,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             );
         }
 
+        // 🌐 (2026-11-03) FB web-only — ห้ามดูดวงใน FB · ของที่จ่ายแล้วส่งให้จบ (DM เท่านั้น) + CTA เว็บ
+        if ($this->webOnlyActiveFor($recipientId)) {
+            return $this->sendFortuneTellingWebOnly($reading, $response, $message, $template);
+        }
+
         // 1. ส่งรูปส่วนหัว (header image) ถ้ามี
         if ($template && $template->hasHeaderImage()) {
             $this->sendImage($recipientId, $template->header_image_url);
@@ -3437,6 +3817,90 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         }
 
         return true;
+    }
+
+    /**
+     * 🌐 (2026-11-03) sendFortuneTelling ใต้ FB web-only
+     *
+     * - บิลที่ยังไม่จ่าย (ดูดวงฟรีจากคอมเมนต์ "ดูดวง ...") → **ไม่ส่งคำทำนายบน FB** (คืน false + critical)
+     *   ด่านหลักอยู่ที่ต้นทาง (ไม่ dispatch / ProcessFortuneTelling เช็คธงซ้ำ) — ตรงนี้กันงานที่ค้างคิวหลุดมา
+     * - บิลที่จ่ายแล้ว → ส่งให้จบ แต่:
+     *     · ไม่ตอบใต้คอมเมนต์สาธารณะ (ส่ง DM แทน)
+     *     · ตัดบรรทัดชวน 'พิมพ์ ดูดวงละเอียด' / สมัครสมาชิก / ลิงก์จ่ายเงิน / ราคา ที่มาจากเทมเพลต
+     *       (บรรทัดที่เป็นเนื้อคำทำนายของ AI ไม่แตะ — เนื้อดวงอาจมีคำว่า "โอนเงิน" ได้)
+     *     · ปิดท้ายด้วย CTA ห้องแม่หมอ
+     *     · ไม่ส่งรูปท้าย (footer = QR Code ตามคอมเมนต์เดิม)
+     */
+    protected function sendFortuneTellingWebOnly(
+        FortuneReading $reading,
+        string $response,
+        string $message,
+        ?FortuneResponseTemplate $template
+    ): bool {
+        $recipientId = (string) $reading->facebook_user_id;
+
+        if (! $reading->is_paid) {
+            Log::critical('🌐 FB web-only: ปฏิเสธส่งคำทำนายที่ยังไม่จ่ายบน FB (sendFortuneTelling) — ต้นทางต้องไม่ dispatch', [
+                'reading_id' => $reading->id,
+                'recipient' => $recipientId,
+                'comment_id' => $reading->facebook_comment_id,
+            ]);
+
+            return false;
+        }
+
+        $message = $this->stripWebOnlyTemplateCta($message, $response);
+        $message = rtrim($message)."\n\n".self::WEB_ONLY_PAID_CLOSING_CTA;
+
+        return $this->asPaidDelivery(function () use ($reading, $recipientId, $message, $template) {
+            if ($template && $template->hasHeaderImage()) {
+                $this->sendImage($recipientId, $template->header_image_url);
+            }
+
+            if ($reading->hasUserImage()) {
+                $this->sendImage($recipientId, $reading->user_image_url);
+            }
+
+            $sent = $this->sendMessage($recipientId, $message);
+
+            if ($reading->hasReadingImage()) {
+                $this->sendImage($recipientId, $reading->reading_image_url);
+            }
+
+            return $sent;
+        });
+    }
+
+    /**
+     * 🌐 ตัดบรรทัดชวน/ขาย/ราคาที่มาจาก "เทมเพลต" — บรรทัดที่อยู่ในคำตอบ AI เก็บไว้ทุกบรรทัด
+     *
+     * @param  string  $message  ข้อความที่ render จากเทมเพลตแล้ว
+     * @param  string  $response  คำตอบ AI ดิบ (แหล่งของบรรทัดที่ห้ามแตะ)
+     */
+    public function stripWebOnlyTemplateCta(string $message, string $response): string
+    {
+        $aiLines = [];
+        foreach (preg_split('/\R/u', $response) ?: [] as $line) {
+            $t = trim($line);
+            if ($t !== '') {
+                $aiLines[$t] = true;
+            }
+        }
+
+        $ctaPattern = '/ดูดวงละเอียด|ดูดวงเชิงลึก|คำทำนายเชิงลึก|พิมพ์[^\n]*ดูดวง|สมัครสมาชิก|\/register|\/payment|ดูดวงอีกครั้ง/u';
+
+        $kept = [];
+        foreach (preg_split('/\R/u', $message) ?: [] as $line) {
+            $t = trim($line);
+            if ($t !== '' && ! isset($aiLines[$t])
+                && (preg_match($ctaPattern, $t) === 1 || self::containsMoneyText($t))) {
+                continue;
+            }
+            $kept[] = $line;
+        }
+
+        // ตัดบรรทัดว่างซ้อนที่เหลือจากการตัด
+        return trim(preg_replace("/\n{3,}/u", "\n\n", implode("\n", $kept)));
     }
 
     // ============================================================
@@ -3732,7 +4196,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 'greeting' => [
                     [
                         'locale' => 'default',
-                        'text' => "🔮 ยินดีต้อนรับสู่ \"แม่หมอจันทรา\"\n\nหมอดูเชี่ยวชาญโหราศาสตร์ไทย-สากล ทำนายแม่นยำด้วยระบบหลักล้าน 💎\n\nกดปุ่มด้านล่างเพื่อเริ่มได้เลย ✨",
+                        // 🌐 (2026-11-03) FB web-only → ข้อความชวนเข้าห้องแม่หมอ (ไม่มี 'ระบบหลักล้าน')
+                        'text' => $this->buildGreetingText(),
                     ],
                 ],
 
@@ -3803,6 +4268,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     protected function buildPersistentMenuActions(): array
     {
+        // 🌐 (2026-11-03) FB web-only → เมนูแบบเว็บ (ไม่มีราคา / ไม่มี /auth/facebook)
+        if ($this->messengerProfileIsWebOnly()) {
+            return $this->buildWebPersistentMenuActions();
+        }
+
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
 
         // ❌ Note: nested submenu สร้าง "Invalid button type" จาก FB API
@@ -3899,6 +4369,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     protected function buildIceBreakerActions(): array
     {
+        // 🌐 (2026-11-03) FB web-only → ice breaker แบบเว็บ (ตัด 'รับรายได้' / 'ดูดวงเชิงลึก')
+        if ($this->messengerProfileIsWebOnly()) {
+            return $this->buildWebIceBreakerActions();
+        }
+
         // ⚠️ Facebook จำกัด 4 ice breakers ต่อ persona — เกินจะ reject ทั้งชุด
         // 🌐 (2026-05-03) ใช้ "MENU_REFERRAL" + ไม่เพิ่ม language picker ตรงนี้
         //    เหตุผล: auto-detect ทำงานเป็น default แล้ว, manual picker ใช้ผ่าน
@@ -3914,6 +4389,91 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             ],
             [
                 'question' => '✨ รู้จักเรา / ศาสตร์ที่ใช้ทำนาย',
+                'payload' => 'MENU_ABOUT_US',
+            ],
+            [
+                'question' => '🌐 ภาษา / ພາສາ / Language',
+                'payload' => 'LANG_PICKER',
+            ],
+        ];
+    }
+
+    /**
+     * 🌐 (2026-11-03) โปรไฟล์ Messenger ต้องเป็นแบบเว็บไหม
+     *
+     * เมนูถาวรเป็นของ "เพจ" ไม่ใช่ของคน → ใช้ธงแถวกลาง (fbWebOnly) ไม่ต้องมีผู้รับ
+     * อ่านธงไม่ได้ = ถือว่าเปิด (fail-closed — เมนูแบบเว็บไม่มีราคา ปลอดภัยกว่าเสมอ)
+     *
+     * ⚠️ เมนูถาวรค้างอยู่ฝั่ง FB จนกว่าจะ setup ใหม่ ⇒ สลับธงแล้วต้องรัน
+     *    `php artisan fortune:setup-messenger-profile` ใหม่ทุกเพจสาขา
+     */
+    protected function messengerProfileIsWebOnly(): bool
+    {
+        try {
+            return $this->webOnlyPolicy()->fbWebOnly();
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
+    /**
+     * 🌐 ข้อความทักทาย (greeting) ก่อนลูกค้าพิมพ์ข้อความแรก
+     */
+    protected function buildGreetingText(): string
+    {
+        if ($this->messengerProfileIsWebOnly()) {
+            return "🌙 สวัสดีค่ะ แม่หมอจันทรายินดีต้อนรับนะคะ\n\n"
+                ."เรื่องไหนที่ค้างอยู่ในใจ แม่หมอเปิดห้องส่วนตัวรอไว้แล้ว คุยกันได้ยาว ๆ เงียบ ๆ สองคนค่ะ\n\n"
+                .'แตะ 🌙 เข้าห้องแม่หมอ ได้เลยนะคะ ✨';
+        }
+
+        return "🔮 ยินดีต้อนรับสู่ \"แม่หมอจันทรา\"\n\nหมอดูเชี่ยวชาญโหราศาสตร์ไทย-สากล ทำนายแม่นยำด้วยระบบหลักล้าน 💎\n\nกดปุ่มด้านล่างเพื่อเริ่มได้เลย ✨";
+    }
+
+    /**
+     * 🌐 เมนูถาวรแบบเว็บ — ใช้ postback WEB_ROOM (ไม่ใช่ web_url)
+     *
+     * เหตุผล: เมนูถาวรเป็นของทั้งเพจ ใส่ magic link ต่อคนไม่ได้ ⇒ กดแล้วได้ postback พร้อม PSID จริง
+     * แล้วฝั่ง webhook ตอบด้วยกล่องที่มีลิงก์ของคนนั้น (ออกใหม่ทุกครั้งที่กด)
+     * และเลิกใช้ "📝 สมัครสมาชิก → /auth/facebook" — สมัครผ่าน OAuth = ได้บัญชีที่สองแยกจาก PSID
+     * (ตัวตนแตก ⇒ สายงาน MLM แตก)
+     *
+     * @return array call_to_actions
+     */
+    protected function buildWebPersistentMenuActions(): array
+    {
+        return [
+            [
+                'type' => 'postback',
+                'title' => '🌙 เข้าห้องแม่หมอ',
+                'payload' => self::WEB_ROOM_PAYLOAD,
+            ],
+            [
+                'type' => 'postback',
+                'title' => '🔍 รู้จักเรา',
+                'payload' => 'MENU_ABOUT_US',
+            ],
+        ];
+    }
+
+    /**
+     * 🌐 ice breakers แบบเว็บ — คำถามที่จะดูดวงพาเข้า WEB_ROOM ทั้งหมด (FB จำกัด 4 ข้อ)
+     *
+     * @return array call_to_actions สำหรับ ice_breakers
+     */
+    protected function buildWebIceBreakerActions(): array
+    {
+        return [
+            [
+                'question' => '🌙 อยากให้แม่หมอเปิดไพ่ให้',
+                'payload' => self::WEB_ROOM_PAYLOAD,
+            ],
+            [
+                'question' => '💜 มีเรื่องค้างใจ อยากปรึกษาแม่หมอ',
+                'payload' => self::WEB_ROOM_PAYLOAD,
+            ],
+            [
+                'question' => '✨ รู้จักแม่หมอจันทรา / ศาสตร์ที่ใช้',
                 'payload' => 'MENU_ABOUT_US',
             ],
             [
@@ -4104,6 +4664,13 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     {
         // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
         if ($this->shouldSkipSend($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — หัวการ์ดเรื่องเงิน = บล็อก · ปุ่มเรื่องเงิน = ตัดทิ้ง
+        //    (ครอบ sendGenericTemplate / sendTemplateWithQuickReplies / sendPostbackButtons ด้วย — ทุกตัววิ่งผ่านนี่)
+        $templatePayload = $this->applyWebOnlyGuardToTemplate($recipientId, $templatePayload, $options);
+        if ($templatePayload === null) {
             return false;
         }
 

@@ -491,6 +491,9 @@ class FortuneTellingSetting extends Model
         'transfer_rollout_percent',
         'free_card_max_chars',
         'free_card_regrant_at',
+        // 🌐 (2026-11-03) FB web-only — ปิดดูดวง/รับเงินในแชท FB ย้ายทุกคนไปเว็บ (อ่านจากแถวกลางเท่านั้น)
+        'facebook_web_only',
+        'fb_web_only_since',
         // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
         'enable_kbank_verify',
         'kbank_env',
@@ -796,6 +799,9 @@ class FortuneTellingSetting extends Model
         'transfer_rollout_percent' => 'integer',
         'free_card_max_chars' => 'integer',
         'free_card_regrant_at' => 'datetime',
+        // 🌐 (2026-11-03) FB web-only
+        'facebook_web_only' => 'boolean',
+        'fb_web_only_since' => 'datetime',
         // 🏦 (2026-07-14) KBank Slip Verification — secret เก็บแบบเข้ารหัส
         'enable_kbank_verify' => 'boolean',
         'kbank_consumer_secret' => 'encrypted',
@@ -1125,6 +1131,8 @@ class FortuneTellingSetting extends Model
         'transfer_fallback_days' => 30,
         'transfer_rollout_percent' => 100,
         'free_card_max_chars' => 0,   // 0 = คำทำนายฟรียาวแบบเดิม
+        // 🌐 (2026-11-03) FB web-only — default ปิด = พฤติกรรมเดิม 100% (เปิดหลัง preflight ผ่านเท่านั้น)
+        'facebook_web_only' => false,
         // 🏦 (2026-07-14) KBank Slip Verification — default ปิด (แอดมินกรอก cred + cert + เปิดสวิตช์ก่อน)
         'enable_kbank_verify' => false,
         'kbank_env' => 'sandbox',
@@ -1240,6 +1248,19 @@ class FortuneTellingSetting extends Model
     }
 
     /**
+     * 🌐 (2026-11-03) คอลัมน์ที่เพจสาขา "ห้าม" override — อ่านจากแถวกลางเท่านั้น
+     *
+     * ธง FB web-only คือด่านกันเพจโดนแบน (สลิปใน Messenger) — ถ้าเพจสาขาเขียนทับได้
+     * เพจนั้นจะกลับไปออกบิล/รับสลิปบน FB เองเงียบ ๆ = เพจโดนแบนทั้งที่สั่งปิดไปแล้ว
+     *
+     * @var array<int, string>
+     */
+    public const PAGE_OVERRIDE_DENY_LIST = [
+        'facebook_web_only',
+        'fb_web_only_since',
+    ];
+
+    /**
      * เขียนค่าของสาขาทับลงบนค่ากลาง แล้วคืน "สำเนา" (ไม่แตะแถวจริงใน DB)
      *
      * @tip clone ของ Eloquent ก็อป array attributes แบบ by-value อยู่แล้ว
@@ -1266,12 +1287,35 @@ class FortuneTellingSetting extends Model
                 continue;
             }
 
+            // 🌐 (2026-11-03) คีย์ระดับ "นโยบายทั้งระบบ" — เพจสาขาห้าม override เด็ดขาด
+            //    ไม่งั้นเพจสาขาตั้ง facebook_web_only=false แล้วกลับมารับเงินบน FB ได้เอง
+            if (in_array($column, self::PAGE_OVERRIDE_DENY_LIST, true)) {
+                continue;
+            }
+
             $merged->setAttribute($column, $value);
         }
 
         $merged->syncOriginal();
 
         return $merged;
+    }
+
+    /**
+     * 🌐 (2026-11-03) ประทับเวลา fb_web_only_since อัตโนมัติตอนเปิดธง FB web-only
+     *
+     * ใช้เป็นจุดตัด T0 (เงินกำพร้าหลัง T0 / audit) — ทุกทางที่เปิดธง (หน้าแอดมิน, คำสั่ง cutover,
+     * tinker) ได้เวลาเดียวกันหมดโดยไม่ต้องจำไปตั้งเอง · ปิดธง = เก็บเวลาเดิมไว้เป็นประวัติ
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $setting) {
+            if ($setting->isDirty('facebook_web_only')
+                && (bool) $setting->getAttribute('facebook_web_only')
+                && ! $setting->isDirty('fb_web_only_since')) {
+                $setting->setAttribute('fb_web_only_since', now());
+            }
+        });
     }
 
     /**

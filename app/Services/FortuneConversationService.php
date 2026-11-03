@@ -49,6 +49,15 @@ class FortuneConversationService
     use \App\Services\Fortune\QaSettleTrait;
     use \App\Services\Fortune\TransferModeTrait;
 
+    // 🌙 (2026-11-03) FB web-only — sendWebHandoff() พาลูกค้า FB ไปห้องแม่หมอบนเว็บ (fail-closed)
+    use \App\Services\Fortune\WebHandoffTrait;
+
+    // 🌐 (2026-11-03) FB web-only — ด่านขาเข้า maybeWebOnlyGate() (เรียกหัว processMessage หลัง takeover)
+    use \App\Services\Fortune\WebOnlyGateTrait;
+
+    // 🌐 (2026-11-03) FB web-only — hard guard ที่จุดสร้างบิลทุกจุด (T5) ใช้ FbBillingGuard ตัดสิน
+    use \App\Services\Fortune\WebOnlyBillingGuardTrait;
+
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
      *
@@ -720,6 +729,17 @@ class FortuneConversationService
                 Log::debug('Fortune: takeover check fail (non-blocking)', [
                     'error' => $takeoverErr->getMessage(),
                 ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🌐 (2026-11-03) FB web-only gate — ด่านเดียวก่อนทุกด่านเงิน/ทำนาย (WebOnlyGateTrait)
+            //   ลูกค้า FB ใต้ธง facebook_web_only: เรื่องเงิน/ทำนาย/สลิป → กล่องพาไปห้องแม่หมอ
+            //   คุยเล่น → AI + directive web-only · ของที่จ่ายแล้ว (ระดับ A) → null = โฟลเดิม
+            //   LINE / Telegram / ธงปิด → null ทันที (พฤติกรรมเดิมทุกอย่าง)
+            // ═══════════════════════════════════════════════════════════════
+            $webOnlyGate = $this->maybeWebOnlyGate($facebookUserId, $messageText, $userProfile);
+            if ($webOnlyGate !== null) {
+                return $webOnlyGate;
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -2784,7 +2804,7 @@ class FortuneConversationService
                         }
 
                         // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
-                        $matchedKeyword = $this->checkDatabaseKeywords($messageText);
+                        $matchedKeyword = $this->checkDatabaseKeywords($messageText, $facebookUserId);
                         if ($matchedKeyword) {
                             Log::info('Fortune: DB keyword matched (basic_done fallback)', [
                                 'user_id' => $facebookUserId,
@@ -3109,7 +3129,7 @@ class FortuneConversationService
 
                 // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
                 // ตอบ small talk, FAQ, อารมณ์ ฯลฯ โดยไม่สร้าง FortuneReading
-                $matchedKeyword = $this->checkDatabaseKeywords($messageText);
+                $matchedKeyword = $this->checkDatabaseKeywords($messageText, $facebookUserId);
                 if ($matchedKeyword) {
                     Log::info('Fortune: DB keyword matched (no active conversation)', [
                         'user_id' => $facebookUserId,
@@ -9056,6 +9076,12 @@ class FortuneConversationService
      */
     protected function startStripeForeignFallback(FortuneReading $reading, string $prefixMessage = ''): array
     {
+        // 🌐 (2026-11-03) FB web-only — เลนบัตรต่างประเทศก็เป็นการเก็บเงินบน FB → ห้าม
+        //   (บิลที่จ่ายแล้วไม่โดน: FbBillingGuard บล็อกเฉพาะการออกบิล ส่วนบิลจ่ายแล้วไปเส้นด้านล่างตามเดิม)
+        if (! $reading->is_paid && $this->webOnlyBillingBlocked($reading, 'startStripeForeignFallback')) {
+            return $this->webOnlyBillBlockedResponse($reading, 'startStripeForeignFallback');
+        }
+
         // 🛡️ (2026-08-23) จ่ายเข้ามาแล้วระหว่างที่ถามยืนยันค้างอยู่ → ห้ามเปิดเลนบัตรเด็ดขาด
         //    ช่องโหว่จริง: ถามยืนยัน → ลูกค้าสแกน QR ที่ค้างในแอปธนาคารส่งเงินเข้ามา
         //    → SMS ตัดบิลเรียบร้อย → ลูกค้าเพิ่งมากดปุ่ม "ยืนยัน จ่ายบัตร"
@@ -9199,6 +9225,12 @@ class FortuneConversationService
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ห้ามจองยอด QR ไทยใหม่ (reissue) บน FB
+        //   ปิดลิงก์บัตรไปแล้วด้านบน → ปิดบิลเป็น moved_to_web แล้วพาไปห้องแม่หมอ
+        if (! $reading->is_paid && $this->webOnlyBillingBlocked($reading, 'returnFromStripeForeignFallback')) {
+            return $this->webOnlyBillBlockedResponse($reading, 'returnFromStripeForeignFallback');
         }
 
         // คืนสถานะเดิมของบิลตามชนิดแพ็กเกจ
@@ -9662,6 +9694,11 @@ class FortuneConversationService
      */
     protected function askPaymentMethod(FortuneReading $reading, string $prefixMessage = ''): array
     {
+        // 🌐 (2026-11-03) FB web-only — เมนูเลือกวิธีจ่าย = เรื่องเงิน ห้ามขึ้นบน FB
+        if ($this->webOnlyBillingBlocked($reading, 'askPaymentMethod')) {
+            return $this->webOnlyBillBlockedResponse($reading, 'askPaymentMethod');
+        }
+
         $mode = $this->getActivePaymentMode();
 
         // SMS-only / none → fall to QR Thai
@@ -9941,6 +9978,11 @@ class FortuneConversationService
      */
     protected function startStripePaymentFlow(FortuneReading $reading, string $tier = 'foreign'): array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามเปิดลิงก์บัตรบน FB (และห้ามตกไป QR ไทยตอน Stripe พัง)
+        if ($this->webOnlyBillingBlocked($reading, 'startStripePaymentFlow')) {
+            return $this->webOnlyBillBlockedResponse($reading, 'startStripePaymentFlow');
+        }
+
         $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
         $result = $service->createCheckoutSession($reading, $tier);
 
@@ -10444,6 +10486,11 @@ class FortuneConversationService
      */
     protected function createPaymentBill(FortuneReading $reading, array $questions, bool $payFirst = false): array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามออกบิล Deep บน FB (ทุกเส้น รวม cron/job ที่ไม่ได้ setPlatform)
+        if ($this->webOnlyBillingBlocked($reading, 'createPaymentBill')) {
+            return $this->webOnlyBillBlockedResponse($reading, 'createPaymentBill');
+        }
+
         // 🛡️ (2026-05-31 HOTFIX) Celtic reading ห้ามใช้ createPaymentBill (ราคา Deep 39 เสมอ)
         //   Incident จริง (reading 4487): Celtic 99 reading หลุดมา createPaymentBill ผ่าน
         //   askPaymentMethod fall-through (mode=sms_only / state race) → บิลถูกทับเป็น 39
@@ -15660,9 +15707,12 @@ class FortuneConversationService
 
                 return [
                     'action' => 'fuzzy_rejected_by_customer',
-                    'message' => "🙏 รับทราบค่ะ — ทีมงานจะตรวจสอบให้\n\n"
-                        ."ถ้าเจ้าชะตาโอนแล้วจริง อาจใช้ชื่อบัญชีอื่น/ยอดต่างกัน\n"
-                        .'แอดมินจะติดต่อกลับภายใน 5-15 นาทีนะคะ 🙏',
+                    // 🔐 (รีวิว) FB web-only: ข้อความเดิมมี "ชื่อบัญชี" → ด่านเงินชั้นส่งบล็อก (ลูกค้าได้ความเงียบ)
+                    'message' => $this->webOnlyActiveFor($userId)
+                        ? \App\Services\Fortune\WebHandoffCopy::FUZZY_ANSWER_ACK
+                        : "🙏 รับทราบค่ะ — ทีมงานจะตรวจสอบให้\n\n"
+                            ."ถ้าเจ้าชะตาโอนแล้วจริง อาจใช้ชื่อบัญชีอื่น/ยอดต่างกัน\n"
+                            .'แอดมินจะติดต่อกลับภายใน 5-15 นาทีนะคะ 🙏',
                     'reading' => $reading,
                 ];
             }
@@ -17192,6 +17242,11 @@ class FortuneConversationService
      */
     protected function createProvisionalCelticReading(string $platform, string $userId): ?FortuneReading
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามเปิดบิล "โอนก่อนบิล" ใหม่บน FB (สลิประดับ C เก็บหลักฐานให้แอดมินแทน)
+        if (\App\Services\Fortune\FbBillingGuard::blocks(null, $userId, $platform, 'createProvisionalCelticReading')) {
+            return null;
+        }
+
         try {
             $reading = FortuneReading::create([
                 'facebook_user_id' => $userId,           // LINE id เก็บ field เดียวกัน (ขึ้นต้น U)
@@ -17553,6 +17608,15 @@ class FortuneConversationService
             return $this->applyAdminSwitchCovered($reading, $target, $moneyIn, $newPrice, (bool) $reading->is_paid, $before);
         }
 
+        // 🌐 (2026-11-03) FB web-only — แอดมินออกบิลส่วนต่างให้ลูกค้า FB ไม่ได้ (เก็บเงินในแชท FB = ผิดนโยบาย)
+        if (\App\Services\Fortune\FbBillingGuard::blocks($reading, null, null, 'applyAdminSwitchCharge')) {
+            return [
+                'ok' => false,
+                'message' => 'ลูกค้า Facebook อยู่ใต้โหมดย้ายไปเว็บจันทรา — ออกบิลส่วนต่างในแชท FB ไม่ได้ '
+                    .'ให้เลือก "ถือว่าจ่ายครบ" หรือให้ลูกค้าเติมผ่านเว็บจันทราแทน',
+            ];
+        }
+
         $expiry = FortuneReading::billTimeoutMinutes();
         $upa = UniquePaymentAmount::generate($remaining, $reading->id, 'fortune_reading', $expiry);
         if (! $upa) {
@@ -17616,6 +17680,17 @@ class FortuneConversationService
      */
     protected function presentPrepayPackageChoice(FortuneReading $provisional, array $verify, float $amount, string $platform, string $userId): array
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามถาม "39 หรือโอนเพิ่มให้ครบ 99" ในแชท FB (ทาง 99 = ออก QR เติม)
+        //   ยอดกำกวม → พักให้แอดมินตัดสิน (ส่ง Deep / คืนเงิน / เติมวอลเลตจันทรา)
+        if ($this->webOnlyBillingBlocked($provisional, 'presentPrepayPackageChoice', $userId)) {
+            $this->clearPrepayChoice($userId, $provisional);
+            // เก็บสลิปที่ verify แล้วไว้บนบิล (ยังไม่เครดิต — แอดมินเป็นคนตัดสิน) ไม่แตะยอดสะสม
+            $provisional->setConversationState('prepay_choice_verify', $verify);
+            $provisional->setConversationState('web_only_parked_amount', $amount);
+
+            return $this->webOnlyParkMoneyForAdmin($provisional, $userId, 'presentPrepayPackageChoice');
+        }
+
         // 🩹 (2026-07-02 จับผี) บิลหลุดสถานะรอจ่ายไปแล้ว (เช่น cron หมดอายุปิดเป็น completed) แต่เงินจริง
         //   เพิ่งเข้ามาถึงขั้นถาม 39/99 → ปลุกกลับมารอจ่าย — ไม่งั้น guard ตอนลูกค้าตอบจะเคลียร์ choice ทิ้ง
         //   ลูกค้าตอบไม่ได้ + เงินค้างเงียบ (กฎ paid-bills-always-resume)
@@ -17893,6 +17968,11 @@ class FortuneConversationService
         //   ห้ามส่งเข้า handlePartialPayment ซ้ำ (จะโดนด่าน duplicate-slip ตอบงงๆ) → แจ้งยอดขาด + ออกบิล top-up ตรงยอด
         $refs = is_array($reading->partial_transrefs) ? $reading->partial_transrefs : [];
         if (in_array((string) ($verify['transRef'] ?? ''), $refs, true)) {
+            // 🌐 (2026-11-03) FB web-only — เลือก 99 แล้วต้องโอนเพิ่ม = ห้ามออก QR เติมบน FB → พักยอดให้แอดมิน
+            if ($this->webOnlyBillingBlocked($reading, 'prepayChoiceCelticTopup', $userId)) {
+                return $this->webOnlyParkMoneyForAdmin($reading, $userId, 'prepayChoiceCelticTopup');
+            }
+
             $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
             $paidTotal = (float) ($reading->partial_paid_total ?? 0);
             $remain = max(0, round($celticPrice - $paidTotal, 2));
@@ -19059,6 +19139,15 @@ class FortuneConversationService
                 return $prepayResp;
             }
 
+            // 🌐 (2026-11-03) FB web-only — โอนขาดเกิน tolerance: ห้ามออก QR เติม/ทวงยอดในแชท FB
+            //   พักยอดสะสมให้แอดมินตัดสิน (เงินไม่หาย) + ตอบสั้นไม่พูดเรื่องเงิน (design 1.4)
+            if ($this->webOnlyBillingBlocked($reading, 'handlePartialPayment', (string) $userId)) {
+                return $this->webOnlyParkMoneyForAdmin($reading, (string) $userId, 'handlePartialPayment', [
+                    'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
+                    'partial_rounds' => $rounds, 'partial_transrefs' => $refs,
+                ]);
+            }
+
             // ❌ ครบ 3 รอบยังไม่ครบ → HOLD พักให้แม่หมอ/แอดมินตรวจ (เงินไม่หาย ไม่แบน)
             if ($rounds >= 3) {
                 try {
@@ -19175,6 +19264,12 @@ class FortuneConversationService
      */
     protected function createPartialTopupBill(FortuneReading $reading, float $shortfall): ?\App\Models\UniquePaymentAmount
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามออก QR เติมบน FB (design 1.4 ระดับ B: ขาดเกิน tolerance → คิวแอดมิน)
+        //   ผู้เรียกที่เป็นเส้นลูกค้าเช็คก่อนแล้วพักยอดผ่าน webOnlyParkMoneyForAdmin — ตรงนี้คือด่านสุดท้าย
+        if ($this->webOnlyBillingBlocked($reading, 'createPartialTopupBill')) {
+            return null;
+        }
+
         try {
             return \DB::transaction(function () use ($reading, $shortfall) {
                 $oldUpa = $reading->uniquePaymentAmount;
@@ -19312,6 +19407,16 @@ class FortuneConversationService
             }
 
             // ตอบทุกครั้งระหว่าง HOLD (user spec: ลูกค้าพิมพ์อะไรมาก็ตอบ) — เงินไม่หาย รอแม่หมอ
+            // 🔐 (รีวิว) FB web-only: ข้อความเดิมมี "โอนมา" → ด่านเงินชั้นส่งบล็อกทั้งข้อความ (ลูกค้าได้ความเงียบ)
+            //    → ใช้ถ้อยคำไม่มีคำเรื่องเงิน · LINE คงข้อความเดิม
+            if ($this->webOnlyActiveFor($userId)) {
+                return [
+                    'action' => 'partial_hold',
+                    'message' => \App\Services\Fortune\WebHandoffCopy::HOLD,
+                    'reading' => $reading,
+                ];
+            }
+
             return [
                 'action' => 'partial_hold',
                 'message' => "🌙 เจ้าชะตาคะ ตอนนี้ยอดที่โอนมาอยู่ระหว่าง *แม่หมอตรวจสอบเอง* นะคะ\n"
@@ -20457,12 +20562,18 @@ class FortuneConversationService
      * ตรวจสอบเฉพาะ category 'fortune' + 'faq' ที่ active
      * เรียงตาม priority สูงสุดก่อน
      *
+     * 🌐 (2026-11-03) FB web-only: ลูกค้า FB ใต้ธง → ข้ามคีย์เวิร์ดที่คำตอบมีเรื่องเงิน
+     *   (ห้ามแก้ตาราง LineBotKeyword เพราะ LINE ใช้ร่วม — กรองตอนอ่านแทน)
+     *
      * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  string|null  $platformUserId  id ลูกค้า (ใช้ตัดสิน FB web-only — null = ใช้ currentPlatform)
      * @return LineBotKeyword|null keyword ที่ match หรือ null
      */
-    protected function checkDatabaseKeywords(string $messageText): ?LineBotKeyword
+    protected function checkDatabaseKeywords(string $messageText, ?string $platformUserId = null): ?LineBotKeyword
     {
         try {
+            $skipMoneyAnswers = $this->webOnlyActiveFor($platformUserId);
+
             // ดึง keywords จาก cache (ลดการเรียก DB ทุกข้อความ)
             $keywords = Cache::remember('fortune:db_keywords', 300, function () {
                 return LineBotKeyword::active()
@@ -20477,6 +20588,15 @@ class FortuneConversationService
             // ตรวจสอบว่า match keyword ไหน
             foreach ($keywords as $keyword) {
                 if ($keyword->matches($messageText)) {
+                    if ($skipMoneyAnswers && $this->webOnlyKeywordHasMoney($keyword)) {
+                        Log::info('🌐 FB web-only: ข้ามคีย์เวิร์ดที่ตอบเรื่องเงิน', [
+                            'keyword_id' => $keyword->id,
+                            'platform_user_id' => $platformUserId,
+                        ]);
+
+                        continue;
+                    }
+
                     return $keyword;
                 }
             }
@@ -23430,13 +23550,18 @@ PROMPT;
             //   ถ้าลูกค้าถูก mark "ฟุ้งซ่านไม่ปิดการขาย" + ไม่มี keyword พร้อมซื้อ → return null
             //   ตรวจ keyword bypass ก่อนเสมอ (ลูกค้าพร้อมจ่ายต้อง pass — อย่าตัดราย!)
             $platformForSilence = $this->detectPlatformFromUserId($userId);
+
+            // 🌐 (2026-11-03) FB web-only — แชทนี้ห้ามขายของ/พูดเรื่องเงิน/ทำนาย (เส้น job buffer ก็ผ่านตรงนี้)
+            $webOnlyFb = $this->webOnlyActiveFor($userId);
+
             if (! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)) {
                 $personaSvc = app(\App\Services\Fortune\CustomerPersonaService::class);
                 if ($personaSvc->isChatSilenced($platformForSilence, $userId)) {
                     // 🛒 (2026-08-27) เงียบแชทฟรี ≠ เงียบตอนลูกค้าจะซื้อของ — ให้เหมือนด่านแรกใน processMessage
                     //    เส้นนี้ถึงมือได้จาก ProcessBufferedChatMessageJob ที่เรียกตรง (ไม่ผ่าน processMessage)
                     //    กรณีลูกค้าโดนสั่งเงียบ "ระหว่างที่ข้อความรออยู่ใน buffer"
-                    $askResult = $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
+                    //    🌐 FB web-only: ไม่ส่งการ์ดสินค้า (มีราคา/ลิงก์ร้าน) ในแชท FB
+                    $askResult = $webOnlyFb ? null : $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
                     if ($askResult !== null) {
                         Log::info('Fortune: AI Chat silenced แต่ถามหาของ → ส่งการ์ดให้', [
                             'platform' => $platformForSilence,
@@ -23545,7 +23670,8 @@ PROMPT;
             //   วางไว้ "หลัง debounce" (ต้องรวมข้อความก่อนอ่านเจตนา)
             //   และ "ก่อนด่านตัดบทสนทนา" (คนกำลังจะซื้อ ห้ามโดนส่ง goodbye)
             //   ดู tryCustomerAskOffer — ด่านของจริงอยู่ใน FortuneMuOfferService::canOffer()
-            $askOfferResult = $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
+            //   🌐 (2026-11-03) FB web-only: ข้าม — การ์ดสินค้ามีราคา/ลิงก์จ่ายเงิน ห้ามอยู่ในแชท FB
+            $askOfferResult = $webOnlyFb ? null : $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
             if ($askOfferResult !== null) {
                 return $askOfferResult;
             }
@@ -23576,6 +23702,10 @@ PROMPT;
                         // ส่ง "เนียน goodbye" 1 ข้อความ แล้วเงียบในรอบหน้า
                         $goodbye = $chitchatResult['goodbye_message']
                             ?? '🌙 เดี๋ยวกลับมาคุยใหม่นะคะ พิมพ์ "ดูดวง" เมื่อพร้อม ❤️';
+                        if ($webOnlyFb) {
+                            // 🌐 FB web-only: คำลาเดิมชวน 'พิมพ์ "ดูดวง"' ในแชท — ใช้คำลากลาง ๆ แทน
+                            $goodbye = $this->webOnlyGoodbyeMessage();
+                        }
 
                         $this->saveConversationMessage($userId, 'user', $messageText);
                         $this->saveConversationMessage($userId, 'assistant', $goodbye);
@@ -23615,6 +23745,9 @@ PROMPT;
                     if (! empty($turnCapResult['triggered'])) {
                         $goodbye = $turnCapResult['goodbye_message']
                             ?? '🌙 ขอบคุณที่คุยกับแม่หมอวันนี้นะคะ พิมพ์ "ดูดวง" เมื่อพร้อม เดี๋ยวกลับมาคุยใหม่ค่ะ ✨';
+                        if ($webOnlyFb) {
+                            $goodbye = $this->webOnlyGoodbyeMessage();
+                        }
 
                         $this->saveConversationMessage($userId, 'user', $messageText);
                         $this->saveConversationMessage($userId, 'assistant', $goodbye);
@@ -23948,7 +24081,8 @@ PROMPT;
 
             // 💳 (2026-05-07 Phase 2) Bill Psychology — ถ้าลูกค้ามีบิลค้าง → ใช้ Pro model + bill prompt
             $billDetector = new \App\Services\Fortune\FortuneBillContextDetector($this->settings);
-            $billContext = $billDetector->detect($platform, $userId);
+            // 🌐 (2026-11-03) FB web-only: ห้าม AI ทวง/พูดถึงบิลในแชท FB (prompt นี้พูดเรื่องโอน/ชำระโดยตรง)
+            $billContext = $webOnlyFb ? null : $billDetector->detect($platform, $userId);
 
             if ($billContext !== null) {
                 try {
@@ -24216,11 +24350,15 @@ PROMPT;
                     //   early-gate จะแปลเป็น "เอา" แล้วยิงเมนูแพคเกจให้ทันที
                     //   เดิม: แท็กนี้แค่แปะปุ่มแล้วทิ้ง ไม่เก็บ state → คำตอบรับตกน้ำ
                     //   (เทียบ [ASK_SAVE] ข้างล่างที่เก็บ fortune_pending_save อยู่แล้ว)
-                    Cache::put(
-                        "fortune:pending_offer:{$userId}",
-                        true,
-                        now()->addMinutes(self::PENDING_OFFER_TTL_MINUTES)
-                    );
+                    //   🌐 (2026-11-03) FB web-only: ไม่ติดธง — "ค่ะ" ต้องไม่กลายเป็นเมนูแพ็กเกจ
+                    //      (ปุ่มที่แนบคือ "เข้าห้องแม่หมอ" — ChannelManager/T8 แปลง offer_fortune เอง)
+                    if (! $webOnlyFb) {
+                        Cache::put(
+                            "fortune:pending_offer:{$userId}",
+                            true,
+                            now()->addMinutes(self::PENDING_OFFER_TTL_MINUTES)
+                        );
+                    }
 
                     Log::info('Fortune: AI เสนอเริ่มดูดวง (rapport built)', [
                         'user_id' => $userId,
@@ -24232,6 +24370,21 @@ PROMPT;
             // ✅ ตรวจจับ [DEEP_READING] — AI เข้าใจว่าผู้ใช้ต้องการดูดวงเชิงลึก → redirect เข้า deep reading flow
             if (str_contains($responseText, '[DEEP_READING]')) {
                 $responseText = trim(str_replace('[DEEP_READING]', '', $responseText));
+
+                // 🌐 (2026-11-03) FB web-only: ห้ามเปิดโฟลดูดวงในแชท → พาไปห้องแม่หมอแทน
+                //   (ข้อความลูกค้า + คำตอบ AI ถูกบันทึกไปแล้วด้านบน → handoff ไม่บันทึกข้อความลูกค้าซ้ำ)
+                if ($webOnlyFb) {
+                    $handoff = $this->webOnlyHandoff(
+                        $userId,
+                        $messageText,
+                        \App\Services\Fortune\WebHandoffCopy::KIND_READING,
+                        $userProfile,
+                        'ai_deep_reading_tag',
+                        false
+                    );
+
+                    return $handoff;
+                }
 
                 Log::info('Fortune: AI detect intent ดูดวงเชิงลึก → redirect to deep reading flow', [
                     'user_id' => $userId,
@@ -24275,6 +24428,24 @@ PROMPT;
                         ['label' => '❌ ไม่ฝาก', 'text' => 'ไม่ฝากคำถาม'],
                     ],
                 ];
+            }
+
+            // 🌐 (2026-11-03) FB web-only: AI ฝืน directive พูดเรื่องเงิน → ไม่ส่งข้อความนั้น พาไปห้องแม่หมอแทน
+            //   (ด่านสุดท้ายฝั่งข้อความ — ชั้นส่ง FacebookWebhookService ยังกรองซ้ำอีกชั้น)
+            if ($webOnlyFb && $this->webOnlyTextHasMoney($responseText)) {
+                Log::warning('🌐 FB web-only: คำตอบ AI มีเรื่องเงิน → แทนด้วยกล่องพาไปห้องแม่หมอ', [
+                    'user_id' => $userId,
+                    'response_preview' => mb_substr($responseText, 0, 80),
+                ]);
+
+                return $this->webOnlyHandoff(
+                    $userId,
+                    $messageText,
+                    \App\Services\Fortune\WebHandoffCopy::KIND_PRICE,
+                    $userProfile,
+                    'ai_money_reply_blocked',
+                    false
+                );
             }
 
             Log::info('Fortune: AI Chat response สำเร็จ', [
@@ -24526,6 +24697,11 @@ PROMPT;
     protected function tryCustomerAskOffer(string $platform, string $userId, string $messageText): ?array
     {
         try {
+            // 🔐 (รีวิว) FB web-only: ไม่ตอบด้วยการ์ดสินค้ามีราคาบน FB — ปล่อยให้ด่าน web-only พาไปห้องแม่หมอ
+            if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($platform, $userId, null, 'customer_ask_offer')) {
+                return null;
+            }
+
             $svc = app(\App\Services\Fortune\FortuneMuOfferService::class);
 
             $ask = $svc->detectCustomerAsk($platform, $userId, $messageText);

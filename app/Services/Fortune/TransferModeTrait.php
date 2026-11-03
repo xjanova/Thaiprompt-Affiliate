@@ -251,6 +251,15 @@ trait TransferModeTrait
         try {
             $mode = new FortuneBotMode($this->settings);
 
+            // 🌐 (2026-11-03) FB web-only — ฉีดทุกครั้ง (ไม่สนโหมด/rollout/fallback) ชนะ directive โหมด transfer
+            //   ลูกค้าที่มีของจ่ายแล้วกำลังส่ง → ฉบับห้ามพูดเงินอย่างเดียว (ห้ามสั่ง "ไม่ทำนาย" ทับงานที่จ่ายแล้ว)
+            //   ⚠️ LINE / tg_ → fbWebOnlyFor = false เสมอ (เดินเส้นเดิมข้างล่าง)
+            if ($mode->fbWebOnlyFor($platform, $platformUserId)) {
+                return method_exists($this, 'buildWebOnlyChatDirective')
+                    ? $this->buildWebOnlyChatDirective($mode->fbLegacyPaidInFlight($platformUserId))
+                    : '';
+            }
+
             // ครอบทั้ง: โหมด/ช่องทาง/rollout · ลูกค้าเลือกอยู่แชทแล้ว · **มีบิลหรือโฟลค้างอยู่**
             // (ตัวสุดท้ายสำคัญที่สุด — คนจ่ายเงินแล้วถามต่อ ห้ามโดนตอบว่า "ไปดูที่เว็บ")
             if (! $mode->shouldNudgeToTransfer($platform, $platformUserId)) {

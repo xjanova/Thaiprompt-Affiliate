@@ -33,8 +33,13 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * ⚠️ ไม่มี token เลย → ตอบ 401 ทันทีโดยไม่แตะ ResourceServer
  *    (สภาพแวดล้อมที่ยังไม่มีคีย์ Passport จะโยน exception ตอนสร้าง ResourceServer — ห้ามกลายเป็น 500)
+ *
+ * 🚦 (2026-11-03) implements AuthenticatesRequests (interface ว่าง ใช้แค่จัดลำดับ middleware)
+ *    = Laravel วางด่านนี้ "ก่อน" throttle เสมอ — เดิม throttle ถูกเลื่อนขึ้นมาก่อน (ลำดับ priority ของ Kernel)
+ *    คำขอที่ไม่มี token จึงกินถังรวมของแชทได้ (limiter ของกลุ่มนี้นับรวมทั้งเว็บ ไม่ใช่ต่อ IP)
+ *    = ใครก็ยิงขยะจนแชทลูกค้าจริงได้ 429 ทั้งเว็บ
  */
-class AuthenticateJuntraServer
+class AuthenticateJuntraServer implements \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests
 {
     /** host ของเว็บจันทรา (punycode + ตัวอักษรไทย) */
     public const JUNTRA_HOSTS = ['xn--82c4af5bzdj.online', 'จันทรา.online'];

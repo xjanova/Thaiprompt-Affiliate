@@ -324,6 +324,7 @@
                         <option value="classic">เฉพาะโหมดเดิม (คุยในแชท)</option>
                         <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
                         <option value="daily">เฉพาะโหมดดวงรายวัน (ขอวันเกิด)</option>
+                        <option value="web">เฉพาะ FB พาเข้าห้องแม่หมอ (ห้ามพูดเรื่องเงิน/ลิงก์)</option>
                     </select>
                 </div>
 
@@ -428,6 +429,8 @@
                                     <span class="tp-pill" style="font-size:11px; color:#8a6d3b; font-weight:600;">💬 โหมดเดิม</span>
                                 @elseif(($msg->mode ?? 'all') === 'daily')
                                     <span class="tp-pill" style="font-size:11px; color:#5689b8; font-weight:600;">🌙 โหมดดวงรายวัน</span>
+                                @elseif(($msg->mode ?? 'all') === 'web')
+                                    <span class="tp-pill" style="font-size:11px; color:#7a5cc8; font-weight:600;">🌐 FB พาเข้าห้องแม่หมอ</span>
                                 @endif
                                 {{-- ⏰ (2026-08-08) ป้ายช่วงเวลา — ไม่มีป้าย = ส่งได้ทุกเวลา --}}
                                 @if($windowLabel)
@@ -506,6 +509,7 @@
                             <option value="classic">เฉพาะโหมดเดิม</option>
                             <option value="transfer">เฉพาะโหมดพาไปเว็บ/LINE</option>
                             <option value="daily">เฉพาะโหมดดวงรายวัน</option>
+                            <option value="web">เฉพาะ FB พาเข้าห้องแม่หมอ</option>
                         </select>
                     </div>
                     <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer;">

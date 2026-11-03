@@ -72,10 +72,28 @@ class FortuneTransferPreflight extends Command
      */
     protected function checkMode(FortuneBotMode $mode): void
     {
+        // 🐛 (2026-11-03) เดิมพิมพ์ "classic — ยังไม่เปิด" ทุกครั้งที่ไม่ใช่ transfer (โหมด daily ก็ขึ้น classic)
+        //    → แอดมินอ่านแล้วเข้าใจผิดว่าบอทอยู่โหมดปกติ ⇒ พิมพ์โหมดจริงเสมอ
+        $current = $mode->mode();
+
         if ($mode->isTransfer()) {
             $this->ok('โหมดบอท', 'transfer (เปิดอยู่)');
+        } elseif ($mode->isDaily()) {
+            $this->info_('โหมดบอท', 'daily (DM ดูดวงรายวัน) — ยังไม่ใช่ transfer (ตรวจล่วงหน้าได้ตามปกติ)');
         } else {
-            $this->info_('โหมดบอท', 'classic — ยังไม่เปิด (ตรวจล่วงหน้าได้ตามปกติ)');
+            $this->info_('โหมดบอท', $current.' — ยังไม่เปิด transfer (ตรวจล่วงหน้าได้ตามปกติ)');
+        }
+
+        // 🌐 ธง FB web-only ชนะโหมด transfer บน FB (ไม่มีทางถอยไปดูในแชท) — ตรวจด้วยคำสั่งของมันเอง
+        try {
+            if ($mode->fbWebOnly()) {
+                $this->info_(
+                    'ธง FB web-only',
+                    'เปิดอยู่ — ลูกค้า FB ไปเว็บทั้งหมดโดยไม่ดูโหมดนี้ (ตรวจด้วย fortune:fb-web-only-preflight)'
+                );
+            }
+        } catch (\Throwable $e) {
+            // อ่านธงไม่ได้ ไม่ใช่เรื่องของ preflight ตัวนี้
         }
 
         $percent = (int) (FortuneTellingSetting::getSettings()->transfer_rollout_percent ?? 100);

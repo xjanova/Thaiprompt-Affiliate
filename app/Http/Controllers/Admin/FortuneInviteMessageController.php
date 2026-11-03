@@ -89,7 +89,8 @@ class FortuneInviteMessageController extends Controller
         return [
             'message' => 'required|string|max:1000',
             'category' => 'nullable|string|max:50',
-            'mode' => 'nullable|in:all,classic,transfer,daily',
+            // 🌐 (2026-11-03) + 'web' (ชุด FB web-only) — ไม่มีในลิสต์ = แก้แถวชุด web จากหน้าแอดมินไม่ได้
+            'mode' => 'nullable|in:'.implode(',', FortuneInviteMessage::MODES),
             // ⏰ ช่วงเวลาที่อนุญาตให้ส่ง (0-23) — ไม่กรอก = ส่งได้ทุกเวลา
             'hour_from' => 'nullable|integer|min:0|max:23',
             'hour_to' => 'nullable|integer|min:0|max:23',

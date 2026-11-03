@@ -228,6 +228,14 @@ class FortuneFlowNudge extends Command
             return;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ห้ามส่งกล่องเลือกแพคเกจ/กล่อง "พร้อมโอนค่าบูชาครู" ใน Messenger
+        //   (อยู่ใต้ EXIT — การปิดเมนูค้างเงียบ ๆ ยังทำตามเดิม ส่วนการเสนอสินค้าตอน exit ถูกกันใน offerProductsOnExit)
+        if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($platform, $userId, $reading, 'flow_nudge')) {
+            $stats['skip']++;
+
+            return;
+        }
+
         // 🛡️ (2026-07-24) Guard: platform=line แต่ userId ไม่ใช่รูปแบบ LINE userId (^U + 32 hex)
         //   = ข้อมูล platform เพี้ยน (เคส reading 10179: chat redirect สร้าง reading platform='line'
         //   ทั้งที่ id เป็น FB PSID ตัวเลขล้วน). ถ้า nudge ต่อ → LineFortuneService.pushMessage
@@ -431,6 +439,11 @@ class FortuneFlowNudge extends Command
 
         // ข้อมูล platform เพี้ยน → ห้ามยิง (เหตุผลเดียวกับด่าน nudge ด้านล่าง)
         if ($platform === 'line' && ! preg_match('/^U[0-9a-f]{32}$/i', $userId)) {
+            return;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ไม่ทิ้งการ์ดขายของใน Messenger ตอนปิดเมนู
+        if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($platform, $userId, $reading, 'flow_nudge_exit_offer')) {
             return;
         }
 

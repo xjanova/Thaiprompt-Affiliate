@@ -77,6 +77,12 @@ class FortuneSavedQuestionsController extends Controller
             'admin_reply' => 'required|string|max:2000',
         ]);
 
+        // 🔐 (รีวิว) FB web-only: ห้ามตอบเรื่องเงิน/โอน/เลขบัญชีเข้าแชท FB (เหมือนแผงเทคโอเวอร์) — เช็คก่อนบันทึก
+        $blocked = $this->webOnlyBlockReason($question, $validated['admin_reply']);
+        if ($blocked !== null) {
+            return $this->webOnlyBlockedResponse($request, $blocked);
+        }
+
         $question->markAsReplied(
             $validated['admin_reply'],
             auth()->id()
@@ -187,10 +193,18 @@ class FortuneSavedQuestionsController extends Controller
             }
 
             // สร้างข้อความตอบกลับ
-            $message = "📝 แอดมินตอบกลับคำถามของคุณค่ะ\n\n"
-                ."❓ คำถาม: {$question->question}\n\n"
-                ."💬 คำตอบ: {$reply}\n\n"
-                .'หากมีคำถามเพิ่มเติม พิมพ์ถามได้เลยนะคะ ✨';
+            // 🔐 (รีวิว) FB web-only: ไม่แปะคำถามเดิมของลูกค้า — คำถามที่ฝากใต้โหมดนี้ส่วนใหญ่คือเรื่องโอน/สลิป
+            //    แปะกลับไป = ด่านเงินชั้นส่งบล็อกทั้งข้อความ (ลูกค้าไม่ได้คำตอบ) หรือเราพูดเรื่องเงินเองบน FB
+            if ($platform === 'facebook' && $this->fbWebOnlyFor($userId)) {
+                $message = "📝 แอดมินตอบกลับค่ะ\n\n"
+                    ."💬 {$reply}\n\n"
+                    .'หากมีคำถามเพิ่มเติม พิมพ์ถามได้เลยนะคะ ✨';
+            } else {
+                $message = "📝 แอดมินตอบกลับคำถามของคุณค่ะ\n\n"
+                    ."❓ คำถาม: {$question->question}\n\n"
+                    ."💬 คำตอบ: {$reply}\n\n"
+                    .'หากมีคำถามเพิ่มเติม พิมพ์ถามได้เลยนะคะ ✨';
+            }
 
             $sent = false;
 
@@ -244,6 +258,47 @@ class FortuneSavedQuestionsController extends Controller
             ]);
 
             return ['sent' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * 🔐 (รีวิว) เหตุผลที่ส่งคำตอบนี้เข้า FB ไม่ได้ใต้ web-only (null = ส่งได้ · LINE/Telegram ไม่โดน)
+     */
+    protected function webOnlyBlockReason(FortuneSavedQuestion $question, string $reply): ?string
+    {
+        $userId = (string) ($question->platform_user_id ?? '');
+        if ($userId === '') {
+            return null;
+        }
+
+        return \App\Services\Fortune\FbWebOnlyAdminMessageFilter::blockReason($question->platform, $userId, $reply);
+    }
+
+    /**
+     * 🔐 ตอบกลับเมื่อถูกบล็อก — JSON = 422 · ฟอร์ม = กลับหน้าเดิมพร้อมข้อความเดิม
+     */
+    protected function webOnlyBlockedResponse(Request $request, string $reason)
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'blocked' => \App\Services\Fortune\FbWebOnlyAdminMessageFilter::REASON_MONEY_WORD,
+                'message' => $reason,
+            ], 422);
+        }
+
+        return back()->withInput()->with('error', $reason);
+    }
+
+    /**
+     * 🌐 ผู้รับ FB คนนี้อยู่ใต้ web-only ไหม (เช็คพัง = ถือว่าใช่ — fail-closed)
+     */
+    protected function fbWebOnlyFor(string $userId): bool
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode)->fbWebOnlyFor('facebook', $userId);
+        } catch (\Throwable $e) {
+            return true;
         }
     }
 
@@ -308,6 +363,12 @@ class FortuneSavedQuestionsController extends Controller
             return redirect()
                 ->route('admin.fortune.saved-questions.index')
                 ->with('error', 'ยังไม่ได้ตอบคำถามนี้');
+        }
+
+        // 🔐 (รีวิว) คำตอบเดิมที่บันทึกไว้ก่อนเปิดธงอาจมีเรื่องเงิน → ห้ามส่งซ้ำเข้า FB
+        $blocked = $this->webOnlyBlockReason($question, (string) $question->admin_reply);
+        if ($blocked !== null) {
+            return $this->webOnlyBlockedResponse(request(), $blocked);
         }
 
         // 🤫 (2026-10-06) แอดมินกดส่งคำตอบของตัวเองซ้ำ → ด่านเทคโอเวอร์ไม่บล็อก

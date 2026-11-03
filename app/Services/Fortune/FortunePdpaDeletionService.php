@@ -330,6 +330,16 @@ class FortunePdpaDeletionService
             $counts['eve_product_wishes'] = $this->deleteWhere('eve_product_wishes', fn ($q) => $q->whereIn('user_id', $userIds));
         }
 
+        // ── 🌙 (2026-11-03 FB web-only) handoff แชท FB → เว็บจันทรา: มีข้อความที่ลูกค้าพิมพ์ (intent_text) ──
+        //    คีย์ด้วย PSID (platform_user_id) และ users.id (thaiprompt_user_id) — ลบทั้งสองทาง
+        $handoffIds = array_values(array_unique(array_merge($facebookIds, [$platformUserId])));
+        $counts['web_handoffs'] = $this->deleteWhere('fortune_web_handoffs', function ($q) use ($handoffIds, $userIds) {
+            $q->whereIn('platform_user_id', $handoffIds);
+            if (! empty($userIds)) {
+                $q->orWhereIn('thaiprompt_user_id', $userIds);
+            }
+        });
+
         // ── referrals: เฉพาะแถวที่ลูกค้าเป็น "ผู้ถูกชวน" (มี IP/UA ของลูกค้า) — เก็บแถวที่เป็นผู้ชวน ──
         //   สร้างเงื่อนไขเฉพาะคอลัมน์ที่มีจริง (ต้องมีอย่างน้อย 1 เงื่อนไข ไม่งั้นข้าม — กันลบทั้งตาราง)
         if (Schema::hasTable('fortune_referrals')) {

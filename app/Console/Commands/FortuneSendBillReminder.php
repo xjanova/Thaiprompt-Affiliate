@@ -88,6 +88,13 @@ class FortuneSendBillReminder extends Command
                 continue;
             }
 
+            // 🌐 (2026-11-03) FB web-only — บิล FB ไม่ทวงใน Messenger (job เช็คซ้ำอีกชั้นตอน handle)
+            if ($this->blockedByFbWebOnly($reading)) {
+                $skipped++;
+
+                continue;
+            }
+
             $ageMinutes = (int) $reading->created_at->diffInMinutes(now());
 
             // หา stage ที่อายุบิลตกอยู่ในหน้าต่าง
@@ -157,6 +164,13 @@ class FortuneSendBillReminder extends Command
                 continue;
             }
 
+            // 🌐 (2026-11-03) FB web-only — ไม่กระตุ้นเลือกวิธีจ่ายใน Messenger
+            if ($this->blockedByFbWebOnly($reading)) {
+                $skipped++;
+
+                continue;
+            }
+
             if ($reading->getConversationState('bill_reminder_sent_at')) {
                 $skipped++;
 
@@ -203,5 +217,20 @@ class FortuneSendBillReminder extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 🌐 (2026-11-03) บิลนี้เป็นของลูกค้า FB ที่อยู่ใต้ web-only ไหม (LINE = false เสมอ)
+     */
+    private function blockedByFbWebOnly(FortuneReading $reading): bool
+    {
+        $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
+
+        return \App\Services\Fortune\FbWebOnlyOutboundGuard::blocks(
+            $reading->platform,
+            $userId,
+            $reading,
+            'bill_reminder_scan'
+        );
     }
 }

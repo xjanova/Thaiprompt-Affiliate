@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $user_id
  * @property string $linked_via sso = ผู้ใช้ Thaiprompt ที่ลูกค้าผูกเอง · auto = ระบบสร้างให้
  * @property int|null $enrolled_member_id ตำแหน่งในผังที่จันทราสร้างให้ (ย้ายสายจากหลังบ้านจันทราได้เฉพาะตัวนี้)
+ * @property \Illuminate\Support\Carbon|null $released_at จันทราแจ้งลบบัญชี user_ref นี้แล้ว (ยังชี้ผู้ใช้เดิมจนมีบัญชีใหม่มาผูก)
+ * @property int|null $released_juntra_user_id user_ref เดิม หลังแถวนี้ถูกชี้ไปบัญชีจันทราใหม่
  */
 class JuntraAccount extends Model
 {
@@ -29,6 +31,8 @@ class JuntraAccount extends Model
     protected $fillable = [
         'juntra_user_id', 'user_id', 'linked_via', 'enrolled_member_id',
         'merged_from_user_id', 'merged_at', 'merge_failed_at', 'merge_error',
+        // 🌙 (2026-11-03) จันทราลบบัญชี → ปลดให้บัญชีจันทราใหม่ผูก Thaiprompt คนเดิมได้ (ไม่สร้างเงา)
+        'released_at', 'released_juntra_user_id',
     ];
 
     protected $casts = [
@@ -38,6 +42,8 @@ class JuntraAccount extends Model
         'merged_from_user_id' => 'integer',
         'merged_at' => 'datetime',
         'merge_failed_at' => 'datetime',
+        'released_at' => 'datetime',
+        'released_juntra_user_id' => 'integer',
     ];
 
     public function user(): BelongsTo

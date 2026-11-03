@@ -2289,6 +2289,79 @@ Format 2 — JSON array:
             </h3>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {{-- 🌐 (2026-11-03) ย้ายลูกค้า Facebook ไปเว็บจันทราทั้งหมด (FB แบนเพจที่มีสลิปในแชท) --}}
+                @php
+                    $fbWebOnlyOn = (bool) old('facebook_web_only', $settings->facebook_web_only ?? false);
+                    $fbWebOnlySince = $settings->fb_web_only_since ?? null;
+                    $fbStatus = $fbWebOnlyStatus ?? ['open_fb_bills' => null, 'web_invites' => null, 'override_pages' => null];
+                    $fbNum = fn ($v) => $v === null ? '—' : number_format((int) $v);
+                    $fbConfirmOn = "เปิด “ย้ายลูกค้า Facebook ไปเว็บ”?\n\n"
+                        ."• ลูกค้า FB จะไม่ได้ดูดวง ไม่ได้บิล ไม่ได้ QR ในแชทอีก ทุกคนถูกพาไปห้องแม่หมอบนเว็บจันทรา\n"
+                        ."• ไม่มีทางถอยให้ลูกค้าขอดูในแชท\n"
+                        ."• LINE ไม่เปลี่ยน\n\n"
+                        .'ควรรัน fortune:fb-web-only-preflight ให้ได้ 0 blocker และ fortune:web-only-cutover ก่อน';
+                    $fbConfirmOff = "ปิด “ย้ายลูกค้า Facebook ไปเว็บ”?\n\n"
+                        ."บอทจะกลับไปออกบิล ส่ง QR และรับสลิปในแชท FB ได้อีก ซึ่งเสี่ยงให้เพจโดนแบน\n"
+                        .'ใช้เป็นสวิตช์ฉุกเฉินของทีมเท่านั้น';
+                @endphp
+                <div class="md:col-span-3 rounded-xl border-2 p-4 transition"
+                     x-data="{
+                         on: @js($fbWebOnlyOn),
+                         toggle(e) {
+                             const want = e.target.checked;
+                             if (! window.confirm(want ? @js($fbConfirmOn) : @js($fbConfirmOff))) {
+                                 e.target.checked = ! want;
+                             }
+                             this.on = e.target.checked;
+                         },
+                     }"
+                     :class="on ? 'border-sky-400 dark:border-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'">
+                    <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
+                        🌐 ย้ายลูกค้า Facebook ไปเว็บจันทราทั้งหมด
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        ห้ามดูดวงและห้ามรับเงินในแชท Facebook — ทุกคนถูกชวนเข้า “ห้องแม่หมอ” บนเว็บ ล็อกอินให้อัตโนมัติด้วยตัวตน FB เดิม
+                        และแม่หมอบนเว็บคุยต่อจากเรื่องในแชทได้
+                        <br>✅ LINE ไม่เปลี่ยน · ✅ สายงานและค่าแนะนำเดินตามเดิม · ⛔ ไม่มีทางถอยให้ลูกค้าขอดูในแชท FB
+                    </p>
+
+                    {{-- hidden 0 ต้องมาก่อน checkbox — ไม่งั้นเอาติ๊กออกแล้วค่าไม่ถูกบันทึก --}}
+                    <input type="hidden" name="facebook_web_only" value="0">
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-sky-400 transition">
+                        <input type="checkbox" name="facebook_web_only" value="1"
+                               {{ $fbWebOnlyOn ? 'checked' : '' }}
+                               @change="toggle($event)"
+                               class="w-5 h-5 text-sky-600 rounded focus:ring-sky-500">
+                        <span class="text-sm text-gray-900 dark:text-white">เปิดโหมดย้ายลูกค้า Facebook ไปเว็บ</span>
+                    </label>
+
+                    <p x-show="on" class="mt-2 text-xs text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/40 border border-sky-200 dark:border-sky-800 rounded px-2 py-1">
+                        🌐 เปิดอยู่{{ $fbWebOnlySince ? ' ตั้งแต่ '.$fbWebOnlySince->format('d/m/Y H:i') : '' }}
+                        — ของที่ลูกค้าจ่ายแล้วยังส่งต่อในแชท FB จนจบ บิลที่ค้างจ่ายหมดอายุเอง
+                        <br>หลังเปิดครั้งแรก รัน <code class="font-mono">php artisan fortune:web-only-cutover --refresh-profile</code> เพื่อเปลี่ยนเมนู Messenger ทุกเพจ
+                    </p>
+                    <p x-show="! on" class="mt-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded px-2 py-1">
+                        ปิดอยู่ — แชท FB ทำงานตามโหมดบอทด้านล่าง
+                        <br>ก่อนเปิด: <code class="font-mono">php artisan fortune:fb-web-only-preflight</code> (ต้องได้ 0 blocker)
+                        → <code class="font-mono">php artisan fortune:web-only-cutover</code> (ดูตัวเลข แล้วค่อย --execute)
+                    </p>
+
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2">
+                            <div class="text-gray-500 dark:text-gray-400">บิล FB ที่ยังค้างจ่าย</div>
+                            <div class="text-base font-bold text-gray-900 dark:text-white">{{ $fbNum($fbStatus['open_fb_bills']) }}</div>
+                        </div>
+                        <div class="rounded-lg border px-3 py-2 {{ ($fbStatus['web_invites'] ?? 0) > 0 ? 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700' : 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/30' }}">
+                            <div class="text-gray-500 dark:text-gray-400">ข้อความ DM ชุดเว็บที่ใช้ได้</div>
+                            <div class="text-base font-bold text-gray-900 dark:text-white">{{ $fbNum($fbStatus['web_invites']) }}</div>
+                        </div>
+                        <div class="rounded-lg border px-3 py-2 {{ ($fbStatus['override_pages'] ?? 0) > 0 ? 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/30' : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700' }}">
+                            <div class="text-gray-500 dark:text-gray-400">เพจสาขาที่เขียนทับค่าคอม/ตอบใต้คอมเมนต์</div>
+                            <div class="text-base font-bold text-gray-900 dark:text-white">{{ $fbNum($fbStatus['override_pages']) }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- 🎁 (2026-05-03) ระบบใหม่: ทำนายฟรี 1 ใบ ครั้งเดียว/platform --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2349,7 +2422,7 @@ Format 2 — JSON array:
                         <p class="mt-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
                             🌙 โหมดดูดวงรายวันทำงานอยู่ — DM จะชวนลูกค้าบอกวันเกิดเพื่อรับคำทำนายวันนี้ฟรี
                             พอลูกค้าตอบกลับ ระบบจะแยกเองว่าเป็นวันในสัปดาห์หรือวันเดือนปีเต็ม แล้วส่งดวงของวันนั้นให้
-                            <br>ใช้เฉพาะช่องทาง Facebook — ฝั่ง LINE ทำงานเหมือนโหมดปกติทุกอย่าง
+                            <br>ทำงานทั้ง Facebook และ LINE — ถ้าเปิด “ย้ายลูกค้า Facebook ไปเว็บ” ฝั่ง FB จะไม่ทำนายในแชท (LINE ยังได้ดวงรายวันตามเดิม)
                         </p>
                     @elseif($tpIsTransfer)
                         <p class="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1">
@@ -2359,6 +2432,13 @@ Format 2 — JSON array:
                     @else
                         <p class="mt-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded px-2 py-1">
                             โหมดปกติ — ยังไม่มีอะไรเปลี่ยน ทุกอย่างทำงานในแชท FB เหมือนเดิม
+                        </p>
+                    @endif
+
+                    @if($fbWebOnlyOn)
+                        <p class="mt-2 text-xs font-medium text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded px-2 py-1">
+                            🌐 เปิด “ย้ายลูกค้า Facebook ไปเว็บ” อยู่ — ลูกค้า FB ไปเว็บทั้งหมดไม่ว่าเลือกโหมดไหน
+                            และช่อง “พยายามพาไปกี่ครั้ง” / “จำขอดูในแชท FB” / “เปิดกี่ %” ด้านล่าง <strong>ไม่มีผลกับลูกค้า FB</strong>
                         </p>
                     @endif
 

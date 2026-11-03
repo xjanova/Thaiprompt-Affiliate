@@ -203,6 +203,22 @@ class FortuneTakeoverController extends Controller
 
         $message = trim($validated['message']);
 
+        // 🌐 (2026-11-03 FB web-only) ห้ามแอดมินพูดเรื่องเงิน/โอน/เลขบัญชีในแชท FB — เช็คก่อนเริ่มเทคโอเวอร์
+        //    (บล็อกแล้วต้องไม่ทิ้งเทคโอเวอร์ค้างไว้ให้บอทเงียบฟรี ๆ) · LINE/Telegram ไม่โดน
+        $blocked = \App\Services\Fortune\FbWebOnlyAdminMessageFilter::blockReason(
+            $reading->platform,
+            (string) ($reading->platform_user_id ?: $reading->facebook_user_id),
+            $message,
+            $reading
+        );
+        if ($blocked !== null) {
+            return response()->json([
+                'success' => false,
+                'blocked' => \App\Services\Fortune\FbWebOnlyAdminMessageFilter::REASON_MONEY_WORD,
+                'message' => $blocked,
+            ], 422);
+        }
+
         // ถ้ายังไม่ได้ takeover → takeover ก่อนเพื่อความปลอดภัย
         // ใช้ forceIgnoreDisabled เพื่อให้ทำงานได้แม้ settings ปิดอยู่ (admin สั่งเอง)
         // 🤫 (2026-10-06) + เทคโอเวอร์อยู่แต่ใกล้หมด → ต่อให้เหลืออย่างน้อย 30 นาที (แอดมินกำลังคุย บอทห้ามโผล่กลับมา)

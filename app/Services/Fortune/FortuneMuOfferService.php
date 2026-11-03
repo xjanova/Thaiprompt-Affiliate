@@ -143,6 +143,11 @@ class FortuneMuOfferService
                 return false;
             }
 
+            // 🔐 (รีวิว) FB web-only: การ์ดสินค้ามีราคา = การขายบน FB → ไม่เข้าคิวเลย (LINE ไม่โดน)
+            if (FbWebOnlyOutboundGuard::blocks($platform, $platformUserId, $reading, 'mu_offer_send:'.$trigger)) {
+                return false;
+            }
+
             $minutes = $this->delayMinutesFor($trigger);
             if ($minutes <= 0) {
                 return $this->offer($platform, $platformUserId, $trigger, $reading, $options);
@@ -276,6 +281,12 @@ class FortuneMuOfferService
     public function canOffer(string $platform, string $platformUserId, string $trigger): bool
     {
         if (! $this->isEnabled($trigger)) {
+            return false;
+        }
+
+        // 🔐 (รีวิว) FB web-only: ห้ามยื่นการ์ดสินค้า (มีราคา) ทาง FB — รวม celtic_end / deep_end / ลูกค้าถามเอง
+        //    เช็คซ้ำตอนส่งจริง เพราะงานที่หน่วงไว้อาจถูกตั้งก่อนแอดมินเปิดธง
+        if (FbWebOnlyOutboundGuard::blocks($platform, $platformUserId, null, 'mu_offer:'.$trigger)) {
             return false;
         }
 
