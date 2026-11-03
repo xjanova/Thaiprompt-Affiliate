@@ -1675,7 +1675,7 @@ Route::prefix('v1/juntra/server')
 
         // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
         //   on-demand + แคช — เว็บขอเฉพาะตอนลูกค้ากดฟัง ข้อความเดิม = ไฟล์เดิม · เพดานตัวอักษรต่อวันอยู่ใน service
-        Route::middleware('throttle:120,1,jwvoice')->prefix('voice')->name('voice.')->group(function () {
+        Route::middleware('throttle:jwvoice')->prefix('voice')->name('voice.')->group(function () {
             Route::post('/speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'speak'])
                 ->name('speak');
             Route::get('/clips/{clip}', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'show'])

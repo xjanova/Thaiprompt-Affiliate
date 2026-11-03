@@ -40,6 +40,9 @@ class JuntraServerRateLimits
 
     public const AFFILIATE = 'jwaff';
 
+    /** เสียงพากย์ผู้พยากรณ์ — ส่วนใหญ่ได้จาก cache คลิป แต่คลิปใหม่ต้องเรียก TTS จึงแยกถัง */
+    public const VOICE = 'jwvoice';
+
     /** รูปแบบ user_ref เดียวกับที่ ChatController validate — นอกเหนือจากนี้ไปถังเดียวกัน (คำขอจะโดน 422 อยู่แล้ว) */
     private const USER_REF_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
@@ -76,6 +79,10 @@ class JuntraServerRateLimits
         RateLimiter::for(self::AFFILIATE, fn (Request $request) => Limit::perMinute(self::setting('affiliate', 300))
             ->by('all')
             ->response(self::responder('affiliate')));
+
+        RateLimiter::for(self::VOICE, fn (Request $request) => Limit::perMinute(self::setting('voice', 120))
+            ->by('all')
+            ->response(self::responder('voice')));
     }
 
     /** เพดานแชทต่อลูกค้า 1 คน (user_ref) ต่อนาที */
@@ -96,7 +103,8 @@ class JuntraServerRateLimits
      */
     public static function serverTotal(): int
     {
-        $inner = self::chatTotal() + self::setting('pay', 120) + self::setting('read', 60) + self::setting('affiliate', 300);
+        $inner = self::chatTotal() + self::setting('pay', 120) + self::setting('read', 60) + self::setting('affiliate', 300)
+            + self::setting('voice', 120);
 
         return max(self::setting('total', 2400), $inner);
     }

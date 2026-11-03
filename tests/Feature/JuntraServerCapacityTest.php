@@ -199,19 +199,19 @@ class JuntraServerCapacityTest extends TestCase
         // ค่าเริ่มต้น (ไม่ตั้ง env)
         config(['ratelimit.juntra_server' => [
             'total' => 2400, 'chat_per_user' => 60, 'chat_total' => 1200,
-            'pay' => 120, 'read' => 60, 'affiliate' => 300,
+            'pay' => 120, 'read' => 60, 'affiliate' => 300, 'voice' => 120,
         ]]);
 
         $this->assertSame(1200, JuntraServerRateLimits::chatTotal());
         $this->assertGreaterThan(300, JuntraServerRateLimits::chatTotal());
         $this->assertGreaterThanOrEqual(
-            JuntraServerRateLimits::chatTotal() + 120 + 60 + 300,
+            JuntraServerRateLimits::chatTotal() + 120 + 60 + 300 + 120,
             JuntraServerRateLimits::serverTotal(),
         );
 
         // ตั้งเพดานแชทสูงกว่าด่านนอก → ด่านนอกขยายตามให้เอง (ไม่ตัดแชทก่อนถึงเพดานที่ตั้ง)
         config(['ratelimit.juntra_server.chat_total' => 5000]);
-        $this->assertSame(5000 + 120 + 60 + 300, JuntraServerRateLimits::serverTotal());
+        $this->assertSame(5000 + 120 + 60 + 300 + 120, JuntraServerRateLimits::serverTotal());
 
         // ค่าเพี้ยน → ค่าเริ่มต้น (ไม่ 0 = ไม่บล็อกทุกคำขอ)
         config(['ratelimit.juntra_server.chat_total' => 0, 'ratelimit.juntra_server.chat_per_user' => 'abc']);
