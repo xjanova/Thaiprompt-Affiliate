@@ -68,6 +68,12 @@ class WebChatContinuityService
     {
         $out = self::emptyResult();
 
+        // 🔁 (รีวิว) ความจำมีเฉพาะห้องที่เปิดจากลิงก์ handoff ของ FB + ธง facebook_web_only เปิด
+        //    ไม่ส่ง nonce = ไม่หยิบ handoff ล่าสุดเอง และไม่สร้างความจำจาก PSID ของ user
+        if ($handoffNonce === null || $handoffNonce === '' || ! $this->enabled()) {
+            return $out;
+        }
+
         try {
             $user = $this->resolveUser($userRef, $claimedUserId);
             if (! $user) {
@@ -76,6 +82,10 @@ class WebChatContinuityService
 
             $userPsids = $this->userPsids($user);
             $handoff = $this->consumeHandoff($user, $userPsids, $handoffNonce, $userRef);
+            // consume ไม่ได้ (ใช้แล้ว/หมดอายุ/ของคนอื่น) = ไม่ได้มาจากลิงก์จริงรอบนี้ → ห้องแบบเดิม ไม่มีความจำ
+            if (! $handoff) {
+                return $out;
+            }
 
             $psids = $this->collectPsids($user, $userPsids, $handoff);
             $intentText = $handoff ? WebChatContinuitySanitizer::sanitizeInbound((string) $handoff->intent_text, 'user') : '';
@@ -116,6 +126,12 @@ class WebChatContinuityService
      */
     public function rebuildMemory(string $userRef, ?int $claimedUserId = null): ?string
     {
+        // 🔁 (รีวิว) สร้างใหม่ได้เฉพาะลูกค้าเว็บที่เพิ่ง consume handoff ของ FB (ภายใน TTL ของ handoff) + ธงเปิด
+        //    ลูกค้าเว็บทั่วไปที่ห้องหมดอายุ ห้ามได้ความจำจากแชท FB โผล่มาเอง
+        if (! $this->enabled() || ! $this->consumedHandoffRecently($userRef)) {
+            return null;
+        }
+
         try {
             $user = $this->resolveUser($userRef, $claimedUserId);
             if (! $user) {
@@ -132,6 +148,38 @@ class WebChatContinuityService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * 🌐 ความจำจากแชท FB เปิดใช้ได้ไหม = ธง facebook_web_only เปิด (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     */
+    public function enabled(): bool
+    {
+        try {
+            return (new FortuneBotMode)->fbWebOnly();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * ลูกค้าเว็บคนนี้ (user_ref) consume handoff ของ FB ภายใน FortuneWebHandoff::TTL_HOURS หรือไม่
+     */
+    protected function consumedHandoffRecently(string $userRef): bool
+    {
+        try {
+            if (! Schema::hasTable('fortune_web_handoffs')) {
+                return false;
+            }
+
+            return FortuneWebHandoff::query()
+                ->where('consumed_juntra_user_id', $userRef)
+                ->where('platform', 'facebook')
+                ->where('consumed_at', '>=', now()->subHours(FortuneWebHandoff::TTL_HOURS))
+                ->exists();
+        } catch (\Throwable) {
+            return false;
         }
     }
 

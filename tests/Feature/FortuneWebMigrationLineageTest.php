@@ -10,8 +10,8 @@ use App\Models\FortuneMessengerPsid;
 use App\Models\FortunePage;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Models\MlmMember;
 use App\Models\JuntraAccount;
+use App\Models\MlmMember;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\FortuneAffiliateService;
@@ -45,6 +45,8 @@ use Tests\TestCase;
  *   - บิลเว็บ+ค่าแนะนำติดป้ายสาขาต้นทาง / page_code (M6)
  *   - ผู้ใช้ Thaiprompt ที่ถูกบัญชีจันทราอื่นผูก → 409 ไม่สร้างเงา · release แล้ว relink ชี้แถวเดิม (M4)
  *   - ส่งซ้ำจ่ายครั้งเดียว · void ดึงคืนทุกชั้น · ผู้เชิญจาก FortuneReferral ของ PSID/alias (M7)
+ *
+ * 🔁 (รีวิว) ทุกข้อข้างบน = ธง facebook_web_only เปิด (setUp) · ชุด "ธงปิด" ท้ายไฟล์พิสูจน์ว่าปิดแล้วกลับเป็นพฤติกรรม e2a9e0868
  *
  * @group security
  */
@@ -481,7 +483,10 @@ class FortuneWebMigrationLineageTest extends TestCase
         $this->assertSame((int) $a->id, (int) User::findByMessengerPsid(self::PSID_B)?->id);
     }
 
-    public function test_migration_backfills_aliases_and_placeholder_names(): void
+    /**
+     * 🔁 migration เติมตาราง alias อย่างเดียว — ไม่เขียนทับ users.name แล้ว (ย้ายไป fortune:web-only-cutover)
+     */
+    public function test_migration_backfills_aliases_but_never_renames_users(): void
     {
         $user = $this->botCustomer(self::PSID_A, 'User');
         FortuneMessengerPsid::query()->delete();
@@ -499,7 +504,9 @@ class FortuneWebMigrationLineageTest extends TestCase
 
         $this->assertSame(1, FortuneMessengerPsid::where('psid', self::PSID_A)->count());
         $this->assertSame((int) $user->id, (int) FortuneMessengerPsid::where('psid', self::PSID_A)->value('user_id'));
-        $this->assertSame('นงลักษณ์ ทดสอบ', $user->fresh()->name);
+        $this->assertSame('User', $user->fresh()->name, 'migration ห้ามเปลี่ยนชื่อผู้ใช้ (ย้อนกลับไม่ได้ และธงอาจยังปิด)');
+        // แถว backfill = ค่าเดียวกับคอลัมน์ facebook_psid → ผลค้นหาเท่าเดิม
+        $this->assertSame((int) $user->id, (int) User::findByMessengerPsid(self::PSID_A)?->id);
     }
 
     // ============================================================
@@ -817,6 +824,161 @@ class FortuneWebMigrationLineageTest extends TestCase
         $this->fortuneReferral('99887766554433221', $inviter2);
         $this->ensureJuntra(864, $d->id, ['referral_code' => 'INVITE01'])->assertStatus(201)
             ->assertJsonPath('data.sponsor.member_code', 'INVITE01');
+    }
+
+    // ============================================================
+    // 🔁 ธงปิด = พฤติกรรมเดิมของ e2a9e0868
+    // ============================================================
+
+    private function flagOff(): void
+    {
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+    }
+
+    /** ธงปิด: ผู้ใช้ Thaiprompt ที่ถูกบัญชีจันทราอื่นผูก → สร้างตัวตนแยก (เงา) แบบเดิม ไม่ใช่ 409 */
+    public function test_flag_off_thaiprompt_user_held_by_another_juntra_account_gets_a_shadow_like_before(): void
+    {
+        $this->flagOff();
+        [$real] = $this->activeMember('REAL0001');
+        JuntraAccount::create(['juntra_user_id' => 700, 'user_id' => $real->id, 'linked_via' => 'sso']);
+        $usersBefore = User::count();
+
+        $this->juntraBill(9301, 821, 99, $real->id)->assertStatus(201);
+        $this->ensureJuntra(821, $real->id)->assertOk()->assertJsonPath('data.linked_via', 'auto');
+
+        $account = JuntraAccount::where('juntra_user_id', 821)->firstOrFail();
+        $this->assertSame('auto', $account->linked_via);
+        $this->assertNotSame((int) $real->id, (int) $account->user_id, 'ธงปิด = บัญชีเงาแยก (เดิม)');
+        $this->assertSame($usersBefore + 1, User::count());
+        $this->assertSame((int) $account->user_id, (int) FortuneReading::where('bill_reference', 'JW-9301')->value('user_id'));
+        $this->assertFalse(Cache::has("juntra:affiliate-taken-alert:821:{$real->id}"), 'ธงปิด = ไม่มีแจ้งเตือน thaiprompt_taken');
+    }
+
+    /** ธงปิด: ผู้เชิญ = รหัสเชิญ → ผู้แนะนำเริ่มต้น (ไม่อ่าน FortuneReferral ไม่ markAsConverted) */
+    public function test_flag_off_pick_sponsor_ignores_fortune_referral(): void
+    {
+        $this->flagOff();
+        [, $inviter] = $this->activeMember('INVITE01');
+        $a = $this->botCustomer(self::PSID_A, 'ลูกค้าถูกเชิญ');
+        $ref = $this->fortuneReferral(self::PSID_A, $inviter);
+
+        $this->ensureJuntra(861, $a->id)->assertStatus(201)
+            ->assertJsonPath('data.sponsor.member_code', 'ROOT0001');
+        $this->assertSame((int) $this->rootMember->id, (int) MlmMember::where('user_id', $a->id)->value('unilevel_sponsor_id'));
+        $this->assertSame(\App\Models\FortuneReferral::STATUS_FOLLOWED, $ref->fresh()->status, 'ธงปิด = ไม่ markAsConverted');
+
+        // รหัสเชิญยังใช้ได้เหมือนเดิม
+        $b = $this->botCustomer(self::PSID_C, 'มีรหัสเชิญ');
+        $this->ensureJuntra(862, $b->id, ['referral_code' => 'INVITE01'])->assertStatus(201)
+            ->assertJsonPath('data.sponsor.member_code', 'INVITE01');
+    }
+
+    /** ธงปิด: บิลเว็บ/ค่าแนะนำไม่ติดป้ายสาขา · page_code ไม่เขียนสาขาต้นทาง */
+    public function test_flag_off_juntra_bills_carry_no_branch_and_origin_is_never_written(): void
+    {
+        $this->flagOff();
+        [, $inviter] = $this->activeMember('INVITE01');
+        $pageB = $this->branch('branch-b');
+        $this->branch('branch-c');
+
+        $customer = $this->botCustomer(self::PSID_B, 'ลูกค้าสาขาบี');
+        $this->member($customer, $inviter, 'CUSTB001');
+        User::whereKey($customer->id)->update(['fortune_origin_page_id' => $pageB->id]);
+
+        $this->juntraBill(9201, 811, 99, $customer->id, ['page_code' => 'branch-c'])->assertStatus(201);
+        $readingId = $this->readingId(9201);
+        $this->assertNull(FortuneReading::find($readingId)->fortune_page_id);
+        $this->assertGreaterThan(0, FortuneCommission::where('fortune_reading_id', $readingId)->count());
+        $this->assertSame(0, FortuneCommission::where('fortune_reading_id', $readingId)->whereNotNull('fortune_page_id')->count());
+
+        $fresh = $this->botCustomer(self::PSID_C, 'ลูกค้าใหม่');
+        $this->ensureJuntra(812, $fresh->id, ['page_code' => 'branch-b'])->assertSuccessful();
+        $this->assertNull(User::whereKey($fresh->id)->value('fortune_origin_page_id'));
+    }
+
+    /** ธงปิด: resolveOrCreateWebUser ไม่เขียนตาราง alias และบัญชีใหม่ชื่อ 'User' (ไม่ดึงจาก persona/บิล) */
+    public function test_flag_off_web_user_resolution_writes_no_alias_and_no_name(): void
+    {
+        $this->flagOff();
+        FortuneCustomerPersona::getOrCreate('facebook', self::PSID_A, 'มาลี ใจดี');
+
+        $new = $this->service()->resolveOrCreateWebUser('facebook', self::PSID_A, 7);
+        $this->assertSame('User', $new->fresh()->name);
+        $this->assertNull($new->fresh()->line_display_name);
+        $this->assertSame(self::PSID_A, $new->fresh()->facebook_psid);
+        $this->assertSame(0, FortuneMessengerPsid::where('psid', self::PSID_A)->count());
+
+        $existing = $this->botCustomer(self::PSID_C, 'ลูกค้าเดิม');
+        FortuneMessengerPsid::query()->where('psid', self::PSID_C)->delete();
+        $this->assertSame((int) $existing->id, (int) $this->service()->resolveOrCreateWebUser('facebook', self::PSID_C, 5)->id);
+        $this->assertSame(0, FortuneMessengerPsid::where('psid', self::PSID_C)->count(), 'ธงปิด = ไม่ bind alias');
+        $this->assertSame('ลูกค้าเดิม', $existing->fresh()->name);
+    }
+
+    /** findExistingUser ขั้น 3: ธงเปิดเชื่อเฉพาะบิล facebook · ธงปิด = คิวรีเดิม (ไม่กรอง platform) */
+    public function test_find_existing_user_step3_filters_platform_only_when_flag_is_on(): void
+    {
+        $lineOwner = User::factory()->create();
+        FortuneReading::create([
+            'user_id' => $lineOwner->id,
+            'platform' => 'line',
+            'platform_user_id' => self::PSID_A,
+            'facebook_user_id' => self::PSID_A,
+            'reading_type' => 'deep',
+            'questions' => [],
+        ]);
+
+        $this->assertNull($this->service()->findExistingUser(self::PSID_A, 'facebook'));
+
+        $this->flagOff();
+        $this->assertSame((int) $lineOwner->id, (int) $this->service()->findExistingUser(self::PSID_A, 'facebook')?->id,
+            'ธงปิด = คิวรีเดิมของ e2a9e0868');
+    }
+
+    /** ธงปิด: hint wf_psid ไม่มีผล — OAuth ต่อสายงานตอนสมัครเหมือนเดิม */
+    public function test_flag_off_facebook_oauth_ignores_wf_psid_hint_and_enrols_member(): void
+    {
+        $this->flagOff();
+        $this->oauthSettings();
+        Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => 'no']], 400)]);
+        $this->botCustomer(self::PSID_B);
+        $this->withSession(['wf_psid' => self::PSID_B, 'wf_page' => 5, 'wf_psid_weak' => self::PSID_B]);
+        $membersBefore = MlmMember::count();
+
+        $result = $this->callFindOrCreateUser($this->socialiteUser());
+
+        $this->assertSame($membersBefore + 1, MlmMember::count(), 'ธงปิด = ต่อสายงานตอนสมัคร (เดิม)');
+        $this->assertSame((int) $this->rootMember->id, (int) MlmMember::where('user_id', $result->id)->value('unilevel_sponsor_id'));
+    }
+
+    /** ธงปิด: reconcile ข้ามเมื่อคอลัมน์มี PSID แล้ว · คอลัมน์ว่าง = เติมคอลัมน์อย่างเดียว ไม่เขียน alias */
+    public function test_flag_off_oauth_reconcile_keeps_the_old_skip_and_never_writes_aliases(): void
+    {
+        $this->flagOff();
+        $this->oauthSettings();
+        FortunePage::create([
+            'code' => 'MAIN', 'name' => 'เพจหลัก', 'platform' => 'facebook',
+            'external_page_id' => 'pg-main', 'is_active' => true, 'is_default' => true,
+        ]);
+        FortuneTellingSetting::getSettings()->forceFill(['facebook_page_id' => 'pg-main'])->save();
+        FortuneTellingSetting::clearSettingsCache();
+        Http::swap(new \Illuminate\Http\Client\Factory(app('events')));
+        Http::fake(['graph.facebook.com/*' => Http::response(['data' => [['id' => self::PSID_C]]], 200)]);
+
+        // มี PSID ในคอลัมน์แล้ว → ข้าม (ไม่ลง alias ของ PSID เพจหลัก)
+        $customer = $this->botCustomer(self::PSID_B);
+        $customer->forceFill(['facebook_user_id' => self::ASID])->save();
+        $this->assertSame((int) $customer->id, (int) $this->callFindOrCreateUser($this->socialiteUser())->id);
+        $this->assertSame(0, FortuneMessengerPsid::where('psid', self::PSID_C)->count());
+        $this->assertSame(self::PSID_B, (string) $customer->fresh()->facebook_psid);
+
+        // คอลัมน์ว่าง → เติมคอลัมน์ (เดิม) แต่ไม่เขียนตาราง alias
+        $customer->forceFill(['facebook_user_id' => null])->save();
+        $linked = User::factory()->create();
+        $linked->forceFill(['facebook_user_id' => self::ASID])->save();
+        $this->assertSame((int) $linked->id, (int) $this->callFindOrCreateUser($this->socialiteUser())->id);
+        $this->assertSame(self::PSID_C, (string) $linked->fresh()->facebook_psid);
+        $this->assertSame(0, FortuneMessengerPsid::where('source', 'oauth_hint')->count());
     }
 
     // ============================================================

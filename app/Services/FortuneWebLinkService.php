@@ -35,23 +35,45 @@ use Illuminate\Support\Facades\Log;
 class FortuneWebLinkService
 {
     /**
-     * อายุ token (ชั่วโมง) — ลิงก์ค้างในแชทต้องหมดอายุได้
+     * อายุ token (ชั่วโมง) ของ FB ในโหมด FB web-only — ลิงก์ค้างในแชทต้องหมดอายุได้
      * (2026-11-03) ลดจาก 72 → 24 เพราะปุ่ม FB สร้างลิงก์ใหม่ทุกครั้งที่ส่งกล่อง
+     * ⚠️ ใช้เฉพาะ FB + ธง facebook_web_only เปิด — ธงปิด = 72 ชม. เหมือนเดิม (ดู ttlHoursFor)
      */
     public const TOKEN_TTL_HOURS = 24;
 
     /**
-     * 🔐 (รีวิว) อายุ token ของ LINE — คงเดิม 72 ชม. (การ์ดใน LINE เขียนว่า "ใช้ได้ 3 วัน"
-     * ลิงก์ค้างในประวัติแชทและ LINE ขอลิงก์ใหม่จากหน้าเว็บไม่ได้ — ห้ามกระทบ LINE)
+     * 🔐 (รีวิว) อายุ token เดิม 72 ชม. — LINE ทุกกรณี และ FB ตอนธง facebook_web_only ปิด
+     * (การ์ดใน LINE เขียนว่า "ใช้ได้ 3 วัน" ลิงก์ค้างในประวัติแชทและ LINE ขอลิงก์ใหม่จากหน้าเว็บไม่ได้)
      */
     public const LINE_TOKEN_TTL_HOURS = 72;
 
+    /** อายุ token เดิมก่อนมีโหมด FB web-only (ทุกแพลตฟอร์ม) */
+    public const LEGACY_TOKEN_TTL_HOURS = 72;
+
     /**
      * อายุ token (ชั่วโมง) ตามแพลตฟอร์ม
+     *
+     * @param  bool  $fbWebOnly  ธง facebook_web_only เปิดอยู่ไหม — ปิด = 72 ชม. ทุกแพลตฟอร์ม (พฤติกรรมเดิม)
+     *
+     * @example
+     * FortuneWebLinkService::ttlHoursFor('facebook', true);  // 24
+     * FortuneWebLinkService::ttlHoursFor('facebook', false); // 72
      */
-    public static function ttlHoursFor(string $platform): int
+    public static function ttlHoursFor(string $platform, bool $fbWebOnly = false): int
     {
-        return $platform === 'line' ? self::LINE_TOKEN_TTL_HOURS : self::TOKEN_TTL_HOURS;
+        if ($platform === 'line') {
+            return self::LINE_TOKEN_TTL_HOURS;
+        }
+
+        return ($platform === 'facebook' && $fbWebOnly) ? self::TOKEN_TTL_HOURS : self::LEGACY_TOKEN_TTL_HOURS;
+    }
+
+    /**
+     * 🌐 ธง facebook_web_only ของแถวกลาง (ค่าเดียวกับ FortuneBotMode::fbWebOnly)
+     */
+    public function fbWebOnlyEnabled(): bool
+    {
+        return (new \App\Services\Fortune\FortuneBotMode($this->settings))->fbWebOnly();
     }
 
     /** เวอร์ชัน token ปัจจุบัน */
@@ -164,7 +186,7 @@ class FortuneWebLinkService
         }
         // jti สุ่ม 16 ไบต์ — gateway ใช้กันการใช้ token ซ้ำ
         $payload['j'] = bin2hex(random_bytes(16));
-        $payload['exp'] = now()->addHours(self::ttlHoursFor($platform))->timestamp;
+        $payload['exp'] = now()->addHours(self::ttlHoursFor($platform, $this->fbWebOnlyEnabled()))->timestamp;
         // เฉพาะ path ภายใน (ขึ้นต้น / ไม่มี scheme/host) — กัน open redirect ตั้งแต่ตอนสร้าง
         if ($to !== null && preg_match(self::TO_PATH_REGEX, $to)) {
             $payload['t'] = $to;

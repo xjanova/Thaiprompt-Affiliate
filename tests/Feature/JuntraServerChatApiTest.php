@@ -172,7 +172,7 @@ class JuntraServerChatApiTest extends TestCase
             'เม.ย. 2570', 'พ.ค. 2570', 'มิ.ย. 2570', 'ก.ค. 2570', 'ส.ค. 2570', 'ก.ย. 2570'];
         $lines = ['แพ็กเกจ: พยากรณ์ 12 เดือน (ไพ่ 12 ใบ)', 'ไพ่ที่เปิดได้:'];
         foreach ($months as $i => $m) {
-            $lines[] = ($i + 1).". เดือนที่ ".($i + 1)." · {$m} — ไพ่ใบที่ ".($i + 1).' · ตั้งตรง';
+            $lines[] = ($i + 1).'. เดือนที่ '.($i + 1)." · {$m} — ไพ่ใบที่ ".($i + 1).' · ตั้งตรง';
         }
         $lines[] = 'คำพยากรณ์ฉบับเต็ม:';
         foreach ($months as $m) {
@@ -340,6 +340,19 @@ class JuntraServerChatApiTest extends TestCase
             $table->text('metadata')->nullable();
             $table->timestamps();
         });
+
+        // 🔁 (รีวิว) ความจำจากแชท FB ใช้เฉพาะตอนธง facebook_web_only เปิด + ห้องเปิดจากลิงก์ handoff
+        //    ชุดความต่อเนื่องเปิดธงไว้ — เทสต์ "ธงปิด" ปิดเอง
+        if (! Schema::hasColumn('fortune_telling_settings', 'facebook_web_only')) {
+            Schema::table('fortune_telling_settings', fn (Blueprint $t) => $t->boolean('facebook_web_only')->default(false));
+        }
+        $this->fbWebOnly(true);
+    }
+
+    private function fbWebOnly(bool $on): void
+    {
+        DB::table('fortune_telling_settings')->update(['facebook_web_only' => $on]);
+        FortuneTellingSetting::clearSettingsCache();
     }
 
     private function makeUser(string $name, ?string $psid = null, array $extra = []): int
@@ -428,17 +441,81 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('ความรัก', $again->json('data.greeting'));
     }
 
-    public function test_without_a_nonce_the_latest_unused_handoff_of_the_same_customer_is_used(): void
+    /**
+     * 🔁 (รีวิว) ไม่ส่ง nonce = ห้องแชทเว็บแบบเดิมทุกอย่าง — ไม่หยิบ handoff ค้างเอง ไม่มีความจำ คำทักทายเดิม
+     */
+    public function test_without_a_nonce_the_room_is_the_old_web_room_even_with_a_pending_handoff(): void
+    {
+        $this->buildContinuitySchema();
+        $uid = $this->makeUser('สมใจ', '1111111111');
+        $this->linkJuntra(42, $uid);
+        $this->fbMessages('1111111111', [['user', 'เรื่องที่คุยในเพจเมื่อวาน']]);
+        $this->paidReading('1111111111');
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid, 'intent_text' => 'งานจะรุ่งไหม', 'intent_topic' => 'career']);
+
+        $res = $this->startContinuity(['user_ref' => '42', 'thaiprompt_user_id' => $uid])->assertStatus(201);
+
+        $res->assertJsonPath('data.greeting', \App\Services\Fortune\JuntraChatService::GREETING)
+            ->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.continued_from', null)
+            ->assertJsonPath('data.handoff_consumed', false)
+            ->assertJsonPath('data.customer', null);
+        $this->assertNull($h->fresh()->consumed_at, 'ไม่ส่ง nonce = ไม่กิน handoff');
+
+        $session = $res->json('data.session_id');
+        $this->send($session, 'สวัสดีค่ะ')->assertOk();
+        $system = end($this->aiCalls)['system'];
+        $this->assertStringNotContainsString('====', $system);
+        $this->assertStringNotContainsString('เรื่องที่คุยในเพจเมื่อวาน', $system);
+        $this->assertStringNotContainsString('งานจะรุ่งไหม', $system);
+
+        // ห้องหมดอายุ → ก็ยังไม่สร้างความจำ (ลูกค้าคนนี้ไม่เคยเข้ามาทาง handoff)
+        Cache::flush();
+        $this->send($session, 'ยังอยู่ไหมคะ', '42')->assertOk();
+        $this->assertStringNotContainsString('====', end($this->aiCalls)['system']);
+    }
+
+    /**
+     * 🔁 (รีวิว) ธงปิด = ห้องแบบเดิมแม้ส่ง handoff มา — ไม่ consume ไม่มีความจำ · ห้องหมดอายุก็ไม่สร้างใหม่
+     */
+    public function test_flag_off_web_chat_never_uses_fb_memory_even_with_a_handoff(): void
+    {
+        $this->buildContinuitySchema();
+        $uid = $this->makeUser('สมใจ', '1111111111');
+        $this->linkJuntra(42, $uid);
+        $this->fbMessages('1111111111', [['user', 'เรื่องที่คุยในเพจเมื่อวาน']]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid, 'intent_text' => 'แฟนจะกลับมาไหม', 'intent_topic' => 'love']);
+        $this->fbWebOnly(false);
+
+        $res = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->assertStatus(201);
+        $res->assertJsonPath('data.greeting', \App\Services\Fortune\JuntraChatService::GREETING)
+            ->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.continued_from', null)
+            ->assertJsonPath('data.handoff_consumed', false);
+        $this->assertNull($h->fresh()->consumed_at);
+
+        $session = $res->json('data.session_id');
+        $this->send($session, 'สวัสดีค่ะ')->assertOk();
+        $this->assertStringNotContainsString('====', end($this->aiCalls)['system']);
+
+        // ห้องหมดอายุ ทั้งที่ลูกค้าเคย consume handoff ตอนธงเปิด → ธงปิด = ไม่อ่านความจำ
+        $h->forceFill(['consumed_at' => now(), 'consumed_juntra_user_id' => '42'])->save();
+        Cache::flush();
+        $this->send($session, 'ยังอยู่ไหมคะ')->assertOk();
+        $this->assertStringNotContainsString('เรื่องที่คุยในเพจเมื่อวาน', end($this->aiCalls)['system']);
+    }
+
+    public function test_a_handoff_matched_by_the_users_psid_greets_without_the_placeholder_name(): void
     {
         $this->buildContinuitySchema();
         $uid = $this->makeUser('User', '1111111111');
         $this->linkJuntra(42, $uid);
         // gateway ยังไม่เติม thaiprompt_user_id — จับคู่ด้วย PSID ของ user
-        FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'intent_text' => 'งานจะรุ่งไหม', 'intent_topic' => 'career']);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'intent_text' => 'งานจะรุ่งไหม', 'intent_topic' => 'career']);
         // ของคนอื่น — ห้ามได้
         FortuneWebHandoff::issue(['platform_user_id' => '9999999999', 'intent_text' => 'ความลับของคนอื่น', 'intent_topic' => 'money']);
 
-        $res = $this->startContinuity(['user_ref' => '42'])->assertStatus(201);
+        $res = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->assertStatus(201);
 
         $res->assertJsonPath('data.offer_topic', 'career')->assertJsonPath('data.customer.display_name', null);
         // ชื่อ 'User' ไม่ใส่ในคำทักทาย
@@ -507,8 +584,9 @@ class JuntraServerChatApiTest extends TestCase
         $this->linkJuntra(42, $owner);
         $this->fbMessages('1111111111', [['user', 'เรื่องของเจ้าของจริงค่ะ']]);
         $this->fbMessages('2222222222', [['user', 'เรื่องส่วนตัวของคนอื่น']]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $owner, 'intent_text' => 'อยากถามต่อ']);
 
-        $session = $this->startContinuity(['user_ref' => '42', 'thaiprompt_user_id' => $other])
+        $session = $this->startContinuity(['user_ref' => '42', 'thaiprompt_user_id' => $other, 'handoff' => $h->nonce])
             ->assertStatus(201)->json('data.session_id');
         $this->send($session, 'สวัสดีค่ะ')->assertOk();
 
@@ -523,11 +601,13 @@ class JuntraServerChatApiTest extends TestCase
         $botCustomer = $this->makeUser('ลูกค้าบอท', '1111111111');
         $plain = $this->makeUser('สมาชิกเว็บ');   // ไม่มี PSID
         $this->fbMessages('1111111111', [['user', 'คุยในเพจเมื่อวาน']]);
+        $plainHandoff = FortuneWebHandoff::issue(['platform_user_id' => '5555555555', 'thaiprompt_user_id' => $plain]);
+        $botHandoff = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $botCustomer]);
 
-        $this->startContinuity(['user_ref' => '77', 'thaiprompt_user_id' => $plain])
+        $this->startContinuity(['user_ref' => '77', 'thaiprompt_user_id' => $plain, 'handoff' => $plainHandoff->nonce])
             ->assertStatus(201)->assertJsonPath('data.continued_from', null);
 
-        $res = $this->startContinuity(['user_ref' => '78', 'thaiprompt_user_id' => $botCustomer])->assertStatus(201);
+        $res = $this->startContinuity(['user_ref' => '78', 'thaiprompt_user_id' => $botCustomer, 'handoff' => $botHandoff->nonce])->assertStatus(201);
         $res->assertJsonPath('data.continued_from', 'facebook');
         // เคยคุยใน 14 วัน แต่ไม่มี intent → คำทักทายต่อเรื่อง
         $this->assertStringContainsString('คุยกันค้างไว้ในเพจ', $res->json('data.greeting'));
@@ -563,8 +643,9 @@ class JuntraServerChatApiTest extends TestCase
             ['user', 'แม่หมอคะ เรื่องแฟนเก่ายังค้างใจอยู่เลย'],
             ['assistant', 'แม่หมอเข้าใจนะคะลูก'],
         ]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid]);
 
-        $session = $this->startContinuity(['user_ref' => '42'])->assertStatus(201)->json('data.session_id');
+        $session = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->assertStatus(201)->json('data.session_id');
         $this->send($session, 'ยังคิดถึงเขาอยู่ค่ะ')->assertOk();
 
         $call = end($this->aiCalls);
@@ -590,8 +671,9 @@ class JuntraServerChatApiTest extends TestCase
             ['assistant', 'โอนค่าครู 99 บาท มาที่บัญชี 123-4-56789-0 นะคะ'],
             ['user', 'โทร 0812345678 ได้เลย'],
         ]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid]);
 
-        $session = $this->startContinuity(['user_ref' => '42'])->json('data.session_id');
+        $session = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->json('data.session_id');
         $this->send($session, 'สวัสดีค่ะ')->assertOk();
         $system = end($this->aiCalls)['system'];
         // ตรวจเฉพาะบล็อกความจำในรั้ว (กติกาของห้องมีตัวอย่างป้าย [[OFFER:หมวด]] ของระบบเองอยู่แล้ว)
@@ -643,8 +725,9 @@ class JuntraServerChatApiTest extends TestCase
             'traits' => json_encode(['ขี้กังวล']), 'risk_flags' => json_encode(['over_emotional' => true]),
             'time_waster_score' => 80, 'created_at' => now(), 'updated_at' => now(),
         ]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid, 'intent_text' => 'อยากถามต่อ']);
 
-        $session = $this->startContinuity(['user_ref' => '42'])->json('data.session_id');
+        $session = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->json('data.session_id');
         $this->send($session, 'สวัสดีค่ะ')->assertOk();
         $system = end($this->aiCalls)['system'];
 
@@ -655,7 +738,12 @@ class JuntraServerChatApiTest extends TestCase
 
     public function test_internal_tags_in_a_reply_never_reach_the_customer(): void
     {
-        $session = $this->start();
+        // ห้องที่มีบล็อกความจำ (เปิดจาก handoff) — ตัวกรองขาออกทำงาน
+        $this->buildContinuitySchema();
+        $uid = $this->makeUser('สมใจ', '1111111111');
+        $this->linkJuntra(42, $uid);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid, 'intent_text' => 'ใจเขายังอยู่ไหม', 'intent_topic' => 'love']);
+        $session = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->assertStatus(201)->json('data.session_id');
         $this->aiReply = "แม่หมอ: [CUSTOMER_TIMELINE] ลูกค้าเก่า\nไพ่บอกว่าใจเขายังอยู่ค่ะ [PAST_CASE_RECALL id=3] [OFFER_FORTUNE]";
 
         $reply = $this->send($session, 'ใจเขายังอยู่ไหมคะ')->assertOk()->json('data.reply');
@@ -665,6 +753,20 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('OFFER_FORTUNE', $reply);
         $this->assertStringNotContainsString('แม่หมอ:', $reply);
         $this->assertStringContainsString('ไพ่บอกว่าใจเขายังอยู่ค่ะ', $reply);
+        $this->assertStringContainsString('====', end($this->aiCalls)['system'], 'ห้องนี้ต้องมีบล็อกความจำจริง');
+    }
+
+    /**
+     * 🔁 (รีวิว) ห้องที่ไม่มีความจำ = ทางเดิมของ e2a9e0868 — ไม่ผ่าน sanitizeOutbound (ตอบตามที่ AI ส่งมา)
+     */
+    public function test_a_room_without_memory_keeps_the_old_reply_path(): void
+    {
+        $session = $this->start();
+        $this->aiReply = "แม่หมอ: ไพ่บอกว่าใจเขายังอยู่ค่ะ\n\nค่อย ๆ ดูไปนะลูก";
+
+        $reply = $this->send($session, 'ใจเขายังอยู่ไหมคะ')->assertOk()->json('data.reply');
+
+        $this->assertSame("แม่หมอ: ไพ่บอกว่าใจเขายังอยู่ค่ะ\n\nค่อย ๆ ดูไปนะลูก", $reply);
     }
 
     public function test_the_token_lane_never_reads_memory(): void

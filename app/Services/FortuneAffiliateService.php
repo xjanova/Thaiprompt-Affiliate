@@ -266,14 +266,20 @@ class FortuneAffiliateService
      */
     private function resolveOrCreateWebUserUnlocked(string $platform, string $platformUserId, ?int $pageId): ?User
     {
+        // 🔁 ของใหม่ทั้งหมด (เติมชื่อ / ตาราง alias) เฉพาะ FB + ธง facebook_web_only เปิด
+        //    LINE ทุกกรณี และ FB ตอนธงปิด = พฤติกรรมเดิม (ชื่อ 'User' · ไม่เขียนตาราง alias)
+        $webOnlyFb = $platform === 'facebook' && $this->fbWebOnlyOn();
+
         $existing = $this->findExistingUser($platformUserId, $platform);
         if ($existing) {
-            $this->refreshPlaceholderName($existing, $platform, $platformUserId);
+            if ($webOnlyFb) {
+                $this->refreshPlaceholderName($existing, $platform, $platformUserId);
 
-            // 🪪 ผูก PSID ลงตาราง alias พร้อมเพจ — แถว backfill (fortune_page_id = null) ได้เพจเติม
-            //    และบัญชีที่บอทสร้างก่อนมีตาราง alias ก็ได้แถวของตัวเอง (bind ไม่ย้ายเจ้าของเด็ดขาด)
-            if ($platform === 'facebook' && ! $this->isPrivilegedAccount($existing)) {
-                FortuneMessengerPsid::bind((int) $existing->id, $platformUserId, $pageId, 'web_gateway');
+                // 🪪 ผูก PSID ลงตาราง alias พร้อมเพจ — แถว backfill (fortune_page_id = null) ได้เพจเติม
+                //    และบัญชีที่บอทสร้างก่อนมีตาราง alias ก็ได้แถวของตัวเอง (bind ไม่ย้ายเจ้าของเด็ดขาด)
+                if (! $this->isPrivilegedAccount($existing)) {
+                    FortuneMessengerPsid::bind((int) $existing->id, $platformUserId, $pageId, 'web_gateway');
+                }
             }
 
             return $existing;
@@ -282,16 +288,17 @@ class FortuneAffiliateService
         // 🔒 ไม่มี session alias แล้ว (ดู docblock ข้อ 2) — PSID ที่ไม่รู้จัก = บัญชีใหม่เสมอ
 
         $profile = [
-            'name' => $this->resolveCustomerName($platform, $platformUserId),
+            // ธงปิด / LINE: name = null → createUserFromPlatform ตั้ง 'User' เหมือนเดิม
+            'name' => $webOnlyFb ? $this->resolveCustomerName($platform, $platformUserId) : null,
             'picture_url' => null,
         ];
 
         try {
-            $user = DB::transaction(function () use ($platformUserId, $platform, $profile, $pageId) {
+            $user = DB::transaction(function () use ($platformUserId, $platform, $profile, $pageId, $webOnlyFb) {
                 $user = $this->createUserFromPlatform($platformUserId, $platform, $profile);
 
                 // บันทึก PSID พร้อมเพจที่สังกัด — ใช้แยก "คนละคนในเพจเดียวกัน" ตอนพิจารณา alias ครั้งหน้า
-                if ($platform === 'facebook') {
+                if ($webOnlyFb) {
                     FortuneMessengerPsid::bind($user->id, $platformUserId, $pageId, 'web_gateway');
                 }
 
@@ -313,6 +320,14 @@ class FortuneAffiliateService
         }
 
         return $user;
+    }
+
+    /**
+     * 🌐 ธง facebook_web_only เปิดอยู่ไหม (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     */
+    private function fbWebOnlyOn(): bool
+    {
+        return (new \App\Services\Fortune\FortuneBotMode($this->settings))->fbWebOnly();
     }
 
     /**
@@ -426,13 +441,18 @@ class FortuneAffiliateService
         }
 
         // 3. ค้นหาจาก FortuneReading ที่ link กับ user อยู่แล้ว
-        // 🔒 (2026-11-03) FB: เชื่อเฉพาะบิลที่ platform = facebook — PSID ตรงกับ id ของแพลตฟอร์มอื่น
-        //    ไม่ได้แปลว่าเป็นคนเดียวกัน (ทางเข้าเว็บ auto-login ตามผลนี้) · LINE/อื่น ๆ คงพฤติกรรมเดิม
+        // 🔒 (2026-11-03) FB + ธง facebook_web_only เปิด: เชื่อเฉพาะบิล FB — PSID ตรงกับ id ของแพลตฟอร์มอื่น
+        //    ไม่ได้แปลว่าเป็นคนเดียวกัน (ทางเข้าเว็บ auto-login ตามผลนี้)
+        //    แถวเก่าที่ platform เป็น NULL = facebook (ค่าเริ่มต้นของคอลัมน์) — ห้ามตัดทิ้ง ⇒ COALESCE
+        //    ธงปิด / LINE / อื่น ๆ = คิวรีเดิมทุกประการ (ไม่กรอง platform)
         $linkedReading = FortuneReading::where(function ($q) use ($platformUserId) {
             $q->where('platform_user_id', $platformUserId)
                 ->orWhere('facebook_user_id', $platformUserId);
         })
-            ->when($platform === 'facebook', fn ($q) => $q->where('platform', 'facebook'))
+            ->when(
+                $platform === 'facebook' && $this->fbWebOnlyOn(),
+                fn ($q) => $q->whereRaw("COALESCE(platform, 'facebook') = ?", ['facebook'])
+            )
             ->whereNotNull('user_id')
             ->latest()
             ->first();

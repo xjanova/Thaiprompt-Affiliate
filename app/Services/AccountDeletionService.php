@@ -633,6 +633,12 @@ class AccountDeletionService
             }
         }
 
+        // 🪪 (2026-11-03) PSID สำรองของ Messenger — คอลัมน์ facebook_psid ถูกล้างแล้ว ตาราง alias ต้องหายด้วย
+        //    ไม่งั้น User::findByMessengerPsid ยังพา PSID เดิมกลับมาหาบัญชีที่ลบแล้ว (และเป็นข้อมูลส่วนบุคคล)
+        if ($this->hasTable('fortune_messenger_psids')) {
+            DB::table('fortune_messenger_psids')->where('user_id', $userId)->delete();
+        }
+
         // สมาชิก MLM — คงโครงสร้างสายงานไว้ (ลบ node = ผังของสมาชิกคนอื่นพัง) แค่ยุติสิทธิ์
         if ($this->hasTable('mlm_members')) {
             $this->updateExisting('mlm_members', ['user_id' => $userId], [

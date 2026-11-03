@@ -328,7 +328,8 @@ class FacebookLoginController extends Controller
         //    ซึ่งคือการยึดบัญชี (FB ของคนถือ session ถูกผูกเข้าบัญชีเจ้าของลิงก์ตลอดไป)
         //    ⇒ ไม่ผูกตัวตนจาก session แล้ว ใช้ hint แค่ "ไม่ต่อสายงานตอนสมัคร" ให้บิลแรกเป็นตัวตัดสินผู้แนะนำ
         //    (ไม่ล็อกลูกค้า FB ใต้ผู้แนะนำเริ่มต้น — M5) · การผูกตัวตนข้าม PSID ต้องยืนยันผ่าน Graph (ขั้น 3) เท่านั้น
-        $hasWebFortuneHint = $this->webFortuneHintPsid() !== null;
+        //    🔁 เฉพาะธง facebook_web_only เปิด — ธงปิด = ต่อสายงานตอนสมัครเสมอ (พฤติกรรมเดิม)
+        $hasWebFortuneHint = $this->fbWebOnlyOn() && $this->webFortuneHintPsid() !== null;
 
         // 4. สร้าง user ใหม่ + wallet + MLM (เก็บ PSID ด้วยถ้า map ได้
         //    — เผื่อลูกค้า login เว็บก่อนเคยคุยกับบอท ให้บอทหาบัญชีนี้เจอทีหลัง)
@@ -343,6 +344,11 @@ class FacebookLoginController extends Controller
      */
     protected function webFortuneHintPsid(): ?string
     {
+        // ธงปิด = ไม่มี hint (session ที่ค้างจากตอนธงเปิดก็ไม่นับ)
+        if (! $this->fbWebOnlyOn()) {
+            return null;
+        }
+
         foreach (['wf_psid', 'wf_psid_weak'] as $key) {
             try {
                 $psid = Session::get($key);
@@ -358,6 +364,20 @@ class FacebookLoginController extends Controller
     }
 
     /**
+     * 🌐 ธง facebook_web_only เปิดอยู่ไหม (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     *
+     * ธงปิด = ล็อกอิน Facebook ทำงานเหมือนก่อนมีโหมด FB web-only ทุกประการ
+     */
+    protected function fbWebOnlyOn(): bool
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode)->fbWebOnly();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * 🪪 ผูก PSID ที่ Graph (ids_for_pages) ยืนยันแล้วว่าเป็นของ ASID นี้ ลงตาราง alias ของ user
      *
      * ids_for_pages ใช้กับเพจหลักเท่านั้น → ใส่ fortune_page_id ของเพจหลัก (is_default)
@@ -365,6 +385,11 @@ class FacebookLoginController extends Controller
      */
     protected function bindVerifiedPsid(User $user, string $psid): bool
     {
+        // 🔁 ตาราง alias เขียนเฉพาะตอนธง facebook_web_only เปิด — ธงปิด = ไม่แตะ (พฤติกรรมเดิม)
+        if (! $this->fbWebOnlyOn()) {
+            return false;
+        }
+
         try {
             $pageId = null;
             if (Schema::hasTable('fortune_pages')) {
@@ -504,11 +529,17 @@ class FacebookLoginController extends Controller
     protected function reconcileMissingPsid(User $user, string $appScopedId): void
     {
         try {
-            // 🔐 (รีวิว) ทำต่อแม้คอลัมน์มี PSID แล้ว — บัญชีที่เกิดจากลิงก์เพจสาขามี PSID สาขาในคอลัมน์
+            // 🔐 (รีวิว) ธงเปิด: ทำต่อแม้คอลัมน์มี PSID แล้ว — บัญชีที่เกิดจากลิงก์เพจสาขามี PSID สาขาในคอลัมน์
             //    แต่ PSID เพจหลักของคนเดียวกัน (Graph ยืนยัน) ต้องลงตาราง alias ด้วย ไม่งั้นลิงก์จากเพจหลัก
             //    ครั้งหน้าจะได้บัญชีใบที่สอง · จำผลไว้ 7 วันกันยิง Graph ทุกครั้งที่ล็อกอิน
+            // 🔁 ธง facebook_web_only ปิด = พฤติกรรมเดิม: มี PSID ในคอลัมน์แล้ว (หรือไม่มีคอลัมน์) → ข้าม
+            $webOnly = $this->fbWebOnlyOn();
             $doneKey = 'fb_oauth:psid_reconciled:'.$user->id.':'.$appScopedId;
-            if (Cache::has($doneKey)) {
+            if (! $webOnly) {
+                if ($user->facebook_psid || ! Schema::hasColumn('users', 'facebook_psid')) {
+                    return;
+                }
+            } elseif (Cache::has($doneKey)) {
                 return;
             }
 
@@ -524,7 +555,9 @@ class FacebookLoginController extends Controller
                     'bot_user_id' => $botUser->id,
                     'psid' => $psid,
                 ]);
-                Cache::put($doneKey, true, now()->addDays(7));
+                if ($webOnly) {
+                    Cache::put($doneKey, true, now()->addDays(7));
+                }
 
                 return;
             }
@@ -532,8 +565,10 @@ class FacebookLoginController extends Controller
             if (! $user->facebook_psid && Schema::hasColumn('users', 'facebook_psid')) {
                 $user->update(['facebook_psid' => $psid]);
             }
-            $this->bindVerifiedPsid($user, $psid);
-            Cache::put($doneKey, true, now()->addDays(7));
+            if ($webOnly) {
+                $this->bindVerifiedPsid($user, $psid);
+                Cache::put($doneKey, true, now()->addDays(7));
+            }
 
             Log::info('Facebook OAuth: เติม PSID (ยืนยันผ่าน Graph) ให้บัญชีที่ link แล้ว', [
                 'user_id' => $user->id,

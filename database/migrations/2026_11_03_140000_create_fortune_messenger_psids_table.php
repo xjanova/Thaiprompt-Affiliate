@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -20,7 +19,12 @@ return new class extends Migration
      *   User::findByMessengerPsid ค้นตารางนี้ต่อจากคอลัมน์ facebook_psid
      *
      * Backfill: คัดลอก users.facebook_psid ทุกแถวมาใส่ (source = backfill, ไม่รู้เพจ = null)
-     *   แล้วเติมชื่อให้บัญชีบอทที่ยังชื่อ 'User' จากชื่อในบิลล่าสุดของ PSID นั้น
+     *   เพิ่มข้อมูลอย่างเดียว — ผลค้นหาเท่าเดิม (findByMessengerPsid ค้นคอลัมน์ facebook_psid ก่อนเสมอ
+     *   แถว backfill จึงไม่เคยเป็นตัวตัดสิน) ใช้ได้ทั้งตอนธง facebook_web_only ปิดและเปิด
+     *
+     * 🔁 (2026-11-03 รีวิว) ย้าย "เติมชื่อบัญชีบอทที่ยังชื่อ 'User'" ออกจาก migration แล้ว
+     *   (เขียนทับ users.name ย้อนกลับไม่ได้ และรันทันทีตอน deploy แม้ธงปิด)
+     *   → ไปอยู่ใน fortune:web-only-cutover --execute (ทำเฉพาะตอนเจ้าของเปิดธงแล้ว)
      */
     public function up(): void
     {
@@ -45,7 +49,6 @@ return new class extends Migration
         }
 
         $this->backfillFromUsers();
-        $this->backfillPlaceholderNames();
     }
 
     /**
@@ -89,53 +92,7 @@ return new class extends Migration
     }
 
     /**
-     * เติมชื่อให้บัญชีที่บอทสร้างแล้วยังชื่อ 'User' — ใช้ชื่อจากบิลล่าสุดของ PSID นั้น
-     *
-     * best-effort: พังตรงนี้ห้ามทำให้ migration ล้ม (log ไว้แล้วไปต่อ)
-     */
-    private function backfillPlaceholderNames(): void
-    {
-        try {
-            if (! Schema::hasColumn('users', 'facebook_psid') || ! Schema::hasColumn('fortune_readings', 'facebook_user_name')) {
-                return;
-            }
-
-            $query = DB::table('users')
-                ->where('name', 'User')
-                ->whereNotNull('facebook_psid')
-                ->select('id', 'facebook_psid')
-                ->orderBy('id');
-
-            if (Schema::hasColumn('users', 'bot_provisioned')) {
-                $query->where('bot_provisioned', true);
-            }
-
-            $query->chunkById(200, function ($rows) {
-                foreach ($rows as $row) {
-                    $name = DB::table('fortune_readings')
-                        ->where(function ($q) use ($row) {
-                            $q->where('facebook_user_id', $row->facebook_psid)
-                                ->orWhere('platform_user_id', $row->facebook_psid);
-                        })
-                        ->whereNotNull('facebook_user_name')
-                        ->orderByDesc('id')
-                        ->value('facebook_user_name');
-
-                    $name = trim((string) $name);
-                    if ($name === '' || $name === 'User' || preg_match('/^\d{15,}$/', $name)) {
-                        continue;
-                    }
-
-                    DB::table('users')->where('id', $row->id)->update(['name' => mb_substr($name, 0, 255)]);
-                }
-            });
-        } catch (\Throwable $e) {
-            Log::warning('fortune_messenger_psids: เติมชื่อบัญชี User ไม่สำเร็จ (ข้ามได้)', ['error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * ลบตาราง alias (ชื่อที่เติมไปแล้วไม่ย้อนกลับ — เป็นข้อมูลที่ถูกต้องกว่าเดิม)
+     * ลบตาราง alias (migration นี้ไม่แตะ users.name แล้ว — ดู up())
      */
     public function down(): void
     {

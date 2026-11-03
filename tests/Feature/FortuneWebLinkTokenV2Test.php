@@ -84,7 +84,7 @@ class FortuneWebLinkTokenV2Test extends TestCase
     public function test_each_link_gets_a_unique_jti_and_24h_ttl(): void
     {
         $this->freezeTime();
-        $svc = $this->service();
+        $svc = $this->service(['facebook_web_only' => true]);
 
         $a = $svc->verifyToken($svc->generateToken('facebook', self::PSID, '/chat'));
         $b = $svc->verifyToken($svc->generateToken('facebook', self::PSID, '/chat'));
@@ -92,6 +92,24 @@ class FortuneWebLinkTokenV2Test extends TestCase
         $this->assertNotSame($a['j'], $b['j']);
         $this->assertSame(24, FortuneWebLinkService::TOKEN_TTL_HOURS);
         $this->assertSame(now()->addHours(24)->timestamp, $a['exp']);
+    }
+
+    /**
+     * 🔁 ธง facebook_web_only ปิด = อายุ token เดิม 72 ชม. ทั้ง FB และ LINE (เหมือน e2a9e0868)
+     */
+    public function test_flag_off_keeps_the_old_72h_ttl_for_facebook_and_line(): void
+    {
+        $this->freezeTime();
+        $svc = $this->service(['facebook_web_only' => false]);
+
+        $fb = $svc->verifyToken($svc->generateToken('facebook', self::PSID));
+        $line = $svc->verifyToken($svc->generateToken('line', 'U0123456789abcdef0123456789abcdef'));
+
+        $this->assertSame(now()->addHours(72)->timestamp, $fb['exp']);
+        $this->assertSame(now()->addHours(72)->timestamp, $line['exp']);
+        $this->assertSame(72, FortuneWebLinkService::ttlHoursFor('facebook', false));
+        $this->assertSame(24, FortuneWebLinkService::ttlHoursFor('facebook', true));
+        $this->assertSame(72, FortuneWebLinkService::ttlHoursFor('line', true));
     }
 
     public function test_generate_chat_link_points_to_gateway_and_verifies(): void
@@ -174,7 +192,8 @@ class FortuneWebLinkTokenV2Test extends TestCase
 
     public function test_expired_token_only_passes_with_allow_expired_within_14_days(): void
     {
-        $svc = $this->service();
+        // อายุ 24 ชม. เฉพาะ FB + ธงเปิด (ธงปิด = 72 ชม. แบบเดิม)
+        $svc = $this->service(['facebook_web_only' => true]);
         $token = $svc->generateToken('facebook', self::PSID, '/chat');
 
         $this->travel(25)->hours();

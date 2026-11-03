@@ -11,8 +11,8 @@ use App\Services\FortuneAffiliateService;
 use App\Services\FortuneWebLinkService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,11 +47,21 @@ use Illuminate\Support\Facades\Schema;
  *
  * ห้ามกระทบ LINE: isEnabledFor('line') = enable_web_fortune_button เหมือนเดิม
  * และ resend ใช้ได้เฉพาะ facebook (LINE push มีโควต้า 300/เดือน — ห้ามยิง)
+ *
+ * 🔁 (2026-11-03 รีวิว) เส้นใหม่ทั้งหมดข้างบน (interstitial / single-use / expired / resend / wf_psid)
+ *    ใช้เฉพาะ token ของ FB **และ** ธง facebook_web_only เปิดเท่านั้น
+ *    LINE ทุกกรณี และ FB ตอนธงปิด = เส้นเดิมของ e2a9e0868 (legacyGo): GET ตรวจ token → หา/สร้างบัญชี
+ *    → Auth::login(remember=true) → เย็บตัวตนข้ามสาขา → SSO · ทางที่ไม่ผ่าน → SSO
+ *    ด่านความปลอดภัยที่คงไว้ทุกเส้น: isDeniedAccount (ทีมงาน/hotel admin/ระงับ/2FA → ไปล็อกอินเองที่ SSO)
+ *    ไม่สลับ session ทีมงาน · regex กัน // (open redirect) · จำกัด platform · lock ต่อ PSID กันบัญชีซ้ำ
  */
 class WebFortuneGatewayController extends Controller
 {
     /** จำนวนครั้งต่อ token ต่อนาที (นับรวม GET + POST) */
     public const GO_MAX_PER_TOKEN_PER_MINUTE = 20;
+
+    /** เส้นเดิม (ธงปิด / LINE): เพดานเดิมของ route GET /web-fortune/go = 30 ครั้ง/นาที/IP */
+    public const LEGACY_GO_MAX_PER_IP_PER_MINUTE = 30;
 
     /** ส่งลิงก์ใหม่ได้กี่ครั้งต่อ PSID ต่อชั่วโมง */
     public const RESEND_MAX_PER_HOUR = 3;
@@ -83,6 +93,11 @@ class WebFortuneGatewayController extends Controller
     public function go(Request $request, FortuneWebLinkService $linkService)
     {
         $token = (string) $request->query('tk', '');
+
+        // 🔁 LINE / ธง FB web-only ปิด → เส้นเดิม (GET ล็อกอินแล้วส่งต่อ SSO ทันที)
+        if (! $this->usesWebOnlyFlow($linkService, $token)) {
+            return $this->legacyGo($request, $linkService, $token);
+        }
 
         if ($throttled = $this->throttleToken($token)) {
             return $throttled;
@@ -116,6 +131,11 @@ class WebFortuneGatewayController extends Controller
     public function consume(Request $request, FortuneWebLinkService $linkService)
     {
         $token = (string) $request->input('tk', '');
+
+        // 🔁 LINE / ธง FB web-only ปิด → เส้นเดิม (POST นี้ไม่มีในเวอร์ชันเดิม — ทำเหมือน GET เดิมทุกอย่าง)
+        if (! $this->usesWebOnlyFlow($linkService, $token)) {
+            return $this->legacyGo($request, $linkService, $token);
+        }
 
         if ($throttled = $this->throttleToken($token)) {
             return $throttled;
@@ -268,6 +288,11 @@ class WebFortuneGatewayController extends Controller
      */
     public function expired(Request $request, FortuneWebLinkService $linkService)
     {
+        // 🔁 ธงปิด = ไม่มีหน้านี้ในเส้นเดิม → ส่งไป SSO เฉย ๆ (ไม่จำ PSID ลง session ไม่มีปุ่มส่งลิงก์ใหม่)
+        if (! $linkService->fbWebOnlyEnabled()) {
+            return redirect()->away($linkService->getSsoUrl());
+        }
+
         $token = (string) $request->query('tk', '');
         $reason = (string) $request->query('reason', 'expired');
         if (! in_array($reason, self::REASONS, true)) {
@@ -313,6 +338,11 @@ class WebFortuneGatewayController extends Controller
      */
     public function resend(Request $request, FortuneWebLinkService $linkService)
     {
+        // 🔁 ธงปิด = ไม่มีการส่งลิงก์ใหม่เข้าแชทในเส้นเดิม → ไป SSO (ไม่ยิงข้อความใด ๆ)
+        if (! $linkService->fbWebOnlyEnabled()) {
+            return redirect()->away($linkService->getSsoUrl());
+        }
+
         $token = (string) $request->input('tk', '');
         $payload = $linkService->verifyToken($token, true);
 
@@ -375,6 +405,131 @@ class WebFortuneGatewayController extends Controller
     public function sso(FortuneWebLinkService $linkService)
     {
         return redirect()->away($linkService->getSsoUrl());
+    }
+
+    // ============================================================
+    // 🔁 เส้นเดิม (e2a9e0868) — LINE ทุกกรณี และ FB ตอนธง facebook_web_only ปิด
+    // ============================================================
+
+    /**
+     * token นี้ใช้เส้นใหม่ (FB web-only) ไหม — ธงต้องเปิด และ token ต้องไม่ใช่ของ LINE
+     *
+     * ธงเปิด + token เสีย/อ่านไม่ออก = เส้นใหม่ (หน้า expired แบบที่เป็นอยู่) · LINE = เส้นเดิมเสมอ
+     */
+    protected function usesWebOnlyFlow(FortuneWebLinkService $linkService, string $token): bool
+    {
+        if (! $linkService->fbWebOnlyEnabled()) {
+            return false;
+        }
+
+        return $this->peekPlatform($linkService, $token) !== 'line';
+    }
+
+    /**
+     * Magic Link แบบเดิม: ตรวจ token → หา/สร้างบัญชี → ล็อกอิน (remember) → ส่งต่อ SSO
+     *
+     * ทุกทางที่ไม่ผ่าน → SSO เฉย ๆ (ลูกค้าล็อกอินเองได้ ไม่ dead-end) เหมือนเดิม
+     * ต่างจากเดิมเฉพาะด่านความปลอดภัยที่ตั้งใจคงไว้ (ดู docblock ของคลาส)
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
+     */
+    protected function legacyGo(Request $request, FortuneWebLinkService $linkService, string $token)
+    {
+        $ssoUrl = $linkService->getSsoUrl();
+
+        // เพดานเดิมของ route (30/นาที/IP) — route ตอนนี้ตั้งกว้างไว้ให้เส้นใหม่ที่นับต่อ token
+        $limitKey = 'wfgo-legacy:'.sha1((string) $request->ip());
+        if (RateLimiter::tooManyAttempts($limitKey, self::LEGACY_GO_MAX_PER_IP_PER_MINUTE)) {
+            return response('Too Many Attempts.', 429, [
+                'Retry-After' => (string) RateLimiter::availableIn($limitKey),
+            ]);
+        }
+        RateLimiter::hit($limitKey, 60);
+
+        // ปิดระบบอยู่ → พาไปหน้า SSO เฉย ๆ (ลูกค้าล็อกอินเองได้ ไม่ dead-end)
+        if (! $linkService->isEnabled()) {
+            return redirect()->away($ssoUrl);
+        }
+
+        // ตรวจ token (ลายเซ็น + วันหมดอายุ + platform)
+        $payload = $linkService->verifyToken($token !== '' ? $token : null);
+        if (! $payload) {
+            Log::info('WebFortune: token ไม่ผ่านการตรวจสอบ — ส่งไปหน้า SSO ปกติ', [
+                'ip' => $request->ip(),
+            ]);
+
+            return redirect()->away($ssoUrl);
+        }
+
+        // 🛡️ (คงไว้) เบราว์เซอร์นี้ล็อกอินเป็นทีมงานอยู่ → ห้ามสลับ session ทีมงานไปเป็นลูกค้า
+        $current = Auth::user();
+        if ($current instanceof User && $this->isDeniedAccount($current)) {
+            Log::warning('WebFortune: session ปัจจุบันเป็นบัญชีทีมงาน — ไม่ใช้ token ลูกค้า', [
+                'current_user_id' => $current->id,
+            ]);
+
+            return redirect()->away($ssoUrl);
+        }
+
+        // หา/สร้างบัญชีจาก platform id — (คงไว้) lock ต่อ PSID กันกดซ้อนแล้วได้บัญชีซ้ำ
+        try {
+            $user = Cache::lock('wf:psid:'.$payload['u'], self::PSID_LOCK_SECONDS)
+                ->block(self::PSID_LOCK_WAIT_SECONDS, function () use ($payload) {
+                    return app(FortuneAffiliateService::class)
+                        ->resolveOrCreateWebUser($payload['p'], $payload['u']);
+                });
+        } catch (LockTimeoutException $e) {
+            Log::warning('WebFortune: รอ lock PSID ไม่ทัน', ['platform' => $payload['p']]);
+            $user = null;
+        } catch (\Throwable $e) {
+            Log::error('WebFortune: resolveOrCreateWebUser ล้มเหลว', [
+                'platform' => $payload['p'],
+                'error' => $e->getMessage(),
+            ]);
+            $user = null;
+        }
+
+        if (! $user instanceof User) {
+            return redirect()->away($ssoUrl);
+        }
+
+        // 🔒 ห้าม auto-login บัญชีทีมงาน/แอดมิน/ระงับ/ต้องใช้ 2FA — ไปล็อกอินเองที่ SSO
+        if ($this->isDeniedAccount($user)) {
+            Log::warning('WebFortune: ปฏิเสธ auto-login บัญชีที่ไม่ใช่ลูกค้า', ['user_id' => $user->id]);
+
+            return redirect()->away($ssoUrl);
+        }
+
+        // ล็อกอิน Thaiprompt (remember เหมือนเดิม) — SSO ขั้นถัดไปจะ auto-approve เพราะมี session แล้ว
+        Auth::login($user, true);
+        $request->session()->regenerate();
+
+        // 🔗 (2026-08-15) เย็บความจำข้ามสาขา — พังตรงนี้ห้ามทำให้เข้าเว็บไม่ได้
+        try {
+            if ($payload['p'] === 'facebook' && ! empty($user->facebook_user_id)) {
+                app(\App\Services\Fortune\CrossPageIdentityService::class)
+                    ->link('facebook', (string) $payload['u'], (string) $user->facebook_user_id);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('🔗 เย็บตัวตนข้ามสาขาไม่สำเร็จ (เข้าเว็บสำเร็จตามปกติ)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::info('WebFortune: ล็อกอินอัตโนมัติสำเร็จ → ส่งต่อ SSO', [
+            'user_id' => $user->id,
+            'platform' => $payload['p'],
+            'to' => $payload['to'] ?? null,
+        ]);
+
+        // 🌳 path ปลายทางจาก token (ผ่าน HMAC + regex แล้ว) — ส่งต่อเป็น ?to= ของ SSO
+        if (! empty($payload['to'])) {
+            $sep = str_contains($ssoUrl, '?') ? '&' : '?';
+
+            return redirect()->away($ssoUrl.$sep.'to='.urlencode($payload['to']));
+        }
+
+        return redirect()->away($ssoUrl);
     }
 
     // ============================================================

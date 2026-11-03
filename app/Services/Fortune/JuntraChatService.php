@@ -30,7 +30,8 @@ use RuntimeException;
  * 🌙 (2026-11-03 FB web-only) ลูกค้าที่ย้ายจากแชทเพจ FB — ทางเซิร์ฟเวอร์ส่งผลของ WebChatContinuityService มา
  * ความจำ (≤ 5,000 ตัว) อยู่ใน system message เท่านั้น ในรั้ว ==== พร้อม CONTINUITY_RULES
  * ทาง token ไม่มีความจำเด็ดขาด (start ไม่ส่ง continuity · send ไม่เปิด allowMemory)
- * ทุกคำตอบผ่าน WebChatContinuitySanitizer::sanitizeOutbound ก่อนถึงลูกค้า
+ * คำตอบของห้องที่มีบล็อกความจำผ่าน WebChatContinuitySanitizer::sanitizeOutbound ก่อนถึงลูกค้า
+ * (🔁 รีวิว: ห้องที่ไม่มีความจำ = ทางเดิมทุกอย่าง ไม่กรองขาออก)
  *
  * 🎭 (2026-11-03) ตัวละคร maemor | busaba | kunsai — ล็อกกับห้องตั้งแต่ start · พรอมต์อยู่ใน PERSONA_PROFILES ที่เดียว
  */
@@ -326,6 +327,8 @@ TXT,
         ?\Closure $memoryLoader = null,
     ): array {
         $history = $this->history($owner, $sessionId);
+        // ห้องยังอยู่ (มีอย่างน้อยคำทักทาย) = รู้อยู่แล้วว่ามี/ไม่มีความจำ · ว่าง = ห้องหมดอายุ/cache ถูกล้าง
+        $roomExpired = $history === [];
         $history[] = ['role' => 'user', 'text' => $text];
 
         // 🎭 ตัวละครล็อกตั้งแต่ start — ห้องที่ยังไม่ล็อก (หมดอายุ/รุ่นเก่า) ใช้ค่าที่ส่งมา แล้วล็อกไว้
@@ -348,11 +351,12 @@ TXT,
             $webOffers = false;
         }
 
-        // 🌙 (2026-11-03) ความจำจากแชท FB — ทางเซิร์ฟเวอร์เท่านั้น · cache หาย = สร้างใหม่จาก DB ครั้งเดียว
+        // 🌙 (2026-11-03) ความจำจากแชท FB — ทางเซิร์ฟเวอร์เท่านั้น · ห้องหมดอายุ = สร้างใหม่จาก DB ครั้งเดียว
+        //    🔁 (รีวิว) ห้องที่ยังอยู่แต่ไม่มีคีย์ความจำ = ห้องที่เปิดแบบไม่มี handoff → ห้ามสร้างความจำทีหลัง
         $memory = null;
         if ($allowMemory) {
             $stored = Cache::get($this->memoryKey($owner, $sessionId));
-            if (! is_string($stored) && $memoryLoader !== null) {
+            if (! is_string($stored) && $memoryLoader !== null && $roomExpired) {
                 try {
                     $stored = (string) ($this->cleanMemory($memoryLoader()) ?? '');
                 } catch (\Throwable $e) {
@@ -403,6 +407,13 @@ TXT,
         );
 
         $reply = trim((string) ($result['response'] ?? ''));
+        // 🔁 ห้องที่ไม่มีความจำ = ทางเดิม: ตรวจคำตอบว่างก่อนถอดป้าย
+        if ($memory === null && $reply === '') {
+            if (! $fillerOnEmpty) {
+                throw new RuntimeException('AI returned an empty reply');
+            }
+            $reply = self::FILLER;
+        }
 
         // ป้าย [[OFFER:หมวด]] — แยกก่อนกรองขาออก (ตัวกรองจะลบป้ายทิ้ง) และถอดออกเสมอ
         $topic = null;
@@ -415,14 +426,17 @@ TXT,
             $topic = null;
         }
 
-        // 🧼 (2026-11-03) กรองขาออกทุกคำตอบ — แท็กภายใน [CUSTOMER_*]/[PAST_CASE_*] และ prefix "แม่หมอ:"
-        $reply = WebChatContinuitySanitizer::sanitizeOutbound($reply);
+        // 🧼 (2026-11-03) ห้องที่มีบล็อกความจำ — กรองขาออก: แท็กภายใน [CUSTOMER_*]/[PAST_CASE_*] และ prefix "แม่หมอ:"
+        //    (ความจำมีบรรทัดจากแชท FB ที่ AI อาจสะท้อนกลับมา) · ห้องที่ไม่มีความจำ = ทางเดิม ไม่กรอง
+        if ($memory !== null) {
+            $reply = WebChatContinuitySanitizer::sanitizeOutbound($reply);
 
-        if ($reply === '') {
-            if (! $fillerOnEmpty) {
-                throw new RuntimeException('AI returned an empty reply');
+            if ($reply === '') {
+                if (! $fillerOnEmpty) {
+                    throw new RuntimeException('AI returned an empty reply');
+                }
+                $reply = self::FILLER;
             }
-            $reply = self::FILLER;
         }
 
         $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);

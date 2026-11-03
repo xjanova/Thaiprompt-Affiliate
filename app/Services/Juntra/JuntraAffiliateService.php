@@ -42,6 +42,9 @@ use Illuminate\Support\Str;
  *   - ผู้ใช้ Thaiprompt ที่ถูกบัญชีจันทราอื่นผูกไว้ → 409 thaiprompt_taken + แจ้งแอดมิน ห้ามสร้างเงาเงียบ ๆ (M4)
  *   - releaseAccount: จันทราลบบัญชี → ปลดแถว ให้บัญชีใหม่ที่ผูก Thaiprompt คนเดิมชี้มาที่แถวเดิมได้
  *   - pickSponsor ลองผู้เชิญจาก FortuneReferral (LINE/PSID/alias ของผู้ใช้) ก่อนตกไปผู้แนะนำเริ่มต้น (M7)
+ *   🔁 (รีวิว) ทั้ง 4 ข้อข้างบนทำงานเฉพาะตอนธง facebook_web_only เปิด — ธงปิด = พฤติกรรมเดิมทุกประการ
+ *      (ไม่ติดป้ายสาขา · สร้างเงาเมื่อผู้ใช้ Thaiprompt ถูกจองแล้ว · ไม่สนแถวที่ปลดแล้ว · ผู้เชิญ = รหัส/ค่าเริ่มต้น)
+ *      endpoint/คำสั่ง release และตาราง merge alias ยังอยู่ (เก็บข้อมูลไว้เฉย ๆ ไม่มีผลกับผลลัพธ์ตอนธงปิด)
  *
  * ล็อกทุกตัวรอไม่เกิน 5 วิ — สั้นกว่าเวลาที่จันทรารอคำตอบ (10-15 วิ) ไม่งั้นจันทราเลิกรอ
  *   ทั้งที่ที่นี่ยังทำงานอยู่ แล้วเข้าใจผิดว่าบิลยังไม่ถึง
@@ -79,23 +82,29 @@ class JuntraAffiliateService
     public function ensureAccount(int $juntraUserId, string $name, ?int $thaipromptUserId = null, ?string $referralCode = null, ?string $pageCode = null): array
     {
         $code = $this->sanitizeCode($referralCode);
+        // 🔁 ธงปิด = เส้นเดิมทั้งหมด (ดู docblock ของคลาส)
+        $webOnly = $this->fbWebOnlyOn();
 
         // หนึ่งลูกค้าทีละคำขอ — บิลกับหน้าแดชบอร์ดมาพร้อมกันได้ ห้ามได้สองบัญชี/สองตำแหน่งในผัง
         $lock = $this->lockOrBusy("juntra:affiliate-account:{$juntraUserId}", 'มีคำขอของลูกค้าคนนี้ค้างอยู่ กรุณาลองใหม่');
 
         try {
-            $account = $this->resolveAccount($juntraUserId, $name, $thaipromptUserId);
+            $account = $this->resolveAccount($juntraUserId, $name, $thaipromptUserId, $webOnly);
 
             // ลูกค้าเพิ่งผูก Thaiprompt ทั้งที่เคยมีบัญชีเงา → รวมเข้าบัญชี Thaiprompt (เจ้าของสั่ง: Thaiprompt เป็นตัวหลัก)
             if ($thaipromptUserId && $account->linked_via === JuntraAccount::LINKED_VIA_AUTO
                 && (int) $account->user_id !== $thaipromptUserId) {
-                $account = $this->mergeIntoThaiprompt($account, $thaipromptUserId);
+                $account = $webOnly
+                    ? $this->mergeIntoThaiprompt($account, $thaipromptUserId)
+                    : $this->merger->mergeIntoThaiprompt($account, $thaipromptUserId);
             }
 
             $user = $account->user;
 
-            // สาขาต้นทาง (เขียนครั้งเดียว) — gateway จดจาก token แล้ว ที่นี่เติมให้เฉพาะตอนยังว่าง
-            $this->rememberOriginPage($user, $this->pageIdFromCode($pageCode));
+            // สาขาต้นทาง (เขียนครั้งเดียว) — gateway จดจาก token แล้ว ที่นี่เติมให้เฉพาะตอนยังว่าง (ธงเปิดเท่านั้น)
+            if ($webOnly) {
+                $this->rememberOriginPage($user, $this->pageIdFromCode($pageCode));
+            }
 
             $member = MlmMember::where('user_id', $user->id)->first();
             if ($member) {
@@ -112,7 +121,7 @@ class JuntraAffiliateService
                 ];
             }
 
-            [$sponsor, $referral, $fortuneReferral] = $this->pickSponsor($user, $code);
+            [$sponsor, $referral, $fortuneReferral] = $this->pickSponsor($user, $code, $webOnly);
             if (! $sponsor) {
                 throw new JuntraAffiliateException('no_default_sponsor', 'ยังไม่มีผู้แนะนำเริ่มต้นในผังแม่หมอ', 503);
             }
@@ -193,7 +202,11 @@ class JuntraAffiliateService
         );
         $user = $ensured['user'];
         $member = $ensured['member'];
-        $pageId = $this->pageIdFromCode($bill['page_code'] ?? null) ?? $this->originPageIdOf($user);
+        // 🏬 ป้ายสาขาของบิลเว็บ — เฉพาะธง facebook_web_only เปิด (ธงปิด = บิลจันทราไม่มีสาขาแบบเดิม)
+        $stampPage = $this->fbWebOnlyOn();
+        $pageId = $stampPage
+            ? ($this->pageIdFromCode($bill['page_code'] ?? null) ?? $this->originPageIdOf($user))
+            : null;
 
         $lock = $this->lockOrBusy("juntra:affiliate-bill:{$billId}", 'บิลนี้กำลังถูกบันทึก/ยกเลิกอยู่ กรุณาลองใหม่');
 
@@ -262,7 +275,7 @@ class JuntraAffiliateService
             }
 
             // ค่าแนะนำของบิลนี้อยู่สาขาเดียวกับบิล (เซิร์ฟเวอร์จันทราไม่มี FortunePageContext → trait เติมให้ไม่ได้)
-            if ($reading->fortune_page_id !== null) {
+            if ($stampPage && $reading->fortune_page_id !== null) {
                 FortuneCommission::where('fortune_reading_id', $reading->id)
                     ->whereNull('fortune_page_id')
                     ->update(['fortune_page_id' => (int) $reading->fortune_page_id]);
@@ -430,7 +443,7 @@ class JuntraAffiliateService
      *   - ยังไม่ถูกปลด → 409 thaiprompt_taken + แจ้งแอดมิน · ห้ามสร้างเงาใต้ผู้แนะนำเริ่มต้นแบบเงียบ ๆ
      *     (เดิมสร้างเงา → บิลของคนจริงไปจ่ายค่าแนะนำให้ผู้แนะนำเริ่มต้นถาวร) จันทราถือ 409 นี้เป็นงานที่ลองใหม่ได้
      */
-    private function resolveAccount(int $juntraUserId, string $name, ?int $thaipromptUserId): JuntraAccount
+    private function resolveAccount(int $juntraUserId, string $name, ?int $thaipromptUserId, bool $webOnly = true): JuntraAccount
     {
         $existing = JuntraAccount::where('juntra_user_id', $juntraUserId)->first();
         if (! $existing && self::releaseColumnsReady()) {
@@ -446,11 +459,24 @@ class JuntraAffiliateService
             return $existing->setRelation('user', $user);
         }
 
-        return DB::transaction(function () use ($juntraUserId, $name, $thaipromptUserId) {
+        return DB::transaction(function () use ($juntraUserId, $name, $thaipromptUserId, $webOnly) {
             $user = null;
             $via = JuntraAccount::LINKED_VIA_AUTO;
 
-            if ($thaipromptUserId && ($candidate = User::find($thaipromptUserId))) {
+            if ($thaipromptUserId && ! $webOnly) {
+                // 🔁 ธงปิด = เส้นเดิม: ผู้ใช้ Thaiprompt ถูกบัญชีจันทราอื่นผูกแล้ว → สร้างตัวตนแยก (เงา)
+                $candidate = User::find($thaipromptUserId);
+                $taken = $candidate && JuntraAccount::where('user_id', $candidate->id)->exists();
+                if ($candidate && ! $taken) {
+                    $user = $candidate;
+                    $via = JuntraAccount::LINKED_VIA_SSO;
+                } elseif ($taken) {
+                    Log::warning('Juntra affiliate: ผู้ใช้ Thaiprompt นี้ผูกกับลูกค้าจันทราคนอื่นแล้ว — สร้างตัวตนแยกให้', [
+                        'juntra_user_id' => $juntraUserId,
+                        'thaiprompt_user_id' => $thaipromptUserId,
+                    ]);
+                }
+            } elseif ($thaipromptUserId && ($candidate = User::find($thaipromptUserId))) {
                 $holder = JuntraAccount::where('user_id', $candidate->id)->lockForUpdate()->first();
 
                 if (! $holder) {
@@ -506,6 +532,13 @@ class JuntraAffiliateService
                 if ($createdShadow) {
                     $user->forceDelete();
                 }
+                if (! $webOnly) {
+                    // 🔁 ธงปิด = เส้นเดิม (ไม่เจอ = ModelNotFoundException เหมือนเดิม)
+                    $winner = JuntraAccount::where('juntra_user_id', $juntraUserId)->firstOrFail();
+
+                    return $winner->setRelation('user', User::findOrFail($winner->user_id));
+                }
+
                 $winner = JuntraAccount::where('juntra_user_id', $juntraUserId)->first();
                 if (! $winner) {
                     // ชน unique ของ user_id = บัญชีจันทราอื่นเพิ่งผูกผู้ใช้ Thaiprompt คนนี้ไปพร้อมกัน → ไม่สร้างเงา
@@ -528,9 +561,11 @@ class JuntraAffiliateService
      * 🌐 (2026-11-03) ขั้น FortuneReferral = กฎเดียวกับ FortuneAffiliateService::createMlmMember ของบอท (M7)
      *   ลูกค้าที่ย้ายจาก FB/LINE มาเว็บแล้วยังไม่มีตำแหน่ง ต้องได้ผู้เชิญคนเดียวกับที่บอทจะให้
      *
+     * 🔁 ขั้น FortuneReferral ทำเฉพาะตอนธง facebook_web_only เปิด — ธงปิด = รหัสเชิญ → ผู้แนะนำเริ่มต้น (เดิม)
+     *
      * @return array{0: ?MlmMember, 1: array{code: ?string, applied: bool, reason_code: ?string, sponsor_source?: string}, 2: ?FortuneReferral}
      */
-    private function pickSponsor(User $user, ?string $code): array
+    private function pickSponsor(User $user, ?string $code, bool $webOnly = true): array
     {
         $reason = null;
 
@@ -553,7 +588,7 @@ class JuntraAffiliateService
             }
         }
 
-        [$referralSponsor, $fortuneReferral] = $this->sponsorFromFortuneReferral($user);
+        [$referralSponsor, $fortuneReferral] = $webOnly ? $this->sponsorFromFortuneReferral($user) : [null, null];
         if ($referralSponsor) {
             return [
                 $referralSponsor,
@@ -789,6 +824,14 @@ class JuntraAffiliateService
         } catch (\Throwable $e) {
             Log::warning('Juntra affiliate: แจ้งแอดมินเรื่อง thaiprompt_taken ไม่สำเร็จ', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * 🌐 ธง facebook_web_only เปิดอยู่ไหม (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     */
+    private function fbWebOnlyOn(): bool
+    {
+        return (new \App\Services\Fortune\FortuneBotMode)->fbWebOnly();
     }
 
     /** fortune_pages.id จาก code ที่จันทราส่งมา — ไม่รู้จัก/ว่าง = null (ไม่ทำให้บิลล้ม) */

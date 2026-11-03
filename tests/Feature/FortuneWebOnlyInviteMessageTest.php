@@ -268,6 +268,24 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
         $this->assertSame('ข้อความชุดกลางของ สมชาย', $classic->render('สมชาย', self::LINE_UID, 'line'));
     }
 
+    /**
+     * 🔁 (รีวิว) โหมด daily + ธง FB web-only เปิด: LINE ยังได้ชุดชวนดวงรายวัน (ส่ง platform จริงให้ isDailyServing)
+     */
+    public function test_line_keeps_daily_invites_while_fb_web_only_is_on(): void
+    {
+        $greeting = Mockery::mock(\App\Services\Fortune\FortuneGreetingService::class);
+        $greeting->shouldReceive('dailyArticlesReadyToday')->andReturn(true);
+        $this->app->instance(\App\Services\Fortune\FortuneGreetingService::class, $greeting);
+
+        $this->webOnly(['fortune_bot_mode' => FortuneBotMode::MODE_DAILY, 'daily_free_horoscope_enabled' => true]);
+        $this->addRow(FortuneInviteMessage::MODE_ALL, 'ข้อความชุดกลาง');
+        $this->addRow(FortuneInviteMessage::MODE_DAILY, 'บอกวันเกิดรับดวงประจำวันได้เลยนะคะ');
+
+        for ($i = 0; $i < 15; $i++) {
+            $this->assertSame(FortuneInviteMessage::MODE_DAILY, FortuneInviteMessage::pickActive('line')->mode);
+        }
+    }
+
     // ------------------------------------------------------------
     // quick replies + render
     // ------------------------------------------------------------

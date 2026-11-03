@@ -545,10 +545,54 @@ class FortuneFbWebOnlyCutoverTest extends TestCase
         $before = $this->snapshot();
 
         $this->artisan('fortune:web-only-cutover', ['--execute' => true])
-            ->expectsConfirmation('ยืนยันเพิกถอน 1 สิทธิ์ และปิด 1 soft state ใช่ไหม? (ย้อนกลับไม่ได้)', 'no')
+            ->expectsConfirmation('ยืนยันเพิกถอน 1 สิทธิ์ ปิด 1 soft state และเติมชื่อ 0 บัญชี ใช่ไหม? (ย้อนกลับไม่ได้)', 'no')
             ->assertExitCode(1);
 
         $this->assertSame($before, $this->snapshot());
+    }
+
+    /** บัญชีบอท FB ชื่อ 'User' + บิลที่มีชื่อจริง (ของเดิมที่ migration เคยเปลี่ยนชื่อให้) */
+    private function placeholderBotUser(string $psid, string $billName): \App\Models\User
+    {
+        $user = \App\Models\User::createBotProvisioned([
+            'name' => 'User',
+            'email' => 'fb_'.$psid.'@thaiprompt.local',
+            'password' => bcrypt(\Illuminate\Support\Str::random(32)),
+        ]);
+        $user->forceFill(['facebook_psid' => $psid])->save();
+        $this->reading(['facebook_user_id' => $psid, 'facebook_user_name' => $billName, 'conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        return $user->fresh();
+    }
+
+    /**
+     * 🔁 เติมชื่อบัญชี 'User' ย้ายจาก migration มาที่ cutover — ธงปิด = ไม่แตะ users.name แม้ --execute
+     */
+    public function test_cutover_execute_ไม่เติมชื่อบัญชีเมื่อธงยังปิด(): void
+    {
+        $user = $this->placeholderBotUser('61550000000201', 'สมศรี ทดสอบ');
+
+        [$code, $out] = $this->cutover(['--execute' => true, '--force' => true]);
+
+        $this->assertSame(0, $code, $out);
+        $this->assertSame('User', $user->fresh()->name, 'ธงปิด = ห้ามเขียนทับ users.name');
+    }
+
+    public function test_cutover_execute_เติมชื่อบัญชีบอท_user_เมื่อธงเปิด_dry_run_ไม่เขียน(): void
+    {
+        $this->settings(['facebook_web_only' => true]);
+        $user = $this->placeholderBotUser('61550000000202', 'สมศรี ทดสอบ');
+        $named = $this->placeholderBotUser('61550000000203', 'ชื่อในบิล');
+        $named->forceFill(['name' => 'ชื่อที่ลูกค้าตั้งเอง'])->save();
+
+        [$code, $out] = $this->cutover();
+        $this->assertSame(0, $code, $out);
+        $this->assertSame('User', $user->fresh()->name, 'dry-run ห้ามเขียน');
+
+        [$code, $out] = $this->cutover(['--execute' => true, '--force' => true]);
+        $this->assertSame(0, $code, $out);
+        $this->assertSame('สมศรี ทดสอบ', $user->fresh()->name);
+        $this->assertSame('ชื่อที่ลูกค้าตั้งเอง', $named->fresh()->name, 'ไม่แตะชื่อที่ไม่ใช่ User');
     }
 
     public function test_cutover_refresh_profile_ไม่ทำเมื่อธงปิด(): void

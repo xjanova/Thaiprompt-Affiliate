@@ -26,6 +26,8 @@ use Throwable;
  *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ย้ายมาจากแชทเพจ FB
  *     แม่หมอได้ "ความจำ" จากแชท FB (WebChatContinuityService) วางใน system message เท่านั้น
  *     ความจำไม่ถูกส่งกลับไปที่เว็บ — ตอบแค่ continued_from / customer.display_name / returning
+ *     🔁 (รีวิว) ความจำ/คำทักทาย "คุยค้างไว้ในเพจ" เฉพาะห้องที่เปิดจากลิงก์ handoff ของ FB (ส่ง `handoff` มา)
+ *        **และ** ธง facebook_web_only เปิด — ไม่งั้นห้องแชทเว็บเหมือนเดิมทุกอย่าง (ไม่มีบล็อกความจำ คำทักทายเดิม)
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
  */
 class ChatController extends Controller
@@ -50,11 +52,15 @@ class ChatController extends Controller
             'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
         ]);
 
-        $continuity = $this->continuity->begin(
-            $data['user_ref'],
-            isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
-            $data['handoff'] ?? null,
-        );
+        // 🔁 ไม่มี handoff หรือธงปิด = ห้องแบบเดิม (continuity = null → ไม่มีความจำ คำทักทายเดิม)
+        $handoff = $data['handoff'] ?? null;
+        $continuity = ($handoff !== null && $handoff !== '' && $this->continuity->enabled())
+            ? $this->continuity->begin(
+                $data['user_ref'],
+                isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
+                $handoff,
+            )
+            : null;
 
         $out = $this->chat->start(
             $this->owner($data['user_ref']),
@@ -110,7 +116,8 @@ class ChatController extends Controller
                 fillerOnEmpty: false,
                 context: $data['context'] ?? null,
                 persona: $data['persona'] ?? null,
-                allowMemory: true,
+                // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่ได้เฉพาะลูกค้าที่เพิ่งเข้ามาทาง handoff
+                allowMemory: $this->continuity->enabled(),
                 memoryLoader: fn () => $this->continuity->rebuildMemory($userRef, $claimed),
             );
         } catch (Throwable $e) {

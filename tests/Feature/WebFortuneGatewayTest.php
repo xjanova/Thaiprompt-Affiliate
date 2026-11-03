@@ -25,6 +25,9 @@ use Tests\TestCase;
  * · token หมดอายุ → หน้า expired + resend ไป PSID เดิมเท่านั้น (3 ครั้ง/ชม.)
  * · ธง facebook_web_only เปิด FB แต่ LINE ยังปิด · throttle นับต่อ token
  *
+ * 🔁 (รีวิว) เส้นใหม่ = FB + ธงเปิดเท่านั้น (setUp เปิดธงไว้) · LINE ทุกกรณี และ FB ตอนธงปิด = เส้นเดิม
+ *   (GET ล็อกอิน remember=true แล้วไป SSO ทันที · token 72 ชม. กดซ้ำได้) — ดูชุดเทสต์ "ธงปิด" ท้ายไฟล์
+ *
  * @group security
  */
 class WebFortuneGatewayTest extends TestCase
@@ -55,7 +58,8 @@ class WebFortuneGatewayTest extends TestCase
             '*' => Http::response([], 200),
         ]);
 
-        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+        // เส้นใหม่ (interstitial / single-use / expired) ใช้เฉพาะ FB + ธงเปิด
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => true]);
     }
 
     /**
@@ -517,8 +521,8 @@ class WebFortuneGatewayTest extends TestCase
 
     public function test_line_links_keep_72h_reuse_remember_and_sso_fallback(): void
     {
-        $this->assertSame(72, FortuneWebLinkService::ttlHoursFor('line'));
-        $this->assertSame(24, FortuneWebLinkService::ttlHoursFor('facebook'));
+        $this->assertSame(72, FortuneWebLinkService::ttlHoursFor('line', true));
+        $this->assertSame(24, FortuneWebLinkService::ttlHoursFor('facebook', true));
 
         $lineUser = $this->makeUser();
         $lineUser->forceFill(['line_user_id' => self::LINE_ID])->save();
@@ -547,6 +551,137 @@ class WebFortuneGatewayTest extends TestCase
         $this->get('/web-fortune/go?tk='.$old)->assertRedirect(self::SSO);
         $this->post('/web-fortune/go', ['tk' => $old])->assertRedirect(self::SSO);
         $this->assertGuest();
+    }
+
+    // ============================================================
+    // 🔁 ธงปิด / LINE = เส้นเดิมของ e2a9e0868
+    // ============================================================
+
+    private function rememberCookie($response): ?\Symfony\Component\HttpFoundation\Cookie
+    {
+        return collect($response->headers->getCookies())->first(fn ($c) => str_starts_with($c->getName(), 'remember_web'));
+    }
+
+    /**
+     * LINE (ธงเปิดอยู่ก็ตาม): GET ลิงก์ = ล็อกอิน remember=true แล้วไป SSO ทันที (ไม่มีหน้า interstitial)
+     */
+    public function test_line_magic_link_get_logs_in_with_remember_and_redirects_like_before(): void
+    {
+        $lineUser = $this->makeUser();
+        $lineUser->forceFill(['line_user_id' => self::LINE_ID])->save();
+
+        $response = $this->get('/web-fortune/go?tk='.$this->token('line', self::LINE_ID, '/mlm'));
+
+        $response->assertRedirect(self::SSO.'?to='.urlencode('/mlm'));
+        $this->assertSame((int) $lineUser->id, (int) Auth::id());
+        $this->assertNotNull($this->rememberCookie($response), 'LINE ต้อง remember เหมือนเดิม');
+        $response->assertSessionMissing('wf_psid');
+        $this->assertSame(0, \DB::table('fortune_web_link_uses')->count(), 'LINE ไม่มี single-use');
+    }
+
+    /**
+     * ธงปิด: ลิงก์ FB = เส้นเดิม — GET ล็อกอิน remember=true · token 72 ชม. · กดซ้ำจากเบราว์เซอร์อื่นได้
+     */
+    public function test_flag_off_facebook_link_logs_in_on_get_and_is_reusable_within_72h(): void
+    {
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+        $this->freezeTime();
+        $token = $this->token('facebook', self::PSID, '/tarot/free');
+        $this->assertSame(now()->addHours(72)->timestamp, $this->link()->verifyToken($token)['exp']);
+
+        $first = $this->get('/web-fortune/go?tk='.$token);
+        $first->assertRedirect(self::SSO.'?to='.urlencode('/tarot/free'));
+        $this->assertAuthenticated();
+        $owner = (int) Auth::id();
+        $this->assertNotNull($this->rememberCookie($first), 'ธงปิด = remember เหมือนเดิม');
+        $first->assertSessionMissing('wf_psid');
+        $this->assertSame(0, \DB::table('fortune_web_link_uses')->count(), 'ธงปิด = ไม่มี single-use');
+        $this->assertSame('User', User::find($owner)->name, 'ธงปิด = ชื่อบัญชีใหม่ = User แบบเดิม');
+        if (Schema::hasTable('fortune_messenger_psids')) {
+            $this->assertSame(0, \DB::table('fortune_messenger_psids')->where('source', 'web_gateway')->count(), 'ธงปิด = ไม่เขียนตาราง alias');
+        }
+
+        // อีก 2 วัน (เกิน 24 ชม. ของโหมดใหม่) จากเบราว์เซอร์อื่น → ยังเข้าได้ ได้บัญชีเดิม
+        $this->travel(48)->hours();
+        $this->freshBrowser();
+        $this->get('/web-fortune/go?tk='.$token)->assertRedirect(self::SSO.'?to='.urlencode('/tarot/free'));
+        $this->assertSame($owner, (int) Auth::id());
+        $this->assertSame(1, User::where('facebook_psid', self::PSID)->count());
+
+        // เกิน 72 ชม. → SSO เฉย ๆ (ไม่ใช่หน้า expired)
+        $this->travel(25)->hours();
+        $this->freshBrowser();
+        $this->get('/web-fortune/go?tk='.$token)->assertRedirect(self::SSO);
+        $this->assertGuest();
+    }
+
+    public function test_flag_off_bad_token_and_disabled_button_go_to_sso(): void
+    {
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+        $this->get('/web-fortune/go?tk=garbage.token')->assertRedirect(self::SSO);
+        $this->get('/web-fortune/go')->assertRedirect(self::SSO);
+
+        $this->settings(['enable_web_fortune_button' => false, 'facebook_web_only' => false]);
+        $this->get('/web-fortune/go?tk='.$this->token())->assertRedirect(self::SSO);
+        $this->assertGuest();
+    }
+
+    public function test_flag_off_expired_page_and_resend_are_harmless(): void
+    {
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+        $token = $this->token();
+
+        $this->get(route('web-fortune.expired', ['reason' => 'expired', 'tk' => $token]))
+            ->assertRedirect(self::SSO)
+            ->assertSessionMissing('wf_psid_weak');
+        $this->post('/web-fortune/resend', ['tk' => $token])->assertRedirect(self::SSO);
+
+        $this->assertCount(0, Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), '/me/messages')));
+        $this->assertGuest();
+    }
+
+    /**
+     * ธงปิด: ด่านความปลอดภัยยังอยู่ — บัญชีทีมงานไม่ถูก auto-login · session ทีมงานไม่ถูกสลับ
+     */
+    public function test_flag_off_keeps_denied_account_and_staff_session_guards(): void
+    {
+        $this->settings(['enable_web_fortune_button' => true, 'facebook_web_only' => false]);
+
+        $admin = $this->makeUser(['facebook_psid' => self::PSID]);
+        $admin->forceFill(['role' => 'admin'])->save();
+        $this->get('/web-fortune/go?tk='.$this->token())->assertRedirect(self::SSO);
+        $this->assertGuest();
+
+        $staff = $this->makeUser();
+        $staff->forceFill(['role' => 'admin'])->save();
+        $this->actingAs($staff->fresh())
+            ->get('/web-fortune/go?tk='.$this->token('facebook', self::OTHER_PSID))
+            ->assertRedirect(self::SSO);
+        $this->assertSame((int) $staff->id, (int) Auth::id(), 'session ทีมงานต้องไม่ถูกสลับเป็นลูกค้า');
+    }
+
+    /**
+     * ธงเปิด: บัญชีใหม่ของ LINE ยังชื่อ 'User' (ไม่ดึงชื่อจาก persona/บิล) — ชื่อจริงเฉพาะ FB + ธงเปิด
+     */
+    public function test_new_line_account_keeps_placeholder_name_even_with_flag_on(): void
+    {
+        \App\Models\FortuneReading::create([
+            'platform' => 'line',
+            'facebook_user_id' => self::LINE_ID,
+            'platform_user_id' => self::LINE_ID,
+            'facebook_user_name' => 'สมศรี ไลน์',
+            'reading_type' => 'deep',
+            'questions' => [],
+        ]);
+
+        $this->get('/web-fortune/go?tk='.$this->token('line', self::LINE_ID))->assertRedirect(self::SSO);
+
+        $user = User::where('line_user_id', self::LINE_ID)->first();
+        $this->assertNotNull($user);
+        $this->assertSame('User', $user->name);
+        if (Schema::hasColumn('users', 'line_display_name')) {
+            $this->assertNull($user->line_display_name);
+        }
     }
 
     private function anyRoleId(string $name = 'staff'): int

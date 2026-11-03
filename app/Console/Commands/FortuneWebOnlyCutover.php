@@ -14,6 +14,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 🌐 (2026-11-03) ตัดรอบ FB → เว็บจันทรา (T0) — ล้างของค้างบน FB ที่จะพาลูกค้ากลับไปออกบิลในแชท
@@ -28,6 +29,10 @@ use Illuminate\Support\Facades\Log;
  *
  * ห้ามแตะเด็ดขาด: แถว is_paid=1 · ลูกค้าที่แอดมินเทคโอเวอร์อยู่ · ลูกค้าที่มีของจ่ายแล้วกำลังส่ง (ระดับ A) ·
  *   บิลค้างจ่าย (ปล่อยหมดอายุเอง ≤180 นาที สลิปใช้ระดับ B) · บิลที่พักยอดขาด (partial_hold_at) · LINE / Telegram · บิลจันทรา
+ *
+ *   3. (เฉพาะธง facebook_web_only เปิดแล้ว) เติมชื่อบัญชีบอท FB ที่ยังชื่อ 'User' จากชื่อในบิลล่าสุดของ PSID นั้น
+ *      — ย้ายมาจาก migration 2026_11_03_140000 (เขียนทับ users.name ย้อนกลับไม่ได้ ต้องเกิดตอนเจ้าของเปิดธงเท่านั้น)
+ *      ธงยังปิด = ข้ามขั้นนี้ (เปิดธงแล้วรัน --execute ซ้ำได้ ทุกขั้น idempotent)
  *
  * --refresh-profile: ตั้งเมนู Messenger ใหม่ทุกเพจ FB (ใช้หลังเปิดธงแล้วเท่านั้น — ธงปิดจะได้เมนูเก่าที่มีราคา)
  *   ตั้งซ้ำได้ไม่เสียหาย จึงทำทันทีโดยไม่ต้อง --execute (เว้นแต่ใส่ --dry-run) และไม่แตะข้อมูลลูกค้า
@@ -85,6 +90,8 @@ class FortuneWebOnlyCutover extends Command
         // ── รวบรวมตัวเลข (อ่านอย่างเดียว) ──
         $fallbackIds = $this->fallbackCreditIds();
         [$softRows, $skipped] = $this->closableSoftReadings($mode, $days);
+        $flagOn = $mode->fbWebOnly();
+        $nameFills = $this->placeholderNameFills();
 
         $this->newLine();
         $this->table(['รายการ', 'จำนวน', 'การจัดการ'], [
@@ -94,6 +101,11 @@ class FortuneWebOnlyCutover extends Command
             ['  ↳ ข้าม: มีของจ่ายแล้วกำลังส่ง (ระดับ A)', $skipped['legacy_paid'], 'ไม่แตะ'],
             ['บิลค้างจ่าย (pending)', $this->countPendingBills(), 'ไม่แตะ — หมดอายุเอง'],
             ['จ่ายแล้วยังส่งไม่ครบ / is_paid=1', $this->countPaidOpen(), 'ไม่แตะ — ส่งต่อบน FB จนจบ'],
+            [
+                'บัญชีบอท FB ชื่อ "User" ที่หาชื่อจริงจากบิลได้',
+                count($nameFills),
+                $flagOn ? 'เติมชื่อจากบิลล่าสุด (ย้อนกลับไม่ได้)' : 'ข้าม — ทำเมื่อเปิดธงแล้วเท่านั้น',
+            ],
         ]);
 
         if ($this->option('refresh-profile')) {
@@ -108,14 +120,20 @@ class FortuneWebOnlyCutover extends Command
             return self::SUCCESS;
         }
 
-        if ($fallbackIds === [] && $softRows === []) {
+        // ธงยังปิด = ไม่เติมชื่อ (users.name เขียนทับแล้วย้อนกลับไม่ได้ — ต้องเป็นการตัดสินใจเปิดธงของเจ้าของ)
+        if (! $flagOn) {
+            $nameFills = [];
+        }
+
+        if ($fallbackIds === [] && $softRows === [] && $nameFills === []) {
             $this->info('ไม่มีอะไรต้องทำ');
 
             return self::SUCCESS;
         }
 
         if (! $this->option('force')
-            && ! $this->confirm('ยืนยันเพิกถอน '.count($fallbackIds).' สิทธิ์ และปิด '.count($softRows).' soft state ใช่ไหม? (ย้อนกลับไม่ได้)', false)) {
+            && ! $this->confirm('ยืนยันเพิกถอน '.count($fallbackIds).' สิทธิ์ ปิด '.count($softRows).' soft state'
+                .' และเติมชื่อ '.count($nameFills).' บัญชี ใช่ไหม? (ย้อนกลับไม่ได้)', false)) {
             $this->warn('ยกเลิก — ไม่มีการเขียนข้อมูล');
 
             return self::FAILURE;
@@ -123,17 +141,23 @@ class FortuneWebOnlyCutover extends Command
 
         $revoked = $this->revokeFallback($fallbackIds);
         $closed = $this->closeSoftReadings($softRows);
+        $named = $this->fillPlaceholderNames($nameFills);
 
         Log::warning('🌐 FB web-only cutover: ลงมือแล้ว', [
             'revoked_fallback' => $revoked,
             'closed_soft_state' => $closed,
+            'filled_names' => $named,
             'days' => $days,
             'skipped' => $skipped,
         ]);
 
         $this->newLine();
-        $this->info("✅ เพิกถอนสิทธิ์ดูในแชท FB {$revoked} แถว · ปิด soft state {$closed} แถว (".self::CANCEL_REASON.')');
-        $this->line('ขั้นต่อไป: เปิดธง facebook_web_only ในหน้าแอดมิน → fortune:web-only-cutover --refresh-profile');
+        $this->info("✅ เพิกถอนสิทธิ์ดูในแชท FB {$revoked} แถว · ปิด soft state {$closed} แถว (".self::CANCEL_REASON.") · เติมชื่อ {$named} บัญชี");
+        if ($flagOn) {
+            $this->line('ขั้นต่อไป: fortune:web-only-cutover --refresh-profile');
+        } else {
+            $this->line('ขั้นต่อไป: เปิดธง facebook_web_only ในหน้าแอดมิน → รัน --execute ซ้ำ (เติมชื่อบัญชี) → --refresh-profile');
+        }
 
         return self::SUCCESS;
     }
@@ -365,6 +389,86 @@ class FortuneWebOnlyCutover extends Command
         } catch (\Throwable $e) {
             // ไม่สำคัญพอจะหยุดคำสั่ง
         }
+    }
+
+    /**
+     * 🏷️ บัญชีบอท FB ที่ยังชื่อ 'User' และหาชื่อจริงจากบิลล่าสุดของ PSID นั้นได้ — [user_id => ชื่อใหม่]
+     *
+     * อ่านอย่างเดียว (ใช้ทั้ง dry-run และก่อนลงมือ) · ย้ายมาจาก migration 2026_11_03_140000
+     * ไม่แตะบัญชีที่ลูกค้าตั้งชื่อเอง (ชื่อไม่ใช่ 'User') และบัญชีที่ไม่ได้สร้างโดยบอท (bot_provisioned)
+     *
+     * @return array<int, string>
+     */
+    protected function placeholderNameFills(): array
+    {
+        $fills = [];
+
+        try {
+            if (! Schema::hasColumn('users', 'facebook_psid') || ! Schema::hasColumn('fortune_readings', 'facebook_user_name')) {
+                return [];
+            }
+
+            $query = DB::table('users')
+                ->where('name', 'User')
+                ->whereNotNull('facebook_psid')
+                ->where('facebook_psid', '!=', '')
+                ->select('id', 'facebook_psid')
+                ->orderBy('id');
+
+            if (Schema::hasColumn('users', 'bot_provisioned')) {
+                $query->where('bot_provisioned', true);
+            }
+
+            $query->chunkById(200, function ($rows) use (&$fills) {
+                foreach ($rows as $row) {
+                    $name = DB::table('fortune_readings')
+                        ->where(function ($q) use ($row) {
+                            $q->where('facebook_user_id', $row->facebook_psid)
+                                ->orWhere('platform_user_id', $row->facebook_psid);
+                        })
+                        ->whereNotNull('facebook_user_name')
+                        ->orderByDesc('id')
+                        ->value('facebook_user_name');
+
+                    $name = trim((string) $name);
+                    // ข้ามชื่อว่าง / 'User' / ตัวเลขยาว (PSID หลุดมาเป็นชื่อ)
+                    if ($name === '' || $name === 'User' || preg_match('/^\d{15,}$/', $name)) {
+                        continue;
+                    }
+
+                    $fills[(int) $row->id] = mb_substr($name, 0, 255);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::warning('🌐 cutover: อ่านบัญชีชื่อ User ไม่สำเร็จ (ข้ามขั้นเติมชื่อ)', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+
+        return $fills;
+    }
+
+    /**
+     * เติมชื่อตามผลของ placeholderNameFills — เขียนเฉพาะแถวที่ยังชื่อ 'User' อยู่ตอนลงมือ (กันทับชื่อที่เพิ่งตั้ง)
+     *
+     * @param  array<int, string>  $fills
+     */
+    protected function fillPlaceholderNames(array $fills): int
+    {
+        $done = 0;
+
+        foreach ($fills as $userId => $name) {
+            try {
+                $done += DB::table('users')
+                    ->where('id', $userId)
+                    ->where('name', 'User')
+                    ->update(['name' => $name, 'updated_at' => now()]);
+            } catch (\Throwable $e) {
+                Log::warning('🌐 cutover: เติมชื่อบัญชีไม่สำเร็จ', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $done;
     }
 
     /**

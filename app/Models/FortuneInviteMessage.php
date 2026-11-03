@@ -244,7 +244,9 @@ class FortuneInviteMessage extends Model
         //   🎁 (2026-08-28) เส้นเดียวกันนี้ครอบสวิตช์ `daily_free_horoscope_enabled` ด้วย
         //     — isDailyServing() คืน false เมื่อแอดมินปิดระบบชวนดวงฟรี ⇒ DM กลับไปใช้
         //     "ชุดข้อความชวนดูดวงชุดแรก" (all/classic) ตามที่เจ้าของสั่ง โดยไม่ต้องแก้ที่นี่
-        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing()) {
+        //   🔁 (2026-11-03 รีวิว) ส่ง platform จริง — ค่าเริ่มต้นของ isDailyServing คือ facebook
+        //     ไม่ส่ง = LINE โดนธง FB web-only ไปด้วย (DM ชวนดวงรายวันของ LINE กลายเป็นชุด classic)
+        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing($platform)) {
             $mode = \App\Services\Fortune\FortuneBotMode::MODE_CLASSIC;
         }
 
