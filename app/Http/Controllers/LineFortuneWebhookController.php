@@ -1121,13 +1121,37 @@ class LineFortuneWebhookController extends Controller
             }
 
             // 2. ตรวจว่า LINE user นี้ถูกจับคู่กับ referral อื่นอยู่แล้วหรือไม่
+            //   🗓️ (F15) แถว followed บล็อกเฉพาะที่ยังไม่หมดอายุ — เดิมแถวที่หมดอายุไปแล้วบล็อกลิงก์ใหม่ตลอดไป
+            //   แถว converted = เป็นสมาชิกแล้ว บล็อกเสมอเหมือนเดิม
             $existingReferral = FortuneReferral::where('referred_line_user_id', $lineUserId)
-                ->whereIn('status', [FortuneReferral::STATUS_FOLLOWED, FortuneReferral::STATUS_CONVERTED])
+                ->where(function ($q) {
+                    $q->where('status', FortuneReferral::STATUS_CONVERTED)
+                        ->orWhere(function ($q2) {
+                            $q2->where('status', FortuneReferral::STATUS_FOLLOWED)
+                                ->where(function ($q3) {
+                                    $q3->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                                });
+                        });
+                })
                 ->first();
 
-            if ($existingReferral) {
-                Log::info('LINE Webhook: LINE user มี referral อยู่แล้ว', [
-                    'existing_referral_id' => $existingReferral->id,
+            // 🚫 (F34) เจ้าของลิงก์กดเอง หรือเป็นสมาชิก/ลูกค้าที่ผูกผู้แนะนำอยู่แล้ว → ไม่สร้างแถว followed
+            //   (ผู้แนะนำของสมาชิกเดิมเปลี่ยนไม่ได้อยู่แล้ว แถว followed ที่สร้างไว้จะค้าง "กำลังดำเนินการ" ตลอดไป)
+            $alreadyMemberReason = null;
+            if (! $existingReferral) {
+                $existingUser = app(\App\Services\FortuneAffiliateService::class)->findExistingUser($lineUserId, 'line');
+                if ($existingUser && (int) $existingUser->id === (int) $referral->referrer_user_id) {
+                    $alreadyMemberReason = 'self_referral';
+                } elseif ($existingUser && \App\Models\MlmMember::where('user_id', $existingUser->id)->exists()) {
+                    $alreadyMemberReason = 'existing_member';
+                }
+            }
+
+            if ($existingReferral || $alreadyMemberReason) {
+                Log::info('LINE Webhook: LINE user มี referral อยู่แล้ว / เป็นสมาชิกอยู่แล้ว — ไม่ผูกลิงก์นี้', [
+                    'existing_referral_id' => $existingReferral?->id,
+                    'reason' => $alreadyMemberReason ?? 'existing_referral',
+                    'referral_id' => $referral->id,
                     'line_user_id' => $lineUserId,
                 ]);
 

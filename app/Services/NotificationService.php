@@ -383,6 +383,43 @@ class NotificationService
     }
 
     /**
+     * 💳 (F12) แจ้งแอดมินในระบบว่าบิลดูดวงที่จ่ายด้วยบัตรถูกคืนเงินบางส่วน/ถูกโต้แย้ง — ต้องตรวจเอง
+     *
+     * ระบบไม่ยกเลิกบิลอัตโนมัติในเคสนี้ (คืนเต็มจำนวนเท่านั้นที่ void อัตโนมัติ) · แจ้งในกล่องแจ้งเตือนเท่านั้น ไม่ส่ง LINE
+     *
+     * @param  string  $kind  partial_refund | dispute | full_refund_void_failed | full_refund_during_generation
+     * @param  array<string, mixed>  $details
+     */
+    public function notifyAdminFortuneStripeReview(\App\Models\FortuneReading $reading, string $kind, array $details = []): void
+    {
+        $bill = $reading->bill_reference ?: '#'.$reading->id;
+        $amount = isset($details['amount']) ? ' '.number_format((float) $details['amount'], 2).' บาท' : '';
+        [$title, $message] = match ($kind) {
+            'partial_refund' => ['คืนเงินบัตรบางส่วน — ต้องตรวจค่าแนะนำ', "บิลดูดวง {$bill} ถูกคืนเงินบัตรบางส่วน{$amount} ระบบไม่ได้ยกเลิกบิลหรือดึงค่าแนะนำคืน กรุณาตรวจและตัดสินใจเอง"],
+            'dispute' => ['ลูกค้าโต้แย้งรายการบัตร — ต้องตรวจ', "บิลดูดวง {$bill} มีการโต้แย้งรายการบัตร{$amount} (".($details['status'] ?? '-').') ถ้าแพ้การโต้แย้งให้กดยกเลิกการอนุมัติบิลเอง'],
+            'full_refund_during_generation' => ['คืนเงินบัตรระหว่างสร้างคำทำนาย — ต้องตรวจ', "บิลดูดวง {$bill} ถูกคืนเงินบัตรเต็มจำนวนขณะระบบกำลังสร้าง/ส่งคำทำนาย ระบบยกเลิกการอนุมัติและดึงค่าแนะนำคืนแล้ว กรุณาตรวจว่าสถานะบิลยังเป็นยกเลิกอยู่"],
+            default => ['คืนเงินบัตรแล้วแต่ยกเลิกบิลไม่สำเร็จ', "บิลดูดวง {$bill} ถูกคืนเงินบัตรเต็มจำนวน แต่ระบบยกเลิกการอนุมัติไม่สำเร็จ กรุณากดยกเลิกการอนุมัติเอง"],
+        };
+
+        foreach ($this->adminRecipients() as $admin) {
+            $this->create(
+                $admin,
+                'fortune_stripe_review',
+                $title,
+                $message,
+                array_merge(['reading_id' => $reading->id, 'bill_reference' => $reading->bill_reference, 'kind' => $kind], $details),
+                route('admin.fortune.bills.index', ['search' => $reading->bill_reference]),
+                'เปิดบิล',
+                'high',
+                true,
+                true,
+                '💳',
+                'orange'
+            );
+        }
+    }
+
+    /**
      * Notify admin about new commission pending approval
      */
     public function notifyAdminNewCommission($commission): void

@@ -397,6 +397,11 @@ class FortuneStripeService
         $type = $event['type'] ?? '';
         $object = $event['data']['object'] ?? [];
 
+        // ⚖️ (F12) ลูกค้าโต้แย้งรายการบัตร (charge.dispute.*) — ไม่ยกเลิกบิลอัตโนมัติ บันทึกให้แอดมินตรวจเอง
+        if (str_starts_with($type, 'charge.dispute.')) {
+            return $this->onChargeDispute($type, $object);
+        }
+
         switch ($type) {
             case 'checkout.session.completed':
                 return $this->onSessionCompleted($object);
@@ -666,9 +671,12 @@ class FortuneStripeService
     }
 
     /**
-     * Charge refunded — admin refund บิลใน Stripe
+     * Charge refunded — คืนเงินบัตร (จากปุ่มหลังบ้านหรือจาก Stripe Dashboard)
      *
-     * - แค่ log ไว้ — ไม่ต้องเปลี่ยน reading status (admin จัดการเองในหน้า admin)
+     * 💸 (F12) เดิมแค่ log → บิลยังเป็น "จ่ายแล้ว" ค่าแนะนำ L1/L2 ค้างอยู่ในกระเป๋าผู้แนะนำ
+     *   - คืนเต็มจำนวน → voidReadingForFullRefund() = voidApproval() ตัวเดียวกับปุ่ม void ของแอดมิน
+     *     (ดึงค่าแนะนำคืน + ปิดบิล) · event ซ้ำไม่ดึงซ้ำ เพราะ voidApproval ล็อกแถวแล้วเช็ค is_paid
+     *   - คืนบางส่วน → ไม่ยกเลิกอัตโนมัติ บันทึกให้แอดมินตรวจ (flagForManualReview)
      */
     protected function onChargeRefunded(array $charge): array
     {
@@ -682,17 +690,243 @@ class FortuneStripeService
             return ['handled' => false, 'error' => 'reading not found'];
         }
 
+        $chargeAmount = (int) ($charge['amount'] ?? 0);
+        $refundedAmount = (int) ($charge['amount_refunded'] ?? 0);
+        // Stripe ตั้ง refunded = true เมื่อคืนครบทั้งรายการเท่านั้น
+        $isFullRefund = ! empty($charge['refunded']) || ($chargeAmount > 0 && $refundedAmount >= $chargeAmount);
+
         Log::info('FortuneStripeService: charge refunded', [
             'reading_id' => $reading->id,
             'payment_intent_id' => $paymentIntentId,
-            'refunded' => $charge['amount_refunded'] ?? 0,
+            'refunded' => $refundedAmount,
+            'charge_amount' => $chargeAmount,
+            'full_refund' => $isFullRefund,
         ]);
+
+        if ($isFullRefund) {
+            $this->voidReadingForFullRefund($reading, 'webhook charge.refunded');
+        } elseif ($refundedAmount > 0) {
+            $this->flagForManualReview($reading, 'partial_refund', [
+                'source' => 'webhook charge.refunded',
+                'charge_id' => $charge['id'] ?? null,
+                'amount' => round($refundedAmount / 100, 2),
+                'charge_amount' => round($chargeAmount / 100, 2),
+            ]);
+        }
 
         return [
             'handled' => true,
             'reading_id' => $reading->id,
             'action' => 'refunded',
         ];
+    }
+
+    /**
+     * ⚖️ (F12) Charge dispute — ลูกค้าโต้แย้งรายการกับธนาคาร
+     *
+     * ผลยังไม่สิ้นสุด (อาจชนะ/แพ้) → ห้ามยกเลิกบิลหรือดึงค่าแนะนำคืนอัตโนมัติ
+     * บันทึกลงบิล + แจ้งแอดมินในระบบให้ตรวจและตัดสินใจเอง (กด void ด้วยมือถ้าแพ้)
+     */
+    protected function onChargeDispute(string $type, array $dispute): array
+    {
+        $paymentIntentId = $dispute['payment_intent'] ?? null;
+        $reading = $paymentIntentId
+            ? FortuneReading::where('stripe_payment_intent_id', $paymentIntentId)->first()
+            : null;
+
+        if (! $reading) {
+            Log::warning('FortuneStripeService: dispute — ไม่พบบิล', [
+                'type' => $type,
+                'dispute_id' => $dispute['id'] ?? null,
+                'payment_intent_id' => $paymentIntentId,
+            ]);
+
+            return ['handled' => false, 'error' => 'reading not found'];
+        }
+
+        $this->flagForManualReview($reading, 'dispute', [
+            'source' => 'webhook '.$type,
+            'dispute_id' => $dispute['id'] ?? null,
+            'charge_id' => $dispute['charge'] ?? null,
+            'amount' => round(((int) ($dispute['amount'] ?? 0)) / 100, 2),
+            'status' => $dispute['status'] ?? null,
+            'reason' => $dispute['reason'] ?? null,
+        ]);
+
+        return [
+            'handled' => true,
+            'reading_id' => $reading->id,
+            'action' => 'dispute_flagged',
+        ];
+    }
+
+    /**
+     * 💸 (F12) คืนเงินบัตรเต็มจำนวน → ยกเลิกการอนุมัติบิลด้วย voidApproval() ตัวเดียวกับแอดมิน
+     *
+     * ดึงค่าแนะนำคืนเหมือน void ด้วยมือทุกอย่าง · เรียกซ้ำได้ (บิลถูกยกเลิกไปแล้ว = ok false ไม่ทำซ้ำ)
+     * ใช้ทั้งจาก webhook charge.refunded และปุ่มคืนเงินหลังบ้าน (Admin\FortuneBillingController::stripeRefund)
+     *
+     * 🔁 กันดึงคืนซ้ำ: จำ payment_intent ที่คืนเต็มแล้วใน conversation_state.stripe_full_refund_handled_pis
+     *   เดิมพึ่ง is_paid อย่างเดียว → แอดมินอนุมัติบิลใหม่ (ลูกค้าจ่าย QR) แล้ว Stripe ส่ง event คืนเงินเดิมซ้ำ
+     *   = void + ดึงค่าแนะนำรอบสองทั้งที่เงินรอบใหม่ไม่ได้ถูกคืน
+     * ⏳ งาน AI กำลังสร้าง/ส่งคำทำนายอยู่: ยัง void ตามเดิม (เงินคืนไปแล้ว) แต่บันทึกให้แอดมินตรวจ
+     *   เพราะ job อาจเขียน conversation_state ชุดเก่าทับ (ธง approval_voided หาย) และลูกค้าอาจยังได้คำทำนาย
+     *
+     * @param  string  $source  มาจากไหน (บันทึกในเหตุผลของการยกเลิก)
+     * @param  int|null  $adminId  แอดมินที่กดคืนเงิน (null = มาจาก Stripe)
+     * @return array{ok: bool, message?: string, reverted: array, warnings: array}
+     */
+    public function voidReadingForFullRefund(FortuneReading $reading, string $source, ?int $adminId = null): array
+    {
+        $paymentIntentId = (string) ($reading->stripe_payment_intent_id ?? '');
+        $handled = (array) ((FortuneReading::whereKey($reading->id)->first()?->conversation_state ?? [])['stripe_full_refund_handled_pis'] ?? []);
+        if ($paymentIntentId !== '' && in_array($paymentIntentId, $handled, true)) {
+            Log::info('FortuneStripeService: คืนเงินเต็มจำนวนของ payment_intent นี้จัดการไปแล้ว — ไม่ void/ดึงคืนซ้ำ', [
+                'reading_id' => $reading->id,
+                'payment_intent_id' => $paymentIntentId,
+                'source' => $source,
+            ]);
+
+            return ['ok' => false, 'message' => 'คืนเงินรายการนี้จัดการไปแล้ว', 'reverted' => [], 'warnings' => []];
+        }
+
+        $generationInFlight = \App\Services\AdminApp\StuckReadingFinder::generationInFlight($reading);
+
+        try {
+            $result = $reading->voidApproval("คืนเงินบัตร Stripe เต็มจำนวน ({$source})", $adminId);
+        } catch (\Throwable $e) {
+            Log::error('FortuneStripeService: void หลังคืนเงินเต็มจำนวนล้มเหลว — ต้อง void ด้วยมือ', [
+                'reading_id' => $reading->id,
+                'source' => $source,
+                'error' => $e->getMessage(),
+            ]);
+            $this->flagForManualReview($reading, 'full_refund_void_failed', ['source' => $source]);
+
+            return ['ok' => false, 'message' => 'void ไม่สำเร็จ', 'reverted' => [], 'warnings' => []];
+        }
+
+        // จำว่า payment_intent นี้คืนเต็มแล้ว (ทั้งกรณี void สำเร็จ และบิลถูกยกเลิกไปก่อนแล้ว)
+        if ($paymentIntentId !== '') {
+            $this->rememberFullRefundHandled($reading, $paymentIntentId);
+        }
+
+        if ($generationInFlight) {
+            $this->flagForManualReview($reading, 'full_refund_during_generation', [
+                'source' => $source,
+                'payment_intent_id' => $paymentIntentId ?: null,
+            ]);
+        }
+
+        if ($result['ok'] ?? false) {
+            Log::warning('FortuneStripeService: คืนเงินเต็มจำนวน → ยกเลิกการอนุมัติบิลแล้ว', [
+                'reading_id' => $reading->id,
+                'source' => $source,
+                'reverted' => $result['reverted'] ?? [],
+                'warnings' => $result['warnings'] ?? [],
+            ]);
+        } else {
+            // บิลถูกยกเลิกไปแล้ว (event ซ้ำ / ปุ่ม + webhook) — ไม่ดึงคืนซ้ำ
+            Log::info('FortuneStripeService: คืนเงินเต็มจำนวน — บิลไม่ได้อยู่ในสถานะจ่ายแล้ว ข้าม', [
+                'reading_id' => $reading->id,
+                'source' => $source,
+                'message' => $result['message'] ?? null,
+            ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 🔁 (F12) จำ payment_intent ที่คืนเงินเต็มจำนวนแล้ว — event คืนเงินเดิมที่มาซ้ำทีหลังจะไม่ void ซ้ำ
+     */
+    protected function rememberFullRefundHandled(FortuneReading $reading, string $paymentIntentId): void
+    {
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($reading, $paymentIntentId) {
+                $locked = FortuneReading::whereKey($reading->id)->lockForUpdate()->first();
+                if (! $locked) {
+                    return;
+                }
+
+                $state = is_array($locked->conversation_state) ? $locked->conversation_state : [];
+                $pis = is_array($state['stripe_full_refund_handled_pis'] ?? null) ? $state['stripe_full_refund_handled_pis'] : [];
+                if (in_array($paymentIntentId, $pis, true)) {
+                    return;
+                }
+
+                $pis[] = $paymentIntentId;
+                $state['stripe_full_refund_handled_pis'] = $pis;
+                $locked->update(['conversation_state' => $state]);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('FortuneStripeService: บันทึก payment_intent ที่คืนเงินแล้วไม่สำเร็จ (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 📝 (F12) บันทึกเคสคืนเงินบางส่วน/โต้แย้งไว้ในบิล + แจ้งแอดมินในระบบ (ไม่ส่ง LINE)
+     *
+     * เก็บใน conversation_state.stripe_refund_reviews · event เดิมซ้ำ (key เดียวกัน) ไม่บันทึกและไม่แจ้งซ้ำ
+     *
+     * @param  string  $kind  partial_refund | dispute | full_refund_void_failed | full_refund_during_generation
+     * @param  array<string, mixed>  $details
+     */
+    public function flagForManualReview(FortuneReading $reading, string $kind, array $details = []): void
+    {
+        $key = implode(':', array_filter([
+            $kind,
+            $details['dispute_id'] ?? $details['charge_id'] ?? $details['refund_id'] ?? null,
+            $details['status'] ?? null,
+            isset($details['amount']) ? (string) $details['amount'] : null,
+        ], fn ($v) => $v !== null && $v !== ''));
+
+        $recorded = \Illuminate\Support\Facades\DB::transaction(function () use ($reading, $kind, $details, $key) {
+            $locked = FortuneReading::whereKey($reading->id)->lockForUpdate()->first();
+            if (! $locked) {
+                return false;
+            }
+
+            $state = is_array($locked->conversation_state) ? $locked->conversation_state : [];
+            $reviews = is_array($state['stripe_refund_reviews'] ?? null) ? $state['stripe_refund_reviews'] : [];
+            foreach ($reviews as $r) {
+                if (($r['key'] ?? null) === $key) {
+                    return false;
+                }
+            }
+
+            $reviews[] = array_merge($details, [
+                'key' => $key,
+                'kind' => $kind,
+                'recorded_at' => now()->toIso8601String(),
+            ]);
+            $state['stripe_refund_reviews'] = $reviews;
+            $locked->update(['conversation_state' => $state]);
+
+            return true;
+        });
+
+        if (! $recorded) {
+            return;
+        }
+
+        Log::warning('FortuneStripeService: ต้องให้แอดมินตรวจ (ไม่ยกเลิกบิลอัตโนมัติ)', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'kind' => $kind,
+            'details' => $details,
+        ]);
+
+        try {
+            app(\App\Services\NotificationService::class)->notifyAdminFortuneStripeReview($reading, $kind, $details);
+        } catch (\Throwable $e) {
+            Log::warning('FortuneStripeService: แจ้งแอดมินไม่สำเร็จ (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -67,6 +67,12 @@ class FortuneReferral extends Model
 
     public const STATUS_EXPIRED = 'expired';
 
+    /**
+     * 🗓️ (F15/M11) ระยะผูกผู้เชิญ นับจากเวลาที่เพื่อนกดลิงก์ (followed_at)
+     *   เดิมหมดอายุ 24 ชม. นับจากตอนสร้างลิงก์ → เพื่อนที่กดทันแต่จ่ายวันถัดไปไปลงใต้ผู้ดูแลถาวร
+     */
+    public const ATTRIBUTION_WINDOW_DAYS = 30;
+
     // ============================
     // Relationships
     // ============================
@@ -183,10 +189,15 @@ class FortuneReferral extends Model
      */
     public function markAsFollowed(string $lineUserId): void
     {
+        // 🗓️ (F15) ยืดวันหมดอายุเป็น followed_at + 30 วัน — ลิงก์ยังต้องกดภายใน 24 ชม. หลังสร้างเหมือนเดิม
+        //   แต่เมื่อกดทันแล้ว เพื่อนมีเวลา 30 วันในการจ่ายบิลแรกโดยยังผูกกับผู้เชิญ
+        $followedAt = now();
+
         $this->update([
             'referred_line_user_id' => $lineUserId,
             'status' => self::STATUS_FOLLOWED,
-            'followed_at' => now(),
+            'followed_at' => $followedAt,
+            'expires_at' => $followedAt->copy()->addDays(self::ATTRIBUTION_WINDOW_DAYS),
         ]);
     }
 

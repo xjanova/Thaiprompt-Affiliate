@@ -536,7 +536,25 @@ class FortuneBillingController extends Controller
             'reason' => $validated['reason'],
         ]);
 
-        return back()->with('success', "Refund สำเร็จ: {$result['amount']} บาท (refund_id: {$result['refund_id']})");
+        // 💸 (F12) คืนเต็มจำนวน (ไม่ระบุยอด หรือยอด ≥ ที่ลูกค้าจ่าย) → ยกเลิกการอนุมัติบิลทางเดียวกับปุ่ม void
+        //   = ดึงค่าแนะนำคืนเหมือน void ด้วยมือ · webhook charge.refunded ที่ตามมาจะเห็นว่ายกเลิกแล้ว ไม่ดึงซ้ำ
+        //   คืนบางส่วน → ไม่ยกเลิกอัตโนมัติ บันทึกให้แอดมินตรวจเอง
+        $requested = $validated['amount'] ?? null;
+        $isFullRefund = $requested === null || (float) $requested >= (float) $reading->amount_paid;
+        if ($isFullRefund) {
+            $void = $service->voidReadingForFullRefund($reading, 'ปุ่มคืนเงินหลังบ้าน', auth()->id());
+            $voidNote = ($void['ok'] ?? false) ? ' — ยกเลิกการอนุมัติบิลและดึงค่าแนะนำคืนแล้ว' : '';
+        } else {
+            $service->flagForManualReview($reading, 'partial_refund', [
+                'source' => 'admin',
+                'refund_id' => $result['refund_id'] ?? null,
+                'amount' => (float) ($result['amount'] ?? $requested),
+                'charge_amount' => (float) $reading->amount_paid,
+            ]);
+            $voidNote = ' — คืนบางส่วน ระบบไม่ได้ยกเลิกบิล/ดึงค่าแนะนำคืน กรุณาตรวจเอง';
+        }
+
+        return back()->with('success', "Refund สำเร็จ: {$result['amount']} บาท (refund_id: {$result['refund_id']}){$voidNote}");
     }
 
     /**
