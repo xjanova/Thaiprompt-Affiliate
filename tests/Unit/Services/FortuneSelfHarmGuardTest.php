@@ -93,15 +93,16 @@ class FortuneSelfHarmGuardTest extends TestCase
         $this->assertSame('off_topic_violence', FortuneAIService::detectAdversarialInput('อยากฆ่าคน'));
     }
 
-    public function test_self_harm_reply_is_caring_with_hotline_and_keeps_the_door_open(): void
+    public function test_self_harm_reply_is_gentle_comfort_without_sending_them_to_call_anyone(): void
     {
         $reply = FortuneAIService::buildAdversarialReply('self_harm');
 
-        $this->assertStringContainsString('สายด่วนใจ 1323', $reply);
         $this->assertStringNotContainsString('สุขภาพจิต', $reply, 'กฎเจ้าของ: ห้ามคำที่ตราหน้าว่าป่วย (rule_no_mental_illness_labeling)');
-        $this->assertStringContainsString('ศูนย์ช่วยเหลือสังคม 1300', $reply);
-        $this->assertStringContainsString('1669', $reply, 'อยู่ในอันตรายตอนนี้ต้องรู้เบอร์ฉุกเฉิน');
-        $this->assertStringContainsString('24 ชม.', $reply);
+        // 🫂 กฎเจ้าของ (2026-11-04): "อย่าไล่เขาไปโทรหาใคร อย่ารู้ดี ปลอบเบาๆ ก็พอ"
+        foreach (['1323', '1300', '1669', 'โทร', 'สายด่วน', 'ควร'] as $pushy) {
+            $this->assertStringNotContainsString($pushy, $reply, "ห้ามไล่ไปโทรหาใครหรือสั่งสอน ({$pushy})");
+        }
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply);
         $this->assertStringContainsString('พิมพ์มาได้เลย', $reply, 'ต้องชวนคุยต่อ ไม่ตัดบท');
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
         foreach (['ดูดวง', 'เปิดไพ่', 'ไพ่', 'ราคา', 'บาท', '[OFFER', '[[OFFER'] as $sales) {

@@ -876,8 +876,8 @@ class JuntraServerChatApiTest extends TestCase
             $res->assertJsonPath('data.offer_topic', null)->assertJsonPath('data.persona', $persona);
             $this->assertNotSame('offer', $res->json('data.kind'), $persona);
             $reply = $res->json('data.reply');
-            $this->assertStringContainsString('1323', $reply, $persona);
-            $this->assertStringContainsString('1300', $reply, $persona);
+            $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply, $persona);
+            $this->assertStringNotContainsString('1323', $reply, "{$persona}: ห้ามไล่ไปโทรหาใคร");
             $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply, $persona);
             $this->assertStringNotContainsString('[[', $reply, $persona);
             $this->assertSame($callsBefore, count($this->aiCalls), "ห้องนี้ ({$persona}) ห้ามส่งข้อความวิกฤตไปให้ AI");
@@ -897,7 +897,8 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('[[', $res->json('data.reply'));
         $call = end($this->aiCalls);
         $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $call['system']);
-        $this->assertStringContainsString('1323', $call['user'], 'AI ต้องเห็นคำตอบสายด่วนในประวัติห้อง');
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $call['user'], 'AI ต้องเห็นคำปลอบในประวัติห้อง');
+        $this->assertStringContainsString('ห้ามไล่ให้ไปโทรหาใคร', $call['system']);
 
         // ห้องอื่นของลูกค้าคนอื่นไม่โดนผลกระทบ
         $other = $this->start('62');

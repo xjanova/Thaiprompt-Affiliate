@@ -25,7 +25,7 @@ use Tests\TestCase;
 /**
  * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้ายตัวเอง — บอทแม่หมอบน FB และ LINE ต้อง
  *
- * - ตอบห่วงใย + สายด่วนใจ 1323 / 1300 (ไม่ใช่ "ไม่ตอบเรื่องแบบนั้น") ไม่ทำนาย ไม่ส่งไปให้ AI
+ * - ปลอบเบา ๆ ไม่ไล่ไปโทรหาใคร (ไม่ใช่ "ไม่ตอบเรื่องแบบนั้น") ไม่ทำนาย ไม่ส่งไปให้ AI
  * - ไม่มีปุ่มชวนดูดวง/ขาย
  * - แจ้งแอดมินทาง Telegram — LINE ต้องตอบด้วย reply เท่านั้น ห้าม push
  */
@@ -146,7 +146,8 @@ class SelfHarmChatReplyTest extends TestCase
         $this->runFlush('facebook', self::FB_UID, 'ไม่ไหวแล้วค่ะ อยากฆ่าตัวตาย');
 
         $sent = $this->sentBodies('graph.facebook.com');
-        $this->assertStringContainsString('1323', $sent, 'ลูกค้า FB ต้องได้สายด่วนใจ');
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $sent, 'ลูกค้า FB ต้องได้คำปลอบ');
+        $this->assertStringNotContainsString('1323', $sent, 'ห้ามไล่ไปโทรหาใคร');
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $sent);
         $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มดูดวง/ปุ่มขาย');
         $this->assertStringNotContainsString('START_FORTUNE', $sent);
@@ -169,7 +170,7 @@ class SelfHarmChatReplyTest extends TestCase
         $this->runFlush('line', self::LINE_UID, 'I want to kill myself');
 
         $reply = $this->sentBodies('/message/reply');
-        $this->assertStringContainsString('1323', $reply);
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply);
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
         $this->assertStringNotContainsString('quickReply', $reply, 'ห้ามมี quick reply ดูดวง');
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
@@ -192,9 +193,9 @@ class SelfHarmChatReplyTest extends TestCase
 
         $this->assertSame('crisis_support', $fb['action']);
         $this->assertSame('crisis_support', $line['action']);
-        $this->assertStringContainsString('1323', $this->sentBodies('graph.facebook.com'));
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
         $this->assertStringNotContainsString('quick_replies', $this->sentBodies('graph.facebook.com'));
-        $this->assertStringContainsString('1323', $this->sentBodies('/message/reply'));
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('/message/reply'));
         $this->assertStringNotContainsString('quickReply', $this->sentBodies('/message/reply'));
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
         $this->assertSame([], $this->aiCalls);
@@ -221,7 +222,7 @@ class SelfHarmChatReplyTest extends TestCase
             ->processMessage('line', self::LINE_UID, 'ไม่อยากอยู่แล้ว', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-fresh']);
 
         $this->assertSame('crisis_support', $result['action']);
-        $this->assertStringContainsString('1323', $this->sentBodies('/message/reply'));
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('/message/reply'));
         $this->assertSame(FortuneReading::STATUS_PAID, $reading->fresh()->conversation_status, 'ห้ามแตะสถานะคำทำนายที่จ่ายแล้ว');
     }
 
@@ -234,7 +235,7 @@ class SelfHarmChatReplyTest extends TestCase
 
         $this->runFlush('facebook', self::FB_UID, 'อยากตาย');
 
-        $this->assertStringContainsString('1323', $this->sentBodies('graph.facebook.com'));
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
         $this->assertNull($persona->fresh()->chat_silenced_until, 'คนวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป');
     }
 
@@ -245,7 +246,7 @@ class SelfHarmChatReplyTest extends TestCase
         $this->runFlush('facebook', self::FB_UID, 'อยากตาย');
         $this->runFlush('facebook', self::FB_UID, 'ไม่อยากอยู่แล้ว');
 
-        $this->assertSame(2, substr_count($this->sentBodies('graph.facebook.com'), '1323'), 'ทุกข้อความต้องได้คำตอบ ไม่ตัดบท');
+        $this->assertSame(2, substr_count($this->sentBodies('graph.facebook.com'), 'อยู่ฟังตรงนี้'), 'ทุกข้อความต้องได้คำตอบ ไม่ตัดบท');
         $this->assertCount(1, $this->adminAlerts(), 'คนเดิมแจ้งแอดมินครั้งเดียวใน 6 ชม.');
     }
 
