@@ -2577,6 +2577,28 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/sample', [$cv, 'sample'])->middleware('throttle:30,1')->name('sample');
         Route::get('/clips/{clip}', [$cv, 'clipStatus'])->name('clips.show');
         Route::post('/select', [$cv, 'select'])->name('select');
+
+        // 🎭 (2026-11-04) ตัวละคร (เพิ่มสำหรับห้องใหม่ได้) + คลังบทพูด/สร้างเสียง + ตารางคลิปทั้งหมด
+        $vl = \App\Http\Controllers\Admin\FortuneVoiceLibraryController::class;
+        Route::get('/characters', [$vl, 'characters'])->name('characters');
+        Route::post('/characters', [$vl, 'storeCharacter'])->name('characters.store');
+        Route::put('/characters/{character}', [$vl, 'updateCharacter'])->name('characters.update');
+        Route::delete('/characters/{character}', [$vl, 'destroyCharacter'])->name('characters.destroy');
+        Route::get('/library', [$vl, 'library'])->name('library');
+        Route::post('/library/lines', [$vl, 'storeLine'])->name('library.lines.store');
+        Route::put('/library/lines/{line}', [$vl, 'updateLine'])->name('library.lines.update');
+        Route::delete('/library/lines/{line}', [$vl, 'destroyLine'])->name('library.lines.destroy');
+        // สร้างเสียงสั่งงานที่เสียเครดิต — หน้าเว็บยิงทีละบรรทัด ("สร้างทั้งหมด" = วนทีละตัว)
+        Route::post('/library/lines/{line}/generate', [$vl, 'generateLine'])->middleware('throttle:60,1')->name('library.lines.generate');
+        Route::get('/all-clips', [$vl, 'clips'])->name('clips.index');
+        Route::delete('/all-clips', [$vl, 'destroyClips'])->name('clips.destroy');
+
+        // 🎬 (2026-11-04) เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) — กุญแจ/เพดานเดือน/เสียงต่อห้อง
+        $fv = \App\Http\Controllers\Admin\FortuneFreeVoiceController::class;
+        Route::put('/google', [$fv, 'update'])->name('google.update');
+        Route::delete('/google/key', [$fv, 'deleteKey'])->name('google.key.delete');
+        Route::post('/google/test', [$fv, 'test'])->middleware('throttle:20,1')->name('google.test');
+        Route::post('/google/sample', [$fv, 'sample'])->middleware('throttle:20,1')->name('google.sample');
     });
 
     // AI Playground - ทดสอบสนทนากับ AI

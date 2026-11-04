@@ -150,6 +150,11 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
      * 🎧 (2026-11-04) สำเนาที่ใช้โมเดลอื่นแทนค่าที่บันทึกไว้ — หน้าจูนเสียงลองฟังโมเดลที่เลือกได้ก่อนกดบันทึก
      * ผู้เรียกต้องตรวจเองว่าโมเดลนี้มีในบัญชีและพูดไทยได้
      */
+    public function hasModelOverride(): bool
+    {
+        return $this->modelOverride !== null;
+    }
+
     public function withModel(string $model): static
     {
         $copy = clone $this;

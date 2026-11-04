@@ -3762,6 +3762,51 @@ PROMPT;
         return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
     }
 
+    /** 🎬 (2026-11-04) กุญแจ Google Cloud Text-to-Speech ของเสียงอ่านคำทำนายฟรี — ตาราง settings เหมือน ElevenLabs */
+    public const GOOGLE_TTS_KEY_SETTING = 'fortune_google_tts_api_key';
+
+    /** กุญแจ Google TTS ที่แอดมินกรอก (ถอดรหัสไม่ได้/ไม่มีตาราง = ยังไม่ได้ตั้ง) */
+    public function getGoogleTtsApiKey(): ?string
+    {
+        try {
+            $stored = Setting::get(self::GOOGLE_TTS_KEY_SETTING);
+            $key = is_string($stored) && $stored !== '' ? Crypt::decryptString($stored) : '';
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = trim($key);
+
+        return $key !== '' ? $key : null;
+    }
+
+    /** บันทึก/ลบ กุญแจ Google TTS (null = ลบ) */
+    public function setGoogleTtsApiKey(?string $key): void
+    {
+        $key = $key !== null ? trim($key) : '';
+
+        if ($key === '') {
+            Setting::where('key', self::GOOGLE_TTS_KEY_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::GOOGLE_TTS_KEY_SETTING, Crypt::encryptString($key), 'encrypted', 'fortune_voice');
+    }
+
+    /** กุญแจ Google แบบปิดบัง เช่น "AIza••••••••x9Qk" */
+    public function getGoogleTtsApiKeyMasked(): ?string
+    {
+        $key = $this->getGoogleTtsApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'AIza') ? 'AIza' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
     /**
      * โมเดลเสียง ElevenLabs ที่แอดมินตั้ง (null = ใช้ค่าเริ่มต้นของ provider)
      */

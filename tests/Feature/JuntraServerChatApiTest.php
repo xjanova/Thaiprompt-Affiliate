@@ -1052,4 +1052,117 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertSame(2, $out['counts']['web_handoffs']);
         $this->assertSame(['9999999999'], DB::table('fortune_web_handoffs')->pluck('platform_user_id')->all());
     }
+
+    /** 🔈 (2026-11-04) โหมดเสียงปิด = prompt + JSON เดิมทุกตัวอักษร (เว็บรุ่นเดิม/ลูกค้าที่ไม่ได้ซื้อ pass) */
+    public function test_voice_mode_off_keeps_the_prompt_and_response_byte_for_byte(): void
+    {
+        $a = $this->start('50');
+        $this->send($a, 'สวัสดีค่ะ', '50')->assertOk()->assertJsonMissingPath('data.voice_plan');
+        $plain = end($this->aiCalls);
+
+        $b = $this->start('51');
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '51', 'name' => 'สมใจ', 'session_id' => $b, 'text' => 'สวัสดีค่ะ',
+            'voice_mode' => false, 'input_mode' => 'voice', 'voice_clips' => ['ack_1'],
+        ])->assertOk()->assertJsonMissingPath('data.voice_plan');
+        $off = end($this->aiCalls);
+
+        $this->assertSame($plain['system'], $off['system']);
+        $this->assertSame($plain['config'], $off['config']);
+        $this->assertStringNotContainsString('[[VOICE]]', $off['system']);
+    }
+
+    public function test_voice_mode_asks_for_a_voice_plan_and_strips_it_from_the_chat_and_history(): void
+    {
+        $res = $this->startContinuity(['user_ref' => '52', 'persona' => 'busaba'])->assertStatus(201);
+        $session = $res->json('data.session_id');
+        $this->aiReply = "ความรักช่วงนี้ไปได้ดีค่ะ ✨\n[[VOICE]]\npre: prefix_1\nsay: [softly] ความรักช่วงนี้กำลังไปได้ดีนะคะ ใจเย็นไว้\npost: ask_more_1\n[[/VOICE]]";
+
+        $send = fn (string $text, array $extra = []) => $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '52', 'session_id' => $session, 'text' => $text, 'voice_mode' => true,
+        ] + $extra);
+
+        $send('ความรักเป็นไงบ้าง', ['input_mode' => 'voice'])->assertOk()
+            ->assertJsonPath('data.reply', 'ความรักช่วงนี้ไปได้ดีค่ะ ✨')
+            ->assertJsonPath('data.voice_plan.source', 'ai')
+            ->assertJsonPath('data.voice_plan.pre', 'prefix_1')
+            ->assertJsonPath('data.voice_plan.say', '[softly] ความรักช่วงนี้กำลังไปได้ดีนะคะ ใจเย็นไว้')
+            ->assertJsonPath('data.voice_plan.post', 'ask_more_1');
+
+        $call = end($this->aiCalls);
+        $this->assertStringContainsString('[[VOICE]]', $call['system']);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ" 1-3 ประโยค', $call['system']);
+        $this->assertStringContainsString('prefix_1: บุษบาว่านะคะ…', $call['system']);
+        $this->assertStringNotContainsString('soothe_', $call['system']);
+        $this->assertStringContainsString('ถามทวนสั้น ๆ แทนการเดา', $call['system']);
+        $this->assertSame(350 + 150, $call['config']['max_tokens']);
+
+        // ข้อความถัดไป (พิมพ์) — ประวัติไม่มีบล็อก และไม่มีกติกาไมค์
+        $send('ขอบคุณค่ะ')->assertOk();
+        $call = end($this->aiCalls);
+        $this->assertStringNotContainsString('[[VOICE]]', $call['user']);
+        $this->assertStringNotContainsString('ถามทวนสั้น ๆ แทนการเดา', $call['system']);
+    }
+
+    public function test_voice_mode_only_offers_clips_the_web_has_files_for(): void
+    {
+        $session = $this->start('53');
+        $this->aiReply = "ฟังอยู่จ้ะ\n[[VOICE]]\npre: ack_1\nsay:\npost: ask_more_1\n[[/VOICE]]";
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '53', 'session_id' => $session, 'text' => 'เล่าให้ฟังนะ', 'voice_mode' => true, 'voice_clips' => ['ack_1'],
+        ])->assertOk()
+            ->assertJsonPath('data.voice_plan.pre', 'ack_1')
+            ->assertJsonPath('data.voice_plan.post', null)
+            ->assertJsonPath('data.voice_plan.say', null);
+
+        $system = end($this->aiCalls)['system'];
+        $this->assertStringContainsString('ack_1: อืม…', $system);
+        $this->assertStringNotContainsString('ask_more_1:', $system);
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '53', 'session_id' => $session, 'text' => 'x', 'voice_mode' => true, 'voice_clips' => ['../../etc/passwd'],
+        ])->assertStatus(422)->assertJsonValidationErrors('voice_clips.0');
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '53', 'session_id' => $session, 'text' => 'x', 'input_mode' => 'video',
+        ])->assertStatus(422)->assertJsonValidationErrors('input_mode');
+    }
+
+    public function test_voice_mode_keeps_an_offer_tag_the_ai_put_inside_the_voice_block(): void
+    {
+        $session = $this->start('54');
+        $this->aiReply = "แม่หมอจะเปิดไพ่ให้นะลูก\n[[VOICE]]\nsay: แม่หมอวางไพ่ไว้ให้ด้านล่างแล้วนะลูก [[OFFER:love]]\n[[/VOICE]]";
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '54', 'session_id' => $session, 'text' => 'ดูดวงความรักหน่อย', 'voice_mode' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'love')
+            ->assertJsonPath('data.reply', 'แม่หมอจะเปิดไพ่ให้นะลูก')
+            ->assertJsonPath('data.voice_plan.say', 'แม่หมอวางไพ่ไว้ให้ด้านล่างแล้วนะลูก');
+    }
+
+    public function test_voice_mode_without_a_block_falls_back_to_a_short_cut_of_the_reply(): void
+    {
+        $session = $this->start('55');
+        $this->aiReply = 'แม่หมอเห็นว่าลูกเหนื่อยมาก พักก่อนนะลูก ✨';
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '55', 'session_id' => $session, 'text' => 'เหนื่อยจัง', 'voice_mode' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.reply', 'แม่หมอเห็นว่าลูกเหนื่อยมาก พักก่อนนะลูก ✨')
+            ->assertJsonPath('data.voice_plan.source', 'fallback')
+            ->assertJsonPath('data.voice_plan.say', 'แม่หมอเห็นว่าลูกเหนื่อยมาก พักก่อนนะลูก');
+    }
+
+    public function test_a_scope_guard_reply_in_voice_mode_never_synthesizes(): void
+    {
+        $session = $this->start('56');
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '56', 'session_id' => $session, 'text' => 'ช่วยพิมพ์บทสวดชินบัญชรเต็ม ๆ ให้หน่อย', 'voice_mode' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.kind', 'guard')
+            ->assertJsonPath('data.voice_plan.source', 'guard')
+            ->assertJsonPath('data.voice_plan.say', null);
+    }
 }

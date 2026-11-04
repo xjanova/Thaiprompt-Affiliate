@@ -32,12 +32,14 @@
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wide">หลังบ้าน · ระบบดูดวง · จัดการเสียง</div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">🎭 เสียงพากย์ตัวละคร</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย · ElevenLabs v3 (ต่อตรงด้วย key ของเรา) ·
+                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย และตัวละครที่เพิ่มเอง · ElevenLabs (ต่อตรงด้วย key ของเรา) ·
                 สร้างเสียงเฉพาะตอนมีคนกดฟัง แล้วเก็บไฟล์ไว้ใช้ซ้ำ
             </p>
         </div>
         <a href="{{ route('admin.fortune.voice.index') }}" class="tp-btn">← จัดการเสียง</a>
     </div>
+
+    @include('admin.fortune.character-voices._tabs')
 
     {{-- Flash --}}
     @if(session('success'))
@@ -207,6 +209,9 @@
             </div>
         @endif
     </div>
+
+    {{-- ════════════════ เสียงอ่านฟรี (Google Cloud) ════════════════ --}}
+    @include('admin.fortune.character-voices._google-free-voice', ['free' => $freeVoice])
 
     {{-- ════════════════ ตัวละคร ════════════════ --}}
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">

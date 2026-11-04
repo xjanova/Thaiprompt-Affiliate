@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneVoiceCharacter;
+use App\Models\FortuneVoiceLine;
 use App\Models\Setting;
 use App\Services\Fortune\FortuneCharacterVoiceService;
+use App\Services\Fortune\JuntraVoiceLibrary;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use App\Services\Tts\XDreamerTtsProvider;
 use Illuminate\Database\Schema\Blueprint;
@@ -49,6 +52,8 @@ class FortuneCharacterVoiceTest extends TestCase
 
         $this->buildJuntraServerSchema();
         (require database_path('migrations/2026_11_03_100000_create_fortune_character_voices.php'))->up();
+        // ตัวละคร + คลังบท (2026-11-04) — เทสต์เดิมทั้งไฟล์ต้องผ่านเมื่อมีตารางนี้ด้วย
+        (require database_path('migrations/2026_11_04_150000_create_fortune_voice_characters_and_lines.php'))->up();
         // ตาราง key/value ที่เก็บ key ElevenLabs (สคีมาเดียวกับของจริง)
         if (! Schema::hasTable('settings')) {
             Schema::create('settings', function (Blueprint $table) {
@@ -151,6 +156,25 @@ class FortuneCharacterVoiceTest extends TestCase
     {
         $client = app(ClientRepository::class)->create(null, 'Juntra Chantra SSO', 'https://xn--82c4af5bzdj.online/auth/thaiprompt/callback', 'oauth_users');
         Passport::actingAsClient($client, [], 'api-oauth');
+    }
+
+    /** เปิดหน้าแอดมินในเทสต์ — ข้าม middleware + layout เปล่า (layout จริงต้องใช้ตารางอีกหลายสิบตัว) */
+    private function asAdminWithBareLayout(): void
+    {
+        $this->withoutMiddleware();
+        // withoutMiddleware() ปิด SubstituteBindings ด้วย → {character}/{line} จะได้โมเดลเปล่า — ผูกโมเดลจาก route เองตอนจับคู่ได้
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Routing\Events\RouteMatched::class, function ($event) {
+            app('router')->substituteBindings($event->route);
+            app('router')->substituteImplicitBindings($event->route);
+        });
+        // ตาราง users ของเทสต์นี้มีแค่คอลัมน์ที่ใช้ — ล็อกอินด้วย user ที่ไม่บันทึกลง DB
+        $this->actingAs((new \App\Models\User)->forceFill(['id' => 1, 'name' => 'แอดมิน', 'email' => 'admin@example.test', 'role' => 'admin']));
+        view()->share('errors', new \Illuminate\Support\ViewErrorBag); // withoutMiddleware() ปิดตัวแชร์ $errors ด้วย
+        $layouts = sys_get_temp_dir().'/cv-layout-'.getmypid();
+        @mkdir($layouts.'/layouts', 0777, true);
+        file_put_contents($layouts.'/layouts/admin-v4.blade.php', "@yield('content')\n@stack('scripts')");
+        \Illuminate\Support\Facades\View::getFinder()->prependLocation($layouts);
+        \Illuminate\Support\Facades\View::getFinder()->flush();
     }
 
     // ───────────────────────────── key ─────────────────────────────
@@ -706,18 +730,9 @@ class FortuneCharacterVoiceTest extends TestCase
 
     public function test_settings_page_shows_cost_per_model_and_dropdown_drives_tuning_badges(): void
     {
-        $this->withoutMiddleware();
         $this->setKey();
         $this->setModel('eleven_v4');
-        // ตาราง users ของเทสต์นี้มีแค่คอลัมน์ที่ใช้ — ล็อกอินด้วย user ที่ไม่บันทึกลง DB
-        $this->actingAs((new \App\Models\User)->forceFill(['id' => 1, 'name' => 'แอดมิน', 'email' => 'admin@example.test', 'role' => 'admin']));
-        view()->share('errors', new \Illuminate\Support\ViewErrorBag); // withoutMiddleware() ปิดตัวแชร์ $errors ด้วย
-        // layout จริง (topbar/กระเป๋าเงิน/เมนู) ต้องใช้ตารางอีกหลายสิบตัว — สลับเป็น layout เปล่าที่แสดงแค่เนื้อหาหน้า
-        $layouts = sys_get_temp_dir().'/cv-layout-'.getmypid();
-        @mkdir($layouts.'/layouts', 0777, true);
-        file_put_contents($layouts.'/layouts/admin-v4.blade.php', "@yield('content')\n@stack('scripts')");
-        \Illuminate\Support\Facades\View::getFinder()->prependLocation($layouts);
-        \Illuminate\Support\Facades\View::getFinder()->flush();
+        $this->asAdminWithBareLayout();
 
         $html = $this->get('/admin/fortune/character-voices')->assertOk()->getContent();
 
@@ -829,5 +844,152 @@ class FortuneCharacterVoiceTest extends TestCase
         $this->assertFileExists($out);
         $this->assertSame('Z3R5wn05IrDiVCyEkUrK', $result['voice_used']);
         @unlink($out);
+    }
+
+    // ─────────────────── ตัวละคร + คลังบทพูด + ตารางคลิป (2026-11-04) ───────────────────
+
+    public function test_migration_seeds_builtin_characters_and_library_lines(): void
+    {
+        $this->assertSame(['maemor', 'busaba', 'kunsai'], array_keys(FortuneCharacterVoiceService::personas()));
+        $this->assertTrue(FortuneCharacterVoiceService::personas()['busaba']['builtin']);
+        $this->assertSame(JuntraVoiceLibrary::DEFAULT_CLIPS['busaba'], JuntraVoiceLibrary::clips('busaba'));
+        $this->assertSame(array_sum(array_map('count', JuntraVoiceLibrary::DEFAULT_CLIPS)), FortuneVoiceLine::count());
+
+        // seed ซ้ำไม่ทับค่าที่แอดมินแก้
+        FortuneVoiceLine::where('persona', 'busaba')->where('line_key', 'ack_1')->first()->update(['script' => '[softly] อือ…']);
+        \App\Support\FortuneVoiceDefaults::seed();
+        $this->assertSame('[softly] อือ…', JuntraVoiceLibrary::clips('busaba')['ack_1']);
+
+        // เสียงที่เลือกไว้ก่อนมีตาราง (คอลัมน์ในค่ากลาง) ยังใช้ได้
+        FortuneTellingSetting::getGlobalSettings()->update(['busaba_voice_id' => 'EXAVITQu4vr4xnSDxMaL']);
+        FortuneTellingSetting::clearSettingsCache();
+        $this->assertSame('EXAVITQu4vr4xnSDxMaL', (new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings()))->voiceFor('busaba'));
+    }
+
+    public function test_admin_adds_a_character_for_a_new_room_with_its_own_voice_and_model(): void
+    {
+        $this->setKey();
+        $this->setModel('eleven_v4');
+        $this->asAdminWithBareLayout();
+        $voice = ElevenLabsTtsProvider::FALLBACK_VOICES[2]['id'];
+
+        $this->post('/admin/fortune/character-voices/characters', [
+            'key' => 'tarot_room', 'label' => 'ยายทองไพ่ยิปซี', 'brief' => 'หญิงวัย 60 ใจดี',
+            'sample_text' => '[softly] มาจ้ะหลาน', 'voice_id' => $voice, 'model' => 'eleven_v4_turbo', 'copy_lines_from' => 'maemor',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertTrue(FortuneCharacterVoiceService::isPersona('tarot_room'));
+        $this->assertSame(FortuneVoiceLine::where('persona', 'maemor')->count(), FortuneVoiceLine::where('persona', 'tarot_room')->count(), 'คัดลอกบทจากแม่หมอ');
+        $this->assertSame(JuntraVoiceLibrary::DEFAULT_CLIPS['maemor']['bye_1'], JuntraVoiceLibrary::clips('tarot_room')['bye_1']);
+
+        // ห้องใหม่ขอเสียง → ใช้เสียงและโมเดลของตัวละครนั้น
+        $result = (new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings()))->request('tarot_room', 'ไพ่ใบนี้บอกว่าดีจ้ะ', 'chat');
+        $this->assertTrue($result['success']);
+        $call = $this->ttsCalls()[0];
+        $this->assertSame('eleven_v4_turbo', $call['body']['model_id']);
+        $this->assertStringContainsString('/v1/text-to-speech/'.$voice, $call['url']);
+
+        // หน้าตัวละคร + คลังของตัวใหม่เปิดได้
+        $this->get('/admin/fortune/character-voices/characters')->assertOk()->assertSee('ยายทองไพ่ยิปซี')->assertSee('tarot_room');
+        $this->get('/admin/fortune/character-voices/library?persona=tarot_room')->assertOk()->assertSee('ยายทองไพ่ยิปซี');
+
+        // รหัสซ้ำ / ผิดรูปแบบ = ไม่สร้าง
+        $this->post('/admin/fortune/character-voices/characters', ['key' => 'tarot_room', 'label' => 'x', 'sample_text' => 'x'])->assertSessionHasErrors('key');
+        $this->post('/admin/fortune/character-voices/characters', ['key' => 'Bad Key!', 'label' => 'x', 'sample_text' => 'x'])->assertSessionHasErrors('key');
+
+        // ลบตัวใหม่ได้ (บทหายด้วย) · ตัวของห้องเดิมลบไม่ได้
+        $tarot = FortuneVoiceCharacter::where('key', 'tarot_room')->first();
+        $this->delete('/admin/fortune/character-voices/characters/'.$tarot->id)->assertSessionHas('success');
+        $this->assertFalse(FortuneCharacterVoiceService::isPersona('tarot_room'));
+        $this->assertSame(0, FortuneVoiceLine::where('persona', 'tarot_room')->count());
+        $this->assertSame(JuntraVoiceLibrary::clips('maemor'), JuntraVoiceLibrary::clips('tarot_room'), 'ตัวที่ลบแล้วถอยไปใช้คลังแม่หมอ');
+
+        $this->flushSession(); // ไม่มี StartSession → error ของคำขอก่อนหน้าค้างใน session
+        $maemor = FortuneVoiceCharacter::where('key', 'maemor')->first();
+        $this->delete('/admin/fortune/character-voices/characters/'.$maemor->id)->assertSessionHas('error');
+        $this->put('/admin/fortune/character-voices/characters/'.$maemor->id, ['label' => 'แม่หมอจันทรา', 'sample_text' => 'สวัสดีจ้ะ', 'is_active' => '0'])->assertSessionHasNoErrors();
+        $this->assertTrue(FortuneCharacterVoiceService::isPersona('maemor'), 'ตัวของห้องเดิมปิดไม่ได้');
+    }
+
+    public function test_library_line_generates_with_the_batch_model_and_voice_and_reuses_the_file(): void
+    {
+        $this->setKey();
+        $this->setModel('eleven_v4');
+        $this->asAdminWithBareLayout();
+        $line = FortuneVoiceLine::where('persona', 'busaba')->where('line_key', 'listen_1')->first();
+        $voice = ElevenLabsTtsProvider::FALLBACK_VOICES[1]['id'];
+
+        $res = $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate", ['model' => 'eleven_v4_turbo', 'voice_id' => $voice])
+            ->assertOk()->assertJsonPath('data.status', 'completed');
+        $this->assertSame('eleven_v4_turbo', $this->ttsCalls()[0]['body']['model_id']);
+        $this->assertStringContainsString('/v1/text-to-speech/'.$voice, $this->ttsCalls()[0]['url']);
+        $this->assertSame($res->json('data.clip_id'), $line->fresh()->clip_id);
+        $this->assertSame('library', FortuneCharacterVoiceClip::find($res->json('data.clip_id'))->purpose);
+        $this->assertSame(0, (new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings()))->charsUsedToday(), 'สร้างคลังไม่กินเพดานรายวันของลูกค้า');
+
+        // แบบเดิมซ้ำ = ไฟล์เดิม ไม่ยิง ElevenLabs
+        $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate", ['model' => 'eleven_v4_turbo', 'voice_id' => $voice])->assertOk();
+        $this->assertCount(1, $this->ttsCalls());
+
+        // ไม่ส่งโมเดล/เสียง = ของบรรทัด → ของตัวละคร → ค่ากลาง
+        $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate")->assertOk();
+        $this->assertSame('eleven_v4', $this->ttsCalls()[1]['body']['model_id']);
+
+        // โมเดลที่พูดไทยไม่ได้ / เสียงแปลก = ไม่ยิง
+        $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate", ['model' => 'eleven_multilingual_v2'])->assertStatus(422);
+        $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate", ['voice_id' => 'NotAVoice123'])->assertStatus(422);
+        $this->assertCount(2, $this->ttsCalls());
+
+        // แก้ข้อความ = ไฟล์เดิมไม่ตรงบท ปลดออก · แก้แค่เปิดปิด = ไฟล์ยังอยู่
+        $this->putJson("/admin/fortune/character-voices/library/lines/{$line->id}", ['script' => $line->script, 'is_active' => false])->assertOk();
+        $this->assertNotNull($line->fresh()->clip_id);
+        $this->assertArrayNotHasKey('listen_1', JuntraVoiceLibrary::clips('busaba'), 'ปิดแล้ว AI ไม่เห็นบทนี้');
+        $this->putJson("/admin/fortune/character-voices/library/lines/{$line->id}", ['script' => '[softly] เล่าต่อได้เลยค่ะ', 'is_active' => true])->assertOk();
+        $this->assertNull($line->fresh()->clip_id);
+        $this->assertSame('[softly] เล่าต่อได้เลยค่ะ', JuntraVoiceLibrary::clips('busaba')['listen_1']);
+
+        // หน้าคลังเปิดได้ · เพิ่มบทหมวดใหม่ได้ id ต่อเลข
+        $this->get('/admin/fortune/character-voices/library?persona=busaba')->assertOk()->assertSee('listen_1');
+        $this->post('/admin/fortune/character-voices/library/lines', ['persona' => 'busaba', 'category' => 'greet', 'script' => '[warmly] ยินดีต้อนรับค่ะ'])->assertSessionHasNoErrors();
+        $this->post('/admin/fortune/character-voices/library/lines', ['persona' => 'busaba', 'category' => 'greet', 'script' => '[warmly] มาแล้วเหรอคะ'])->assertSessionHasNoErrors();
+        $this->assertSame(['greet_1', 'greet_2'], FortuneVoiceLine::where('category', 'greet')->orderBy('id')->pluck('line_key')->all());
+        $this->post('/admin/fortune/character-voices/library/lines', ['persona' => 'busaba', 'category' => 'Greet 2', 'script' => 'x'])->assertSessionHasErrors('category');
+    }
+
+    public function test_clip_table_lists_filters_and_deletes_clips(): void
+    {
+        $this->setKey();
+        $this->asAdminWithBareLayout();
+        $service = new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings());
+        $chat = $service->request('maemor', 'ดวงเดือนนี้ดีนะลูก', 'chat')['clip'];
+        $line = FortuneVoiceLine::where('persona', 'busaba')->where('line_key', 'ack_1')->first();
+        $lib = $this->postJson("/admin/fortune/character-voices/library/lines/{$line->id}/generate")->json('data.clip_id');
+
+        $this->get('/admin/fortune/character-voices/all-clips')->assertOk()
+            ->assertSee('ดวงเดือนนี้ดีนะลูก')->assertSee('ack_1')->assertSee('คลังบทพูด');
+        $this->get('/admin/fortune/character-voices/all-clips?purpose=chat')->assertOk()
+            ->assertSee('ดวงเดือนนี้ดีนะลูก')->assertDontSee('ack_1');
+
+        $this->delete('/admin/fortune/character-voices/all-clips', ['ids' => [$lib]])->assertSessionHas('success');
+        $this->assertNull(FortuneCharacterVoiceClip::find($lib));
+        $this->assertNull($line->fresh()->clip_id, 'บทที่ผูกไฟล์ที่ลบ กลับเป็นยังไม่มีเสียง');
+        $this->assertNotNull(FortuneCharacterVoiceClip::find($chat->id));
+        $this->delete('/admin/fortune/character-voices/all-clips', ['ids' => []])->assertSessionHasErrors('ids');
+    }
+
+    public function test_juntra_server_reads_the_playable_library_with_urls(): void
+    {
+        $this->setKey();
+        $this->actAsJuntraServer();
+        $line = FortuneVoiceLine::where('persona', 'busaba')->where('line_key', 'bye_1')->first();
+        $clip = (new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings()))->request('busaba', $line->script, 'library')['clip'];
+        $line->update(['clip_id' => $clip->id]);
+
+        $res = $this->withToken('server-token')->getJson('/api/v1/juntra/server/voice/library?persona=busaba')->assertOk();
+        $this->assertSame(['bye_1'], array_keys($res->json('data.clips')), 'เฉพาะบทที่มีไฟล์แล้ว');
+        $this->assertSame($clip->audio_url, $res->json('data.clips.bye_1.url'));
+        $this->assertStringNotContainsString('[', $res->json('data.clips.bye_1.text'));
+
+        $this->withToken('server-token')->getJson('/api/v1/juntra/server/voice/library?persona=nobody')->assertStatus(422);
     }
 }

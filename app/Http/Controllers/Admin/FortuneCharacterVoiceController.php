@@ -36,7 +36,7 @@ class FortuneCharacterVoiceController extends Controller
         $service = new FortuneCharacterVoiceService($settings);
 
         $personas = [];
-        foreach (FortuneCharacterVoiceService::PERSONAS as $key => $persona) {
+        foreach (FortuneCharacterVoiceService::personas() as $key => $persona) {
             $personas[$key] = $persona + [
                 'selected_voice' => $service->voiceFor($key),
                 'samples' => $service->samplesFor($key),
@@ -63,6 +63,8 @@ class FortuneCharacterVoiceController extends Controller
             'personas' => $personas,
             'voices' => $voices,
             'chatClipCount' => FortuneCharacterVoiceClip::where('purpose', 'chat')->where('status', 'completed')->count(),
+            // 🎬 (2026-11-04) การ์ดเสียงอ่านฟรี (Google Cloud)
+            'freeVoice' => FortuneFreeVoiceController::viewData($settings),
             'tuning' => $settings->getElevenlabsTuning(),
             'audioEffects' => $this->audioEffects($service->provider()),
             'supportedSettings' => ElevenLabsTtsProvider::supportedVoiceSettings($service->provider()->model()),
@@ -77,7 +79,7 @@ class FortuneCharacterVoiceController extends Controller
      */
     public function updateTuning(Request $request): RedirectResponse
     {
-        $personaKeys = array_keys(FortuneCharacterVoiceService::PERSONAS);
+        $personaKeys = array_keys(FortuneCharacterVoiceService::personas());
         $validated = $request->validate($this->tuningRules($personaKeys), $this->tuningMessages());
 
         $personas = [];
@@ -128,9 +130,9 @@ class FortuneCharacterVoiceController extends Controller
             $service = $service->usingModel($model);
         }
         $tuning = $service->tuningFor($persona, $this->tuningSet($validated, [$persona => $this->tuningPersona($in)]));
-        $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::PERSONAS[$persona]['sample_text'];
+        $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::personas()[$persona]['sample_text'];
 
-        return $this->clipResponse($service->request($persona, $text, 'sample', null, 25, $tuning));
+        return $this->clipResponse($service->request($persona, $text, 'sample', null, 25, tuning: $tuning));
     }
 
     /** กฎตรวจค่าจูน — ค่ารวม + ค่าของตัวละครที่ส่งมา (ช่วงค่าตามที่ ElevenLabs รับ) */
@@ -317,7 +319,7 @@ class FortuneCharacterVoiceController extends Controller
     public function sample(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::PERSONAS)),
+            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::personas())),
             'voice_id' => ['required', 'string', 'regex:/^[A-Za-z0-9]{6,64}$/'],
             'text' => 'nullable|string|max:'.FortuneCharacterVoiceService::MAX_SAMPLE_CHARS,
         ]);
@@ -327,7 +329,7 @@ class FortuneCharacterVoiceController extends Controller
             return response()->json(['success' => false, 'error' => 'ไม่รู้จักเสียงนี้'], 422);
         }
 
-        $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::PERSONAS[$validated['persona']]['sample_text'];
+        $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::personas()[$validated['persona']]['sample_text'];
         $result = $service->request($validated['persona'], $text, 'sample', $validated['voice_id'], 25);
 
         return $this->clipResponse($result);
@@ -349,7 +351,7 @@ class FortuneCharacterVoiceController extends Controller
     public function select(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::PERSONAS)),
+            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::personas())),
             'voice_id' => ['required', 'string', 'regex:/^[A-Za-z0-9]{6,64}$/'],
         ]);
 
@@ -362,7 +364,7 @@ class FortuneCharacterVoiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'เลือกเสียงให้ '.FortuneCharacterVoiceService::PERSONAS[$validated['persona']]['label'].' แล้ว',
+            'message' => 'เลือกเสียงให้ '.FortuneCharacterVoiceService::personas()[$validated['persona']]['label'].' แล้ว',
         ]);
     }
 
