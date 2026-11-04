@@ -1711,6 +1711,9 @@ Route::prefix('v1/juntra/server')
                 ->name('tarot.free');
             Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
                 ->name('deep');
+            // 📈 (2026-11-04) กราฟชีวิตมหาทักษาให้โรงละครคำทำนาย — ไม่ใช้ AI ไม่คิดเงิน (ตัวเลขชุดเดียวกับรูปกราฟใน LINE)
+            Route::post('/lifegraph', \App\Http\Controllers\Api\Juntra\Server\LifeGraphController::class)
+                ->name('lifegraph');
         });
 
         // - affiliate/* : 🌙 (2026-09-21) ผังแม่หมอของลูกค้าจันทราทุกคน — จันทราไม่คำนวณค่าแนะนำเอง
