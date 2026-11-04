@@ -32,9 +32,10 @@ final class NarrationFidelity
     private const ELEMENTS = 'ดิน|น้ำ|ไฟ|ลม';
 
     /**
+     * ctx.section = หัวข้อของบทนี้ (card/month/birth) · null = บทภาพรวม
+     *
      * @param  array{anchor:string,say:string}  $chapter
      * @param  array{persona:string,reading:string,outline:array,cards:array<int,array{name:string,reversed:bool}>,section:?array}  $ctx
-     *                                                                                                                                    section = หัวข้อของบทนี้ (card/month/birth) · null = บทภาพรวม
      * @return list<string> เหตุที่ไม่ผ่าน (ว่าง = ผ่าน)
      */
     public static function check(array $chapter, array $ctx): array

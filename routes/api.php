@@ -1692,6 +1692,9 @@ Route::prefix('v1/juntra/server')
             // 🎬 บทเล่าคำทำนายของโรงละคร (AI เขียน → ตรวจความตรง → ประโยคจากคำทำนาย)
             Route::post('/narration', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'narration'])
                 ->name('narration');
+            // 🎬 เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) สำหรับคนที่ไม่ได้ซื้อเสียงสมจริง
+            Route::post('/free-speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'freeSpeak'])
+                ->name('free-speak');
         });
 
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า

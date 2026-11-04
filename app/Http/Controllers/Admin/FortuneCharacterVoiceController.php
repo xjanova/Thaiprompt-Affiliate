@@ -51,6 +51,8 @@ class FortuneCharacterVoiceController extends Controller
             'personas' => $personas,
             'voices' => $voices,
             'chatClipCount' => FortuneCharacterVoiceClip::where('purpose', 'chat')->where('status', 'completed')->count(),
+            // 🎬 (2026-11-04) การ์ดเสียงอ่านฟรี (Google Cloud)
+            'freeVoice' => FortuneFreeVoiceController::viewData($settings),
         ]);
     }
 

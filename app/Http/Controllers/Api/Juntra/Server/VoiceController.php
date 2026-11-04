@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCharacterVoiceClip;
+use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneCharacterVoiceService;
+use App\Services\Fortune\FortuneFreeVoiceService;
 use App\Services\Fortune\FortuneVoiceTranscribeService;
 use App\Services\Fortune\JuntraChatService;
 use App\Services\Fortune\JuntraNarrationService;
+use App\Services\Tts\GoogleCloudTtsProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +26,7 @@ use Illuminate\Http\Request;
  *   POST /api/v1/juntra/server/voice/transcribe  multipart {audio, user_ref, persona?} → ข้อความ + เวลาของแต่ละคำ
  *   GET  /api/v1/juntra/server/voice/health      → TTS/STT พร้อมไหม + โควต้าวันนี้เหลือเท่าไร
  *   POST /api/v1/juntra/server/voice/narration   → บทเล่าคำทำนายของโรงละคร (ผ่านตัวตรวจความตรงแล้ว)
+ *   POST /api/v1/juntra/server/voice/free-speak  → เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS → ไม่มีเสียง) ไม่ใช้ ElevenLabs
  *
  * ⚠️ ไม่ได้แตะ JuntraChatService — endpoint แยกตามที่ตกลงกับ session ย้ายแชท
  */
@@ -135,6 +139,8 @@ class VoiceController extends Controller
         $ttsUsed = $tts->charsUsedToday();
         $sttLimit = $stt->dailySecondsLimit();
         $sttUsed = $stt->secondsUsedToday();
+        $free = new FortuneFreeVoiceService;
+        $freeUsed = $free->googleCharsThisMonth();
 
         return response()->json(['success' => true, 'data' => [
             'tts' => [
@@ -150,6 +156,12 @@ class VoiceController extends Controller
                 'seconds_used_today' => $sttUsed,
                 'seconds_limit' => $sttLimit,
                 'seconds_left' => max(0, $sttLimit - $sttUsed),
+            ],
+            // 🎬 เสียงอ่านคำทำนายฟรี — google = มีกุญแจ + ยังไม่ถึงเพดานเดือน · ไม่งั้น gTTS
+            'free' => [
+                'provider' => $free->monthlyCap() > $freeUsed && (new GoogleCloudTtsProvider(FortuneTellingSetting::getGlobalSettings()))->isAvailable() ? 'google_tts' : 'gtts',
+                'google_chars_this_month' => $freeUsed,
+                'google_chars_limit' => $free->monthlyCap(),
             ],
         ]]);
     }
@@ -187,5 +199,24 @@ class VoiceController extends Controller
         );
 
         return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * 🎬 (2026-11-04) เสียงอ่านคำทำนายฟรี ทีละบท — ลูกค้าที่ไม่ได้ซื้อเสียงสมจริง
+     *
+     * {persona, text (บทจาก /narration มีแท็กได้ — ลอกให้), user_ref}
+     * 200 {data: {status: completed, url, provider: google_tts|gtts}} · {status: none} = ทุกทางล้ม → เว็บเดินบทเงียบ
+     */
+    public function freeSpeak(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'persona' => 'required|in:'.implode(',', JuntraChatService::PERSONAS),
+            'text' => 'required|string|max:1200',
+            'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
+        ]);
+
+        $result = (new FortuneFreeVoiceService)->speak($validated['persona'], $validated['text'], $validated['user_ref']);
+
+        return response()->json(['success' => $result['status'] === 'completed', 'data' => $result]);
     }
 }

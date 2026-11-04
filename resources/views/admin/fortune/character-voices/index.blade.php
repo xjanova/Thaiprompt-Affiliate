@@ -128,6 +128,9 @@
         @endif
     </div>
 
+    {{-- ════════════════ เสียงอ่านฟรี (Google Cloud) ════════════════ --}}
+    @include('admin.fortune.character-voices._google-free-voice', ['free' => $freeVoice])
+
     {{-- ════════════════ ตัวละคร ════════════════ --}}
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-gray-600 dark:text-gray-300">

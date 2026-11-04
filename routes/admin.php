@@ -2574,6 +2574,13 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/sample', [$cv, 'sample'])->middleware('throttle:30,1')->name('sample');
         Route::get('/clips/{clip}', [$cv, 'clipStatus'])->name('clips.show');
         Route::post('/select', [$cv, 'select'])->name('select');
+
+        // 🎬 (2026-11-04) เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) — กุญแจ/เพดานเดือน/เสียงต่อห้อง
+        $fv = \App\Http\Controllers\Admin\FortuneFreeVoiceController::class;
+        Route::put('/google', [$fv, 'update'])->name('google.update');
+        Route::delete('/google/key', [$fv, 'deleteKey'])->name('google.key.delete');
+        Route::post('/google/test', [$fv, 'test'])->middleware('throttle:20,1')->name('google.test');
+        Route::post('/google/sample', [$fv, 'sample'])->middleware('throttle:20,1')->name('google.sample');
     });
 
     // AI Playground - ทดสอบสนทนากับ AI
