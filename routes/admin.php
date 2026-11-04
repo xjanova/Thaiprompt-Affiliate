@@ -2567,6 +2567,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         $cv = \App\Http\Controllers\Admin\FortuneCharacterVoiceController::class;
         Route::get('/', [$cv, 'index'])->name('index');
         Route::put('/settings', [$cv, 'updateSettings'])->name('settings.update');
+        Route::put('/tuning', [$cv, 'updateTuning'])->name('tuning.update');
         Route::delete('/key', [$cv, 'deleteKey'])->name('key.delete');
         Route::post('/credits', [$cv, 'credits'])->name('credits');
         Route::post('/refresh-voices', [$cv, 'refreshVoices'])->name('refresh-voices');

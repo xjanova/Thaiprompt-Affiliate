@@ -3788,4 +3788,28 @@ PROMPT;
 
         Setting::set(self::ELEVENLABS_MODEL_SETTING, $model, 'string', 'fortune_voice');
     }
+
+    /** 🎚️ (2026-11-04) ค่าจูนเสียง ElevenLabs (JSON) — รวมทุกตัวละคร + ค่ารวม (คุณภาพไฟล์ / ภาษา / อ่านตัวเลข) */
+    public const ELEVENLABS_TUNING_SETTING = 'fortune_elevenlabs_tuning';
+
+    /**
+     * ค่าจูนเสียงที่แอดมินบันทึกไว้ — ยังไม่เคยตั้ง/อ่านไม่ได้ = [] (ไม่ส่งค่าจูนใดๆ ใช้ค่าของเสียงเอง)
+     *
+     * @return array{output_format?: string, language_code?: ?string, apply_text_normalization?: string, personas?: array<string, array>}
+     */
+    public function getElevenlabsTuning(): array
+    {
+        try {
+            $stored = Setting::get(self::ELEVENLABS_TUNING_SETTING);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    public function setElevenlabsTuning(array $tuning): void
+    {
+        Setting::set(self::ELEVENLABS_TUNING_SETTING, json_encode($tuning, JSON_UNESCAPED_UNICODE), 'json', 'fortune_voice');
+    }
 }

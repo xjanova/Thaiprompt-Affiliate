@@ -24,6 +24,10 @@ class FortuneCharacterVoiceController extends Controller
 {
     protected const VOICES_CACHE_KEY = 'fortune:elevenlabs_voices';
 
+    protected const MODELS_CACHE_KEY = 'fortune:elevenlabs_models';
+
+    protected const EFFECTS_CACHE_KEY = 'fortune:elevenlabs_audio_effects';
+
     public function index(): View
     {
         $settings = FortuneTellingSetting::getGlobalSettings();
@@ -46,12 +50,96 @@ class FortuneCharacterVoiceController extends Controller
             'hasKey' => $settings->getElevenlabsApiKey() !== null,
             'maskedKey' => $settings->getElevenlabsApiKeyMasked(),
             'model' => $service->provider()->model(),
+            'models' => $this->thaiModels($service->provider()),
             'dailyLimit' => $service->dailyCharLimit(),
             'usedToday' => $service->charsUsedToday(),
             'personas' => $personas,
             'voices' => $voices,
             'chatClipCount' => FortuneCharacterVoiceClip::where('purpose', 'chat')->where('status', 'completed')->count(),
+            'tuning' => $settings->getElevenlabsTuning(),
+            'audioEffects' => $this->audioEffects($service->provider()),
+            'supportedSettings' => ElevenLabsTtsProvider::supportedVoiceSettings($service->provider()->model()),
         ]);
+    }
+
+    /**
+     * 🎚️ (2026-11-04) บันทึกค่าจูนเสียง ElevenLabs — เจ้าของสั่ง "ปรับตั้งค่า จูน เสียงได้ละเอียดตามที่ api อนุญาติ"
+     *
+     * เก็บทุกค่าที่ API รับ แม้โมเดลที่ใช้อยู่จะไม่ใช้บางค่า (เปลี่ยนโมเดลทีหลังค่าที่ตั้งไว้ยังอยู่)
+     * provider เป็นคนกรองตอนส่งจริง · ปิด "ใช้ค่าที่จูนเอง" = ใช้ค่าที่ติดมากับเสียงนั้น
+     */
+    public function updateTuning(Request $request): RedirectResponse
+    {
+        $id = ['nullable', 'string', 'regex:/^[a-z0-9_]{1,64}$/'];
+        $rules = [
+            'output_format' => 'required|in:'.implode(',', array_keys(ElevenLabsTtsProvider::OUTPUT_FORMATS)),
+            'language_code' => 'nullable|in:th',
+            'apply_text_normalization' => 'required|in:auto,on,off',
+        ];
+        foreach (array_keys(FortuneCharacterVoiceService::PERSONAS) as $persona) {
+            $p = "personas.$persona.";
+            $rules += [
+                $p.'custom' => 'nullable|boolean',
+                $p.'use_speaker_boost' => 'nullable|boolean',
+                $p.'seed' => 'nullable|integer|min:0|max:'.ElevenLabsTtsProvider::SEED_MAX,
+                $p.'filter_preset_id' => $id,
+                $p.'environment_id' => $id,
+                $p.'background_noise_id' => $id,
+            ];
+            foreach (ElevenLabsTtsProvider::SETTING_RANGES as $field => [$min, $max]) {
+                $rules[$p.$field] = "nullable|numeric|min:$min|max:$max";
+            }
+        }
+        $validated = $request->validate($rules, [
+            '*.numeric' => 'ค่าที่ใส่ต้องเป็นตัวเลข',
+            '*.min' => 'ค่าต่ำกว่าที่ ElevenLabs รับ',
+            '*.max' => 'ค่าสูงกว่าที่ ElevenLabs รับ',
+        ]);
+
+        // เอฟเฟกต์ต้องมีอยู่จริงในบัญชี — id ที่ไม่มี ElevenLabs ตอบ 404 ทั้งคำขอ (เสียงไม่ออกเลย)
+        $effects = $this->audioEffects((new FortuneCharacterVoiceService)->provider());
+        $known = [
+            'filter_preset_id' => array_column($effects['effects']['filter_presets'], 'id'),
+            'environment_id' => array_column($effects['effects']['environments'], 'id'),
+            'background_noise_id' => array_column($effects['effects']['background_noises'], 'id'),
+        ];
+
+        $personas = [];
+        foreach (array_keys(FortuneCharacterVoiceService::PERSONAS) as $persona) {
+            $in = $validated['personas'][$persona] ?? [];
+            foreach ($known as $field => $ids) {
+                if (! empty($in[$field]) && ! in_array($in[$field], $ids, true)) {
+                    return back()->withInput()->withErrors(["personas.$persona.$field" => 'ไม่มีเอฟเฟกต์นี้ในบัญชี ElevenLabs — เลือกจากรายการ']);
+                }
+            }
+
+            $num = fn (string $field) => isset($in[$field]) && $in[$field] !== '' ? round((float) $in[$field], 2) : null;
+            $personas[$persona] = [
+                'custom' => (bool) ($in['custom'] ?? false),
+                'stability' => $num('stability'),
+                'similarity_boost' => $num('similarity_boost'),
+                'style' => $num('style'),
+                'use_speaker_boost' => (bool) ($in['use_speaker_boost'] ?? false),
+                'speed' => $num('speed'),
+                'clone_strength' => $num('clone_strength'),
+                'seed' => isset($in['seed']) && $in['seed'] !== '' ? (int) $in['seed'] : null,
+                'filter_preset_id' => ($in['filter_preset_id'] ?? '') ?: null,
+                'environment_id' => ($in['environment_id'] ?? '') ?: null,
+                'send_level' => $num('send_level'),
+                'distance' => $num('distance'),
+                'background_noise_id' => ($in['background_noise_id'] ?? '') ?: null,
+                'pan' => $num('pan'),
+            ];
+        }
+
+        FortuneTellingSetting::getGlobalSettings()->setElevenlabsTuning([
+            'output_format' => $validated['output_format'],
+            'language_code' => $validated['language_code'] ?? null,
+            'apply_text_normalization' => $validated['apply_text_normalization'],
+            'personas' => $personas,
+        ]);
+
+        return back()->with('success', '🎚️ บันทึกค่าจูนเสียงแล้ว — กด "สร้างเสียงตัวอย่าง" เพื่อฟังผล (ค่าใหม่ = ไฟล์ใหม่ เสียโควต้าตามจำนวนตัวอักษร)');
     }
 
     /**
@@ -76,6 +164,7 @@ class FortuneCharacterVoiceController extends Controller
 
         $newKey = trim((string) ($validated['elevenlabs_api_key'] ?? ''));
         $message = '✅ บันทึกการตั้งค่าเสียงตัวละครแล้ว';
+        $check = null;
 
         if ($newKey !== '') {
             $check = (new ElevenLabsTtsProvider($settings, $newKey))->credits();
@@ -85,15 +174,31 @@ class FortuneCharacterVoiceController extends Controller
                     ->withInput($request->except('elevenlabs_api_key'))
                     ->withErrors(['elevenlabs_api_key' => 'ใช้ key นี้ไม่ได้: '.$check['error']]);
             }
+        }
 
+        // โมเดลต้องพูดไทยได้ในบัญชีของ key ที่จะใช้ — เช็คก่อนบันทึกอะไรทั้งนั้น จะได้ไม่บันทึกครึ่งๆ กลางๆ
+        $model = trim((string) ($validated['elevenlabs_tts_model'] ?? ''));
+        if ($model !== '') {
+            $provider = $newKey !== ''
+                ? new ElevenLabsTtsProvider($settings, $newKey)
+                : (new FortuneCharacterVoiceService($settings))->provider();
+            if (! collect($this->thaiModels($provider, $newKey !== ''))->contains(fn ($m) => $m['id'] === $model)) {
+                return back()
+                    ->withInput($request->except('elevenlabs_api_key'))
+                    ->withErrors(['elevenlabs_tts_model' => 'โมเดลนี้พูดภาษาไทยไม่ได้ หรือไม่มีในบัญชี ElevenLabs — เลือกจากรายการ']);
+            }
+        }
+
+        if ($check !== null) {
             $settings->setElevenlabsApiKey($newKey);
             $message = $check['balance'] !== null
                 ? '✅ บันทึก ElevenLabs key แล้ว (เหลือ '.number_format((int) $check['balance']).' ตัวอักษรในรอบบิลนี้)'
                 : '✅ บันทึก ElevenLabs key แล้ว (key นี้ไม่มีสิทธิ์ดูโควต้า แต่สร้างเสียงได้)';
             Cache::forget(self::VOICES_CACHE_KEY);
+            Cache::forget(self::MODELS_CACHE_KEY);
         }
 
-        $settings->setElevenlabsTtsModel($validated['elevenlabs_tts_model'] ?? null);
+        $settings->setElevenlabsTtsModel($model !== '' ? $model : null);
         $settings->update($update);
         FortuneTellingSetting::clearSettingsCache();
 
@@ -209,6 +314,52 @@ class FortuneCharacterVoiceController extends Controller
         }
 
         return $voices;
+    }
+
+    /**
+     * โมเดลที่พูดไทยได้ — ดึงสดจาก /v1/models (ฟรี) แคช 1 ชม. เฉพาะตอนดึงสดได้
+     * ไม่มี key / ดึงไม่ได้ = ใช้รายชื่อสำรอง (v4, v4 Turbo, v3, v3 Conversational)
+     * โมเดลที่ตั้งไว้อยู่แล้วแต่ไม่อยู่ในรายชื่อ ยังแสดงให้เห็น จะได้ไม่ถูกเปลี่ยนเงียบๆ ตอนกดบันทึก
+     */
+    protected function thaiModels(ElevenLabsTtsProvider $provider, bool $fresh = false): array
+    {
+        $cached = $fresh ? null : Cache::get(self::MODELS_CACHE_KEY);
+        if (! is_array($cached)) {
+            $cached = $provider->isAvailable()
+                ? $provider->listModels()
+                : ['models' => ElevenLabsTtsProvider::FALLBACK_MODELS, 'live' => false];
+            if ($cached['live']) {
+                Cache::put(self::MODELS_CACHE_KEY, $cached, 3600);
+            }
+        }
+
+        $models = array_values(array_filter($cached['models'], fn ($m) => $m['thai']));
+        $current = $provider->model();
+        if (! collect($models)->contains(fn ($m) => $m['id'] === $current)) {
+            $models[] = ['id' => $current, 'name' => $current, 'thai' => true, 'cost' => 1.0, 'max_chars' => null];
+        }
+
+        return $models;
+    }
+
+    /**
+     * 🎚️ เอฟเฟกต์เสียงของบัญชี — แคช 1 วัน เฉพาะตอนดึงสดได้ (รายชื่อนี้แทบไม่เปลี่ยน)
+     */
+    protected function audioEffects(ElevenLabsTtsProvider $provider): array
+    {
+        $cached = Cache::get(self::EFFECTS_CACHE_KEY);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $effects = $provider->isAvailable()
+            ? $provider->listAudioEffects()
+            : ['effects' => ElevenLabsTtsProvider::FALLBACK_AUDIO_EFFECTS, 'live' => false];
+        if ($effects['live']) {
+            Cache::put(self::EFFECTS_CACHE_KEY, $effects, 86400);
+        }
+
+        return $effects;
     }
 
     /**

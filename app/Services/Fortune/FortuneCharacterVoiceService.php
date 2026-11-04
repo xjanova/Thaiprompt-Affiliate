@@ -104,6 +104,31 @@ class FortuneCharacterVoiceService
         return $voice !== '' ? $voice : self::PERSONAS[$persona]['default_voice'];
     }
 
+    /** 🎚️ ค่าน้ำเสียงที่จูนแยกต่อตัวละครได้ (ส่งเฉพาะตอนเปิด "ใช้ค่าที่จูนเอง") */
+    public const TUNING_VOICE_FIELDS = ['stability', 'similarity_boost', 'style', 'use_speaker_boost', 'speed', 'clone_strength'];
+
+    /** 🎚️ เอฟเฟกต์ต่อตัวละคร (ไม่เลือก = ไม่ใส่เอฟเฟกต์) */
+    public const TUNING_EFFECT_FIELDS = ['filter_preset_id', 'environment_id', 'send_level', 'distance', 'background_noise_id', 'pan'];
+
+    /**
+     * 🎚️ (2026-11-04) ค่าจูนเสียงของตัวละคร — ค่ารวม (คุณภาพไฟล์/ภาษา/อ่านตัวเลข) + ค่าเฉพาะตัว
+     * provider กรองต่อเองว่าโมเดลที่ใช้อยู่รับค่าไหนได้
+     */
+    public function tuningFor(string $persona): array
+    {
+        $all = $this->settings->getElevenlabsTuning();
+        $own = is_array($all['personas'][$persona] ?? null) ? $all['personas'][$persona] : [];
+
+        return [
+            'output_format' => $all['output_format'] ?? null,
+            'language_code' => $all['language_code'] ?? null,
+            'apply_text_normalization' => $all['apply_text_normalization'] ?? null,
+            'seed' => is_int($own['seed'] ?? null) ? $own['seed'] : null,
+            'voice' => ! empty($own['custom']) ? array_intersect_key($own, array_flip(self::TUNING_VOICE_FIELDS)) : null,
+            'effects' => array_intersect_key($own, array_flip(self::TUNING_EFFECT_FIELDS)) ?: null,
+        ];
+    }
+
     /**
      * บันทึกเสียงที่เลือกให้ตัวละคร
      */
@@ -149,7 +174,13 @@ class FortuneCharacterVoiceService
         $voice = $voiceId ?: $this->voiceFor($persona);
         $model = $this->provider->model();
         // รวม persona ในกุญแจ — แม่หมอกับโหมดคุณไสยเลือกเสียงเดียวกันได้ ไฟล์ต้องแยกโฟลเดอร์ตามตัวละคร
-        $hash = hash('sha256', implode('|', ['elevenlabs', $model, $voice, $persona, $clean]));
+        $keyParts = ['elevenlabs', $model, $voice, $persona, $clean];
+        // 🎚️ จูนเสียงแล้ว = ไฟล์ใหม่ · ยังไม่จูน ([]) = กุญแจเดิมทุกตัวอักษร ไฟล์ที่เก็บไว้ก่อนหน้านี้ยังใช้ได้
+        $tuning = $this->tuningFor($persona);
+        if (($tuned = $this->provider->tuningPayload($tuning)) !== []) {
+            $keyParts[] = json_encode($tuned);
+        }
+        $hash = hash('sha256', implode('|', $keyParts));
 
         $clip = FortuneCharacterVoiceClip::where('text_hash', $hash)->first();
 
@@ -204,7 +235,7 @@ class FortuneCharacterVoiceService
                 $this->addUsage($chars);
             }
 
-            $clip = $this->synthesizeInto($clip, $clean, $voice);
+            $clip = $this->synthesizeInto($clip, $clean, $voice, $tuning);
         } finally {
             $lock->release();
         }
@@ -272,12 +303,12 @@ class FortuneCharacterVoiceService
     /**
      * สร้างเสียงจาก ElevenLabs แล้วเก็บไฟล์ที่ storage ของเราเอง
      */
-    protected function synthesizeInto(FortuneCharacterVoiceClip $clip, string $text, string $voice): FortuneCharacterVoiceClip
+    protected function synthesizeInto(FortuneCharacterVoiceClip $clip, string $text, string $voice, array $tuning = []): FortuneCharacterVoiceClip
     {
         $tempPath = storage_path('app/tmp-voice').'/charvoice-'.Str::random(16).'.mp3';
 
         try {
-            $result = $this->provider->synthesize($text, ['voice' => $voice, 'output_path' => $tempPath]);
+            $result = $this->provider->synthesize($text, ['voice' => $voice, 'output_path' => $tempPath, 'tuning' => $tuning]);
             if (! $result['success']) {
                 $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($result['error'])]);
 
