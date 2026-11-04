@@ -2093,14 +2093,14 @@ PROMPT;
 
         $provider = 'openai';
         $model = $sensitiveKey->resolveModel()
-            ?? ($this->settings->sensitive_model ?? 'gpt-4o');
+            ?? ($this->settings->sensitive_model ?? AiApiKey::defaultModelFor('openai'));
 
         // 🛡️ Vision capability check — ถ้า model เก่า force fallback
         //    OpenAI vision models: gpt-4o*, gpt-5* ขึ้นไป, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
         //    🐛 (2026-10-30) เดิมจับแค่เลข 5 → key ที่ตั้ง gpt-6 ถูกลดเป็น gpt-4o-mini เงียบๆ
         if (! preg_match('/^(gpt-(4o|[5-9]|4-vision|4-turbo))/i', $model)) {
-            // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
-            $model = 'gpt-4o-mini';
+            // fallback = gpt-6-luna — ถูกสุดของ list และรับรูปได้ (ยิงรูปจริงบน prod 2026-11-04)
+            $model = AiApiKey::defaultModelFor('openai');
         }
 
         $config = array_merge(['temperature' => 0.7, 'max_tokens' => 800], $config);
@@ -6242,7 +6242,7 @@ PROMPT;
         try {
             $geminiKey = AiContentSetting::getValue('gemini_api_key');
             if (! empty($geminiKey) && ! in_array($geminiKey, $addedApiKeys)) {
-                $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash');
+                $geminiModel = AiContentSetting::getValue('gemini_model', AiApiKey::defaultModelFor('gemini'));
                 $keys[] = [
                     'provider' => 'gemini',
                     'api_key' => $geminiKey,

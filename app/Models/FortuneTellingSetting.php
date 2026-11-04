@@ -833,7 +833,7 @@ class FortuneTellingSetting extends Model
     protected $attributes = [
         'use_global_ai_settings' => true,
         'ai_provider' => 'gemini',
-        'ai_model' => 'gemini-2.5-flash',
+        'ai_model' => 'gemini-3.8-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
         'enable_deep_reading' => true, // 🌙 (2026-06-08) เปิด 39฿ กลับ — เวอร์ชันคุยโต้ตอบใหม่ (พื้นดวง + คุย 7 นาที)
@@ -1249,7 +1249,7 @@ class FortuneTellingSetting extends Model
         if (! $settings) {
             $settings = self::create([
                 'ai_provider' => 'gemini',
-                'ai_model' => 'gemini-2.5-flash',
+                'ai_model' => 'gemini-3.8-flash',
                 'max_free_readings' => 3,
                 'reading_price' => 0,
                 'is_enabled' => true,
@@ -1889,13 +1889,12 @@ TXT;
         $provider = $this->getActualAIProvider();
 
         return match ($provider) {
-            'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
+            'gemini' => AiContentSetting::getValue('gemini_model', AiApiKey::defaultModelFor('gemini')),
             // 🔄 (2026-10-30) รุ่นที่ปิดแล้ว → default ของ Pool (AiApiKey::MODELS_BY_PROVIDER)
             'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-sonnet-5.5'),
-            'groq', 'deepseek', 'typhoon', 'grok' => AiApiKey::defaultModelFor($provider),
-            'openai' => 'gpt-4o',
-            'anthropic' => 'claude-sonnet-4-5',
-            default => 'gemini-2.5-flash',
+            // 🧹 (2026-11-04) gpt-4o / claude-sonnet-4-5 ลบจาก list แล้ว → default ของ Pool เหมือนค่ายอื่น
+            'groq', 'deepseek', 'typhoon', 'grok', 'openai', 'anthropic' => AiApiKey::defaultModelFor($provider),
+            default => AiApiKey::defaultModelFor('gemini'),
         };
     }
 
@@ -3036,15 +3035,13 @@ PROMPT;
     protected function defaultChatModelFor(string $provider): string
     {
         return match ($provider) {
-            // 🆕 (2026-08-17) 5.4-mini → 5.6-luna: ถูกกว่า 3.75 เท่า ($0.20/$1.20 vs $0.75/$4.50)
-            //   และฉลาดกว่า (AA index 52 vs ~41) — verified live บน /v1/responses key prod
-            'openai' => 'gpt-5.6-luna',
-            'gemini' => 'gemini-3.1-flash-lite',
+            // 🧹 (2026-11-04, owner) เหลือซีรีส์ล่าสุด — แชทใช้ตัวถูกของแต่ละค่าย
+            'openai' => AiApiKey::defaultModelFor('openai'),
+            'gemini' => 'gemini-3.5-flash-lite',
             // 🔄 (2026-10-30) Llama / grok-3 / deepseek-chat / typhoon-v2 ปิดแล้ว → default ของ Pool
-            'groq', 'grok', 'deepseek', 'typhoon' => AiApiKey::defaultModelFor($provider),
-            'openrouter' => 'openai/gpt-4o-mini',
-            'anthropic' => 'claude-haiku-4-5-20251001',
-            default => $this->chat_ai_model ?: 'gpt-5.6-luna',
+            'groq', 'grok', 'deepseek', 'typhoon', 'anthropic' => AiApiKey::defaultModelFor($provider),
+            'openrouter' => 'openai/gpt-6-luna',
+            default => $this->chat_ai_model ?: AiApiKey::defaultModelFor('openai'),
         };
     }
 
@@ -3835,5 +3832,29 @@ PROMPT;
         }
 
         Setting::set(self::ELEVENLABS_MODEL_SETTING, $model, 'string', 'fortune_voice');
+    }
+
+    /** 🎚️ (2026-11-04) ค่าจูนเสียง ElevenLabs (JSON) — รวมทุกตัวละคร + ค่ารวม (คุณภาพไฟล์ / ภาษา / อ่านตัวเลข) */
+    public const ELEVENLABS_TUNING_SETTING = 'fortune_elevenlabs_tuning';
+
+    /**
+     * ค่าจูนเสียงที่แอดมินบันทึกไว้ — ยังไม่เคยตั้ง/อ่านไม่ได้ = [] (ไม่ส่งค่าจูนใดๆ ใช้ค่าของเสียงเอง)
+     *
+     * @return array{output_format?: string, language_code?: ?string, apply_text_normalization?: string, personas?: array<string, array>}
+     */
+    public function getElevenlabsTuning(): array
+    {
+        try {
+            $stored = Setting::get(self::ELEVENLABS_TUNING_SETTING);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    public function setElevenlabsTuning(array $tuning): void
+    {
+        Setting::set(self::ELEVENLABS_TUNING_SETTING, json_encode($tuning, JSON_UNESCAPED_UNICODE), 'json', 'fortune_voice');
     }
 }

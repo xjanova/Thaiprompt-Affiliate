@@ -117,7 +117,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">MiniMax — model <span class="text-xs text-emerald-600 dark:text-emerald-400">(ล่าสุด: speech-2.8-hd)</span></label>
                 {{-- dropdown เลือกโมเดล (datalist เดิมกดแล้วบางเบราว์เซอร์ไม่โชว์) + ช่องพิมพ์เองได้ (bind ตัวเดียวกัน) --}}
                 <select x-model="mmModel" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm mb-1">
-                    @foreach(['speech-2.8-hd','speech-2.8-turbo','speech-2.6-hd','speech-2.6-turbo','speech-02-hd','speech-02-turbo','speech-01-hd','speech-01-turbo'] as $m)
+                    @foreach(\App\Models\AiApiKey::MODELS_BY_PROVIDER['minimax'] as $m)
                         <option value="{{ $m }}">{{ $m }}</option>
                     @endforeach
                 </select>

@@ -83,9 +83,19 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โมเดลเสียง</label>
-                <input type="text" name="elevenlabs_tts_model" value="{{ old('elevenlabs_tts_model', $model) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าเริ่มต้น <code>eleven_v3</code> (พูดไทยได้ ใส่แท็กอารมณ์ได้)</p>
+                @php($selectedModel = old('elevenlabs_tts_model', $model))
+                <select name="elevenlabs_tts_model"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                    @foreach($models as $m)
+                        <option value="{{ $m['id'] }}" @selected($m['id'] === $selectedModel)>
+                            {{ $m['name'] }}{{ $m['cost'] < 1 ? ' — ครึ่งราคา' : '' }}{{ $m['id'] === $model ? ' (ใช้อยู่)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('elevenlabs_tts_model')
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แสดงเฉพาะโมเดลที่พูดไทยได้ในบัญชี ElevenLabs — เปลี่ยนโมเดลแล้วเสียงจะสร้างใหม่ (เสียงเดิมที่แคชไว้ไม่ถูกใช้ซ้ำ)</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เพดานตัวอักษรต่อวัน (ห้องแชท)</label>
@@ -210,6 +220,9 @@
             </div>
         </template>
     </div>
+
+    {{-- ════════════════ จูนเสียงละเอียด ════════════════ --}}
+    @include('admin.fortune.character-voices._elevenlabs-tuning')
 
     {{-- toast --}}
     <div x-show="toast" x-transition class="fixed bottom-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm text-white"
