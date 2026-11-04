@@ -10,6 +10,7 @@ use App\Services\Fortune\FortuneFreeVoiceService;
 use App\Services\Fortune\FortuneVoiceTranscribeService;
 use App\Services\Fortune\JuntraChatService;
 use App\Services\Fortune\JuntraNarrationService;
+use App\Services\Fortune\JuntraVoiceLibrary;
 use App\Services\Tts\GoogleCloudTtsProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class VoiceController extends Controller
     public function speak(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::PERSONAS)),
+            'persona' => 'required|in:'.implode(',', array_keys(FortuneCharacterVoiceService::personas())),
             'text' => 'required|string|max:6000',
             'wait' => 'nullable|integer|min:0|max:20',
             // 🔈 (2026-11-04) ไม่ส่ง = chat (เว็บรุ่นเดิม) · ทุกตัวนับเพดานรายวัน
@@ -131,6 +132,24 @@ class VoiceController extends Controller
      * 🔈 (2026-11-04) ระบบเสียงพร้อมขายไหม — เว็บซ่อนปุ่มซื้อเสียง (+฿100) เมื่อ TTS ใช้ไม่ได้หรือโควต้าวันนี้ใกล้หมด
      * ไม่ยิงไปหา ElevenLabs (เช็คแค่ว่ามี key) — เรียกได้บ่อย
      */
+    /**
+     * 🎭 (2026-11-04) คลังคลิปของตัวละคร — เฉพาะบทที่เปิดใช้และสร้างไฟล์แล้ว
+     *
+     * GET /api/v1/juntra/server/voice/library?persona=busaba
+     * 200 {data: {persona, clips: {ack_1: {text, category, url}, …}}} — ส่ง id เหล่านี้กลับมาเป็น voice_clips ของ /chat/send ได้เลย
+     */
+    public function library(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'persona' => 'required|string|in:'.implode(',', array_keys(FortuneCharacterVoiceService::personas())),
+        ]);
+
+        return response()->json(['success' => true, 'data' => [
+            'persona' => $validated['persona'],
+            'clips' => JuntraVoiceLibrary::playable($validated['persona']),
+        ]]);
+    }
+
     public function health(): JsonResponse
     {
         $tts = new FortuneCharacterVoiceService;

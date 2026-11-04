@@ -2,6 +2,11 @@
 
 namespace App\Services\Fortune;
 
+use App\Models\FortuneVoiceCharacter;
+use App\Models\FortuneVoiceLine;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
+
 /**
  * 🔈 (2026-11-04) คลังคลิปเสียงคำเติม/คำรับของห้องแชทเว็บจันทรา — ฝั่งที่ AI เลือกใช้ได้ในโหมดเสียง
  *
@@ -29,7 +34,11 @@ final class JuntraVoiceLibrary
         'ใช่', 'ใช่ค่ะ', 'ใช่จ้ะ', 'ใช่ลูก', 'ลูก', 'คุณ', 'ครับ', 'โถ', 'ว้าว', 'อ้อ', 'งั้น', 'เหรอ', 'จริงเหรอ',
     ];
 
-    private const CLIPS = [
+    /**
+     * บทเริ่มต้น — (2026-11-04) ย้ายไปอยู่ในตาราง fortune_voice_lines แล้ว (แอดมินเพิ่ม/แก้/ลบได้)
+     * ที่นี่เหลือไว้เป็นค่าตั้งต้นของ migration และใช้แทนตอนยังไม่มีตาราง
+     */
+    public const DEFAULT_CLIPS = [
         'busaba' => [
             'ack_1' => '[softly] อืม…',
             'ack_2' => '[softly] ค่ะ…',
@@ -128,7 +137,59 @@ final class JuntraVoiceLibrary
     /** ชื่อตัวละครที่มีคลัง (ไม่รู้จัก = แม่หมอ) */
     private static function persona(?string $persona): string
     {
-        return isset(self::CLIPS[$persona]) ? $persona : JuntraChatService::DEFAULT_PERSONA;
+        $known = self::hasTable() ? isset(FortuneVoiceCharacter::catalog()[$persona]) : isset(self::DEFAULT_CLIPS[$persona]);
+
+        return is_string($persona) && $known ? $persona : JuntraChatService::DEFAULT_PERSONA;
+    }
+
+    /** บทของตัวละครจากตาราง (เฉพาะที่เปิดใช้ เรียงตามลำดับ) — แคชจนกว่าแอดมินจะแก้ */
+    private static function stored(string $persona): array
+    {
+        if (! self::hasTable()) {
+            return self::DEFAULT_CLIPS[$persona] ?? [];
+        }
+
+        return Cache::rememberForever(FortuneVoiceLine::CACHE_PREFIX.$persona, fn () => FortuneVoiceLine::where('persona', $persona)
+            ->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('id')
+            ->pluck('script', 'line_key')
+            ->all());
+    }
+
+    /** ล้างแคชบทของตัวละคร (ลบทีละหลายแถวไม่ผ่าน event ของโมเดล) */
+    public static function forget(string $persona): void
+    {
+        Cache::forget(FortuneVoiceLine::CACHE_PREFIX.$persona);
+    }
+
+    private static function hasTable(): bool
+    {
+        return Schema::hasTable('fortune_voice_lines');
+    }
+
+    /**
+     * 🎭 คลิปที่สร้างไฟล์แล้วของตัวละคร (id => url) — เว็บจันทราดึงไปเล่นแทนไฟล์ที่เคยวางไว้ในเว็บเอง
+     *
+     * @return array<string, array{text: string, category: string, url: string}>
+     */
+    public static function playable(?string $persona): array
+    {
+        if (! self::hasTable()) {
+            return [];
+        }
+
+        return FortuneVoiceLine::with('clip')
+            ->where('persona', self::persona($persona))
+            ->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('id')
+            ->get()
+            ->filter(fn (FortuneVoiceLine $l) => $l->clip?->isCompleted())
+            ->mapWithKeys(fn (FortuneVoiceLine $l) => [$l->line_key => [
+                'text' => self::plain($l->script),
+                'category' => $l->category,
+                'url' => $l->clip->audio_url,
+            ]])
+            ->all();
     }
 
     /**
@@ -139,7 +200,7 @@ final class JuntraVoiceLibrary
      */
     public static function clips(?string $persona, ?array $available = null): array
     {
-        $clips = self::CLIPS[self::persona($persona)];
+        $clips = self::stored(self::persona($persona));
         if ($available === null) {
             return $clips;
         }

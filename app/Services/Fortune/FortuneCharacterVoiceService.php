@@ -4,12 +4,14 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneVoiceCharacter;
 use App\Models\FortuneVoiceUsage;
 use App\Services\FortuneVoiceStorageService;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -105,7 +107,24 @@ class FortuneCharacterVoiceService
 
     public static function isPersona(?string $persona): bool
     {
-        return is_string($persona) && array_key_exists($persona, self::PERSONAS);
+        return is_string($persona) && array_key_exists($persona, self::personas());
+    }
+
+    /**
+     * 🎭 (2026-11-04) ตัวละครที่เปิดใช้ — มาจากตาราง fortune_voice_characters (แอดมินเพิ่ม/ปิดได้)
+     * ยังไม่มีตาราง = 3 ตัวใน PERSONAS ตามเดิม · รูปแบบเดียวกับ PERSONAS (+ voice_id/model/builtin/active)
+     *
+     * @return array<string, array{label: string, brief: string, default_voice: string, sample_text: string, voice_id: ?string, model: ?string, builtin: bool, active: bool}>
+     */
+    public static function personas(): array
+    {
+        return FortuneVoiceCharacter::active();
+    }
+
+    /** ข้อมูลตัวละคร (รวมที่ปิดไว้) — ไม่รู้จัก = null */
+    public static function persona(string $persona): ?array
+    {
+        return FortuneVoiceCharacter::catalog()[$persona] ?? null;
     }
 
     /**
@@ -113,10 +132,15 @@ class FortuneCharacterVoiceService
      */
     public function voiceFor(string $persona): string
     {
+        $character = self::persona($persona);
+        if ($character && $character['voice_id']) {
+            return $character['voice_id'];
+        }
+        // ก่อนมีตารางตัวละคร เสียงที่เลือกอยู่ในคอลัมน์ {persona}_voice_id ของค่ากลาง (เฉพาะ 3 ตัวเดิม)
         $column = $persona.'_voice_id';
-        $voice = trim((string) ($this->settings->{$column} ?? ''));
+        $voice = isset(self::PERSONAS[$persona]) ? trim((string) ($this->settings->{$column} ?? '')) : '';
 
-        return $voice !== '' ? $voice : self::PERSONAS[$persona]['default_voice'];
+        return $voice !== '' ? $voice : ($character['default_voice'] ?? FortuneVoiceCharacter::fallbackVoice());
     }
 
     /** 🎚️ ค่าน้ำเสียงที่จูนแยกต่อตัวละครได้ (ส่งเฉพาะตอนเปิด "ใช้ค่าที่จูนเอง") */
@@ -151,8 +175,15 @@ class FortuneCharacterVoiceService
      */
     public function selectVoice(string $persona, string $voiceId): void
     {
-        $this->settings->update([$persona.'_voice_id' => $voiceId]);
-        FortuneTellingSetting::clearSettingsCache();
+        if (Schema::hasTable('fortune_voice_characters')) {
+            FortuneVoiceCharacter::where('key', $persona)->update(['voice_id' => $voiceId]);
+            FortuneVoiceCharacter::flushCatalog();
+        }
+        // 3 ตัวเดิมเก็บคู่ไว้ในค่ากลางด้วย (โค้ดรุ่นก่อน/ถอย migration แล้วยังได้เสียงเดิม)
+        if (isset(self::PERSONAS[$persona])) {
+            $this->settings->update([$persona.'_voice_id' => $voiceId]);
+            FortuneTellingSetting::clearSettingsCache();
+        }
     }
 
     public function dailyCharLimit(): int
@@ -182,6 +213,11 @@ class FortuneCharacterVoiceService
         $metered = in_array($purpose, self::METERED_PURPOSES, true);
         if (! self::isPersona($persona)) {
             return $this->fail('ไม่รู้จักตัวละครนี้', 422);
+        }
+        // 🎭 ตัวละครที่ตั้งโมเดลเฉพาะตัว ใช้โมเดลนั้น — เว้นแต่ผู้เรียกเลือกโมเดลมาแล้ว (ลองฟัง/สร้างคลัง)
+        $own = self::persona($persona)['model'] ?? null;
+        if ($own && ! $this->provider->hasModelOverride() && $own !== $this->provider->model()) {
+            return $this->usingModel($own)->request($persona, $text, $purpose, $voiceId, $waitSeconds, $userRef, $tuning);
         }
         if (! $this->provider->isAvailable()) {
             return $this->fail('ยังไม่ได้ตั้ง ElevenLabs API key', 503);

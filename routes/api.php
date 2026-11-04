@@ -1689,6 +1689,9 @@ Route::prefix('v1/juntra/server')
                 ->name('transcribe');
             Route::get('/health', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'health'])
                 ->name('health');
+            // 🎭 (2026-11-04) คลังคลิปคำรับ/คำเติมที่สร้างไฟล์แล้ว (id → url) — แอดมินจัดการในหน้าคลังบทพูด
+            Route::get('/library', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'library'])
+                ->name('library');
             // 🎬 บทเล่าคำทำนายของโรงละคร (AI เขียน → ตรวจความตรง → ประโยคจากคำทำนาย)
             Route::post('/narration', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'narration'])
                 ->name('narration');

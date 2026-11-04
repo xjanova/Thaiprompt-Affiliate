@@ -82,7 +82,7 @@
 
         {{-- ═══ แยกตัวละคร ═══ --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            @foreach(\App\Services\Fortune\FortuneCharacterVoiceService::PERSONAS as $pKey => $persona)
+            @foreach(\App\Services\Fortune\FortuneCharacterVoiceService::personas() as $pKey => $persona)
                 @php
                     $t = $tp[$pKey] ?? [];
                     $state = [
