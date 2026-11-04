@@ -159,10 +159,10 @@ class FbWebOnlyChannelEgressTest extends TestCase
         [$type, , $payload] = $sender->sent[0];
         $this->assertSame('template', $type, "{$why}: ต้องเป็นกล่อง button template");
 
-        $buttons = $payload['attachment']['payload']['buttons'] ?? [];
+        $buttons = WebHandoffCopy::buttonsOf($payload);
         $this->assertNotEmpty($buttons, "{$why}: กล่องต้องมีปุ่ม");
         $this->assertSame('web_url', $buttons[0]['type'] ?? null, "{$why}: ปุ่มแรกต้องเป็น web_url");
-        $this->assertSame(WebHandoffCopy::LABEL_WEB_ROOM, $buttons[0]['title'] ?? null);
+        $this->assertContains($buttons[0]['title'] ?? null, [WebHandoffCopy::LABEL_WEB_ROOM, WebHandoffCopy::LABEL_ENTER_READING]);
 
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
         $this->assertDoesNotMatchRegularExpression('/TIER_|PAY_METHOD|STRIPE|บาท|฿|ค่าครู|โอน/u', $json, "{$why}: ห้ามมีปุ่ม/คำเรื่องเงิน");
@@ -212,8 +212,8 @@ class FbWebOnlyChannelEgressTest extends TestCase
 
         // ข้อความในกล่องคือชุด "ราคา" (ไม่มีตัวเลขเงิน)
         $this->assertSame(
-            WebHandoffCopy::reply(WebHandoffCopy::KIND_PRICE),
-            $sender->sent[0][2]['attachment']['payload']['text']
+            WebHandoffCopy::boxText(WebHandoffCopy::KIND_PRICE),
+            WebHandoffCopy::textOf($sender->sent[0][2])
         );
     }
 

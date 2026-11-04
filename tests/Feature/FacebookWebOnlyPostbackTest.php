@@ -99,9 +99,10 @@ class FacebookWebOnlyPostbackTest extends TestCase
             .json_encode($this->sender->messages, JSON_UNESCAPED_UNICODE));
 
         $box = $this->sender->templates[0]['payload'];
-        $this->assertSame('button', $box['attachment']['payload']['template_type'] ?? null, "{$label}: ต้องเป็น button template");
-        $this->assertSame(WebHandoffCopy::reply($kind), $box['attachment']['payload']['text'], "{$label}: ชนิดข้อความไม่ตรง");
-        $this->assertSame('web_url', $box['attachment']['payload']['buttons'][0]['type']);
+        $expectType = WebHandoffCopy::usesCard($kind) ? 'generic' : 'button';
+        $this->assertSame($expectType, $box['attachment']['payload']['template_type'] ?? null, "{$label}: ชนิดกล่องไม่ตรง");
+        $this->assertSame(WebHandoffCopy::boxText($kind), WebHandoffCopy::textOf($box), "{$label}: ชนิดข้อความไม่ตรง");
+        $this->assertSame('web_url', WebHandoffCopy::buttonsOf($box)[0]['type'] ?? null);
 
         $json = json_encode($box, JSON_UNESCAPED_UNICODE);
         $this->assertStringNotContainsString('TRANSFER_STAY_FB', $json);
@@ -464,7 +465,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
 
     private function boxText(int $i = 0): ?string
     {
-        return $this->sender->templates[$i]['payload']['attachment']['payload']['text'] ?? null;
+        return isset($this->sender->templates[$i]) ? WebHandoffCopy::textOf($this->sender->templates[$i]['payload']) : null;
     }
 
     public function test_รูประดับ_c_คล้ายสลิป_ไม่เรียก_slip_o_k_เก็บหลักฐาน_แจ้งแอดมิน_และส่งกล่อง(): void
@@ -528,7 +529,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
         $c->callProtected('handleSlipImageOnly', self::PSID, self::IMG_URL, false);
 
         $this->assertCount(1, $this->sender->templates, 'รูปติดกันต้องได้กล่องเดียว');
-        $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_ROOM), $this->boxText());
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $this->boxText());
         $this->assertSame([], \Illuminate\Support\Facades\Storage::disk('local')->files('fortune/slips'), 'รูปทั่วไปไม่เก็บ');
         $this->assertSame(0, \App\Models\FortuneSavedQuestion::count());
     }
@@ -548,7 +549,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
         ]);
 
         $this->assertCount(1, $this->sender->templates, json_encode($this->sender->messages, JSON_UNESCAPED_UNICODE));
-        $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_ROOM), $this->boxText());
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $this->boxText());
         $this->assertSame([], $this->sender->images, 'ห้ามยื่นการ์ดสินค้า/แบนเนอร์');
         foreach ($this->sender->messages as $m) {
             $this->assertNotContains('MENU_FORTUNE', array_column($m['quick_replies'] ?? [], 'payload'));
@@ -788,7 +789,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
             $c->callParent($method, self::PSID);
 
             $this->assertCount(1, $this->sender->templates, "{$method}: ต้องได้กล่อง 1 กล่อง");
-            $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_ROOM), $this->boxText(), $method);
+            $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $this->boxText(), $method);
             $json = json_encode($this->sender->templates[0]['payload'], JSON_UNESCAPED_UNICODE);
             $this->assertStringNotContainsString('/auth/facebook', $json, "{$method}: ห้ามพาไปสมัครแยกบัญชี");
             $this->assertSame([], $this->sender->messages, "{$method}: ห้ามมีข้อความอื่น");
@@ -805,7 +806,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
 
         $this->assertSame([], $c->conversational, 'ห้ามทำนายฟรีในแชท');
         $this->assertCount(1, $this->sender->templates);
-        $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_ROOM), $this->boxText());
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $this->boxText());
 
         // มากับ GET_STARTED postback → ด่านปุ่มส่งกล่องแล้ว ไม่ส่งซ้ำ
         $this->resetProbe($c);

@@ -117,7 +117,8 @@ trait WebHandoffTrait
             ];
             $this->alertWebHandoffFailure($platformUserId, $source);
         } else {
-            $text = (string) ($box['attachment']['payload']['text'] ?? WebHandoffCopy::reply($kind, is_string($name) ? $name : null));
+            // การ์ดรูป (generic) ไม่มี text — ใช้หัว — คำโปรยการ์ดเป็นข้อความที่บันทึก
+            $text = WebHandoffCopy::textOf($box) ?? WebHandoffCopy::boxText($kind, is_string($name) ? $name : null);
             $payload = $box;
         }
 

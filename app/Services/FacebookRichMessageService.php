@@ -1150,6 +1150,33 @@ class FacebookRichMessageService
             return null;
         }
 
+        // 🔮 (2026-11-04) พาไปดูดวง = การ์ดรูป "เข้าสู่ระบบดูดวง" รูปเดียว — แตะรูปหรือแตะปุ่มก็เข้าหน้าเลือกห้อง
+        if ($copy::usesCard($kind)) {
+            return [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'generic',
+                        'image_aspect_ratio' => 'horizontal',
+                        'elements' => [[
+                            'title' => mb_substr($copy::CARD_TITLE, 0, $copy::CARD_TEXT_MAX),
+                            'subtitle' => mb_substr($copy::cardSubtitle($kind), 0, $copy::CARD_TEXT_MAX),
+                            'image_url' => asset($copy::CARD_IMAGE_PATH),
+                            'default_action' => [
+                                'type' => 'web_url',
+                                'url' => $url,
+                            ],
+                            'buttons' => [[
+                                'type' => 'web_url',
+                                'title' => $copy::LABEL_ENTER_READING,
+                                'url' => $url,
+                            ]],
+                        ]],
+                    ],
+                ],
+            ];
+        }
+
         $buttons = [[
             'type' => 'web_url',
             'title' => $copy::LABEL_WEB_ROOM,

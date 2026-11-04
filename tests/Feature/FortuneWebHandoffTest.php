@@ -179,7 +179,10 @@ class FortuneWebHandoffTest extends TestCase
     // 2. กล่อง buildWebHandoffBox / getWebFortuneUrl
     // ============================================================
 
-    public function test_กล่องมีปุ่ม_web_url_ปุ่มเดียว_ไป_chat_continue_พร้อม_h_และ_pg(): void
+    /**
+     * 🔮 (2026-11-04 เจ้าของสั่ง) พาไปดูดวง = การ์ดรูป "เข้าสู่ระบบดูดวง" รูปเดียว แตะรูปหรือปุ่มก็เข้า
+     */
+    public function test_การ์ดรูปเข้าสู่ระบบดูดวง_แตะรูปหรือปุ่ม_ไป_chat_continue_พร้อม_h_และ_pg(): void
     {
         $rich = new FacebookRichMessageService($this->webOnly());
         $nonce = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -188,16 +191,25 @@ class FortuneWebHandoffTest extends TestCase
 
         $this->assertIsArray($box, 'ธง web-only เปิด ต้องมีลิงก์แม้ enable_web_fortune_button ปิด');
         $payload = $box['attachment']['payload'];
-        $this->assertSame('button', $payload['template_type']);
-        $this->assertSame(WebHandoffCopy::REPLIES[WebHandoffCopy::KIND_PRICE], $payload['text']);
-        $this->assertCount(1, $payload['buttons']);
-        $this->assertSame('web_url', $payload['buttons'][0]['type']);
-        $this->assertSame(WebHandoffCopy::LABEL_WEB_ROOM, $payload['buttons'][0]['title']);
-        $this->assertStringContainsString('/web-fortune/go?tk=', $payload['buttons'][0]['url']);
+        $this->assertSame('generic', $payload['template_type']);
+        $this->assertCount(1, $payload['elements'], 'ใช้รูปเดียว');
+        $card = $payload['elements'][0];
+        $this->assertSame(WebHandoffCopy::CARD_TITLE, $card['title']);
+        $this->assertSame(WebHandoffCopy::CARD_SUBTITLES[WebHandoffCopy::KIND_PRICE], $card['subtitle']);
+        $this->assertStringContainsString('แตะที่รูป', $card['subtitle'], 'ต้องบอกให้แตะที่การ์ดรูป');
+        $this->assertLessThanOrEqual(80, mb_strlen($card['subtitle']));
+        $this->assertStringContainsString('images/fortune/web-enter-reading.jpg', $card['image_url']);
+        $this->assertFileExists(public_path('images/fortune/web-enter-reading.jpg'));
+        $this->assertSame('web_url', $card['default_action']['type']);
+        $this->assertCount(1, $card['buttons']);
+        $this->assertSame('web_url', $card['buttons'][0]['type']);
+        $this->assertSame(WebHandoffCopy::LABEL_ENTER_READING, $card['buttons'][0]['title']);
+        $this->assertSame($card['default_action']['url'], $card['buttons'][0]['url'], 'แตะรูป = แตะปุ่ม');
+        $this->assertStringContainsString('/web-fortune/go?tk=', $card['buttons'][0]['url']);
         $this->assertStringNotContainsString('line.me', json_encode($box));
         $this->assertStringNotContainsString('TRANSFER_STAY_FB', json_encode($box));
 
-        $token = $this->tokenFromUrl($payload['buttons'][0]['url']);
+        $token = $this->tokenFromUrl($card['buttons'][0]['url']);
         $this->assertSame('facebook', $token['p']);
         $this->assertSame(self::PSID, $token['u']);
         $this->assertSame('/chat/continue/'.$nonce, $token['to']);
@@ -263,7 +275,7 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertFalse($res['fail_closed']);
         $this->assertNull($res['sent'], 'ไม่ได้ขอ deliver = ให้ ChannelManager ส่ง');
         $this->assertNull($res['reading']);
-        $this->assertSame(WebHandoffCopy::REPLIES[WebHandoffCopy::KIND_READING], $res['message']);
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_READING), $res['message']);
 
         $handoff = FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->firstOrFail();
         $this->assertSame('facebook', $handoff->platform);
@@ -275,7 +287,7 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertStringContainsString('แฟนจะกลับมาไหมคะ', (string) $handoff->intent_text);
         $this->assertStringNotContainsString('99 บาท', (string) $handoff->intent_text);
 
-        $token = $this->tokenFromUrl($res['fb_template']['attachment']['payload']['buttons'][0]['url']);
+        $token = $this->tokenFromUrl(WebHandoffCopy::buttonsOf($res['fb_template'])[0]['url']);
         $this->assertSame($handoff->nonce, $token['h']);
         $this->assertSame('/chat/continue/'.$handoff->nonce, $token['to']);
         $this->assertSame(5, $token['pg']);
@@ -312,7 +324,7 @@ class FortuneWebHandoffTest extends TestCase
         // 🔐 (รีวิว) กดปุ่ม = ไม่มีหัวข้อ (null) — ห้องเว็บต้องไม่ทักว่า "รับเรื่องที่ลูกทักมาในเพจ"
         $this->assertNull(FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->value('intent_topic'));
         $this->assertNull(FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->value('intent_text'));
-        $this->assertSame([['assistant', WebHandoffCopy::REPLIES[WebHandoffCopy::KIND_ROOM]]], $this->historyFor(self::PSID));
+        $this->assertSame([['assistant', WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM)]], $this->historyFor(self::PSID));
     }
 
     public function test_สร้างลิงก์ไม่ได้_fail_closed_พร้อม_quick_reply_และแจ้งแอดมินครั้งเดียว(): void

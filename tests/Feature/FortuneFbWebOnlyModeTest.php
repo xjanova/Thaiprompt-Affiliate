@@ -189,7 +189,7 @@ class FortuneFbWebOnlyModeTest extends TestCase
             $this->assertHandoff($res, $label);
             $this->assertNoBillingHappened($res, $before, $label);
             if ($kind !== null) {
-                $this->assertSame(WebHandoffCopy::reply($kind, 'สมศรี'), $res['message'], "{$label}: ชนิดกล่องต้องตรงเจตนา");
+                $this->assertSame(WebHandoffCopy::boxText($kind, 'สมศรี'), $res['message'], "{$label}: ชนิดกล่องต้องตรงเจตนา");
             }
             $this->assertNotNull($res['handoff_nonce'], "{$label}: ต้องออก handoff ให้เว็บคุยต่อ");
         }
@@ -283,14 +283,14 @@ class FortuneFbWebOnlyModeTest extends TestCase
         $res = $this->fcs($settings)->processMessage(self::PSID, 'สวัสดีค่ะแม่หมอ');
 
         $this->assertHandoff($res, 'chitchat');
-        $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_ROOM), $res['message']);
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $res['message']);
         $this->assertSame(0, FortuneReading::count());
     }
 
     /**
-     * เจ้าของสั่ง 2026-11-03: ไม่คุยบน FB แล้ว — AI เปิดอยู่ก็ต้องไม่ถูกเรียก ลูกค้าได้กล่องห้องทันที
+     * เจ้าของสั่ง 2026-11-04: คุยในเพจก่อน แล้วค่อยส่งการ์ดเข้าเว็บ — คุยเล่นต้องได้คำตอบ AI ไม่ใช่การ์ดทันที
      */
-    public function test_คุยเล่นตอน_ai_เปิด_ไม่เรียก_ai_ได้กล่องห้องทันที(): void
+    public function test_คุยเล่นตอน_ai_เปิด_แม่หมอคุยในเพจก่อน_ไม่ส่งการ์ด(): void
     {
         $settings = $this->webOnly(['enable_ai_chat' => true]);
         $fcs = new class($settings) extends FortuneConversationService
@@ -306,11 +306,33 @@ class FortuneFbWebOnlyModeTest extends TestCase
         };
         $fcs->setPlatform('facebook');
 
+        $before = FortuneReading::count();
         $res = $fcs->processMessage(self::PSID, 'สวัสดีค่ะแม่หมอ วันนี้เหนื่อยมากเลย');
 
-        $this->assertHandoff($res, 'chitchat-ai-on');
-        $this->assertSame(0, $fcs->aiCalls, 'ห้ามเรียก AI คุยบน FB');
-        $this->assertStringContainsString('เปิดไพ่ฟรี', (string) $res['message']);
+        $this->assertSame(1, $fcs->aiCalls, 'คุยเล่นต้องให้แม่หมอ AI ตอบในเพจ');
+        $this->assertSame('ai_chat_response', $res['action'] ?? null);
+        $this->assertSame('คุยต่อบน FB', $res['message']);
+        $this->assertTrue((bool) ($res['web_only_gate'] ?? false), 'ต้องมาจากด่าน web-only');
+        $this->assertNoBillingHappened($res, $before, 'chitchat-ai-on');
+        $this->assertSame(0, FortuneWebHandoff::where('platform_user_id', self::PSID)->count(), 'ยังไม่อยากดูดวง = ยังไม่ส่งการ์ด');
+    }
+
+    public function test_คุยเล่นตอน_ai_ตอบไม่ได้_ได้การ์ดเข้าเว็บแทนความเงียบ(): void
+    {
+        $settings = $this->webOnly(['enable_ai_chat' => true]);
+        $fcs = new class($settings) extends FortuneConversationService
+        {
+            public function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
+            {
+                return null;
+            }
+        };
+        $fcs->setPlatform('facebook');
+
+        $res = $fcs->processMessage(self::PSID, 'สวัสดีค่ะแม่หมอ');
+
+        $this->assertHandoff($res, 'chitchat-ai-null');
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $res['message']);
         $this->assertSame(1, FortuneWebHandoff::where('platform_user_id', self::PSID)->count());
     }
 
