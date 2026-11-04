@@ -33,30 +33,46 @@ Alpine.store('language', {
      * เริ่มต้น language store
      */
     init() {
-        // โหลด Google Translate Element script
-        this.loadGoogleTranslate();
-
-        // โหลดภาษาที่บันทึกไว้
-        const savedLang = localStorage.getItem('app_language');
+        // โหลดภาษาที่บันทึกไว้ (localStorage อาจโยน error ในโหมดส่วนตัว/บล็อกคุกกี้)
+        let savedLang = null;
+        try { savedLang = localStorage.getItem('app_language'); } catch (e) { /* ใช้ภาษาไทย */ }
         if (savedLang && this.languages.find(l => l.code === savedLang)) {
             this.current = savedLang;
         } else {
             this.current = 'th';
-            localStorage.setItem('app_language', 'th');
+            try { localStorage.setItem('app_language', 'th'); } catch (e) { /* ไม่เป็นไร */ }
         }
 
-        console.log('🌐 Language Store initialized:', this.current);
+        // ⚡ โหลด Google Translate (iframe ~1 วินาที) เฉพาะเมื่อต้องใช้จริง:
+        //    ภาษาที่บันทึกไว้ไม่ใช่ไทย หรือคุกกี้ googtrans ยังค้างการแปลไว้ — นอกนั้นรอจนผู้ใช้เลือกภาษาเอง (setLanguage)
+        if (this.current !== 'th' || this.hasActiveGoogleTranslateCookie()) {
+            this.loadGoogleTranslate();
+        }
     },
 
     /**
-     * โหลด Google Translate Element script
+     * คุกกี้ googtrans (เช่น "/th/en") = Google Translate กำลังแปลหน้าอยู่ → ต้องโหลดสคริปต์ต่อ ไม่งั้นแปลกลับไม่ได้
+     *
+     * @returns {boolean}
+     */
+    hasActiveGoogleTranslateCookie() {
+        const m = document.cookie.match(/(?:^|;\s*)googtrans=([^;]*)/);
+        if (!m) return false;
+        const target = decodeURIComponent(m[1]).split('/').pop();
+        return !!target && target !== 'th';
+    },
+
+    /**
+     * โหลด Google Translate Element script (เรียกซ้ำได้ — โหลดครั้งเดียว)
      */
     loadGoogleTranslate() {
         // เช็คว่าโหลดแล้วหรือยัง
         if (window.google?.translate) {
-            this.initGoogleTranslate();
+            if (!this.isGoogleTranslateReady) this.initGoogleTranslate();
             return;
         }
+        if (this._gtLoading) return;
+        this._gtLoading = true;
 
         // สร้าง callback function สำหรับ Google Translate
         window.googleTranslateElementInit = () => {
@@ -68,6 +84,7 @@ Alpine.store('language', {
         script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
         script.async = true;
         script.onerror = () => {
+            this._gtLoading = false; // ให้ลองโหลดใหม่ได้ตอนผู้ใช้เลือกภาษาอีกครั้ง
             console.error('❌ ไม่สามารถโหลด Google Translate ได้');
         };
         document.head.appendChild(script);
@@ -101,7 +118,8 @@ Alpine.store('language', {
             this.hideGoogleTranslateToolbar();
 
             // ✅ แปลภาษาตาม saved language (ไม่ reload หน้า)
-            const savedLang = localStorage.getItem('app_language');
+            // ใช้ this.current (ไม่อ่าน localStorage ซ้ำ) — ครอบคลุมทั้งภาษาที่บันทึกไว้และภาษาที่เพิ่งเลือกตอนโหลดแบบ on-demand
+            const savedLang = this.current;
             if (savedLang && savedLang !== 'th') {
                 console.log('🌐 Auto-translating to saved language:', savedLang);
                 setTimeout(() => this.translatePage(savedLang), 1000);
@@ -185,13 +203,20 @@ Alpine.store('language', {
         console.log('🌐 setLanguage called:', langCode);
 
         this.current = langCode;
-        localStorage.setItem('app_language', langCode);
+        try { localStorage.setItem('app_language', langCode); } catch (e) { /* โหมดส่วนตัว — แปลได้แต่จำไม่ได้ */ }
 
         // Dispatch event เมื่อเริ่มแปล
         const lang = this.languages.find(l => l.code === langCode);
         window.dispatchEvent(new CustomEvent('language-changed', {
             detail: { code: langCode, language: lang?.nativeName || langCode }
         }));
+
+        // สคริปต์ยังไม่ถูกโหลด (โหลดแบบ on-demand) → โหลดตอนนี้; initGoogleTranslate() จะแปลตามภาษาที่เพิ่งบันทึกให้เอง
+        // เลือก "ไทย" ทั้งที่ยังไม่โหลด = หน้าเป็นภาษาไทยอยู่แล้ว ไม่ต้องทำอะไร
+        if (!this.isGoogleTranslateReady) {
+            if (langCode !== 'th') this.loadGoogleTranslate();
+            return;
+        }
 
         this.translatePage(langCode);
     },

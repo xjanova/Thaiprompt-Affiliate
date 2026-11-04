@@ -135,17 +135,46 @@ html.tp-brand {
 .tp-num { font-family: var(--tp-font-num); }
 .tp-muted { color: var(--ink2); }
 
-/* พื้นหลังลาวา */
+/* พื้นหลังลาวา
+ * ⚡ (2026-11-04) เลิกใช้ filter:blur(72–86px) — เบลอวงใหญ่ 3 วงที่ขยับตลอดเวลา = GPU ต้องเบลอใหม่ทุกเฟรม
+ *    ทำให้หลังบ้านหน่วง แทนด้วย radial-gradient ที่ "เบลอไว้ก่อน": ค่า stop คำนวณจาก
+ *    Gaussian blur จริงของวงเดิม (σ = 72/78/86px ที่จอกว้าง 1920px) จึงหน้าตาเท่าเดิมบนเดสก์ท็อป
+ *    วงต้องใหญ่ขึ้น (×1.2/×1.25/×1.45) เพราะขอบเบลอเดิมล้นออกนอกกล่อง → ขยับตำแหน่งชดเชยให้จุดศูนย์กลางเท่าเดิม
+ *    - will-change:transform → เลื่อนบน compositor ไม่ต้อง repaint
+ *    - หยุดเมื่อแท็บถูกซ่อน (html.tp-tab-hidden จาก shell-script) และเมื่อผู้ใช้ตั้ง prefers-reduced-motion
+ *    - จอเล็ก (<768px) ใช้ 2 วง — วงที่ 3 แทบมองไม่เห็นบนมือถืออยู่แล้ว */
 .tp-lava { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
 .tp-lava > i {
-  position:absolute; border-radius:50%; display:block;
+  position:absolute; border-radius:50%; display:block; will-change:transform;
 }
-.tp-lava .l1 { top:-12%; left:-8%;  width:48vw; height:48vw; background:radial-gradient(circle, var(--accent1), transparent 66%); filter:blur(72px); opacity:var(--lava-op);  animation:tpDrift1 var(--lava-d1) ease-in-out infinite; }
-.tp-lava .l2 { bottom:-16%; right:-6%; width:44vw; height:44vw; background:radial-gradient(circle, var(--accent2), transparent 66%); filter:blur(78px); opacity:var(--lava-op);  animation:tpDrift2 var(--lava-d2) ease-in-out infinite; }
-.tp-lava .l3 { top:34%; left:46%;  width:34vw; height:34vw; background:radial-gradient(circle, var(--deep2),  transparent 68%); filter:blur(86px); opacity:var(--lava-op2); animation:tpDrift3 var(--lava-d3) ease-in-out infinite; }
+.tp-lava .l1 { top:calc(-12% - 4.8vw); left:calc(-8% - 4.8vw); width:57.6vw; height:57.6vw; opacity:var(--lava-op);  animation:tpDrift1 var(--lava-d1) ease-in-out infinite;
+  background:radial-gradient(closest-side,
+    color-mix(in srgb, var(--accent1) 79%, transparent) 0%,  color-mix(in srgb, var(--accent1) 75%, transparent) 12%,
+    color-mix(in srgb, var(--accent1) 63%, transparent) 25%, color-mix(in srgb, var(--accent1) 49%, transparent) 38%,
+    color-mix(in srgb, var(--accent1) 34%, transparent) 50%, color-mix(in srgb, var(--accent1) 20%, transparent) 62%,
+    color-mix(in srgb, var(--accent1) 11%, transparent) 72%, color-mix(in srgb, var(--accent1) 4%, transparent) 82%,
+    color-mix(in srgb, var(--accent1) 1.3%, transparent) 91%, transparent 100%); }
+.tp-lava .l2 { bottom:calc(-16% - 5.5vw); right:calc(-6% - 5.5vw); width:55vw; height:55vw; opacity:var(--lava-op);  animation:tpDrift2 var(--lava-d2) ease-in-out infinite;
+  background:radial-gradient(closest-side,
+    color-mix(in srgb, var(--accent2) 75%, transparent) 0%,  color-mix(in srgb, var(--accent2) 71%, transparent) 12%,
+    color-mix(in srgb, var(--accent2) 60%, transparent) 25%, color-mix(in srgb, var(--accent2) 45%, transparent) 38%,
+    color-mix(in srgb, var(--accent2) 31%, transparent) 50%, color-mix(in srgb, var(--accent2) 17%, transparent) 62%,
+    color-mix(in srgb, var(--accent2) 9%, transparent) 72%,  color-mix(in srgb, var(--accent2) 3.5%, transparent) 82%,
+    color-mix(in srgb, var(--accent2) 1.2%, transparent) 91%, transparent 100%); }
+.tp-lava .l3 { top:calc(34% - 7.65vw); left:calc(46% - 7.65vw); width:49.3vw; height:49.3vw; opacity:var(--lava-op2); animation:tpDrift3 var(--lava-d3) ease-in-out infinite;
+  background:radial-gradient(closest-side,
+    color-mix(in srgb, var(--deep2) 66%, transparent) 0%,  color-mix(in srgb, var(--deep2) 62%, transparent) 12%,
+    color-mix(in srgb, var(--deep2) 52%, transparent) 25%, color-mix(in srgb, var(--deep2) 37%, transparent) 38%,
+    color-mix(in srgb, var(--deep2) 24%, transparent) 50%, color-mix(in srgb, var(--deep2) 12.5%, transparent) 62%,
+    color-mix(in srgb, var(--deep2) 6%, transparent) 72%,  color-mix(in srgb, var(--deep2) 2.5%, transparent) 82%,
+    color-mix(in srgb, var(--deep2) 0.9%, transparent) 91%, transparent 100%); }
 
+.tp-tab-hidden .tp-lava > i { animation-play-state:paused; }
+@media (max-width: 767px) {
+  .tp-lava .l3 { display:none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .tp-lava .l1, .tp-lava .l2, .tp-lava .l3 { animation:none; }
+  .tp-lava > i { animation:none; will-change:auto; }
 }
 
 /* ลายกนกทองจาง ๆ เป็นพื้นหลังทั้งพื้นที่สมาชิก
@@ -288,13 +317,45 @@ html.tp-brand {
 .tpdd-item:hover { background: color-mix(in srgb, var(--accent1) 14%, transparent); }
 .tpdd-ic { width:30px; height:30px; flex:none; border-radius:9px; display:grid; place-items:center; background: color-mix(in srgb, var(--ink2) 14%, transparent); color:var(--ink2); font-size:13px; }
 
+/* ---- sidebar: คลาสแทน inline style ที่เคยซ้ำทุกแถว (~200 แถว ทุกหน้า → HTML บวม 400KB+) ---- */
+/* กล่องรายการเมนูที่เลื่อนได้ */
+.tp-side-list { position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px; }
+
+/* หัวกลุ่ม (ปุ่ม accordion) และเมนูเดี่ยว (ลิงก์) — ใช้คู่กับ .tp-card */
+.tp-grp { cursor:pointer; width:100%; text-align:left; display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:15px; box-shadow:var(--raise); font-family:inherit; color:var(--ink); }
+.tp-grp.is-active { box-shadow:var(--inset); }
+.tp-grp-link { padding-right:34px; text-decoration:none; }
+.tp-grp-tile { width:33px; height:33px; border-radius:11px; font-size:15px; }
+.tp-grp-txt { line-height:1.15; flex:1; min-width:0; }
+.tp-grp-name, .tp-grp-en { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tp-grp-name { font-weight:600; font-size:13.5px; }
+.tp-grp-en { font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px; }
+.tp-grp-badge { font-size:9px; padding:2px 7px; }
+.tp-grp-caret { font-size:10px; color:var(--ink2); width:12px; text-align:center; flex:none; transition:transform .2s ease; }
+.tp-grp[aria-expanded="true"] .tp-grp-caret { transform:rotate(90deg); }
+
+/* กล่องเมนูย่อย + เส้น RGB วิ่งด้านซ้าย (::before แทน <span> ต่อกลุ่ม)
+   display:flex อยู่ในคลาส (ไม่ใช่ inline) เพื่อให้ x-show คืนค่า display ถูก */
+.tp-subwrap { position:relative; margin:4px 0 6px 22px; padding-left:16px; display:flex; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) backwards; }
+.tp-subwrap::before { content:''; position:absolute; left:0; top:5px; bottom:5px; width:3px; border-radius:3px; background:linear-gradient(180deg,#ff5a5a,#ffb24d,#ffe24d,#5ad65a,#4dd2ff,#7a8cff,#c44dff,#ff5a5a); background-size:100% 220%; box-shadow:0 0 7px rgba(120,140,255,.4); animation:tpHue 5s linear infinite, tpFlow 2.6s linear infinite; }
+.tp-sub-hr { margin:5px 6px; }
+.tp-sub-head { font-size:10.5px; font-weight:700; color:var(--ink2); padding:7px 11px 3px; letter-spacing:.2px; }
+
 /* ลิงก์เมนูย่อย (sidebar) */
-.tp-sub-link { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:11px; background: var(--card-bg); text-decoration:none; transition: box-shadow .16s ease, color .16s ease; animation: tpSubItem .3s ease both; }
+.tp-sub-link { display:flex; align-items:center; gap:10px; padding:9px 28px 9px 11px; border-radius:11px; background: var(--card-bg); color: var(--ink2); text-decoration:none; transition: box-shadow .16s ease, color .16s ease; animation: tpSubItem .3s ease both; }
 .tp-sub-link:hover { box-shadow: var(--inset-sm); color: var(--ink); }
+.tp-sub-link.is-active { box-shadow: var(--inset-sm); color: var(--ink); }
+.tp-sub-dot { width:6px; height:6px; flex:none; border-radius:50%; background:var(--ink2); }
+.tp-sub-link.is-active .tp-sub-dot { background:linear-gradient(135deg,var(--accent1),var(--accent2)); }
+.tp-sub-label { font-weight:500; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tp-sub-link.is-active .tp-sub-label { font-weight:700; }
+.tp-sub-ext { font-size:8.5px; color:var(--ink2); flex:none; }
+.tp-sub-badge { font-size:8.5px; padding:2px 6px; }
 
 /* ปุ่มปักหมุด — ซ่อนไว้ เผยตอน hover แถวเมนู (ไม่รก sidebar); อันที่ปักไว้ = ทองค้าง */
 .tp-mrow { position: relative; }
-.tp-pin-btn { opacity: 0; color: var(--ink2); transition: opacity .14s ease, color .14s ease; }
+.tp-pin-btn { position:absolute; right:6px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:9.5px; line-height:1; opacity: 0; color: var(--ink2); transition: opacity .14s ease, color .14s ease; }
+.tp-pin-btn-grp { right:9px; font-size:10px; }
 .tp-mrow:hover .tp-pin-btn { opacity: .5; }
 .tp-pin-btn:hover { opacity: 1; color: var(--accent1); }
 .tp-pin-btn.on { opacity: 1; color: var(--accent1); }

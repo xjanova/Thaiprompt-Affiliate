@@ -12,6 +12,9 @@
     }
     root.classList.toggle('dark', readDark());
 
+    // หยุดแอนิเมชันพื้นหลังลาวาเมื่อแท็บถูกซ่อน (ไม่กิน GPU/แบตตอนไม่ได้ดู) — ดู .tp-tab-hidden ใน theme-v4.css
+    document.addEventListener('visibilitychange', () => root.classList.toggle('tp-tab-hidden', document.hidden));
+
     // ลงทะเบียนหลัง alpine:init (ก่อน Alpine.start ใน app.js)
     document.addEventListener('alpine:init', () => {
         window.Alpine.store('tp', {
