@@ -52,11 +52,11 @@ class FortuneConversationService
     // 🌙 (2026-11-03) FB web-only — sendWebHandoff() พาลูกค้า FB ไปห้องแม่หมอบนเว็บ (fail-closed)
     use \App\Services\Fortune\WebHandoffTrait;
 
-    // 🌐 (2026-11-03) FB web-only — ด่านขาเข้า maybeWebOnlyGate() (เรียกหัว processMessage หลัง takeover)
-    use \App\Services\Fortune\WebOnlyGateTrait;
-
     // 🌐 (2026-11-03) FB web-only — hard guard ที่จุดสร้างบิลทุกจุด (T5) ใช้ FbBillingGuard ตัดสิน
     use \App\Services\Fortune\WebOnlyBillingGuardTrait;
+
+    // 🌐 (2026-11-03) FB web-only — ด่านขาเข้า maybeWebOnlyGate() (เรียกหัว processMessage หลัง takeover)
+    use \App\Services\Fortune\WebOnlyGateTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -699,7 +699,7 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // 🤍 (2026-11-03) สัญญาณอยากทำร้ายตัวเอง — ตอบห่วงใย + สายด่วนใจ 1323 ก่อนทุก flow
+            // 🤍 (2026-11-03) สัญญาณอยากทำร้ายตัวเอง — ปลอบเบา ๆ ก่อนทุก flow
             // ═══════════════════════════════════════════════════════════════
             //   จุดนี้ทุกข้อความ FB/LINE/Telegram ผ่าน ⇒ ครอบทั้งแชท AI, เส้น Pro sensitive (ไม่มี guard),
             //   partial hold และกลางบททำนาย (ข้อยกเว้นของกฎ "ห้ามแทรกระหว่างทำนาย" — ชีวิตคนมาก่อน)
@@ -23701,7 +23701,7 @@ PROMPT;
             //   ตรวจก่อน AI call → ประหยัด token + ตัดเร็ว
             // 💬 (2026-05-28) ขยาย gate — นับ "ระบายวนไม่ดูดวง" (venting) ด้วย ไม่ใช่แค่ chitchat/meta
             //   เคส สุบิน สาวันดี 68 turns: venting ไม่เคยถูกนับ → ไม่ silence
-            //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้อง empathy + 1323)
+            //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้องปลอบเบา ๆ)
             //   🌙 (2026-10-30) chat_retry = ข้อความเดิมที่นับไปแล้วตอนลองรอบแรก — ห้ามนับซ้ำ
             $isChatRetry = ! empty($dmContext['chat_retry']);
             if (! $isChatRetry

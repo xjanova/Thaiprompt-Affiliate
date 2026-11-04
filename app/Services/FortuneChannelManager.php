@@ -7693,7 +7693,7 @@ class FortuneChannelManager
     }
 
     /**
-     * 🤍 (2026-11-04) ส่งคำตอบห่วงใย (สายด่วน 1323/1300/1669) ทาง LINE ด้วย reply เท่านั้น
+     * 🤍 (2026-11-04) ส่งคำปลอบ ทาง LINE ด้วย reply เท่านั้น
      *
      * ❌ ห้ามใช้ sendMessageWithReplyFallback — มันตกไป push เมื่อ token ตาย (โควตา 300/เดือน)
      * ส่งไม่ออก = log ไว้ แอดมินได้แจ้งเตือน Telegram แล้ว ไม่ push ซ้ำ

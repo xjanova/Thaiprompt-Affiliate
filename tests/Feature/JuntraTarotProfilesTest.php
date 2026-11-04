@@ -184,7 +184,8 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertSame('prediction_celtic', $call['purpose']);
         $this->assertSame(['openai' => FortuneModelRouter::MODEL_STRONG], $call['models']);
         $this->assertStringContainsString('🪬 คลังสัญญาณไสยศาสตร์', $call['prompt']);
-        $this->assertStringContainsString('1323', $call['prompt']);
+        $this->assertStringContainsString('ห้ามไล่ไปโทรหาใคร', $call['prompt']);
+        $this->assertStringNotContainsString('1323', $call['prompt']);
         $this->assertStringContainsString('ห้ามพิมพ์ตัวบท', $call['prompt']);
         $this->assertStringNotContainsString('ตาชั่งใช่/ไม่ใช่', $call['prompt']);
         // QA prod 2026-11-03: คำทำนายคุณไสยเขียนว่า "ตำราที่แนบมา…" — กฎห้ามพูดถึงวัตถุดิบต้องอยู่ใน prompt เสมอ

@@ -203,7 +203,7 @@ class CustomerPersonaService
 
         // 🚩 (2026-05-25) Critical keyword → throttle สั้นลง 30→10 min
         //   เคสจริง conv 4936: "เคยคิดฆ่าตัวตาย 3 ครั้ง" / "กินยานอนหลับจนดื้อยา"
-        //   → ระบบต้อง flag เร็ว เพื่อปรับ tone ตอบ + แนะ 1323/1669
+        //   → ระบบต้อง flag เร็ว เพื่อปรับ tone ตอบเป็นปลอบเบา ๆ
         $isCritical = $this->hasCriticalKeyword($messageText);
         $throttleTtl = $isCritical
             ? self::EXTRACTION_THROTTLE_TTL_CRITICAL
@@ -787,7 +787,7 @@ class CustomerPersonaService
      * แคบกว่า hasCriticalKeyword() มาก — ❌ ตัดคำหยาบ/โดนโกง/troll ออกทั้งหมด
      * (คนโกรธ/โดนหลอก/บ่น ≠ คนคิดสั้น — ห้ามยื่นสายด่วนใจให้จนรู้สึกถูกตราหน้าว่า "โรคจิต")
      *
-     * ใช้ gate การแสดงเบอร์ 1323 ให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
+     * ใช้ gate ประโยคปลอบให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
      * (ดู FortuneCustomerPersona::buildRiskGuidanceLines)
      */
     public function hasSelfHarmSignal(string $text): bool
