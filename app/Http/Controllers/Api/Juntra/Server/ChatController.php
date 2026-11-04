@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
+use App\Services\Fortune\FortuneLiveActivity;
 use App\Services\Fortune\JuntraChatService;
 use App\Services\Fortune\WebChatContinuityService;
 use Illuminate\Http\JsonResponse;
@@ -103,6 +104,9 @@ class ChatController extends Controller
 
         $userRef = $data['user_ref'];
         $claimed = isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null;
+
+        // 🔴 (2026-11-04) ลูกค้าเว็บพิมพ์หาแม่หมอ = นับใน "กำลังสนทนาตอนนี้" แบบเดียวกับ DM ของเพจ/LINE
+        app(FortuneLiveActivity::class)->touch('web', $userRef);
 
         try {
             $out = $this->chat->send(

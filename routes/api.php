@@ -1673,6 +1673,11 @@ Route::prefix('v1/juntra/server')
                 ->name('chat.send');
         });
 
+        // - stats/live : 🔴 (2026-11-04) ตัวเลขสดหน้าห้องของเว็บ — คนกำลังทักแม่หมอทุกช่องทาง · บิลจ่ายแล้วทั้งหมด · คิวเปิดไพ่
+        //   ตัวเลขจริงล้วน แคช 15 วิใน FortuneLiveActivity (เว็บดึงจากทุกหน้าที่เปิดอยู่)
+        Route::middleware('throttle:jwchat')->get('/stats/live', [\App\Http\Controllers\Api\Juntra\Server\StatsController::class, 'live'])
+            ->name('stats.live');
+
         // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
         //   on-demand + แคช — เว็บขอเฉพาะตอนลูกค้ากดฟัง ข้อความเดิม = ไฟล์เดิม · เพดานตัวอักษรต่อวันอยู่ใน service
         Route::middleware('throttle:jwvoice')->prefix('voice')->name('voice.')->group(function () {

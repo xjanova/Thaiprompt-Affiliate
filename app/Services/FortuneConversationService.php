@@ -659,6 +659,11 @@ class FortuneConversationService
                 // ignore — chat log is best-effort
             }
 
+            // 🔴 (2026-11-04) ตัวนับ "กำลังสนทนากับแม่หมอตอนนี้" ของป้ายหน้าห้องเว็บจันทรา (เลขจริงทุกช่องทาง)
+            //    touch() กลืน error เอง + เขียน DB ไม่เกินนาทีละครั้งต่อคน — ไม่กระทบ flow บอท
+            app(\App\Services\Fortune\FortuneLiveActivity::class)
+                ->touch($this->currentPlatform ?? 'facebook', $facebookUserId);
+
             // ═══════════════════════════════════════════════════════════════
             // 🤖 (2026-07-09) ลบ mention "@Meta AI" ที่ Facebook เด้งแนะนำ แล้วลูกค้าเผลอกดติดมา
             // ═══════════════════════════════════════════════════════════════
