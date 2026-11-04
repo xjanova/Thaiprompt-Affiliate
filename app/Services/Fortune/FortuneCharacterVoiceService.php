@@ -92,6 +92,17 @@ class FortuneCharacterVoiceService
         return $this->provider;
     }
 
+    /**
+     * 🎧 สำเนาที่สร้างเสียงด้วยโมเดลอื่น (ลองฟังก่อนบันทึก) — ชื่อโมเดลอยู่ในกุญแจแคช ไฟล์จึงไม่ปนกับโมเดลที่ใช้จริง
+     */
+    public function usingModel(string $model): static
+    {
+        $copy = clone $this;
+        $copy->provider = $this->provider->withModel($model);
+
+        return $copy;
+    }
+
     public static function isPersona(?string $persona): bool
     {
         return is_string($persona) && array_key_exists($persona, self::PERSONAS);
