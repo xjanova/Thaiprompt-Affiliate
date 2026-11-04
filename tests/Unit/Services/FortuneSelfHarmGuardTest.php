@@ -97,7 +97,8 @@ class FortuneSelfHarmGuardTest extends TestCase
     {
         $reply = FortuneAIService::buildAdversarialReply('self_harm');
 
-        $this->assertStringContainsString('สายด่วนสุขภาพจิต 1323', $reply);
+        $this->assertStringContainsString('สายด่วนใจ 1323', $reply);
+        $this->assertStringNotContainsString('สุขภาพจิต', $reply, 'กฎเจ้าของ: ห้ามคำที่ตราหน้าว่าป่วย (rule_no_mental_illness_labeling)');
         $this->assertStringContainsString('ศูนย์ช่วยเหลือสังคม 1300', $reply);
         $this->assertStringContainsString('1669', $reply, 'อยู่ในอันตรายตอนนี้ต้องรู้เบอร์ฉุกเฉิน');
         $this->assertStringContainsString('24 ชม.', $reply);
