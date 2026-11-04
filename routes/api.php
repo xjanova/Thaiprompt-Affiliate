@@ -1671,6 +1671,9 @@ Route::prefix('v1/juntra/server')
                 ->name('chat.start');
             Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
                 ->name('chat.send');
+            // 🎬 คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เสียงออกลำโพง — ข้อมูลเฉพาะที่พูดได้)
+            Route::post('/chat/greeting', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'greeting'])
+                ->name('chat.greeting');
         });
 
         // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
 use App\Services\Fortune\JuntraChatService;
+use App\Services\Fortune\JuntraRegularGreetingService;
 use App\Services\Fortune\WebChatContinuityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ use Throwable;
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
  *   - 🔈 (2026-11-04) `voice_mode` + `input_mode` + `voice_clips` (ไม่บังคับ) = โหมดคุยด้วยเสียง → ตอบ `voice_plan`
  *     {source, pre, say, say_parts, post} ให้เว็บเล่นคลิปคลัง → (เสียงใหม่ผ่าน /voice/speak) → คลิปคลัง
+ *   - 🎬 (2026-11-04) `POST /chat/greeting` คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เว็บนับบิลเอง ≥ 6)
  */
 class ChatController extends Controller
 {
@@ -164,5 +166,36 @@ class ChatController extends Controller
     private function owner(string $userRef): string
     {
         return 'jw'.$userRef;
+    }
+
+    /**
+     * 🎬 (2026-11-04) คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย — ข้อ 17.7
+     *
+     * facts รับเฉพาะคีย์ที่พูดออกลำโพงได้ (คีย์อื่นถูกทิ้งก่อนถึง AI) · ชื่อเรียกห้ามมีตัวเลข/@ (กันเบอร์/อีเมล)
+     * 200 {greeting, say, cached} · 429 ครบเพดานทั้งเว็บวันนี้ · 503 AI ไม่ตอบ/คำทักทายไม่ผ่าน → เว็บใช้คลิปลูกค้าเก่า
+     */
+    public function greeting(Request $request, JuntraRegularGreetingService $greetings): JsonResponse
+    {
+        $data = $request->validate([
+            'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
+            'persona' => 'required|string|in:'.implode(',', JuntraChatService::PERSONAS),
+            'facts' => 'sometimes|array',
+            'facts.name' => ['sometimes', 'nullable', 'string', 'max:20', "regex:/^[\p{Thai}A-Za-z .'-]+$/u"],
+            'facts.zodiac' => 'sometimes|nullable|in:'.implode(',', JuntraRegularGreetingService::ZODIACS),
+            'facts.birth_weekday' => 'sometimes|nullable|in:'.implode(',', JuntraRegularGreetingService::WEEKDAYS),
+            'facts.days_to_birthday' => 'sometimes|nullable|integer|min:0|max:7',
+            'facts.visits' => 'sometimes|nullable|integer|min:1|max:9999',
+            'facts.days_away' => 'sometimes|nullable|integer|min:0|max:3650',
+            'facts.last_topic' => 'sometimes|nullable|in:'.implode(',', array_keys(JuntraRegularGreetingService::TOPICS)),
+        ]);
+
+        $facts = array_intersect_key($data['facts'] ?? [], array_flip(['name', 'zodiac', 'birth_weekday', 'days_to_birthday', 'visits', 'days_away', 'last_topic']));
+        $result = $greetings->greet($data['persona'], $data['user_ref'], array_filter($facts, fn ($v) => $v !== null && $v !== ''));
+
+        return match ($result['code']) {
+            200 => response()->json(['success' => true, 'data' => $result['data']]),
+            429 => response()->json(['success' => false, 'error' => 'greeting_cap', 'message' => 'วันนี้ครบโควต้าคำทักทายแล้ว'], 429),
+            default => response()->json(['success' => false, 'error' => 'greeting_unavailable', 'message' => 'ยังทักทายด้วยเสียงไม่ได้ตอนนี้'], 503),
+        };
     }
 }
