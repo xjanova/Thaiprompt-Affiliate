@@ -35,6 +35,25 @@ class VoicePlanParserTest extends TestCase
         $this->assertSame([$plan['say']], $plan['say_parts']);
     }
 
+    /**
+     * คำตอบจริงผ่านตัวกรองขาออกของ FortuneAIService ก่อนถึง JuntraChatService — ตัวกรองลอก [softly] ทิ้ง
+     * AI จึงเขียนแท็กเป็น {softly} แล้วตัวนี้แปลงกลับเป็น [softly] ให้ ElevenLabs
+     */
+    public function test_a_reply_that_went_through_the_outbound_sanitizer_still_yields_the_plan(): void
+    {
+        $raw = "ความรักช่วงนี้ไปได้ดีค่ะ ✨\n[[VOICE]]\npre: prefix_1\nsay: {softly} ความรักช่วงนี้กำลังไปได้ดีนะคะ\npost: ask_more_1\n[[/VOICE]]";
+        $plan = $this->plan(\App\Services\FortuneAIService::stripInternalContextTags($raw));
+
+        $this->assertSame('ai', $plan['source']);
+        $this->assertSame('prefix_1', $plan['pre']);
+        $this->assertSame('[softly] ความรักช่วงนี้กำลังไปได้ดีนะคะ', $plan['say']);
+        $this->assertSame('ask_more_1', $plan['post']);
+
+        // บทที่เป็นคำเติมล้วนแบบมีแท็กปีกกา ก็ยังกลายเป็นคลิป
+        $plan = $this->plan("อืม\n[[VOICE]]\nsay: {softly} อืม… ค่ะ\n[[/VOICE]]");
+        $this->assertNull($plan['say']);
+    }
+
     public function test_a_reply_cut_off_inside_the_block_never_shows_the_block(): void
     {
         [$display, $block] = VoicePlanParser::extract("ดีค่ะ\n[[VOICE]]\npre: ack_1\nsay: ความรัก");

@@ -171,8 +171,10 @@ final class VoicePlanParser
         $text = (string) preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{FE0F}\x{200D}☾✨]/u', '', $text);
 
         // แท็กอารมณ์: เก็บแท็กแรกที่รู้จัก วางหน้าบท · ที่เหลือลอกทิ้ง
+        //   AI เขียนเป็น {softly} — ตัวกรองขาออกของ FortuneAIService ลอก [softly] ทิ้งก่อนถึงที่นี่
+        //   ([softly] ที่รอดมาได้ก็รับ) ส่งต่อให้ ElevenLabs เป็น [softly] เสมอ
         $tag = null;
-        $text = (string) preg_replace_callback('/\[([a-z ]{2,20})\]/iu', function ($m) use (&$tag) {
+        $text = (string) preg_replace_callback('/[\[\{]([a-z ]{2,20})[\]\}]/iu', function ($m) use (&$tag) {
             $name = strtolower(trim($m[1]));
             if ($tag === null && in_array($name, JuntraVoiceLibrary::ALLOWED_TAGS, true)) {
                 $tag = $name;

@@ -175,7 +175,8 @@ final class JuntraVoiceLibrary
     /** บทไม่มีแท็ก — ใช้ทั้งรายการที่ส่งให้ AI และเทียบข้อความ */
     public static function plain(string $script): string
     {
-        return trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('/\[[a-z_ ]+\]/iu', ' ', $script)));
+        // แท็กมาได้ทั้ง [softly] (บทในคลัง) และ {softly} (ที่ AI เขียน — ดู VoicePlanParser::cleanSay)
+        return trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('/[\[\{][a-z_ ]+[\]\}]/iu', ' ', $script)));
     }
 
     /**
