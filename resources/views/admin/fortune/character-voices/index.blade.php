@@ -218,6 +218,9 @@
         </template>
     </div>
 
+    {{-- ════════════════ จูนเสียงละเอียด ════════════════ --}}
+    @include('admin.fortune.character-voices._elevenlabs-tuning')
+
     {{-- toast --}}
     <div x-show="toast" x-transition class="fixed bottom-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm text-white"
          :class="toastOk ? 'bg-emerald-600' : 'bg-red-600'" x-text="toast"></div>
