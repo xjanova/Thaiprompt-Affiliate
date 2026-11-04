@@ -30,6 +30,9 @@ class JuntraServerChatApiTest extends TestCase
 
     private ?string $aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก ✨';
 
+    /** ผลที่ AI ส่งกลับทีละครั้งก่อนจะใช้ $aiReply — ใส่ Throwable เพื่อจำลองว่าทางนั้นหลุด */
+    private array $aiScript = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,9 +52,15 @@ class JuntraServerChatApiTest extends TestCase
         $ai = Mockery::mock(FortuneAIService::class);
         $ai->shouldReceive('withCustomerContext')->andReturnSelf();
         $ai->shouldReceive('chatWithCustomSystemPrompt')->andReturnUsing(function (...$args) {
-            $this->aiCalls[] = ['system' => $args[0], 'user' => $args[1], 'config' => $args[2] ?? []];
+            $this->aiCalls[] = ['system' => $args[0], 'user' => $args[1], 'config' => $args[2] ?? [],
+                'provider' => $args[3] ?? null, 'model' => $args[4] ?? null];
 
-            return ['response' => $this->aiReply, 'provider' => 'gemini'];
+            $next = array_shift($this->aiScript);
+            if ($next instanceof \Throwable) {
+                throw $next;
+            }
+
+            return $next ?? ['response' => $this->aiReply, 'provider' => 'gemini'];
         });
         $this->app->instance(FortuneAIService::class, $ai);
     }
@@ -132,6 +141,48 @@ class JuntraServerChatApiTest extends TestCase
         $this->aiReply = null;
 
         $this->send($session, 'สวัสดีค่ะ')->assertStatus(503)->assertJsonPath('reason_code', 'ai_unavailable');
+    }
+
+    public function test_when_the_free_gemini_lane_drops_the_room_switches_to_openai_luna(): void
+    {
+        $session = $this->start();
+        $this->aiScript = [
+            new \RuntimeException('cURL error 28: Operation timed out after 10001 milliseconds'),
+            ['response' => 'แม่หมออยู่ตรงนี้นะคะลูก (luna)', 'provider' => 'openai'],
+        ];
+
+        $this->send($session, 'สวัสดีค่ะ')->assertOk()
+            ->assertJsonPath('data.reply', 'แม่หมออยู่ตรงนี้นะคะลูก (luna)');
+
+        $this->assertCount(2, $this->aiCalls);
+        [$primary, $luna] = $this->aiCalls;
+        $this->assertSame(10, $primary['config']['timeout']);
+        $this->assertSame('openai', $luna['provider']);
+        $this->assertSame('gpt-6-luna', $luna['model']);
+        $this->assertSame(20, $luna['config']['timeout']);
+        $this->assertSame($primary['system'], $luna['system'], 'luna ได้ persona เดียวกันครบ');
+        $this->assertSame($primary['user'], $luna['user']);
+    }
+
+    public function test_when_luna_also_fails_the_web_gets_a_503_so_it_shows_the_prepared_message(): void
+    {
+        $session = $this->start();
+        $this->aiScript = [
+            new \RuntimeException('cURL error 28'),
+            new \RuntimeException('OpenAI 401: invalid api key'),
+        ];
+
+        $this->send($session, 'สวัสดีค่ะ')->assertStatus(503)->assertJsonPath('reason_code', 'ai_unavailable');
+        $this->assertCount(2, $this->aiCalls);
+    }
+
+    public function test_a_healthy_primary_never_calls_luna(): void
+    {
+        $session = $this->start();
+
+        $this->send($session, 'สวัสดีค่ะ')->assertOk();
+
+        $this->assertCount(1, $this->aiCalls);
     }
 
     public function test_history_is_kept_per_customer_and_never_mixed(): void
@@ -231,7 +282,8 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('ห้ามเปิดไพ่ใบใหม่', $call['system']);
         $this->assertStringNotContainsString('====', $call['system']);
         $this->assertStringContainsString('[[OFFER:', $call['system']);
-        $this->assertSame(['temperature' => 0.85, 'max_tokens' => 350], $call['config']);
+        $this->assertSame(['temperature' => 0.85, 'max_tokens' => 350, 'timeout' => 10], $call['config']);
+        $this->assertNull($call['provider'], 'ทางหลักยังเป็นตัวที่ตั้งไว้ในระบบ ไม่ได้บังคับ provider');
         $this->assertNull(app(\App\Services\Fortune\JuntraChatService::class)->context('jw42', $session));
     }
 
