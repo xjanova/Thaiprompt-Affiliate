@@ -824,6 +824,25 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringContainsString('น้ำเสียงแม่หมอจันทรา', end($this->aiCalls)['user']);
     }
 
+    /** 🪬 (2026-11-04, owner) ห้องคุณไสย = แม่หมอร่างดุ — กติกาป้ายของห้องแทนที่ชุดกลาง ใช้ป้าย kunsai อย่างเดียว */
+    public function test_kunsai_is_the_stern_form_of_mae_mor_with_its_own_offer_rules(): void
+    {
+        $service = app(\App\Services\Fortune\JuntraChatService::class);
+
+        $kunsai = $service->start('9', null, 'kunsai');
+        $this->assertSame('kunsai', $kunsai['persona']);
+        $service->send('9', $kunsai['session_id'], 'รู้สึกเหมือนโดนของ', [], webOffers: true, fillerOnEmpty: true);
+
+        $call = end($this->aiCalls);
+        $this->assertStringContainsString('กติกาของห้องคุณไสยนี้', $call['system']);
+        $this->assertStringContainsString('[[OFFER:kunsai]]', $call['system']);
+        $this->assertStringContainsString('ดุดัน เคร่งขรึม ตรงไปตรงมา', $call['system']);
+        $this->assertStringNotContainsString('ห้องนี้คุยฟรี', $call['system']);
+        $this->assertStringNotContainsString('love, career, money, health, kunsai, general', $call['system']);
+        $this->assertStringContainsString('น้ำเสียงแม่หมอจันทราร่างห้องคุณไสย', $call['user']);
+        $this->assertStringContainsString('ลูก: รู้สึกเหมือนโดนของ', $call['user']);
+    }
+
     public function test_an_unknown_persona_is_refused(): void
     {
         $this->startContinuity(['user_ref' => '42', 'persona' => 'grandma'])
