@@ -13,6 +13,14 @@
         'busy' => (object) [],
         'busyAll' => false,
     ])->all();
+
+    // 💳 ตารางค่าใช้จ่าย — 1 / 0.5 ไม่ต้องมีทศนิยมห้อยท้าย
+    $fmtCost = fn ($cost) => rtrim(rtrim(number_format((float) $cost, 2), '0'), '.');
+    $usdPerCredit = ($plan['price_usd'] ?? null) && ($plan['limit'] ?? 0) > 0 ? $plan['price_usd'] / $plan['limit'] : null;
+    $settingNames = [
+        'stability' => 'ความนิ่ง', 'similarity_boost' => 'ความเหมือน', 'style' => 'สไตล์',
+        'use_speaker_boost' => 'Speaker boost', 'speed' => 'ความเร็ว', 'clone_strength' => 'Clone strength',
+    ];
 @endphp
 
 @section('content')
@@ -84,11 +92,11 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โมเดลเสียง</label>
                 @php($selectedModel = old('elevenlabs_tts_model', $model))
-                <select name="elevenlabs_tts_model"
+                <select name="elevenlabs_tts_model" x-model="tuneModel"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
                     @foreach($models as $m)
                         <option value="{{ $m['id'] }}" @selected($m['id'] === $selectedModel)>
-                            {{ $m['name'] }}{{ $m['cost'] < 1 ? ' — ครึ่งราคา' : '' }}{{ $m['id'] === $model ? ' (ใช้อยู่)' : '' }}
+                            {{ $m['name'] }} — {{ $fmtCost($m['cost']) }} เครดิต/ตัวอักษร{{ $m['id'] === $model ? ' (ใช้อยู่)' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -112,6 +120,68 @@
                 @endif
             </div>
         </form>
+
+        {{-- 💳 ค่าใช้จ่ายแต่ละโมเดล — เครดิตต่อตัวอักษรอ่านสดจาก /v1/models · เงินประมาณจากราคาแพ็กของบัญชี --}}
+        <div class="mt-5">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">💳 ค่าใช้จ่ายแต่ละโมเดล</h3>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/60 text-xs text-gray-600 dark:text-gray-300">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-medium">โมเดล</th>
+                            <th class="px-3 py-2 text-right font-medium">เครดิต / ตัวอักษร</th>
+                            <th class="px-3 py-2 text-right font-medium">ข้อความ 1,000 ตัวอักษร</th>
+                            @if($plan)
+                                <th class="px-3 py-2 text-right font-medium">แพ็กนี้พูดได้ / เดือน</th>
+                            @endif
+                            <th class="px-3 py-2 text-left font-medium">จูนได้</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($models as $m)
+                            <tr class="transition" :class="tuneModel === @js($m['id']) ? 'bg-violet-50 dark:bg-violet-900/20' : ''">
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                                    {{ $m['name'] }}
+                                    @if($m['id'] === $model)
+                                        <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">ใช้อยู่</span>
+                                    @endif
+                                    <span x-show="tuneModel === @js($m['id']) && tuneModel !== savedModel" x-cloak
+                                          class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">เลือกอยู่ (ยังไม่บันทึก)</span>
+                                </td>
+                                <td class="px-3 py-2 text-right font-mono text-gray-900 dark:text-gray-100">
+                                    {{ $fmtCost($m['cost']) }}
+                                    @if($m['cost'] < 1)
+                                        <span class="ml-1 text-[11px] font-sans text-emerald-700 dark:text-emerald-300">ครึ่งราคา</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">
+                                    {{ number_format($m['cost'] * 1000) }} เครดิต
+                                    @if($usdPerCredit)
+                                        <span class="text-gray-500 dark:text-gray-400">≈ ${{ number_format($m['cost'] * 1000 * $usdPerCredit, 2) }}</span>
+                                    @endif
+                                </td>
+                                @if($plan)
+                                    <td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">≈ {{ number_format($plan['limit'] / max($m['cost'], 0.01)) }} ตัวอักษร</td>
+                                @endif
+                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
+                                    {{ collect($modelSettings[$m['id']] ?? [])->map(fn ($f) => $settingNames[$f] ?? $f)->implode(' · ') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                @if($plan)
+                    แพ็ก {{ $plan['tier'] ?? 'ElevenLabs' }}: {{ number_format($plan['limit']) }} เครดิตต่อเดือน
+                    @if($plan['price_usd'])
+                        (${{ number_format($plan['price_usd'], 2) }} ก่อนภาษี → 1 เครดิต ≈ ${{ number_format($usdPerCredit, 5) }})
+                    @endif
+                    ·
+                @endif
+                เครดิต/ตัวอักษร ดึงจากบัญชี ElevenLabs · ใช้เกินโควต้าแพ็กจะคิดเพิ่มตามเรทของ ElevenLabs · ฟังซ้ำจากแคชไม่เสียเครดิต
+            </p>
+        </div>
 
         <div class="mt-3 text-sm" x-show="creditsText" x-text="creditsText"
              :class="creditsOk ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'"></div>
@@ -236,6 +306,10 @@
             // 🎧 ผลลองฟังค่าจูนก่อนบันทึก แยกตามตัวละคร (ฟอร์มจูนอยู่ใน scope เดียวกันนี้)
             tuningPreview: Object.fromEntries(Object.keys(personas).map((k) => [k, { busy: false, clip: null, error: '' }])),
             voices: @json($voices['voices']),
+            // 🎚️ โมเดลที่เลือกในดรอปดาวน์ (ยังไม่บันทึกก็ได้) — ฟอร์มจูนกับปุ่มลองฟังใช้ตัวนี้
+            savedModel: @js($model),
+            tuneModel: @js(old('elevenlabs_tts_model', $model)),
+            modelSettings: {{ \Illuminate\Support\Js::from((object) $modelSettings) }},
             showMale: false,
             creditsLoading: false,
             creditsText: '',
@@ -244,6 +318,10 @@
             toastOk: true,
             CSRF: '{{ csrf_token() }}',
 
+            // โมเดลที่เลือกรับค่านี้ไหม (ไม่รู้จักโมเดล = ใช้รายการของโมเดลที่บันทึกไว้)
+            supports(field) {
+                return (this.modelSettings[this.tuneModel] ?? this.modelSettings[this.savedModel] ?? []).includes(field);
+            },
             visibleVoices() {
                 return this.voices.filter(v => this.showMale || v.gender !== 'male');
             },
@@ -331,7 +409,7 @@
                 s.busy = true;
                 s.error = '';
                 s.clip = null;
-                const payload = { persona: pKey, text: this.personas[pKey]?.text || '', personas: { [pKey]: {} } };
+                const payload = { persona: pKey, model: this.tuneModel, text: this.personas[pKey]?.text || '', personas: { [pKey]: {} } };
                 for (const [name, value] of new FormData(form).entries()) {
                     if (['output_format', 'language_code', 'apply_text_normalization'].includes(name)) payload[name] = value;
                     const m = name.match(/^personas\[(\w+)\]\[(\w+)\]$/);

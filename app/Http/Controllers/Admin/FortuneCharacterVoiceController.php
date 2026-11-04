@@ -26,6 +26,8 @@ class FortuneCharacterVoiceController extends Controller
 
     protected const MODELS_CACHE_KEY = 'fortune:elevenlabs_models';
 
+    protected const PLAN_CACHE_KEY = 'fortune:elevenlabs_plan';
+
     protected const EFFECTS_CACHE_KEY = 'fortune:elevenlabs_audio_effects';
 
     public function index(): View
@@ -45,12 +47,17 @@ class FortuneCharacterVoiceController extends Controller
             ? $this->voices($service)
             : ['voices' => ElevenLabsTtsProvider::FALLBACK_VOICES, 'live' => false, 'max_chars' => ElevenLabsTtsProvider::MAX_CHARS];
 
+        $models = $this->thaiModels($service->provider());
+
         return view('admin.fortune.character-voices.index', [
             'pageTitle' => '🎭 เสียงพากย์ตัวละคร',
             'hasKey' => $settings->getElevenlabsApiKey() !== null,
             'maskedKey' => $settings->getElevenlabsApiKeyMasked(),
             'model' => $service->provider()->model(),
-            'models' => $this->thaiModels($service->provider()),
+            'models' => $models,
+            // 🎚️ ฟอร์มจูนเปลี่ยนป้าย "โมเดลนี้ไม่ใช้" ตามโมเดลที่เลือกในดรอปดาวน์ทันที (ไม่ต้องบันทึกก่อน)
+            'modelSettings' => collect($models)->mapWithKeys(fn ($m) => [$m['id'] => ElevenLabsTtsProvider::supportedVoiceSettings($m['id'])])->all(),
+            'plan' => $this->plan($service->provider()),
             'dailyLimit' => $service->dailyCharLimit(),
             'usedToday' => $service->charsUsedToday(),
             'personas' => $personas,
@@ -103,6 +110,7 @@ class FortuneCharacterVoiceController extends Controller
 
         $validated = $request->validate($this->tuningRules([$persona]) + [
             'text' => 'nullable|string|max:'.FortuneCharacterVoiceService::MAX_SAMPLE_CHARS,
+            'model' => ['nullable', 'string', 'max:64', 'regex:/^[a-z0-9][a-z0-9_\-\.]*$/'],
         ], $this->tuningMessages());
 
         $in = $validated['personas'][$persona] ?? [];
@@ -111,6 +119,14 @@ class FortuneCharacterVoiceController extends Controller
         }
 
         $service = new FortuneCharacterVoiceService;
+        // 🎧 ลองฟังด้วยโมเดลที่เลือกในดรอปดาวน์ (ยังไม่บันทึก) — รับเฉพาะโมเดลไทยที่มีในบัญชี
+        $model = (string) ($validated['model'] ?? '');
+        if ($model !== '' && $model !== $service->provider()->model()) {
+            if (! in_array($model, array_column($this->thaiModels($service->provider()), 'id'), true)) {
+                return response()->json(['success' => false, 'error' => 'โมเดลนี้พูดภาษาไทยไม่ได้ หรือไม่มีในบัญชี ElevenLabs'], 422);
+            }
+            $service = $service->usingModel($model);
+        }
         $tuning = $service->tuningFor($persona, $this->tuningSet($validated, [$persona => $this->tuningPersona($in)]));
         $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::PERSONAS[$persona]['sample_text'];
 
@@ -263,6 +279,7 @@ class FortuneCharacterVoiceController extends Controller
                 : '✅ บันทึก ElevenLabs key แล้ว (key นี้ไม่มีสิทธิ์ดูโควต้า แต่สร้างเสียงได้)';
             Cache::forget(self::VOICES_CACHE_KEY);
             Cache::forget(self::MODELS_CACHE_KEY);
+            Cache::forget(self::PLAN_CACHE_KEY);
         }
 
         $settings->setElevenlabsTtsModel($model !== '' ? $model : null);
@@ -407,6 +424,34 @@ class FortuneCharacterVoiceController extends Controller
         }
 
         return $models;
+    }
+
+    /**
+     * 💳 แพ็ก ElevenLabs ของบัญชี (เครดิตต่อเดือน + ราคา) — ใช้ประมาณค่าใช้จ่ายของแต่ละโมเดล
+     * แคช 6 ชม. เฉพาะตอนอ่านได้ · อ่านไม่ได้ (key จำกัดสิทธิ์ / ล่ม) = null หน้าแสดงแค่เครดิต
+     *
+     * @return array{tier: ?string, limit: int, price_usd: ?float}|null
+     */
+    protected function plan(ElevenLabsTtsProvider $provider): ?array
+    {
+        if (! $provider->isAvailable()) {
+            return null;
+        }
+
+        $cached = Cache::get(self::PLAN_CACHE_KEY);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $credits = $provider->credits();
+        if (! $credits['success'] || ! $credits['limit']) {
+            return null;
+        }
+
+        $plan = ['tier' => $credits['tier'] ?? null, 'limit' => (int) $credits['limit'], 'price_usd' => $credits['price_usd'] ?? null];
+        Cache::put(self::PLAN_CACHE_KEY, $plan, 6 * 3600);
+
+        return $plan;
     }
 
     /**
