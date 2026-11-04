@@ -80,6 +80,15 @@ final class JuntraChatService
 
     public const DEFAULT_PERSONA = 'maemor';
 
+    /** 🔈 (2026-11-04) ที่มาของข้อความลูกค้า — voice = ถอดจากไมค์ (อาจถอดคำผิด) */
+    public const INPUT_MODES = ['text', 'voice'];
+
+    /** 🔈 คำที่ตัวละครเรียกลูกค้าในบทพูดออกเสียง (ตาม rooms-v3-design) */
+    private const VOICE_CUSTOMER_WORD = ['maemor' => 'ลูก', 'busaba' => 'คุณ', 'kunsai' => 'ลูก'];
+
+    /** 🔈 แผนเสียงเพิ่มท้ายคำตอบ ~100 โทเค็น — เผื่อไว้ไม่ให้คำตอบในแชทถูกตัดสั้นลง */
+    private const VOICE_EXTRA_TOKENS = 150;
+
     /** ความจำจากแชท FB ยาวสุดที่วางใน system message (WebChatContinuityService คุมไว้ที่ 5,000 แล้ว — ตรงนี้กันผู้เรียกในโค้ด) */
     public const MAX_MEMORY_CHARS = 5000;
 
@@ -483,7 +492,11 @@ TXT,
      *                                ห้องที่ล็อกแล้วใช้ตัวละครเดิมเสมอ
      * @param  bool  $allowMemory  🌙 (2026-11-03) อ่านความจำจากแชท FB ได้ — **ทางเซิร์ฟเวอร์เท่านั้น** (ทาง token = false เสมอ)
      * @param  (\Closure():?string)|null  $memoryLoader  สร้างความจำใหม่จาก DB เมื่อ cache ของห้องหาย (ทางเซิร์ฟเวอร์)
-     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string}
+     * @param  bool  $voiceMode  🔈 (2026-11-04) ลูกค้าเปิดโหมดคุยด้วยเสียง — AI ปิดท้ายด้วยแผนเสียง [[VOICE]]
+     *                           false = prompt และคำตอบเดิมทุกตัวอักษร (ไม่มี voice_plan)
+     * @param  string  $inputMode  text | voice (ข้อความมาจากไมค์ — ให้ถามทวนเมื่อชื่อ/วันเกิดไม่ชัด)
+     * @param  array<int,string>|null  $voiceClips  id คลิปคลังที่เว็บมีไฟล์จริง (null = ถือว่ามีครบ)
+     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string,voice_plan?:array}
      *
      * @throws RuntimeException AI ไม่ได้ตอบอะไร และไม่ได้ขอข้อความรองรับ
      */
@@ -498,6 +511,9 @@ TXT,
         ?string $persona = null,
         bool $allowMemory = false,
         ?\Closure $memoryLoader = null,
+        bool $voiceMode = false,
+        string $inputMode = 'text',
+        ?array $voiceClips = null,
     ): array {
         $history = $this->history($owner, $sessionId);
         // ห้องยังอยู่ (มีอย่างน้อยคำทักทาย) = รู้อยู่แล้วว่ามี/ไม่มีความจำ · ว่าง = ห้องหมดอายุ/cache ถูกล้าง
@@ -546,7 +562,12 @@ TXT,
             $reply = FortuneScopeGuard::deflect($scopeHit);
             $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
 
-            return ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona];
+            $out = ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona];
+            if ($voiceMode) {
+                $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, null, $voiceClips, 'guard');
+            }
+
+            return $out;
         }
 
         $contextLines = collect($history)
@@ -571,6 +592,11 @@ TXT,
             $system .= self::READING_RULES.($profile['reading_rules'] ?? '')."\n====\n".$reading."\n====";
             $config = ['temperature' => 0.6, 'max_tokens' => 600];
         }
+        // 🔈 (2026-11-04) โหมดเสียง — ต่อท้ายสุด (หลังบล็อกคำพยากรณ์) · ปิด = ไม่แตะ prompt เลย
+        if ($voiceMode) {
+            $system .= $this->voiceModeRules($persona, $profile, $inputMode, $voiceClips);
+            $config['max_tokens'] += self::VOICE_EXTRA_TOKENS;
+        }
 
         $result = $this->ask(
             $system,
@@ -580,6 +606,15 @@ TXT,
         );
 
         $reply = trim((string) ($result['response'] ?? ''));
+        // 🔈 แยกแผนเสียงออกก่อนทุกอย่าง — ข้อความในแชท/ประวัติต้องไม่มีบล็อก [[VOICE]] (AI ห้องถัดไปจะลอกตาม)
+        $voiceBlock = null;
+        if ($voiceMode) {
+            [$reply, $voiceBlock] = VoicePlanParser::extract($reply);
+            // ป้าย [[OFFER:…]] ที่ AI เผลอใส่ไว้ในบล็อก — คืนให้ข้อความ (ไม่งั้นการ์ดเสนอไพ่หาย)
+            if ($voiceBlock !== null && preg_match('/\[\[\s*OFFER\s*:[^\]]*\]\]/iu', $voiceBlock, $offerTag)) {
+                $reply = trim($reply.' '.$offerTag[0]);
+            }
+        }
         // 🔁 ห้องที่ไม่มีความจำ = ทางเดิม: ตรวจคำตอบว่างก่อนถอดป้าย
         if ($memory === null && $reply === '') {
             if (! $fillerOnEmpty) {
@@ -614,13 +649,48 @@ TXT,
 
         $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
 
-        return [
+        $out = [
             'reply' => $reply,
             'provider' => $result['provider'] ?? null,
             'kind' => $topic !== null ? 'offer' : 'reply',
             'offer_topic' => $topic,
             'persona' => $persona,
         ];
+        if ($voiceMode) {
+            $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, $voiceBlock, $voiceClips, $out['kind']);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔈 (2026-11-04) กติกาโหมดคุยด้วยเสียง — ตัวละครพูดออกลำโพง ใช้คลังคลิปก่อน สร้างเสียงใหม่เฉพาะเนื้อหาเจาะจง
+     *
+     * รายการคลังเป็นข้อมูลของเราเอง (ไม่มีข้อความลูกค้าปน) จึงไม่ต้องล้อมรั้ว ====
+     */
+    private function voiceModeRules(string $persona, array $profile, string $inputMode, ?array $voiceClips): string
+    {
+        $self = $profile['speaker'];
+        $customer = self::VOICE_CUSTOMER_WORD[$persona] ?? $profile['listener'];
+        $library = JuntraVoiceLibrary::promptList($persona, $voiceClips);
+
+        $rules = "\n\nตอนนี้ลูกค้าเปิดโหมดคุยด้วยเสียง: {$self}พูดออกลำโพงให้ลูกค้าฟัง\n"
+            ."- เขียนคำตอบในแชทตามปกติ แล้วปิดท้ายคำตอบด้วยแผนเสียงรูปแบบนี้เสมอ (ลูกค้าไม่เห็นแผนเสียง)\n"
+            ."[[VOICE]]\npre: <id คลิปเปิด หรือเว้นว่าง>\nsay: <บทพูดใหม่ หรือเว้นว่าง>\npost: <id คลิปปิด หรือเว้นว่าง>\n[[/VOICE]]\n"
+            ."- pre/post เลือกจากคลังเสียงด้านล่างเท่านั้น (ใส่แค่ id) ไม่มีที่เหมาะให้เว้นว่าง\n"
+            ."- คำตอบที่เป็นแค่การรับฟัง ทักทาย ชวนเล่าต่อ ขอบคุณ ลา หรือถามทวนสั้น ๆ → ใช้คลิปอย่างเดียว ให้ say ว่าง\n"
+            ."- say ใช้เฉพาะเนื้อหาที่เจาะจงเรื่องของลูกค้า (คำแนะนำ คำตอบคำถาม ใจความจากไพ่) เป็นภาษาพูดธรรมชาติของ{$self} เรียกลูกค้าว่า \"{$customer}\" 1-3 ประโยค ไม่เกิน 220 ตัวอักษร\n"
+            ."  เล่าใจความสำคัญที่สุด ไม่อ่านทุกบรรทัด ❌ ห้ามมีรายการ ตัวเลขข้อ อีโมจิ markdown ลิงก์ ราคา หรือยอดเงิน\n"
+            ."  ใส่แท็กอารมณ์ได้ไม่เกิน 1 แท็กไว้หน้าบท จาก [softly] [calm] [warmly] [excited] [whispers] [sighs] ให้เข้ากับบุคลิกห้อง\n"
+            ."- ❌ อย่าเอาคำที่มีในคลังมาเขียนซ้ำใน say (เช่นคำขึ้นต้น ให้ใช้ pre เป็นคลิป prefix แทน)\n"
+            ."- ถ้าคำตอบมีการ์ดเสนอเปิดไพ่ ให้ say ว่า{$self}วางไพ่ไว้ให้ด้านล่างแล้ว ไม่ต้องพูดราคา\n"
+            ."คลังเสียงของห้องนี้ (id: ข้อความ):\n".$library;
+
+        if ($inputMode === 'voice') {
+            $rules .= "\n- ข้อความล่าสุดของลูกค้ามาจากการพูดผ่านไมค์ อาจถอดคำผิด ถ้าวันเกิด ชื่อ หรือคำสำคัญไม่ชัด ให้ถามทวนสั้น ๆ แทนการเดา";
+        }
+
+        return $rules;
     }
 
     /**

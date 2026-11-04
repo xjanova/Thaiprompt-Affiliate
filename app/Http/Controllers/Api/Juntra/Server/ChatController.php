@@ -29,6 +29,8 @@ use Throwable;
  *     💬 (2026-11-04 เจ้าของสั่ง) ความจำ = RPG/อุปนิสัย + ประวัติเปิดไพ่ เท่านั้น (ไม่มีแชทเพจ/เรื่องที่ทักมา)
  *        ใช้ได้ทุกห้องที่ลูกค้าเปิด ไม่ต้องมาจากลิงก์ handoff · ธง facebook_web_only ปิด = ห้องแบบเดิมทุกอย่าง
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
+ *   - 🔈 (2026-11-04) `voice_mode` + `input_mode` + `voice_clips` (ไม่บังคับ) = โหมดคุยด้วยเสียง → ตอบ `voice_plan`
+ *     {source, pre, say, say_parts, post} ให้เว็บเล่นคลิปคลัง → (เสียงใหม่ผ่าน /voice/speak) → คลิปคลัง
  */
 class ChatController extends Controller
 {
@@ -99,9 +101,16 @@ class ChatController extends Controller
             'thaiprompt_user_id' => 'sometimes|nullable|integer|min:1',
             // 🎭 ใช้เฉพาะห้องที่ยังไม่ล็อกตัวละคร — ห้องที่ล็อกแล้วไม่เปลี่ยน
             'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
+            // 🔈 (2026-11-04) โหมดคุยด้วยเสียง (ลูกค้าซื้อ pass แล้ว — เว็บเป็นคนตัดสิน) · ไม่ส่ง = ทางเดิมทุกตัวอักษร
+            'voice_mode' => 'sometimes|boolean',
+            'input_mode' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::INPUT_MODES),
+            // id คลิปคลังที่เว็บมีไฟล์จริง — AI เห็นเฉพาะคลิปที่เล่นได้
+            'voice_clips' => 'sometimes|nullable|array|max:120',
+            'voice_clips.*' => 'string|max:40|regex:/^[a-z_]+_\d+$/',
         ]);
 
         $userRef = $data['user_ref'];
+        $voiceMode = $request->boolean('voice_mode');
         $claimed = isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null;
 
         try {
@@ -119,6 +128,9 @@ class ChatController extends Controller
                 // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่จาก RPG/ประวัติไพ่ของลูกค้า
                 allowMemory: $this->continuity->enabled(),
                 memoryLoader: fn () => $this->continuity->rebuildMemory($userRef, $claimed),
+                voiceMode: $voiceMode,
+                inputMode: $data['input_mode'] ?? 'text',
+                voiceClips: isset($data['voice_clips']) ? array_values($data['voice_clips']) : null,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
@@ -132,14 +144,20 @@ class ChatController extends Controller
             ], 503);
         }
 
-        return response()->json(['data' => [
+        $payload = [
             'session_id' => $data['session_id'],
             'reply' => $out['reply'],
             'ai_provider' => $out['provider'],
             'kind' => $out['kind'],
             'offer_topic' => $out['offer_topic'],
             'persona' => $out['persona'],
-        ]]);
+        ];
+        // 🔈 มีเฉพาะเมื่อเปิดโหมดเสียง — เว็บรุ่นเดิมได้ JSON หน้าตาเดิม
+        if ($voiceMode) {
+            $payload['voice_plan'] = $out['voice_plan'] ?? null;
+        }
+
+        return response()->json(['data' => $payload]);
     }
 
     /** ห้องของลูกค้าเว็บ — คนละ namespace กับ users.id ของ Thaiprompt (key ไม่มีทางชนกัน) */
