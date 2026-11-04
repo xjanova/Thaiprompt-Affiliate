@@ -1681,6 +1681,11 @@ Route::prefix('v1/juntra/server')
             Route::get('/clips/{clip}', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'show'])
                 ->whereNumber('clip')
                 ->name('clips.show');
+            // 🔈 (2026-11-04) โหมดคุยด้วยเสียง — ถอดเสียงไมค์ (Scribe สำรอง) + สถานะระบบเสียง
+            Route::post('/transcribe', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'transcribe'])
+                ->name('transcribe');
+            Route::get('/health', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'health'])
+                ->name('health');
         });
 
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า

@@ -4,6 +4,7 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneVoiceUsage;
 use App\Services\FortuneVoiceStorageService;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Database\QueryException;
@@ -50,6 +51,9 @@ class FortuneCharacterVoiceService
             'sample_text' => '[whispers] ลูกเอ๋ย... สิ่งที่ตามลูกมา มันไม่ใช่เรื่องบังเอิญ [softly] ตั้งสติไว้ แม่หมอจะเปิดไพ่ดูให้ ว่าใครทำ ทำด้วยอะไร และจะแก้อย่างไร [sighs] อย่าเพิ่งกลัวนะลูก',
         ],
     ];
+
+    /** 🔈 (2026-11-04) งานที่ลูกค้าเป็นคนขอ — นับเพดานตัวอักษรรายวัน (sample ของแอดมินไม่นับ) */
+    public const METERED_PURPOSES = ['chat', 'greeting', 'narration'];
 
     /** ตัวอักษรสูงสุดต่อข้อความในห้องแชท (ยาวกว่านี้ตัดทิ้ง — คุมต้นทุนต่อครั้ง) */
     public const MAX_CHAT_CHARS = 1500;
@@ -128,12 +132,15 @@ class FortuneCharacterVoiceService
     /**
      * ขอไฟล์เสียงของข้อความ — เจอในแคชคืนทันที ไม่เจอค่อยสั่งสร้าง
      *
-     * @param  string  $purpose  'chat' (ห้องแชท — นับเพดานรายวัน) | 'sample' (แอดมินฟังเทียบ)
+     * @param  string  $purpose  'chat' (ห้องแชท) | 'greeting' (ทักลูกค้าคุ้นเคย) | 'narration' (เล่าคำทำนาย)
+     *                           — สามอย่างนี้นับเพดานรายวัน · 'sample' (แอดมินฟังเทียบ) ไม่นับ
      * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ElevenLabs ตอบไฟล์ในคำขอเดียว ไม่ต้องรอ
+     * @param  string|null  $userRef  🔈 (2026-11-04) ลูกค้าฝั่งเว็บที่ขอเสียง — ลงบันทึกต้นทุน fortune_voice_usages
      * @return array{success: bool, clip: ?FortuneCharacterVoiceClip, error: ?string, code: int}
      */
-    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0): array
+    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0, ?string $userRef = null): array
     {
+        $metered = in_array($purpose, self::METERED_PURPOSES, true);
         if (! self::isPersona($persona)) {
             return $this->fail('ไม่รู้จักตัวละครนี้', 422);
         }
@@ -164,7 +171,7 @@ class FortuneCharacterVoiceService
         }
 
         if ($clip && $clip->status === FortuneCharacterVoiceClip::STATUS_FAILED
-            && $purpose === 'chat'
+            && $metered
             && $clip->updated_at && $clip->updated_at->gt(now()->subSeconds(self::FAILED_RETRY_AFTER_SECONDS))) {
             return ['success' => false, 'clip' => $clip, 'error' => $clip->error ?: 'สร้างเสียงไม่สำเร็จ', 'code' => 502];
         }
@@ -180,7 +187,7 @@ class FortuneCharacterVoiceService
         try {
             $chars = mb_strlen($clean);
 
-            if ($purpose === 'chat' && $this->charsUsedToday() + $chars > $this->dailyCharLimit()) {
+            if ($metered && $this->charsUsedToday() + $chars > $this->dailyCharLimit()) {
                 Log::warning('🎭 เสียงตัวละคร: ชนเพดานตัวอักษรรายวัน', [
                     'used' => $this->charsUsedToday(),
                     'limit' => $this->dailyCharLimit(),
@@ -199,12 +206,23 @@ class FortuneCharacterVoiceService
                 'chars' => $chars,
             ]);
 
-            if ($purpose === 'chat') {
+            if ($metered) {
                 // นับก่อนยิง — ล้มกลางทางก็นับ (ElevenLabs อาจคิดไปแล้ว) กันโดนยิงซ้ำจนโควต้าไหล
                 $this->addUsage($chars);
             }
 
             $clip = $this->synthesizeInto($clip, $clean, $voice);
+
+            FortuneVoiceUsage::record([
+                'kind' => 'tts',
+                'purpose' => $purpose,
+                'provider' => 'elevenlabs',
+                'persona' => $persona,
+                'user_ref' => $userRef,
+                'chars' => $chars,
+                'success' => $clip->status !== FortuneCharacterVoiceClip::STATUS_FAILED,
+                'meta' => ['clip_id' => $clip->id, 'model' => $model],
+            ]);
         } finally {
             $lock->release();
         }
