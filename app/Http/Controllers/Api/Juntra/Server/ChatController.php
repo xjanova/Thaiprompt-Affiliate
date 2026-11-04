@@ -23,11 +23,11 @@ use Throwable;
  *   - แม่หมอไม่ทำนายเองในแชท ชวนเลือกแพ็กเกจเปิดไพ่แทน (kind=offer + offer_topic)
  *   - AI เงียบ = 503 ai_unavailable (ไม่ส่งข้อความรองรับที่หน้าตาเหมือนคำตอบจริง)
  *   - 💬 (2026-09-21) `context` (ไม่บังคับ) = คำพยากรณ์ที่ห้องนี้คุยต่อ — อยู่ใน system message ทุกรอบ
- *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ย้ายมาจากแชทเพจ FB
- *     แม่หมอได้ "ความจำ" จากแชท FB (WebChatContinuityService) วางใน system message เท่านั้น
+ *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ผูกกับแชทเพจ FB
+ *     แม่หมอได้ "ความจำ" (WebChatContinuityService) วางใน system message เท่านั้น
  *     ความจำไม่ถูกส่งกลับไปที่เว็บ — ตอบแค่ continued_from / customer.display_name / returning
- *     🔁 (รีวิว) ความจำ/คำทักทาย "คุยค้างไว้ในเพจ" เฉพาะห้องที่เปิดจากลิงก์ handoff ของ FB (ส่ง `handoff` มา)
- *        **และ** ธง facebook_web_only เปิด — ไม่งั้นห้องแชทเว็บเหมือนเดิมทุกอย่าง (ไม่มีบล็อกความจำ คำทักทายเดิม)
+ *     💬 (2026-11-04 เจ้าของสั่ง) ความจำ = RPG/อุปนิสัย + ประวัติเปิดไพ่ เท่านั้น (ไม่มีแชทเพจ/เรื่องที่ทักมา)
+ *        ใช้ได้ทุกห้องที่ลูกค้าเปิด ไม่ต้องมาจากลิงก์ handoff · ธง facebook_web_only ปิด = ห้องแบบเดิมทุกอย่าง
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
  */
 class ChatController extends Controller
@@ -52,13 +52,13 @@ class ChatController extends Controller
             'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
         ]);
 
-        // 🔁 ไม่มี handoff หรือธงปิด = ห้องแบบเดิม (continuity = null → ไม่มีความจำ คำทักทายเดิม)
-        $handoff = $data['handoff'] ?? null;
-        $continuity = ($handoff !== null && $handoff !== '' && $this->continuity->enabled())
+        // 🔁 ธงปิด = ห้องแบบเดิม (continuity = null → ไม่มีความจำ คำทักทายเดิม)
+        //    💬 (2026-11-04) ธงเปิด = ทุกห้องได้ความจำของลูกค้า (RPG/อุปนิสัย) — handoff แค่ consume ลิงก์
+        $continuity = $this->continuity->enabled()
             ? $this->continuity->begin(
                 $data['user_ref'],
                 isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
-                $handoff,
+                $data['handoff'] ?? null,
             )
             : null;
 
@@ -116,7 +116,7 @@ class ChatController extends Controller
                 fillerOnEmpty: false,
                 context: $data['context'] ?? null,
                 persona: $data['persona'] ?? null,
-                // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่ได้เฉพาะลูกค้าที่เพิ่งเข้ามาทาง handoff
+                // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่จาก RPG/ประวัติไพ่ของลูกค้า
                 allowMemory: $this->continuity->enabled(),
                 memoryLoader: fn () => $this->continuity->rebuildMemory($userRef, $claimed),
             );

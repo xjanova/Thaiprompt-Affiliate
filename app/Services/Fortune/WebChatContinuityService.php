@@ -22,9 +22,10 @@ use Illuminate\Support\Facades\Schema;
  *   2. หา handoff (nonce จากลิงก์ /chat/continue/{nonce}) แล้ว consume ครั้งเดียว (lockForUpdate)
  *   3. รวม PSID ของ FB (สูงสุด 5) — handoff, users.facebook_psid, alias, บิล FB ของ user, persona สาขาอื่น
  *   4. ประกอบ "บล็อกความจำ" (≤ 5,000 ตัว) — วางใน system message เท่านั้น (JuntraChatService ใส่รั้ว ====):
- *        intent ที่ทักมาในเพจ · timeline การเปิดไพ่ (ไม่มีราคา) · persona (โหมดเว็บ) ·
- *        บทสนทนา FB 12 ข้อความล่าสุดใน 14 วัน · คำทำนายล่าสุดที่จ่ายแล้วใน 30 วัน
- *   5. ไม่ส่งบทสนทนา FB ไปเก็บที่ juntraweb — ความจำอยู่ใน cache ฝั่ง Thaiprompt เท่านั้น
+ *        timeline การเปิดไพ่ (ไม่มีราคา) · persona/อุปนิสัย (โหมดเว็บ) · คำทำนายล่าสุดที่จ่ายแล้วใน 30 วัน
+ *   5. 💬 (2026-11-04 เจ้าของสั่ง) **ไม่ส่งบริบทที่คุยในเพจมาเว็บ** — "คุยก่อน แล้วค่อยส่งมาเว็บ แต่ไม่ต้องส่งบริบท
+ *      ที่คุยในเฟชบุ๊คมา" ⇒ ตัดเรื่องที่ทักมา (intent) + บทสนทนา FB ออก · RPG/อุปนิสัยยังใช้
+ *      ความจำผูกกับตัวลูกค้า (ทุกห้อง ทุกครั้งที่เปิดห้อง) ไม่ต้องมาจากลิงก์ handoff แล้ว
  *
  * ทุกขั้นห่อ try/catch — ความจำเป็นของแถม ห้ามทำให้เปิดห้องแชทไม่ได้
  */
@@ -33,14 +34,6 @@ class WebChatContinuityService
     public const MEMORY_MAX_CHARS = 5000;
 
     public const MAX_PSIDS = 5;
-
-    public const CONVERSATION_DAYS = 14;
-
-    public const CONVERSATION_MAX_MESSAGES = 12;
-
-    public const MESSAGE_MAX_CHARS = 280;
-
-    public const CONVERSATION_MAX_CHARS = 3000;
 
     public const PERSONA_MAX_CHARS = 1200;
 
@@ -68,9 +61,8 @@ class WebChatContinuityService
     {
         $out = self::emptyResult();
 
-        // 🔁 (รีวิว) ความจำมีเฉพาะห้องที่เปิดจากลิงก์ handoff ของ FB + ธง facebook_web_only เปิด
-        //    ไม่ส่ง nonce = ไม่หยิบ handoff ล่าสุดเอง และไม่สร้างความจำจาก PSID ของ user
-        if ($handoffNonce === null || $handoffNonce === '' || ! $this->enabled()) {
+        // 🔁 ธง facebook_web_only ปิด = ห้องแบบเดิม ไม่มีความจำ
+        if (! $this->enabled()) {
             return $out;
         }
 
@@ -81,32 +73,26 @@ class WebChatContinuityService
             }
 
             $userPsids = $this->userPsids($user);
-            $handoff = $this->consumeHandoff($user, $userPsids, $handoffNonce, $userRef);
-            // consume ไม่ได้ (ใช้แล้ว/หมดอายุ/ของคนอื่น) = ไม่ได้มาจากลิงก์จริงรอบนี้ → ห้องแบบเดิม ไม่มีความจำ
-            if (! $handoff) {
-                return $out;
+
+            // ลิงก์จากเพจ (nonce) → consume ครั้งเดียว ให้เว็บรู้ว่าเปิดลิงก์ใหม่หรือเปิดซ้ำ
+            // 💬 (2026-11-04) ไม่หยิบเรื่องที่ทักมา (intent) ไปใช้แล้ว — ไม่ส่งบริบทแชทเพจมาเว็บ
+            $handoff = null;
+            if ($handoffNonce !== null && $handoffNonce !== '') {
+                $handoff = $this->consumeHandoff($user, $userPsids, $handoffNonce, $userRef);
+                if ($handoff) {
+                    $out['handoff_consumed'] = true;
+                    $out['handoff_id'] = (string) $handoff->nonce;
+                }
             }
 
             $psids = $this->collectPsids($user, $userPsids, $handoff);
-            $intentText = $handoff ? WebChatContinuitySanitizer::sanitizeInbound((string) $handoff->intent_text, 'user') : '';
-            $built = $this->buildMemory($user, $psids, $intentText !== '' ? $intentText : null);
+            $memory = $this->buildMemory($user, $psids);
 
-            $out['memory'] = $built['memory'];
-            $out['returning'] = $built['memory'] !== null;
-            $out['recent_conversation'] = $built['recent'];
+            $out['memory'] = $memory;
+            $out['returning'] = $memory !== null;
             $out['customer_name'] = $this->customerName($user, $psids);
 
-            if ($handoff) {
-                $out['handoff_consumed'] = true;
-                $out['handoff_id'] = (string) $handoff->nonce;
-                $out['intent_text'] = $intentText !== '' ? $intentText : null;
-                // 🔐 (รีวิว) หัวข้อ 'general' ที่ไม่มีข้อความประกอบ = ไม่มีเรื่องจริงให้อ้าง (แถวเก่าจากการกดปุ่ม)
-                $topic = $handoff->intent_topic;
-                if ($intentText !== '' || ($topic !== null && $topic !== 'general')) {
-                    $out['intent_topic'] = $topic ?? 'general';
-                }
-            }
-            if ($handoff || $built['memory'] !== null) {
+            if ($handoff || $memory !== null) {
                 $out['continued_from'] = 'facebook';
             }
         } catch (\Throwable $e) {
@@ -126,9 +112,8 @@ class WebChatContinuityService
      */
     public function rebuildMemory(string $userRef, ?int $claimedUserId = null): ?string
     {
-        // 🔁 (รีวิว) สร้างใหม่ได้เฉพาะลูกค้าเว็บที่เพิ่ง consume handoff ของ FB (ภายใน TTL ของ handoff) + ธงเปิด
-        //    ลูกค้าเว็บทั่วไปที่ห้องหมดอายุ ห้ามได้ความจำจากแชท FB โผล่มาเอง
-        if (! $this->enabled() || ! $this->consumedHandoffRecently($userRef)) {
+        // 💬 (2026-11-04) ความจำไม่มีแชทเพจแล้ว (มีแค่ RPG/อุปนิสัย/ประวัติไพ่ของลูกค้าเอง) → สร้างใหม่ได้ทุกคนที่ผูก FB
+        if (! $this->enabled()) {
             return null;
         }
 
@@ -140,7 +125,7 @@ class WebChatContinuityService
 
             $psids = $this->collectPsids($user, $this->userPsids($user), null);
 
-            return $this->buildMemory($user, $psids, null)['memory'];
+            return $this->buildMemory($user, $psids);
         } catch (\Throwable $e) {
             Log::warning('WebChatContinuity: rebuild ล้มเหลว (non-blocking)', [
                 'user_ref' => $userRef,
@@ -158,26 +143,6 @@ class WebChatContinuityService
     {
         try {
             return (new FortuneBotMode)->fbWebOnly();
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    /**
-     * ลูกค้าเว็บคนนี้ (user_ref) consume handoff ของ FB ภายใน FortuneWebHandoff::TTL_HOURS หรือไม่
-     */
-    protected function consumedHandoffRecently(string $userRef): bool
-    {
-        try {
-            if (! Schema::hasTable('fortune_web_handoffs')) {
-                return false;
-            }
-
-            return FortuneWebHandoff::query()
-                ->where('consumed_juntra_user_id', $userRef)
-                ->where('platform', 'facebook')
-                ->where('consumed_at', '>=', now()->subHours(FortuneWebHandoff::TTL_HOURS))
-                ->exists();
         } catch (\Throwable) {
             return false;
         }
@@ -416,17 +381,14 @@ class WebChatContinuityService
     /**
      * ประกอบบล็อกความจำ (≤ MEMORY_MAX_CHARS) ตามลำดับความสำคัญ
      *
+     * 💬 (2026-11-04) ไม่มีบทสนทนา/เรื่องที่ทักมาในเพจ — เจ้าของสั่งไม่ส่งบริบทแชท FB มาเว็บ
+     *
      * @param  array<int,string>  $psids
-     * @return array{memory:?string,recent:bool}
+     * @return string|null null = ไม่มีอะไรให้จำ
      */
-    protected function buildMemory(User $user, array $psids, ?string $intentText): array
+    protected function buildMemory(User $user, array $psids): ?string
     {
         $sections = [];
-        $recent = false;
-
-        if ($intentText !== null && $intentText !== '') {
-            $sections[] = "— เรื่องที่ลูกทักมาในเพจก่อนย้ายมาห้องนี้ —\n".mb_substr($intentText, 0, FortuneWebHandoff::INTENT_MAX_LENGTH);
-        }
 
         if ($psids !== []) {
             $timeline = $this->timelineSection($user, $psids);
@@ -439,13 +401,6 @@ class WebChatContinuityService
                 $sections[] = $persona;
             }
 
-            $conversation = $this->conversationSection($psids);
-            if ($conversation !== null) {
-                $sections[] = $conversation;
-                // 🔐 (รีวิว) "คุยค้างไว้" ต้องมีบรรทัดที่ลูกค้าพิมพ์จริง — ข้อความบอทฝ่ายเดียว (บรอดแคสต์/ชวน) ไม่นับ
-                $recent = str_contains($conversation, 'ลูก: ');
-            }
-
             $recall = $this->recall->build($psids, forWeb: true);
             if ($recall !== null) {
                 $sections[] = $recall;
@@ -453,7 +408,7 @@ class WebChatContinuityService
         }
 
         if ($sections === []) {
-            return ['memory' => null, 'recent' => false];
+            return null;
         }
 
         // ใส่ตามลำดับจนเต็มเพดาน — section ที่ล้นตัดท้าย (ถ้าเหลือที่น้อยเกินไปก็ทิ้ง)
@@ -467,7 +422,7 @@ class WebChatContinuityService
             $memory .= ($memory === '' ? '' : "\n\n").mb_substr($section, 0, $room);
         }
 
-        return ['memory' => $memory, 'recent' => $recent];
+        return $memory;
     }
 
     /**
@@ -552,66 +507,6 @@ class WebChatContinuityService
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-    /**
-     * บทสนทนาในเพจ 12 ข้อความล่าสุดใน 14 วัน (ข้อความละ ≤ 280 · รวม ≤ 3,000) — ผ่านตัวกรองขาเข้าทุกข้อความ
-     *
-     * @param  array<int,string>  $psids
-     */
-    protected function conversationSection(array $psids): ?string
-    {
-        if (! Schema::hasTable('line_bot_conversations') || ! Schema::hasTable('line_bot_messages')) {
-            return null;
-        }
-
-        try {
-            $convQuery = DB::table('line_bot_conversations')->whereIn('line_user_id', $psids);
-            if (Schema::hasColumn('line_bot_conversations', 'platform')) {
-                $convQuery->where('platform', 'facebook');
-            }
-            if (Schema::hasColumn('line_bot_conversations', 'deleted_at')) {
-                $convQuery->whereNull('deleted_at');
-            }
-            $convIds = $convQuery->pluck('id')->all();
-            if ($convIds === []) {
-                return null;
-            }
-
-            $rows = DB::table('line_bot_messages')
-                ->whereIn('conversation_id', $convIds)
-                ->whereIn('role', ['user', 'assistant'])
-                ->where('created_at', '>=', now()->subDays(self::CONVERSATION_DAYS))
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->limit(self::CONVERSATION_MAX_MESSAGES)
-                ->get(['role', 'message']);
-        } catch (\Throwable $e) {
-            return null;
-        }
-
-        $lines = [];
-        $total = 0;
-        // ล่าสุดก่อน — เติมจนเต็มเพดาน แล้วค่อยกลับลำดับเป็นเก่า → ใหม่
-        foreach ($rows as $row) {
-            $text = WebChatContinuitySanitizer::sanitizeInbound((string) $row->message, (string) $row->role);
-            if ($text === '') {
-                continue;
-            }
-            $text = mb_substr(preg_replace('/\s+/u', ' ', $text) ?? $text, 0, self::MESSAGE_MAX_CHARS);
-            $line = ($row->role === 'user' ? 'ลูก: ' : 'แม่หมอ: ').$text;
-            if ($total + mb_strlen($line) > self::CONVERSATION_MAX_CHARS) {
-                break;
-            }
-            $total += mb_strlen($line) + 1;
-            $lines[] = $line;
-        }
-
-        if ($lines === []) {
-            return null;
-        }
-
-        return "— บทสนทนาล่าสุดในเพจ (เก่า → ใหม่) —\n".implode("\n", array_reverse($lines));
     }
 
     /**
