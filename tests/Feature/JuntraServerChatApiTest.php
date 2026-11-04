@@ -839,6 +839,9 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringContainsString('ดุดัน เคร่งขรึม ตรงไปตรงมา', $call['system']);
         $this->assertStringNotContainsString('ห้องนี้คุยฟรี', $call['system']);
         $this->assertStringNotContainsString('love, career, money, health, kunsai, general', $call['system']);
+        // QA บน prod: ลูกพูดว่า "ไม่อยากอยู่แล้ว" แม่หมอยังดุ — ร่างดุต้องหายทั้งหมดในจังหวะนั้น
+        $this->assertStringContainsString('ทิ้งร่างดุทั้งหมด', $call['system']);
+        $this->assertStringContainsString('ยังไม่ได้ขอให้ดู → ยังไม่ใส่ป้าย', $call['system']);
         $this->assertStringContainsString('น้ำเสียงแม่หมอจันทราร่างห้องคุณไสย', $call['user']);
         $this->assertStringContainsString('ลูก: รู้สึกเหมือนโดนของ', $call['user']);
     }
