@@ -30,7 +30,13 @@ use Illuminate\Support\Facades\Log;
  */
 class GoogleCloudTtsProvider implements TtsProviderInterface
 {
-    public function __construct(protected FortuneTellingSetting $settings) {}
+    /** ไบต์สูงสุดต่อคำขอของ Google คือ 5,000 — ไทย 3 ไบต์/ตัว ≈ 1,600 ตัวอักษร */
+    public const MAX_INPUT_BYTES = 4800;
+
+    /**
+     * @param  string|null  $apiKey  🎬 (2026-11-04) กุญแจที่จะใช้แทนของที่ตั้งไว้ — ปุ่ม "ทดสอบกุญแจ" ก่อนบันทึก
+     */
+    public function __construct(protected FortuneTellingSetting $settings, protected ?string $apiKey = null) {}
 
     public function name(): string
     {
@@ -47,6 +53,7 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
      * (ขอเปิด "Cloud Text-to-Speech API" ใน project เดียวกับ Translate/Vision)
      *
      * Priority:
+     *   0. 🎬 (2026-11-04) กุญแจที่ส่งเข้ามาตรง ๆ → กุญแจที่แอดมินกรอกในหน้าเสียงตัวละคร (ตาราง settings เข้ารหัส)
      *   1. GOOGLE_TTS_API_KEY              (เฉพาะ TTS)
      *   2. GOOGLE_TRANSLATE_API_KEY        (มีใน .env อยู่แล้ว — share)
      *   3. GOOGLE_CLOUD_TRANSLATE_API_KEY  (alternative same project)
@@ -55,7 +62,9 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
     protected function resolveApiKey(): ?string
     {
         // อ่านผ่าน config() เท่านั้น — prod รัน config:cache แล้ว env() นอกไฟล์ config คืน null
-        return config('services.google.tts_api_key')
+        return $this->apiKey
+            ?: $this->settings->getGoogleTtsApiKey()
+            ?: config('services.google.tts_api_key')
             ?: config('services.google.translate.api_key')
             ?: config('services.google_cloud.translate_api_key')
             ?: config('services.google.api_key')
@@ -75,6 +84,7 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
     public static function diagnoseCredentials(): array
     {
         $checks = [
+            'ADMIN_PAGE_KEY' => (new FortuneTellingSetting)->getGoogleTtsApiKey() !== null,
             'GOOGLE_TTS_API_KEY' => ! empty(config('services.google.tts_api_key')),
             'GOOGLE_TRANSLATE_API_KEY' => ! empty(config('services.google.translate.api_key')),
             'GOOGLE_CLOUD_TRANSLATE_API_KEY' => ! empty(config('services.google_cloud.translate_api_key')),
@@ -101,6 +111,57 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
         ];
     }
 
+    /**
+     * 🎬 (2026-11-04) รายชื่อเสียงไทยของ Google — ใช้ทดสอบกุญแจ (ไม่กินโควตาตัวอักษร) + ให้แอดมินเลือกเสียงต่อห้อง
+     * error เป็นภาษาไทยพร้อมแสดงในหน้าแอดมิน · ไม่มีกุญแจในข้อความ
+     *
+     * @return array{success:bool, voices:list<array{name:string,gender:string,type:string}>, status:?int, error:?string}
+     */
+    public function listVoices(string $languageCode = 'th-TH'): array
+    {
+        $apiKey = $this->resolveApiKey();
+        if (! $apiKey) {
+            return ['success' => false, 'voices' => [], 'status' => null, 'error' => 'ยังไม่ได้ใส่กุญแจ Google Cloud'];
+        }
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders(['x-goog-api-key' => $apiKey])
+                ->get('https://texttospeech.googleapis.com/v1/voices', ['languageCode' => $languageCode]);
+        } catch (\Throwable $e) {
+            return ['success' => false, 'voices' => [], 'status' => null, 'error' => 'ต่อ Google ไม่ได้ ลองใหม่อีกครั้ง'];
+        }
+
+        if (! $response->successful()) {
+            $reason = (string) $response->json('error.status', '');
+            $message = (string) $response->json('error.message', '');
+
+            return ['success' => false, 'voices' => [], 'status' => $response->status(), 'error' => match (true) {
+                $response->status() === 403 && (str_contains($message, 'has not been used') || str_contains($message, 'disabled') || $reason === 'PERMISSION_DENIED' && str_contains($message, 'API')) => 'กุญแจถูกต้อง แต่โปรเจกต์ยังไม่ได้เปิด Cloud Text-to-Speech API',
+                in_array($response->status(), [400, 401, 403], true) => 'กุญแจไม่ถูกต้อง หรือถูกจำกัดไม่ให้ใช้ Text-to-Speech',
+                $response->status() === 429 => 'Google จำกัดจำนวนคำขอชั่วคราว ลองใหม่ภายหลัง',
+                default => 'Google ตอบผิดปกติ (HTTP '.$response->status().')',
+            }];
+        }
+
+        $voices = [];
+        foreach ((array) $response->json('voices', []) as $v) {
+            $name = (string) ($v['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+            $voices[] = [
+                'name' => $name,
+                'gender' => strtolower((string) ($v['ssmlGender'] ?? '')),
+                // th-TH-Neural2-C → Neural2 · th-TH-Chirp3-HD-Achernar → Chirp3
+                'type' => explode('-', $name)[2] ?? '',
+            ];
+        }
+        usort($voices, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+        return ['success' => true, 'voices' => $voices, 'status' => 200, 'error' => null];
+    }
+
     public function synthesize(string $text, array $options = []): array
     {
         $startTime = microtime(true);
@@ -117,8 +178,19 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
         }
 
         $voice = $options['voice'] ?? $this->settings->google_tts_voice ?? 'th-TH-Neural2-C';
-        $rate = (float) ($this->settings->google_tts_speaking_rate ?? 0.95);
+        $rate = (float) ($options['speaking_rate'] ?? $this->settings->google_tts_speaking_rate ?? 0.95);
         $outputPath = $options['output_path'] ?? null;
+
+        // ยาวเกิน = Google ตอบ 400 อยู่ดี — ตัดสินเองก่อน ไม่เสียคำขอ (ผู้เรียกถอยไป gTTS ที่ตัดเป็นท่อน)
+        if (strlen($text) > self::MAX_INPUT_BYTES) {
+            return [
+                'success' => false,
+                'audio_path' => null,
+                'error' => 'Google TTS ข้อความยาวเกิน '.self::MAX_INPUT_BYTES.' ไบต์',
+                'duration_ms' => null,
+                'voice_used' => $voice,
+            ];
+        }
 
         if (! $outputPath) {
             return [

@@ -1712,7 +1712,10 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         //    เดิมชั้นนี้ลอก [OFFER:love] ข้างในทิ้งเหลือ "[]" → การ์ดเปิดไพ่ไม่เคยขึ้นตั้งแต่ ก.ย.
         //    ยกเว้นเฉพาะแบบวงเล็บสองชั้นครบ ตัวที่หลุดมาชั้นเดียวยังถูกลอกเหมือนเดิม
         $webOfferTag = 'OFFER\s*:\s*[a-z]+\s*\]\]';
-        $bracketPattern = '/\[(?!'.$whitelistKeep.'\b)(?!'.$webOfferTag.')(?:👤\s*|[A-Za-z])[^\]\n]{0,300}\]/iu';
+        // 🔈 (2026-11-04) ป้ายเปิดแผนเสียง [[VOICE]] ของโหมดคุยด้วยเสียง — JuntraChatService ตัดบล็อกออกเอง
+        //    ไม่ยกเว้น = เหลือ "[]" แล้วแผนเสียงทั้งก้อนไปโผล่ในแชทของลูกค้า (ป้ายปิด [[/VOICE]] ไม่โดนอยู่แล้ว)
+        $webVoiceTag = 'VOICE\s*\]\]';
+        $bracketPattern = '/\[(?!'.$whitelistKeep.'\b)(?!'.$webOfferTag.')(?!'.$webVoiceTag.')(?:👤\s*|[A-Za-z])[^\]\n]{0,300}\]/iu';
         $cleaned = preg_replace($bracketPattern, '', $text);
 
         // เพิ่มจับ "(ลูกค้าคนนี้: ... / ... )" — AI หลอน paren format
@@ -2196,14 +2199,14 @@ PROMPT;
 
         $provider = 'openai';
         $model = $sensitiveKey->resolveModel()
-            ?? ($this->settings->sensitive_model ?? 'gpt-4o');
+            ?? ($this->settings->sensitive_model ?? AiApiKey::defaultModelFor('openai'));
 
         // 🛡️ Vision capability check — ถ้า model เก่า force fallback
         //    OpenAI vision models: gpt-4o*, gpt-5* ขึ้นไป, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
         //    🐛 (2026-10-30) เดิมจับแค่เลข 5 → key ที่ตั้ง gpt-6 ถูกลดเป็น gpt-4o-mini เงียบๆ
         if (! preg_match('/^(gpt-(4o|[5-9]|4-vision|4-turbo))/i', $model)) {
-            // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
-            $model = 'gpt-4o-mini';
+            // fallback = gpt-6-luna — ถูกสุดของ list และรับรูปได้ (ยิงรูปจริงบน prod 2026-11-04)
+            $model = AiApiKey::defaultModelFor('openai');
         }
 
         $config = array_merge(['temperature' => 0.7, 'max_tokens' => 800], $config);
@@ -6347,7 +6350,7 @@ PROMPT;
         try {
             $geminiKey = AiContentSetting::getValue('gemini_api_key');
             if (! empty($geminiKey) && ! in_array($geminiKey, $addedApiKeys)) {
-                $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash');
+                $geminiModel = AiContentSetting::getValue('gemini_model', AiApiKey::defaultModelFor('gemini'));
                 $keys[] = [
                     'provider' => 'gemini',
                     'api_key' => $geminiKey,
@@ -8250,6 +8253,11 @@ TXT;
             || str_contains($msg, 'quota exceeded')
             || str_contains($msg, 'quota_exceeded')
             || str_contains($msg, 'tokens per minute')
+            // 🌙 (2026-11-04) Gemini "This model is currently experiencing high demand" (503 UNAVAILABLE)
+            //    = รุ่นนั้นล่มทั้งรุ่น ไม่ใช่คีย์เสีย — เดิมนับ strike → prod คีย์ฟรี 25/26/29 ติด critical ในชั่วโมงเดียว
+            || str_contains($msg, 'high demand')
+            || str_contains($msg, 'overloaded')
+            || str_contains($msg, 'service unavailable')
         );
 
         $retryAfter = null;

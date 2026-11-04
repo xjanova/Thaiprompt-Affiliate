@@ -80,9 +80,24 @@ class JuntraServerRateLimits
             ->by('all')
             ->response(self::responder('affiliate')));
 
-        RateLimiter::for(self::VOICE, fn (Request $request) => Limit::perMinute(self::setting('voice', 120))
-            ->by('all')
-            ->response(self::responder('voice')));
+        // 🔈 (2026-11-04) โหมดคุยด้วยเสียง — ลูกค้าคนเดียวกดไมค์/ขอเสียงรัวต้องไม่กินถังของคนอื่น
+        //    คำขอที่ไม่มี user_ref (poll คลิป /clips/{id}, health, เว็บรุ่นเดิม) ใช้แค่เพดานรวมเหมือนเดิม
+        RateLimiter::for(self::VOICE, fn (Request $request) => [
+            self::userRefKey($request) !== '-invalid-'
+                ? Limit::perMinute(self::voicePerUser())
+                    ->by('u:'.self::userRefKey($request))
+                    ->response(self::responder('customer'))
+                : Limit::none(),
+            Limit::perMinute(self::setting('voice', 120))
+                ->by('all')
+                ->response(self::responder('voice')),
+        ]);
+    }
+
+    /** เพดานคำขอเสียงต่อลูกค้า 1 คนต่อนาที (ถอดเสียง + ขอเสียงรวมกัน) */
+    public static function voicePerUser(): int
+    {
+        return self::setting('voice_per_user', 30);
     }
 
     /** เพดานแชทต่อลูกค้า 1 คน (user_ref) ต่อนาที */

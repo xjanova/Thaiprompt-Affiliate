@@ -22,11 +22,10 @@ class AiConversationService
     /**
      * OpenAI API settings (can be replaced with other AI services)
      */
-    private const AI_MODEL = 'gpt-3.5-turbo';
+    // 🧹 (2026-11-04) gpt-3.5-turbo ปิดแล้ว (2026-10-23) → gpt-6-luna (ส่ง max_completion_tokens ไม่ส่ง temperature)
+    private const AI_MODEL = 'gpt-6-luna';
 
     private const MAX_TOKENS = 150;
-
-    private const TEMPERATURE = 0.7;
 
     /**
      * Cache TTL in seconds (5 minutes)
@@ -332,8 +331,9 @@ class AiConversationService
                 ['role' => 'system', 'content' => 'You are a helpful assistant for LINE OA signup process. Respond in Thai when appropriate.'],
                 ['role' => 'user', 'content' => $prompt],
             ],
-            'max_tokens' => $maxTokens,
-            'temperature' => self::TEMPERATURE,
+            // รุ่น reasoning: 'max_tokens' และ temperature ≠ 1 ถูกปฏิเสธ (400)
+            'max_completion_tokens' => $maxTokens,
+            'reasoning_effort' => 'low',
         ]);
 
         if (! $response->successful()) {

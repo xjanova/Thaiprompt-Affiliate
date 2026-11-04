@@ -83,6 +83,25 @@ return [
             'permissions' => [],
         ],
 
+        // =============================================
+        // 🔑 (2026-11-04) Account AI Pools — key ของทุกผู้ให้บริการ AI รวมไว้ที่เดียว
+        // เดิมหน้า ai-api-keys ไม่มีในเมนู ต้องกดลิงก์จากหน้าตั้งค่าดูดวงเข้าไป — เจ้าของขอให้ยกออกมาเป็นเมนูด้านนอก
+        // =============================================
+        [
+            'id' => 'ai-account-pools',
+            'label' => 'Account AI Pools',
+            'icon' => '🔑',
+            'route' => null,
+            'order' => 49.5,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '🔑 คีย์ AI ทั้งหมด (Pool)', 'route' => 'admin.ai-api-keys.index', 'description' => 'เพิ่ม/ปิด/ทดสอบ key ของ Gemini, OpenAI, Claude, Groq ฯลฯ — ระบบหมุนใช้อัตโนมัติ'],
+                ['label' => '📊 การใช้งาน & ค่าใช้จ่าย', 'route' => 'admin.ai-api-keys.usage-dashboard', 'description' => 'กราฟการใช้ token และค่าใช้จ่ายของแต่ละ key'],
+                ['label' => '📜 Log การเรียก AI', 'route' => 'admin.ai-api-keys.logs', 'description' => 'ประวัติการเรียกแต่ละครั้ง สำเร็จ/ล้มเหลว'],
+                ['label' => '🎙️ ElevenLabs (เสียงตัวละคร)', 'route' => 'admin.fortune.character-voices.index', 'description' => 'key ElevenLabs + เลือกโมเดลเสียง (v4 / v4 Turbo / v3)'],
+            ],
+        ],
+
         [
             'id' => 'ai-bots',
             'label' => 'AI Bots & ผู้ช่วย',

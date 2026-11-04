@@ -105,6 +105,39 @@ final class WebHandoffCopy
         self::KIND_CANNOT_ESCALATED => 'แม่หมอแจ้งทีมให้ช่วยดูแล้วนะคะ 🙏 เดี๋ยวมีคนทักกลับมาช่วยตรงนี้ค่ะ ระหว่างนี้ลองแตะปุ่มด้านล่างอีกครั้งได้นะคะ',
     ];
 
+    // ------------------------------------------------------------
+    // 🔮 (2026-11-04 เจ้าของสั่ง) การ์ดรูป "เข้าสู่ระบบดูดวง" — ใช้แทนกล่องปุ่มเมื่อพาไปเว็บเพื่อดูดวง
+    //    "ส่งมาหน้าห้องดูดวงให้เลือกเลย แต่ต้องบอกให้ลูกค้ากดที่การ์ดรูปภาพมา ใช้รูปเดียว ทำใหม่ บอกว่า เข้าสู่ระบบดูดวง"
+    //    generic template: หัว/คำโปรย ≤ 80 ตัวอักษร · แตะรูปหรือแตะปุ่มก็เข้าได้ (default_action)
+    // ------------------------------------------------------------
+
+    /** รูปการ์ด (public/) — เปลี่ยนรูปแล้วเลื่อน ?v= ให้ FB ดึงรูปใหม่ */
+    public const CARD_IMAGE_PATH = 'images/fortune/web-enter-reading.jpg?v=1';
+
+    public const CARD_TITLE = '🔮 เข้าสู่ระบบดูดวง';
+
+    /** ป้ายปุ่มใต้การ์ด (≤ 20 ตัวอักษร) */
+    public const LABEL_ENTER_READING = '🔮 เข้าสู่ระบบดูดวง';
+
+    /** ชนิดที่ส่งเป็นการ์ดรูป (ชนิดอื่นยังเป็นกล่องข้อความ+ปุ่ม เพราะข้อความต้องอธิบายเรื่องเฉพาะ) */
+    public const CARD_KINDS = [
+        self::KIND_READING,
+        self::KIND_PRICE,
+        self::KIND_ROOM,
+        self::KIND_PAID_CTA,
+    ];
+
+    /** คำโปรยใต้หัวการ์ด (≤ 80 ตัวอักษร) — ต้องบอกให้แตะที่รูปทุกข้อ */
+    public const CARD_SUBTITLES = [
+        self::KIND_READING => '👆 แตะที่รูปนี้ แล้วเลือกห้องดูดวงได้เลยค่ะ ระบบพาเข้าให้เอง ไม่ต้องสมัคร',
+        self::KIND_PRICE => 'แพ็กเกจทั้งหมดอยู่ในห้องดูดวงค่ะ 👆 แตะที่รูปนี้ ระบบพาเข้าให้เอง',
+        self::KIND_ROOM => '👆 แตะที่รูปนี้ แล้วเลือกห้องดูดวงได้เลยค่ะ ระบบพาเข้าให้เอง ไม่ต้องสมัคร',
+        self::KIND_PAID_CTA => 'อยากเปิดไพ่เรื่องอื่นอีก 👆 แตะที่รูปนี้ เลือกห้องดูดวงได้เลยค่ะ',
+    ];
+
+    /** หัว/คำโปรยของ generic template สูงสุด */
+    public const CARD_TEXT_MAX = 80;
+
     /** สร้างลิงก์ไม่ได้ (fail-closed) — ส่งพร้อม quick reply WEB_ROOM และแจ้งแอดมิน */
     public const FAIL_CLOSED = 'ห้องแม่หมอกำลังจัดเตรียมอยู่สักครู่นะคะ 🙏 อีกเดี๋ยวลองแตะ 🌙 เข้าห้องแม่หมอ อีกครั้งได้เลยค่ะ';
 
@@ -225,6 +258,55 @@ final class WebHandoffCopy
         $kind = in_array($kind, self::KINDS, true) ? $kind : self::KIND_READING;
 
         return self::fill(self::REPLIES[$kind], $name, self::NAME_FALLBACK[$kind] ?? self::DEFAULT_NAME_FALLBACK);
+    }
+
+    /** ชนิดนี้ส่งเป็นการ์ดรูปไหม */
+    public static function usesCard(string $kind): bool
+    {
+        return in_array($kind, self::CARD_KINDS, true);
+    }
+
+    /** คำโปรยการ์ดตามชนิด (ไม่รู้จัก → ของ KIND_READING) */
+    public static function cardSubtitle(string $kind): string
+    {
+        return self::CARD_SUBTITLES[$kind] ?? self::CARD_SUBTITLES[self::KIND_READING];
+    }
+
+    /** ข้อความของกล่อง/การ์ดตามชนิด (การ์ด = หัว — คำโปรย) — ใช้บันทึกบทสนทนา */
+    public static function boxText(string $kind, ?string $name = null): string
+    {
+        return self::usesCard($kind)
+            ? self::CARD_TITLE.' — '.self::cardSubtitle($kind)
+            : self::reply($kind, $name);
+    }
+
+    /**
+     * ข้อความในกล่องที่ประกอบแล้ว (button template = text · การ์ด generic = หัว — คำโปรย)
+     *
+     * @param  array<string,mixed>  $box
+     */
+    public static function textOf(array $box): ?string
+    {
+        $payload = $box['attachment']['payload'] ?? [];
+        $card = $payload['elements'][0] ?? null;
+        if (is_array($card)) {
+            return trim(($card['title'] ?? '').' — '.($card['subtitle'] ?? ''));
+        }
+
+        return isset($payload['text']) ? (string) $payload['text'] : null;
+    }
+
+    /**
+     * ปุ่มของกล่องที่ประกอบแล้ว (button template หรือการ์ดใบแรก)
+     *
+     * @param  array<string,mixed>  $box
+     * @return array<int,array<string,mixed>>
+     */
+    public static function buttonsOf(array $box): array
+    {
+        $payload = $box['attachment']['payload'] ?? [];
+
+        return (array) ($payload['buttons'] ?? $payload['elements'][0]['buttons'] ?? []);
     }
 
     /**
@@ -387,7 +469,11 @@ final class WebHandoffCopy
         $lines['fail_closed'] = self::FAIL_CLOSED;
         $lines['slip_received'] = self::SLIP_RECEIVED;
         $lines['comment_reply'] = self::COMMENT_REPLY;
-        foreach ([self::LABEL_WEB_ROOM, self::LABEL_WEB_ROOM_ALT, self::LABEL_HOWTO, self::LABEL_SNOOZE, self::LABEL_OPTOUT] as $i => $label) {
+        $lines['card_title'] = self::CARD_TITLE;
+        foreach (self::CARD_SUBTITLES as $kind => $text) {
+            $lines['card_'.$kind] = $text;
+        }
+        foreach ([self::LABEL_WEB_ROOM, self::LABEL_WEB_ROOM_ALT, self::LABEL_HOWTO, self::LABEL_SNOOZE, self::LABEL_OPTOUT, self::LABEL_ENTER_READING] as $i => $label) {
             $lines['label_'.$i] = $label;
         }
 

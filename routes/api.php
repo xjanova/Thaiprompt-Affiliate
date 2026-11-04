@@ -1671,6 +1671,9 @@ Route::prefix('v1/juntra/server')
                 ->name('chat.start');
             Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
                 ->name('chat.send');
+            // 🎬 คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เสียงออกลำโพง — ข้อมูลเฉพาะที่พูดได้)
+            Route::post('/chat/greeting', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'greeting'])
+                ->name('chat.greeting');
         });
 
         // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
@@ -1681,6 +1684,20 @@ Route::prefix('v1/juntra/server')
             Route::get('/clips/{clip}', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'show'])
                 ->whereNumber('clip')
                 ->name('clips.show');
+            // 🔈 (2026-11-04) โหมดคุยด้วยเสียง — ถอดเสียงไมค์ (Scribe สำรอง) + สถานะระบบเสียง
+            Route::post('/transcribe', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'transcribe'])
+                ->name('transcribe');
+            Route::get('/health', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'health'])
+                ->name('health');
+            // 🎭 (2026-11-04) คลังคลิปคำรับ/คำเติมที่สร้างไฟล์แล้ว (id → url) — แอดมินจัดการในหน้าคลังบทพูด
+            Route::get('/library', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'library'])
+                ->name('library');
+            // 🎬 บทเล่าคำทำนายของโรงละคร (AI เขียน → ตรวจความตรง → ประโยคจากคำทำนาย)
+            Route::post('/narration', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'narration'])
+                ->name('narration');
+            // 🎬 เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) สำหรับคนที่ไม่ได้ซื้อเสียงสมจริง
+            Route::post('/free-speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'freeSpeak'])
+                ->name('free-speak');
         });
 
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า

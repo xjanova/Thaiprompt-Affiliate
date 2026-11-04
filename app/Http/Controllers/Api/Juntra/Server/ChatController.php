@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
 use App\Services\Fortune\JuntraChatService;
+use App\Services\Fortune\JuntraRegularGreetingService;
 use App\Services\Fortune\WebChatContinuityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,12 +24,15 @@ use Throwable;
  *   - แม่หมอไม่ทำนายเองในแชท ชวนเลือกแพ็กเกจเปิดไพ่แทน (kind=offer + offer_topic)
  *   - AI เงียบ = 503 ai_unavailable (ไม่ส่งข้อความรองรับที่หน้าตาเหมือนคำตอบจริง)
  *   - 💬 (2026-09-21) `context` (ไม่บังคับ) = คำพยากรณ์ที่ห้องนี้คุยต่อ — อยู่ใน system message ทุกรอบ
- *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ย้ายมาจากแชทเพจ FB
- *     แม่หมอได้ "ความจำ" จากแชท FB (WebChatContinuityService) วางใน system message เท่านั้น
+ *   - 🌙 (2026-11-03 FB web-only) `thaiprompt_user_id` + `handoff` (ไม่บังคับ) = ลูกค้าที่ผูกกับแชทเพจ FB
+ *     แม่หมอได้ "ความจำ" (WebChatContinuityService) วางใน system message เท่านั้น
  *     ความจำไม่ถูกส่งกลับไปที่เว็บ — ตอบแค่ continued_from / customer.display_name / returning
- *     🔁 (รีวิว) ความจำ/คำทักทาย "คุยค้างไว้ในเพจ" เฉพาะห้องที่เปิดจากลิงก์ handoff ของ FB (ส่ง `handoff` มา)
- *        **และ** ธง facebook_web_only เปิด — ไม่งั้นห้องแชทเว็บเหมือนเดิมทุกอย่าง (ไม่มีบล็อกความจำ คำทักทายเดิม)
+ *     💬 (2026-11-04 เจ้าของสั่ง) ความจำ = RPG/อุปนิสัย + ประวัติเปิดไพ่ เท่านั้น (ไม่มีแชทเพจ/เรื่องที่ทักมา)
+ *        ใช้ได้ทุกห้องที่ลูกค้าเปิด ไม่ต้องมาจากลิงก์ handoff · ธง facebook_web_only ปิด = ห้องแบบเดิมทุกอย่าง
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
+ *   - 🔈 (2026-11-04) `voice_mode` + `input_mode` + `voice_clips` (ไม่บังคับ) = โหมดคุยด้วยเสียง → ตอบ `voice_plan`
+ *     {source, pre, say, say_parts, post} ให้เว็บเล่นคลิปคลัง → (เสียงใหม่ผ่าน /voice/speak) → คลิปคลัง
+ *   - 🎬 (2026-11-04) `POST /chat/greeting` คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เว็บนับบิลเอง ≥ 6)
  */
 class ChatController extends Controller
 {
@@ -52,13 +56,13 @@ class ChatController extends Controller
             'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
         ]);
 
-        // 🔁 ไม่มี handoff หรือธงปิด = ห้องแบบเดิม (continuity = null → ไม่มีความจำ คำทักทายเดิม)
-        $handoff = $data['handoff'] ?? null;
-        $continuity = ($handoff !== null && $handoff !== '' && $this->continuity->enabled())
+        // 🔁 ธงปิด = ห้องแบบเดิม (continuity = null → ไม่มีความจำ คำทักทายเดิม)
+        //    💬 (2026-11-04) ธงเปิด = ทุกห้องได้ความจำของลูกค้า (RPG/อุปนิสัย) — handoff แค่ consume ลิงก์
+        $continuity = $this->continuity->enabled()
             ? $this->continuity->begin(
                 $data['user_ref'],
                 isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
-                $handoff,
+                $data['handoff'] ?? null,
             )
             : null;
 
@@ -99,9 +103,16 @@ class ChatController extends Controller
             'thaiprompt_user_id' => 'sometimes|nullable|integer|min:1',
             // 🎭 ใช้เฉพาะห้องที่ยังไม่ล็อกตัวละคร — ห้องที่ล็อกแล้วไม่เปลี่ยน
             'persona' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::PERSONAS),
+            // 🔈 (2026-11-04) โหมดคุยด้วยเสียง (ลูกค้าซื้อ pass แล้ว — เว็บเป็นคนตัดสิน) · ไม่ส่ง = ทางเดิมทุกตัวอักษร
+            'voice_mode' => 'sometimes|boolean',
+            'input_mode' => 'sometimes|nullable|string|in:'.implode(',', JuntraChatService::INPUT_MODES),
+            // id คลิปคลังที่เว็บมีไฟล์จริง — AI เห็นเฉพาะคลิปที่เล่นได้
+            'voice_clips' => 'sometimes|nullable|array|max:120',
+            'voice_clips.*' => 'string|max:40|regex:/^[a-z_]+_\d+$/',
         ]);
 
         $userRef = $data['user_ref'];
+        $voiceMode = $request->boolean('voice_mode');
         $claimed = isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null;
 
         try {
@@ -116,9 +127,12 @@ class ChatController extends Controller
                 fillerOnEmpty: false,
                 context: $data['context'] ?? null,
                 persona: $data['persona'] ?? null,
-                // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่ได้เฉพาะลูกค้าที่เพิ่งเข้ามาทาง handoff
+                // 🔁 ธงปิด = ไม่อ่านความจำเลย · ห้องหมดอายุสร้างใหม่จาก RPG/ประวัติไพ่ของลูกค้า
                 allowMemory: $this->continuity->enabled(),
                 memoryLoader: fn () => $this->continuity->rebuildMemory($userRef, $claimed),
+                voiceMode: $voiceMode,
+                inputMode: $data['input_mode'] ?? 'text',
+                voiceClips: isset($data['voice_clips']) ? array_values($data['voice_clips']) : null,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
@@ -132,19 +146,56 @@ class ChatController extends Controller
             ], 503);
         }
 
-        return response()->json(['data' => [
+        $payload = [
             'session_id' => $data['session_id'],
             'reply' => $out['reply'],
             'ai_provider' => $out['provider'],
             'kind' => $out['kind'],
             'offer_topic' => $out['offer_topic'],
             'persona' => $out['persona'],
-        ]]);
+        ];
+        // 🔈 มีเฉพาะเมื่อเปิดโหมดเสียง — เว็บรุ่นเดิมได้ JSON หน้าตาเดิม
+        if ($voiceMode) {
+            $payload['voice_plan'] = $out['voice_plan'] ?? null;
+        }
+
+        return response()->json(['data' => $payload]);
     }
 
     /** ห้องของลูกค้าเว็บ — คนละ namespace กับ users.id ของ Thaiprompt (key ไม่มีทางชนกัน) */
     private function owner(string $userRef): string
     {
         return 'jw'.$userRef;
+    }
+
+    /**
+     * 🎬 (2026-11-04) คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย — ข้อ 17.7
+     *
+     * facts รับเฉพาะคีย์ที่พูดออกลำโพงได้ (คีย์อื่นถูกทิ้งก่อนถึง AI) · ชื่อเรียกห้ามมีตัวเลข/@ (กันเบอร์/อีเมล)
+     * 200 {greeting, say, cached} · 429 ครบเพดานทั้งเว็บวันนี้ · 503 AI ไม่ตอบ/คำทักทายไม่ผ่าน → เว็บใช้คลิปลูกค้าเก่า
+     */
+    public function greeting(Request $request, JuntraRegularGreetingService $greetings): JsonResponse
+    {
+        $data = $request->validate([
+            'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
+            'persona' => 'required|string|in:'.implode(',', JuntraChatService::PERSONAS),
+            'facts' => 'sometimes|array',
+            'facts.name' => ['sometimes', 'nullable', 'string', 'max:20', "regex:/^[\p{Thai}A-Za-z .'-]+$/u"],
+            'facts.zodiac' => 'sometimes|nullable|in:'.implode(',', JuntraRegularGreetingService::ZODIACS),
+            'facts.birth_weekday' => 'sometimes|nullable|in:'.implode(',', JuntraRegularGreetingService::WEEKDAYS),
+            'facts.days_to_birthday' => 'sometimes|nullable|integer|min:0|max:7',
+            'facts.visits' => 'sometimes|nullable|integer|min:1|max:9999',
+            'facts.days_away' => 'sometimes|nullable|integer|min:0|max:3650',
+            'facts.last_topic' => 'sometimes|nullable|in:'.implode(',', array_keys(JuntraRegularGreetingService::TOPICS)),
+        ]);
+
+        $facts = array_intersect_key($data['facts'] ?? [], array_flip(['name', 'zodiac', 'birth_weekday', 'days_to_birthday', 'visits', 'days_away', 'last_topic']));
+        $result = $greetings->greet($data['persona'], $data['user_ref'], array_filter($facts, fn ($v) => $v !== null && $v !== ''));
+
+        return match ($result['code']) {
+            200 => response()->json(['success' => true, 'data' => $result['data']]),
+            429 => response()->json(['success' => false, 'error' => 'greeting_cap', 'message' => 'วันนี้ครบโควต้าคำทักทายแล้ว'], 429),
+            default => response()->json(['success' => false, 'error' => 'greeting_unavailable', 'message' => 'ยังทักทายด้วยเสียงไม่ได้ตอนนี้'], 503),
+        };
     }
 }

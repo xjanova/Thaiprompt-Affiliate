@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
             FortuneResponseTemplateSeeder::class, // 🆕 ระบบดูดวง - เทมเพลตตอบกลับคำทำนาย (basic, deep, welcome, payment, error)
             FortuneKeywordSeeder::class,         // 🆕 ระบบดูดวง - Keywords บทสนทนาอัจฉริยะ (ทักทาย, ขอบคุณ, ราคา, อารมณ์, FAQ 48+ entries)
             FortuneHoroscopeCampaignSeeder::class, // 🆕 ระบบดูดวง - แคมเปญโพสดวงรายวันอัตโนมัติ (AI + FB/LINE auto-post)
+            FortuneVoiceLibrarySeeder::class,    // 🎭 ตัวละครเสียงพากย์ + คลังบทพูด (ElevenLabs)
             FortuneCommissionSeeder::class,      // 🔮 ค่าเริ่มต้น Level 1/Level 2 commission ดูดวง
             FortuneTakeoverSettingsSeeder::class, // 🎯 ระบบเทคโอเวอร์ดูดวง (แม่หมอ/แอดมินคุยแทน AI)
             FortuneBannerSeeder::class,          // 🖼️ แบนเนอร์ DM (4 รูปเริ่มต้นจาก banner1.zip)

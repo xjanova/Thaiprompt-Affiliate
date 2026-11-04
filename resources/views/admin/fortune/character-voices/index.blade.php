@@ -13,6 +13,14 @@
         'busy' => (object) [],
         'busyAll' => false,
     ])->all();
+
+    // 💳 ตารางค่าใช้จ่าย — 1 / 0.5 ไม่ต้องมีทศนิยมห้อยท้าย
+    $fmtCost = fn ($cost) => rtrim(rtrim(number_format((float) $cost, 2), '0'), '.');
+    $usdPerCredit = ($plan['price_usd'] ?? null) && ($plan['limit'] ?? 0) > 0 ? $plan['price_usd'] / $plan['limit'] : null;
+    $settingNames = [
+        'stability' => 'ความนิ่ง', 'similarity_boost' => 'ความเหมือน', 'style' => 'สไตล์',
+        'use_speaker_boost' => 'Speaker boost', 'speed' => 'ความเร็ว', 'clone_strength' => 'Clone strength',
+    ];
 @endphp
 
 @section('content')
@@ -24,12 +32,14 @@
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wide">หลังบ้าน · ระบบดูดวง · จัดการเสียง</div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">🎭 เสียงพากย์ตัวละคร</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย · ElevenLabs v3 (ต่อตรงด้วย key ของเรา) ·
+                แม่หมอจันทรา · น้องบุษบา · แม่หมอโหมดคุณไสย และตัวละครที่เพิ่มเอง · ElevenLabs (ต่อตรงด้วย key ของเรา) ·
                 สร้างเสียงเฉพาะตอนมีคนกดฟัง แล้วเก็บไฟล์ไว้ใช้ซ้ำ
             </p>
         </div>
         <a href="{{ route('admin.fortune.voice.index') }}" class="tp-btn">← จัดการเสียง</a>
     </div>
+
+    @include('admin.fortune.character-voices._tabs')
 
     {{-- Flash --}}
     @if(session('success'))
@@ -83,9 +93,19 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โมเดลเสียง</label>
-                <input type="text" name="elevenlabs_tts_model" value="{{ old('elevenlabs_tts_model', $model) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าเริ่มต้น <code>eleven_v3</code> (พูดไทยได้ ใส่แท็กอารมณ์ได้)</p>
+                @php($selectedModel = old('elevenlabs_tts_model', $model))
+                <select name="elevenlabs_tts_model" x-model="tuneModel"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                    @foreach($models as $m)
+                        <option value="{{ $m['id'] }}" @selected($m['id'] === $selectedModel)>
+                            {{ $m['name'] }} — {{ $fmtCost($m['cost']) }} เครดิต/ตัวอักษร{{ $m['id'] === $model ? ' (ใช้อยู่)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('elevenlabs_tts_model')
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แสดงเฉพาะโมเดลที่พูดไทยได้ในบัญชี ElevenLabs — เปลี่ยนโมเดลแล้วเสียงจะสร้างใหม่ (เสียงเดิมที่แคชไว้ไม่ถูกใช้ซ้ำ)</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เพดานตัวอักษรต่อวัน (ห้องแชท)</label>
@@ -102,6 +122,68 @@
                 @endif
             </div>
         </form>
+
+        {{-- 💳 ค่าใช้จ่ายแต่ละโมเดล — เครดิตต่อตัวอักษรอ่านสดจาก /v1/models · เงินประมาณจากราคาแพ็กของบัญชี --}}
+        <div class="mt-5">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">💳 ค่าใช้จ่ายแต่ละโมเดล</h3>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/60 text-xs text-gray-600 dark:text-gray-300">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-medium">โมเดล</th>
+                            <th class="px-3 py-2 text-right font-medium">เครดิต / ตัวอักษร</th>
+                            <th class="px-3 py-2 text-right font-medium">ข้อความ 1,000 ตัวอักษร</th>
+                            @if($plan)
+                                <th class="px-3 py-2 text-right font-medium">แพ็กนี้พูดได้ / เดือน</th>
+                            @endif
+                            <th class="px-3 py-2 text-left font-medium">จูนได้</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($models as $m)
+                            <tr class="transition" :class="tuneModel === @js($m['id']) ? 'bg-violet-50 dark:bg-violet-900/20' : ''">
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                                    {{ $m['name'] }}
+                                    @if($m['id'] === $model)
+                                        <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">ใช้อยู่</span>
+                                    @endif
+                                    <span x-show="tuneModel === @js($m['id']) && tuneModel !== savedModel" x-cloak
+                                          class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">เลือกอยู่ (ยังไม่บันทึก)</span>
+                                </td>
+                                <td class="px-3 py-2 text-right font-mono text-gray-900 dark:text-gray-100">
+                                    {{ $fmtCost($m['cost']) }}
+                                    @if($m['cost'] < 1)
+                                        <span class="ml-1 text-[11px] font-sans text-emerald-700 dark:text-emerald-300">ครึ่งราคา</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">
+                                    {{ number_format($m['cost'] * 1000) }} เครดิต
+                                    @if($usdPerCredit)
+                                        <span class="text-gray-500 dark:text-gray-400">≈ ${{ number_format($m['cost'] * 1000 * $usdPerCredit, 2) }}</span>
+                                    @endif
+                                </td>
+                                @if($plan)
+                                    <td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">≈ {{ number_format($plan['limit'] / max($m['cost'], 0.01)) }} ตัวอักษร</td>
+                                @endif
+                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
+                                    {{ collect($modelSettings[$m['id']] ?? [])->map(fn ($f) => $settingNames[$f] ?? $f)->implode(' · ') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                @if($plan)
+                    แพ็ก {{ $plan['tier'] ?? 'ElevenLabs' }}: {{ number_format($plan['limit']) }} เครดิตต่อเดือน
+                    @if($plan['price_usd'])
+                        (${{ number_format($plan['price_usd'], 2) }} ก่อนภาษี → 1 เครดิต ≈ ${{ number_format($usdPerCredit, 5) }})
+                    @endif
+                    ·
+                @endif
+                เครดิต/ตัวอักษร ดึงจากบัญชี ElevenLabs · ใช้เกินโควต้าแพ็กจะคิดเพิ่มตามเรทของ ElevenLabs · ฟังซ้ำจากแคชไม่เสียเครดิต
+            </p>
+        </div>
 
         <div class="mt-3 text-sm" x-show="creditsText" x-text="creditsText"
              :class="creditsOk ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'"></div>
@@ -127,6 +209,9 @@
             </div>
         @endif
     </div>
+
+    {{-- ════════════════ เสียงอ่านฟรี (Google Cloud) ════════════════ --}}
+    @include('admin.fortune.character-voices._google-free-voice', ['free' => $freeVoice])
 
     {{-- ════════════════ ตัวละคร ════════════════ --}}
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -208,6 +293,9 @@
         </template>
     </div>
 
+    {{-- ════════════════ จูนเสียงละเอียด ════════════════ --}}
+    @include('admin.fortune.character-voices._elevenlabs-tuning')
+
     {{-- toast --}}
     <div x-show="toast" x-transition class="fixed bottom-4 right-4 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm text-white"
          :class="toastOk ? 'bg-emerald-600' : 'bg-red-600'" x-text="toast"></div>
@@ -220,7 +308,13 @@
 
         return {
             personas,
+            // 🎧 ผลลองฟังค่าจูนก่อนบันทึก แยกตามตัวละคร (ฟอร์มจูนอยู่ใน scope เดียวกันนี้)
+            tuningPreview: Object.fromEntries(Object.keys(personas).map((k) => [k, { busy: false, clip: null, error: '' }])),
             voices: @json($voices['voices']),
+            // 🎚️ โมเดลที่เลือกในดรอปดาวน์ (ยังไม่บันทึกก็ได้) — ฟอร์มจูนกับปุ่มลองฟังใช้ตัวนี้
+            savedModel: @js($model),
+            tuneModel: @js(old('elevenlabs_tts_model', $model)),
+            modelSettings: {{ \Illuminate\Support\Js::from((object) $modelSettings) }},
             showMale: false,
             creditsLoading: false,
             creditsText: '',
@@ -229,6 +323,10 @@
             toastOk: true,
             CSRF: '{{ csrf_token() }}',
 
+            // โมเดลที่เลือกรับค่านี้ไหม (ไม่รู้จักโมเดล = ใช้รายการของโมเดลที่บันทึกไว้)
+            supports(field) {
+                return (this.modelSettings[this.tuneModel] ?? this.modelSettings[this.savedModel] ?? []).includes(field);
+            },
             visibleVoices() {
                 return this.voices.filter(v => this.showMale || v.gender !== 'male');
             },
@@ -290,21 +388,56 @@
                         return;
                     }
                     p.samples[voiceId] = clip;
-
-                    // ยังไม่เสร็จ (อีกคำขอกำลังสร้างข้อความเดียวกันอยู่) → เช็คซ้ำทุก 3 วิ สูงสุดราว 3 นาที
-                    for (let i = 0; i < 60 && clip.status === 'pending'; i++) {
-                        await new Promise((resolve) => setTimeout(resolve, 3000));
-                        const r = await this.request(@json(url('/admin/fortune/character-voices/clips')) + '/' + clip.clip_id);
-                        clip = r.body.data || { status: 'failed', error: r.body.error || 'เช็คสถานะไม่สำเร็จ' };
-                        p.samples[voiceId] = clip;
-                    }
-                    if (clip.status === 'pending') {
-                        p.samples[voiceId] = { ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดสร้างอีกครั้งเพื่อเช็คผล (ไม่เสียโควต้าซ้ำ)' };
-                    }
+                    await this.waitClip(clip, (c) => p.samples[voiceId] = c);
                 } catch (e) {
                     p.samples[voiceId] = { status: 'failed', error: 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง' };
                 } finally {
                     p.busy[voiceId] = false;
+                }
+            },
+            // ยังไม่เสร็จ (อีกคำขอกำลังสร้างข้อความเดียวกันอยู่) → เช็คซ้ำทุก 3 วิ สูงสุดราว 3 นาที
+            async waitClip(clip, update) {
+                for (let i = 0; i < 60 && clip.status === 'pending'; i++) {
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
+                    const r = await this.request(@json(url('/admin/fortune/character-voices/clips')) + '/' + clip.clip_id);
+                    clip = r.body.data || { status: 'failed', error: r.body.error || 'เช็คสถานะไม่สำเร็จ' };
+                    update(clip);
+                }
+                if (clip.status === 'pending') {
+                    update({ ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดอีกครั้งเพื่อเช็คผล (ไม่เสียโควต้าซ้ำ)' });
+                }
+            },
+            // 🎧 ลองฟังค่าจูนที่ตั้งอยู่ในฟอร์มตอนนี้ (ยังไม่บันทึก) — ส่งเฉพาะค่ารวม + ค่าของตัวละครที่กด
+            async previewTuning(pKey, form) {
+                const s = this.tuningPreview[pKey];
+                if (s.busy) return; // กันกดซ้ำระหว่างรอ
+                s.busy = true;
+                s.error = '';
+                s.clip = null;
+                const payload = { persona: pKey, model: this.tuneModel, text: this.personas[pKey]?.text || '', personas: { [pKey]: {} } };
+                for (const [name, value] of new FormData(form).entries()) {
+                    if (['output_format', 'language_code', 'apply_text_normalization'].includes(name)) payload[name] = value;
+                    const m = name.match(/^personas\[(\w+)\]\[(\w+)\]$/);
+                    // checkbox มี hidden "0" นำหน้า — ค่าหลังทับค่าแรก ได้ค่าที่ติ๊กจริง
+                    if (m && m[1] === pKey) payload.personas[pKey][m[2]] = value;
+                }
+                try {
+                    const { body } = await this.request(@json(route('admin.fortune.character-voices.tuning.preview')), {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    const clip = body.data || null;
+                    if (!clip) {
+                        s.error = body.error || 'สร้างเสียงไม่สำเร็จ';
+                        return;
+                    }
+                    s.clip = clip;
+                    await this.waitClip(clip, (c) => s.clip = c);
+                    if (s.clip?.status === 'failed') s.error = s.clip.error || 'สร้างเสียงไม่สำเร็จ';
+                } catch (e) {
+                    s.error = 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';
+                } finally {
+                    s.busy = false;
                 }
             },
             async generateAll(pKey) {

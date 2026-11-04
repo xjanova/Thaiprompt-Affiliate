@@ -4,11 +4,14 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneCharacterVoiceClip;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneVoiceCharacter;
+use App\Models\FortuneVoiceUsage;
 use App\Services\FortuneVoiceStorageService;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -51,6 +54,9 @@ class FortuneCharacterVoiceService
         ],
     ];
 
+    /** 🔈 (2026-11-04) งานที่ลูกค้าเป็นคนขอ — นับเพดานตัวอักษรรายวัน (sample ของแอดมินไม่นับ) */
+    public const METERED_PURPOSES = ['chat', 'greeting', 'narration'];
+
     /** ตัวอักษรสูงสุดต่อข้อความในห้องแชท (ยาวกว่านี้ตัดทิ้ง — คุมต้นทุนต่อครั้ง) */
     public const MAX_CHAT_CHARS = 1500;
 
@@ -88,9 +94,37 @@ class FortuneCharacterVoiceService
         return $this->provider;
     }
 
+    /**
+     * 🎧 สำเนาที่สร้างเสียงด้วยโมเดลอื่น (ลองฟังก่อนบันทึก) — ชื่อโมเดลอยู่ในกุญแจแคช ไฟล์จึงไม่ปนกับโมเดลที่ใช้จริง
+     */
+    public function usingModel(string $model): static
+    {
+        $copy = clone $this;
+        $copy->provider = $this->provider->withModel($model);
+
+        return $copy;
+    }
+
     public static function isPersona(?string $persona): bool
     {
-        return is_string($persona) && array_key_exists($persona, self::PERSONAS);
+        return is_string($persona) && array_key_exists($persona, self::personas());
+    }
+
+    /**
+     * 🎭 (2026-11-04) ตัวละครที่เปิดใช้ — มาจากตาราง fortune_voice_characters (แอดมินเพิ่ม/ปิดได้)
+     * ยังไม่มีตาราง = 3 ตัวใน PERSONAS ตามเดิม · รูปแบบเดียวกับ PERSONAS (+ voice_id/model/builtin/active)
+     *
+     * @return array<string, array{label: string, brief: string, default_voice: string, sample_text: string, voice_id: ?string, model: ?string, builtin: bool, active: bool}>
+     */
+    public static function personas(): array
+    {
+        return FortuneVoiceCharacter::active();
+    }
+
+    /** ข้อมูลตัวละคร (รวมที่ปิดไว้) — ไม่รู้จัก = null */
+    public static function persona(string $persona): ?array
+    {
+        return FortuneVoiceCharacter::catalog()[$persona] ?? null;
     }
 
     /**
@@ -98,10 +132,42 @@ class FortuneCharacterVoiceService
      */
     public function voiceFor(string $persona): string
     {
+        $character = self::persona($persona);
+        if ($character && $character['voice_id']) {
+            return $character['voice_id'];
+        }
+        // ก่อนมีตารางตัวละคร เสียงที่เลือกอยู่ในคอลัมน์ {persona}_voice_id ของค่ากลาง (เฉพาะ 3 ตัวเดิม)
         $column = $persona.'_voice_id';
-        $voice = trim((string) ($this->settings->{$column} ?? ''));
+        $voice = isset(self::PERSONAS[$persona]) ? trim((string) ($this->settings->{$column} ?? '')) : '';
 
-        return $voice !== '' ? $voice : self::PERSONAS[$persona]['default_voice'];
+        return $voice !== '' ? $voice : ($character['default_voice'] ?? FortuneVoiceCharacter::fallbackVoice());
+    }
+
+    /** 🎚️ ค่าน้ำเสียงที่จูนแยกต่อตัวละครได้ (ส่งเฉพาะตอนเปิด "ใช้ค่าที่จูนเอง") */
+    public const TUNING_VOICE_FIELDS = ['stability', 'similarity_boost', 'style', 'use_speaker_boost', 'speed', 'clone_strength'];
+
+    /** 🎚️ เอฟเฟกต์ต่อตัวละคร (ไม่เลือก = ไม่ใส่เอฟเฟกต์) */
+    public const TUNING_EFFECT_FIELDS = ['filter_preset_id', 'environment_id', 'send_level', 'distance', 'background_noise_id', 'pan'];
+
+    /**
+     * 🎚️ (2026-11-04) ค่าจูนเสียงของตัวละคร — ค่ารวม (คุณภาพไฟล์/ภาษา/อ่านตัวเลข) + ค่าเฉพาะตัว
+     * provider กรองต่อเองว่าโมเดลที่ใช้อยู่รับค่าไหนได้
+     *
+     * @param  array|null  $all  ค่าจูนทั้งชุดที่ยังไม่บันทึก (ปุ่มลองฟังในหน้าแอดมิน) · null = ค่าที่บันทึกไว้
+     */
+    public function tuningFor(string $persona, ?array $all = null): array
+    {
+        $all ??= $this->settings->getElevenlabsTuning();
+        $own = is_array($all['personas'][$persona] ?? null) ? $all['personas'][$persona] : [];
+
+        return [
+            'output_format' => $all['output_format'] ?? null,
+            'language_code' => $all['language_code'] ?? null,
+            'apply_text_normalization' => $all['apply_text_normalization'] ?? null,
+            'seed' => is_int($own['seed'] ?? null) ? $own['seed'] : null,
+            'voice' => ! empty($own['custom']) ? array_intersect_key($own, array_flip(self::TUNING_VOICE_FIELDS)) : null,
+            'effects' => array_intersect_key($own, array_flip(self::TUNING_EFFECT_FIELDS)) ?: null,
+        ];
     }
 
     /**
@@ -109,8 +175,15 @@ class FortuneCharacterVoiceService
      */
     public function selectVoice(string $persona, string $voiceId): void
     {
-        $this->settings->update([$persona.'_voice_id' => $voiceId]);
-        FortuneTellingSetting::clearSettingsCache();
+        if (Schema::hasTable('fortune_voice_characters')) {
+            FortuneVoiceCharacter::where('key', $persona)->update(['voice_id' => $voiceId]);
+            FortuneVoiceCharacter::flushCatalog();
+        }
+        // 3 ตัวเดิมเก็บคู่ไว้ในค่ากลางด้วย (โค้ดรุ่นก่อน/ถอย migration แล้วยังได้เสียงเดิม)
+        if (isset(self::PERSONAS[$persona])) {
+            $this->settings->update([$persona.'_voice_id' => $voiceId]);
+            FortuneTellingSetting::clearSettingsCache();
+        }
     }
 
     public function dailyCharLimit(): int
@@ -128,14 +201,23 @@ class FortuneCharacterVoiceService
     /**
      * ขอไฟล์เสียงของข้อความ — เจอในแคชคืนทันที ไม่เจอค่อยสั่งสร้าง
      *
-     * @param  string  $purpose  'chat' (ห้องแชท — นับเพดานรายวัน) | 'sample' (แอดมินฟังเทียบ)
+     * @param  string  $purpose  'chat' (ห้องแชท) | 'greeting' (ทักลูกค้าคุ้นเคย) | 'narration' (เล่าคำทำนาย)
+     *                           — สามอย่างนี้นับเพดานรายวัน · 'sample' (แอดมินฟังเทียบ) ไม่นับ
      * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ElevenLabs ตอบไฟล์ในคำขอเดียว ไม่ต้องรอ
+     * @param  string|null  $userRef  🔈 (2026-11-04) ลูกค้าฝั่งเว็บที่ขอเสียง — ลงบันทึกต้นทุน fortune_voice_usages
+     * @param  array|null  $tuning  ค่าจูนจาก tuningFor() ที่ใช้แทนค่าที่บันทึกไว้ (ลองฟังก่อนบันทึก) · null = ค่าที่บันทึกไว้
      * @return array{success: bool, clip: ?FortuneCharacterVoiceClip, error: ?string, code: int}
      */
-    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0): array
+    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0, ?string $userRef = null, ?array $tuning = null): array
     {
+        $metered = in_array($purpose, self::METERED_PURPOSES, true);
         if (! self::isPersona($persona)) {
             return $this->fail('ไม่รู้จักตัวละครนี้', 422);
+        }
+        // 🎭 ตัวละครที่ตั้งโมเดลเฉพาะตัว ใช้โมเดลนั้น — เว้นแต่ผู้เรียกเลือกโมเดลมาแล้ว (ลองฟัง/สร้างคลัง)
+        $own = self::persona($persona)['model'] ?? null;
+        if ($own && ! $this->provider->hasModelOverride() && $own !== $this->provider->model()) {
+            return $this->usingModel($own)->request($persona, $text, $purpose, $voiceId, $waitSeconds, $userRef, $tuning);
         }
         if (! $this->provider->isAvailable()) {
             return $this->fail('ยังไม่ได้ตั้ง ElevenLabs API key', 503);
@@ -149,7 +231,13 @@ class FortuneCharacterVoiceService
         $voice = $voiceId ?: $this->voiceFor($persona);
         $model = $this->provider->model();
         // รวม persona ในกุญแจ — แม่หมอกับโหมดคุณไสยเลือกเสียงเดียวกันได้ ไฟล์ต้องแยกโฟลเดอร์ตามตัวละคร
-        $hash = hash('sha256', implode('|', ['elevenlabs', $model, $voice, $persona, $clean]));
+        $keyParts = ['elevenlabs', $model, $voice, $persona, $clean];
+        // 🎚️ จูนเสียงแล้ว = ไฟล์ใหม่ · ยังไม่จูน ([]) = กุญแจเดิมทุกตัวอักษร ไฟล์ที่เก็บไว้ก่อนหน้านี้ยังใช้ได้
+        $tuning ??= $this->tuningFor($persona);
+        if (($tuned = $this->provider->tuningPayload($tuning)) !== []) {
+            $keyParts[] = json_encode($tuned);
+        }
+        $hash = hash('sha256', implode('|', $keyParts));
 
         $clip = FortuneCharacterVoiceClip::where('text_hash', $hash)->first();
 
@@ -164,7 +252,7 @@ class FortuneCharacterVoiceService
         }
 
         if ($clip && $clip->status === FortuneCharacterVoiceClip::STATUS_FAILED
-            && $purpose === 'chat'
+            && $metered
             && $clip->updated_at && $clip->updated_at->gt(now()->subSeconds(self::FAILED_RETRY_AFTER_SECONDS))) {
             return ['success' => false, 'clip' => $clip, 'error' => $clip->error ?: 'สร้างเสียงไม่สำเร็จ', 'code' => 502];
         }
@@ -180,7 +268,7 @@ class FortuneCharacterVoiceService
         try {
             $chars = mb_strlen($clean);
 
-            if ($purpose === 'chat' && $this->charsUsedToday() + $chars > $this->dailyCharLimit()) {
+            if ($metered && $this->charsUsedToday() + $chars > $this->dailyCharLimit()) {
                 Log::warning('🎭 เสียงตัวละคร: ชนเพดานตัวอักษรรายวัน', [
                     'used' => $this->charsUsedToday(),
                     'limit' => $this->dailyCharLimit(),
@@ -199,12 +287,23 @@ class FortuneCharacterVoiceService
                 'chars' => $chars,
             ]);
 
-            if ($purpose === 'chat') {
+            if ($metered) {
                 // นับก่อนยิง — ล้มกลางทางก็นับ (ElevenLabs อาจคิดไปแล้ว) กันโดนยิงซ้ำจนโควต้าไหล
                 $this->addUsage($chars);
             }
 
-            $clip = $this->synthesizeInto($clip, $clean, $voice);
+            $clip = $this->synthesizeInto($clip, $clean, $voice, $tuning);
+
+            FortuneVoiceUsage::record([
+                'kind' => 'tts',
+                'purpose' => $purpose,
+                'provider' => 'elevenlabs',
+                'persona' => $persona,
+                'user_ref' => $userRef,
+                'chars' => $chars,
+                'success' => $clip->status !== FortuneCharacterVoiceClip::STATUS_FAILED,
+                'meta' => ['clip_id' => $clip->id, 'model' => $model],
+            ]);
         } finally {
             $lock->release();
         }
@@ -272,12 +371,12 @@ class FortuneCharacterVoiceService
     /**
      * สร้างเสียงจาก ElevenLabs แล้วเก็บไฟล์ที่ storage ของเราเอง
      */
-    protected function synthesizeInto(FortuneCharacterVoiceClip $clip, string $text, string $voice): FortuneCharacterVoiceClip
+    protected function synthesizeInto(FortuneCharacterVoiceClip $clip, string $text, string $voice, array $tuning = []): FortuneCharacterVoiceClip
     {
         $tempPath = storage_path('app/tmp-voice').'/charvoice-'.Str::random(16).'.mp3';
 
         try {
-            $result = $this->provider->synthesize($text, ['voice' => $voice, 'output_path' => $tempPath]);
+            $result = $this->provider->synthesize($text, ['voice' => $voice, 'output_path' => $tempPath, 'tuning' => $tuning]);
             if (! $result['success']) {
                 $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($result['error'])]);
 

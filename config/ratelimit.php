@@ -60,6 +60,8 @@ return [
         'read' => env('RATE_LIMIT_JUNTRA_READ', 60),
         'affiliate' => env('RATE_LIMIT_JUNTRA_AFFILIATE', 300),
         'voice' => env('RATE_LIMIT_JUNTRA_VOICE', 120),
+        // 🔈 (2026-11-04) โหมดคุยด้วยเสียง — ต่อลูกค้า (ถอดเสียง + ขอเสียงรวมกัน)
+        'voice_per_user' => env('RATE_LIMIT_JUNTRA_VOICE_PER_USER', 30),
     ],
 
     /*

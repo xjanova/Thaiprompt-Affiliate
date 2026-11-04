@@ -130,6 +130,23 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
     }
 
+    /** 🪬 (2026-11-04, owner) คุณไสย = แม่หมออีกร่าง ดุดัน เคร่งขรึม — พรอมต์ทำนายเดิม + บล็อกบุคลิกท้ายสุด ยังเรียก "ลูก" */
+    public function test_kunsai_is_read_by_the_stern_form_of_mae_mor(): void
+    {
+        $this->read(['spread_key' => 'kunsai', 'question' => 'โดนของไหม', 'cards' => $this->deck(10)])->assertOk();
+
+        $override = end($this->overrides);
+        $this->assertStringStartsWith('[⚠️ WEB TAROT OVERRIDE', $override);
+        $this->assertStringContainsString('KUNSAI ROOM OVERRIDE', $override);
+        $this->assertStringContainsString('ดุดัน เคร่งขรึม ตรงไปตรงมา', $override);
+        $this->assertStringContainsString('ห้ามโทษลูกว่าทำตัวเองให้โดนของ', $override);
+        $this->assertStringNotContainsString('PERSONA OVERRIDE — บุษบา', $override);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
+
+        $this->read(['spread_key' => 'celtic', 'question' => 'งานจะรุ่งไหม', 'cards' => $this->deck(10)])->assertOk();
+        $this->assertStringNotContainsString('KUNSAI ROOM OVERRIDE', end($this->overrides));
+    }
+
     public function test_love_reads_on_the_prediction_lane_with_its_own_structure_and_length(): void
     {
         $this->read(['spread_key' => 'love', 'spread' => 'tarot_love', 'question' => 'เราสองคนจะไปต่อได้ไหม', 'cards' => $this->loveCards()])
