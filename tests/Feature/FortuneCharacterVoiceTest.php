@@ -119,7 +119,7 @@ class FortuneCharacterVoiceTest extends TestCase
 
             return match (true) {
                 str_starts_with($path, '/v1/text-to-speech/') => Http::response(str_repeat("\xFF\xFB\x90\x00", 400), 200, ['Content-Type' => 'audio/mpeg']),
-                $path === '/v1/user/subscription' => Http::response(['tier' => 'creator', 'character_count' => 1000, 'character_limit' => 100000]),
+                $path === '/v1/user/subscription' => Http::response(['tier' => 'creator', 'character_count' => 1000, 'character_limit' => 100000, 'next_invoice' => ['subtotal_cents' => 2200]]),
                 $path === '/v1/voices' => Http::response(['voices' => array_map(fn ($v) => [
                     'voice_id' => $v['id'],
                     'name' => strtok($v['name'], ' '),
@@ -673,7 +673,65 @@ class FortuneCharacterVoiceTest extends TestCase
         $this->assertStringContainsString('value="mp3_44100_192" selected', $html);
         $this->assertStringContainsString('value="cafe" selected', $html);
         $this->assertStringContainsString('value="9"', $html);
-        $this->assertSame(3 * 3, substr_count($html, 'โมเดลนี้ไม่ใช้') - 1, 'v4: style / speed / speaker boost ไม่ใช้ × 3 ตัวละคร (+ ป้ายอธิบาย 1 จุด)');
+        // ป้ายครบทุกค่า (6 × 3 ตัวละคร) ให้ Alpine สลับตามดรอปดาวน์ · ตอนโหลดโชว์เฉพาะที่ v4 ไม่ใช้ ที่เหลือ x-cloak
+        $this->assertSame(6 * 3, substr_count($html, 'x-show="!supports('));
+        $this->assertSame(3 * 3, preg_match_all('/x-show="!supports\(\'(style|speed|use_speaker_boost)\'\)" class=/', $html), 'v4: style / speed / speaker boost ไม่ใช้ × 3 ตัวละคร');
+        $this->assertSame(3 * 3, preg_match_all('/x-show="!supports\(\'(stability|similarity_boost|clone_strength)\'\)" x-cloak/', $html));
+    }
+
+    public function test_tuning_preview_uses_the_model_picked_in_the_dropdown_without_saving_it(): void
+    {
+        $this->withoutMiddleware();
+        $this->setKey();
+        $this->setModel('eleven_v4');
+        $form = ['output_format' => 'mp3_44100_128', 'apply_text_normalization' => 'auto', 'persona' => 'maemor', 'text' => 'ทดสอบโมเดลค่ะ',
+            'personas' => ['maemor' => ['custom' => '1', 'stability' => '0.4', 'similarity_boost' => '0.8', 'style' => '0.3']]];
+
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $form + ['model' => 'eleven_v4_turbo'])->assertOk()->assertJsonPath('success', true);
+        $this->assertSame('eleven_v4_turbo', $this->ttsCalls()[0]['body']['model_id']);
+        $this->assertSame(['stability' => 0.4, 'similarity_boost' => 0.8], $this->ttsCalls()[0]['body']['voice_settings']);
+        FortuneTellingSetting::clearSettingsCache();
+        $this->assertSame('eleven_v4', (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->model(), 'ลองฟัง = ไม่เปลี่ยนโมเดลที่บันทึกไว้');
+
+        // โมเดลที่บันทึกไว้ = ไฟล์คนละไฟล์กับที่ลองฟังโมเดลอื่น (กุญแจแคชมีชื่อโมเดล)
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $form + ['model' => 'eleven_v4'])->assertOk();
+        $this->assertSame('eleven_v4', $this->ttsCalls()[1]['body']['model_id']);
+
+        // พูดไทยไม่ได้ / ไม่มีในบัญชี / ชื่อแปลก = ไม่ยิง ElevenLabs
+        foreach (['eleven_multilingual_v2', 'eleven_v9', 'Bad Model!'] as $bad) {
+            $this->postJson('/admin/fortune/character-voices/tuning/preview', $form + ['model' => $bad])->assertStatus(422);
+        }
+        $this->assertCount(2, $this->ttsCalls());
+    }
+
+    public function test_settings_page_shows_cost_per_model_and_dropdown_drives_tuning_badges(): void
+    {
+        $this->withoutMiddleware();
+        $this->setKey();
+        $this->setModel('eleven_v4');
+        // ตาราง users ของเทสต์นี้มีแค่คอลัมน์ที่ใช้ — ล็อกอินด้วย user ที่ไม่บันทึกลง DB
+        $this->actingAs((new \App\Models\User)->forceFill(['id' => 1, 'name' => 'แอดมิน', 'email' => 'admin@example.test', 'role' => 'admin']));
+        view()->share('errors', new \Illuminate\Support\ViewErrorBag); // withoutMiddleware() ปิดตัวแชร์ $errors ด้วย
+        // layout จริง (topbar/กระเป๋าเงิน/เมนู) ต้องใช้ตารางอีกหลายสิบตัว — สลับเป็น layout เปล่าที่แสดงแค่เนื้อหาหน้า
+        $layouts = sys_get_temp_dir().'/cv-layout-'.getmypid();
+        @mkdir($layouts.'/layouts', 0777, true);
+        file_put_contents($layouts.'/layouts/admin-v4.blade.php', "@yield('content')\n@stack('scripts')");
+        \Illuminate\Support\Facades\View::getFinder()->prependLocation($layouts);
+        \Illuminate\Support\Facades\View::getFinder()->flush();
+
+        $html = $this->get('/admin/fortune/character-voices')->assertOk()->getContent();
+
+        $this->assertStringContainsString('x-model="tuneModel"', $html);
+        $this->assertStringContainsString('Eleven v4 Turbo — 0.5 เครดิต/ตัวอักษร', $html);
+        $this->assertStringContainsString('Eleven v4 — 1 เครดิต/ตัวอักษร (ใช้อยู่)', $html);
+        $this->assertStringContainsString('1,000 เครดิต', $html);
+        $this->assertStringContainsString('500 เครดิต', $html);
+        $this->assertStringContainsString('≈ $0.22', $html, 'แพ็ก $22 / 100,000 เครดิต × 1,000 ตัว');
+        $this->assertStringContainsString('≈ $0.11', $html);
+        $this->assertStringContainsString('≈ 200,000 ตัวอักษร', $html, 'โมเดลครึ่งราคาพูดได้สองเท่าของเครดิตในแพ็ก');
+        // Js::from เข้ารหัสเครื่องหมายคำพูดเป็น "
+        $settings = str_replace('"', '\\'.'u0022', '"eleven_v4_turbo":["stability","similarity_boost","clone_strength"]');
+        $this->assertStringContainsString($settings, $html, 'ส่งค่าที่แต่ละโมเดลรับให้ Alpine');
     }
 
     public function test_tuning_partial_compiles(): void

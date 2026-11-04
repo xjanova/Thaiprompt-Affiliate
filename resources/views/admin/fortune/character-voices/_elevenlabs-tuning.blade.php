@@ -20,6 +20,12 @@
     ];
     $effectLabel = fn (array $e) => isset($effectNames[$e['id']]) ? $effectNames[$e['id']].' ('.$e['name'].')' : $e['name'];
     $isV3 = str_starts_with($model, 'eleven_v3');
+    // 🎚️ ป้าย "โมเดลนี้ไม่ใช้" — เซิร์ฟเวอร์วาดตามโมเดลที่บันทึกไว้ แล้ว Alpine (supports() ของหน้าหลัก) สลับตามดรอปดาวน์ทันที
+    // ค่าที่โมเดลรับ = ซ่อนไว้ก่อนด้วย x-cloak กันป้ายกะพริบตอนโหลด
+    $unusedBadge = fn (string $field, string $extra = '') => new \Illuminate\Support\HtmlString(
+        "<span x-show=\"!supports('$field')\"".(in_array($field, $supportedSettings, true) ? ' x-cloak' : '')
+        .' class="'.$extra.'px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>'
+    );
     $selectClass = 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm';
 @endphp
 
@@ -27,15 +33,20 @@
     <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
         <h2 class="text-lg font-bold text-gray-900 dark:text-white">🎚️ จูนเสียงละเอียด (ElevenLabs)</h2>
         <span class="px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
-            โมเดลที่ใช้อยู่: <code>{{ $model }}</code>
+            โมเดลที่เลือก: <code x-text="tuneModel">{{ $model }}</code>
         </span>
     </div>
+    <p x-show="tuneModel !== savedModel" x-cloak
+       class="mb-3 px-3 py-2 rounded-lg text-xs bg-violet-50 text-violet-800 dark:bg-violet-900/30 dark:text-violet-200">
+        เลือกโมเดลใหม่แล้วแต่ยังไม่บันทึก — ป้ายด้านล่างกับปุ่ม 🎧 ลองฟัง ใช้โมเดลที่เลือกแล้ว
+        แต่ห้องแชทจริงยังใช้ <code x-text="savedModel">{{ $model }}</code> จนกว่าจะกด 💾 บันทึก ในกล่องตั้งค่าด้านบน
+    </p>
     <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-        ปรับได้ทุกค่าที่ ElevenLabs เปิดให้ — ค่าที่โมเดลปัจจุบันไม่ใช้จะมีป้าย <span class="px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
+        ปรับได้ทุกค่าที่ ElevenLabs เปิดให้ — ค่าที่โมเดลที่เลือกไม่ใช้จะมีป้าย <span class="px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
         (เก็บไว้ให้ ใช้ได้ทันทีถ้าเปลี่ยนโมเดล) · กด <b>🎧 ลองฟัง</b> ท้ายกล่องตัวละครเพื่อฟังค่าที่ตั้งอยู่ได้เลยโดยยังไม่บันทึก — ค่าใหม่ = ไฟล์เสียงใหม่ เสียโควต้าตามจำนวนตัวอักษร (ค่าเดิมกดซ้ำไม่เสียซ้ำ)
-        @if($isV3)
+        <span x-show="tuneModel.startsWith('eleven_v3')" @unless($isV3) x-cloak @endunless>
             <br><span class="text-amber-700 dark:text-amber-300">v3 รับความนิ่งแค่ 3 ระดับ (0 สร้างสรรค์ / 0.5 ธรรมชาติ / 1 นิ่ง) — ระบบปัดให้อัตโนมัติ</span>
-        @endif
+        </span>
     </p>
 
     <form method="POST" action="{{ route('admin.fortune.character-voices.tuning.update') }}">
@@ -104,9 +115,7 @@
                             <div>
                                 <div class="flex items-center justify-between gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <span>{{ $f['label'] }}
-                                        @unless(in_array($field, $supportedSettings, true))
-                                            <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
-                                        @endunless
+                                        {{ $unusedBadge($field, 'ml-1 ') }}
                                     </span>
                                     <span class="font-mono text-xs" x-text="v.{{ $field }}.toFixed(2)"></span>
                                 </div>
@@ -120,17 +129,13 @@
                             <input type="hidden" name="{{ $p }}[use_speaker_boost]" value="0">
                             <input type="checkbox" name="{{ $p }}[use_speaker_boost]" value="1" @checked(old("personas.$pKey.use_speaker_boost", $t['use_speaker_boost'] ?? true)) class="rounded text-violet-600">
                             เพิ่มความชัดของผู้พูด (Speaker boost)
-                            @unless(in_array('use_speaker_boost', $supportedSettings, true))
-                                <span class="px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
-                            @endunless
+                            {{ $unusedBadge('use_speaker_boost') }}
                         </label>
 
                         <div>
                             <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                                 Clone strength (0–1)
-                                @unless(in_array('clone_strength', $supportedSettings, true))
-                                    <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
-                                @endunless
+                                {{ $unusedBadge('clone_strength', 'ml-1 ') }}
                             </label>
                             <input type="number" name="{{ $p }}[clone_strength]" min="0" max="1" step="0.05" placeholder="เว้นว่าง = ไม่ส่ง"
                                    value="{{ old("personas.$pKey.clone_strength", $t['clone_strength'] ?? '') }}" class="{{ $selectClass }}">

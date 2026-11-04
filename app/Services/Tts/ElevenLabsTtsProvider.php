@@ -114,6 +114,9 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
 
     protected string $baseUrl;
 
+    /** โมเดลที่ใช้แทนค่าที่บันทึกไว้ (ลองฟังก่อนบันทึก) — ตั้งผ่าน withModel() เท่านั้น */
+    protected ?string $modelOverride = null;
+
     /**
      * @param  string|null  $apiKey  ส่งตรงได้ (หน้าแอดมินทดสอบ key ก่อนบันทึก) — null = อ่านจากค่ากลาง
      */
@@ -140,7 +143,19 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
      */
     public function model(): string
     {
-        return $this->settings->getElevenlabsTtsModel() ?? self::DEFAULT_MODEL;
+        return $this->modelOverride ?? $this->settings->getElevenlabsTtsModel() ?? self::DEFAULT_MODEL;
+    }
+
+    /**
+     * 🎧 (2026-11-04) สำเนาที่ใช้โมเดลอื่นแทนค่าที่บันทึกไว้ — หน้าจูนเสียงลองฟังโมเดลที่เลือกได้ก่อนกดบันทึก
+     * ผู้เรียกต้องตรวจเองว่าโมเดลนี้มีในบัญชีและพูดไทยได้
+     */
+    public function withModel(string $model): static
+    {
+        $copy = clone $this;
+        $copy->modelOverride = $model;
+
+        return $copy;
     }
 
     /**
@@ -457,7 +472,7 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
      *
      * key ที่จำกัดสิทธิ์ (ไม่ได้เปิด user_read) อ่านโควต้าไม่ได้ แต่ยังสร้างเสียงได้ → นับว่า key ใช้ได้ (balance = null)
      *
-     * @return array{success: bool, balance: ?int, limit: ?int, error: ?string}
+     * @return array{success: bool, balance: ?int, limit: ?int, error: ?string, tier?: ?string, price_usd?: ?float}
      */
     public function credits(): array
     {
@@ -466,8 +481,14 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
         if ($response['success']) {
             $used = (int) ($response['data']['character_count'] ?? 0);
             $limit = (int) ($response['data']['character_limit'] ?? 0);
+            // ราคาแพ็กต่อรอบบิล (ก่อนภาษี) — ใช้ประมาณค่าเงินต่อเครดิตในหน้าตั้งค่า · ไม่มี = แสดงแค่เครดิต
+            $cents = $response['data']['next_invoice']['subtotal_cents'] ?? null;
 
-            return ['success' => true, 'balance' => max(0, $limit - $used), 'limit' => $limit, 'error' => null];
+            return [
+                'success' => true, 'balance' => max(0, $limit - $used), 'limit' => $limit, 'error' => null,
+                'tier' => is_string($response['data']['tier'] ?? null) ? $response['data']['tier'] : null,
+                'price_usd' => is_numeric($cents) && $cents > 0 ? round($cents / 100, 2) : null,
+            ];
         }
 
         if ($response['detail_status'] === 'missing_permissions') {
