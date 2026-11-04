@@ -594,6 +594,58 @@ class FortuneCharacterVoiceTest extends TestCase
         $this->assertSame('hall', FortuneTellingSetting::getGlobalSettings()->getElevenlabsTuning()['personas']['kunsai']['environment_id']);
     }
 
+    public function test_admin_previews_unsaved_tuning_without_saving_it(): void
+    {
+        $this->withoutMiddleware();
+        $this->setKey();
+        $this->setModel('eleven_v4');
+        $base = ['output_format' => 'mp3_44100_192', 'language_code' => '', 'apply_text_normalization' => 'auto'];
+        $form = $base + ['persona' => 'busaba', 'text' => 'ลองฟังเสียงบุษบาค่ะ', 'personas' => ['busaba' => [
+            'custom' => '1', 'stability' => '0.3', 'similarity_boost' => '0.9', 'style' => '0.4', 'use_speaker_boost' => '1',
+            'speed' => '1.1', 'clone_strength' => '', 'seed' => '', 'environment_id' => 'hall', 'send_level' => '0.5', 'distance' => '0', 'pan' => '0',
+        ]]];
+
+        $res = $this->postJson('/admin/fortune/character-voices/tuning/preview', $form)->assertOk()->assertJsonPath('success', true);
+        $this->assertSame('completed', $res->json('data.status'));
+        $this->assertNotEmpty($res->json('data.url'));
+
+        $call = $this->ttsCalls()[0];
+        $this->assertStringContainsString('output_format=mp3_44100_192', $call['url']);
+        $this->assertSame('ลองฟังเสียงบุษบาค่ะ', $call['body']['text']);
+        $this->assertSame(['stability' => 0.3, 'similarity_boost' => 0.9], $call['body']['voice_settings'], 'v4 ส่งเฉพาะค่าที่โมเดลรับ');
+        $this->assertSame(['environment_id' => 'hall', 'send_level' => 0.5], $call['body']['audio_effects']);
+
+        FortuneTellingSetting::clearSettingsCache();
+        $this->assertSame([], FortuneTellingSetting::getGlobalSettings()->getElevenlabsTuning()['personas'] ?? [], 'ลองฟัง = ไม่บันทึกค่า');
+
+        // ค่าเดิมกดซ้ำ = ไฟล์เดิม ไม่เสียโควต้าซ้ำ
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $form)->assertOk();
+        $this->assertCount(1, $this->ttsCalls());
+
+        // บันทึกค่าเดียวกันแล้ว ห้องแชทได้ไฟล์ที่ลองฟังไว้ทันที (กุญแจแคชตรงกัน)
+        $this->from('/admin/fortune/character-voices')->put('/admin/fortune/character-voices/tuning', $form)->assertSessionHasNoErrors();
+        FortuneTellingSetting::clearSettingsCache();
+        $chat = (new FortuneCharacterVoiceService(FortuneTellingSetting::getGlobalSettings()))->request('busaba', 'ลองฟังเสียงบุษบาค่ะ', 'chat');
+        $this->assertSame($res->json('data.clip_id'), $chat['clip']->id);
+        $this->assertCount(1, $this->ttsCalls());
+    }
+
+    public function test_tuning_preview_rejects_bad_input_before_calling_elevenlabs(): void
+    {
+        $this->withoutMiddleware();
+        $this->setKey();
+        $base = ['output_format' => 'mp3_44100_128', 'apply_text_normalization' => 'auto'];
+
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $base + ['persona' => 'nobody'])
+            ->assertStatus(422)->assertJsonPath('error', 'ไม่รู้จักตัวละครนี้');
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $base + ['persona' => 'maemor', 'personas' => ['maemor' => ['speed' => '2']]])
+            ->assertStatus(422)->assertJsonValidationErrors('personas.maemor.speed');
+        $this->postJson('/admin/fortune/character-voices/tuning/preview', $base + ['persona' => 'maemor', 'personas' => ['maemor' => ['background_noise_id' => 'thunderstorm']]])
+            ->assertStatus(422)->assertJsonPath('success', false);
+
+        $this->assertCount(0, $this->ttsCalls());
+    }
+
     public function test_audio_effect_catalog_is_read_live_and_drops_bad_ids(): void
     {
         $this->setKey();

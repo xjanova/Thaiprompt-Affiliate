@@ -2568,6 +2568,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/', [$cv, 'index'])->name('index');
         Route::put('/settings', [$cv, 'updateSettings'])->name('settings.update');
         Route::put('/tuning', [$cv, 'updateTuning'])->name('tuning.update');
+        // ลองฟังค่าจูนก่อนบันทึก — สั่งงานที่เสียเครดิตเหมือนเสียงตัวอย่าง จำกัดความถี่เท่ากัน
+        Route::post('/tuning/preview', [$cv, 'previewTuning'])->middleware('throttle:30,1')->name('tuning.preview');
         Route::delete('/key', [$cv, 'deleteKey'])->name('key.delete');
         Route::post('/credits', [$cv, 'credits'])->name('credits');
         Route::post('/refresh-voices', [$cv, 'refreshVoices'])->name('refresh-voices');

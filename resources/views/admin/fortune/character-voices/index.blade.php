@@ -236,6 +236,8 @@
 
         return {
             personas,
+            // 🎧 ผลลองฟังค่าจูนก่อนบันทึก แยกตามตัวละคร (ฟอร์มจูนอยู่ใน scope เดียวกันนี้)
+            tuningPreview: Object.fromEntries(Object.keys(personas).map((k) => [k, { busy: false, clip: null, error: '' }])),
             voices: @json($voices['voices']),
             showMale: false,
             creditsLoading: false,
@@ -306,21 +308,56 @@
                         return;
                     }
                     p.samples[voiceId] = clip;
-
-                    // ยังไม่เสร็จ (อีกคำขอกำลังสร้างข้อความเดียวกันอยู่) → เช็คซ้ำทุก 3 วิ สูงสุดราว 3 นาที
-                    for (let i = 0; i < 60 && clip.status === 'pending'; i++) {
-                        await new Promise((resolve) => setTimeout(resolve, 3000));
-                        const r = await this.request(@json(url('/admin/fortune/character-voices/clips')) + '/' + clip.clip_id);
-                        clip = r.body.data || { status: 'failed', error: r.body.error || 'เช็คสถานะไม่สำเร็จ' };
-                        p.samples[voiceId] = clip;
-                    }
-                    if (clip.status === 'pending') {
-                        p.samples[voiceId] = { ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดสร้างอีกครั้งเพื่อเช็คผล (ไม่เสียโควต้าซ้ำ)' };
-                    }
+                    await this.waitClip(clip, (c) => p.samples[voiceId] = c);
                 } catch (e) {
                     p.samples[voiceId] = { status: 'failed', error: 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง' };
                 } finally {
                     p.busy[voiceId] = false;
+                }
+            },
+            // ยังไม่เสร็จ (อีกคำขอกำลังสร้างข้อความเดียวกันอยู่) → เช็คซ้ำทุก 3 วิ สูงสุดราว 3 นาที
+            async waitClip(clip, update) {
+                for (let i = 0; i < 60 && clip.status === 'pending'; i++) {
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
+                    const r = await this.request(@json(url('/admin/fortune/character-voices/clips')) + '/' + clip.clip_id);
+                    clip = r.body.data || { status: 'failed', error: r.body.error || 'เช็คสถานะไม่สำเร็จ' };
+                    update(clip);
+                }
+                if (clip.status === 'pending') {
+                    update({ ...clip, status: 'failed', error: 'ยังไม่เสร็จ — กดอีกครั้งเพื่อเช็คผล (ไม่เสียโควต้าซ้ำ)' });
+                }
+            },
+            // 🎧 ลองฟังค่าจูนที่ตั้งอยู่ในฟอร์มตอนนี้ (ยังไม่บันทึก) — ส่งเฉพาะค่ารวม + ค่าของตัวละครที่กด
+            async previewTuning(pKey, form) {
+                const s = this.tuningPreview[pKey];
+                if (s.busy) return; // กันกดซ้ำระหว่างรอ
+                s.busy = true;
+                s.error = '';
+                s.clip = null;
+                const payload = { persona: pKey, text: this.personas[pKey]?.text || '', personas: { [pKey]: {} } };
+                for (const [name, value] of new FormData(form).entries()) {
+                    if (['output_format', 'language_code', 'apply_text_normalization'].includes(name)) payload[name] = value;
+                    const m = name.match(/^personas\[(\w+)\]\[(\w+)\]$/);
+                    // checkbox มี hidden "0" นำหน้า — ค่าหลังทับค่าแรก ได้ค่าที่ติ๊กจริง
+                    if (m && m[1] === pKey) payload.personas[pKey][m[2]] = value;
+                }
+                try {
+                    const { body } = await this.request(@json(route('admin.fortune.character-voices.tuning.preview')), {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    const clip = body.data || null;
+                    if (!clip) {
+                        s.error = body.error || 'สร้างเสียงไม่สำเร็จ';
+                        return;
+                    }
+                    s.clip = clip;
+                    await this.waitClip(clip, (c) => s.clip = c);
+                    if (s.clip?.status === 'failed') s.error = s.clip.error || 'สร้างเสียงไม่สำเร็จ';
+                } catch (e) {
+                    s.error = 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';
+                } finally {
+                    s.busy = false;
                 }
             },
             async generateAll(pKey) {

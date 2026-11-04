@@ -117,10 +117,12 @@ class FortuneCharacterVoiceService
     /**
      * 🎚️ (2026-11-04) ค่าจูนเสียงของตัวละคร — ค่ารวม (คุณภาพไฟล์/ภาษา/อ่านตัวเลข) + ค่าเฉพาะตัว
      * provider กรองต่อเองว่าโมเดลที่ใช้อยู่รับค่าไหนได้
+     *
+     * @param  array|null  $all  ค่าจูนทั้งชุดที่ยังไม่บันทึก (ปุ่มลองฟังในหน้าแอดมิน) · null = ค่าที่บันทึกไว้
      */
-    public function tuningFor(string $persona): array
+    public function tuningFor(string $persona, ?array $all = null): array
     {
-        $all = $this->settings->getElevenlabsTuning();
+        $all ??= $this->settings->getElevenlabsTuning();
         $own = is_array($all['personas'][$persona] ?? null) ? $all['personas'][$persona] : [];
 
         return [
@@ -161,9 +163,10 @@ class FortuneCharacterVoiceService
      *                           — สามอย่างนี้นับเพดานรายวัน · 'sample' (แอดมินฟังเทียบ) ไม่นับ
      * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ElevenLabs ตอบไฟล์ในคำขอเดียว ไม่ต้องรอ
      * @param  string|null  $userRef  🔈 (2026-11-04) ลูกค้าฝั่งเว็บที่ขอเสียง — ลงบันทึกต้นทุน fortune_voice_usages
+     * @param  array|null  $tuning  ค่าจูนจาก tuningFor() ที่ใช้แทนค่าที่บันทึกไว้ (ลองฟังก่อนบันทึก) · null = ค่าที่บันทึกไว้
      * @return array{success: bool, clip: ?FortuneCharacterVoiceClip, error: ?string, code: int}
      */
-    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0, ?string $userRef = null): array
+    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0, ?string $userRef = null, ?array $tuning = null): array
     {
         $metered = in_array($purpose, self::METERED_PURPOSES, true);
         if (! self::isPersona($persona)) {
@@ -183,7 +186,7 @@ class FortuneCharacterVoiceService
         // รวม persona ในกุญแจ — แม่หมอกับโหมดคุณไสยเลือกเสียงเดียวกันได้ ไฟล์ต้องแยกโฟลเดอร์ตามตัวละคร
         $keyParts = ['elevenlabs', $model, $voice, $persona, $clean];
         // 🎚️ จูนเสียงแล้ว = ไฟล์ใหม่ · ยังไม่จูน ([]) = กุญแจเดิมทุกตัวอักษร ไฟล์ที่เก็บไว้ก่อนหน้านี้ยังใช้ได้
-        $tuning = $this->tuningFor($persona);
+        $tuning ??= $this->tuningFor($persona);
         if (($tuned = $this->provider->tuningPayload($tuning)) !== []) {
             $keyParts[] = json_encode($tuned);
         }
