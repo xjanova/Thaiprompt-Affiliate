@@ -2,7 +2,9 @@
 
 namespace App\Services\Fortune;
 
+use App\Models\AiApiKey;
 use App\Services\FortuneAIService;
+use App\Support\SafeLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -62,7 +64,11 @@ final class JuntraChatService
      */
     public const FALLBACK_MODEL = 'gpt-6-luna';
 
-    private const PRIMARY_TIMEOUT_SEC = 10;
+    /** รอคีย์ Gemini แต่ละตัวได้ไม่เกินนี้ */
+    private const PRIMARY_TIMEOUT_SEC = 8;
+
+    /** ไล่คีย์ Gemini ฟรีรวมกันได้ไม่เกินนี้ แล้วต้องเหลือเวลาให้ luna */
+    private const GEMINI_BUDGET_SEC = 24;
 
     private const FALLBACK_TIMEOUT_SEC = 20;
 
@@ -618,33 +624,53 @@ TXT,
     }
 
     /**
-     * 🌙 (2026-11-04, owner) Gemini ฟรีหลุดบ่อย — สลับไป OpenAI luna อัตโนมัติ
+     * 🌙 (2026-11-04, owner) Gemini ฟรีหลุดบ่อย — ไล่คีย์ Gemini ฟรีให้ครบก่อน แล้วค่อยไป OpenAI luna
      *
-     * QA บน prod วันเดียวกัน: Gemini ค้างครบ 15 วิแล้วได้ 0 ไบต์ 4 จาก 5 ข้อความ
-     * ทางหลักล้ม (โยน error) หรือตอบว่าง → ยิงซ้ำที่ luna ครั้งเดียว
-     * luna ล้มด้วย (ไม่มีคีย์ / คีย์ใช้ไม่ได้ / หมดเวลา) → โยนต่อ ผู้เรียกตอบข้อความที่เตรียมไว้ของห้อง (ไม่คิดเครดิต)
+     * owner: "ถ้า gemini ฟรีตัวไหนยังใช้ได้ให้เก็บไว้วนก่อน ล่มหมดทุกคีย์ค่อยไปใช้ gpt luna"
+     * QA บน prod: Gemini ค้างครบ 15 วิแล้วได้ 0 ไบต์ 4 จาก 5 ข้อความ / ตอบ "high demand" ทันที
      *
-     * ⏱️ ทางหลัก 10 วิ (p95 ของแชท 5.6 วิ) + luna 20 วิ = 30 วิ ยังอยู่ในงบของเว็บ (รอได้ ~50 วิ)
+     * 1. คีย์ Gemini ใน pool ที่ purpose=chat และพร้อมใช้ (ไม่ติดคูลดาวน์ เทสผ่าน) ทีละตัว
+     *    เริ่มคนละตัวทุกข้อความ (วนรอบ) กันคีย์แรกโดนยิงตลอด
+     * 2. ไม่มีคีย์ Gemini เลย → ยิงตามที่ตั้งค่า Chat AI ไว้ครั้งเดียว (ทางเดิม)
+     * 3. ล้มหมด → luna · luna ล้มด้วย (ไม่มีคีย์ / คีย์ใช้ไม่ได้ / หมดเวลา) → โยนต่อ
+     *    ผู้เรียกตอบข้อความที่เตรียมไว้ของห้อง (ไม่คิดเครดิต)
+     *
+     * ⏱️ คีย์ละ 8 วิ รวมไม่เกิน 24 วิ + luna 20 วิ = 44 วิ ยังอยู่ในงบของเว็บ (รอได้ ~50 วิ)
+     *    คีย์ที่ล่มเร็ว (high demand / 429) ไล่ได้หลายตัวในงบเดียวกัน
      */
     private function ask(string $system, string $userMessage, array $config, string $guardText): array
     {
-        try {
-            $result = $this->ai->chatWithCustomSystemPrompt(
-                systemMessage: $system,
-                userMessage: $userMessage,
-                config: $config + ['timeout' => self::PRIMARY_TIMEOUT_SEC],
-                // 🛡 ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" เท่านั้น ห้ามตรวจ userMessage ที่ห่อไว้
-                guardText: $guardText,
-            );
-            if (trim((string) ($result['response'] ?? '')) !== '' || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
-                return $result;
+        $started = microtime(true);
+        $failures = [];
+
+        foreach ($this->primaryAttempts() as $label => $override) {
+            if (microtime(true) - $started + self::PRIMARY_TIMEOUT_SEC > self::GEMINI_BUDGET_SEC) {
+                $failures[] = 'หมดงบเวลา';
+                break;
             }
-            $reason = 'empty reply';
-        } catch (\Throwable $e) {
-            $reason = mb_substr($e->getMessage(), 0, 160);
+
+            try {
+                $result = $this->ai->chatWithCustomSystemPrompt(
+                    systemMessage: $system,
+                    userMessage: $userMessage,
+                    config: $config + ['timeout' => self::PRIMARY_TIMEOUT_SEC],
+                    providerOverride: $override['provider'] ?? null,
+                    modelOverride: $override['model'] ?? null,
+                    apiKeyOverride: $override['key'] ?? null,
+                    // 🛡 ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" เท่านั้น ห้ามตรวจ userMessage ที่ห่อไว้
+                    guardText: $guardText,
+                );
+                if (trim((string) ($result['response'] ?? '')) !== '' || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
+                    return $result;
+                }
+                $failures[] = "{$label}: ตอบว่าง";
+            } catch (\Throwable $e) {
+                // 🔐 error ของ Gemini มี ?key=<คีย์> ใน URL — ปิดก่อนลง log
+                $failures[] = "{$label}: ".mb_substr(SafeLog::redactSecrets($e->getMessage()), 0, 120);
+            }
         }
 
-        Log::warning('JuntraChat: ทางหลักไม่ตอบ — สลับไป OpenAI luna', ['reason' => $reason]);
+        Log::warning('JuntraChat: ทางหลักไม่ตอบ — สลับไป OpenAI luna', ['tried' => $failures]);
 
         return $this->ai->chatWithCustomSystemPrompt(
             systemMessage: $system,
@@ -654,6 +680,44 @@ TXT,
             modelOverride: self::FALLBACK_MODEL,
             guardText: $guardText,
         );
+    }
+
+    /**
+     * คีย์ที่จะลองก่อนไป luna — Gemini ฟรีทุกตัวที่พร้อมใช้ เรียงวนรอบ
+     *
+     * ไม่บันทึก error ลง pool: "high demand" เป็นของทั้งรุ่น ไม่ใช่ความผิดของคีย์
+     * นับเป็น strike จะพาคีย์ดีทั้งหมดไปติด critical
+     *
+     * @return array<string, array{provider?: string, model?: string|null, key?: string}>
+     */
+    private function primaryAttempts(): array
+    {
+        try {
+            // purpose ตรงตัว — scope forPurpose('chat') ดึงคีย์เสียเงิน chat_paid มาด้วย
+            $keys = AiApiKey::available()
+                ->where('purpose', 'chat')
+                ->where('provider', 'gemini')
+                ->orderBy('id')
+                ->get();
+        } catch (\Throwable) {
+            $keys = collect();
+        }
+
+        if ($keys->isEmpty()) {
+            return ['ตั้งค่า Chat AI' => []];
+        }
+
+        $offset = (int) Cache::increment('juntra_chat:gemini_rr') % $keys->count();
+        $attempts = [];
+        foreach ($keys->slice($offset)->concat($keys->take($offset)) as $key) {
+            $attempts["gemini#{$key->id}"] = [
+                'provider' => 'gemini',
+                'model' => $key->resolveModel(),
+                'key' => $key->api_key,
+            ];
+        }
+
+        return $attempts;
     }
 
     private function remember(string $owner, string $sessionId, array $history, string $reply, ?string $reading = null, bool $touchMemory = false): void

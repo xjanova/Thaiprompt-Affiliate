@@ -53,7 +53,7 @@ class JuntraServerChatApiTest extends TestCase
         $ai->shouldReceive('withCustomerContext')->andReturnSelf();
         $ai->shouldReceive('chatWithCustomSystemPrompt')->andReturnUsing(function (...$args) {
             $this->aiCalls[] = ['system' => $args[0], 'user' => $args[1], 'config' => $args[2] ?? [],
-                'provider' => $args[3] ?? null, 'model' => $args[4] ?? null];
+                'provider' => $args[3] ?? null, 'model' => $args[4] ?? null, 'key' => $args[5] ?? null];
 
             $next = array_shift($this->aiScript);
             if ($next instanceof \Throwable) {
@@ -156,7 +156,7 @@ class JuntraServerChatApiTest extends TestCase
 
         $this->assertCount(2, $this->aiCalls);
         [$primary, $luna] = $this->aiCalls;
-        $this->assertSame(10, $primary['config']['timeout']);
+        $this->assertSame(8, $primary['config']['timeout']);
         $this->assertSame('openai', $luna['provider']);
         $this->assertSame('gpt-6-luna', $luna['model']);
         $this->assertSame(20, $luna['config']['timeout']);
@@ -174,6 +174,108 @@ class JuntraServerChatApiTest extends TestCase
 
         $this->send($session, 'สวัสดีค่ะ')->assertStatus(503)->assertJsonPath('reason_code', 'ai_unavailable');
         $this->assertCount(2, $this->aiCalls);
+    }
+
+    /** คีย์ Gemini ฟรีใน pool — ตารางเดียวกับที่ AiApiKey::available() อ่าน */
+    private function geminiChatKeys(int $count): void
+    {
+        if (! Schema::hasTable('ai_api_keys')) {
+            Schema::create('ai_api_keys', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('provider');
+                $table->string('model')->nullable();
+                $table->string('base_url')->nullable();
+                $table->text('api_key');
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_critical')->default(false);
+                $table->integer('priority')->default(50);
+                $table->string('purpose')->nullable();
+                $table->timestamp('disabled_until')->nullable();
+                $table->timestamp('last_test_passed_at')->nullable();
+                $table->softDeletes();
+                $table->timestamps();
+            });
+        }
+
+        for ($i = 1; $i <= $count; $i++) {
+            DB::table('ai_api_keys')->insert([
+                'name' => "ฟรี {$i}", 'provider' => 'gemini', 'model' => 'gemini-3.1-flash-lite',
+                'api_key' => "gemini-free-{$i}", 'is_active' => true, 'purpose' => 'chat', 'last_test_passed_at' => now(),
+            ]);
+        }
+        // ตัวที่ไม่ควรถูกหยิบ: ติดคูลดาวน์ / คีย์เสียเงิน / ค่ายอื่น
+        DB::table('ai_api_keys')->insert([
+            ['name' => 'คูลดาวน์', 'provider' => 'gemini', 'model' => null, 'api_key' => 'gemini-cooling', 'is_active' => true,
+                'purpose' => 'chat', 'last_test_passed_at' => now(), 'disabled_until' => now()->addHour()],
+            ['name' => 'เสียเงิน', 'provider' => 'gemini', 'model' => null, 'api_key' => 'gemini-paid', 'is_active' => true,
+                'purpose' => 'chat_paid', 'last_test_passed_at' => now(), 'disabled_until' => null],
+            ['name' => 'groq', 'provider' => 'groq', 'model' => null, 'api_key' => 'groq-chat', 'is_active' => true,
+                'purpose' => 'chat', 'last_test_passed_at' => now(), 'disabled_until' => null],
+        ]);
+    }
+
+    public function test_every_free_gemini_key_is_tried_before_luna(): void
+    {
+        $this->geminiChatKeys(3);
+        $session = $this->start();
+        $this->aiScript = [
+            new \RuntimeException('This model is currently experiencing high demand'),
+            new \RuntimeException('429 RESOURCE_EXHAUSTED'),
+            new \RuntimeException('cURL error 28'),
+            ['response' => 'luna ตอบแทนค่ะลูก', 'provider' => 'openai'],
+        ];
+
+        $this->send($session, 'สวัสดีค่ะ')->assertOk()->assertJsonPath('data.reply', 'luna ตอบแทนค่ะลูก');
+
+        $this->assertCount(4, $this->aiCalls);
+        $gemini = array_slice($this->aiCalls, 0, 3);
+        $this->assertSame(['gemini', 'gemini', 'gemini'], array_column($gemini, 'provider'));
+        $this->assertEqualsCanonicalizing(['gemini-free-1', 'gemini-free-2', 'gemini-free-3'], array_column($gemini, 'key'),
+            'ไล่ครบทุกคีย์ฟรี ไม่หยิบคีย์ติดคูลดาวน์ คีย์เสียเงิน หรือค่ายอื่น');
+        $this->assertSame('gemini-3.1-flash-lite', $gemini[0]['model']);
+        $this->assertSame('openai', $this->aiCalls[3]['provider']);
+    }
+
+    public function test_a_working_gemini_key_answers_and_luna_is_never_called(): void
+    {
+        $this->geminiChatKeys(3);
+        $session = $this->start();
+        $this->aiScript = [new \RuntimeException('429 RESOURCE_EXHAUSTED')];
+
+        $this->send($session, 'สวัสดีค่ะ')->assertOk()->assertJsonPath('data.reply', $this->aiReply);
+
+        $this->assertCount(2, $this->aiCalls);
+        $this->assertSame(['gemini', 'gemini'], array_column($this->aiCalls, 'provider'));
+    }
+
+    public function test_the_first_key_rotates_between_messages(): void
+    {
+        $this->geminiChatKeys(3);
+        $session = $this->start();
+
+        $this->send($session, 'ข้อความแรก')->assertOk();
+        $this->send($session, 'ข้อความสอง')->assertOk();
+
+        $this->assertCount(2, $this->aiCalls);
+        $this->assertNotSame($this->aiCalls[0]['key'], $this->aiCalls[1]['key'], 'ไม่ยิงคีย์แรกซ้ำทุกข้อความ');
+    }
+
+    public function test_gemini_errors_carrying_the_key_in_the_url_are_redacted_in_the_log(): void
+    {
+        $this->geminiChatKeys(1);
+        $session = $this->start();
+        $this->aiScript = [
+            new \RuntimeException('cURL error 28 for https://generativelanguage.googleapis.com/v1beta/models/x:generateContent?key=AIzaSySECRET123456789'),
+            ['response' => 'ok', 'provider' => 'openai'],
+        ];
+        \Illuminate\Support\Facades\Log::spy();
+
+        $this->send($session, 'สวัสดีค่ะ')->assertOk();
+
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs(function ($msg, $ctx = []) {
+            return str_contains($msg, 'สลับไป OpenAI luna') && ! str_contains(json_encode($ctx), 'AIzaSySECRET');
+        })->once();
     }
 
     public function test_a_healthy_primary_never_calls_luna(): void
@@ -282,7 +384,7 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('ห้ามเปิดไพ่ใบใหม่', $call['system']);
         $this->assertStringNotContainsString('====', $call['system']);
         $this->assertStringContainsString('[[OFFER:', $call['system']);
-        $this->assertSame(['temperature' => 0.85, 'max_tokens' => 350, 'timeout' => 10], $call['config']);
+        $this->assertSame(['temperature' => 0.85, 'max_tokens' => 350, 'timeout' => 8], $call['config']);
         $this->assertNull($call['provider'], 'ทางหลักยังเป็นตัวที่ตั้งไว้ในระบบ ไม่ได้บังคับ provider');
         $this->assertNull(app(\App\Services\Fortune\JuntraChatService::class)->context('jw42', $session));
     }
