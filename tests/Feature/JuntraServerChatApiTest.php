@@ -858,4 +858,62 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertSame(2, $out['counts']['web_handoffs']);
         $this->assertSame(['9999999999'], DB::table('fortune_web_handoffs')->pluck('platform_user_id')->all());
     }
+
+    /**
+     * 🤍 (2026-11-04) ลูกค้าบอกว่าอยากฆ่าตัวตาย — ทุกห้อง (แม่หมอ/บุษบา/คุณไสย) ต้องได้คำตอบห่วงใย + สายด่วน
+     * ไม่ใช่คำปัด "ไม่ตอบเรื่องแบบนั้น" · ไม่ส่งไปให้ AI · ❌ ไม่มีการ์ดเปิดไพ่ ต่อให้ AI จะแปะป้ายมา
+     */
+    public function test_self_harm_in_every_web_room_gets_the_hotline_and_never_an_offer_card(): void
+    {
+        $this->aiReply = 'แม่หมอจะเปิดไพ่ให้นะคะ [[OFFER:love]]';
+
+        foreach (['maemor' => '51', 'busaba' => '52', 'kunsai' => '53'] as $persona => $ref) {
+            $session = $this->startContinuity(['user_ref' => $ref, 'persona' => $persona])->assertStatus(201)->json('data.session_id');
+            $callsBefore = count($this->aiCalls);
+
+            $res = $this->send($session, 'ไม่ไหวแล้ว อยากฆ่าตัวตาย', $ref)->assertOk();
+
+            $res->assertJsonPath('data.offer_topic', null)->assertJsonPath('data.persona', $persona);
+            $this->assertNotSame('offer', $res->json('data.kind'), $persona);
+            $reply = $res->json('data.reply');
+            $this->assertStringContainsString('1323', $reply, $persona);
+            $this->assertStringContainsString('1300', $reply, $persona);
+            $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply, $persona);
+            $this->assertStringNotContainsString('[[', $reply, $persona);
+            $this->assertSame($callsBefore, count($this->aiCalls), "ห้องนี้ ({$persona}) ห้ามส่งข้อความวิกฤตไปให้ AI");
+        }
+    }
+
+    /** 🤍 ห้องที่ลูกค้าเคยส่งสัญญาณวิกฤต — เทิร์นถัด ๆ ไปไม่ยื่นการ์ดขาย และ AI ได้กติกาดูแลใจทุกรอบ */
+    public function test_after_a_crisis_the_room_never_offers_cards_but_other_rooms_still_do(): void
+    {
+        $session = $this->start('61');
+        $this->send($session, 'ไม่อยากอยู่แล้ว', '61')->assertOk();
+
+        $this->aiReply = 'แม่หมอจะเปิดไพ่เรื่องความรักให้นะคะลูก [[OFFER:love]]';
+        $res = $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '61')->assertOk();
+
+        $res->assertJsonPath('data.kind', 'reply')->assertJsonPath('data.offer_topic', null);
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $call = end($this->aiCalls);
+        $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $call['system']);
+        $this->assertStringContainsString('1323', $call['user'], 'AI ต้องเห็นคำตอบสายด่วนในประวัติห้อง');
+
+        // ห้องอื่นของลูกค้าคนอื่นไม่โดนผลกระทบ
+        $other = $this->start('62');
+        $this->send($other, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '62')->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'love');
+        $this->assertStringNotContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', end($this->aiCalls)['system']);
+    }
+
+    /** 🔮 คำดูดวงที่มีคำว่าตาย/Death ไม่ใช่วิกฤต — ยังคุยและยื่นการ์ดได้ตามปกติ */
+    public function test_fortune_words_about_death_are_not_a_crisis(): void
+    {
+        $session = $this->start('63');
+        $this->aiReply = 'ไพ่ Death หมายถึงการเปลี่ยนแปลงค่ะลูก [[OFFER:general]]';
+
+        $this->send($session, 'เปิดได้ไพ่ Death ดวงตายไหมคะ', '63')->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'general');
+        $this->assertStringNotContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', end($this->aiCalls)['system']);
+    }
 }

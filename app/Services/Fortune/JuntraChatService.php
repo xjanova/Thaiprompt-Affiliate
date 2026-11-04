@@ -94,6 +94,15 @@ TXT;
 - ถ้าไม่ได้ขอให้ทำนาย ห้ามใส่ป้ายนี้
 TXT;
 
+    /** 🤍 (2026-11-04) ห้องที่ลูกค้าเคยบอกว่าอยากทำร้ายตัวเอง — ต่อท้ายทุกเทิร์นจนห้องหมดอายุ (ทุกตัวละคร) */
+    private const CRISIS_RULES = <<<'TXT'
+
+⚠️ ในห้องนี้ลูกค้าเคยบอกว่าอยากทำร้ายหรือจบชีวิตตัวเอง:
+- ดูแลใจก่อนเสมอ พูดอ่อนโยน ไม่ร่าเริง รับฟัง ถามไถ่ ชวนคุยกับคนที่ไว้ใจ
+- ❌ ห้ามชวนเปิดไพ่ ห้ามขาย ห้ามพูดราคา ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี
+- ถ้ายังมีสัญญาณอันตราย ย้ำสายด่วนสุขภาพจิต 1323 หรือศูนย์ช่วยเหลือสังคม 1300 (ฟรี 24 ชม.) · อยู่ในอันตรายตอนนี้ โทร 1669
+TXT;
+
     /**
      * 💬 (2026-09-21) ห้องที่ผูกกับคำพยากรณ์ที่ลูกค้าจ่ายแล้ว — ต่อท้ายด้วยบริบทคำพยากรณ์เสมอ
      *
@@ -443,6 +452,19 @@ TXT,
             $memory = is_string($stored) && $stored !== '' ? $stored : null;
         }
 
+        // 🤍 (2026-11-04) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง — ตอบห่วงใย + สายด่วน ก่อนด่านอื่นทั้งหมด
+        //    (ด่าน scope อาจปัด "ช่วยเขียนจดหมายลาตาย" เป็นคำขอเขียนให้) ไม่ส่งไปให้ AI · ❌ ไม่มีการ์ดเปิดไพ่
+        //    และติดธงห้องไว้ — เทิร์นถัด ๆ ไปในห้องนี้ก็ไม่ยื่นการ์ดขาย ต่อให้ AI แปะป้ายมาเอง
+        if (FortuneAIService::isSelfHarmStatement($text)) {
+            FortuneAIService::reportSelfHarmSignal('self_harm', $text, $customer['customer_name'] ?? $owner);
+            Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
+            $reply = FortuneAIService::buildAdversarialReply('self_harm');
+            $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
+
+            return ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona];
+        }
+        $crisisRoom = Cache::has($this->crisisKey($owner, $sessionId));
+
         // 🪬 (2026-09-05 owner) ด่านกัน "ใช้แม่หมอเป็น AI ฟรี" — ขอบทสวด/สูตร/แปล/สรุป/เขียนให้
         $scopeHit = FortuneScopeGuard::detectExtraction($text);
         if ($scopeHit !== null) {
@@ -465,6 +487,9 @@ TXT,
         //    อุณหภูมิต่ำลง (ไม่แต่งเกินคำพยากรณ์) · max_tokens 350 ตัดคำอธิบาย "เดือน X หมายถึงอะไร" กลางประโยค → 600
         // 🌸 (2026-11-04) ตัวละครที่มี offer_rules ของตัวเอง ใช้แทน WEB_OFFER_RULES ทั้งก้อน (ไม่ต่อท้าย กันกติกาสองชุดขัดกัน)
         $system = $profile['system'].($webOffers ? ($profile['offer_rules'] ?? self::WEB_OFFER_RULES) : '');
+        if ($crisisRoom) {
+            $system .= self::CRISIS_RULES;
+        }
         $config = ['temperature' => 0.85, 'max_tokens' => 350];
         // 🌙 (2026-11-03) ความจำอยู่ใน system message เท่านั้น — ห้ามไปอยู่ใน userMessage (ด่านเจลเบรคตรวจแค่ข้อความดิบ)
         if ($memory !== null) {
@@ -499,7 +524,7 @@ TXT,
             $topic = in_array($candidate, self::OFFER_TOPICS, true) ? $candidate : 'general';
             $reply = trim((string) preg_replace('/\s*\[\[\s*OFFER\s*:[^\]]*\]\]\s*/iu', ' ', $reply));
         }
-        if (! $webOffers) {
+        if (! $webOffers || $crisisRoom) {
             $topic = null;
         }
 
@@ -601,6 +626,12 @@ TXT,
     private function memoryKey(string $owner, string $sessionId): string
     {
         return "juntra:chat:{$owner}:{$sessionId}:mem";
+    }
+
+    /** 🤍 ห้องที่ลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเอง — ไม่ยื่นการ์ดขายจนห้องหมดอายุ */
+    private function crisisKey(string $owner, string $sessionId): string
+    {
+        return "juntra:chat:{$owner}:{$sessionId}:crisis";
     }
 
     /** คีย์แยกจากประวัติ — ห้องเดิม/ทางเดิมที่อ่านประวัติ (show) ได้รูปข้อมูลเหมือนเดิมทุกอย่าง */

@@ -35,6 +35,18 @@ class FortuneSelfHarmGuardTest extends TestCase
             'just kill me' => ['just kill me already'],
             'มีแท็กระบบนำหน้า' => ['[TURN 4] [OFFER_COOLDOWN] [RETURNING_CUSTOMER past_topics="การงาน"] อยากตายค่ะ'],
             'ระบายยาวเกิน 2000 ตัว' => [str_repeat('เรื่องงานหนักมาก ', 200).'อยากฆ่าตัวตาย'],
+            // 🤍 (2026-11-04) ขยาย regex
+            'ฆ่าตัวตาย เดี่ยว ๆ' => ['ฆ่าตัวตาย'],
+            'ฆ่า ตัว ตาย เว้นวรรค' => ['คิดเรื่อง ฆ่า ตัว ตาย ทุกคืน'],
+            'คิดสั้น' => ['ช่วงนี้อยากคิดสั้นค่ะ'],
+            'เกือบคิดสั้น' => ['เมื่อคืนเกือบคิดสั้นไปแล้ว'],
+            'ทำร้ายร่างกายตัวเอง' => ['ทำร้ายร่างกายตัวเองบ่อยมาก'],
+            'กินยานอนหลับเกินขนาด' => ['คิดจะกินยานอนหลับเกินขนาด'],
+            'กินยาหมดแผง' => ['จะกินยาหมดแผงเลย'],
+            'แขวนคอ' => ['อยากแขวนคอ'],
+            'กระโดดสะพาน' => ['จะไปกระโดดสะพานตาย'],
+            'ไม่อยากตื่นอีก' => ['หลับไปแล้วไม่อยากตื่นขึ้นมาอีก'],
+            'เบื่อที่จะมีชีวิต' => ['เบื่อที่จะมีชีวิตอยู่แล้ว'],
         ];
     }
 
@@ -58,6 +70,13 @@ class FortuneSelfHarmGuardTest extends TestCase
             'ถามดวงเรื่องความตาย' => ['ปีนี้จะตายไหมคะ'],
             'going to die' => ['am i going to die this year?'],
             'ดูดวงปกติ' => ['อยากถามเรื่องความรักค่ะ'],
+            // 🔮 (2026-11-04) คำดูดวงที่มีคำว่า "ตาย/Death" ต้องไม่ติด
+            'ดวงตาย' => ['ดวงตายไหมปีนี้คะ'],
+            'ไพ่ Death' => ['เปิดได้ไพ่ Death หมายถึงอะไรคะ'],
+            'ไพ่ความตาย' => ['ได้ไพ่ความตาย น่ากลัวไหม'],
+            'death card' => ['I got the Death card, what does it mean?'],
+            'ปฏิเสธคิดสั้น' => ['ไม่อยากคิดสั้นหรอก แค่เหนื่อย'],
+            'ผูกคอเสื้อ' => ['ใส่เสื้อผูกคอสีอะไรดีวันสัมภาษณ์'],
         ];
     }
 
@@ -78,13 +97,25 @@ class FortuneSelfHarmGuardTest extends TestCase
     {
         $reply = FortuneAIService::buildAdversarialReply('self_harm');
 
-        $this->assertStringContainsString('1323', $reply);
+        $this->assertStringContainsString('สายด่วนสุขภาพจิต 1323', $reply);
+        $this->assertStringContainsString('ศูนย์ช่วยเหลือสังคม 1300', $reply);
+        $this->assertStringContainsString('1669', $reply, 'อยู่ในอันตรายตอนนี้ต้องรู้เบอร์ฉุกเฉิน');
         $this->assertStringContainsString('24 ชม.', $reply);
-        $this->assertStringContainsString('ฟรี', $reply);
         $this->assertStringContainsString('พิมพ์มาได้เลย', $reply, 'ต้องชวนคุยต่อ ไม่ตัดบท');
         $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
-        $this->assertStringNotContainsString('ดูดวง', $reply, 'ห้ามชวนดูดวง/ขายในเทิร์นนี้');
-        $this->assertStringNotContainsString('[OFFER_FORTUNE]', $reply);
-        $this->assertStringNotContainsString('สุขภาพจิต', $reply, 'ใช้ "สายด่วนใจ" ตามแนว persona — ไม่ตราหน้า');
+        foreach (['ดูดวง', 'เปิดไพ่', 'ไพ่', 'ราคา', 'บาท', '[OFFER', '[[OFFER'] as $sales) {
+            $this->assertStringNotContainsString($sales, $reply, "ห้ามชวนดูดวง/ขายในเทิร์นนี้ ({$sales})");
+        }
+        // 🎭 ใช้ข้อความเดียวทุกตัวละคร — ห้ามเรียกชื่อตัวเองหรือเรียกลูกค้าแบบของตัวละครใดตัวหนึ่ง
+        foreach (['แม่หมอ', 'บุษบา', 'ลูก', 'ครับ'] as $personaWord) {
+            $this->assertStringNotContainsString($personaWord, $reply, "ต้องเป็นกลางทุกตัวละคร ({$personaWord})");
+        }
+    }
+
+    public function test_violence_never_swallows_self_harm_any_more(): void
+    {
+        foreach (['อยากฆ่าตัวเอง', 'ฆ่าตัวตาย', 'kill myself'] as $text) {
+            $this->assertNotSame('off_topic_violence', FortuneAIService::detectAdversarialInput($text), $text);
+        }
     }
 }

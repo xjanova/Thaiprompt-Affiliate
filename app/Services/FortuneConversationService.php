@@ -24569,15 +24569,6 @@ PROMPT;
     }
 
     /**
-     * 🛡️ (2026-05-14) Detect platform จาก user ID format
-     *
-     * FB PSID: digit-only string (e.g., "26165964502999706")
-     * LINE user ID: 'U' + 32 hex chars (e.g., "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-     *
-     * ใช้แทน $this->currentPlatform default ('line') ที่อาจไม่ตรงกับ user ID จริง
-     * → กัน FB users ติด LINE bucket / LINE users ติด FB bucket
-     */
-    /**
      * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง
      *
      * - แจ้งแอดมิน (Telegram) + ติดธง persona mental_fragile/crisis_resources_sent เสมอ
@@ -24618,6 +24609,15 @@ PROMPT;
         ];
     }
 
+    /**
+     * 🛡️ (2026-05-14) Detect platform จาก user ID format
+     *
+     * FB PSID: digit-only string (e.g., "26165964502999706")
+     * LINE user ID: 'U' + 32 hex chars (e.g., "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+     *
+     * ใช้แทน $this->currentPlatform default ('line') ที่อาจไม่ตรงกับ user ID จริง
+     * → กัน FB users ติด LINE bucket / LINE users ติด FB bucket
+     */
     protected function detectPlatformFromUserId(string $userId): string
     {
         // ✈️ (2026-09-13) รวม Telegram ('tg_…') — แหล่งเดียวกับ FortuneRecipient

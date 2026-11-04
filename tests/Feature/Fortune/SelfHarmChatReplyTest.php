@@ -25,7 +25,7 @@ use Tests\TestCase;
 /**
  * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้ายตัวเอง — บอทแม่หมอบน FB และ LINE ต้อง
  *
- * - ตอบห่วงใย + สายด่วนใจ 1323 (ไม่ใช่ "ไม่ตอบเรื่องแบบนั้น") ไม่ทำนาย ไม่ส่งไปให้ AI
+ * - ตอบห่วงใย + สายด่วนสุขภาพจิต 1323 / 1300 (ไม่ใช่ "ไม่ตอบเรื่องแบบนั้น") ไม่ทำนาย ไม่ส่งไปให้ AI
  * - ไม่มีปุ่มชวนดูดวง/ขาย
  * - แจ้งแอดมินทาง Telegram — LINE ต้องตอบด้วย reply เท่านั้น ห้าม push
  */
@@ -42,6 +42,9 @@ class SelfHarmChatReplyTest extends TestCase
     private const ALERT_TOKEN = '999:alert-token';
 
     private array $aiCalls = [];
+
+    /** 🟢 token ตาย — LINE reply API ตอบ 400 */
+    private bool $lineReplyRejected = false;
 
     protected function setUp(): void
     {
@@ -83,6 +86,9 @@ class SelfHarmChatReplyTest extends TestCase
         $this->mock(LineAlertService::class, fn ($m) => $m->shouldIgnoreMissing());
 
         Http::fake(function (Request $r) {
+            if ($this->lineReplyRejected && str_contains($r->url(), '/message/reply')) {
+                return Http::response(['message' => 'Invalid reply token'], 400);
+            }
             if (str_contains($r->url(), ':generateContent')) {
                 $this->aiCalls[] = $r->url();
 
@@ -241,5 +247,21 @@ class SelfHarmChatReplyTest extends TestCase
 
         $this->assertSame(2, substr_count($this->sentBodies('graph.facebook.com'), '1323'), 'ทุกข้อความต้องได้คำตอบ ไม่ตัดบท');
         $this->assertCount(1, $this->adminAlerts(), 'คนเดิมแจ้งแอดมินครั้งเดียวใน 6 ชม.');
+    }
+
+    /** 🟢 (2026-11-04) LINE reply ไม่ออก (token ตาย/ไม่มี) → ❌ ห้ามตกไป push · แอดมินยังได้แจ้งเตือน */
+    public function test_line_crisis_reply_never_falls_back_to_push(): void
+    {
+        Queue::fake();
+        $this->lineReplyRejected = true;
+
+        $channels = app(FortuneChannelManager::class);
+        $withDeadToken = $channels->processMessage('line', self::LINE_UID, 'อยากฆ่าตัวตาย', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-dead']);
+        $withoutToken = $channels->processMessage('line', self::LINE_UID, 'อยากตาย', ['name' => 'ลูกค้าทดสอบ']);
+
+        $this->assertSame('crisis_support', $withDeadToken['action']);
+        $this->assertSame('crisis_support', $withoutToken['action']);
+        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
+        $this->assertCount(1, $this->adminAlerts(), 'แอดมินต้องรู้ แม้ส่งถึงลูกค้าไม่ได้');
     }
 }

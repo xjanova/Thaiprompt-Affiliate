@@ -3171,6 +3171,13 @@ class FortuneChannelManager
             return $this->sendLineHoldReply($lineService, $message, $replyToken, $result['quick_reply_options'] ?? []);
         }
 
+        // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → text ล้วน ไม่มี quick reply ดูดวง
+        //   🟢 (2026-11-04) reply อย่างเดียว ❌ ห้าม push (.claude/LINE_MESSAGING_RULES.md) — อยู่นอก match เหตุผลเดียวกับ ai_chat_hold
+        //   token ตาย = ไม่ส่ง · แอดมินได้แจ้งเตือนทาง Telegram แล้ว (reportSelfHarmSignal) และข้อความถัดไปของลูกค้าก็ได้คำตอบตามปกติ
+        if ($action === 'crisis_support') {
+            return $this->sendLineCrisisReplyOnly($lineService, $userId, $message, $replyToken);
+        }
+
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
         try {
             $sent = match ($action) {
@@ -3487,9 +3494,6 @@ class FortuneChannelManager
 
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendLineDeepReadingRedirect($lineService, $userId, $result, $replyToken),
-
-                // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → text ล้วน ไม่มี quick reply ดูดวง
-                'crisis_support' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // AI Chat ทั่วไป → ส่ง text + Quick Replies default (ดูดวง / คุยกับแม่หมอ)
                 'ai_chat_response' => $this->sendLineAiChatResponse($lineService, $userId, $message, $replyToken, $result),
@@ -7686,5 +7690,27 @@ class FortuneChannelManager
             'user_id' => $userId,
             'seconds' => $seconds,
         ]);
+    }
+
+    /**
+     * 🤍 (2026-11-04) ส่งคำตอบห่วงใย (สายด่วน 1323/1300/1669) ทาง LINE ด้วย reply เท่านั้น
+     *
+     * ❌ ห้ามใช้ sendMessageWithReplyFallback — มันตกไป push เมื่อ token ตาย (โควตา 300/เดือน)
+     * ส่งไม่ออก = log ไว้ แอดมินได้แจ้งเตือน Telegram แล้ว ไม่ push ซ้ำ
+     */
+    protected function sendLineCrisisReplyOnly(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken): bool
+    {
+        if ($replyToken) {
+            if ($lineService->replyMessage($replyToken, [['type' => 'text', 'text' => $message]])) {
+                return true;
+            }
+        }
+
+        Log::warning('ChannelManager: ส่งคำตอบห่วงใย (crisis_support) ทาง LINE ไม่ออก — ไม่มี/หมดอายุ replyToken (ไม่ push)', [
+            'user_id' => $userId,
+            'has_reply_token' => (bool) $replyToken,
+        ]);
+
+        return false;
     }
 }
