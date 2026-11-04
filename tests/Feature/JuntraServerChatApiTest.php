@@ -158,7 +158,7 @@ class JuntraServerChatApiTest extends TestCase
         [$primary, $luna] = $this->aiCalls;
         $this->assertSame(10, $primary['config']['timeout']);
         $this->assertSame('openai', $luna['provider']);
-        $this->assertSame(\App\Services\Fortune\FortuneModelRouter::MODEL_DEFAULT, $luna['model']);
+        $this->assertSame('gpt-6-luna', $luna['model']);
         $this->assertSame(20, $luna['config']['timeout']);
         $this->assertSame($primary['system'], $luna['system'], 'luna ได้ persona เดียวกันครบ');
         $this->assertSame($primary['user'], $luna['user']);

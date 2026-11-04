@@ -56,6 +56,12 @@ final class JuntraChatService
     /** 🌙 (2026-11-04) ทางสำรองเมื่อ Gemini ฟรีหลุด — OpenAI luna (ดู ask()) */
     public const FALLBACK_PROVIDER = 'openai';
 
+    /**
+     * owner สั่ง "6.1 luna" — แต่ OpenAI ตอบ gpt-6.1-luna "does not exist" กับคีย์ prod (2026-11-04)
+     * จึงใช้ gpt-6-luna (ยิงจริงบน prod: ตอบไทย 3.3 วิ · $0.10/$0.50 ถูกกว่า 5.6-luna ครึ่งหนึ่ง)
+     */
+    public const FALLBACK_MODEL = 'gpt-6-luna';
+
     private const PRIMARY_TIMEOUT_SEC = 10;
 
     private const FALLBACK_TIMEOUT_SEC = 20;
@@ -645,7 +651,7 @@ TXT,
             userMessage: $userMessage,
             config: $config + ['timeout' => self::FALLBACK_TIMEOUT_SEC],
             providerOverride: self::FALLBACK_PROVIDER,
-            modelOverride: FortuneModelRouter::MODEL_DEFAULT,
+            modelOverride: self::FALLBACK_MODEL,
             guardText: $guardText,
         );
     }
