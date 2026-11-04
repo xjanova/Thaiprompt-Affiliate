@@ -122,6 +122,13 @@ return new class extends Migration
     ];
 
     /**
+     * key purpose=tts ที่ค้างรุ่นที่ลบ → รุ่น TTS ของค่ายเดียวกัน
+     */
+    private const TTS_REPLACEMENT = [
+        'gemini' => 'gemini-3.8-flash-tts',
+    ];
+
+    /**
      * คอลัมน์คู่ provider → model ใน fortune_telling_settings
      */
     private const SETTING_PAIRS = [
@@ -176,16 +183,22 @@ return new class extends Migration
         }
 
         $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+        $hasPurpose = Schema::hasColumn($table, 'purpose');
         $changes = [];
         $rows = DB::table($table)
             ->whereNotNull('model')
             ->where('model', '!=', '')
-            ->get(['id', 'provider', 'model']);
+            ->get($hasPurpose ? ['id', 'provider', 'model', 'purpose'] : ['id', 'provider', 'model']);
 
         foreach ($rows as $row) {
             $target = $this->replacementFor((string) $row->provider, (string) $row->model);
             if ($target === null) {
                 continue;
+            }
+
+            // key เสียง (purpose=tts) ต้องได้รุ่น TTS — ไม่ใช่รุ่นข้อความ (prod key 31: gemini-2.5-flash ที่ใช้เป็นป้ายชื่อ)
+            if (($row->purpose ?? null) === 'tts' && isset(self::TTS_REPLACEMENT[$row->provider])) {
+                $target = self::TTS_REPLACEMENT[$row->provider];
             }
 
             $update = ['model' => $target];
