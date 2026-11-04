@@ -70,13 +70,63 @@ class FortuneCharacterVoiceController extends Controller
      */
     public function updateTuning(Request $request): RedirectResponse
     {
+        $personaKeys = array_keys(FortuneCharacterVoiceService::PERSONAS);
+        $validated = $request->validate($this->tuningRules($personaKeys), $this->tuningMessages());
+
+        $personas = [];
+        foreach ($personaKeys as $persona) {
+            $in = $validated['personas'][$persona] ?? [];
+            if ($field = $this->unknownEffect($in)) {
+                return back()->withInput()->withErrors(["personas.$persona.$field" => 'ไม่มีเอฟเฟกต์นี้ในบัญชี ElevenLabs — เลือกจากรายการ']);
+            }
+            $personas[$persona] = $this->tuningPersona($in);
+        }
+
+        FortuneTellingSetting::getGlobalSettings()->setElevenlabsTuning($this->tuningSet($validated, $personas));
+
+        return back()->with('success', '🎚️ บันทึกค่าจูนเสียงแล้ว — ห้องแชทใช้ค่านี้กับเสียงที่สร้างใหม่ตั้งแต่ตอนนี้');
+    }
+
+    /**
+     * 🎧 (2026-11-04) AJAX — ลองฟังค่าจูนในฟอร์มก่อนบันทึก (เจ้าของสั่ง "ต้องมีการลองฟังเสียงที่จูนแล้วได้ด้วย")
+     *
+     * รับค่าชุดเดียวกับฟอร์มบันทึก (เฉพาะตัวละครที่กด) ไม่แตะค่าที่บันทึกไว้ · สร้างด้วยเสียงที่ตัวละครเลือกอยู่
+     * ใช้แคชไฟล์ชุดเดียวกับห้องแชท — ค่าเดิมกดซ้ำได้ไฟล์เดิม ไม่เสียโควต้าซ้ำ
+     * บันทึกค่านี้ทีหลัง ห้องแชทก็ได้ไฟล์ที่ลองฟังไว้แล้วทันที (กุญแจแคชตรงกัน)
+     */
+    public function previewTuning(Request $request): JsonResponse
+    {
+        $persona = (string) $request->input('persona');
+        if (! FortuneCharacterVoiceService::isPersona($persona)) {
+            return response()->json(['success' => false, 'error' => 'ไม่รู้จักตัวละครนี้'], 422);
+        }
+
+        $validated = $request->validate($this->tuningRules([$persona]) + [
+            'text' => 'nullable|string|max:'.FortuneCharacterVoiceService::MAX_SAMPLE_CHARS,
+        ], $this->tuningMessages());
+
+        $in = $validated['personas'][$persona] ?? [];
+        if ($this->unknownEffect($in)) {
+            return response()->json(['success' => false, 'error' => 'ไม่มีเอฟเฟกต์นี้ในบัญชี ElevenLabs — เลือกจากรายการ'], 422);
+        }
+
+        $service = new FortuneCharacterVoiceService;
+        $tuning = $service->tuningFor($persona, $this->tuningSet($validated, [$persona => $this->tuningPersona($in)]));
+        $text = trim((string) ($validated['text'] ?? '')) ?: FortuneCharacterVoiceService::PERSONAS[$persona]['sample_text'];
+
+        return $this->clipResponse($service->request($persona, $text, 'sample', null, 25, $tuning));
+    }
+
+    /** กฎตรวจค่าจูน — ค่ารวม + ค่าของตัวละครที่ส่งมา (ช่วงค่าตามที่ ElevenLabs รับ) */
+    protected function tuningRules(array $personas): array
+    {
         $id = ['nullable', 'string', 'regex:/^[a-z0-9_]{1,64}$/'];
         $rules = [
             'output_format' => 'required|in:'.implode(',', array_keys(ElevenLabsTtsProvider::OUTPUT_FORMATS)),
             'language_code' => 'nullable|in:th',
             'apply_text_normalization' => 'required|in:auto,on,off',
         ];
-        foreach (array_keys(FortuneCharacterVoiceService::PERSONAS) as $persona) {
+        foreach ($personas as $persona) {
             $p = "personas.$persona.";
             $rules += [
                 $p.'custom' => 'nullable|boolean',
@@ -90,56 +140,73 @@ class FortuneCharacterVoiceController extends Controller
                 $rules[$p.$field] = "nullable|numeric|min:$min|max:$max";
             }
         }
-        $validated = $request->validate($rules, [
+
+        return $rules;
+    }
+
+    protected function tuningMessages(): array
+    {
+        return [
             '*.numeric' => 'ค่าที่ใส่ต้องเป็นตัวเลข',
             '*.min' => 'ค่าต่ำกว่าที่ ElevenLabs รับ',
             '*.max' => 'ค่าสูงกว่าที่ ElevenLabs รับ',
-        ]);
-
-        // เอฟเฟกต์ต้องมีอยู่จริงในบัญชี — id ที่ไม่มี ElevenLabs ตอบ 404 ทั้งคำขอ (เสียงไม่ออกเลย)
-        $effects = $this->audioEffects((new FortuneCharacterVoiceService)->provider());
-        $known = [
-            'filter_preset_id' => array_column($effects['effects']['filter_presets'], 'id'),
-            'environment_id' => array_column($effects['effects']['environments'], 'id'),
-            'background_noise_id' => array_column($effects['effects']['background_noises'], 'id'),
         ];
+    }
 
-        $personas = [];
-        foreach (array_keys(FortuneCharacterVoiceService::PERSONAS) as $persona) {
-            $in = $validated['personas'][$persona] ?? [];
-            foreach ($known as $field => $ids) {
-                if (! empty($in[$field]) && ! in_array($in[$field], $ids, true)) {
-                    return back()->withInput()->withErrors(["personas.$persona.$field" => 'ไม่มีเอฟเฟกต์นี้ในบัญชี ElevenLabs — เลือกจากรายการ']);
-                }
+    /**
+     * เอฟเฟกต์ต้องมีอยู่จริงในบัญชี — id ที่ไม่มี ElevenLabs ตอบ 404 ทั้งคำขอ (เสียงไม่ออกเลย)
+     *
+     * @return string|null ชื่อช่องที่เลือกเอฟเฟกต์ที่ไม่มี · null = ผ่าน
+     */
+    protected function unknownEffect(array $in): ?string
+    {
+        $effects = $this->audioEffects((new FortuneCharacterVoiceService)->provider())['effects'];
+        $known = [
+            'filter_preset_id' => array_column($effects['filter_presets'], 'id'),
+            'environment_id' => array_column($effects['environments'], 'id'),
+            'background_noise_id' => array_column($effects['background_noises'], 'id'),
+        ];
+        foreach ($known as $field => $ids) {
+            if (! empty($in[$field]) && ! in_array($in[$field], $ids, true)) {
+                return $field;
             }
-
-            $num = fn (string $field) => isset($in[$field]) && $in[$field] !== '' ? round((float) $in[$field], 2) : null;
-            $personas[$persona] = [
-                'custom' => (bool) ($in['custom'] ?? false),
-                'stability' => $num('stability'),
-                'similarity_boost' => $num('similarity_boost'),
-                'style' => $num('style'),
-                'use_speaker_boost' => (bool) ($in['use_speaker_boost'] ?? false),
-                'speed' => $num('speed'),
-                'clone_strength' => $num('clone_strength'),
-                'seed' => isset($in['seed']) && $in['seed'] !== '' ? (int) $in['seed'] : null,
-                'filter_preset_id' => ($in['filter_preset_id'] ?? '') ?: null,
-                'environment_id' => ($in['environment_id'] ?? '') ?: null,
-                'send_level' => $num('send_level'),
-                'distance' => $num('distance'),
-                'background_noise_id' => ($in['background_noise_id'] ?? '') ?: null,
-                'pan' => $num('pan'),
-            ];
         }
 
-        FortuneTellingSetting::getGlobalSettings()->setElevenlabsTuning([
+        return null;
+    }
+
+    /** ค่าจากฟอร์มของตัวละครหนึ่งตัว → รูปที่เก็บ (ตัวเลขปัด 2 ตำแหน่ง · ช่องว่าง = null) */
+    protected function tuningPersona(array $in): array
+    {
+        $num = fn (string $field) => isset($in[$field]) && $in[$field] !== '' ? round((float) $in[$field], 2) : null;
+
+        return [
+            'custom' => (bool) ($in['custom'] ?? false),
+            'stability' => $num('stability'),
+            'similarity_boost' => $num('similarity_boost'),
+            'style' => $num('style'),
+            'use_speaker_boost' => (bool) ($in['use_speaker_boost'] ?? false),
+            'speed' => $num('speed'),
+            'clone_strength' => $num('clone_strength'),
+            'seed' => isset($in['seed']) && $in['seed'] !== '' ? (int) $in['seed'] : null,
+            'filter_preset_id' => ($in['filter_preset_id'] ?? '') ?: null,
+            'environment_id' => ($in['environment_id'] ?? '') ?: null,
+            'send_level' => $num('send_level'),
+            'distance' => $num('distance'),
+            'background_noise_id' => ($in['background_noise_id'] ?? '') ?: null,
+            'pan' => $num('pan'),
+        ];
+    }
+
+    /** ค่าจูนทั้งชุด (รูปเดียวกับที่บันทึกใน settings) */
+    protected function tuningSet(array $validated, array $personas): array
+    {
+        return [
             'output_format' => $validated['output_format'],
             'language_code' => $validated['language_code'] ?? null,
             'apply_text_normalization' => $validated['apply_text_normalization'],
             'personas' => $personas,
-        ]);
-
-        return back()->with('success', '🎚️ บันทึกค่าจูนเสียงแล้ว — กด "สร้างเสียงตัวอย่าง" เพื่อฟังผล (ค่าใหม่ = ไฟล์ใหม่ เสียโควต้าตามจำนวนตัวอักษร)');
+        ];
     }
 
     /**

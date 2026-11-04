@@ -32,7 +32,7 @@
     </div>
     <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
         ปรับได้ทุกค่าที่ ElevenLabs เปิดให้ — ค่าที่โมเดลปัจจุบันไม่ใช้จะมีป้าย <span class="px-1.5 py-0.5 rounded text-[11px] bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">โมเดลนี้ไม่ใช้</span>
-        (เก็บไว้ให้ ใช้ได้ทันทีถ้าเปลี่ยนโมเดล) · บันทึกแล้วกด <b>สร้างเสียงตัวอย่าง</b> ด้านบนเพื่อฟังผล — ค่าใหม่ = ไฟล์เสียงใหม่ เสียโควต้าตามจำนวนตัวอักษร
+        (เก็บไว้ให้ ใช้ได้ทันทีถ้าเปลี่ยนโมเดล) · กด <b>🎧 ลองฟัง</b> ท้ายกล่องตัวละครเพื่อฟังค่าที่ตั้งอยู่ได้เลยโดยยังไม่บันทึก — ค่าใหม่ = ไฟล์เสียงใหม่ เสียโควต้าตามจำนวนตัวอักษร (ค่าเดิมกดซ้ำไม่เสียซ้ำ)
         @if($isV3)
             <br><span class="text-amber-700 dark:text-amber-300">v3 รับความนิ่งแค่ 3 ระดับ (0 สร้างสรรค์ / 0.5 ธรรมชาติ / 1 นิ่ง) — ระบบปัดให้อัตโนมัติ</span>
         @endif
@@ -187,6 +187,24 @@
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+
+                    {{-- 🎧 ลองฟังค่าที่ตั้งอยู่ตอนนี้ก่อนบันทึก (previewTuning อยู่ใน characterVoices() ของหน้าหลัก) --}}
+                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                        <button type="button" @click="previewTuning('{{ $pKey }}', $el.closest('form'))"
+                                :disabled="tuningPreview['{{ $pKey }}'].busy"
+                                class="tp-btn w-full justify-center disabled:opacity-60 disabled:cursor-wait">
+                            <span x-show="!tuningPreview['{{ $pKey }}'].busy">🎧 ลองฟังค่าที่ตั้งตอนนี้</span>
+                            <span x-show="tuningPreview['{{ $pKey }}'].busy" x-cloak>⏳ ElevenLabs กำลังสร้างเสียง…</span>
+                        </button>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                            ใช้เสียงที่เลือกไว้ของ{{ $persona['label'] }} อ่านข้อความทดสอบในกล่องด้านบน · ยังไม่บันทึกค่า กด 💾 ด้านล่างเมื่อพอใจ
+                        </p>
+                        <template x-if="tuningPreview['{{ $pKey }}'].clip?.url">
+                            <audio controls autoplay class="w-full h-10" :src="tuningPreview['{{ $pKey }}'].clip.url"></audio>
+                        </template>
+                        <p x-show="tuningPreview['{{ $pKey }}'].error" x-cloak class="text-xs text-red-700 dark:text-red-300"
+                           x-text="tuningPreview['{{ $pKey }}'].error"></p>
                     </div>
                 </fieldset>
             @endforeach

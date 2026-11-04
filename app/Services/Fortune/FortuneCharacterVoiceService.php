@@ -113,10 +113,12 @@ class FortuneCharacterVoiceService
     /**
      * 🎚️ (2026-11-04) ค่าจูนเสียงของตัวละคร — ค่ารวม (คุณภาพไฟล์/ภาษา/อ่านตัวเลข) + ค่าเฉพาะตัว
      * provider กรองต่อเองว่าโมเดลที่ใช้อยู่รับค่าไหนได้
+     *
+     * @param  array|null  $all  ค่าจูนทั้งชุดที่ยังไม่บันทึก (ปุ่มลองฟังในหน้าแอดมิน) · null = ค่าที่บันทึกไว้
      */
-    public function tuningFor(string $persona): array
+    public function tuningFor(string $persona, ?array $all = null): array
     {
-        $all = $this->settings->getElevenlabsTuning();
+        $all ??= $this->settings->getElevenlabsTuning();
         $own = is_array($all['personas'][$persona] ?? null) ? $all['personas'][$persona] : [];
 
         return [
@@ -155,9 +157,10 @@ class FortuneCharacterVoiceService
      *
      * @param  string  $purpose  'chat' (ห้องแชท — นับเพดานรายวัน) | 'sample' (แอดมินฟังเทียบ)
      * @param  int  $waitSeconds  (คงไว้ให้ผู้เรียกเดิม) ElevenLabs ตอบไฟล์ในคำขอเดียว ไม่ต้องรอ
+     * @param  array|null  $tuning  ค่าจูนจาก tuningFor() ที่ใช้แทนค่าที่บันทึกไว้ (ลองฟังก่อนบันทึก) · null = ค่าที่บันทึกไว้
      * @return array{success: bool, clip: ?FortuneCharacterVoiceClip, error: ?string, code: int}
      */
-    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0): array
+    public function request(string $persona, string $text, string $purpose = 'chat', ?string $voiceId = null, int $waitSeconds = 0, ?array $tuning = null): array
     {
         if (! self::isPersona($persona)) {
             return $this->fail('ไม่รู้จักตัวละครนี้', 422);
@@ -176,7 +179,7 @@ class FortuneCharacterVoiceService
         // รวม persona ในกุญแจ — แม่หมอกับโหมดคุณไสยเลือกเสียงเดียวกันได้ ไฟล์ต้องแยกโฟลเดอร์ตามตัวละคร
         $keyParts = ['elevenlabs', $model, $voice, $persona, $clean];
         // 🎚️ จูนเสียงแล้ว = ไฟล์ใหม่ · ยังไม่จูน ([]) = กุญแจเดิมทุกตัวอักษร ไฟล์ที่เก็บไว้ก่อนหน้านี้ยังใช้ได้
-        $tuning = $this->tuningFor($persona);
+        $tuning ??= $this->tuningFor($persona);
         if (($tuned = $this->provider->tuningPayload($tuning)) !== []) {
             $keyParts[] = json_encode($tuned);
         }
