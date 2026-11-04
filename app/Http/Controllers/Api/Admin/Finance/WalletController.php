@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Finance;
 
+use App\Exceptions\WalletAdminException;
 use App\Http\Controllers\Api\Admin\Concerns\FlatPaging;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\WalletResource;
@@ -10,6 +11,7 @@ use App\Models\Wallet;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -107,7 +109,8 @@ class WalletController extends Controller
     /**
      * POST /api/admin/finance/wallets/{wallet}/adjust
      *
-     * Body: { amount: number (not 0), reason: string }
+     * Body: { amount: number (not 0), reason: string, expected_balance?: number }
+     * Header (แนะนำ): Idempotency-Key: <uuid> — ส่งซ้ำด้วยคีย์เดิมจะไม่ปรับยอดซ้ำ
      */
     public function adjustBalance(Wallet $wallet, Request $request): JsonResponse
     {
@@ -119,8 +122,9 @@ class WalletController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'amount' => ['required', 'numeric', 'not_in:0'],
-            'reason' => ['required', 'string', 'max:500'],
+            'amount' => ['required', 'numeric', 'not_in:0', 'decimal:0,2', 'between:-'.WalletService::ADMIN_MAX_AMOUNT.','.WalletService::ADMIN_MAX_AMOUNT],
+            'reason' => ['required', 'string', 'min:3', 'max:500'],
+            'expected_balance' => ['nullable', 'numeric'],
         ]);
 
         if ($validator->fails()) {
@@ -132,22 +136,34 @@ class WalletController extends Controller
         }
 
         try {
-            $this->walletService->adjustBalance(
+            $idempotencyKey = mb_substr((string) $request->header('Idempotency-Key', ''), 0, 64) ?: null;
+
+            $transaction = $this->walletService->adjustBalance(
                 wallet: $wallet,
                 amount: (float) $request->amount,
                 reason: $request->reason,
-                admin: $admin
+                admin: $admin,
+                idempotencyKey: $idempotencyKey,
+                expectedBalance: $request->filled('expected_balance') ? (float) $request->expected_balance : null
             );
 
             return response()->json([
                 'success' => true,
-                'data' => ['wallet' => new WalletResource($wallet->fresh('user'))],
-                'message' => 'ปรับยอดสำเร็จ',
+                'data' => [
+                    'wallet' => new WalletResource($wallet->fresh('user')),
+                    'transaction_id' => $transaction->transaction_id,
+                    'replayed' => ! $transaction->wasRecentlyCreated,
+                ],
+                'message' => $transaction->wasRecentlyCreated ? 'ปรับยอดสำเร็จ' : 'รายการนี้ถูกบันทึกไปแล้ว — ไม่ได้ปรับซ้ำ',
             ]);
+        } catch (WalletAdminException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
+            Log::error('Admin API wallet adjust failed', ['wallet_id' => $wallet->id, 'admin_id' => $admin->id, 'error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'ปรับยอดไม่สำเร็จ: '.$e->getMessage(),
+                'message' => 'ปรับยอดไม่สำเร็จ ระบบยังไม่ได้แตะยอดเงิน กรุณาลองใหม่',
             ], 500);
         }
     }
@@ -168,10 +184,12 @@ class WalletController extends Controller
                 'locked_until' => now()->addYears(10),
             ]);
 
+            // 🐛 (2026-11-04) เดิมส่ง action 'lock' (ไม่อยู่ใน enum) + ส่ง array ในช่อง severity → TypeError ทุกครั้ง
             $this->walletService->logAction(
                 $wallet,
-                'lock',
-                'Admin locked wallet',
+                'wallet_locked',
+                'แอดมินล็อกกระเป๋า: '.$admin->name,
+                'warning',
                 ['admin_id' => $admin->id]
             );
 
@@ -181,7 +199,9 @@ class WalletController extends Controller
                 'message' => 'ล็อก wallet สำเร็จ',
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            Log::error('Admin API wallet lock failed', ['wallet_id' => $wallet->id, 'error' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => 'ล็อก wallet ไม่สำเร็จ กรุณาลองใหม่'], 500);
         }
     }
 
@@ -201,7 +221,7 @@ class WalletController extends Controller
             'failed_attempts' => 0,
         ]);
 
-        $this->walletService->logAction($wallet, 'unlock', 'Admin unlocked wallet', ['admin_id' => $admin->id]);
+        $this->walletService->logAction($wallet, 'wallet_unlocked', 'แอดมินปลดล็อกกระเป๋า: '.$admin->name, 'warning', ['admin_id' => $admin->id]);
 
         return response()->json([
             'success' => true,

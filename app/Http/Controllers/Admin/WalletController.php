@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\WalletAdminException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletAdminAdjustment;
 use App\Models\WalletTransaction;
 use App\Services\WalletService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WalletController extends Controller
 {
@@ -90,44 +93,194 @@ class WalletController extends Controller
             ->take(20)
             ->get();
 
-        return view('admin.wallet.show', compact('wallet', 'statistics', 'recentTransactions', 'recentLogs'));
+        // ประวัติการปรับยอดโดยแอดมินของกระเป๋าใบนี้ (audit trail)
+        $adminAdjustments = WalletAdminAdjustment::where('wallet_id', $wallet->id)
+            ->latest('id')
+            ->take(10)
+            ->get();
+
+        // รายการที่ย้อนไปแล้ว — ซ่อนปุ่ม "ย้อนรายการ" ของแถวนั้น
+        $rolledBackIds = WalletTransaction::where('wallet_id', $wallet->id)
+            ->where('reference_type', 'rollback')
+            ->whereIn('reference_id', $recentTransactions->pluck('id'))
+            ->pluck('reference_id')
+            ->all();
+
+        return view('admin.wallet.show', compact('wallet', 'statistics', 'recentTransactions', 'recentLogs', 'adminAdjustments', 'rolledBackIds'));
     }
 
     /**
-     * ปรับยอด wallet balance (Super Admin เท่านั้น)
+     * แอดมินเติมเงิน / หักเงิน กระเป๋าผู้ใช้
      *
-     * ⚠️ SECURITY: การกระทำที่อันตราย ต้องตรวจสอบ Policy
+     * ฟอร์มต้องส่ง: direction (credit|debit) · amount (บวกเสมอ) · reason · idempotency_key (โทเคนฟอร์ม)
+     * · expected_balance (ยอดที่เห็นตอนยืนยัน) · confirmed=1 (ผ่านหน้าต่างยืนยันแล้ว)
+     *
+     * 🐛 (2026-11-04) ฟอร์มเดิมกลับเครื่องหมายจำนวนเงินตอนเปลี่ยน dropdown เท่านั้น — เลือก "หักเงิน"
+     *    ก่อนแล้วค่อยพิมพ์จำนวน = ส่งค่าบวก = กลายเป็น "เติมเงิน" · ตอนนี้ส่งทิศทางแยกจากจำนวนเงิน
+     *
+     * ⚠️ SECURITY: ตรวจ Policy deposit/withdraw ตามทิศทาง
      */
     public function adjustBalance(Request $request, $id)
     {
         $wallet = Wallet::findOrFail($id);
 
-        // ✅ ใช้ Policy - deposit/withdraw methods
-        if ($request->amount > 0) {
-            $this->authorize('deposit', $wallet);
-        } else {
-            $this->authorize('withdraw', $wallet);
-        }
+        $request->validate($this->adminMoneyRules() + [
+            'direction' => 'required|in:credit,debit',
+        ], $this->adminMoneyMessages());
 
-        $request->validate([
-            'amount' => 'required|numeric|not_in:0',
-            'reason' => 'required|string|max:500',
-        ]);
+        $isCredit = $request->input('direction') === 'credit';
+        $this->authorize($isCredit ? 'deposit' : 'withdraw', $wallet);
 
         try {
-            $transaction = $this->walletService->adjustBalance(
+            $transaction = $this->walletService->adminAdjust(
                 $wallet,
-                $request->amount,
-                $request->reason,
-                auth()->user()
+                $request->input('direction'),
+                (float) $request->input('amount'),
+                (string) $request->input('reason'),
+                auth()->user(),
+                (string) $request->input('idempotency_key'),
+                (float) $request->input('expected_balance')
             );
 
-            $action = $request->amount > 0 ? 'เพิ่ม' : 'หัก';
-
-            return redirect()->back()->with('success', "{$action}ยอดเงินสำเร็จ: ".number_format(abs($request->amount), 2).' บาท');
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return $this->adminMoneyDone(
+                $wallet->id,
+                $transaction,
+                ($isCredit ? 'เติมเงิน' : 'หักเงิน').'สำเร็จ ฿'.number_format((float) $transaction->amount, 2)
+                    .' · ยอดคงเหลือ ฿'.number_format((float) $transaction->balance_after, 2)
+            );
+        } catch (\Throwable $e) {
+            return $this->adminMoneyFailed($e, 'adjust', $wallet->id);
         }
+    }
+
+    /**
+     * ประวัติการปรับยอดโดยแอดมินทั้งระบบ (audit trail)
+     */
+    public function adjustments(Request $request)
+    {
+        $this->authorize('viewAny', Wallet::class);
+
+        $filters = $request->only(['wallet_id', 'admin_id', 'action', 'search', 'date_from', 'date_to']);
+
+        $query = WalletAdminAdjustment::with(['wallet:id,wallet_address', 'user:id,name,email', 'walletTransaction:id,transaction_id'])
+            ->latest('id');
+
+        if (! empty($filters['wallet_id'])) {
+            $query->where('wallet_id', (int) $filters['wallet_id']);
+        }
+        if (! empty($filters['admin_id'])) {
+            $query->where('admin_id', (int) $filters['admin_id']);
+        }
+        if (! empty($filters['action']) && array_key_exists($filters['action'], WalletAdminAdjustment::ACTION_LABELS)) {
+            $query->where('action', $filters['action']);
+        }
+        if (! empty($filters['search'])) {
+            $term = '%'.addcslashes(mb_substr((string) $filters['search'], 0, 100), '%_\\').'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('reason', 'like', $term)
+                    ->orWhere('admin_name', 'like', $term)
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $term)->orWhere('email', 'like', $term))
+                    ->orWhereHas('wallet', fn ($w) => $w->where('wallet_address', 'like', $term));
+            });
+        }
+        if (! empty($filters['date_from']) && strtotime((string) $filters['date_from'])) {
+            $query->where('created_at', '>=', \Carbon\Carbon::parse($filters['date_from'])->startOfDay());
+        }
+        if (! empty($filters['date_to']) && strtotime((string) $filters['date_to'])) {
+            $query->where('created_at', '<=', \Carbon\Carbon::parse($filters['date_to'])->endOfDay());
+        }
+
+        $summary = (clone $query)->reorder()
+            ->selectRaw("COALESCE(SUM(CASE WHEN action IN ('credit','refund','transfer_in') THEN amount ELSE 0 END),0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN action IN ('debit','transfer_out') THEN amount ELSE 0 END),0) as total_out")
+            ->selectRaw('COUNT(*) as total_count')
+            ->first();
+
+        $adjustments = $query->paginate(30)->withQueryString();
+
+        return view('admin.wallet.adjustments', [
+            'adjustments' => $adjustments,
+            'filters' => $filters,
+            'summary' => $summary,
+            'actionLabels' => WalletAdminAdjustment::ACTION_LABELS,
+        ]);
+    }
+
+    /**
+     * กฎตรวจฟอร์มเงินของแอดมิน (ใช้ร่วม: เติม/หัก/คืนเงิน/โอน)
+     *
+     * @return array<string, string>
+     */
+    private function adminMoneyRules(): array
+    {
+        return [
+            'amount' => 'required|numeric|decimal:0,2|min:0.01|max:'.WalletService::ADMIN_MAX_AMOUNT,
+            'reason' => 'required|string|min:3|max:500',
+            'idempotency_key' => 'required|string|max:64',
+            'expected_balance' => 'required|numeric',
+            'confirmed' => 'accepted',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function adminMoneyMessages(): array
+    {
+        return [
+            'direction.required' => 'กรุณาเลือกประเภท (เติมเงิน/หักเงิน)',
+            'direction.in' => 'ประเภทรายการไม่ถูกต้อง',
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
+            'amount.decimal' => 'จำนวนเงินมีทศนิยมได้ไม่เกิน 2 ตำแหน่ง',
+            'amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+            'amount.max' => 'จำนวนเงินเกินเพดานต่อครั้ง (฿'.number_format(WalletService::ADMIN_MAX_AMOUNT).')',
+            'reason.required' => 'กรุณาระบุเหตุผล',
+            'reason.min' => 'เหตุผลต้องยาวอย่างน้อย 3 ตัวอักษร',
+            'reason.max' => 'เหตุผลยาวได้ไม่เกิน 500 ตัวอักษร',
+            'idempotency_key.required' => 'ฟอร์มหมดอายุ กรุณาโหลดหน้าใหม่แล้วทำรายการอีกครั้ง',
+            'expected_balance.required' => 'ฟอร์มหมดอายุ กรุณาโหลดหน้าใหม่แล้วทำรายการอีกครั้ง',
+            'confirmed.accepted' => 'กรุณากดยืนยันในหน้าต่างยืนยันก่อนทำรายการ',
+            'to_wallet_id.required' => 'กรุณาเลือกกระเป๋าปลายทาง',
+            'to_wallet_id.exists' => 'ไม่พบกระเป๋าปลายทาง',
+            'to_wallet_id.different' => 'กระเป๋าปลายทางต้องไม่ใช่ใบเดียวกับต้นทาง',
+            'transaction_id.required' => 'กรุณาเลือกรายการที่ต้องการย้อน',
+            'transaction_id.exists' => 'ไม่พบรายการที่ต้องการย้อน',
+        ];
+    }
+
+    /**
+     * ทำรายการเสร็จ → กลับหน้ากระเป๋า (ส่งซ้ำ = แจ้งว่าทำไปแล้ว ไม่ได้ทำซ้ำ)
+     */
+    private function adminMoneyDone(int $walletId, WalletTransaction $transaction, string $successText)
+    {
+        $redirect = redirect()->route('admin.wallet.show', $walletId);
+
+        if (! $transaction->wasRecentlyCreated) {
+            return $redirect->with('info', 'รายการนี้ถูกบันทึกไปแล้ว (กดซ้ำ/ส่งฟอร์มเดิมซ้ำ) — ระบบไม่ได้ทำซ้ำ · เลขที่ '.$transaction->transaction_id);
+        }
+
+        return $redirect->with('success', $successText.' · เลขที่ '.$transaction->transaction_id);
+    }
+
+    /**
+     * ทำรายการไม่สำเร็จ → แสดงข้อความภาษาไทย (ไม่โชว์ข้อความ exception ดิบ)
+     */
+    private function adminMoneyFailed(\Throwable $e, string $action, int $walletId)
+    {
+        if ($e instanceof WalletAdminException) {
+            return redirect()->route('admin.wallet.show', $walletId)->withInput()->with('error', $e->getMessage());
+        }
+
+        Log::error('Admin wallet action failed', [
+            'action' => $action,
+            'wallet_id' => $walletId,
+            'admin_id' => auth()->id(),
+            'error' => $e->getMessage(),
+        ]);
+
+        return redirect()->route('admin.wallet.show', $walletId)->withInput()
+            ->with('error', 'ทำรายการไม่สำเร็จ ระบบยังไม่ได้แตะยอดเงิน กรุณาลองใหม่อีกครั้ง');
     }
 
     /**
@@ -403,63 +556,75 @@ class WalletController extends Controller
      */
     public function refund(Request $request, $id)
     {
-        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
-        }
+        $wallet = Wallet::findOrFail($id);
+        $this->authorize('deposit', $wallet);
 
-        $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'reason' => 'required|string|max:255',
-            'reference_type' => 'nullable|string',
+        $request->validate($this->adminMoneyRules() + [
+            'reference_type' => 'nullable|string|max:100',
             'reference_id' => 'nullable|integer',
-        ]);
+        ], $this->adminMoneyMessages());
 
         try {
-            $wallet = Wallet::findOrFail($id);
-            $admin = auth()->user();
-
             $transaction = $this->walletService->refund(
                 $wallet,
-                $request->amount,
-                $request->reason,
-                $admin,
-                $request->reference_type,
-                $request->reference_id
+                (float) $request->input('amount'),
+                (string) $request->input('reason'),
+                auth()->user(),
+                $request->input('reference_type'),
+                $request->filled('reference_id') ? (int) $request->input('reference_id') : null,
+                (string) $request->input('idempotency_key'),
+                (float) $request->input('expected_balance')
             );
 
-            return redirect()->back()->with('success', 'คืนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return $this->adminMoneyDone(
+                $wallet->id,
+                $transaction,
+                'คืนเงินสำเร็จ ฿'.number_format((float) $transaction->amount, 2)
+                    .' · ยอดคงเหลือ ฿'.number_format((float) $transaction->balance_after, 2)
+            );
+        } catch (\Throwable $e) {
+            return $this->adminMoneyFailed($e, 'refund', $wallet->id);
         }
     }
 
     /**
-     * Rollback a transaction (Admin only)
+     * ย้อนรายการ (สร้างรายการกลับทิศ) — รายการต้องเป็นของกระเป๋าใบนี้
      */
     public function rollbackTransaction(Request $request, $id)
     {
-        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
-        }
+        $wallet = Wallet::findOrFail($id);
+        $this->authorize('update', $wallet);
 
         $request->validate([
-            'transaction_id' => 'required|exists:wallet_transactions,id',
-            'reason' => 'required|string|max:255',
-        ]);
+            'transaction_id' => 'required|integer|exists:wallet_transactions,id',
+            'reason' => 'required|string|min:3|max:500',
+            'idempotency_key' => 'required|string|max:64',
+            'confirmed' => 'accepted',
+        ], $this->adminMoneyMessages());
+
+        $transaction = WalletTransaction::whereKey((int) $request->input('transaction_id'))
+            ->where('wallet_id', $wallet->id)
+            ->first();
+        if (! $transaction) {
+            return redirect()->route('admin.wallet.show', $wallet->id)
+                ->with('error', 'รายการนี้ไม่ได้อยู่ในกระเป๋าใบนี้');
+        }
 
         try {
-            $transaction = WalletTransaction::findOrFail($request->transaction_id);
-            $admin = auth()->user();
-
             $rollbackTx = $this->walletService->rollbackTransaction(
                 $transaction,
-                $request->reason,
-                $admin
+                (string) $request->input('reason'),
+                auth()->user(),
+                (string) $request->input('idempotency_key')
             );
 
-            return redirect()->back()->with('success', 'Rollback ธุรกรรมสำเร็จ');
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return $this->adminMoneyDone(
+                $wallet->id,
+                $rollbackTx,
+                'ย้อนรายการ '.$transaction->transaction_id.' สำเร็จ · ยอดคงเหลือ ฿'.number_format((float) $rollbackTx->balance_after, 2)
+            );
+        } catch (\Throwable $e) {
+            return $this->adminMoneyFailed($e, 'rollback', $wallet->id);
         }
     }
 
@@ -470,36 +635,40 @@ class WalletController extends Controller
      */
     public function adminTransfer(Request $request)
     {
-        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
-        }
+        $request->validate($this->adminMoneyRules() + [
+            'from_wallet_id' => 'required|integer|exists:wallets,id',
+            'to_wallet_id' => 'required|integer|exists:wallets,id|different:from_wallet_id',
+        ], $this->adminMoneyMessages());
 
-        $request->validate([
-            'from_wallet_id' => 'required|exists:wallets,id',
-            'to_wallet_id' => 'required|exists:wallets,id|different:from_wallet_id',
-            'amount' => 'required|numeric|min:0.01',
-            'reason' => 'required|string|max:500',
-        ]);
+        $fromWallet = Wallet::with('user')->findOrFail((int) $request->input('from_wallet_id'));
+        $toWallet = Wallet::with('user')->findOrFail((int) $request->input('to_wallet_id'));
+        $this->authorize('withdraw', $fromWallet);
+        $this->authorize('deposit', $toWallet);
 
         try {
-            $fromWallet = Wallet::findOrFail($request->from_wallet_id);
-            $toWallet = Wallet::findOrFail($request->to_wallet_id);
-            $admin = auth()->user();
-
             $result = $this->walletService->adminTransfer(
                 $fromWallet,
                 $toWallet,
-                $request->amount,
-                $request->reason,
-                $admin
+                (float) $request->input('amount'),
+                (string) $request->input('reason'),
+                auth()->user(),
+                (string) $request->input('idempotency_key'),
+                (float) $request->input('expected_balance')
             );
 
-            return redirect()->back()->with('success',
-                'โอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท จาก '.
-                $fromWallet->user->name.' ไปยัง '.$toWallet->user->name
+            $out = $result['out_transaction'];
+            if (! empty($result['replayed'])) {
+                $out->wasRecentlyCreated = false;
+            }
+
+            return $this->adminMoneyDone(
+                $fromWallet->id,
+                $out,
+                'โอนเงินสำเร็จ ฿'.number_format((float) $out->amount, 2).' จาก '
+                    .($fromWallet->user->name ?? '-').' ไปยัง '.($toWallet->user->name ?? '-')
             );
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            return $this->adminMoneyFailed($e, 'transfer', $fromWallet->id);
         }
     }
 
@@ -663,8 +832,24 @@ class WalletController extends Controller
      */
     public function getWalletsDropdown(Request $request)
     {
-        $excludeId = $request->input('exclude');
-        $wallets = $this->walletService->getWalletsForDropdown($excludeId);
+        $excludeId = $request->filled('exclude') ? (int) $request->input('exclude') : null;
+
+        // 🔎 (2026-11-04) มีคำค้น → คืนแค่ 20 ใบที่ตรง (ชื่อ/อีเมล/เบอร์กระเป๋า) แทนการโหลดกระเป๋าทั้งระบบ
+        if ($request->filled('q')) {
+            $term = '%'.addcslashes(mb_substr((string) $request->input('q'), 0, 100), '%_\\').'%';
+            $wallets = Wallet::with('user:id,name,email')
+                ->select(['id', 'user_id', 'wallet_address', 'balance', 'currency', 'status'])
+                ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+                ->where(function ($q) use ($term) {
+                    $q->where('wallet_address', 'like', $term)
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $term)->orWhere('email', 'like', $term));
+                })
+                ->orderBy('id', 'desc')
+                ->limit(20)
+                ->get();
+        } else {
+            $wallets = $this->walletService->getWalletsForDropdown($excludeId);
+        }
 
         return response()->json([
             'success' => true,
@@ -675,7 +860,8 @@ class WalletController extends Controller
                     'user_name' => $wallet->user->name ?? 'N/A',
                     'user_email' => $wallet->user->email ?? 'N/A',
                     'balance' => number_format($wallet->balance, 2),
-                    'label' => $wallet->user->name.' ('.$wallet->wallet_address.') - '.number_format($wallet->balance, 2).' THB',
+                    'status' => $wallet->status ?? 'active',
+                    'label' => ($wallet->user->name ?? 'N/A').' ('.$wallet->wallet_address.') - '.number_format($wallet->balance, 2).' THB',
                 ];
             }),
         ]);
