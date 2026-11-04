@@ -164,6 +164,11 @@ final class JuntraVoiceLibrary
 
     private static function hasTable(): bool
     {
+        // ไม่มีแอป/ฐานข้อมูล (เทสต์ระดับ unit) — ใช้บทในโค้ด
+        if (! app()->bound('db')) {
+            return false;
+        }
+
         return Schema::hasTable('fortune_voice_lines');
     }
 
