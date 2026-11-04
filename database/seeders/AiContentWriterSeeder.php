@@ -46,7 +46,7 @@ class AiContentWriterSeeder extends Seeder
             ],
             [
                 'key' => 'openai_default_model',
-                'value' => 'gpt-4o-mini',
+                'value' => 'gpt-6-luna',
                 'type' => 'string',
                 'group' => 'openai',
                 'label' => 'Model เริ่มต้น',
@@ -64,7 +64,7 @@ class AiContentWriterSeeder extends Seeder
             ],
             [
                 'key' => 'claude_default_model',
-                'value' => 'claude-3-haiku-20240307',
+                'value' => 'claude-haiku-5-5',
                 'type' => 'string',
                 'group' => 'claude',
                 'label' => 'Model เริ่มต้น',
@@ -82,7 +82,7 @@ class AiContentWriterSeeder extends Seeder
             ],
             [
                 'key' => 'gemini_default_model',
-                'value' => 'gemini-1.5-flash',
+                'value' => 'gemini-3.8-flash',
                 'type' => 'string',
                 'group' => 'gemini',
                 'label' => 'Model เริ่มต้น',
@@ -133,5 +133,4 @@ class AiContentWriterSeeder extends Seeder
 
         $this->command->info('   📝 สร้างการตั้งค่า AI Content Writer แล้ว');
     }
-
 }

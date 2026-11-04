@@ -319,15 +319,25 @@ class LineBotAiService
      */
     private function callOpenAI(array $messages): array
     {
+        // 🧹 (2026-11-04) gpt-5 ขึ้นไปเป็นรุ่น reasoning — ยิงจริงบน prod กับ gpt-6-luna:
+        //   'max_tokens' → 400 ต้องใช้ 'max_completion_tokens' · temperature ≠ 1 → 400
+        $isReasoningModel = (bool) preg_match('/^(gpt-[5-9]|o\d)/i', (string) $this->settings->model);
+        $payload = [
+            'model' => $this->settings->model,
+            'messages' => $messages,
+        ];
+        if ($isReasoningModel) {
+            $payload['max_completion_tokens'] = $this->settings->max_tokens;
+            $payload['reasoning_effort'] = 'low';
+        } else {
+            $payload['temperature'] = $this->settings->temperature;
+            $payload['max_tokens'] = $this->settings->max_tokens;
+        }
+
         $response = Http::withHeaders([
             'Authorization' => 'Bearer '.$this->settings->api_key,
             'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.openai.com/v1/chat/completions', [
-            'model' => $this->settings->model,
-            'messages' => $messages,
-            'temperature' => $this->settings->temperature,
-            'max_tokens' => $this->settings->max_tokens,
-        ]);
+        ])->timeout(60)->post('https://api.openai.com/v1/chat/completions', $payload);
 
         if (! $response->successful()) {
             throw new Exception('OpenAI API error: '.$response->body());

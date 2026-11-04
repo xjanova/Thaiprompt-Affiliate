@@ -94,101 +94,58 @@ class AiApiKey extends Model
      *
      * 🔄 (2026-10-30) อัปเดตทุกค่ายตามหน้า docs/pricing ทางการ (เช็ค 2026-10-30)
      *   โมเดลที่ปิดแล้วถูกลบออก — migration 2026_10_30_120000 รีแมป DB rows ที่ค้างค่าเก่าให้อัตโนมัติ
+     * 🧹 (2026-11-04, owner) "ลบรุ่นเก่าให้หมด เหลือทั้งซีรีส์ของรุ่นล่าสุดในแต่ละเจ้า"
+     *   — migration 2026_11_04_120000 ย้าย key/setting ที่ค้างรุ่นที่ลบ ไปรุ่นใหม่ระดับเดียวกัน
      */
     public const MODELS_BY_PROVIDER = [
         'grok' => [
-            // docs.x.ai/docs/models — ไม่มี grok-5
-            // 🚫 grok-4 / grok-4-latest / grok-4-fast* / grok-3* ปลดแล้ว 2026-05-15
-            //    (ยังยิงได้แต่ถูก redirect ไป grok-4.3 และคิดราคา grok-4.3)
-            'grok-4.3',                       // ⭐ DEFAULT — ถูกสุดของรุ่นปัจจุบัน ($1.25/$2.50) 1M context
-            'grok-4.7',                       // รุ่นใหม่สุด ($2/$6) 500K context — prompt ≥200K คิด 2 เท่า
-            'grok-4.6',                       // ($2/$6)
-            'grok-4.5',                       // ($2/$6)
-            'grok-4.20-0309-non-reasoning',   // ($1.25/$2.50) ไม่ใช้ reasoning — ตอบเร็ว
-            'grok-4.20-0309-reasoning',       // ($1.25/$2.50)
-            'grok-build-0.1',                 // งานเขียนโค้ด ($1/$2) แทน grok-code-fast-1
+            // docs.x.ai/docs/models — ซีรีส์ 4.x ยังไม่มี grok-5
+            // 🧹 (2026-11-04, owner) เหลือเฉพาะซีรีส์ล่าสุด: 4.5/4.6 ราคาเท่า 4.7 · 4.20-0309 ราคาเท่า 4.3 → ลบ
+            'grok-4.3',                       // ⭐ DEFAULT — ระดับถูก ($1.25/$2.50) 1M context
+            'grok-4.7',                       // ตัวท็อป ($2/$6) 500K context — prompt ≥200K คิด 2 เท่า
+            'grok-build-0.1',                 // งานเขียนโค้ด ($1/$2)
         ],
         'groq' => [
-            // console.groq.com/docs/deprecations
-            // 🚫 (2026-10-30) Groq ปิด Llama ทั้งหมดสำหรับ free/dev tier แล้ว:
-            //   - llama-3.3-70b-versatile / llama-3.1-8b-instant      (ปิด 2026-08-16 — เหลือเฉพาะ enterprise)
-            //   - meta-llama/llama-4-scout-17b-16e-instruct / qwen/qwen3-32b (ปิด 2026-07-17)
-            //   - qwen/qwen3.6-27b                                      (ปิด 2026-09-14)
-            //   → key free tier เหลือแค่ gpt-oss 2 ตัว (+ qwen3.8 preview)
-            'openai/gpt-oss-120b',            // ⭐ DEFAULT — production ($0.15/$0.60) แทน llama-3.3-70b
-            'openai/gpt-oss-20b',             // production — เร็ว+ถูกสุด ($0.075/$0.30) แทน llama-3.1-8b
+            // console.groq.com/docs/models — Llama ทั้งหมดปิดสำหรับ free/dev tier แล้ว
+            'openai/gpt-oss-120b',            // ⭐ DEFAULT — production ($0.15/$0.60)
+            'openai/gpt-oss-20b',             // production — เร็ว+ถูกสุด ($0.075/$0.30)
             'qwen/qwen3.8-27b',               // preview ($0.80/$4.00) — preview อาจถูกปิดโดยแจ้งล่วงหน้าสั้น
         ],
         'openai' => [
-            // 🔬 (2026-08-17) Verified live กับ key prod (id 37) บน /v1/responses: gpt-5.6-* / 5.5 / 5.4 / gpt-4o*
-            //   ❌ 400 model_not_found : gpt-5.5-mini ← ไม่มีจริง (migration 2026_05_29_120000)
-            // 🔄 (2026-10-30) developers.openai.com/api/docs/pricing + /deprecations
-            //   ราคา 5.6 ปรับใหม่: sol $4/$20 (เดิม $5/$30) · terra $2/$12 · luna $0.20/$1.20
-            //   ⚠️ input เกิน 272K คิด input 2× / output 1.5× "ทั้งคำขอ" (ของเราสูงสุด ~12K → ปลอดภัย)
-            //   ⚠️ ตัวแรก = default ของ resolveModel() — คง 5.6-luna (ยิงจริงบน prod แล้ว) ไว้แรก
-            //
-            // GPT-5.6 family — ⭐ ที่ใช้บน prod อยู่ (verified)
-            'gpt-5.6-luna',                   // ⭐ DEFAULT — ($0.20/$1.20)
-            'gpt-5.6-sol',                    // flagship 5.6 ($4/$20) — ใช้กับ sensitive/งานยากจริง
-            'gpt-5.6-terra',                  // ($2/$12) — Artificial Analysis: แพ้ luna+sol ทุกจุด ไม่แนะนำ
-            // GPT-6 family (DevDay 2026-09-29) — 🆕 ยังไม่ได้ยิงจริงกับ key prod: กด "ทดสอบ" ก่อนลงสนาม
-            //   Responses API: gpt-6-astra ไม่รับ effort 'none' / gpt-6.1-sol ไม่รับ 'none','minimal'
-            //   (โค้ดเราส่ง 'low' → ใช้ได้)
-            'gpt-6-luna',                     // ถูกสุดของ gen 6 ($0.10/$0.50)
+            // 🧹 (2026-11-04, owner) เหลือเฉพาะ GPT-6 — prod ใช้ 6-luna (ทำนาย) + 6.1-sol (sensitive) อยู่แล้ว
+            //   ไม่มี gpt-6.1-luna — OpenAI ตอบ "does not exist" กับคีย์ prod
+            //   Responses API: gpt-6-astra ไม่รับ effort 'none' / gpt-6.1-sol ไม่รับ 'none','minimal' (โค้ดส่ง 'low')
+            'gpt-6-luna',                     // ⭐ DEFAULT — ถูกสุด ($0.10/$0.50)
             'gpt-6.1-terra',                  // ($1/$5)
-            'gpt-6.1-sol',                    // ($2/$10)
+            'gpt-6.1-sol',                    // ($2/$10) — sensitive / งานยาก
             'gpt-6-sol',                      // ($2/$10)
             'gpt-6-astra',                    // flagship ($10/$50 — แพงมาก)
-            // GPT-5.5 / 5.4 — gen ก่อนหน้า (ยังใช้ได้)
-            'gpt-5.5',                        // ($5/$30)
-            'gpt-5.5-pro',                    // ($30/$180 — แพงมาก)
-            'gpt-5.4',                        // ($2.50/$15)
-            'gpt-5.4-mini',                   // ($0.75/$4.50)
-            'gpt-5.4-pro',                    // 5.4 ตัวฉลาดสุด
-            'gpt-5.4-nano',                   // ⚠️ deprecated — ปิด 2027-04-01 ($0.20/$1.25)
-            // ⚠️ Deprecated — ยังยิงได้ แต่มีวันปิดแล้ว
-            'gpt-5',                          // ปิด 2026-12-11
-            'gpt-5-mini',                     // ปิด 2026-12-11
-            'gpt-4o',                         // ปิด 2027-01-14 ($2.50/$10)
-            'gpt-4o-mini',                    // ปิด 2027-01-14 ($0.15/$0.60)
-            // 🚫 (2026-10-30) ลบ gpt-4 / gpt-4-turbo / gpt-3.5-turbo / o3-mini (ปิด 2026-10-23)
-            //    และ o1-preview / o1-mini (ปิดตั้งแต่ 2025) — migration รีแมปเป็น gpt-5.6-luna
-            // 🎙️ TTS models — เลือกได้ถ้า key purpose='tts' — ⚠️ ทั้ง 3 ตัวปิด 2027-01-06
+            // 🎙️ TTS — เลือกได้ถ้า key purpose='tts' — ⚠️ ทั้ง 3 ตัวปิด 2027-01-06
             //    ตัวแทน (gpt-realtime-2.1-mini) เป็น Realtime API ไม่ใช่ /v1/audio/speech — ต้องเขียน provider ใหม่
             'gpt-4o-mini-tts',
             'tts-1',
             'tts-1-hd',
         ],
         'gemini' => [
-            // ai.google.dev/gemini-api/docs/models + /deprecations (หน้า 2026-10-28)
-            // 🚫 (2026-05-26 v2) admin directive "ใช้ได้จริงเท่านั้น" — stable เท่านั้น ห้าม preview
-            // 🔄 (2026-10-30) gemini-3.5-flash ถูก supersede → Google route ไป 3.6-flash เอง
-            //    migration รีแมป DB → gemini-3.6-flash ให้ราคาในตารางตรงกับที่ถูกคิดจริง
-            //    ยังไม่มี gemini-3.x Pro แบบ stable — ตัว Pro-class stable คือ gemini-4-argon
-            'gemini-3.6-flash',               // ⭐ DEFAULT — frontier flash ($0.75/$3.75) มี free tier
-            'gemini-3.5-flash-lite',          // ⭐ ถูก+มี free tier ($0.30/$2.50) — แทน 3.1-flash-lite
-            'gemini-3.8-flash',               // flash ใหม่สุด ($0.75/$3.75) — ⚠️ ขึ้นเป็น $1.50/$7.50 ตั้งแต่ 2027-01-01
+            // aistudio.google.com/docs/models + /deprecations (เช็ค 2026-11-04)
+            // 🧹 (2026-11-04, owner) เหลือซีรีส์ล่าสุด: Gemini 4 มีแค่ argon → tier flash/lite ยังต้องใช้ 3.x ตัวล่าสุด
+            //   ลบ 3.6-flash (ราคาเท่า 3.8) · 3.1-flash-lite (ปิด 2027-05-07) · 2.5-* (Google ย้ายเองตั้งแต่ 2026-12-01)
+            'gemini-3.8-flash',               // ⭐ DEFAULT — flash ใหม่สุด ($0.75/$3.75 → $1.50/$7.50 ตั้งแต่ 2027-01-01) มี free tier
+            'gemini-3.5-flash-lite',          // lite ล่าสุด ($0.30/$2.50) มี free tier — คีย์แชทฟรีใช้ตัวนี้
             'gemini-4-argon',                 // flagship ($2/$10 → $4/$20 ตั้งแต่ 2026-12-01) ❌ ไม่มี free tier
-            'gemini-3.1-flash-lite',          // ถูกสุด ($0.25/$1.50) — ⚠️ ปิดเร็วสุด 2027-05-07
-            // Gemini 2.5 stable — ยังไม่มีวันปิด แต่ "เฉพาะ project ที่เคยเรียกช่วงหลัง" เท่านั้นที่ยังใช้ได้
-            'gemini-2.5-pro',
-            'gemini-2.5-flash',
-            'gemini-2.5-flash-lite',
+            // 🎙️ TTS (GA 2026-09-22) — แทน 2.5-*-preview-tts ที่ปิด 2026-11-17
+            'gemini-3.8-flash-tts',
+            'gemini-3.8-flash-lite-tts',
         ],
         'qwen' => [
-            // alibabacloud.com/help/en/model-studio/model-pricing (Singapore, หน้า 2026-10-29)
-            // 🚫 qwen-turbo / qwen2.5-* ไม่อยู่ในรายการ international แล้ว
-            'qwen3.7-plus',                   // ⭐ DEFAULT — recommended ($0.40/$1.60 ช่วง 0-256K)
-            'qwen3.8-flash',                  // recommended ถูกสุด ($0.15/$0.47)
-            'qwen3.8-max',                    // recommended flagship ($2/$6)
-            'qwen-plus',
-            'qwen-max',
-            'qwen-flash',
-            'qwen3-coder-flash',
+            // alibabacloud.com/help/en/model-studio/models (Singapore, เช็ค 2026-11-04)
+            // 🧹 (2026-11-04, owner) qwen-plus/max/flash ล็อกไว้กับรุ่นปี 2025 ไม่ได้ตามรุ่นใหม่ → ลบ
+            'qwen3.7-plus',                   // ⭐ DEFAULT — ระดับ plus (ยังไม่มี qwen3.8-plus) ($0.40/$1.60)
+            'qwen3.8-flash',                  // ถูกสุด ($0.15/$0.47)
+            'qwen3.8-max',                    // flagship ($2/$6)
         ],
         'openrouter' => [
-            // 🔄 (2026-10-30) เช็คจาก GET openrouter.ai/api/v1/models จริง
-            //   slug เก่า anthropic/claude-sonnet-4, google/gemini-2.0-flash-001, x-ai/grok-2-1212 หายแล้ว (404)
+            // 🔄 (2026-10-30) เช็คจาก GET openrouter.ai/api/v1/models จริง — slug ปัจจุบันทั้งหมด
             'anthropic/claude-haiku-5.5',     // ⭐ DEFAULT — ถูกสุด ($0.10/$0.50)
             'anthropic/claude-sonnet-5.5',
             'anthropic/claude-opus-5.5',
@@ -203,55 +160,36 @@ class AiApiKey extends Model
             'meta/muse-spark-1.3',
         ],
         'anthropic' => [
-            // platform.claude.com/docs models overview + model-deprecations
-            // 🤖 (2026-10-30) Claude 4.7+ / 5.x ไม่รับ temperature — request สร้างผ่าน App\Support\AnthropicMessages
-            // 🚫 retired: claude-opus-4 / claude-sonnet-4 (2026-06-15), claude-3-5-sonnet / 3-5-haiku / 3-opus
-            //    claude-sonnet-4-5 ปิด 2026-11-30 → ไม่ใส่ใน dropdown แล้ว
+            // platform.claude.com/docs models overview + model-deprecations (เช็ค 2026-11-04)
+            // 🤖 Claude 4.7+ / 5.x ไม่รับ temperature — request สร้างผ่าน App\Support\AnthropicMessages
+            // 🧹 (2026-11-04, owner) เหลือซีรีส์ 5.5 + Fable 5.1 — ลบ opus-5 / sonnet-5 / 4.x ทั้งหมด
             'claude-haiku-5-5',               // ⭐ DEFAULT — ถูกสุด ($0.10/$0.50 เมื่อ prompt ≤100K)
             'claude-sonnet-5-5',              // งานทั่วไปคุณภาพสูง ($2/$10)
             'claude-opus-5-5',                // Opus ปัจจุบัน ($4/$20) — คิด (thinking) ตลอด ปิดไม่ได้
             'claude-fable-5-1',               // ฉลาดสุด ($10/$50 — แพงมาก) — คิดตลอด
-            // legacy — ยังใช้ได้
-            'claude-opus-5',
-            'claude-sonnet-5',
-            'claude-opus-4-8',
-            'claude-opus-4-7',
-            'claude-opus-4-6',
-            'claude-sonnet-4-6',
-            'claude-haiku-4-5',
         ],
         'deepseek' => [
             // api-docs.deepseek.com/quick_start/pricing
-            // 🚫 deepseek-chat / deepseek-reasoner ประกาศยุติ 2026-07-24 · deepseek-coder ไม่อยู่ในรายการแล้ว
-            'deepseek-flash',                 // ⭐ DEFAULT — V4.1-Flash ($0.30/$1.20 ช่วง peak) รับรูปได้
+            'deepseek-flash',                 // ⭐ DEFAULT — ชี้ V4.1-Flash เสมอ ($0.30/$1.20 ช่วง peak) รับรูปได้
             'deepseek-v4-pro',                // V4-Pro ($1.32/$3.96 ช่วง peak)
         ],
         'typhoon' => [
             // docs.opentyphoon.ai/en/models — ฟรี (5 req/s, 200 req/min)
+            // 🧹 (2026-11-04, owner) ลบ v2.1-12b รุ่นก่อน
             'typhoon-v2.5-30b-a3b-instruct',  // ⭐ DEFAULT — flagship ปัจจุบัน 128K context
-            'typhoon-v2.1-12b-instruct',      // flagship รุ่นก่อน 56K context
         ],
         'xiaomi' => [
-            // mimo.mi.com pricing (อัปเดต 2026-10-21)
-            // 🚫 mimo-v2.5-pro / mimo-v2.5 ปิด 2026-10-21 (ยิงแล้ว fail) · mimo-v2-* ไม่อยู่ในรายการ
+            // mimo.mi.com pricing — ซีรีส์ v2.6 ทั้งหมด
             'mimo-v2.6-pro',                  // ⭐ DEFAULT ($0.435/$0.87)
             'mimo-v2.6-flash',                // ถูกสุด ($0.14/$0.28)
             'mimo-v2.6-pro-ultraspeed',       // เร็วพิเศษ ($4.35/$8.70)
         ],
-        // 🎙️ (2026-05-08) MiniMax TTS — text-to-audio
-        //   ใช้กับ purpose='tts' — สังเคราะห์เสียงสรุปคำทำนาย Celtic 99฿
-        //   📚 https://platform.minimax.io/docs/api-reference/speech-t2a-http
-        //   v2 endpoint = https://api.minimax.io/v1/t2a_v2 (ไม่ต้อง group_id ใน URL แล้ว)
-        //   ราคาคิดต่อจำนวนตัวอักษร (ไม่ใช่ token) — hd $100 / turbo $60 ต่อ 1M ตัวอักษร · ไม่มี speech-3
+        // 🎙️ MiniMax TTS — purpose='tts' · https://platform.minimax.io/docs/api-reference/speech-t2a-http
+        //   ราคาคิดต่อจำนวนตัวอักษร — hd $100 / turbo $60 ต่อ 1M ตัวอักษร
+        //   🧹 (2026-11-04, owner) เหลือ 2.8 — 2.6/02/01 ลบ (emotion 'whisper' ที่มีแค่ 2.6 เราไม่ได้ใช้ · ใช้ 'calm')
         'minimax' => [
-            'speech-2.8-hd',          // ⭐ ใหม่สุด — HD quality — interjection tag ใช้ได้เฉพาะ 2.8
-            'speech-2.8-turbo',       // ⭐ ใหม่สุด — turbo (เร็ว+ถูก)
-            'speech-2.6-hd',          // legacy — emotion 'whisper' ใช้ได้เฉพาะ 2.6
-            'speech-2.6-turbo',
-            'speech-02-hd',           // legacy
-            'speech-02-turbo',        // legacy
-            'speech-01-hd',           // legacy — ไม่อยู่ในหน้าราคาแล้ว
-            'speech-01-turbo',        // legacy — ไม่อยู่ในหน้าราคาแล้ว
+            'speech-2.8-hd',          // ⭐ HD — interjection tag ใช้ได้เฉพาะ 2.8
+            'speech-2.8-turbo',       // turbo (เร็ว+ถูก)
         ],
     ];
 
@@ -270,10 +208,6 @@ class AiApiKey extends Model
         'grok' => [
             'grok-4.3' => [1.25, 2.50, 0.20],
             'grok-4.7' => [2.00, 6.00, 0.50],
-            'grok-4.6' => [2.00, 6.00, 0.50],
-            'grok-4.5' => [2.00, 6.00, 0.30],
-            'grok-4.20-0309-non-reasoning' => [1.25, 2.50, 0.20],
-            'grok-4.20-0309-reasoning' => [1.25, 2.50, 0.20],
             'grok-build-0.1' => [1.00, 2.00, 0.20],
         ],
         'groq' => [
@@ -282,46 +216,28 @@ class AiApiKey extends Model
             'qwen/qwen3.8-27b' => [0.80, 4.00, null],
         ],
         'openai' => [
-            'gpt-5.6-luna' => [0.20, 1.20, 0.02],
-            'gpt-5.6-sol' => [4.00, 20.00, 0.40],
-            'gpt-5.6-terra' => [2.00, 12.00, 0.20],
             'gpt-6-luna' => [0.10, 0.50, 0.01],
             'gpt-6.1-terra' => [1.00, 5.00, 0.05],
             'gpt-6.1-sol' => [2.00, 10.00, 0.10],
             'gpt-6-sol' => [2.00, 10.00, 0.20],
             'gpt-6-astra' => [10.00, 50.00, 1.00],
-            'gpt-5.5' => [5.00, 30.00, 0.50],
-            'gpt-5.5-pro' => [30.00, 180.00, null],
-            'gpt-5.4' => [2.50, 15.00, 0.25],
-            'gpt-5.4-mini' => [0.75, 4.50, 0.075],
-            'gpt-5.4-nano' => [0.20, 1.25, 0.02],
-            'gpt-5' => [1.25, 10.00, 0.125],
-            'gpt-5-mini' => [0.25, 2.00, 0.025],
-            'gpt-4o' => [2.50, 10.00, 1.25],
-            'gpt-4o-mini' => [0.15, 0.60, 0.075],
             // gpt-4o-mini-tts: input = text tokens, output = audio tokens
             'gpt-4o-mini-tts' => [0.60, 12.00, null],
             'tts-1' => ['unit' => 'chars', 'price' => 15.00],
             'tts-1-hd' => ['unit' => 'chars', 'price' => 30.00],
         ],
         'gemini' => [
-            'gemini-3.6-flash' => [0.75, 3.75, 0.075],
-            'gemini-3.5-flash-lite' => [0.30, 2.50, 0.03],
             'gemini-3.8-flash' => [0.75, 3.75, 0.075],
+            'gemini-3.5-flash-lite' => [0.30, 2.50, 0.03],
             'gemini-4-argon' => [2.00, 10.00, 0.10],
-            'gemini-3.1-flash-lite' => [0.25, 1.50, 0.025],
-            'gemini-2.5-pro' => [1.25, 10.00, 0.125],
-            'gemini-2.5-flash' => [0.30, 2.50, 0.03],
-            'gemini-2.5-flash-lite' => [0.10, 0.40, 0.01],
+            // TTS: output = audio tokens
+            'gemini-3.8-flash-tts' => [0.50, 9.00, null],
+            'gemini-3.8-flash-lite-tts' => [0.50, 6.00, null],
         ],
         'qwen' => [
             'qwen3.7-plus' => [0.40, 1.60, null],
             'qwen3.8-flash' => [0.15, 0.47, null],
             'qwen3.8-max' => [2.00, 6.00, null],
-            'qwen-plus' => [0.40, 1.20, null],
-            'qwen-max' => [1.60, 6.40, null],
-            'qwen-flash' => [0.05, 0.40, null],
-            'qwen3-coder-flash' => [0.30, 1.50, null],
         ],
         'openrouter' => [
             'anthropic/claude-haiku-5.5' => [0.10, 0.50, 0.01],
@@ -343,13 +259,6 @@ class AiApiKey extends Model
             'claude-sonnet-5-5' => [2.00, 10.00, 0.20],
             'claude-opus-5-5' => [4.00, 20.00, 0.20],
             'claude-fable-5-1' => [10.00, 50.00, 0.25],
-            'claude-opus-5' => [5.00, 25.00, 0.50],
-            'claude-sonnet-5' => [2.00, 10.00, 0.20],
-            'claude-opus-4-8' => [5.00, 25.00, 0.50],
-            'claude-opus-4-7' => [5.00, 25.00, 0.50],
-            'claude-opus-4-6' => [5.00, 25.00, 0.50],
-            'claude-sonnet-4-6' => [3.00, 15.00, 0.30],
-            'claude-haiku-4-5' => [1.00, 5.00, 0.10],
         ],
         'deepseek' => [
             // ราคาช่วง peak (จ-ศ 01-04, 06-10 UTC) — off-peak ถูกลงครึ่งหนึ่ง
@@ -358,7 +267,6 @@ class AiApiKey extends Model
         ],
         'typhoon' => [
             'typhoon-v2.5-30b-a3b-instruct' => ['free' => true],
-            'typhoon-v2.1-12b-instruct' => ['free' => true],
         ],
         'xiaomi' => [
             'mimo-v2.6-pro' => [0.435, 0.87, 0.0036],
@@ -368,6 +276,61 @@ class AiApiKey extends Model
         'minimax' => [
             'speech-2.8-hd' => ['unit' => 'chars', 'price' => 100.00],
             'speech-2.8-turbo' => ['unit' => 'chars', 'price' => 60.00],
+        ],
+    ];
+
+    /**
+     * 📜 (2026-11-04) ราคารุ่นที่ลบจาก dropdown แล้ว — ไม่ให้เลือกใหม่ แต่ usage log เก่ายังคิดค่าใช้จ่ายได้
+     *
+     * pricingFor() ดูที่นี่ต่อเมื่อไม่เจอใน MODEL_PRICING (รูปแบบเดียวกัน)
+     */
+    public const RETIRED_MODEL_PRICING = [
+        'grok' => [
+            'grok-4.6' => [2.00, 6.00, 0.50],
+            'grok-4.5' => [2.00, 6.00, 0.30],
+            'grok-4.20-0309-non-reasoning' => [1.25, 2.50, 0.20],
+            'grok-4.20-0309-reasoning' => [1.25, 2.50, 0.20],
+        ],
+        'openai' => [
+            'gpt-5.6-luna' => [0.20, 1.20, 0.02],
+            'gpt-5.6-sol' => [4.00, 20.00, 0.40],
+            'gpt-5.6-terra' => [2.00, 12.00, 0.20],
+            'gpt-5.5' => [5.00, 30.00, 0.50],
+            'gpt-5.5-pro' => [30.00, 180.00, null],
+            'gpt-5.4' => [2.50, 15.00, 0.25],
+            'gpt-5.4-mini' => [0.75, 4.50, 0.075],
+            'gpt-5.4-nano' => [0.20, 1.25, 0.02],
+            'gpt-5' => [1.25, 10.00, 0.125],
+            'gpt-5-mini' => [0.25, 2.00, 0.025],
+            'gpt-4o' => [2.50, 10.00, 1.25],
+            'gpt-4o-mini' => [0.15, 0.60, 0.075],
+        ],
+        'gemini' => [
+            'gemini-3.6-flash' => [0.75, 3.75, 0.075],
+            'gemini-3.1-flash-lite' => [0.25, 1.50, 0.025],
+            'gemini-2.5-pro' => [1.25, 10.00, 0.125],
+            'gemini-2.5-flash' => [0.30, 2.50, 0.03],
+            'gemini-2.5-flash-lite' => [0.10, 0.40, 0.01],
+        ],
+        'qwen' => [
+            'qwen-plus' => [0.40, 1.20, null],
+            'qwen-max' => [1.60, 6.40, null],
+            'qwen-flash' => [0.05, 0.40, null],
+            'qwen3-coder-flash' => [0.30, 1.50, null],
+        ],
+        'anthropic' => [
+            'claude-opus-5' => [5.00, 25.00, 0.50],
+            'claude-sonnet-5' => [2.00, 10.00, 0.20],
+            'claude-opus-4-8' => [5.00, 25.00, 0.50],
+            'claude-opus-4-7' => [5.00, 25.00, 0.50],
+            'claude-opus-4-6' => [5.00, 25.00, 0.50],
+            'claude-sonnet-4-6' => [3.00, 15.00, 0.30],
+            'claude-haiku-4-5' => [1.00, 5.00, 0.10],
+        ],
+        'typhoon' => [
+            'typhoon-v2.1-12b-instruct' => ['free' => true],
+        ],
+        'minimax' => [
             'speech-2.6-hd' => ['unit' => 'chars', 'price' => 100.00],
             'speech-2.6-turbo' => ['unit' => 'chars', 'price' => 60.00],
             'speech-02-hd' => ['unit' => 'chars', 'price' => 100.00],
@@ -988,7 +951,7 @@ class AiApiKey extends Model
      * Anthropic: id ที่มีวันที่ต่อท้าย (claude-haiku-4-5-20251001) ใช้ราคาของ alias
      *
      * @return array{unit: string, input: float|null, output: float|null, cached: float|null, free: bool}|null
-     *   unit 'tokens' = USD/1M tokens · 'chars' = USD/1M ตัวอักษร (input = ราคา) · null = ไม่รู้ราคา
+     *                                                                                                         unit 'tokens' = USD/1M tokens · 'chars' = USD/1M ตัวอักษร (input = ราคา) · null = ไม่รู้ราคา
      */
     public static function pricingFor(string $provider, ?string $model): ?array
     {
@@ -996,7 +959,7 @@ class AiApiKey extends Model
             return null;
         }
 
-        $table = self::MODEL_PRICING[$provider] ?? [];
+        $table = (self::MODEL_PRICING[$provider] ?? []) + (self::RETIRED_MODEL_PRICING[$provider] ?? []);
         $row = $table[$model] ?? null;
         if ($row === null && $provider === 'anthropic') {
             $row = $table[preg_replace('/-\d{8}$/', '', $model)] ?? null;
@@ -1134,7 +1097,7 @@ class AiApiKey extends Model
      *
      * Logic เหมือน getEffectiveRpmLimit แต่ดู MODEL_TPM_FREE_TIER
      *
-     * @return int  TPM limit (0 = unlimited)
+     * @return int TPM limit (0 = unlimited)
      */
     public function getEffectiveTpmLimit(): int
     {
@@ -1429,8 +1392,8 @@ class AiApiKey extends Model
      * บันทึกการใช้งาน tokens
      *
      * @param  array<string,mixed>|null  $context  Optional customer identity to denormalize
-     *   onto the log row. Keys: reading_id, user_id, fb_user_id, customer_name.
-     *   Used by warroom /workers → /chat deep-link.
+     *                                             onto the log row. Keys: reading_id, user_id, fb_user_id, customer_name.
+     *                                             Used by warroom /workers → /chat deep-link.
      */
     public function recordUsage(int $inputTokens, int $outputTokens, ?string $model = null, ?int $responseTimeMs = null, string $requestType = 'general', ?array $context = null): void
     {

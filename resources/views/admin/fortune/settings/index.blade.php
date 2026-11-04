@@ -1281,16 +1281,6 @@
                                 <optgroup label="🌟 Latest (2026)">
                                     <option value="speech-2.8-hd" {{ $currentMm === 'speech-2.8-hd' ? 'selected' : '' }}>speech-2.8-hd (HD ใหม่สุด ⭐)</option>
                                     <option value="speech-2.8-turbo" {{ $currentMm === 'speech-2.8-turbo' ? 'selected' : '' }}>speech-2.8-turbo (turbo ใหม่สุด)</option>
-                                    <option value="speech-2.6-hd" {{ $currentMm === 'speech-2.6-hd' ? 'selected' : '' }}>speech-2.6-hd</option>
-                                    <option value="speech-2.6-turbo" {{ $currentMm === 'speech-2.6-turbo' ? 'selected' : '' }}>speech-2.6-turbo</option>
-                                </optgroup>
-                                <optgroup label="Standard">
-                                    <option value="speech-02-hd" {{ $currentMm === 'speech-02-hd' ? 'selected' : '' }}>speech-02-hd</option>
-                                    <option value="speech-02-turbo" {{ $currentMm === 'speech-02-turbo' ? 'selected' : '' }}>speech-02-turbo</option>
-                                </optgroup>
-                                <optgroup label="Legacy">
-                                    <option value="speech-01-hd" {{ $currentMm === 'speech-01-hd' ? 'selected' : '' }}>speech-01-hd</option>
-                                    <option value="speech-01-turbo" {{ $currentMm === 'speech-01-turbo' ? 'selected' : '' }}>speech-01-turbo</option>
                                 </optgroup>
                             </select>
                         </div>

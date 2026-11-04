@@ -27,10 +27,10 @@ use Illuminate\Support\Facades\Log;
 class FortuneModelRouter
 {
     /** ค่าสำรองของโมเดลตัวแรง (คุณไสย์ + คำถามยาก) — ใช้เมื่อไม่มี key ให้อ่าน ปกติเรียกผ่าน strongModel() */
-    public const MODEL_STRONG = 'gpt-5.6-sol';
+    public const MODEL_STRONG = 'gpt-6.1-sol';
 
     /** ค่าสำรองของโมเดลหลัก — ใช้เมื่อไม่มี key ให้อ่าน ปกติเรียกผ่าน defaultModel() */
-    public const MODEL_DEFAULT = 'gpt-5.6-luna';
+    public const MODEL_DEFAULT = 'gpt-6-luna';
 
     /** สั้นกว่านี้ = ทัก/ตอบรับ ไม่ใช่คำถามยาก → ข้าม detector ไม่ต้องเสียค่าตรวจ */
     protected const MIN_QUESTION_LEN = 8;
