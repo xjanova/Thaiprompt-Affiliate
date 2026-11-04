@@ -24,6 +24,8 @@ class FortuneCharacterVoiceController extends Controller
 {
     protected const VOICES_CACHE_KEY = 'fortune:elevenlabs_voices';
 
+    protected const MODELS_CACHE_KEY = 'fortune:elevenlabs_models';
+
     public function index(): View
     {
         $settings = FortuneTellingSetting::getGlobalSettings();
@@ -46,6 +48,7 @@ class FortuneCharacterVoiceController extends Controller
             'hasKey' => $settings->getElevenlabsApiKey() !== null,
             'maskedKey' => $settings->getElevenlabsApiKeyMasked(),
             'model' => $service->provider()->model(),
+            'models' => $this->thaiModels($service->provider()),
             'dailyLimit' => $service->dailyCharLimit(),
             'usedToday' => $service->charsUsedToday(),
             'personas' => $personas,
@@ -76,6 +79,7 @@ class FortuneCharacterVoiceController extends Controller
 
         $newKey = trim((string) ($validated['elevenlabs_api_key'] ?? ''));
         $message = '✅ บันทึกการตั้งค่าเสียงตัวละครแล้ว';
+        $check = null;
 
         if ($newKey !== '') {
             $check = (new ElevenLabsTtsProvider($settings, $newKey))->credits();
@@ -85,15 +89,31 @@ class FortuneCharacterVoiceController extends Controller
                     ->withInput($request->except('elevenlabs_api_key'))
                     ->withErrors(['elevenlabs_api_key' => 'ใช้ key นี้ไม่ได้: '.$check['error']]);
             }
+        }
 
+        // โมเดลต้องพูดไทยได้ในบัญชีของ key ที่จะใช้ — เช็คก่อนบันทึกอะไรทั้งนั้น จะได้ไม่บันทึกครึ่งๆ กลางๆ
+        $model = trim((string) ($validated['elevenlabs_tts_model'] ?? ''));
+        if ($model !== '') {
+            $provider = $newKey !== ''
+                ? new ElevenLabsTtsProvider($settings, $newKey)
+                : (new FortuneCharacterVoiceService($settings))->provider();
+            if (! collect($this->thaiModels($provider, $newKey !== ''))->contains(fn ($m) => $m['id'] === $model)) {
+                return back()
+                    ->withInput($request->except('elevenlabs_api_key'))
+                    ->withErrors(['elevenlabs_tts_model' => 'โมเดลนี้พูดภาษาไทยไม่ได้ หรือไม่มีในบัญชี ElevenLabs — เลือกจากรายการ']);
+            }
+        }
+
+        if ($check !== null) {
             $settings->setElevenlabsApiKey($newKey);
             $message = $check['balance'] !== null
                 ? '✅ บันทึก ElevenLabs key แล้ว (เหลือ '.number_format((int) $check['balance']).' ตัวอักษรในรอบบิลนี้)'
                 : '✅ บันทึก ElevenLabs key แล้ว (key นี้ไม่มีสิทธิ์ดูโควต้า แต่สร้างเสียงได้)';
             Cache::forget(self::VOICES_CACHE_KEY);
+            Cache::forget(self::MODELS_CACHE_KEY);
         }
 
-        $settings->setElevenlabsTtsModel($validated['elevenlabs_tts_model'] ?? null);
+        $settings->setElevenlabsTtsModel($model !== '' ? $model : null);
         $settings->update($update);
         FortuneTellingSetting::clearSettingsCache();
 
@@ -209,6 +229,32 @@ class FortuneCharacterVoiceController extends Controller
         }
 
         return $voices;
+    }
+
+    /**
+     * โมเดลที่พูดไทยได้ — ดึงสดจาก /v1/models (ฟรี) แคช 1 ชม. เฉพาะตอนดึงสดได้
+     * ไม่มี key / ดึงไม่ได้ = ใช้รายชื่อสำรอง (v4, v4 Turbo, v3, v3 Conversational)
+     * โมเดลที่ตั้งไว้อยู่แล้วแต่ไม่อยู่ในรายชื่อ ยังแสดงให้เห็น จะได้ไม่ถูกเปลี่ยนเงียบๆ ตอนกดบันทึก
+     */
+    protected function thaiModels(ElevenLabsTtsProvider $provider, bool $fresh = false): array
+    {
+        $cached = $fresh ? null : Cache::get(self::MODELS_CACHE_KEY);
+        if (! is_array($cached)) {
+            $cached = $provider->isAvailable()
+                ? $provider->listModels()
+                : ['models' => ElevenLabsTtsProvider::FALLBACK_MODELS, 'live' => false];
+            if ($cached['live']) {
+                Cache::put(self::MODELS_CACHE_KEY, $cached, 3600);
+            }
+        }
+
+        $models = array_values(array_filter($cached['models'], fn ($m) => $m['thai']));
+        $current = $provider->model();
+        if (! collect($models)->contains(fn ($m) => $m['id'] === $current)) {
+            $models[] = ['id' => $current, 'name' => $current, 'thai' => true, 'cost' => 1.0, 'max_chars' => null];
+        }
+
+        return $models;
     }
 
     /**

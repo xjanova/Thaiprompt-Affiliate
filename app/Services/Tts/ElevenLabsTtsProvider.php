@@ -39,6 +39,18 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
      */
     public const FALLBACK_VOICES = XDreamerTtsProvider::FALLBACK_VOICES;
 
+    /**
+     * โมเดลที่พูดไทยได้ — ใช้เมื่อดึงรายชื่อจากบัญชีไม่ได้ (ข้อมูลจาก /v1/models ของบัญชีจริง 2026-11-04)
+     *
+     * @var array<int, array{id: string, name: string, thai: bool, cost: float, max_chars: ?int}>
+     */
+    public const FALLBACK_MODELS = [
+        ['id' => 'eleven_v4', 'name' => 'Eleven v4', 'thai' => true, 'cost' => 1.0, 'max_chars' => 10000],
+        ['id' => 'eleven_v4_turbo', 'name' => 'Eleven v4 Turbo', 'thai' => true, 'cost' => 0.5, 'max_chars' => 10000],
+        ['id' => 'eleven_v3', 'name' => 'Eleven v3', 'thai' => true, 'cost' => 1.0, 'max_chars' => 5000],
+        ['id' => 'eleven_v3_conversational', 'name' => 'Eleven v3 Conversational', 'thai' => true, 'cost' => 0.5, 'max_chars' => 5000],
+    ];
+
     /** ไฟล์เสียงใหญ่สุดที่ยอมรับ */
     protected const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 
@@ -198,6 +210,45 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
         }
 
         return ['voices' => self::FALLBACK_VOICES, 'live' => false, 'max_chars' => self::MAX_CHARS];
+    }
+
+    /**
+     * โมเดลเสียงที่บัญชีนี้ใช้ได้ (เจ้าของสั่ง 2026-11-04 "eleven lab มี v4 เราเปลี่ยนไปเลือกได้ไหม")
+     *
+     * ดึงสดจาก /v1/models (ไม่เสียโควต้า) เก็บเฉพาะโมเดลที่สร้างเสียงจากข้อความได้
+     * thai = พูดไทยได้ · cost = ตัวคูณราคาต่อตัวอักษร (0.5 = ครึ่งราคาของ v3)
+     * ดึงไม่ได้ = รายชื่อสำรองในไฟล์นี้ (live = false)
+     *
+     * @return array{models: array<int, array{id: string, name: string, thai: bool, cost: float, max_chars: ?int}>, live: bool}
+     */
+    public function listModels(): array
+    {
+        $response = $this->get('/v1/models');
+
+        if ($response['success']) {
+            $models = [];
+            foreach ($response['data'] as $m) {
+                if (! is_array($m) || empty($m['model_id']) || ! ($m['can_do_text_to_speech'] ?? false)) {
+                    continue;
+                }
+                $languages = array_column(is_array($m['languages'] ?? null) ? $m['languages'] : [], 'language_id');
+                $cost = $m['model_rates']['character_cost_multiplier'] ?? 1;
+
+                $models[] = [
+                    'id' => (string) $m['model_id'],
+                    'name' => (string) ($m['name'] ?? $m['model_id']),
+                    'thai' => in_array('th', $languages, true),
+                    'cost' => is_numeric($cost) ? (float) $cost : 1.0,
+                    'max_chars' => isset($m['maximum_text_length_per_request']) ? (int) $m['maximum_text_length_per_request'] : null,
+                ];
+            }
+
+            if ($models !== []) {
+                return ['models' => $models, 'live' => true];
+            }
+        }
+
+        return ['models' => self::FALLBACK_MODELS, 'live' => false];
     }
 
     /**

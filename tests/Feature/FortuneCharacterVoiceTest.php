@@ -126,6 +126,12 @@ class FortuneCharacterVoiceTest extends TestCase
                     'category' => 'premade',
                     'labels' => ['gender' => $v['gender'], 'accent' => 'american'],
                 ], ElevenLabsTtsProvider::FALLBACK_VOICES)]),
+                $path === '/v1/models' => Http::response([
+                    ['model_id' => 'eleven_v4', 'name' => 'Eleven v4', 'can_do_text_to_speech' => true, 'languages' => [['language_id' => 'en'], ['language_id' => 'th']], 'model_rates' => ['character_cost_multiplier' => 1], 'maximum_text_length_per_request' => 10000],
+                    ['model_id' => 'eleven_v4_turbo', 'name' => 'Eleven v4 Turbo', 'can_do_text_to_speech' => true, 'languages' => [['language_id' => 'th']], 'model_rates' => ['character_cost_multiplier' => 0.5], 'maximum_text_length_per_request' => 10000],
+                    ['model_id' => 'eleven_multilingual_v2', 'name' => 'Multilingual v2', 'can_do_text_to_speech' => true, 'languages' => [['language_id' => 'en'], ['language_id' => 'ja']], 'model_rates' => ['character_cost_multiplier' => 1]],
+                    ['model_id' => 'eleven_english_sts_v2', 'name' => 'STS', 'can_do_text_to_speech' => false, 'languages' => [['language_id' => 'th']]],
+                ]),
                 default => Http::response(['detail' => ['status' => 'not_found', 'message' => 'not found']], 404),
             };
         });
@@ -379,7 +385,7 @@ class FortuneCharacterVoiceTest extends TestCase
 
         $this->from('/admin/fortune/character-voices')->put('/admin/fortune/character-voices/settings', [
             'elevenlabs_api_key' => self::KEY,
-            'elevenlabs_tts_model' => 'eleven_multilingual_v2',
+            'elevenlabs_tts_model' => 'eleven_v4_turbo',
             'character_voice_daily_char_limit' => 50000,
         ])->assertRedirect()->assertSessionHas('success', '✅ บันทึก ElevenLabs key แล้ว (เหลือ 99,000 ตัวอักษรในรอบบิลนี้)');
 
@@ -387,7 +393,7 @@ class FortuneCharacterVoiceTest extends TestCase
         $settings = FortuneTellingSetting::getGlobalSettings();
         $this->assertSame(self::KEY, $settings->getElevenlabsApiKey());
         $this->assertSame(50000, (int) $settings->character_voice_daily_char_limit);
-        $this->assertSame('eleven_multilingual_v2', (new ElevenLabsTtsProvider($settings))->model());
+        $this->assertSame('eleven_v4_turbo', (new ElevenLabsTtsProvider($settings))->model());
         $this->assertSame([], $this->ttsCalls(), 'ทดสอบ key ไม่เสียโควต้า');
 
         // บันทึกรอบหน้าเว้นช่อง key ว่าง = key เดิมยังอยู่ · เว้นโมเดลว่าง = กลับไปค่าเริ่มต้น
@@ -395,6 +401,81 @@ class FortuneCharacterVoiceTest extends TestCase
         FortuneTellingSetting::clearSettingsCache();
         $this->assertSame(self::KEY, FortuneTellingSetting::getGlobalSettings()->getElevenlabsApiKey());
         $this->assertSame('eleven_v3', (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->model());
+    }
+
+    // ───────────────────────────── เลือกโมเดล (v4 / v4 Turbo / v3) ─────────────────────────────
+
+    public function test_model_list_is_read_live_and_flags_thai(): void
+    {
+        $this->setKey();
+
+        $list = (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->listModels();
+
+        $this->assertTrue($list['live']);
+        $byId = collect($list['models'])->keyBy('id');
+        $this->assertSame(['eleven_v4', 'eleven_v4_turbo', 'eleven_multilingual_v2'], $byId->keys()->all(), 'โมเดลที่สร้างเสียงจากข้อความไม่ได้ไม่ถูกนับ');
+        $this->assertTrue($byId['eleven_v4_turbo']['thai']);
+        $this->assertSame(0.5, $byId['eleven_v4_turbo']['cost']);
+        $this->assertFalse($byId['eleven_multilingual_v2']['thai']);
+        $this->assertSame([], $this->ttsCalls(), 'ดูรายชื่อโมเดลไม่เสียโควต้า');
+    }
+
+    public function test_model_list_falls_back_when_vendor_is_down(): void
+    {
+        $this->setKey();
+        $this->fakeVendors(fn ($path) => $path === '/v1/models' ? Http::response('upstream error', 503) : null);
+
+        $list = (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->listModels();
+
+        $this->assertFalse($list['live']);
+        $this->assertSame(ElevenLabsTtsProvider::FALLBACK_MODELS, $list['models']);
+        $this->assertContains('eleven_v4', array_column($list['models'], 'id'));
+    }
+
+    public function test_admin_rejects_model_without_thai_and_saves_nothing(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->from('/admin/fortune/character-voices')->put('/admin/fortune/character-voices/settings', [
+            'elevenlabs_api_key' => self::KEY,
+            'elevenlabs_tts_model' => 'eleven_multilingual_v2',
+            'character_voice_daily_char_limit' => 50000,
+        ])->assertRedirect('/admin/fortune/character-voices')->assertSessionHasErrors('elevenlabs_tts_model');
+
+        FortuneTellingSetting::clearSettingsCache();
+        $settings = FortuneTellingSetting::getGlobalSettings();
+        $this->assertNull($settings->getElevenlabsApiKey(), 'โมเดลไม่ผ่าน = key ใหม่ก็ยังไม่ถูกบันทึก');
+        $this->assertSame('eleven_v3', (new ElevenLabsTtsProvider($settings))->model());
+        $this->assertNull(session()->getOldInput('elevenlabs_api_key'));
+    }
+
+    public function test_admin_switches_existing_key_to_v4_and_keeps_current_model_selectable(): void
+    {
+        $this->withoutMiddleware();
+        $this->setKey();
+
+        // โมเดลที่ใช้อยู่ (v3) ไม่อยู่ในรายชื่อสดของบัญชี แต่กดบันทึกซ้ำได้ ไม่ถูกบังคับเปลี่ยน
+        $this->put('/admin/fortune/character-voices/settings', ['elevenlabs_tts_model' => 'eleven_v3'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->put('/admin/fortune/character-voices/settings', ['elevenlabs_tts_model' => 'eleven_v4'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        FortuneTellingSetting::clearSettingsCache();
+        $this->assertSame('eleven_v4', (new ElevenLabsTtsProvider(FortuneTellingSetting::getGlobalSettings()))->model());
+        $this->assertSame(self::KEY, FortuneTellingSetting::getGlobalSettings()->getElevenlabsApiKey());
+    }
+
+    public function test_account_ai_pools_menu_links_the_key_pool_and_elevenlabs(): void
+    {
+        $group = collect(config('menus.admin'))->firstWhere('id', 'ai-account-pools');
+
+        $this->assertNotNull($group, 'มีเมนู Account AI Pools ด้านนอก');
+        $routes = array_column($group['submenu'], 'route');
+        $this->assertContains('admin.ai-api-keys.index', $routes);
+        $this->assertContains('admin.fortune.character-voices.index', $routes);
+        foreach ($routes as $route) {
+            $this->assertTrue(\Illuminate\Support\Facades\Route::has($route), $route);
+        }
     }
 
     public function test_admin_accepts_restricted_key_that_cannot_read_quota(): void
