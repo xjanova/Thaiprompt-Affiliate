@@ -195,12 +195,12 @@ return [
 
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY', ''),
-        'model' => env('AI_MODEL_CLAUDE', 'claude-haiku-4-5-20251001'),
+        'model' => env('AI_MODEL_CLAUDE', 'claude-haiku-5-5'),
     ],
 
     'openai' => [
         'api_key' => env('OPENAI_API_KEY', ''),
-        'model' => env('AI_MODEL_OPENAI', 'gpt-4o-mini'),
+        'model' => env('AI_MODEL_OPENAI', 'gpt-6-luna'),
     ],
 
     /*

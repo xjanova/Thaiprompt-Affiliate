@@ -15,11 +15,7 @@ use PHPUnit\Framework\TestCase;
 class AiApiKeyModelCatalogTest extends TestCase
 {
     /** ค่ายไม่ประกาศราคาต่อหน่วย — ยอมให้แสดง "ไม่ทราบราคา" */
-    private const UNPRICED = [
-        'openai/gpt-5.4-pro',
-        'minimax/speech-01-hd',
-        'minimax/speech-01-turbo',
-    ];
+    private const UNPRICED = [];
 
     #[Test]
     public function every_selectable_model_has_a_price(): void
@@ -54,9 +50,23 @@ class AiApiKeyModelCatalogTest extends TestCase
     #[Test]
     public function cost_is_input_plus_output_per_million_tokens(): void
     {
-        // gpt-5.6-luna = $0.20 เข้า / $1.20 ออก ต่อ 1M
+        // gpt-6-luna = $0.10 เข้า / $0.50 ออก ต่อ 1M
+        $this->assertEqualsWithDelta(0.35, AiApiKey::estimateCostUsd('openai', 'gpt-6-luna', 1_000_000, 500_000), 1e-9);
+        $this->assertEqualsWithDelta(0.0, AiApiKey::estimateCostUsd('openai', 'gpt-6-luna', 0, 0), 1e-9);
+    }
+
+    #[Test]
+    public function retired_models_still_price_old_usage_logs_but_are_not_selectable(): void
+    {
+        // gpt-5.6-luna ลบจาก dropdown แล้ว (2026-11-04) แต่ log เก่ายังต้องคิดเงินได้ — $0.20 / $1.20
+        $this->assertNotContains('gpt-5.6-luna', AiApiKey::MODELS_BY_PROVIDER['openai']);
         $this->assertEqualsWithDelta(0.80, AiApiKey::estimateCostUsd('openai', 'gpt-5.6-luna', 1_000_000, 500_000), 1e-9);
-        $this->assertEqualsWithDelta(0.0, AiApiKey::estimateCostUsd('openai', 'gpt-5.6-luna', 0, 0), 1e-9);
+
+        foreach (AiApiKey::RETIRED_MODEL_PRICING as $provider => $rows) {
+            foreach (array_keys($rows) as $model) {
+                $this->assertNotContains($model, AiApiKey::MODELS_BY_PROVIDER[$provider] ?? [], "{$provider}/{$model} ยังอยู่ใน dropdown");
+            }
+        }
     }
 
     #[Test]

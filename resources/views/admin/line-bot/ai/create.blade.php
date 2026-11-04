@@ -3,9 +3,20 @@
 @section('title', 'สร้างการตั้งค่า LINE Bot AI')
 
 @section('content')
+@php
+    // 🧹 (2026-11-04) รายชื่อรุ่นมาจาก AiApiKey::MODELS_BY_PROVIDER ที่เดียว (เดิม hardcode gpt-3.5 / gemini-1.5 ที่ปิดไปแล้ว)
+    $lineBotModels = collect(['openai', 'deepseek', 'anthropic', 'gemini'])
+        ->mapWithKeys(fn ($p) => [$p => array_values(array_filter(
+            \App\Models\AiApiKey::MODELS_BY_PROVIDER[$p] ?? [],
+            fn ($m) => ! str_starts_with($m, 'tts-') && ! str_contains($m, '-tts')
+        ))])
+        ->put('custom', [])
+        ->all();
+    $lineBotDefaults = collect($lineBotModels)->map(fn ($list) => $list[0] ?? '')->all();
+@endphp
 <div class="min-h-screen bg-gray-100/50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8" x-data="{
     provider: '{{ old('provider', 'openai') }}',
-    model: '{{ old('model', 'gpt-3.5-turbo') }}',
+    model: '{{ old('model', $lineBotDefaults['openai']) }}',
     isActive: {{ old('is_active', false) ? 'true' : 'false' }},
     enableFallback: {{ old('enable_fallback', true) ? 'true' : 'false' }},
     enableHistory: {{ old('enable_conversation_history', true) ? 'true' : 'false' }},
@@ -16,24 +27,12 @@
         { type: 'user', text: 'สวัสดีครับ', time: '14:30' },
         { type: 'bot', text: 'สวัสดีค่ะ! ยินดีต้อนรับสู่ระบบ Affiliate 😊 มีอะไรให้ช่วยไหมคะ?', time: '14:30' }
     ],
-    models: {
-        openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'],
-        deepseek: ['deepseek-chat', 'deepseek-coder'],
-        anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-        gemini: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
-        custom: []
-    },
+    models: {{ json_encode($lineBotModels) }},
     get modelOptions() {
         return this.models[this.provider] || [];
     },
     updateModel() {
-        const defaults = {
-            openai: 'gpt-3.5-turbo',
-            deepseek: 'deepseek-chat',
-            anthropic: 'claude-3-5-sonnet-20241022',
-            gemini: 'gemini-1.5-pro',
-            custom: ''
-        };
+        const defaults = {{ json_encode($lineBotDefaults) }};
         this.model = defaults[this.provider] || '';
     },
     addPreviewMessage(type, text) {
