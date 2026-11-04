@@ -4,6 +4,7 @@ namespace App\Services\Fortune;
 
 use App\Services\FortuneAIService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -51,6 +52,13 @@ final class JuntraChatService
 
     /** คำตอบรองรับเมื่อ AI ไม่ตอบ — ทางเดิมเท่านั้น (ทางเซิร์ฟเวอร์ตอบ 503 ให้เว็บรู้ว่าไม่ใช่คำตอบจริง) */
     public const FILLER = 'ลูก... แม่หมอขอคิดอีกซักครู่นะคะ';
+
+    /** 🌙 (2026-11-04) ทางสำรองเมื่อ Gemini ฟรีหลุด — OpenAI luna (ดู ask()) */
+    public const FALLBACK_PROVIDER = 'openai';
+
+    private const PRIMARY_TIMEOUT_SEC = 10;
+
+    private const FALLBACK_TIMEOUT_SEC = 20;
 
     /** 🌙 (2026-11-03) + kunsai — ห้องคุณไสยของเว็บ (การ์ดแพ็กเกจเปิดไพ่ดูคุณไสย) */
     public const OFFER_TOPICS = ['love', 'career', 'money', 'health', 'kunsai', 'general'];
@@ -552,12 +560,11 @@ TXT,
             $config = ['temperature' => 0.6, 'max_tokens' => 600];
         }
 
-        $result = $this->ai->chatWithCustomSystemPrompt(
-            systemMessage: $system,
-            userMessage: "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียง".($profile['voice'] ?? $profile['display_name']),
-            config: $config,
-            // 🛡 ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" เท่านั้น ห้ามตรวจ userMessage ที่ห่อไว้
-            guardText: $text,
+        $result = $this->ask(
+            $system,
+            "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียง".($profile['voice'] ?? $profile['display_name']),
+            $config,
+            $text,
         );
 
         $reply = trim((string) ($result['response'] ?? ''));
@@ -602,6 +609,45 @@ TXT,
             'offer_topic' => $topic,
             'persona' => $persona,
         ];
+    }
+
+    /**
+     * 🌙 (2026-11-04, owner) Gemini ฟรีหลุดบ่อย — สลับไป OpenAI luna อัตโนมัติ
+     *
+     * QA บน prod วันเดียวกัน: Gemini ค้างครบ 15 วิแล้วได้ 0 ไบต์ 4 จาก 5 ข้อความ
+     * ทางหลักล้ม (โยน error) หรือตอบว่าง → ยิงซ้ำที่ luna ครั้งเดียว
+     * luna ล้มด้วย (ไม่มีคีย์ / คีย์ใช้ไม่ได้ / หมดเวลา) → โยนต่อ ผู้เรียกตอบข้อความที่เตรียมไว้ของห้อง (ไม่คิดเครดิต)
+     *
+     * ⏱️ ทางหลัก 10 วิ (p95 ของแชท 5.6 วิ) + luna 20 วิ = 30 วิ ยังอยู่ในงบของเว็บ (รอได้ ~50 วิ)
+     */
+    private function ask(string $system, string $userMessage, array $config, string $guardText): array
+    {
+        try {
+            $result = $this->ai->chatWithCustomSystemPrompt(
+                systemMessage: $system,
+                userMessage: $userMessage,
+                config: $config + ['timeout' => self::PRIMARY_TIMEOUT_SEC],
+                // 🛡 ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" เท่านั้น ห้ามตรวจ userMessage ที่ห่อไว้
+                guardText: $guardText,
+            );
+            if (trim((string) ($result['response'] ?? '')) !== '' || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
+                return $result;
+            }
+            $reason = 'empty reply';
+        } catch (\Throwable $e) {
+            $reason = mb_substr($e->getMessage(), 0, 160);
+        }
+
+        Log::warning('JuntraChat: ทางหลักไม่ตอบ — สลับไป OpenAI luna', ['reason' => $reason]);
+
+        return $this->ai->chatWithCustomSystemPrompt(
+            systemMessage: $system,
+            userMessage: $userMessage,
+            config: $config + ['timeout' => self::FALLBACK_TIMEOUT_SEC],
+            providerOverride: self::FALLBACK_PROVIDER,
+            modelOverride: FortuneModelRouter::MODEL_DEFAULT,
+            guardText: $guardText,
+        );
     }
 
     private function remember(string $owner, string $sessionId, array $history, string $reply, ?string $reading = null, bool $touchMemory = false): void
