@@ -1686,6 +1686,9 @@ Route::prefix('v1/juntra/server')
                 ->name('transcribe');
             Route::get('/health', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'health'])
                 ->name('health');
+            // 🎬 บทเล่าคำทำนายของโรงละคร (AI เขียน → ตรวจความตรง → ประโยคจากคำทำนาย)
+            Route::post('/narration', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'narration'])
+                ->name('narration');
         });
 
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า

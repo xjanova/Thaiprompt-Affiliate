@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCharacterVoiceClip;
 use App\Services\Fortune\FortuneCharacterVoiceService;
 use App\Services\Fortune\FortuneVoiceTranscribeService;
+use App\Services\Fortune\JuntraChatService;
+use App\Services\Fortune\JuntraNarrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,6 +22,7 @@ use Illuminate\Http\Request;
  *   🔈 (2026-11-04) โหมดคุยด้วยเสียง (+฿100):
  *   POST /api/v1/juntra/server/voice/transcribe  multipart {audio, user_ref, persona?} → ข้อความ + เวลาของแต่ละคำ
  *   GET  /api/v1/juntra/server/voice/health      → TTS/STT พร้อมไหม + โควต้าวันนี้เหลือเท่าไร
+ *   POST /api/v1/juntra/server/voice/narration   → บทเล่าคำทำนายของโรงละคร (ผ่านตัวตรวจความตรงแล้ว)
  *
  * ⚠️ ไม่ได้แตะ JuntraChatService — endpoint แยกตามที่ตกลงกับ session ย้ายแชท
  */
@@ -149,5 +152,40 @@ class VoiceController extends Controller
                 'seconds_left' => max(0, $sttLimit - $sttUsed),
             ],
         ]]);
+    }
+
+    /**
+     * 🎬 (2026-11-04) บทเล่าคำทำนายของโรงละคร — สัญญาข้อ 23.1
+     *
+     * {persona, spread, reading_text, cards:[{position, name_th, reversed}], birth_known, budget_chars?, user_ref}
+     * 200 {data: {script_hash, chapters:[{anchor, kind, tone, energy, say}], fidelity:{passed, rewritten, extractive}}}
+     * AI ล่มก็ยังได้ 200 — บทเป็นประโยคจากคำทำนายเอง (ไม่สร้างเสียงเอง เว็บเรียก /speak ทีละบท)
+     */
+    public function narration(Request $request, JuntraNarrationService $narration): JsonResponse
+    {
+        $validated = $request->validate([
+            'persona' => 'required|in:'.implode(',', JuntraChatService::PERSONAS),
+            'spread' => 'required|string|max:20|regex:/^[a-z_]+$/',
+            'reading_text' => 'required|string|min:20|max:20000',
+            'cards' => 'sometimes|array|max:20',
+            'cards.*.position' => 'required|integer|min:1|max:20',
+            'cards.*.name_th' => 'nullable|string|max:60',
+            'cards.*.reversed' => 'sometimes|boolean',
+            'birth_known' => 'sometimes|boolean',
+            'budget_chars' => 'sometimes|nullable|integer|min:100|max:2000',
+            'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
+        ]);
+
+        $data = $narration->narrate(
+            $validated['persona'],
+            $validated['spread'],
+            $validated['reading_text'],
+            $validated['cards'] ?? [],
+            (bool) ($validated['birth_known'] ?? false),
+            isset($validated['budget_chars']) ? (int) $validated['budget_chars'] : null,
+            $validated['user_ref'],
+        );
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 }

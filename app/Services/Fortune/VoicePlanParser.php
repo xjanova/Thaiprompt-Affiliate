@@ -36,7 +36,7 @@ final class VoicePlanParser
     private const CRISIS_PATTERN = '/(?<!\d)(?:1323|1669)(?!\d)/u';
 
     /** วลีราคา/ยอดเงิน — ตัวเลขคู่กับ บาท/฿/เครดิต (คำนำ "ราคา/เพียง/แค่" ไปด้วย) */
-    private const PRICE_PATTERN = '/(?:(?:ราคา|เพียง|แค่|ค่า\S{0,10})\s*)?(?:฿\s*\d[\d,\.]*|\d[\d,\.]*\s*(?:บาท|฿|เครดิต))/u';
+    public const PRICE_PATTERN = '/(?:(?:ราคา|เพียง|แค่|ค่า\S{0,10})\s*)?(?:฿\s*\d[\d,\.]*|\d[\d,\.]*\s*(?:บาท|฿|เครดิต))/u';
 
     /**
      * แยกบล็อกออกจากคำตอบ (ข้อความที่แสดงในแชทต้องไม่มีบล็อกเสมอ แม้ AI ตอบถูกตัดกลางบล็อก)
@@ -162,7 +162,7 @@ final class VoicePlanParser
      * ทำความสะอาดบทพูด: ลอก markdown/emoji/ป้าย/ลิงก์ · แท็กอารมณ์ที่ทดสอบแล้วเหลือ 1 แท็กแรก
      * ตัดประโยคที่พูดราคา · ยาวเกิน = ตัดที่ขอบประโยค (วรรค / . ! ? …) ไม่ตัดกลางคำ
      */
-    private static function cleanSay(string $text, int $max): string
+    public static function cleanSay(string $text, int $max): string
     {
         $text = (string) preg_replace('/\[\[[^\]]*\]\]/u', ' ', $text);
         $text = (string) preg_replace('#https?://\S+#u', ' ', $text);

@@ -694,6 +694,36 @@ TXT,
     }
 
     /**
+     * 🎬 (2026-11-04) เรียก AI ด้วยพรอมต์ที่ระบบสร้างเอง (บทเล่าคำทำนาย) — ทางไล่คีย์เดียวกับแชท
+     *
+     * ไม่มีข้อความดิบของลูกค้า → ไม่ตรวจด่านเจลเบรค · บทยาวกว่าแชท จึงให้เวลาต่อคีย์นานกว่า
+     *
+     * @throws \Throwable ทุกทางล้ม (ผู้เรียกถอยไปใช้ประโยคจากคำทำนายเอง)
+     */
+    public function complete(string $system, string $userMessage, array $config, int $primaryTimeout = 20, int $geminiBudget = 40): array
+    {
+        return $this->ask($system, $userMessage, $config, '', $primaryTimeout, $geminiBudget);
+    }
+
+    /**
+     * 🎬 คำเรียก/น้ำเสียงของห้อง ให้บทเล่าคำทำนาย — ไม่ส่งพรอมต์ทั้งก้อนออกไป
+     *
+     * @return array{display_name:string,speaker:string,customer:string,voice:string}
+     */
+    public static function voiceIdentity(?string $persona): array
+    {
+        $persona = self::isPersona($persona) ? $persona : self::DEFAULT_PERSONA;
+        $profile = self::profile($persona);
+
+        return [
+            'display_name' => $profile['display_name'],
+            'speaker' => $profile['speaker'],
+            'customer' => self::VOICE_CUSTOMER_WORD[$persona] ?? $profile['listener'],
+            'voice' => $profile['voice'] ?? $profile['display_name'],
+        ];
+    }
+
+    /**
      * 🌙 (2026-11-04, owner) Gemini ฟรีหลุดบ่อย — ไล่คีย์ Gemini ฟรีให้ครบก่อน แล้วค่อยไป OpenAI luna
      *
      * owner: "ถ้า gemini ฟรีตัวไหนยังใช้ได้ให้เก็บไว้วนก่อน ล่มหมดทุกคีย์ค่อยไปใช้ gpt luna"
@@ -708,13 +738,19 @@ TXT,
      * ⏱️ คีย์ละ 8 วิ รวมไม่เกิน 24 วิ + luna 20 วิ = 44 วิ ยังอยู่ในงบของเว็บ (รอได้ ~50 วิ)
      *    คีย์ที่ล่มเร็ว (high demand / 429) ไล่ได้หลายตัวในงบเดียวกัน
      */
-    private function ask(string $system, string $userMessage, array $config, string $guardText): array
-    {
+    private function ask(
+        string $system,
+        string $userMessage,
+        array $config,
+        string $guardText,
+        int $primaryTimeout = self::PRIMARY_TIMEOUT_SEC,
+        int $geminiBudget = self::GEMINI_BUDGET_SEC,
+    ): array {
         $started = microtime(true);
         $failures = [];
 
         foreach ($this->primaryAttempts() as $label => $override) {
-            if (microtime(true) - $started + self::PRIMARY_TIMEOUT_SEC > self::GEMINI_BUDGET_SEC) {
+            if (microtime(true) - $started + $primaryTimeout > $geminiBudget) {
                 $failures[] = 'หมดงบเวลา';
                 break;
             }
@@ -723,7 +759,7 @@ TXT,
                 $result = $this->ai->chatWithCustomSystemPrompt(
                     systemMessage: $system,
                     userMessage: $userMessage,
-                    config: $config + ['timeout' => self::PRIMARY_TIMEOUT_SEC],
+                    config: $config + ['timeout' => $primaryTimeout],
                     providerOverride: $override['provider'] ?? null,
                     modelOverride: $override['model'] ?? null,
                     apiKeyOverride: $override['key'] ?? null,
