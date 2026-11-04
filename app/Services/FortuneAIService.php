@@ -8142,6 +8142,11 @@ TXT;
             || str_contains($msg, 'quota exceeded')
             || str_contains($msg, 'quota_exceeded')
             || str_contains($msg, 'tokens per minute')
+            // 🌙 (2026-11-04) Gemini "This model is currently experiencing high demand" (503 UNAVAILABLE)
+            //    = รุ่นนั้นล่มทั้งรุ่น ไม่ใช่คีย์เสีย — เดิมนับ strike → prod คีย์ฟรี 25/26/29 ติด critical ในชั่วโมงเดียว
+            || str_contains($msg, 'high demand')
+            || str_contains($msg, 'overloaded')
+            || str_contains($msg, 'service unavailable')
         );
 
         $retryAfter = null;
