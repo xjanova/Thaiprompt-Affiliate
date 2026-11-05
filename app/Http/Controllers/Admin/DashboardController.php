@@ -11,7 +11,7 @@ use App\Models\MlmCommission;
 use App\Models\MlmMember;
 use App\Models\Ticket;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -136,26 +136,9 @@ class DashboardController extends Controller
         // Page View Analytics
         $pageViewStats = [];
         if (class_exists(\App\Models\PageView::class)) {
-            // สถิติผู้เข้าชมวันนี้
-            $todayStats = \App\Models\PageView::getSummary('today');
-            // สถิติผู้เข้าชม 7 วันล่าสุด
-            $weekStats = \App\Models\PageView::getSummary('7days');
-            // สถิติผู้เข้าชมเดือนนี้
-            $monthStats = \App\Models\PageView::getSummary('month');
-
-            // คำนวณการเปลี่ยนแปลงเทียบกับเมื่อวาน
-            $yesterdayStats = \App\Models\PageView::getSummary('yesterday');
-            $viewsChange = $yesterdayStats['total_views'] > 0
-                ? (($todayStats['total_views'] - $yesterdayStats['total_views']) / $yesterdayStats['total_views']) * 100
-                : 0;
-
-            $pageViewStats = [
-                'today' => $todayStats,
-                'week' => $weekStats,
-                'month' => $monthStats,
-                'yesterday' => $yesterdayStats,
-                'views_change' => $viewsChange,
-            ];
+            // ⚡ แคช 5 นาที — COUNT/DISTINCT บนตาราง page_views 12 query กินเวลา ~180ms บน prod ทุกครั้งที่เปิด dashboard
+            //    key ผูกกับวันที่ เพื่อให้ "วันนี้/เมื่อวาน" เปลี่ยนชุดทันทีหลังเที่ยงคืน
+            $pageViewStats = $this->cachedPageViewStats();
         }
 
         // ใช้ dashboard view (ธีม V4 นวลทองคำ) — เดิมชี้ dashboard-v3 (Arrow X)
@@ -177,5 +160,43 @@ class DashboardController extends Controller
             'recentTickets',
             'pageViewStats'
         ));
+    }
+
+    /**
+     * สถิติผู้เข้าชม (วันนี้ / 7 วัน / เดือนนี้ / เมื่อวาน) แบบแคช 5 นาที
+     *
+     * ถ้า cache store ล่ม (เช่น Redis ไม่ตอบ) จะคำนวณสดแทน — หน้า dashboard ต้องไม่ 500 เพราะแคช
+     *
+     * @return array{today: array, week: array, month: array, yesterday: array, views_change: float|int}
+     */
+    protected function cachedPageViewStats(): array
+    {
+        $compute = function (): array {
+            $todayStats = \App\Models\PageView::getSummary('today');
+            $weekStats = \App\Models\PageView::getSummary('7days');
+            $monthStats = \App\Models\PageView::getSummary('month');
+            $yesterdayStats = \App\Models\PageView::getSummary('yesterday');
+
+            // เปอร์เซ็นต์การเปลี่ยนแปลงเทียบกับเมื่อวาน
+            $viewsChange = $yesterdayStats['total_views'] > 0
+                ? (($todayStats['total_views'] - $yesterdayStats['total_views']) / $yesterdayStats['total_views']) * 100
+                : 0;
+
+            return [
+                'today' => $todayStats,
+                'week' => $weekStats,
+                'month' => $monthStats,
+                'yesterday' => $yesterdayStats,
+                'views_change' => $viewsChange,
+            ];
+        };
+
+        try {
+            return Cache::remember('admin:dashboard:page-view-stats:'.today()->toDateString(), now()->addMinutes(5), $compute);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $compute();
+        }
     }
 }

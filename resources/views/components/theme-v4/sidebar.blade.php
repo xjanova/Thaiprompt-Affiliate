@@ -93,10 +93,22 @@
         <button @click="closeDrawer()" type="button" class="tp-icon-btn" style="width:34px; height:34px; border-radius:11px; color:var(--ink2);"><i class="fas fa-xmark"></i></button>
     </div>
 
-    {{-- รายการเมนู (เลื่อนได้) --}}
+    {{-- รายการเมนู (เลื่อนได้)
+     | ⚡ ทำให้เบา (2026-11-04): เดิม 201 แถว × ~1.9KB = 423KB ต่อหน้า → หลังบ้านหน่วง
+     |   - สไตล์ซ้ำ ๆ ย้ายไปเป็นคลาส .tp-grp / .tp-sub-* ใน resources/css/theme-v4.css
+     |   - ปุ่มปักหมุดไม่มี binding ต่อแถวแล้ว: @click ตัวเดียวบนกล่องนี้ (event delegation)
+     |     อ่าน URL/ชื่อจาก <a> ในแถวเดียวกัน · ไอคอนจาก data-icon ของกลุ่ม
+     |   - สถานะ "ปักแล้ว" (.on) ตั้งด้วย x-effect ตัวเดียว เมื่อ $store.pinnedMenus เปลี่ยน
+     |   ⚠️ key ปักหมุด = ค่า href ตามที่ render (เหมือนเดิม) — ห้ามเปลี่ยนเป็น a.href (absolute) ไม่งั้นหมุดเก่าใน localStorage หาย
+     --}}
     <div x-data="{ openId: @js($activeGroupId), pinActive(u) { if (!u) return false; const c = location.origin + location.pathname; const x = String(u).replace(/\/+$/, ''); return c === x || c.startsWith(x + '/'); } }"
          x-init="const tpScroll = () => { const a = $el.querySelector('[data-tpactive]'); if (!a) return; const ar = a.getBoundingClientRect(); if (!ar.height) return; const cr = $el.getBoundingClientRect(); $el.scrollTop += (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; }; $nextTick(tpScroll); [320, 700, 1200].forEach(t => setTimeout(tpScroll, t))"
-         style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
+         x-effect="const keys = new Set($store.pinnedMenus.getPinnedMenus(@js($type)).map(p => p.key)); $el.querySelectorAll('[data-pin]').forEach(b => { const a = b.parentElement.querySelector('a'); b.classList.toggle('on', !!a && keys.has(a.getAttribute('href'))); })"
+         @click="const t = $event.target, pin = t.closest('[data-pin]'), grp = t.closest('[data-gid]');
+                 if (pin) { $event.preventDefault(); $event.stopPropagation(); const a = pin.parentElement.querySelector('a'), u = a.getAttribute('href'), n = a.querySelector('[data-name]'); $store.pinnedMenus.toggle(@js($type), u, { label: (n ? n.textContent : a.textContent).trim(), url: u, icon: (pin.closest('[data-icon]') || {}).dataset?.icon || '' }); }
+                 else if (grp) { openId = openId === grp.dataset.gid ? '' : grp.dataset.gid; }
+                 else if (isMobile && t.closest('a[href]:not([target])')) { closeDrawer(); }"
+         class="tp-side-list">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
         <div x-show="$store.pinnedMenus.getPinnedMenus(@js($type)).length > 0" x-cloak class="flex"
@@ -115,7 +127,7 @@
 
             <template x-for="p in $store.pinnedMenus.getPinnedMenus(@js($type))" :key="p.key">
                 <div style="position:relative;">
-                    <a :href="p.url" @click="if (isMobile) closeDrawer()" class="tp-card"
+                    <a :href="p.url" class="tp-card"
                        :style="{ boxShadow: pinActive(p.url) ? 'var(--inset)' : 'var(--raise)' }"
                        style="display:flex; align-items:center; gap:10px; padding:8px 30px 8px 10px; border-radius:13px; text-decoration:none; color:var(--ink);">
                         <span class="tp-tile" style="width:28px; height:28px; border-radius:9px; font-size:12px;">
@@ -134,111 +146,49 @@
             <hr class="tp-divider" style="margin:6px 4px 2px;">
         </div>
 
+        {{-- ===== เมนูจาก config/menus.php — markup ต่อแถวต้องสั้น (มี ~200 แถว ทุกหน้า) ===== --}}
         @foreach($menus as $gi => $group)
-            @php
-                $gid     = $group['id'] ?? \Illuminate\Support\Str::slug($group['label'] ?? 'g');
-                $gicon   = $group['icon'] ?? '•';
-                $glabel  = $group['label'] ?? '';
-                $gen     = \Illuminate\Support\Str::headline($gid);
-                $gbadge  = $group['badge'] ?? null;
-                $subs    = $group['submenu'] ?? [];
-                $hasSubs = is_array($subs) && count($subs) > 0;
-                $gurl    = $group['url'] ?? null;
-                $gExternal = ! empty($group['external']);
-                // กลุ่มที่มีเมนูย่อย → ไฮไลต์เมื่อ "ผู้ชนะ" อยู่ในกลุ่มนี้ / เมนูเดี่ยว → ต้องเป็นผู้ชนะเอง
-                $gIsWinner = ($activeKey === "g{$gi}");
-                $gActive   = $hasSubs ? ($gid === $activeGroupId) : $gIsWinner;
-            @endphp
-
-            <div>
-                @if($hasSubs)
-                    {{-- กลุ่มที่มีเมนูย่อย → accordion --}}
-                    <button type="button"
-                            @click="openId = openId === '{{ $gid }}' ? '' : '{{ $gid }}'"
-                            class="tp-card" @if($gIsWinner) data-tpactive @endif
-                            style="cursor:pointer; width:100%; text-align:left; display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:15px; {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
-                        <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
-                            @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
-                        </span>
-                        <span style="line-height:1.15; flex:1; min-width:0;">
-                            <span style="display:block; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $glabel }}</span>
-                            <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $gen }}</span>
-                        </span>
-                        @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
-                        <span style="font-size:10px; color:var(--ink2); width:12px; text-align:center; flex:none; transition:transform .2s ease;" :style="{ transform: openId === '{{ $gid }}' ? 'rotate(90deg)' : 'none' }">▸</span>
-                    </button>
-
-                    <div x-show="openId === '{{ $gid }}'" x-cloak class="flex"
-                         style="position:relative; margin:4px 0 6px 22px; padding-left:16px; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) backwards;">
-                        {{-- เส้น RGB วิ่ง --}}
-                        <span style="position:absolute; left:0; top:5px; bottom:5px; width:3px; border-radius:3px; background:linear-gradient(180deg,#ff5a5a,#ffb24d,#ffe24d,#5ad65a,#4dd2ff,#7a8cff,#c44dff,#ff5a5a); background-size:100% 220%; box-shadow:0 0 7px rgba(120,140,255,.4); animation:tpHue 5s linear infinite, tpFlow 2.6s linear infinite;"></span>
-
-                        @foreach($subs as $si => $sub)
-                            @php
-                                if (!is_array($sub)) continue;
-                                $slabel = $sub['label'] ?? '';
-                                $surl   = $sub['url'] ?? null;
-                                $sActive = ($activeKey === "g{$gi}s{$si}");
-                                $isDivider = ($slabel === '---' || $slabel === '');
-                                $isHeader  = !$isDivider && empty($surl);
-                                $sPinData  = ['label' => $slabel, 'url' => $surl, 'icon' => $gicon];
-                            @endphp
-
-                            @if($isDivider)
-                                <hr class="tp-divider" style="margin:5px 6px;">
-                            @elseif($isHeader)
-                                <div style="font-size:10.5px; font-weight:700; color:var(--ink2); padding:7px 11px 3px; letter-spacing:.2px;">{{ $slabel }}</div>
-                            @else
-                                {{-- ลิงก์ย่อย + ปุ่มปักหมุด (ปุ่มเป็น sibling ของ <a> เพราะห้าม button ซ้อนใน a) --}}
-                                @php $sExternal = ! empty($sub['external']); @endphp
-                                <div class="tp-mrow" style="position:relative;">
-                                    <a href="{{ $surl }}"
-                                       @if($sExternal) target="_blank" rel="noopener" @else @click="if (isMobile) closeDrawer()" @endif
-                                       class="tp-sub-link" @if($sActive) data-tpactive @endif
-                                       style="padding-right:28px; {{ $sActive ? 'box-shadow:var(--inset-sm); color:var(--ink);' : 'color:var(--ink2);' }}">
-                                        <span style="width:6px; height:6px; flex:none; border-radius:50%; background:{{ $sActive ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'var(--ink2)' }};"></span>
-                                        <span style="font-weight:{{ $sActive ? 700 : 500 }}; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $slabel }}</span>
-                                        @if($sExternal)<i class="fas fa-arrow-up-right-from-square" style="font-size:8.5px; color:var(--ink2); flex:none;" title="เปิดเว็บจันทรา"></i>@endif
-                                        @if(!empty($sub['badge']))<span class="tp-pill tp-pill-soft" style="font-size:8.5px; padding:2px 6px;">{{ $sub['badge'] }}</span>@endif
-                                    </a>
-                                    <button type="button" title="ปักหมุด" class="tp-pin-btn"
-                                            @click.prevent.stop="$store.pinnedMenus.toggle(@js($type),@js($surl), @js($sPinData))"
-                                            :class="$store.pinnedMenus.isPinned(@js($type),@js($surl)) ? 'on' : ''"
-                                            style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:9.5px; line-height:1;">
-                                        <i class="fas fa-thumbtack"></i>
-                                    </button>
-                                </div>
-                            @endif
-                        @endforeach
-                    </div>
-                @else
-                    {{-- เมนูเดี่ยว (ลิงก์ตรง) + ปุ่มปักหมุด --}}
-                    @php $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon]; @endphp
-                    <div class="tp-mrow" style="position:relative;">
-                        <a href="{{ $gurl ?? '#' }}"
-                           @if($gExternal) target="_blank" rel="noopener" @else @click="if (isMobile) closeDrawer()" @endif
-                           class="tp-card" @if($gActive) data-tpactive @endif
-                           style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
-                            <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
-                                @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
-                            </span>
-                            <span style="line-height:1.15; flex:1; min-width:0;">
-                                <span style="display:block; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $glabel }}</span>
-                                <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px;">{{ $gen }}</span>
-                            </span>
-                            @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
-                        </a>
-                        @if($gurl && $gurl !== '#')
-                            <button type="button" title="ปักหมุด" class="tp-pin-btn"
-                                    @click.prevent.stop="$store.pinnedMenus.toggle(@js($type),@js($gurl), @js($gPinData))"
-                                    :class="$store.pinnedMenus.isPinned(@js($type),@js($gurl)) ? 'on' : ''"
-                                    style="position:absolute; right:9px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; padding:4px; font-size:10px; line-height:1;">
-                                <i class="fas fa-thumbtack"></i>
-                            </button>
-                        @endif
-                    </div>
-                @endif
-            </div>
+@php
+    $gid     = $group['id'] ?? \Illuminate\Support\Str::slug($group['label'] ?? 'g');
+    $gicon   = $group['icon'] ?? '•';
+    $gbadge  = $group['badge'] ?? null;
+    $subs    = $group['submenu'] ?? [];
+    $hasSubs = is_array($subs) && count($subs) > 0;
+    $gurl    = $group['url'] ?? null;
+    // กลุ่มที่มีเมนูย่อย → ไฮไลต์เมื่อ "ผู้ชนะ" อยู่ในกลุ่มนี้ / เมนูเดี่ยว → ต้องเป็นผู้ชนะเอง
+    $gIsWinner = ($activeKey === "g{$gi}");
+    $gActive   = $hasSubs ? ($gid === $activeGroupId) : $gIsWinner;
+    // หัวกลุ่ม (ไอคอน + ชื่อไทย + ชื่ออังกฤษ + ป้าย) — ใช้ทั้งปุ่ม accordion และลิงก์เดี่ยว
+    $gHead = '<span class="tp-tile tp-grp-tile">'.(str_contains($gicon, 'fa-') ? '<i class="'.e($gicon).'"></i>' : $gicon).'</span>'
+        .'<span class="tp-grp-txt"><span class="tp-grp-name" data-name>'.e($group['label'] ?? '').'</span><span class="tp-grp-en">'.e(\Illuminate\Support\Str::headline($gid)).'</span></span>'
+        .($gbadge ? '<span class="tp-pill tp-pill-gold tp-grp-badge">'.e($gbadge).'</span>' : '');
+@endphp
+<div data-icon="{{ $gicon }}">
+@if($hasSubs)
+<button type="button" data-gid="{{ $gid }}" :aria-expanded="openId === '{{ $gid }}'" class="tp-card tp-grp{{ $gActive ? ' is-active' : '' }}"@if($gIsWinner) data-tpactive @endif>{!! $gHead !!}<span class="tp-grp-caret">▸</span></button>
+<div x-show="openId === '{{ $gid }}'" x-cloak class="tp-subwrap">
+@foreach($subs as $si => $sub)
+@php
+    if (! is_array($sub)) continue;
+    $slabel = $sub['label'] ?? '';
+    $surl   = $sub['url'] ?? null;
+    $sActive = ($activeKey === "g{$gi}s{$si}");
+@endphp
+@if($slabel === '---' || $slabel === '')
+<hr class="tp-divider tp-sub-hr">
+@elseif(empty($surl))
+<div class="tp-sub-head">{{ $slabel }}</div>
+@else
+{{-- ลิงก์ย่อย + ปุ่มปักหมุด (ปุ่มเป็น sibling ของ <a> เพราะห้าม button ซ้อนใน a) --}}
+<div class="tp-mrow"><a href="{{ $surl }}" class="tp-sub-link{{ $sActive ? ' is-active' : '' }}"@if($sActive) data-tpactive @endif @if(! empty($sub['external'])) target="_blank" rel="noopener" @endif><span class="tp-sub-dot"></span><span class="tp-sub-label" data-name>{{ $slabel }}</span>@if(! empty($sub['external']))<i class="fas fa-arrow-up-right-from-square tp-sub-ext" title="เปิดเว็บจันทรา"></i>@endif @if(! empty($sub['badge']))<span class="tp-pill tp-pill-soft tp-sub-badge">{{ $sub['badge'] }}</span>@endif</a><button type="button" title="ปักหมุด" class="tp-pin-btn" data-pin><i class="fas fa-thumbtack"></i></button></div>
+@endif
+@endforeach
+</div>
+@else
+{{-- เมนูเดี่ยว (ลิงก์ตรง) + ปุ่มปักหมุด --}}
+<div class="tp-mrow"><a href="{{ $gurl ?? '#' }}" class="tp-card tp-grp tp-grp-link{{ $gActive ? ' is-active' : '' }}"@if($gActive) data-tpactive @endif @if(! empty($group['external'])) target="_blank" rel="noopener" @endif>{!! $gHead !!}</a>@if($gurl && $gurl !== '#')<button type="button" title="ปักหมุด" class="tp-pin-btn tp-pin-btn-grp" data-pin><i class="fas fa-thumbtack"></i></button>@endif</div>
+@endif
+</div>
         @endforeach
     </div>
 
@@ -252,4 +202,4 @@
         </div>
     </div>
 </aside>
-{{-- หมายเหตุ: คลาส .tp-sub-link อยู่ใน resources/css/theme-v4.css --}}
+{{-- หมายเหตุ: คลาส .tp-side-list / .tp-grp* / .tp-sub-* / .tp-pin-btn อยู่ใน resources/css/theme-v4.css (หมวด 6) --}}

@@ -12,7 +12,7 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-vfigS0-p.css",
+    "file": "assets/app-_s4rO-Pb.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -22,12 +22,12 @@
     "isEntry": true
   },
   "resources/css/theme-v4.css": {
-    "file": "assets/theme-v4-CVga4emY.css",
+    "file": "assets/theme-v4-CvKnDhwl.css",
     "src": "resources/css/theme-v4.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-Bu64Sq41.js",
+    "file": "assets/app-BFDAE64B.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -81,7 +81,7 @@
     ]
   },
   "resources/js/wealth-guide-pro.js": {
-    "file": "assets/wealth-guide-pro-DgH_50X7.js",
+    "file": "assets/wealth-guide-pro-bCqc-X1K.js",
     "name": "wealth-guide-pro",
     "src": "resources/js/wealth-guide-pro.js",
     "isEntry": true,
