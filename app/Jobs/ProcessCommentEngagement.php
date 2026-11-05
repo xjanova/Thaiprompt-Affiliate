@@ -66,6 +66,21 @@ class ProcessCommentEngagement implements ShouldQueue
     protected const WEB_INVITE_COOLDOWN = 259200;
 
     /**
+     * 🕊️ (2026-11-05) คอมเมนต์ปล่อยวาง / ให้อภัย / เจ็บใจ → คลังโทนสงบ (letting_go)
+     *
+     * วัดจากคอมเมนต์จริง 7 วัน (7,069 อัน): อโหสิ 1,263 · ไม่สน 160 · ไม่ให้ค่า 142 · ไม่แคร์ 99
+     * ⚠️ ห้ามใส่ "เจ็บ" เดี่ยว ๆ (ชนคำอวยพร "หมดโรคภัยไข้เจ็บ") และ "ท้อ" เดี่ยว ๆ (ชน "สะท้อน")
+     */
+    protected const LETTING_GO_PATTERN = '/อโหสิ|ไม่แคร์|ไม่สน|ไม่ให้ค่า|ช่างมัน|ช่างหัว|ปล่อยวาง|กรรมใคร|ไม่โกรธ|ไม่ถือโทษ|ไม่เอาเรื่อง|โน\s*สน|โน\s*แค|no\s*สน|no\s*care|แช่ง|ใส่ร้าย|นินทา|เกลียด|เจ็บใจ|เจ็บปวด|เจ็บแล้วจำ|เสียใจ|ร้องไห้|น้ำตา|ผิดหวัง|ท้อแท้|ท้อใจ/iu';
+
+    /**
+     * 🕊️ (2026-11-05) คอมเมนต์ตำหนิเพจ / การดูดวง → คลังโทนกลางสุภาพ (neutral) ไม่ร่าเริง ไม่แนบลิงก์
+     *
+     * ⚠️ ห้ามใส่ "หลอก" เดี่ยว ๆ — ลูกค้าพิมพ์ "หรอก" ผิดเป็น "หลอก" บ่อย ("ไม่สนใจหลอก")
+     */
+    protected const CRITICAL_PATTERN = '/หลอกลวง|หลอกเงิน|หลอกคน|หลอกขาย|หลอกกิน|ต้มตุ๋น|มิจฉาชีพ|แหกตา|งมงาย|ไร้สาระ|ไม่แม่น|มั่วซั่ว|โกหก|โกรหก|ไม่จริงสักอย่าง|ไม่จริงเลย|เพจปลอม|เพจหลอก|หากินกับ|สแกม|scam|อย่าไปเชื่อ|เชื่อไม่ได้/iu';
+
+    /**
      * @param  array  $data  Expected keys:
      *                       - facebook_user_id: string (PSID)
      *                       - facebook_post_id: string
@@ -360,8 +375,20 @@ class ProcessCommentEngagement implements ShouldQueue
                     }
                 }
 
+                // 🕊️ (2026-11-05) คอมเมนต์ปล่อยวาง/เจ็บใจ/ตำหนิ → คลังโทนสงบหรือโทนกลาง และไม่แนบลิงก์
+                //    เดิมได้คำขอบคุณร่าเริง ("เห็นแล้วใจฟูเลยค่ะ") ใต้ "อโหสิกรรม"/"ไม่สนใจ" ดูเป็นบอทหรือประชด
+                //    ตรวจด้วยรายการคำในโค้ด — ฟรี ไม่ส่งให้ AI
+                $toneCategory = empty($commentReply) ? $this->detectCommentTone($commentText) : null;
+                if ($toneCategory !== null) {
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        $toneCategory,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
+                }
+
                 // 🌐 (2026-11-05) บางส่วนแนบลิงก์ชวนดูดวงที่เว็บ จันทรา.online (คำตอบ AI ไม่แนบ)
-                if (empty($commentReply) && $webInviteOk && $this->claimWebInviteSlot((string) $userId)) {
+                if (empty($commentReply) && $toneCategory === null && $webInviteOk && $this->claimWebInviteSlot((string) $userId)) {
                     $commentReply = \App\Models\FortuneCommentReply::pickRendered(
                         \App\Models\FortuneCommentReply::CATEGORY_WEB_INVITE,
                         $name,
@@ -503,9 +530,21 @@ class ProcessCommentEngagement implements ShouldQueue
             $publicReplySent = false;
             if ($publicReplyEnabled && ! empty($commentReply) && ! $alreadyRepliedBefore) {
                 try {
-                    $facebookService->replyToComment($commentId, $commentReply);
-                    $publicReplySent = true;
-                    Cache::put($replyOnceKey, 1, 86400);
+                    // ⚠️ (2026-11-05) replyToComment คืน false เมื่อ FB ปฏิเสธ (ไม่ throw) — ต้องเช็กค่าที่คืน
+                    //    เดิมถือว่าส่งสำเร็จทุกครั้ง ⇒ DB บันทึกคำตอบที่ไม่ได้ขึ้นจริง + จองกันซ้ำไว้เปล่า ๆ
+                    //    FB 500 ชั่วคราว ("Please reduce the amount of data") ⇒ ลองซ้ำ 1 ครั้ง
+                    $publicReplySent = $facebookService->replyToComment($commentId, $commentReply);
+                    if (! $publicReplySent) {
+                        sleep(3);
+                        $publicReplySent = $facebookService->replyToComment($commentId, $commentReply);
+                        Log::info('Comment Engagement: ลองตอบคอมเมนต์ซ้ำ', [
+                            'comment_id' => $commentId,
+                            'ok' => $publicReplySent,
+                        ]);
+                    }
+                    if ($publicReplySent) {
+                        Cache::put($replyOnceKey, 1, 86400);
+                    }
                 } catch (Throwable $e) {
                     Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
                         'comment_id' => $commentId,
@@ -1452,5 +1491,25 @@ class ProcessCommentEngagement implements ShouldQueue
         }
 
         return Cache::add('fcr:web_invite:'.md5($userId), 1, self::WEB_INVITE_COOLDOWN);
+    }
+
+    /**
+     * 🕊️ (2026-11-05) จับโทนคอมเมนต์จากรายการคำ (ฟรี ไม่ใช้ AI)
+     *
+     * ตำหนิมาก่อน (หายากกว่าและสัญญาณชัดกว่า) แล้วค่อยปล่อยวาง/เจ็บใจ
+     *
+     * @return string|null หมวดคลัง (neutral | letting_go) หรือ null = โทนปกติ ใช้คำขอบคุณ/ลิงก์ตามเดิม
+     */
+    protected function detectCommentTone(string $text): ?string
+    {
+        if (preg_match(self::CRITICAL_PATTERN, $text)) {
+            return \App\Models\FortuneCommentReply::CATEGORY_NEUTRAL;
+        }
+
+        if (preg_match(self::LETTING_GO_PATTERN, $text)) {
+            return \App\Models\FortuneCommentReply::CATEGORY_LETTING_GO;
+        }
+
+        return null;
     }
 }

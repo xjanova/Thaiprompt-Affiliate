@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * @property int $id
  * @property string $message ข้อความตอบ (รองรับ {name})
- * @property string $category invite | blessing | thanks | emoji | reply_to_bot | appreciation | web_invite
+ * @property string $category invite | blessing | thanks | emoji | reply_to_bot | appreciation | web_invite | letting_go | neutral
  * @property string $locale ภาษา (ตอนนี้มีแต่ th)
  * @property bool $is_active
  * @property int $use_count จำนวนครั้งที่ถูกหยิบ
@@ -58,6 +58,16 @@ class FortuneCommentReply extends Model
      * เพราะ punycode หน้าตาเหมือนลิงก์หลอกลวง ลูกค้าไม่กล้ากด
      */
     public const WEB_LINK = 'https://จันทรา.online';
+
+    /**
+     * 🕊️ (2026-11-05) โทนสงบ ให้กำลังใจ — 100 แบบ ตอบคอมเมนต์อโหสิกรรม / ไม่สน / ไม่แคร์ / เจ็บใจ
+     *
+     * ไม่ร่าเริง (ห้าม "ใจฟู/ยิ้ม") ไม่แนบลิงก์ ไม่ชวนทำอะไร
+     */
+    public const CATEGORY_LETTING_GO = 'letting_go';
+
+    /** 🕊️ (2026-11-05) โทนกลางสุภาพ — 40 แบบ ตอบคอมเมนต์ที่ตำหนิเพจ ไม่แก้ตัว ไม่ขาย ไม่แนบลิงก์ */
+    public const CATEGORY_NEUTRAL = 'neutral';
 
     /**
      * ลูกค้าตอบคำถามที่บอทถามไว้ใต้คอมเมนต์ = สนใจจริง
