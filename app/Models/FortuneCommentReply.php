@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * @property int $id
  * @property string $message ข้อความตอบ (รองรับ {name})
- * @property string $category invite | blessing | thanks | emoji
+ * @property string $category invite | blessing | thanks | emoji | reply_to_bot | appreciation
  * @property string $locale ภาษา (ตอนนี้มีแต่ th)
  * @property bool $is_active
  * @property int $use_count จำนวนครั้งที่ถูกหยิบ
@@ -38,6 +38,13 @@ class FortuneCommentReply extends Model
 
     /** ชุดสั้นมาก ไว้ตอบคอมเมนต์อีโมจิล้วน */
     public const CATEGORY_EMOJI = 'emoji';
+
+    /**
+     * 🙏 (2026-11-05) ขอบคุณที่ร่วมแสดงความเห็น — 200 แบบ ใช้ตอบคอมเมนต์ทุกคน
+     *
+     * ไม่ชวนทักแชท ไม่ขอให้กดอะไร (ดู migration 2026_11_05_120000)
+     */
+    public const CATEGORY_APPRECIATION = 'appreciation';
 
     /**
      * ลูกค้าตอบคำถามที่บอทถามไว้ใต้คอมเมนต์ = สนใจจริง

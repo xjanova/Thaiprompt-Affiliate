@@ -216,22 +216,27 @@ class ProcessCommentEngagement implements ShouldQueue
             //    ลูกค้ายังติดต่อมาเองได้ปกติ (inbound) — guard นี้ block แค่ outbound DM
             // 🚫 (2026-08-01) กันซ้ำ 7 วันแบบทบ — เลิกใช้กฎ "เดือนปฏิทิน" แล้ว
             if (\App\Models\FortuneReading::hasPaidReadingWithinDays($userId)) {
-                Log::info('Comment engagement skip — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
+                Log::info('Comment engagement: user เพิ่งดูดวงแบบจ่ายเงิน → ไม่ DM (ยังตอบคอมเมนต์)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                     'month' => now()->format('Y-m'),
                 ]);
 
-                return;
+                $allowDm = false;
             }
 
             // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze (safety — เผื่อ dispatch ก่อนลูกค้ากด opt-out)
             if (! \App\Models\FortuneUserCredit::canReceiveOutbound($userId, 'facebook')) {
-                Log::info('🔕 Comment engagement skip — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                Log::info('🔕 Comment engagement: ลูกค้าเลือกพัก/ไม่รับ DM → ไม่ DM (ยังตอบคอมเมนต์)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
+                $allowDm = false;
+            }
+
+            // 🙏 (2026-11-05) 2 ด่านบนตัดแค่ DM — คำขอบคุณใต้คอมเมนต์ยังส่งได้ (ตอบทุกคน)
+            if (! $allowDm && ! $allowPublicReply) {
                 return;
             }
 
@@ -307,42 +312,30 @@ class ProcessCommentEngagement implements ShouldQueue
                     ? WebHandoffCopy::COMMENT_REPLY
                     : self::WEB_ONLY_PUBLIC_REPLIES[array_rand(self::WEB_ONLY_PUBLIC_REPLIES)];
             } elseif ($publicReplyEnabled) {
-                // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
-                //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
-                //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
-                //    Speedup: AI call 2-3s → matcher 1-2ms = ~3× throughput per worker
-                $commentReply = $this->matchCommonGratitudePattern($commentText, $name);
-                $usedTemplate = $commentReply !== null;
-
-                if ($usedTemplate) {
-                    Log::info('⚡ Comment Engagement: matched common pattern (skip AI)', [
-                        'user_id' => $userId,
-                        'comment_preview' => mb_substr($commentText, 0, 30),
-                    ]);
-                } else {
-                    // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
-                    //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
-                    //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
-                    //    💸 (2026-08-22) USER SPEC: "ใช้ gemini เจนฟรีเท่านั้น"
-                    //       ตอบคอมเมนต์เป็นงานปริมาณมากและไม่มีรายได้ตรง → ห้ามแตะคีย์เสียเงิน
-                    //       ไม่มีคีย์ฟรีว่าง = ปล่อยให้ตกไปใช้ชุดสำเร็จรูปข้างล่าง
-                    //       (คอมเมนต์ทั่วไปตอบด้วยชุดสำเร็จรูปยังดีกว่าเผาเงินหรือเงียบ)
+                // 🙏 (2026-11-05) USER SPEC: "ตอบคอมเม้นต์อัตโนมัติ ทุกคนให้หมด ... ให้คำตอบมีหลากหลาย
+                //    ดูแล้วเหมือนเป็นการขอบคุณที่ร่วมแสดงความเห็น ... ถ้าเม้นต์ไหนออกความเห็นยาว
+                //    (มากกว่า 200 อักษร ที่เป็นความเห็นจริงไม่ใช่การฟลัด) ให้บอทเอไอวิเคราะห์แล้วตอบจริงๆ"
+                //    ⇒ ยาวจริง → Gemini ฟรี (ห้ามแตะคีย์เสียเงิน — กฎเดิม 2026-08-22)
+                //    ⇒ นอกนั้นทั้งหมด → คลังคำขอบคุณ 200 แบบ (หมวด appreciation) กันซ้ำ 8 ชุดล่าสุด/คน
+                //    เลิกใช้ pattern matcher + คลังชวนดูดวง (invite/blessing) สำหรับตอบใต้โพสต์
+                if ($this->isThoughtfulLongComment($commentText)) {
                     $geminiService = $this->makeFreeGeminiService($settings);
 
                     if ($geminiService === null) {
-                        Log::info('Comment Engagement: ไม่มีคีย์ Gemini ฟรีว่าง → ใช้ชุดสำเร็จรูปแทน', [
+                        Log::info('Comment Engagement: คอมเมนต์ยาวแต่ไม่มีคีย์ Gemini ฟรีว่าง → ใช้คลังขอบคุณ', [
                             'user_id' => $userId,
                         ]);
-                        $commentReply = '';
                     } else {
                         try {
-                            $engagement = $geminiService->generateCommentEngagement(
-                                $commentText,
-                                $userProfile
-                            );
-                            $commentReply = $engagement['comment_reply'] ?? '';
+                            $commentReply = $geminiService->generateThoughtfulCommentReply($commentText);
+                            Log::info('🧠 Comment Engagement: AI ตอบคอมเมนต์ยาว', [
+                                'user_id' => $userId,
+                                'comment_id' => $commentId,
+                                'comment_length' => mb_strlen($commentText),
+                                'ok' => $commentReply !== '',
+                            ]);
                         } catch (Throwable $aiError) {
-                            Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                            Log::warning('Comment Engagement: AI ล้ม → ใช้คลังขอบคุณ', [
                                 'user_id' => $userId,
                                 'error' => $aiError->getMessage(),
                             ]);
@@ -351,12 +344,16 @@ class ProcessCommentEngagement implements ShouldQueue
                     }
                 }
 
-                // Comment reply fallback ถ้า AI คืน empty
                 if (empty($commentReply)) {
-                    // 💬 (2026-08-22) ลองคลังสำเร็จรูปก่อน — ได้ข้อความหลากหลายกว่า template เดี่ยว
-                    //    template ตัวเดียวยิงซ้ำทุกเคสที่ AI พลาด = สัญญาณสแปมชัดเจน
-                    //    ⚠️ $isLao ของ matchCommonGratitudePattern เป็น local ของเมธอดนั้น
-                    //       ตรงนี้ต้องอ่าน locale จาก $commentLocale ที่ resolve ไว้ด้านบน
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        \App\Models\FortuneCommentReply::CATEGORY_APPRECIATION,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
+                }
+
+                // คลังยังไม่พร้อม (deploy ขึ้นก่อน migrate) → ชุดฝังโค้ดเดิม
+                if (empty($commentReply)) {
                     $commentReply = $this->pickCannedReply(
                         $name,
                         $commentLocale === \App\Services\FortuneLocaleService::LOCALE_LO,
@@ -1339,6 +1336,45 @@ class ProcessCommentEngagement implements ShouldQueue
 
             return null;
         }
+    }
+
+    /**
+     * 🙏 (2026-11-05) คอมเมนต์นี้ "ยาวจริง เป็นความเห็นจริง" ไหม — ใช่ = ให้ AI ตอบ
+     *
+     * USER SPEC: ยาวมากกว่า 200 อักษร และเป็นคำแสดงความเห็นจริง ไม่ใช่การฟลัด
+     *
+     * วัดกับคอมเมนต์ยาวจริงบน prod 165 อัน (2026-11-05): ผ่าน 153 · ตัด 12
+     *   ลิงก์ (สแปม) · ตัวอักษรจริงน้อย (อีโมจิ/สัญลักษณ์) · ตัวอักษรไม่หลากหลาย · ก๊อปวลีซ้ำวน
+     * ตัววัด "ซ้ำวน" = อัตราบีบอัด gz ของตัวอักษร: ข้อความจริง ~0.33-0.39 ·
+     *   ก๊อปวลีเดิมวนหลายรอบ ~0.09 · ตั้ง 0.15 (0.2 เคยตัดความเห็นจริงที่ซ้ำแค่บางท่อน)
+     *
+     * @param  string  $text  ข้อความคอมเมนต์ดิบ
+     */
+    protected function isThoughtfulLongComment(string $text): bool
+    {
+        $text = trim($text);
+        if (mb_strlen($text) <= 200) {
+            return false;
+        }
+
+        if (preg_match('~https?://|www\.|bit\.ly|line\.me|\.(com|net|co|io|me)\b~iu', $text)) {
+            return false;
+        }
+
+        // ยุบตัวซ้ำติดกัน (55555, ๆๆๆ, !!!!) แล้วนับเฉพาะตัวอักษร/ตัวเลขจริง
+        $collapsed = preg_replace('/(.)\1{2,}/u', '$1', $text) ?? $text;
+        $letters = preg_replace('/[^\p{Thai}\p{L}\p{N}]/u', '', $collapsed) ?? '';
+        if (mb_strlen($letters) < 120) {
+            return false;
+        }
+
+        if (count(array_unique(mb_str_split($letters))) < 20) {
+            return false;
+        }
+
+        $ratio = strlen((string) gzcompress($letters, 9)) / max(1, strlen($letters));
+
+        return $ratio >= 0.15;
     }
 
     /**

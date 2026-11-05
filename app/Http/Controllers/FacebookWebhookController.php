@@ -2072,12 +2072,16 @@ class FacebookWebhookController extends Controller
             // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze — ลูกค้ากด "พัก 7 วัน" / "ไม่ต้องส่งอีก"
             //   ครอบ comment DM ทุกแบบ (affiliate + template + Job dispatch) ในที่เดียว
             //   ⚠️ guard เฉพาะ outbound — ไม่กระทบ flow จ่ายเงิน/รับคำทำนาย (inbound)
+            // 🙏 (2026-11-05) ตอบคอมเมนต์ทุกคน — ด่านกดพัก DM / แอดมินดูแล / กำลังดูดวง ตัดแค่ DM
+            //    คำขอบคุณใต้โพสต์เป็นของสาธารณะ ไม่รบกวน inbox ⇒ ยังตอบได้
+            $dmBlocked = false;
+
             if (! \App\Models\FortuneUserCredit::canReceiveOutbound($fromId, 'facebook')) {
                 Log::info('🔕 Comment Engagement: ข้าม — ลูกค้าเลือกพัก/ไม่รับ DM', [
                     'user_id' => $fromId,
                 ]);
 
-                return;
+                $dmBlocked = true;
             }
 
             // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมาย — เลือกส่ง/ไม่ส่งตามสัญชาติ (ต่างชาติ) + อายุ
@@ -2103,7 +2107,7 @@ class FacebookWebhookController extends Controller
                         'comment_id' => $commentId,
                     ]);
 
-                    return;
+                    $dmBlocked = true;
                 }
             } catch (\Throwable $e) {
                 // ถ้า takeover service ล้ม → ดำเนินการต่อ best-effort
@@ -2120,7 +2124,7 @@ class FacebookWebhookController extends Controller
                         'comment_id' => $commentId,
                     ]);
 
-                    return;
+                    $dmBlocked = true;
                 }
             } catch (\Throwable $e) {
                 Log::debug('Comment engagement active check failed (non-blocking): '.$e->getMessage());
@@ -2175,10 +2179,10 @@ class FacebookWebhookController extends Controller
             //    🏬 (2026-08-27) โควตาผูกกับ "เพจนี้" ชัดเจน ไม่พึ่งว่า PSID แยกเพจให้เอง
             $pageId = \App\Services\Fortune\FortunePageContext::currentId();
 
-            $allowDm = $isReplyToUs || ! (
+            $allowDm = ! $dmBlocked && ($isReplyToUs || ! (
                 FortuneCommentEngagement::hasDmRecently($fromId, 24, $pageId)
                 || FortunePostReaction::hasDmSuccessRecently($fromId, 24)
-            );
+            ));
 
             //    🎚️ (2026-08-27) เพดานอ่านจากหลังบ้าน + สวิตช์รายเพจ (ค่ากลางเป็นสวิตช์ครอบ)
             $allowPublicReply = $this->commentReplyAllowedForCurrentPage()
@@ -2225,6 +2229,11 @@ class FacebookWebhookController extends Controller
             // 🌐 (2026-11-03) FB web-only — ปิดเส้นชวน affiliate ('ค่าชวน 10 บาท', 'เรื่องเงินมาถูกทาง')
             //    และไม่ใช้ AI เขียน DM (อาจพูดราคา) → ข้อความชวนชุด web + ตอบใต้คอมเมนต์แบบกลาง
             if ($this->isFbWebOnlyCustomer((string) $fromId)) {
+                // web-only ตอบใต้คอมเมนต์ด้วยประโยค "ทักไปใน inbox แล้ว" — คนที่ถูกตัด DM ห้ามได้ประโยคนี้
+                if ($dmBlocked) {
+                    return;
+                }
+
                 $this->sendFbWebOnlyCommentEngagement($comment, $allowDm, $allowPublicReply);
 
                 return;
