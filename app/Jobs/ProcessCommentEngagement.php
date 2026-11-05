@@ -55,6 +55,17 @@ class ProcessCommentEngagement implements ShouldQueue
     ];
 
     /**
+     * 🌐 (2026-11-05) สัดส่วนคำตอบใต้คอมเมนต์ที่แนบลิงก์เว็บ จันทรา.online (เปอร์เซ็นต์)
+     *
+     * ไม่แนบทุกคอมเมนต์ — เพจที่ยิงลิงก์ออกนอก FB ซ้ำ ๆ หลายร้อยครั้ง/วัน เสี่ยงถูกจับเป็นสแปม
+     * และโดนลดการมองเห็น ที่เหลือยังเป็นคำขอบคุณล้วน (หมวด appreciation)
+     */
+    protected const WEB_INVITE_PERCENT = 20;
+
+    /** คนเดิมได้ลิงก์เว็บไม่เกิน 1 ครั้งต่อช่วงนี้ (วินาที) — 3 วัน */
+    protected const WEB_INVITE_COOLDOWN = 259200;
+
+    /**
      * @param  array  $data  Expected keys:
      *                       - facebook_user_id: string (PSID)
      *                       - facebook_post_id: string
@@ -201,6 +212,9 @@ class ProcessCommentEngagement implements ShouldQueue
             $allowPublicReply = ($this->data['allow_public_reply'] ?? true)
                 && FortuneCommentEngagement::hasPublicReplyQuota($userId, $pageId);
 
+            // 🌐 (2026-11-05) ลิงก์เว็บใต้คอมเมนต์ — ปิดให้คนที่เพิ่งจ่ายดูดวง/กดพักข้อความ (ด่านข้างล่าง)
+            $webInviteOk = true;
+
             if (! $allowDm && ! $allowPublicReply) {
                 Log::info('Comment engagement skip — หมดสิทธิ์ทั้ง DM และตอบคอมเมนต์', [
                     'user_id' => $userId,
@@ -223,6 +237,7 @@ class ProcessCommentEngagement implements ShouldQueue
                 ]);
 
                 $allowDm = false;
+                $webInviteOk = false;
             }
 
             // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze (safety — เผื่อ dispatch ก่อนลูกค้ากด opt-out)
@@ -233,6 +248,7 @@ class ProcessCommentEngagement implements ShouldQueue
                 ]);
 
                 $allowDm = false;
+                $webInviteOk = false;
             }
 
             // 🙏 (2026-11-05) 2 ด่านบนตัดแค่ DM — คำขอบคุณใต้คอมเมนต์ยังส่งได้ (ตอบทุกคน)
@@ -342,6 +358,15 @@ class ProcessCommentEngagement implements ShouldQueue
                             $commentReply = '';
                         }
                     }
+                }
+
+                // 🌐 (2026-11-05) บางส่วนแนบลิงก์ชวนดูดวงที่เว็บ จันทรา.online (คำตอบ AI ไม่แนบ)
+                if (empty($commentReply) && $webInviteOk && $this->claimWebInviteSlot((string) $userId)) {
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        \App\Models\FortuneCommentReply::CATEGORY_WEB_INVITE,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
                 }
 
                 if (empty($commentReply)) {
@@ -1413,5 +1438,19 @@ class ProcessCommentEngagement implements ShouldQueue
         }
 
         return false;
+    }
+
+    /**
+     * 🌐 (2026-11-05) รอบนี้แนบลิงก์เว็บ จันทรา.online ได้ไหม
+     *
+     * สุ่มตาม WEB_INVITE_PERCENT แล้วจองสิทธิ์ต่อคนด้วย Cache::add (atomic — คอมเมนต์ติดกันไม่ได้ลิงก์ซ้ำ)
+     */
+    protected function claimWebInviteSlot(string $userId): bool
+    {
+        if ($userId === '' || random_int(1, 100) > self::WEB_INVITE_PERCENT) {
+            return false;
+        }
+
+        return Cache::add('fcr:web_invite:'.md5($userId), 1, self::WEB_INVITE_COOLDOWN);
     }
 }

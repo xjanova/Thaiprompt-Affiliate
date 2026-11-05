@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * @property int $id
  * @property string $message ข้อความตอบ (รองรับ {name})
- * @property string $category invite | blessing | thanks | emoji | reply_to_bot | appreciation
+ * @property string $category invite | blessing | thanks | emoji | reply_to_bot | appreciation | web_invite
  * @property string $locale ภาษา (ตอนนี้มีแต่ th)
  * @property bool $is_active
  * @property int $use_count จำนวนครั้งที่ถูกหยิบ
@@ -45,6 +45,19 @@ class FortuneCommentReply extends Model
      * ไม่ชวนทักแชท ไม่ขอให้กดอะไร (ดู migration 2026_11_05_120000)
      */
     public const CATEGORY_APPRECIATION = 'appreciation';
+
+    /**
+     * 🌐 (2026-11-05) ขอบคุณ + ชวนดูดวงที่เว็บ จันทรา.online — 100 แบบ ทุกแบบมี {web_link} จุดเดียว
+     *
+     * ไม่ใช้ทุกคอมเมนต์ — ProcessCommentEngagement คุมความถี่ (สุ่มบางส่วน + เว้นระยะต่อคน)
+     */
+    public const CATEGORY_WEB_INVITE = 'web_invite';
+
+    /**
+     * ลิงก์เว็บแม่หมอที่โชว์ในคอมเมนต์ — ใช้ชื่อไทย ไม่ใช้ punycode (xn--82c4af5bzdj.online)
+     * เพราะ punycode หน้าตาเหมือนลิงก์หลอกลวง ลูกค้าไม่กล้ากด
+     */
+    public const WEB_LINK = 'https://จันทรา.online';
 
     /**
      * ลูกค้าตอบคำถามที่บอทถามไว้ใต้คอมเมนต์ = สนใจจริง
@@ -184,6 +197,10 @@ class FortuneCommentReply extends Model
         //    ระบบมีหลายสาขา (fortune_pages) ถ้า hardcode ไว้ สาขาอื่นจะส่งลูกค้าไปผิดเพจ
         if (str_contains($rendered, '{page_link}')) {
             $rendered = str_replace('{page_link}', self::messengerLink(), $rendered);
+        }
+
+        if (str_contains($rendered, '{web_link}')) {
+            $rendered = str_replace('{web_link}', self::WEB_LINK, $rendered);
         }
 
         return trim(preg_replace('/\s+/u', ' ', $rendered));
