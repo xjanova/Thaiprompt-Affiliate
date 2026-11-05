@@ -127,6 +127,45 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('[[OFFER:', end($this->aiCalls)['system']);
     }
 
+    /** 💬 (2026-11-05) ปุ่มคำถามถัดไปที่ AI คิด — ขอด้วย suggest=1 · ป้ายไม่ถึงตาลูกค้า */
+    public function test_suggest_returns_the_ai_follow_up_questions_and_strips_the_tag(): void
+    {
+        $session = $this->start();
+        $this->aiReply = "ไพ่ถ้วยสองบอกว่าความรักกำลังไปได้ดีนะคะลูก ✨ [[OFFER:love]]\n[[ASK: แล้วเขาคิดยังไงกับหนู | ควรบอกความรู้สึกเมื่อไหร่ดี | ✨ มีอะไรต้องระวังไหม | ควรบอกความรู้สึกเมื่อไหร่ดี]]";
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'เรื่องความรักค่ะ', 'suggest' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.suggestions', ['แล้วเขาคิดยังไงกับหนู', 'ควรบอกความรู้สึกเมื่อไหร่ดี', 'มีอะไรต้องระวังไหม'])
+            ->assertJsonPath('data.kind', 'offer');
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $this->assertStringNotContainsString('ASK', $res->json('data.reply'));
+        $this->assertStringContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_without_suggest_the_prompt_and_json_stay_as_before_but_a_stray_tag_is_still_stripped(): void
+    {
+        $session = $this->start();
+        $this->aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก [[ASK: ถามต่อ | อีกข้อ]]';
+
+        $res = $this->send($session, 'สวัสดีค่ะ')->assertOk();
+
+        $this->assertArrayNotHasKey('suggestions', $res->json('data'));
+        $this->assertSame('แม่หมออยู่ตรงนี้นะคะลูก', $res->json('data.reply'));
+        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_a_tag_cut_off_by_the_token_limit_is_dropped_whole(): void
+    {
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk("ดวงช่วงนี้ดีค่ะลูก\n[[ASK: แล้วเรื่องงานล่ะ | ควรเริ่ม");
+        $this->assertSame('ดวงช่วงนี้ดีค่ะลูก', $reply);
+        $this->assertSame([], $asks);
+
+        [, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk('ค่ะ [[ASK: ดูที่ https://x.co | ค่าครูกี่บาท | <b>ใช่ค่ะ</b>]]');
+        $this->assertSame(['ใช่ค่ะ'], $asks);
+    }
+
     public function test_unknown_offer_topic_falls_back_to_general(): void
     {
         $session = $this->start();

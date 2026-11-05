@@ -124,6 +124,23 @@ TXT;
 TXT;
 
     /**
+     * 💬 (2026-11-05) ปุ่มคำถามถัดไปที่ AI คิดจากบริบท — เจ้าของสั่ง "ให้ขึ้นคำถาม ทางเลือก ที่เอไอทำขึ้นเพื่อให้ผู้ใช้ได้กด"
+     * ต่อท้าย prompt เฉพาะเว็บที่ขอ (suggest=1) · ป้ายถูกถอดออกเสมอ ลูกค้าไม่เห็น ไม่เข้าประวัติห้อง
+     */
+    private const ASK_RULES = <<<'TXT'
+
+ปุ่มให้ลูกค้ากด (ลูกค้าไม่เห็นป้ายนี้ ระบบทำเป็นปุ่มใต้ช่องพิมพ์):
+- ปิดท้ายทุกคำตอบด้วยป้าย [[ASK: ข้อ1 | ข้อ2 | ข้อ3]] เป็นบรรทัดสุดท้าย (หลังป้ายอื่นทั้งหมด)
+- ถ้าคำตอบนี้ให้ลูกค้าเลือกหรือตอบสั้น ๆ (เลือกเรื่อง ใช่หรือไม่ ช่วงเวลา) ให้ใส่ตัวเลือกคำตอบที่กดได้ทันที 2-4 ข้อ
+- ถ้าไม่ได้ถามอะไร ให้ใส่ 3 คำถามที่ลูกค้าน่าจะอยากถามต่อจากเรื่องที่คุยกันอยู่ เขียนเป็นคำพูดของลูกค้าเอง
+- แต่ละข้อสั้นไม่เกิน 40 ตัวอักษร ไม่ซ้ำกัน ไม่มีอีโมจิ ราคา ตัวเลขเงิน ลิงก์ หรือชื่อคน
+- ถ้ากำลังขอให้ลูกค้าพิมพ์วันเกิด ชื่อ หรือเล่าเรื่องเอง ไม่ต้องใส่ป้ายนี้
+TXT;
+
+    /** โทเคนเผื่อป้าย [[ASK]] (3-4 ข้อ × ~40 ตัวอักษรไทย) */
+    private const ASK_EXTRA_TOKENS = 120;
+
+    /**
      * 💬 (2026-09-21) ห้องที่ผูกกับคำพยากรณ์ที่ลูกค้าจ่ายแล้ว — ต่อท้ายด้วยบริบทคำพยากรณ์เสมอ
      *
      * เคยเห็นบน prod: แม่หมอ "เปิดไพ่ใบใหม่" ในแชท แล้วทำนายขัดกับคำพยากรณ์ที่ลูกค้าเพิ่งจ่ายเงินไป
@@ -496,7 +513,8 @@ TXT,
      *                           false = prompt และคำตอบเดิมทุกตัวอักษร (ไม่มี voice_plan)
      * @param  string  $inputMode  text | voice (ข้อความมาจากไมค์ — ให้ถามทวนเมื่อชื่อ/วันเกิดไม่ชัด)
      * @param  array<int,string>|null  $voiceClips  id คลิปคลังที่เว็บมีไฟล์จริง (null = ถือว่ามีครบ)
-     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string,voice_plan?:array}
+     * @param  bool  $suggest  💬 (2026-11-05) เว็บขอปุ่มคำถามถัดไป — AI ปิดท้ายด้วย [[ASK: …]] คืนเป็น suggestions
+     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string,voice_plan?:array,suggestions?:list<string>}
      *
      * @throws RuntimeException AI ไม่ได้ตอบอะไร และไม่ได้ขอข้อความรองรับ
      */
@@ -514,6 +532,7 @@ TXT,
         bool $voiceMode = false,
         string $inputMode = 'text',
         ?array $voiceClips = null,
+        bool $suggest = false,
     ): array {
         $history = $this->history($owner, $sessionId);
         // ห้องยังอยู่ (มีอย่างน้อยคำทักทาย) = รู้อยู่แล้วว่ามี/ไม่มีความจำ · ว่าง = ห้องหมดอายุ/cache ถูกล้าง
@@ -597,6 +616,10 @@ TXT,
             $system .= $this->voiceModeRules($persona, $profile, $inputMode, $voiceClips);
             $config['max_tokens'] += self::VOICE_EXTRA_TOKENS;
         }
+        if ($suggest) {
+            $system .= self::ASK_RULES;
+            $config['max_tokens'] += self::ASK_EXTRA_TOKENS;
+        }
 
         $result = $this->ask(
             $system,
@@ -606,6 +629,8 @@ TXT,
         );
 
         $reply = trim((string) ($result['response'] ?? ''));
+        // 💬 ป้าย [[ASK]] — ถอดก่อนทุกอย่าง (อาจหลุดเข้าไปในบล็อกเสียง) และถอดเสมอแม้ไม่ได้ขอ
+        [$reply, $suggestions] = self::extractAsk($reply);
         // 🔈 แยกแผนเสียงออกก่อนทุกอย่าง — ข้อความในแชท/ประวัติต้องไม่มีบล็อก [[VOICE]] (AI ห้องถัดไปจะลอกตาม)
         $voiceBlock = null;
         if ($voiceMode) {
@@ -659,8 +684,50 @@ TXT,
         if ($voiceMode) {
             $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, $voiceBlock, $voiceClips, $out['kind']);
         }
+        if ($suggest) {
+            $out['suggestions'] = $suggestions;
+        }
 
         return $out;
+    }
+
+    /**
+     * แยกป้าย [[ASK: ข้อ1 | ข้อ2 | …]] ออกจากคำตอบ
+     *
+     * - ถอดทุกป้าย รวมป้ายที่ถูกตัดกลางคันเพราะ max_tokens ("[[ASK: ..." ที่ไม่มีวงเล็บปิดท้ายข้อความ)
+     * - แต่ละข้อ: ตัดแท็ก ขึ้นบรรทัด อีโมจิ · ทิ้งข้อที่ยาวเกิน 60 ตัว มีลิงก์ หรือพูดเรื่องเงิน · ไม่ซ้ำ · สูงสุด 4 ข้อ
+     *
+     * @return array{0:string,1:list<string>}
+     */
+    public static function extractAsk(string $reply): array
+    {
+        $items = [];
+        if (preg_match_all('/\[\[\s*ASK\s*:(.*?)\]\]/isu', $reply, $all)) {
+            foreach ($all[1] as $body) {
+                array_push($items, ...explode('|', $body));
+            }
+        }
+        $reply = (string) preg_replace('/\s*\[\[\s*ASK\s*:.*?\]\]\s*/isu', ' ', $reply);
+        // ป้ายที่ถูกตัดท้าย (ไม่มี ]]) — ทิ้งทั้งก้อน ไม่เดาข้อที่ขาด
+        $reply = trim((string) preg_replace('/\s*\[\[\s*ASK\b[^\]]*$/isu', '', $reply));
+
+        $out = [];
+        foreach ($items as $raw) {
+            $q = strip_tags((string) $raw);
+            $q = (string) preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}]/u', '', $q);
+            $q = trim((string) preg_replace('/\s+/u', ' ', $q), " \t\n\r\0\x0B\"'“”-•·");
+            if ($q === '' || mb_strlen($q) > 60 || preg_match('/https?:|www\.|฿|บาท/iu', $q)) {
+                continue;
+            }
+            if (! in_array($q, $out, true)) {
+                $out[] = $q;
+            }
+            if (count($out) >= 4) {
+                break;
+            }
+        }
+
+        return [$reply, $out];
     }
 
     /**

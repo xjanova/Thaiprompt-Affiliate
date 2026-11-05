@@ -110,7 +110,10 @@ class ChatController extends Controller
             // id คลิปคลังที่เว็บมีไฟล์จริง — AI เห็นเฉพาะคลิปที่เล่นได้
             'voice_clips' => 'sometimes|nullable|array|max:120',
             'voice_clips.*' => 'string|max:40|regex:/^[a-z_]+_\d+$/',
+            // 💬 (2026-11-05) ขอปุ่มคำถามถัดไปที่ AI คิดจากบริบท · ไม่ส่ง = JSON หน้าตาเดิม
+            'suggest' => 'sometimes|boolean',
         ]);
+        $suggest = $request->boolean('suggest');
 
         $userRef = $data['user_ref'];
         $voiceMode = $request->boolean('voice_mode');
@@ -137,6 +140,7 @@ class ChatController extends Controller
                 voiceMode: $voiceMode,
                 inputMode: $data['input_mode'] ?? 'text',
                 voiceClips: isset($data['voice_clips']) ? array_values($data['voice_clips']) : null,
+                suggest: $suggest,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
@@ -161,6 +165,9 @@ class ChatController extends Controller
         // 🔈 มีเฉพาะเมื่อเปิดโหมดเสียง — เว็บรุ่นเดิมได้ JSON หน้าตาเดิม
         if ($voiceMode) {
             $payload['voice_plan'] = $out['voice_plan'] ?? null;
+        }
+        if ($suggest) {
+            $payload['suggestions'] = $out['suggestions'] ?? [];
         }
 
         return response()->json(['data' => $payload]);
