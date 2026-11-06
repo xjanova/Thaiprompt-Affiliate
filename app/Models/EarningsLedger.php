@@ -113,14 +113,6 @@ class EarningsLedger extends Model
     }
 
     /**
-     * คำขอเบิกเงิน
-     */
-    public function payoutRequest(): BelongsTo
-    {
-        return $this->belongsTo(PayoutRequest::class);
-    }
-
-    /**
      * Wallet Transaction
      */
     public function walletTransaction(): BelongsTo
@@ -200,19 +192,6 @@ class EarningsLedger extends Model
         return $this->update([
             'status' => self::STATUS_AVAILABLE,
             'available_at' => now(),
-        ]);
-    }
-
-    /**
-     * ทำให้จ่ายแล้ว
-     */
-    public function markAsPaid(int $payoutRequestId, ?int $walletTransactionId = null): bool
-    {
-        return $this->update([
-            'status' => self::STATUS_PAID,
-            'paid_at' => now(),
-            'payout_request_id' => $payoutRequestId,
-            'wallet_transaction_id' => $walletTransactionId,
         ]);
     }
 

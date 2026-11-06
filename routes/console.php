@@ -711,13 +711,8 @@ Schedule::command('earnings:release-pending --limit=100')
     ->name('earnings-release-pending')
     ->runInBackground();
 
-// 17) Payouts Process Scheduled — process payout requests ที่ scheduled
-Schedule::command('payouts:process-scheduled')
-    ->everyFifteenMinutes()
-    ->withoutOverlapping(20)
-    ->onOneServer()
-    ->name('payouts-process-scheduled')
-    ->runInBackground();
+// 17) (ถอดแล้ว 2026-11-06) payouts:process-scheduled — ตาราง payout_requests ไม่เคยมีแถว
+//     และคำสั่งพังทุกรอบ คำขอถอนเงินจริงไปทาง WithdrawalService → /admin/withdrawals
 
 // ────────────────────────────────────────────────────────────────
 // 📊 ANALYTICS / DEBT / LINE / INVESTMENT

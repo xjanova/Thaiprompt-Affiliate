@@ -4,172 +4,28 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EarningsLedger;
-use App\Models\PayoutRequest;
 use App\Models\PayoutSetting;
-use App\Services\PayoutService;
 use Illuminate\Http\Request;
 
 /**
  * PayoutController
  *
- * จัดการ Payout Requests และการตั้งค่า
+ * สองหน้าที่ยังใช้งานจริงของเมนู "รายได้แพลตฟอร์ม":
+ *  1. ตั้งค่า payout_settings — `holding_days` ของผู้ขายถูกอ่านจริงโดย
+ *     SellerPayoutService::holdingDays() จึงเป็นหน้าที่แก้ค่านี้ได้ที่เดียว
+ *  2. Earnings Ledger — รายการรายได้ที่ SellerPayoutService บันทึกลง earnings_ledger
+ *     (หน้ารายละเอียดรายตัว earnings.show ถอดออกด้วย เพราะไม่เคยมีไฟล์ view)
+ *
+ * ❌ ส่วนของ payout_requests ถูกถอดออกแล้ว (2026-11-06): ไม่มีโค้ดไหนสร้างแถวใน
+ *    ตารางนั้นเลย ตัวสร้างตัวเดียวคือ PayoutService::createPayoutRequest() ที่เรียก
+ *    PayoutSetting::getSettingByType() ซึ่งไม่เคยมีอยู่จริง (มาพังตั้งแต่ commit
+ *    c6e918bba) หน้าจอและปุ่มทั้งหมดจึงทำงานบนตารางว่างมาตลอด
+ *    คำขอถอนเงินของจริงอยู่ที่ WithdrawalService → /admin/withdrawals
  */
 class PayoutController extends Controller
 {
-    protected PayoutService $payoutService;
-
-    public function __construct()
-    {
-        $this->payoutService = new PayoutService;
-    }
-
     /**
-     * รายการ Payout Requests ทั้งหมด
-     *
-     * @return \Illuminate\View\View
-     */
-    public function index(Request $request)
-    {
-        $payouts = $this->payoutService->getPayoutRequests(
-            $request->only(['user_id', 'status', 'earning_type', 'date_from', 'date_to']),
-            20
-        );
-
-        $stats = $this->payoutService->getPayoutStats([
-            'date_from' => now()->startOfMonth(),
-            'date_to' => now(),
-        ]);
-
-        return view('admin.platform-revenue.payouts.index', [
-            'payouts' => $payouts,
-            'stats' => $stats,
-            'filters' => $request->only(['user_id', 'status', 'earning_type', 'date_from', 'date_to']),
-            'pageTitle' => 'Payout Requests',
-        ]);
-    }
-
-    /**
-     * รายละเอียด Payout Request
-     *
-     * @return \Illuminate\View\View
-     */
-    public function show(PayoutRequest $payout)
-    {
-        $payout->load(['user', 'payoutSetting', 'approvedByUser', 'rejectedByUser', 'earnings']);
-
-        return view('admin.platform-revenue.payouts.show', [
-            'payout' => $payout,
-            'pageTitle' => "Payout Request #{$payout->id}",
-        ]);
-    }
-
-    /**
-     * อนุมัติ Payout
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function approve(Request $request, PayoutRequest $payout)
-    {
-        $validated = $request->validate([
-            'note' => 'nullable|string|max:500',
-        ]);
-
-        try {
-            $this->payoutService->approvePayout(
-                $payout,
-                auth()->id(),
-                $validated['note'] ?? null
-            );
-
-            return redirect()
-                ->route('admin.platform-revenue.payouts.show', $payout)
-                ->with('success', 'อนุมัติ Payout สำเร็จ');
-
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * ปฏิเสธ Payout
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function reject(Request $request, PayoutRequest $payout)
-    {
-        $validated = $request->validate([
-            'reason' => 'required|string|max:500',
-        ]);
-
-        try {
-            $this->payoutService->rejectPayout(
-                $payout,
-                auth()->id(),
-                $validated['reason']
-            );
-
-            return redirect()
-                ->route('admin.platform-revenue.payouts.index')
-                ->with('success', 'ปฏิเสธ Payout สำเร็จ');
-
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * ประมวลผล Payout ที่อนุมัติแล้ว
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function process(PayoutRequest $payout)
-    {
-        try {
-            $this->payoutService->processPayout($payout);
-
-            return redirect()
-                ->route('admin.platform-revenue.payouts.show', $payout)
-                ->with('success', 'ประมวลผล Payout สำเร็จ');
-
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * Bulk approve payouts
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function bulkApprove(Request $request)
-    {
-        $validated = $request->validate([
-            'payout_ids' => 'required|array',
-            'payout_ids.*' => 'exists:payout_requests,id',
-        ]);
-
-        $approved = 0;
-        $failed = 0;
-
-        foreach ($validated['payout_ids'] as $payoutId) {
-            try {
-                $payout = PayoutRequest::find($payoutId);
-                if ($payout && $payout->status === PayoutRequest::STATUS_PENDING) {
-                    $this->payoutService->approvePayout($payout, auth()->id(), 'Bulk approved');
-                    $approved++;
-                }
-            } catch (\Exception $e) {
-                $failed++;
-            }
-        }
-
-        return redirect()
-            ->route('admin.platform-revenue.payouts.index')
-            ->with('success', "อนุมัติสำเร็จ {$approved} รายการ".($failed > 0 ? " (ล้มเหลว {$failed} รายการ)" : ''));
-    }
-
-    /**
-     * การตั้งค่า Payout
+     * การตั้งค่า Payout (ที่ยังมีผลจริงคือ holding_days ของผู้ขาย)
      *
      * @return \Illuminate\View\View
      */
@@ -216,7 +72,7 @@ class PayoutController extends Controller
      */
     public function earnings(Request $request)
     {
-        $query = EarningsLedger::with(['user', 'payoutRequest']);
+        $query = EarningsLedger::with('user');
 
         if ($request->user_id) {
             $query->where('user_id', $request->user_id);
@@ -255,42 +111,6 @@ class PayoutController extends Controller
             'stats' => $stats,
             'filters' => $request->only(['user_id', 'earning_type', 'status', 'date_from', 'date_to']),
             'pageTitle' => 'Earnings Ledger',
-        ]);
-    }
-
-    /**
-     * รายละเอียด Earning
-     *
-     * @return \Illuminate\View\View
-     */
-    public function showEarning(EarningsLedger $earning)
-    {
-        $earning->load(['user', 'payoutRequest']);
-
-        return view('admin.platform-revenue.earnings.show', [
-            'earning' => $earning,
-            'pageTitle' => "Earning #{$earning->id}",
-        ]);
-    }
-
-    /**
-     * API: ดึง pending payouts
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function apiPendingPayouts()
-    {
-        $payouts = PayoutRequest::with(['user'])
-            ->where('status', PayoutRequest::STATUS_PENDING)
-            ->latest()
-            ->limit(20)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $payouts,
-            'total_pending' => PayoutRequest::where('status', PayoutRequest::STATUS_PENDING)->count(),
-            'total_amount' => PayoutRequest::where('status', PayoutRequest::STATUS_PENDING)->sum('net_amount'),
         ]);
     }
 }

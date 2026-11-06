@@ -370,7 +370,7 @@ return [
                 ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
                 ['label' => '📈 รายงานการเงิน', 'route' => 'admin.platform-revenue.reports', 'description' => 'รายงานรายได้รายวัน/เดือน'],
                 ['label' => '---', 'route' => null],
-                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.platform-revenue.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
+                ['label' => '⚙️ ตั้งค่าพักเงินผู้ขาย', 'route' => 'admin.platform-revenue.payouts.settings', 'description' => 'ระยะพักเงิน (holding days) ก่อนรายได้ผู้ขายเข้ากระเป๋า · คำขอถอนเงินอยู่ที่เมนูประวัติการถอน'],
                 ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
                 ['label' => '🔑 HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
             ],
