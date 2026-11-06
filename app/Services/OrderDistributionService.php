@@ -133,7 +133,10 @@ class OrderDistributionService
             $officialSellerId = $this->officialSellerId();
 
             // คำนวณทีละรายการด้วย PricingEngine
-            $computed = $items->map(fn (OrderItem $item) => $this->computeItem($engine, $item, $officialSellerId));
+            // 🪙 M15: จ่ายด้วย Coins → PV 0 ทุกบรรทัด (ไม่มี PV ไม่มีเงินกอง ไม่มีคอม)
+            //    เดิมออเดอร์ Coins ราคา 0 บาท ได้ PV เต็ม เพราะ lineSaleRatio คืน 1 เมื่อยอดก่อนส่วนลดเป็น 0
+            $noPv = $locked->isPaidWithCoins();
+            $computed = $items->map(fn (OrderItem $item) => $this->computeItem($engine, $item, $officialSellerId, $noPv));
             $groups = $computed->groupBy(fn (array $row) => (int) $row['item']->seller_id);
 
             // ส่วนลดของออเดอร์: ใครออกเงิน (คูปองร้าน = ร้านรับภาระ / คูปองแพลตฟอร์ม = แพลตฟอร์มรับภาระ)
@@ -245,7 +248,7 @@ class OrderDistributionService
      *
      * @return array{item: OrderItem, breakdown: PriceBreakdown, gp_source: string, snapshot_gp_rate: float, pv_per_unit: float, official: bool}
      */
-    protected function computeItem(PricingEngine $engine, OrderItem $item, ?int $officialSellerId): array
+    protected function computeItem(PricingEngine $engine, OrderItem $item, ?int $officialSellerId, bool $noPv = false): array
     {
         $gross = max(0.0, round((float) $item->total, 2));
         $qty = max(1, (int) $item->quantity);
@@ -269,8 +272,10 @@ class OrderDistributionService
 
         // คิดทั้งบรรทัดเป็นก้อนเดียว (ยอดหลังส่วนลดรายการ) → PV ต้องเป็นยอดรวมของบรรทัด
         unset($opts['cost_per_unit']);
-        $pvPerUnit = max(0.0, (float) ($opts['pv'] ?? 0));
-        $opts['pv'] = $pvPerUnit * $qty;
+        $pvPerUnit = $noPv ? 0.0 : max(0.0, (float) ($opts['pv'] ?? 0));
+        // 🛡️ F7: PV เฉลี่ยตามส่วนลดของบรรทัด (ยอดหลังส่วนลด ÷ ยอดก่อนส่วนลด)
+        //    เดิมคูปองร้าน 970 จากสินค้า 1,070 ยังได้ PV 1,070 → คอมคิดจาก PV เต็มแต่เงินเข้ากองแค่ 50
+        $opts['pv'] = round($pvPerUnit * $qty * self::lineSaleRatio($item, $gross), 2);
 
         return [
             'item' => $item,
@@ -280,6 +285,26 @@ class OrderDistributionService
             'pv_per_unit' => $pvPerUnit,
             'official' => $official,
         ];
+    }
+
+    /**
+     * สัดส่วนยอดขายจริงของบรรทัด = ยอดหลังส่วนลด ÷ ยอดก่อนส่วนลด (0..1) — ใช้เฉลี่ย PV ตามส่วนลด (audit F7)
+     *
+     * ยอดก่อนส่วนลด = order_items.subtotal (ไม่มี = unit_price × quantity) · หาไม่ได้/เป็น 0 → 1 (ไม่ลด PV)
+     * หมายเหตุ: คูปองแพลตฟอร์มไม่หักใน order_items.total — ร้านได้ราคาเต็มและเงินเข้ากองเต็ม PV จึงไม่ลด
+     */
+    public static function lineSaleRatio(OrderItem $item, float $lineTotal): float
+    {
+        $before = (float) $item->subtotal;
+        if ($before <= 0) {
+            $before = (float) $item->unit_price * max(1, (int) $item->quantity);
+        }
+
+        if ($before <= 0) {
+            return 1.0;
+        }
+
+        return max(0.0, min(1.0, $lineTotal / $before));
     }
 
     /**

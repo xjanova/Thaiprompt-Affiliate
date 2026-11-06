@@ -938,6 +938,12 @@ class ECommerceController extends Controller
                     throw new \DomainException('สถานะการชำระเงินถูกเปลี่ยนโดยผู้อื่นระหว่างนี้ กรุณารีเฟรชหน้าแล้วลองใหม่');
                 }
 
+                // 🛡️ F31: ออเดอร์ที่ยกเลิก/คืนเงินแล้วห้ามเปลี่ยนเป็น "ชำระแล้ว" — เดิมได้ cancelled+paid (ออเดอร์ #29)
+                //    ปุ่มคืนเงินปกติใช้ไม่ได้ ลูกค้าขาดเงิน และยอดถูกนับเป็นยอดขายของกอง
+                if ($newStatus === 'paid' && in_array((string) $locked->status, ['cancelled', 'refunded'], true)) {
+                    throw new \DomainException('ออเดอร์นี้ถูกยกเลิกแล้ว ยืนยันรับเงินไม่ได้ — ถ้าลูกค้าโอนเงินมาหลังยกเลิก ให้คืนเงินลูกค้าเข้ากระเป๋าโดยตรง');
+                }
+
                 $locked->payment_status = $newStatus;
                 if ($newStatus === 'paid') {
                     $locked->paid_at = $locked->paid_at ?? now();

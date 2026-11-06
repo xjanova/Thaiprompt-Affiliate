@@ -315,19 +315,20 @@ class NovaMlmPagesTest extends TestCase
 
     public function test_dashboard_binary_estimate_matches_engine_formula(): void
     {
-        // 2:1 → min(ขาอ่อน, floor(ขาแข็ง/2)) และรวม PV ยกยอด: ซ้าย 100, ขวา 250+50 = 300 → 100 คู่ (สูตรเดิมได้ 50)
+        // 2:1 + หน่วยคู่ 100 PV/ขา → min(floor(ขาอ่อน/100), floor(ขาแข็ง/200)) และรวม PV ยกยอด:
+        // ซ้าย 1,000, ขวา 2,500+500 = 3,000 → min(10, 15) = 10 คู่ (สูตรเดิมแบบ ขาอ่อน/2 ได้ 5)
         \Illuminate\Support\Facades\Cache::put('mlm_setting_binary_pairing_type', '2:1', 60);
         \Illuminate\Support\Facades\Cache::put('mlm_setting_binary_pair_commission', 100, 60);
         $user = $this->user();
         $member = $this->member($user, $this->plan('binary'), [
-            'left_leg_pv' => 100, 'right_leg_pv' => 250, 'carried_right_pv' => 50,
+            'left_leg_pv' => 1000, 'right_leg_pv' => 2500, 'carried_right_pv' => 500,
         ]);
 
         $est = app(\App\Services\MlmBinaryService::class)->estimatePairs($member->fresh());
-        $this->assertSame(100, $est['pairs']);
+        $this->assertSame(10, $est['pairs']);
 
         $this->actingAs($user)->get(route('user.mlm.dashboard'))
-            ->assertOk()->assertSee('฿10,000.00')->assertDontSee('฿5,000.00')->assertSee('แบบ 2:1');
+            ->assertOk()->assertSee('฿1,000.00')->assertDontSee('฿500.00')->assertSee('แบบ 2:1');
     }
 
     public function test_genealogy_does_not_load_third_party_avatar(): void

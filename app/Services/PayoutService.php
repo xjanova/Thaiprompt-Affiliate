@@ -81,12 +81,30 @@ class PayoutService
             $netAmount = $payoutAmount - $fee;
 
             // หักหนี้ (ถ้ามี)
+            // 🧾 F14/M7: หักหนี้จากยอดถอน 100% (เดิม 50% แล้วปล่อยถอนส่วนที่เหลือทั้งที่หนี้ยังค้าง)
+            //    หนี้มากกว่ายอดถอนสุทธิ = ห้ามถอน (ระหว่างมีหนี้ห้ามถอน) — ทั้งก้อน rollback ไม่มีอะไรถูกหัก
+            //    หนี้ที่ระบบต้นทางเก็บเอง (ตลาดสด) ไม่บล็อก แต่ยังถูกหักจากยอดนี้ได้ไม่เกินยอดสุทธิ (ไม่ติดลบ)
             $debtDeduction = 0;
-            $totalDebt = WalletDebt::getTotalDebtForUser($userId);
+            $totalDebt = round((float) WalletDebt::getTotalDebtForUser($userId), 2);
+            $blockingDebt = DebtCollectionService::blockingDebtTotal($userId);
+            if ($blockingDebt > 0 && $blockingDebt > round($netAmount * DebtCollectionService::INCOME_COLLECTION_RATE, 2)) {
+                throw new \Exception(DebtCollectionService::withdrawalBlockedMessage($userId) ?? 'มียอดค้างชำระ ยังถอนเงินไม่ได้');
+            }
             if ($totalDebt > 0) {
-                $maxDeduction = min($totalDebt, $netAmount * 0.5); // หักได้สูงสุด 50% ของยอด
-                $debtResult = WalletDebt::deductAllDebts($userId, $maxDeduction);
-                $debtDeduction = $debtResult['total_deducted'];
+                $maxDeduction = round(min($totalDebt, $netAmount * DebtCollectionService::INCOME_COLLECTION_RATE), 2);
+                // หักหนี้ที่บล็อกการถอนก่อน (ให้หมดก่อนจ่าย) แล้วค่อยหักหนี้อื่นด้วยยอดที่เหลือ
+                $left = $maxDeduction;
+                foreach (DebtCollectionService::blockingDebtQuery($userId)->byPriority()->lockForUpdate()->get() as $debt) {
+                    if ($left <= 0) {
+                        break;
+                    }
+                    $got = round((float) $debt->deduct($left), 2);
+                    $debtDeduction = round($debtDeduction + $got, 2);
+                    $left = round($left - $got, 2);
+                }
+                if ($left > 0) {
+                    $debtDeduction = round($debtDeduction + (float) WalletDebt::deductAllDebts($userId, $left)['total_deducted'], 2);
+                }
                 $netAmount -= $debtDeduction;
             }
 

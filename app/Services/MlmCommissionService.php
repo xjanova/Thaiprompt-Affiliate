@@ -30,8 +30,10 @@ class MlmCommissionService
      * 1. จำกัดจำนวน rollup ต่อคน (rollup_max_per_member)
      * 2. กระจายแบบต่างๆ (single/distributed/proportional)
      * 3. ส่ง excess ไป Pool Bonus แทน admin (rollup_to_pool_enabled)
+     *
+     * @param  float|null  $poolCollected  เงินที่ออเดอร์เก็บเข้า mlm_pool จริง (audit F7) — null = ใช้ budget จาก PV อย่างเดียว
      */
-    public function calculateCommissionsWithRollup(MlmMember $member, float $pv, string $transactionType = 'purchase', $transactionId = null, bool $disableRollup = false)
+    public function calculateCommissionsWithRollup(MlmMember $member, float $pv, string $transactionType = 'purchase', $transactionId = null, bool $disableRollup = false, ?float $poolCollected = null)
     {
         DB::beginTransaction();
 
@@ -67,26 +69,29 @@ class MlmCommissionService
                 $commissions = array_merge($commissions, $unilevelCommissions);
             }
 
-            // Calculate Binary commissions (no roll-up for binary)
-            if ($this->isBinaryEnabled()) {
-                $binaryCommissions = $this->calculateBinaryCommissions($member, $pv, $transactionType, $transactionId);
-                $commissions = array_merge($commissions, $binaryCommissions);
-            }
-
             // ⚠️ Overpay Protection - ป้องกันจ่าย commission เกินสัดส่วนที่ตั้งค่าไว้
             // ใช้ OverpayProtectionService สำหรับตรวจสอบ runtime
             if (! empty($commissions)) {
                 $totalCommission = array_sum(array_column($commissions, 'commission_amount'));
 
-                $overpayCheck = OverpayProtectionService::checkRuntimeOverpay($pv, $totalCommission);
+                // 🛡️ F7: ออเดอร์ที่รู้ยอดเงินเข้ากองจริง → เพดาน = min(budget จาก PV, เงินที่เก็บได้จริง)
+                $overpayCheck = $poolCollected === null
+                    ? OverpayProtectionService::checkRuntimeOverpay($pv, $totalCommission)
+                    : $this->checkAgainstOrderBudget(OverpayProtectionService::orderBudget($pv, $poolCollected), $totalCommission);
 
                 if (! $overpayCheck['allowed']) {
                     // ลดสัดส่วนทุก commission ให้รวมแล้วไม่เกิน cap
                     $ratio = $overpayCheck['ratio'];
+                    // ทางเดิม (ไม่รู้เงินเข้ากอง) ratio ถูกปัดปกติ 4 ตำแหน่ง อาจปัดขึ้น → คิดใหม่แบบปัดลง
+                    if ($poolCollected === null && $totalCommission > 0) {
+                        $ratio = floor(min(1.0, (float) $overpayCheck['max_allowed'] / $totalCommission) * 10000) / 10000;
+                    }
 
                     foreach ($commissions as &$comm) {
                         $originalAmount = $comm['commission_amount'];
-                        $comm['commission_amount'] = round($originalAmount * $ratio, 2);
+                        // budget ของออเดอร์ (F7) ปัดลงเป็นสตางค์ — ผลรวมต้องไม่เกินเงินที่เก็บได้จริงแม้ 1 สตางค์
+                        // ทั้งสองทางปัดลงเป็นสตางค์ (ปัดปกติทำให้ผลรวมเกินเพดานได้ 0.01–0.0x บาท)
+                        $comm['commission_amount'] = floor(round($originalAmount * $ratio * 100, 6)) / 100;
                         $comm['calculation_details'] = json_encode(
                             array_merge(
                                 json_decode($comm['calculation_details'] ?? '{}', true) ?? [],
@@ -116,6 +121,17 @@ class MlmCommissionService
             // Save all commissions
             foreach ($commissions as $commission) {
                 MlmCommission::create($commission);
+            }
+
+            // Binary (ไม่มี roll-up) — คำนวณหลังบันทึก unilevel แล้ว
+            // 🛡️ F1: binary ใช้ได้เฉพาะ budget ที่เหลือของออเดอร์ (หักค่าแนะนำ + unilevel ที่บันทึกแล้ว)
+            //    เดิมสร้างแถวคู่ตรงๆ นอกตัวกันจ่ายเกิน จึงจ่าย 100,000 จากออเดอร์ที่เก็บเข้ากองได้ 500
+            //    แถว binary ถูกบันทึกใน MlmBinaryService แล้ว จึงไม่รวมใน loop บันทึกด้านบน
+            if ($this->isBinaryEnabled()) {
+                $commissions = array_merge(
+                    $commissions,
+                    $this->calculateBinaryCommissions($member, $pv, $transactionType, $transactionId, $poolCollected)
+                );
             }
 
             DB::commit();
@@ -148,7 +164,7 @@ class MlmCommissionService
      * Roll-up Logic:
      * 1. ถ้าสมาชิกไม่ active (ไม่รักษายอด) → ข้ามไป upline ที่ active
      * 2. ป้องกัน duplicate rollup - คนที่ได้รับแล้วจะไม่ได้รับซ้ำ
-     * 3. สุดท้ายจะ rollup ไปที่ Admin (ID 1) เท่านั้น
+     * 3. หาผู้รับไม่ได้ → เงินอยู่ใน mlm_pool เป็นแถว pooled ไม่มีเจ้าของ (F8 / M4 — เดิมไปที่ Admin ID 1)
      * 4. บันทึก rollup_chain เพื่อติดตามที่มาที่ไป
      *
      * @param  MlmMember  $member  สมาชิกผู้ซื้อ
@@ -184,8 +200,11 @@ class MlmCommissionService
         $sourceType = $this->resolveSourceType($transactionType);
         $sourceId = $transactionId;
 
-        // ดึง Admin member (ID 1) สำหรับ final rollup
-        $adminMember = MlmMember::find(1);
+        // 🛡️ F8 / M4: ไม่มี "admin member #1" ปลายทางแล้ว — เงินที่หาผู้รับไม่ได้อยู่ในกอง (แถว pooled ไม่มีเจ้าของ)
+        //    เดิม MlmMember::find(1) ได้เงินเป็นค่าคอมที่จ่ายได้ และถ้าไม่มี member #1 ตกไปที่ผู้ซื้อเอง
+
+        // 🛡️ F6: เพดานต่อชั้น — ค่าตั้ง NULL (prod) = ไม่จำกัด (เดิมอ่านเป็น 0 → unilevel จ่าย 0 ทุกชั้น)
+        $maxPerLevel = MlmGlobalSetting::positiveCap('unilevel_max_commission_per_level');
 
         $currentMember = $member;
         $currentLevel = 1;
@@ -236,8 +255,6 @@ class MlmCommissionService
                 }
             }
 
-            // แก้ Bug #24: ใช้ !== null แทน falsy check (ค่า 0 = ห้ามจ่าย ต้องไม่ถูกข้ามไป)
-            $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
             if ($maxPerLevel !== null && $commissionAmount > $maxPerLevel) {
                 $commissionAmount = $maxPerLevel;
             }
@@ -269,8 +286,7 @@ class MlmCommissionService
                         $sponsor,
                         $rollupSearchDepth,
                         $rollupTracker,
-                        $preventDuplicateRollup,
-                        $adminMember
+                        $preventDuplicateRollup
                     );
 
                     $rollupSponsor = $rollupResult['sponsor'];
@@ -278,18 +294,16 @@ class MlmCommissionService
                     $toPool = $rollupResult['to_pool'] ?? false;
 
                     if ($toPool) {
-                        // ส่ง commission ไป Pool Bonus
+                        // เงินชั้นนี้ไม่มีผู้รับ → อยู่ใน mlm_pool
                         $this->pooledRollupAmount += $commissionAmount;
 
-                        // แก้ Bug #5: ใช้ admin member แทน null (NOT NULL columns)
-                        $fallbackMemberId = $adminMember->id ?? $member->id;
-                        $fallbackUserId = $adminMember->user_id ?? $member->user_id;
-
-                        // บันทึก commission ที่ส่งไป pool (สำหรับ tracking)
+                        // 🛡️ F8 / M4: บันทึกเป็น ledger ของกอง — ไม่มีเจ้าของ (null) และสถานะ pooled อนุมัติ/จ่ายไม่ได้
+                        //    เดิมเป็นแถว pending ของ member #1 (ไม่มี member #1 = ของผู้ซื้อ) → กดจ่ายแล้วเงินกองเข้ากระเป๋าคน
+                        //    แถวนี้ยังนับใน budget ของออเดอร์ (เงินถูกกันไว้ในกอง) และเป็นตัวกันคำนวณซ้ำ
                         $commissions[] = [
-                            'mlm_member_id' => $fallbackMemberId,
+                            'mlm_member_id' => null,
                             'mlm_plan_id' => $member->mlm_plan_id,
-                            'user_id' => $fallbackUserId,
+                            'user_id' => null,
                             'from_member_id' => $member->id,
                             // แก้ Bug: เพิ่ม source_type/source_id สำหรับ duplicate guard
                             'source_type' => $sourceType,
@@ -299,7 +313,7 @@ class MlmCommissionService
                             'commission_amount' => $commissionAmount,
                             'pv_amount' => $pv,
                             'percentage' => $percentage,
-                            'status' => 'pending',
+                            'status' => MlmCommission::STATUS_POOLED,
                             'is_rollup' => true,
                             'rollup_from_member_id' => $sponsor->id,
                             'rollup_original_level' => $currentLevel,
@@ -431,8 +445,11 @@ class MlmCommissionService
      *
      * ปรับปรุงแล้ว:
      * 1. เช็ค rollup_max_per_member - ป้องกันคนเดียวได้มากเกินไป
-     * 2. เช็ค rollup_to_pool_enabled - ส่งไป pool แทน admin
-     * 3. กระจายแบบ distributed/proportional ถ้าตั้งค่าไว้
+     * 2. หาไม่เจอ → เงินอยู่ในกอง (to_pool) เสมอ
+     *
+     * 🛡️ F8 / M4: ลบปลายทาง "admin member #1" — เดิมเมื่อปิด rollup_to_pool_enabled เงินไปเป็น unilevel_rollup
+     *    ที่จ่ายได้ของ member #1 · ตอนนี้ไม่ว่าสวิตช์จะเป็นอะไร เงินที่ไม่มีผู้รับอยู่ใน mlm_pool ไม่เข้ากระเป๋าคน
+     *    (สวิตช์บอกแค่ว่าเงินนี้กันไว้ให้ Pool Bonus หรือเป็นรายได้บริษัท — บันทึกใน chain)
      *
      * @return array ['sponsor' => MlmMember|null, 'chain' => array, 'to_pool' => bool]
      */
@@ -440,8 +457,7 @@ class MlmCommissionService
         MlmMember $member,
         int $maxLevelsToSearch,
         array $rollupTracker,
-        bool $preventDuplicate,
-        ?MlmMember $adminMember
+        bool $preventDuplicate
     ): array {
         $chain = [];
         $currentMember = $member;
@@ -499,57 +515,25 @@ class MlmCommissionService
             $levelsSearched++;
         }
 
-        // ถ้าหาไม่เจอ upline ที่เหมาะสม
-        // ตัดสินใจว่าจะส่งไป admin หรือ pool
+        // ถ้าหาไม่เจอ upline ที่เหมาะสม → เงินอยู่ในกอง (ไม่มี fallback ไป admin / ผู้ซื้อ)
+        $chain[] = [
+            'member_id' => null,
+            'member_code' => 'POOL',
+            'level' => 0,
+            'reason' => $toPoolEnabled ? 'sent_to_pool_bonus' : 'kept_in_pool_no_recipient',
+            'tree_type' => 'pool',
+        ];
 
-        if ($toPoolEnabled) {
-            // ส่งไป Pool Bonus แทน admin
-            $chain[] = [
-                'member_id' => null,
-                'member_code' => 'POOL',
-                'level' => 0,
-                'reason' => 'sent_to_pool_bonus',
-                'tree_type' => 'pool',
-            ];
-
-            Log::info('Rollup commission sent to Pool Bonus', [
-                'original_member_id' => $member->id,
-                'chain_length' => count($chain),
-            ]);
-
-            return [
-                'sponsor' => null,
-                'chain' => $chain,
-                'to_pool' => true,
-            ];
-        }
-
-        // ส่งไป Admin (fallback เดิม)
-        if ($adminMember) {
-            $adminRollupCount = $this->rollupCountPerMember[$adminMember->id] ?? 0;
-
-            // Admin ได้ไม่จำกัด แต่ยังบันทึกไว้
-            $this->rollupCountPerMember[$adminMember->id] = $adminRollupCount + 1;
-
-            $chain[] = [
-                'member_id' => $adminMember->id,
-                'member_code' => $adminMember->member_code,
-                'level' => 0,
-                'reason' => 'final_rollup_to_admin',
-                'tree_type' => 'unilevel',
-            ];
-
-            return [
-                'sponsor' => $adminMember,
-                'chain' => $chain,
-                'to_pool' => false,
-            ];
-        }
+        Log::info('Rollup commission kept in MLM pool (no eligible recipient)', [
+            'original_member_id' => $member->id,
+            'chain_length' => count($chain),
+            'reserved_for_pool_bonus' => (bool) $toPoolEnabled,
+        ]);
 
         return [
             'sponsor' => null,
             'chain' => $chain,
-            'to_pool' => false,
+            'to_pool' => true,
         ];
     }
 
@@ -609,19 +593,20 @@ class MlmCommissionService
      * Calculate Binary commissions (no roll-up for binary)
      *
      * เชื่อมต่อกับ MlmBinaryService เพื่อคำนวณ pair matching จริง:
-     * 1. attributePvToBinaryLeg - อัพเดท left_leg_pv / right_leg_pv ขึ้นไปตาม binary tree
-     * 2. calculateBinaryPairCommissions - จับคู่ขาซ้าย/ขวา แล้วสร้าง commission
+     * 1. ล็อกแถว upline ในผัง binary แล้วลง PV ขา (เฉพาะคนที่ active)
+     * 2. จับคู่ตาม pair unit + เพดานรายวัน + budget ที่เหลือของออเดอร์ แล้วสร้าง commission
      *
-     * หมายเหตุ: MlmBinaryService สร้าง MlmCommission records โดยตรง (ไม่ return array)
-     * ดังนั้น method นี้ return array ว่าง เพราะ commissions ถูก save แล้ว
+     * หมายเหตุ: MlmBinaryService บันทึก MlmCommission เองแล้ว — ค่าที่คืนเป็นสำเนา array
+     * สำหรับรวมยอด/รายงานเท่านั้น ห้ามนำไป create ซ้ำ
      *
      * @param  MlmMember  $member  สมาชิกผู้ซื้อ
      * @param  float  $pv  จำนวน PV
      * @param  string  $transactionType  ประเภทธุรกรรม ('order', 'purchase', etc.)
      * @param  mixed  $transactionId  ID ของธุรกรรม (order_id)
-     * @return array Commission records (ว่าง เพราะ MlmBinaryService save โดยตรง)
+     * @param  float|null  $poolCollected  เงินที่ออเดอร์เก็บเข้ากองจริง (F7) — null = budget จาก PV อย่างเดียว
+     * @return array แถว binary_pair ที่บันทึกแล้ว (รูปแบบ array)
      */
-    protected function calculateBinaryCommissions(MlmMember $member, float $pv, string $transactionType, $transactionId)
+    protected function calculateBinaryCommissions(MlmMember $member, float $pv, string $transactionType, $transactionId, ?float $poolCollected = null)
     {
         $binaryEnabled = MlmGlobalSetting::get('binary_enabled', false);
 
@@ -634,19 +619,23 @@ class MlmCommissionService
             $order = Order::find($transactionId);
 
             if ($order) {
-                $binaryService = new MlmBinaryService;
+                // budget = null → MlmBinaryService คิดจาก budget ต่อออเดอร์ − คอมของออเดอร์ที่บันทึกแล้ว
                 $pvData = ['total_pv' => $pv];
-
-                // MlmBinaryService จะ:
-                // 1. attributePvToBinaryLeg() - อัพเดท left_leg_pv/right_leg_pv ขึ้นไปตาม tree
-                // 2. calculateBinaryPairCommissions() - จับคู่ pair matching + สร้าง commission
-                $binaryService->calculateBinaryCommissions($member, $order, $pvData);
+                if ($poolCollected !== null) {
+                    $pvData['pv_amount_thb'] = $poolCollected;
+                }
+                $created = (new MlmBinaryService)->calculateBinaryCommissions($member, $order, $pvData);
 
                 Log::info('Binary commissions calculated via MlmBinaryService', [
                     'member_id' => $member->id,
                     'order_id' => $order->id,
                     'pv' => $pv,
+                    'pair_rows' => count($created),
                 ]);
+
+                return array_map(fn (MlmCommission $c) => $c->only([
+                    'id', 'mlm_member_id', 'user_id', 'type', 'pairs_count', 'pv_amount', 'commission_amount', 'status',
+                ]), $created);
             }
         } else {
             // Log เมื่อ transactionType ไม่ใช่ order/purchase เพื่อให้ admin ทราบ
@@ -658,9 +647,28 @@ class MlmCommissionService
             ]);
         }
 
-        // MlmBinaryService สร้าง MlmCommission records โดยตรงแล้ว
-        // ไม่ต้อง return ใน array เพราะจะถูก save ซ้ำใน calculateCommissionsWithRollup()
         return [];
+    }
+
+    /**
+     * เทียบยอดคอมกับ budget ของออเดอร์ (รูปแบบผลเหมือน OverpayProtectionService::checkRuntimeOverpay)
+     *
+     * budget 0 = ออเดอร์ไม่มีเงินเข้ากอง → ratio 0 (ไม่จ่ายจากเงินของออเดอร์อื่น)
+     */
+    protected function checkAgainstOrderBudget(float $budget, float $totalCommission): array
+    {
+        $allowed = $totalCommission <= $budget + 0.000001;
+        $ratio = $totalCommission > 0 ? max(0.0, min(1.0, $budget / $totalCommission)) : 1.0;
+
+        return [
+            'allowed' => $allowed,
+            'max_allowed' => round($budget, 2),
+            'total_commission' => round($totalCommission, 2),
+            'excess' => round(max(0.0, $totalCommission - $budget), 2),
+            // ปัดลง 4 ตำแหน่ง — ปัดขึ้นอาจทำให้ผลรวมหลังคูณเกิน budget
+            'ratio' => floor($ratio * 10000) / 10000,
+            'message' => $allowed ? 'ไม่เกิน budget ของออเดอร์' : 'เกินเงินที่ออเดอร์เก็บเข้ากองจริง',
+        ];
     }
 
     /**
@@ -716,6 +724,13 @@ class MlmCommissionService
             'binary' => [],
         ];
 
+        // 🪙 M15: ซื้อด้วย Coins ไม่ได้ PV/คอม — กันที่ engine ด้วย (ผู้เรียกบางรายส่ง PV ที่คิดเองมา)
+        if ($order->isPaidWithCoins()) {
+            Log::info('Order paid with coins earns no MLM commission (M15)', ['order_id' => $order->id]);
+
+            return $result;
+        }
+
         // หา MlmMember ของผู้ซื้อ
         $buyerMember = MlmMember::where('user_id', $order->user_id)->first();
 
@@ -731,7 +746,8 @@ class MlmCommissionService
         // แก้ Bug #15: ตรวจสอบว่าออเดอร์นี้คำนวณ commission ไปแล้วหรือยัง
         $existingCommission = MlmCommission::where('source_type', Order::class)
             ->where('source_id', $order->id)
-            ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair'])
+            // 🛡️ F8: นับแถว pool_bonus (เงินกองของออเดอร์นี้) ด้วย — เดิมออเดอร์ที่ทุกแถวเป็นเงินกอง เรียกซ้ำได้ +128.40 ต่อครั้ง
+            ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair', 'pool_bonus'])
             ->exists();
 
         if ($existingCommission) {
@@ -742,6 +758,12 @@ class MlmCommissionService
             return $result;
         }
 
+        // 🛡️ budget ต่อออเดอร์ (audit F7) = min(PV × อัตรา × max %, เงินที่ออเดอร์เก็บเข้า mlm_pool จริง)
+        //    pv_amount_thb มาจาก OrderDistributionService::pvData() — ผู้เรียกที่ไม่ส่งมา ใช้สูตร PV อย่างเดียว (แบบเดิม)
+        $totalPv = round((float) ($pvData['total_pv'] ?? 0), 2);
+        $poolCollected = array_key_exists('pv_amount_thb', $pvData) ? round((float) $pvData['pv_amount_thb'], 2) : null;
+        $orderBudget = OverpayProtectionService::orderBudget($totalPv, $poolCollected);
+
         try {
             // แก้ Bug #14: ใช้ single transaction ไม่ซ้อน
             // calculateCommissionsWithRollup มี transaction ภายในแล้ว
@@ -750,8 +772,19 @@ class MlmCommissionService
             // 1. คำนวณค่าแนะนำตรง (Direct Referral Bonus)
             // 🐛 (2026-09-25) audit G12: แยก try ของค่าแนะนำออกมา — เดิมถ้าค่าแนะนำ insert ล้ม
             //    (type 'direct_referral' ไม่อยู่ใน enum) จะกระโดดไป catch ด้านล่าง ทำให้ unilevel/binary ไม่ถูกคำนวณเลย
+            // 🛡️ F5 / M3: จ่ายเฉพาะออเดอร์ที่มี PV > 0 และไม่เกิน budget ของออเดอร์
+            //    เดิมออเดอร์ PV 0 (เก็บเข้ากอง 0) ก็ได้ 100 บาท → พออนุมัติ+จ่าย เงินออกจากกองของออเดอร์อื่น
             try {
-                $result['direct_referral'] = $this->calculateDirectReferralBonus($order);
+                if ($totalPv <= 0 || $orderBudget <= 0) {
+                    Log::info('Direct referral bonus skipped: order has no PV or no commission budget', [
+                        'order_id' => $order->id,
+                        'total_pv' => $totalPv,
+                        'pool_collected' => $poolCollected,
+                        'order_budget' => $orderBudget,
+                    ]);
+                } else {
+                    $result['direct_referral'] = (new MlmReferralBonusService)->calculateReferralBonus($order, $orderBudget);
+                }
             } catch (\Throwable $referralError) {
                 Log::error('Direct referral bonus failed, continuing with PV commissions', [
                     'order_id' => $order->id,
@@ -761,12 +794,14 @@ class MlmCommissionService
             }
 
             // 2. คำนวณ Unilevel + Binary Commission (ถ้ามี PV)
-            if (($pvData['total_pv'] ?? 0) > 0) {
+            if ($totalPv > 0) {
                 $pvCommissions = $this->calculateCommissionsWithRollup(
                     $buyerMember,
-                    $pvData['total_pv'],
+                    $totalPv,
                     'order',
-                    $order->id
+                    $order->id,
+                    false,
+                    $poolCollected
                 );
 
                 if ($pvCommissions['success']) {
@@ -784,38 +819,41 @@ class MlmCommissionService
 
             // ⚠️ Overpay Protection รวม: ตรวจสอบ referral + unilevel + binary ทั้งหมด
             // calculateCommissionsWithRollup มี overpay check ภายใน แต่ไม่รวม referral
-            // ต้องเช็คอีกครั้งว่ารวมแล้วทั้งหมดไม่เกิน budget
-            $totalPv = $pvData['total_pv'] ?? 0;
-            if ($totalPv > 0 && $result['direct_referral'] !== null) {
-                $referralAmount = $result['direct_referral']->commission_amount;
+            // ลำดับสิทธิ์ใน budget: unilevel → ค่าแนะนำตรง → binary (binary ใช้ได้เฉพาะที่เหลือหลังสองอย่างแรก)
+            if ($result['direct_referral'] !== null) {
+                $referralAmount = (float) $result['direct_referral']->commission_amount;
                 $unilevelTotal = array_sum(array_column($result['unilevel'], 'commission_amount'));
                 $binaryTotal = array_sum(array_column($result['binary'], 'commission_amount'));
                 $grandTotal = $referralAmount + $unilevelTotal + $binaryTotal;
 
-                $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
-                $maxPercentage = (float) MlmGlobalSetting::get('max_commission_percentage', 40);
-                $maxBudget = $totalPv * $commissionPerPv * ($maxPercentage / 100);
-
-                if ($maxBudget > 0 && $grandTotal > $maxBudget) {
-                    // คำนวณจำนวนเงิน referral ที่ลดได้ (unilevel/binary ถูก scale แล้ว)
-                    $allowedReferral = max(0, $maxBudget - $unilevelTotal - $binaryTotal);
+                if ($grandTotal > $orderBudget + 0.000001) {
+                    $allowedReferral = floor(round(max(0, $orderBudget - $unilevelTotal - $binaryTotal) * 100, 6)) / 100;
                     $originalReferral = $referralAmount;
 
                     if ($allowedReferral < $referralAmount) {
-                        // อัปเดท referral commission ให้ไม่เกิน budget
-                        $result['direct_referral']->update([
-                            'commission_amount' => round($allowedReferral, 2),
-                            'notes' => $result['direct_referral']->notes
-                                .' | Overpay scaled: ฿'.number_format($originalReferral, 2)
-                                .' → ฿'.number_format($allowedReferral, 2),
-                        ]);
+                        if ($allowedReferral <= 0) {
+                            // budget หมดที่ unilevel แล้ว → ยกเลิกแถว (สิทธิ์ออเดอร์แรกคืนให้ออเดอร์ถัดไป) พร้อมเหตุผล
+                            $result['direct_referral']->update([
+                                'status' => 'cancelled',
+                                'notes' => $result['direct_referral']->notes
+                                    .' | ยกเลิก: budget ของออเดอร์ (฿'.number_format($orderBudget, 2).') ถูกใช้ครบแล้ว',
+                            ]);
+                        } else {
+                            // อัปเดท referral commission ให้ไม่เกิน budget
+                            $result['direct_referral']->update([
+                                'commission_amount' => round($allowedReferral, 2),
+                                'notes' => $result['direct_referral']->notes
+                                    .' | Overpay scaled: ฿'.number_format($originalReferral, 2)
+                                    .' → ฿'.number_format($allowedReferral, 2),
+                            ]);
+                        }
                         $result['direct_referral']->refresh();
 
                         Log::warning('Overpay protection: referral bonus scaled down', [
                             'order_id' => $order->id,
                             'original_referral' => $originalReferral,
                             'allowed_referral' => $allowedReferral,
-                            'max_budget' => $maxBudget,
+                            'max_budget' => $orderBudget,
                             'grand_total_before' => $grandTotal,
                             'grand_total_after' => $allowedReferral + $unilevelTotal + $binaryTotal,
                         ]);
@@ -853,6 +891,8 @@ class MlmCommissionService
         return match ($transactionType) {
             'order', 'purchase' => Order::class,
             'fortune_reading' => \App\Models\FortuneReading::class,
+            // 🛡️ F20: คอมจากการจองบริการ (ฝั่งลูกค้า + ฝั่ง PV ผู้ให้บริการ) — เดิมได้ null ทำให้ตัวกันซ้ำ/รายงานมองไม่เห็นที่มา
+            'service_booking', 'service_pv' => \App\Models\ServiceBooking::class,
             default => null,
         };
     }

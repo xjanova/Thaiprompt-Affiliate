@@ -861,13 +861,26 @@ class Order extends Model implements RiderDeliverable
     }
 
     /**
+     * 🪙 M15: ออเดอร์ที่จ่ายด้วย Coins (ไม่มีเงินบาทเข้า) → ไม่ได้ PV และไม่เกิดคอม MLM ทุกชนิด
+     *
+     * engine MLM ทุกจุด (OrderDistributionService, MlmCommissionService, MlmCalculationService) เช็คจากที่นี่ที่เดียว
+     */
+    public function isPaidWithCoins(): bool
+    {
+        return PaymentMethod::normalize($this->payment_method) === PaymentMethod::COINS;
+    }
+
+    /**
      * Check if order can be refunded
      *
      * ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → คืนเงินทางนี้ไม่ได้ (แอดมินตัดสินที่หน้างานไรเดอร์)
      */
     public function canBeRefunded(): bool
     {
-        return in_array($this->status, ['paid', 'processing', 'shipped'])
+        // 🛡️ F31: ข้อมูลเก่า cancelled + payment_status=paid (ยกเลิกโดยไม่คืนเงิน) ต้องคืนเงินทางปกติได้
+        $cancelledButPaid = $this->status === 'cancelled' && $this->payment_status === 'paid';
+
+        return (in_array($this->status, ['paid', 'processing', 'shipped']) || $cancelledButPaid)
             && $this->riderHandoverHoldMessage() === null;
     }
 

@@ -19,6 +19,7 @@
         'rejected' => ['ปฏิเสธ', $c['bad']],
         'cancelled' => ['ยกเลิก', $c['mute']],
         'clawback' => ['ดึงคืน', $c['bad']],
+        'pooled' => ['อยู่ในกองกลาง', $c['mute']],
     ];
     [$sLabel, $sColor] = $statusMeta[$commission->status] ?? [$commission->status, $c['mute']];
     $typeMeta = [

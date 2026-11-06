@@ -322,6 +322,11 @@ class WalletService
             throw new Exception('Cannot transfer to the same wallet');
         }
 
+        // 🧾 F14/M7: ผู้โอนมีหนี้ค้าง (ดึงคืนคอม/คืนเงิน) → ห้ามโอนออก (กันเลี่ยงด่านห้ามถอนด้วยการโอนให้บัญชีอื่นไปถอนแทน)
+        if ($fromWallet->user_id && ($blocked = DebtCollectionService::withdrawalBlockedMessage((int) $fromWallet->user_id))) {
+            throw new Exception($blocked);
+        }
+
         if ($fromWallet->balance < $amount) {
             $this->logAction($fromWallet, 'transaction_failed', 'Insufficient balance for transfer', 'warning');
             throw new Exception('Insufficient balance');
@@ -652,6 +657,11 @@ class WalletService
         string $pin,
         string $description = 'Transfer'
     ): array {
+        // 🧾 F14/M7: ผู้โอนมีหนี้ค้าง → ห้ามโอนออก (ตรวจก่อนคิดค่าธรรมเนียม)
+        if ($fromWallet->user_id && ($blocked = DebtCollectionService::withdrawalBlockedMessage((int) $fromWallet->user_id))) {
+            throw new Exception($blocked);
+        }
+
         // Calculate transfer fee
         $fee = \App\Models\WalletSetting::calculateTransferFee($amount);
         $totalAmount = $amount + $fee;

@@ -503,7 +503,8 @@ class MlmDashboardController extends Controller
             $binaryPairingType = \App\Models\MlmGlobalSetting::get('binary_pairing_type', '1:1');
 
             // Constraints
-            $maxPerLevel = \App\Models\MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
+            // 🛡️ F6: กติกาเดียวกับ engine — NULL/0 = ไม่จำกัด (null), ค่า > 0 = เพดาน
+            $maxPerLevel = \App\Models\MlmGlobalSetting::positiveCap('unilevel_max_commission_per_level');
             $maxPerDay = \App\Models\MlmGlobalSetting::get('binary_max_commission_per_day', null);
             $maxPairsPerDay = \App\Models\MlmGlobalSetting::get('binary_max_pairs_per_day', null);
             $overpayEnabled = \App\Models\MlmGlobalSetting::get('overpay_protection_enabled', true);
@@ -541,7 +542,7 @@ class MlmDashboardController extends Controller
                     $commission *= $rankMultiplier;
 
                     // Apply level constraint
-                    if ($maxPerLevel && $commission > $maxPerLevel) {
+                    if ($maxPerLevel !== null && $commission > $maxPerLevel) {
                         $commission = $maxPerLevel;
                     }
 

@@ -610,7 +610,24 @@ class ServiceBookingService
     public function completeService(ServiceBooking $booking): array
     {
         return DB::transaction(function () use ($booking) {
-            // อัพเดทสถานะเป็น completed
+            // 🛡️ F20: ล็อกแถวการจอง → กดจบงานซ้ำ/พร้อมกัน จ่ายผู้ให้บริการและคอม MLM ครั้งเดียว
+            $booking = ServiceBooking::whereKey($booking->id)->lockForUpdate()->first();
+
+            if (! $booking) {
+                throw new \Exception('ไม่พบการจองนี้');
+            }
+
+            // จบงานไปแล้ว → no-op (กดซ้ำ/double-tap ไม่ใช่ error และไม่จ่ายซ้ำ)
+            if ($booking->status === 'completed') {
+                return [
+                    'success' => true,
+                    'already_completed' => true,
+                    'booking' => $booking,
+                    'commission_results' => null,
+                ];
+            }
+
+            // อัพเดทสถานะเป็น completed (โยน exception ถ้ายังไม่จ่าย/ยกเลิกแล้ว — state guard ใน model)
             $booking->completeService();
 
             // ประมวลผลการจ่ายเงินและคอมมิชชั่นทั้งหมด

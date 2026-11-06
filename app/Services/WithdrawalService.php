@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PaymentMethod;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletDebt;
 use App\Models\WalletSetting;
 use App\Models\WithdrawalRequest;
 use Exception;
@@ -56,6 +57,12 @@ class WithdrawalService
                 'กรุณายืนยันตัวตน (KYC) ก่อนถอนเงิน — '
                 .'ไปที่หน้า KYC แล้วอัพโหลดเอกสารยืนยัน'
             );
+        }
+
+        // 🧾 F14/M7: มีหนี้ค้าง (ดึงคืนคอม/คืนเงิน) → ห้ามถอนจนกว่าหนี้จะถูกหักจากรายได้ครบ
+        //    เดิมถอนได้ตามปกติ หนี้จึงไม่เคยถูกเก็บ (ถอนออกหมดก่อนรายได้ถัดไปจะเข้า)
+        if ($blocked = DebtCollectionService::withdrawalBlockedMessage((int) $user->id)) {
+            throw new Exception($blocked);
         }
 
         $wallet = $this->walletService->getOrCreateWallet($user);
@@ -188,6 +195,11 @@ class WithdrawalService
                 throw new Exception('คำขอถอนเงินนี้ไม่สามารถอนุมัติได้');
             }
             $request->setRawAttributes($locked->getAttributes(), true);
+
+            // 🧾 F14/M7: หนี้เกิดหลังยื่นคำขอ (ถูกดึงคืนคอมระหว่างรออนุมัติ) → ห้ามอนุมัติ ให้ปฏิเสธเพื่อคืนเงินเข้ากระเป๋า
+            if (DebtCollectionService::hasActiveDebt((int) $locked->user_id)) {
+                throw new Exception('อนุมัติไม่ได้: ผู้ใช้มียอดค้างชำระ '.number_format((float) WalletDebt::getTotalDebtForUser((int) $locked->user_id), 2).' บาท กรุณาปฏิเสธคำขอนี้ (เงินจะคืนเข้ากระเป๋า)');
+            }
 
             $request->update([
                 'status' => 'approved',

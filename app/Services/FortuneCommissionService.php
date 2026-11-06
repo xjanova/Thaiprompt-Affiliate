@@ -848,8 +848,22 @@ class FortuneCommissionService
             $this->depositToWallet($recipientMember, $commission, $reading, $level, $amount);
 
             // 🧾 (F25/F24) แถวที่นำกลับมาจ่ายใหม่ เคยดึงคืนไม่ครบจนเป็นหนี้ → หักหนี้ของแถวนี้จากยอดที่เพิ่งเข้า
+            $settled = 0.0;
             if (! $commission->wasRecentlyCreated) {
-                $this->settleClawbackDebt($commission, $reading);
+                $settled = $this->settleClawbackDebt($commission, $reading);
+            }
+
+            // 🧾 F14/M7: หนี้ค้างอื่น (ดึงคืนคอม MLM/คืนเงิน) → หักจากค่าแนะนำที่เพิ่งเข้ากระเป๋า (ส่วนที่เหลือหลังหักหนี้ของแถวนี้)
+            //    เดิมค่าแนะนำดูดวงเข้ากระเป๋าตรงโดยไม่หักหนี้ → ผู้มีหนี้ได้เงินแล้วโอน/ใช้ออกไปได้
+            $rest = round($amount - $settled, 2);
+            if ($rest > 0 && $recipientMember->user_id) {
+                (new DebtCollectionService)->collectFromWalletIncome(
+                    (int) $recipientMember->user_id,
+                    $rest,
+                    FortuneCommission::class,
+                    (int) $commission->id,
+                    'ค่าแนะนำดูดวง #'.$commission->id
+                );
             }
         });
     }
@@ -898,8 +912,9 @@ class FortuneCommissionService
      * ค่าแนะนำดูดวงเข้ากระเป๋าตรง → ถ้าไม่หักตรงนี้ บิลที่จ่ายใหม่จะได้เงินซ้ำทั้งที่หนี้ยังค้าง
      * ⚠️ เรียกภายใน DB::transaction เดียวกับการจ่าย (ล็อกกระเป๋า + หนี้) · ไม่ส่งข้อความหาผู้ใช้ทาง LINE
      */
-    protected function settleClawbackDebt(FortuneCommission $commission, FortuneReading $reading): void
+    protected function settleClawbackDebt(FortuneCommission $commission, FortuneReading $reading): float
     {
+        $settled = 0.0;
         $debts = WalletDebt::where('user_id', $commission->user_id)
             ->where('source_type', 'FortuneClawback')
             ->where('source_id', $commission->id)
@@ -908,12 +923,12 @@ class FortuneCommissionService
             ->lockForUpdate()
             ->get();
         if ($debts->isEmpty()) {
-            return;
+            return 0.0;
         }
 
         $wallet = Wallet::where('user_id', $commission->user_id)->lockForUpdate()->first();
         if (! $wallet) {
-            return;
+            return 0.0;
         }
 
         $budget = round((float) $commission->amount, 2);
@@ -948,6 +963,7 @@ class FortuneCommissionService
             $wallet->update(['balance' => $after, 'last_transaction_at' => now()]);
             $debt->deduct($take);
             $budget = round($budget - $take, 2);
+            $settled = round($settled + $take, 2);
 
             Log::warning('FortuneCommission: หักหนี้ดึงคืนค่าแนะนำจากค่าแนะนำที่จ่ายใหม่', [
                 'reading_id' => $reading->id,
@@ -956,6 +972,8 @@ class FortuneCommissionService
                 'deducted' => $take,
             ]);
         }
+
+        return $settled;
     }
 
     /**

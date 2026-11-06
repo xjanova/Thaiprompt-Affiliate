@@ -309,7 +309,8 @@ class MlmReportController extends Controller
             $csv .= sprintf(
                 "%s,%s,%s,%s,%s,%s,%s\n",
                 $commission->created_at,
-                $commission->member->user->name,
+                // F8: แถว pooled (เงินกอง) ไม่มีเจ้าของ
+                $commission->member?->user?->name ?? ($commission->status === MlmCommission::STATUS_POOLED ? 'กองกลาง MLM' : '-'),
                 $commission->plan->name,
                 $commission->type,
                 $commission->commission_amount,

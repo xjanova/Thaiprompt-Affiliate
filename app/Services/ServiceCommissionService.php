@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\MlmCommission;
 use App\Models\MlmMember;
+use App\Models\MlmPvTransaction;
 use App\Models\ServiceBooking;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -13,9 +14,24 @@ use Illuminate\Support\Facades\Log;
  *
  * บริการคำนวณและแจกจ่ายคอมมิชชั่นและ PV สำหรับ Service Booking
  * รวมถึงการจ่ายเงินให้ Provider และระบบ MLM
+ *
+ * 🛡️ audit F20 (ขั้น 2f) — เดิมมี 3 ชั้นที่บังกันอยู่:
+ *    1. ส่ง User ไปที่ WalletService::deposit() ที่ต้องเป็น Wallet → TypeError ผู้ให้บริการไม่ได้เงิน booking ค้าง in_progress
+ *    2. increment คอลัมน์ mlm_members.personal_pv / users.total_pv ที่ไม่มีจริง → คอม MLM ล้มเงียบ
+ *    3. จบงานซ้ำไม่มี state guard + source_type ของคอมเป็น null → จ่าย 2 รอบโดยตัวกันซ้ำมองไม่เห็น
+ *    แก้พร้อมกันทั้ง 3 ชั้น (state guard อยู่ที่ ServiceBooking::completeService + ล็อกแถวใน ServiceBookingService)
+ *
+ * กติกาเงิน MLM ของการจองบริการ (ตามออเดอร์สินค้า F7 / M3 / M4 / M10):
+ * - PV = services.pv_value เท่านั้น (0 = ไม่มี PV/คอม — ไม่ fallback เป็น total_amount เพราะไม่มีเงินกองรองรับ)
+ * - budget = min(PV × อัตรา × max %, เงินที่แพลตฟอร์มเก็บไว้จริง) — เงินที่เก็บไว้ = ยอดจ่าย − VAT − เงินผู้ให้บริการ − cashback
+ * - budget ที่ใช้ถูกเก็บเข้ากระเป๋า mlm_pool (แบบออเดอร์) → คอมที่อนุมัติแล้วมีเงินรองรับ
+ * - คอมทุกแถวเป็น pending รออนุมัติเอง (M10) · source_type = ServiceBooking
  */
 class ServiceCommissionService
 {
+    /** source_type ของ platform_transactions (แบบเดียวกับ 'Order' ของออเดอร์) */
+    public const POOL_SOURCE_TYPE = 'ServiceBooking';
+
     public function __construct(
         protected WalletService $walletService,
         protected MlmCommissionService $mlmCommissionService
@@ -23,6 +39,8 @@ class ServiceCommissionService
 
     /**
      * ประมวลผลการจ่ายเงินและคอมมิชชั่นเมื่อบริการเสร็จสิ้น
+     *
+     * เรียกครั้งเดียวต่อการจอง (ServiceBookingService::completeService ล็อกแถว + เช็คสถานะก่อนเรียก)
      *
      * @return array ผลลัพธ์การประมวลผล
      */
@@ -37,7 +55,7 @@ class ServiceCommissionService
                 'referrer_commission' => null,
             ];
 
-            // 1. จ่ายเงินให้ Provider
+            // 1. จ่ายเงินให้ Provider (ล้ม = โยนต่อ → ทั้งงานย้อนกลับ booking ไม่ถูกปิดโดยที่ผู้ให้บริการไม่ได้เงิน)
             $results['provider_payment'] = $this->payProvider($booking);
 
             // 2. จ่าย Cashback ให้ลูกค้า (ถ้ามี)
@@ -45,26 +63,45 @@ class ServiceCommissionService
                 $results['customer_cashback'] = $this->payCustomerCashback($booking);
             }
 
-            // 3. คำนวณและแจกจ่าย PV สำหรับ Provider
+            // เงินที่แพลตฟอร์มเก็บไว้จริงจากการจองนี้ → เพดานเงินคอม MLM ทั้งหมดของการจอง
+            $retained = $this->retainedAmount(
+                $booking,
+                (float) ($results['provider_payment']['amount'] ?? 0),
+                (float) ($results['customer_cashback']['amount'] ?? 0)
+            );
+
+            // 3. คอม MLM ฝั่งลูกค้า (PV ของบริการ)
+            $results['mlm_commission'] = $this->distributeMlmCommission($booking, $retained);
+            $remaining = round(max(0.0, $retained - (float) ($results['mlm_commission']['budget'] ?? 0)), 2);
+
+            // 4. PV ของ Provider (ค่า PV/การตลาดที่ผู้ให้บริการออก) — ใช้ได้เฉพาะเงินที่เหลือหลังข้อ 3
             if ($booking->provider_pv_amount > 0) {
-                $results['provider_pv'] = $this->distributeProviderPV($booking);
+                $results['provider_pv'] = $this->distributeProviderPV($booking, $remaining);
             }
 
-            // 4. คำนวณคอมมิชชั่น MLM (ถ้าลูกค้าเป็นสมาชิก MLM)
-            $results['mlm_commission'] = $this->distributeMlmCommission($booking);
-
-            // 5. จ่ายคอมมิชชั่นให้ผู้แนะนำ (ถ้ามี)
+            // 5. ค่าแนะนำบริการแบบเดิม (ปิด — ดู payReferrerCommission)
             $results['referrer_commission'] = $this->payReferrerCommission($booking);
 
             // บันทึก log
             Log::info('Service booking commission processed', [
                 'booking_id' => $booking->id,
                 'booking_number' => $booking->booking_number,
+                'retained' => $retained,
                 'results' => $results,
             ]);
 
             return $results;
         });
+    }
+
+    /**
+     * เงินที่แพลตฟอร์มเก็บไว้จริง = ยอดที่ลูกค้าจ่าย − VAT − เงินผู้ให้บริการ − cashback (ไม่ติดลบ)
+     */
+    protected function retainedAmount(ServiceBooking $booking, float $providerPaid, float $cashbackPaid): float
+    {
+        $paid = (float) ($booking->metadata['paid_amount'] ?? $booking->total_amount);
+
+        return round(max(0.0, $paid - (float) $booking->tax_amount - $providerPaid - $cashbackPaid), 2);
     }
 
     /**
@@ -84,26 +121,38 @@ class ServiceCommissionService
         }
 
         // ใช้ค่า provider_earnings ที่คำนวณไว้แล้ว (snapshot)
-        $providerEarnings = $booking->provider_earnings;
+        $providerEarnings = round((float) $booking->provider_earnings, 2);
 
         if ($providerEarnings <= 0) {
             return null;
         }
 
         try {
-            // เพิ่มเงินเข้า wallet ของ provider
+            // 🛡️ F20 ชั้น 1: deposit() รับ Wallet (เดิมส่ง User → TypeError ที่ catch(\Exception) จับไม่ได้)
+            $wallet = $this->walletService->getOrCreateWallet($providerUser);
             $transaction = $this->walletService->deposit(
-                $providerUser,
+                $wallet,
                 $providerEarnings,
-                'service_income',
                 "รายได้จากบริการ #{$booking->booking_number}",
+                'service_booking',
+                $booking->id,
                 [
                     'booking_id' => $booking->id,
                     'service_id' => $booking->service_id,
                     'total_amount' => $booking->total_amount,
                     'platform_fee' => $booking->platform_fee_amount,
                     'pv_deducted' => $booking->provider_pv_amount,
-                ]
+                ],
+                'deposit'
+            );
+
+            // 🧾 M7: ผู้ให้บริการมีหนี้ค้าง → หักจากรายได้งานนี้ก่อน (กระเป๋าไม่ติดลบ)
+            $debtCollected = (new DebtCollectionService)->collectFromWalletIncome(
+                $providerUser->id,
+                $providerEarnings,
+                'service_booking',
+                $booking->id,
+                "รายได้บริการ #{$booking->booking_number}"
             );
 
             // อัพเดทรายได้รวมของ provider
@@ -113,9 +162,10 @@ class ServiceCommissionService
                 'user_id' => $providerUser->id,
                 'provider_id' => $booking->provider->id,
                 'amount' => $providerEarnings,
+                'debt_collected' => $debtCollected,
                 'transaction_id' => $transaction->id ?? null,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to pay provider', [
                 'booking_id' => $booking->id,
                 'provider_id' => $booking->provider->id,
@@ -130,29 +180,43 @@ class ServiceCommissionService
      */
     protected function payCustomerCashback(ServiceBooking $booking): ?array
     {
-        if (! $booking->service || $booking->service->cashback_percentage <= 0) {
+        if (! $booking->service || $booking->service->cashback_percentage <= 0 || ! $booking->user) {
             return null;
         }
 
         $cashbackPercentage = $booking->service->cashback_percentage;
-        $cashbackAmount = ($booking->total_amount * $cashbackPercentage) / 100;
+        $cashbackAmount = round(($booking->total_amount * $cashbackPercentage) / 100, 2);
 
         if ($cashbackAmount <= 0) {
             return null;
         }
 
         try {
+            // 🛡️ F20 ชั้น 1: ส่ง Wallet (เดิมส่ง User → TypeError)
             $transaction = $this->walletService->deposit(
-                $booking->user,
+                $this->walletService->getOrCreateWallet($booking->user),
                 $cashbackAmount,
-                'service_cashback',
                 "Cashback จากบริการ #{$booking->booking_number}",
+                'service_booking_cashback',
+                $booking->id,
                 [
                     'booking_id' => $booking->id,
                     'service_id' => $booking->service_id,
                     'cashback_percentage' => $cashbackPercentage,
-                ]
+                ],
+                'bonus'
             );
+
+            // 🧾 M7: หักหนี้ค้างจากเงินเข้าครั้งนี้
+            (new DebtCollectionService)->collectFromWalletIncome(
+                (int) $booking->user_id,
+                $cashbackAmount,
+                'service_booking_cashback',
+                $booking->id,
+                "Cashback บริการ #{$booking->booking_number}"
+            );
+
+            $booking->forceFill(['cashback_amount' => $cashbackAmount])->save();
 
             return [
                 'user_id' => $booking->user_id,
@@ -160,7 +224,7 @@ class ServiceCommissionService
                 'percentage' => $cashbackPercentage,
                 'transaction_id' => $transaction->id ?? null,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to pay cashback', [
                 'booking_id' => $booking->id,
                 'user_id' => $booking->user_id,
@@ -173,8 +237,10 @@ class ServiceCommissionService
 
     /**
      * แจกจ่าย PV สำหรับ Provider (สำหรับ MLM)
+     *
+     * @param  float  $availableMoney  เงินที่เหลือให้คอมฝั่งนี้ใช้ได้ (หลังหัก budget ฝั่งลูกค้า)
      */
-    protected function distributeProviderPV(ServiceBooking $booking): ?array
+    protected function distributeProviderPV(ServiceBooking $booking, float $availableMoney): ?array
     {
         if (! $booking->provider || $booking->provider_pv_amount <= 0) {
             return null;
@@ -189,37 +255,35 @@ class ServiceCommissionService
         $mlmMember = MlmMember::where('user_id', $providerUser->id)->first();
 
         if (! $mlmMember) {
-            // ถ้า provider ไม่ได้เป็นสมาชิก MLM ให้เพิ่ม PV เข้า user โดยตรง
-            $providerUser->increment('total_pv', $booking->provider_pv_amount);
-
+            // 🛡️ F20 ชั้น 2: ไม่ใช่สมาชิก MLM → ไม่มี PV (เดิม increment users.total_pv ที่ไม่มีจริง → booking จบไม่ได้)
             return [
                 'user_id' => $providerUser->id,
-                'pv_amount' => $booking->provider_pv_amount,
+                'pv_amount' => 0,
                 'mlm_member' => false,
             ];
         }
 
-        try {
-            // เพิ่ม PV ให้ MLM Member
-            $mlmMember->increment('personal_pv', $booking->provider_pv_amount);
-            $mlmMember->increment('total_pv', $booking->provider_pv_amount);
+        $pv = round((float) $booking->provider_pv_amount, 2);
 
-            // คำนวณคอมมิชชั่น MLM จาก PV ของ Provider
-            $commissionResult = $this->mlmCommissionService->calculateCommissionsWithRollup(
-                $mlmMember,
-                $booking->provider_pv_amount,
-                'service_pv',
-                $booking->id
-            );
+        if ($this->hasCommissions($booking, $mlmMember)) {
+            return null;
+        }
+
+        try {
+            // PV ของผู้ให้บริการไม่ใช่การซื้อ → ไม่นับรักษายอด (transaction_type ไม่อยู่ใน RETENTION_TYPES)
+            $this->recordServicePv($mlmMember, $booking, $pv, 'service_provider');
+
+            $run = $this->runMlm($mlmMember, $booking, $pv, 'service_pv', $availableMoney);
 
             return [
                 'user_id' => $providerUser->id,
                 'mlm_member_id' => $mlmMember->id,
-                'pv_amount' => $booking->provider_pv_amount,
+                'pv_amount' => $pv,
                 'mlm_member' => true,
-                'commission_result' => $commissionResult,
+                'budget' => $run['budget'],
+                'commission_result' => $run['result'],
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to distribute provider PV', [
                 'booking_id' => $booking->id,
                 'provider_id' => $booking->provider->id,
@@ -232,8 +296,10 @@ class ServiceCommissionService
 
     /**
      * คำนวณและแจกจ่ายคอมมิชชั่น MLM สำหรับการจองบริการ
+     *
+     * @param  float  $availableMoney  เงินที่แพลตฟอร์มเก็บไว้จริงจากการจองนี้
      */
-    protected function distributeMlmCommission(ServiceBooking $booking): ?array
+    protected function distributeMlmCommission(ServiceBooking $booking, float $availableMoney): ?array
     {
         // หา MLM Member ของลูกค้า
         $mlmMember = MlmMember::where('user_id', $booking->user_id)->first();
@@ -243,39 +309,43 @@ class ServiceCommissionService
             return null;
         }
 
-        // คำนวณ PV จากการจอง (ใช้ pv_value ของ service หรือ total_amount)
-        $pvValue = $booking->service->pv_value ?? $booking->total_amount;
+        // PV = pv_value ของบริการเท่านั้น (คอลัมน์ NOT NULL default 0 — เดิม `?? total_amount` ไม่เคยทำงาน
+        // และถ้าทำงานก็จะสร้างคอมจากบริการที่ไม่ได้ตั้ง PV ไว้ ซึ่งไม่มีเงินกองรองรับ — M3)
+        $pvValue = round((float) ($booking->service->pv_value ?? 0), 2);
 
         if ($pvValue <= 0) {
             return null;
         }
 
+        // 🛡️ ตัวกันซ้ำชั้นที่ 2 (ชั้นแรกคือ state guard): การจองนี้มีคอมฝั่งลูกค้าแล้ว → ไม่คิดซ้ำ
+        if ($this->hasCommissions($booking, $mlmMember)) {
+            Log::warning('Service booking commissions already calculated, skipping', ['booking_id' => $booking->id]);
+
+            return null;
+        }
+
         try {
-            // เพิ่ม PV ให้ลูกค้า (Personal PV)
-            $mlmMember->increment('personal_pv', $pvValue);
-            $mlmMember->increment('total_pv', $pvValue);
+            // 🛡️ F20 ชั้น 2: บันทึก PV ผ่าน mlm_pv_transactions + total_pv (เดิม increment personal_pv ที่ไม่มีจริง)
+            $this->recordServicePv($mlmMember, $booking, $pvValue, 'purchase');
 
-            // คำนวณคอมมิชชั่น MLM
-            $commissionResult = $this->mlmCommissionService->calculateCommissionsWithRollup(
-                $mlmMember,
-                $pvValue,
-                'service_booking',
-                $booking->id
-            );
+            $run = $this->runMlm($mlmMember, $booking, $pvValue, 'service_booking', $availableMoney);
 
-            // อัพเดทการจองด้วย mlm_member_id และ commission_amount
+            // อัพเดทการจองด้วย mlm_member_id และยอดคอม
             $booking->update([
                 'mlm_member_id' => $mlmMember->id,
-                'commission_amount' => $commissionResult['total_amount'] ?? 0,
+                'commission_amount' => $run['result']['total_amount'] ?? 0,
+                'mlm_pv_total' => $pvValue,
+                'mlm_commission_total' => $run['budget'],
             ]);
 
             return [
                 'user_id' => $booking->user_id,
                 'mlm_member_id' => $mlmMember->id,
                 'pv_value' => $pvValue,
-                'commission_result' => $commissionResult,
+                'budget' => $run['budget'],
+                'commission_result' => $run['result'],
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to distribute MLM commission', [
                 'booking_id' => $booking->id,
                 'user_id' => $booking->user_id,
@@ -287,58 +357,106 @@ class ServiceCommissionService
     }
 
     /**
-     * จ่ายคอมมิชชั่นให้ผู้แนะนำ (Referrer)
+     * คำนวณคอม MLM ภายใน budget แล้วเก็บ budget เข้า mlm_pool (แบบออเดอร์สินค้า)
+     *
+     * @return array{budget: float, result: array|null}
+     */
+    protected function runMlm(MlmMember $member, ServiceBooking $booking, float $pv, string $transactionType, float $availableMoney): array
+    {
+        $budget = OverpayProtectionService::orderBudget($pv, round(max(0.0, $availableMoney), 2));
+
+        if ($budget <= 0) {
+            Log::info('Service booking MLM skipped: no commission budget', [
+                'booking_id' => $booking->id,
+                'pv' => $pv,
+                'available_money' => $availableMoney,
+            ]);
+
+            return ['budget' => 0.0, 'result' => null];
+        }
+
+        $result = $this->mlmCommissionService->calculateCommissionsWithRollup(
+            $member,
+            $pv,
+            $transactionType,
+            $booking->id,
+            false,
+            $budget
+        );
+
+        if (! ($result['success'] ?? false)) {
+            // คำนวณล้ม (rollback ภายในแล้ว) → ไม่เก็บเงินเข้ากอง
+            Log::error('Service booking MLM calculation failed', [
+                'booking_id' => $booking->id,
+                'error' => $result['error'] ?? null,
+            ]);
+
+            return ['budget' => 0.0, 'result' => $result];
+        }
+
+        // เงินกองของการจองนี้เข้ากระเป๋า mlm_pool → คอมที่อนุมัติแล้วจ่ายจากเงินของการจองนี้ ไม่ใช่ของออเดอร์อื่น (F7)
+        app(PlatformRevenueService::class)->collectMlmPool($budget, self::POOL_SOURCE_TYPE, (int) $booking->id, [
+            'booking_number' => $booking->booking_number,
+            'transaction_type' => $transactionType,
+            'pv' => $pv,
+            'available_money' => $availableMoney,
+        ]);
+
+        return ['budget' => $budget, 'result' => $result];
+    }
+
+    /**
+     * บันทึก PV ของการจองบริการ (mlm_pv_transactions + mlm_members.total_pv)
+     */
+    protected function recordServicePv(MlmMember $member, ServiceBooking $booking, float $pv, string $transactionType): MlmPvTransaction
+    {
+        $member->refresh();
+        $previous = (float) $member->total_pv;
+
+        $row = MlmPvTransaction::create([
+            'mlm_member_id' => $member->id,
+            'mlm_plan_id' => $member->mlm_plan_id,
+            'transaction_type' => $transactionType,
+            'order_id' => null,
+            'pv_amount' => $pv,
+            'sales_amount' => (float) $booking->total_amount,
+            'previous_balance' => $previous,
+            'new_balance' => $previous + $pv,
+            'attributed_leg' => 'personal',
+            'binary_leg_credits' => [],
+            'description' => "PV จากการจองบริการ #{$booking->booking_number}",
+            'notes' => json_encode(['service_booking_id' => $booking->id], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $member->increment('total_pv', $pv);
+        if ($transactionType === 'purchase') {
+            $member->update(['last_purchase_at' => now()]);
+        }
+
+        return $row;
+    }
+
+    /**
+     * การจองนี้มีคอมที่เกิดจาก PV ของสมาชิกคนนี้แล้วหรือยัง (ฝั่งลูกค้า/ฝั่งผู้ให้บริการแยกด้วย from_member_id)
+     */
+    protected function hasCommissions(ServiceBooking $booking, MlmMember $member): bool
+    {
+        return MlmCommission::where('source_type', ServiceBooking::class)
+            ->where('source_id', $booking->id)
+            ->where('from_member_id', $member->id)
+            ->exists();
+    }
+
+    /**
+     * ค่าแนะนำบริการแบบเดิม (5% ของยอด เข้ากระเป๋าผู้แนะนำทันที) — ปิดแล้ว
+     *
+     * 🛡️ F20: โค้ดเดิมอ่าน users.referred_by ซึ่งไม่มีคอลัมน์นี้จริง (จึงไม่เคยทำงาน) และถ้าทำงานจะ
+     *    ฝากเงินเข้ากระเป๋าที่ถอนได้ทันที นอกการอนุมัติ (M10) และนอก budget ของการจอง (M3)
+     *    ผู้แนะนำได้เงินจากการจองผ่าน unilevel ชั้น 1 ของ MLM อยู่แล้ว
      */
     protected function payReferrerCommission(ServiceBooking $booking): ?array
     {
-        // หา Affiliate/Referrer ของลูกค้า
-        $customer = $booking->user;
-        if (! $customer || ! $customer->referred_by) {
-            return null;
-        }
-
-        $referrer = User::find($customer->referred_by);
-        if (! $referrer) {
-            return null;
-        }
-
-        // คำนวณคอมมิชชั่นผู้แนะนำ (ใช้ค่าจากระบบหรือ default 5%)
-        $referralPercentage = config('services.referral_commission_percentage', 5);
-        $referralCommission = ($booking->total_amount * $referralPercentage) / 100;
-
-        if ($referralCommission <= 0) {
-            return null;
-        }
-
-        try {
-            $transaction = $this->walletService->deposit(
-                $referrer,
-                $referralCommission,
-                'referral_commission',
-                "คอมมิชชั่นแนะนำบริการ #{$booking->booking_number}",
-                [
-                    'booking_id' => $booking->id,
-                    'referred_user_id' => $customer->id,
-                    'percentage' => $referralPercentage,
-                ]
-            );
-
-            return [
-                'referrer_id' => $referrer->id,
-                'referred_user_id' => $customer->id,
-                'amount' => $referralCommission,
-                'percentage' => $referralPercentage,
-                'transaction_id' => $transaction->id ?? null,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Failed to pay referrer commission', [
-                'booking_id' => $booking->id,
-                'referrer_id' => $referrer->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
+        return null;
     }
 
     /**
@@ -347,7 +465,8 @@ class ServiceCommissionService
     public function calculateBookingSummary(ServiceBooking $booking): array
     {
         $service = $booking->service;
-        $pvValue = $service->pv_value ?? $booking->total_amount;
+        // PV = pv_value ของบริการเท่านั้น (ตรงกับ distributeMlmCommission)
+        $pvValue = (float) ($service->pv_value ?? 0);
         $cashbackPercentage = $service->cashback_percentage ?? 0;
         $cashbackAmount = ($booking->total_amount * $cashbackPercentage) / 100;
 

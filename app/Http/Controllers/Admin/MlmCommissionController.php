@@ -128,11 +128,14 @@ class MlmCommissionController extends Controller
 
         try {
             $count = $this->calculationService->payApprovedCommissions($validated['commission_ids']);
+            $blocked = $this->calculationService->getLastPayoutBlocked();
 
+            // 🛡️ F9: เดิมตอบ "สำเร็จ" แม้บางแถวจ่ายไม่ได้ — ตอนนี้บอกจำนวนและเหตุผล
             return response()->json([
                 'success' => true,
-                'message' => "จ่ายคอมมิชชั่นแล้ว {$count} รายการ",
+                'message' => "จ่ายคอมมิชชั่นแล้ว {$count} รายการ".$this->blockedSummary($blocked),
                 'count' => $count,
+                'blocked' => $blocked,
             ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Admin MLM commission pay failed', ['error' => $e->getMessage()]);
@@ -149,10 +152,14 @@ class MlmCommissionController extends Controller
     {
         try {
             $count = $this->calculationService->payApprovedCommissions();
+            $blocked = $this->calculationService->getLastPayoutBlocked();
 
-            return redirect()
+            $redirect = redirect()
                 ->route('admin.mlm.commissions.index')
                 ->with('success', "จ่ายคอมมิชชั่นแล้ว {$count} รายการ");
+
+            // 🛡️ F9: แถวที่จ่ายไม่ได้ต้องแจ้งให้เห็น ไม่ใช่เงียบ
+            return $blocked === [] ? $redirect : $redirect->with('error', 'จ่ายไม่ได้'.$this->blockedSummary($blocked));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Admin MLM commission pay-all failed', ['error' => $e->getMessage()]);
 
@@ -200,14 +207,35 @@ class MlmCommissionController extends Controller
             }
         }
 
+        $blocked = [];
         if ($validated['action'] === 'pay') {
             $count = $this->calculationService->payApprovedCommissions($validated['commission_ids']);
+            $blocked = $this->calculationService->getLastPayoutBlocked();
         }
 
         return response()->json([
             'success' => true,
-            'message' => "ดำเนินการแล้ว {$count} รายการ",
+            'message' => "ดำเนินการแล้ว {$count} รายการ".$this->blockedSummary($blocked),
             'count' => $count,
+            'blocked' => $blocked,
         ]);
+    }
+
+    /**
+     * สรุปแถวที่จ่ายไม่ได้เป็นข้อความไทย เช่น " · จ่ายไม่ได้ 2 รายการ (กองทุน MLM มีเงินไม่พอจ่าย 2)" (audit F9)
+     *
+     * @param  array<int, string>  $blocked  [commission_id => รหัสเหตุผล]
+     */
+    protected function blockedSummary(array $blocked): string
+    {
+        if ($blocked === []) {
+            return '';
+        }
+
+        $parts = collect($blocked)->countBy()
+            ->map(fn ($n, $code) => (MlmCommission::PAYOUT_BLOCK_REASONS[$code] ?? $code).' '.$n)
+            ->implode(', ');
+
+        return ' · จ่ายไม่ได้ '.count($blocked).' รายการ ('.$parts.')';
     }
 }

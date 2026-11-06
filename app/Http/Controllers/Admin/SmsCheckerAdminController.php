@@ -242,7 +242,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * ลบ FCM Token ของอุปกรณ์ (สำหรับ reset token ที่ไม่ถูกต้อง)
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\Http\RedirectResponse
      */
     public function clearFcmToken(SmsCheckerDevice $device)
@@ -637,6 +636,18 @@ class SmsCheckerAdminController extends Controller
         try {
             DB::beginTransaction();
 
+            // 🛡️ F31: ล็อกแถวแล้วตรวจสถานะล่าสุด — เดิมไม่ตรวจอะไรเลย ออเดอร์ที่ยกเลิก/คืนเงิน/จ่ายแล้ว
+            //    ถูกตั้งเป็น paid+processing ได้ (cancelled → paid = ลูกค้าขาดเงิน, กดซ้ำ = ทับสถานะเดิม)
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if (! $locked || $locked->payment_status !== 'pending' || in_array((string) $locked->status, ['cancelled', 'refunded'], true)) {
+                DB::rollBack();
+
+                return redirect()
+                    ->back()
+                    ->with('error', "คำสั่งซื้อ #{$order->id} ไม่ได้อยู่ในสถานะรอชำระเงิน (ยกเลิก/คืนเงิน/ชำระแล้ว) จึงยืนยันการชำระเงินไม่ได้");
+            }
+            $order->setRawAttributes($locked->getAttributes(), true);
+
             // อัปเดตสถานะ order
             $order->update([
                 'payment_status' => 'paid',
@@ -675,7 +686,7 @@ class SmsCheckerAdminController extends Controller
 
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'ทำรายการไม่สำเร็จ ระบบยกเลิกการเปลี่ยนแปลงแล้ว กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ');
         }
     }
 
@@ -692,6 +703,17 @@ class SmsCheckerAdminController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // 🛡️ F31: ปฏิเสธได้เฉพาะออเดอร์ที่ยังรอชำระ — เดิมออเดอร์ที่จ่ายแล้วถูกตั้ง cancelled ได้โดยไม่คืนเงิน
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if (! $locked || $locked->payment_status !== 'pending' || in_array((string) $locked->status, ['cancelled', 'refunded'], true)) {
+                DB::rollBack();
+
+                return redirect()
+                    ->back()
+                    ->with('error', "คำสั่งซื้อ #{$order->id} ไม่ได้อยู่ในสถานะรอชำระเงิน จึงปฏิเสธการชำระเงินไม่ได้ (ออเดอร์ที่ชำระแล้วให้ใช้การคืนเงิน)");
+            }
+            $order->setRawAttributes($locked->getAttributes(), true);
 
             // อัปเดตสถานะ order
             $order->update([
@@ -731,7 +753,7 @@ class SmsCheckerAdminController extends Controller
 
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'ทำรายการไม่สำเร็จ ระบบยกเลิกการเปลี่ยนแปลงแล้ว กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ');
         }
     }
 
@@ -837,7 +859,7 @@ class SmsCheckerAdminController extends Controller
             if (empty($order['approval_status'])) {
                 $issues[] = 'Missing approval_status';
             }
-            if (!empty($issues)) {
+            if (! empty($issues)) {
                 $validationIssues[] = [
                     'fortune_reading_id' => $reading->id,
                     'offset_id' => $reading->id + $idOffset,
@@ -857,7 +879,7 @@ class SmsCheckerAdminController extends Controller
                     'device_name' => $d->device_name,
                     'last_active_at' => $d->last_active_at?->toIso8601String(),
                     'fcm_token_length' => strlen($d->fcm_token ?? ''),
-                    'has_fcm_token' => !empty($d->fcm_token),
+                    'has_fcm_token' => ! empty($d->fcm_token),
                 ];
             });
 

@@ -73,6 +73,28 @@ class MlmGlobalSetting extends Model
     }
 
     /**
+     * อ่านค่าตั้งที่เป็น "เพดาน" — คืน null เมื่อไม่จำกัด
+     *
+     * 🛡️ audit F6: แถวค่าตั้งที่เป็น NULL (หน้าแอดมินเขียนว่า "ไม่จำกัด") ถูก getTypedValue() แปลงเป็น 0.0
+     *    แล้วโค้ดที่เช็ค `!== null` เอา 0 ไปเป็นเพดาน → unilevel จ่าย 0 ทุกชั้นบน prod
+     *    กติกาเดียวทั้งระบบ: ค่า NULL / ว่าง / 0 / ติดลบ / ไม่ใช่ตัวเลข = ไม่จำกัด · ค่า > 0 = เพดาน
+     *
+     * @return float|null เพดาน (> 0) หรือ null = ไม่จำกัด
+     */
+    public static function positiveCap(string $key): ?float
+    {
+        $value = static::get($key, null);
+
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
+
+        $cap = (float) $value;
+
+        return $cap > 0 ? $cap : null;
+    }
+
+    /**
      * Set a setting value
      *
      * ⚠️ ตรวจสอบ PV rate >= 0.01 และ commission_per_pv > 0 อัตโนมัติ
@@ -129,6 +151,13 @@ class MlmGlobalSetting extends Model
                 : null,
             'max_commission_percentage' => $numericValue !== null && ($numericValue <= 0 || $numericValue > 100)
                 ? throw new \InvalidArgumentException("Max Commission Percentage ต้องอยู่ระหว่าง 0-100 (ได้รับ: {$value})")
+                : null,
+            // 🛡️ หน่วยคู่ binary ต้อง > 0 (0 = กลับไปคิด 1 PV เป็นคู่ไม่ได้ — audit F1)
+            'binary_pair_unit_pv' => $numericValue !== null && $numericValue <= 0
+                ? throw new \InvalidArgumentException("PV ต่อคู่ binary ต้อง > 0 (ได้รับ: {$value})")
+                : null,
+            'binary_max_pairs_per_day' => $numericValue !== null && $numericValue < 0
+                ? throw new \InvalidArgumentException("เพดานคู่ต่อวันต้อง >= 0 (ได้รับ: {$value})")
                 : null,
             default => null,
         };
