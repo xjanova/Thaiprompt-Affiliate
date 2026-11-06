@@ -334,7 +334,8 @@ class FortuneChannelManager
         $action = $result['action'] ?? '';
         // 🗑️ PDPA actions — ห้ามแทรกโฆษณาคอมมิชชั่นในข้อความลบข้อมูล (ผิดบริบท legal)
         // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — เป็นคำขอสิทธิ์ PDPA เช่นกัน ห้ามแทรกโฆษณา
-        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned',
+        // 🤍 (2026-11-03) crisis_support — คนกำลังคิดทำร้ายตัวเอง ห้ามมีเรื่องเงินแทรก
+        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning', 'abuse_auto_banned', 'crisis_support',
             'pdpa_delete_confirm', 'pdpa_deleted', 'pdpa_delete_cancelled',
             'personal_data_summary', 'personal_data_restricted', 'personal_data_empty', 'personal_data_error',
             'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled', 'personal_name_failed'], true)) {
@@ -939,6 +940,9 @@ class FortuneChannelManager
 
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendFacebookDeepReadingRedirect($fbService, $richService, $userId, $result),
+
+                // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → ข้อความล้วน ❌ ห้ามปุ่มดูดวง/ปุ่มชวนย้าย ❌ ไม่หน่วง 15 วิ
+                'crisis_support' => $fbService->sendMessage($userId, $message, $extra),
 
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
                 'keyword_matched', 'ai_chat_response', 'ai_chat_hold', 'fortune_throttled', 'busy', 'busy_processing',
@@ -3165,6 +3169,13 @@ class FortuneChannelManager
         //   ต้องอยู่นอก match: ส่งไม่สำเร็จใน match จะตกไป sendMessageWithReplyFallback ซึ่ง push เอง
         if ($action === 'ai_chat_hold') {
             return $this->sendLineHoldReply($lineService, $message, $replyToken, $result['quick_reply_options'] ?? []);
+        }
+
+        // 🤍 (2026-11-03) คำตอบห่วงใยคนที่อยากทำร้ายตัวเอง → text ล้วน ไม่มี quick reply ดูดวง
+        //   🟢 (2026-11-04) reply อย่างเดียว ❌ ห้าม push (.claude/LINE_MESSAGING_RULES.md) — อยู่นอก match เหตุผลเดียวกับ ai_chat_hold
+        //   token ตาย = ไม่ส่ง · แอดมินได้แจ้งเตือนทาง Telegram แล้ว (reportSelfHarmSignal) และข้อความถัดไปของลูกค้าก็ได้คำตอบตามปกติ
+        if ($action === 'crisis_support') {
+            return $this->sendLineCrisisReplyOnly($lineService, $userId, $message, $replyToken);
         }
 
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
@@ -7679,5 +7690,27 @@ class FortuneChannelManager
             'user_id' => $userId,
             'seconds' => $seconds,
         ]);
+    }
+
+    /**
+     * 🤍 (2026-11-04) ส่งคำปลอบ ทาง LINE ด้วย reply เท่านั้น
+     *
+     * ❌ ห้ามใช้ sendMessageWithReplyFallback — มันตกไป push เมื่อ token ตาย (โควตา 300/เดือน)
+     * ส่งไม่ออก = log ไว้ แอดมินได้แจ้งเตือน Telegram แล้ว ไม่ push ซ้ำ
+     */
+    protected function sendLineCrisisReplyOnly(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken): bool
+    {
+        if ($replyToken) {
+            if ($lineService->replyMessage($replyToken, [['type' => 'text', 'text' => $message]])) {
+                return true;
+            }
+        }
+
+        Log::warning('ChannelManager: ส่งคำตอบห่วงใย (crisis_support) ทาง LINE ไม่ออก — ไม่มี/หมดอายุ replyToken (ไม่ push)', [
+            'user_id' => $userId,
+            'has_reply_token' => (bool) $replyToken,
+        ]);
+
+        return false;
     }
 }

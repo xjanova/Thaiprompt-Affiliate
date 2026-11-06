@@ -52,11 +52,11 @@ class FortuneConversationService
     // 🌙 (2026-11-03) FB web-only — sendWebHandoff() พาลูกค้า FB ไปห้องแม่หมอบนเว็บ (fail-closed)
     use \App\Services\Fortune\WebHandoffTrait;
 
-    // 🌐 (2026-11-03) FB web-only — ด่านขาเข้า maybeWebOnlyGate() (เรียกหัว processMessage หลัง takeover)
-    use \App\Services\Fortune\WebOnlyGateTrait;
-
     // 🌐 (2026-11-03) FB web-only — hard guard ที่จุดสร้างบิลทุกจุด (T5) ใช้ FbBillingGuard ตัดสิน
     use \App\Services\Fortune\WebOnlyBillingGuardTrait;
+
+    // 🌐 (2026-11-03) FB web-only — ด่านขาเข้า maybeWebOnlyGate() (เรียกหัว processMessage หลัง takeover)
+    use \App\Services\Fortune\WebOnlyGateTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -701,6 +701,17 @@ class FortuneConversationService
                 }
             } catch (\Throwable $laoErr) {
                 // ignore — sticky-lao detection เป็นแค่ตัวช่วย ไม่ critical
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🤍 (2026-11-03) สัญญาณอยากทำร้ายตัวเอง — ปลอบเบา ๆ ก่อนทุก flow
+            // ═══════════════════════════════════════════════════════════════
+            //   จุดนี้ทุกข้อความ FB/LINE/Telegram ผ่าน ⇒ ครอบทั้งแชท AI, เส้น Pro sensitive (ไม่มี guard),
+            //   partial hold และกลางบททำนาย (ข้อยกเว้นของกฎ "ห้ามแทรกระหว่างทำนาย" — ชีวิตคนมาก่อน)
+            //   ไม่แตะสถานะ reading/บิล — ข้อความถัดไปกลับเข้า flow เดิมได้ตามปกติ
+            $selfHarmReply = $this->maybeHandleSelfHarmMessage($facebookUserId, $messageText, $userProfile);
+            if ($selfHarmReply !== null) {
+                return $selfHarmReply;
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -23550,6 +23561,46 @@ PROMPT;
 
     public function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
     {
+        // 🤍 (2026-11-03) ProcessBufferedChatMessageJob เรียกตรงนี้โดยไม่ผ่าน processMessage
+        //   → ดักซ้ำที่นี่ ก่อนด่านปิดปาก rambler (คนวิกฤตห้ามโดนเงียบ)
+        $selfHarmReply = $this->maybeHandleSelfHarmMessage($userId, $messageText, $userProfile);
+        if ($selfHarmReply !== null) {
+            return $selfHarmReply;
+        }
+
+        return $this->quietOthersCrisisReply(
+            $this->aiChatResponseFor($userId, $messageText, $userProfile, $dmContext, $bypassBuffer),
+            $messageText
+        );
+    }
+
+    /**
+     * 🤍 (2026-11-06) ลูกค้าเล่าว่าคนอื่นอยากทำร้ายตัวเอง ("แฟนขู่จะฆ่าตัวตาย" / "แม่ฆ่าตัวตายเมื่อปีก่อน")
+     *
+     * ไม่ใช่วิกฤตของลูกค้าเอง → ให้ AI ตอบตามปกติ (system prompt มีกฎดูแลใจเมื่อเจอคำวิกฤตอยู่แล้ว)
+     * แต่คำตอบเทิร์นนี้ต้องไม่มีอะไรขาย: เปลี่ยนเป็น action crisis_support = ข้อความล้วน ไม่มีปุ่มดูดวง/ชวนย้าย
+     * ไม่แทรกโฆษณาคอมมิชชั่น ไม่หน่วง 15 วิ และ LINE ตอบด้วย reply เท่านั้น
+     * ไม่ติดธงเปราะบาง ไม่แจ้งแอดมิน (ไม่ใช่ตัวลูกค้า)
+     */
+    protected function quietOthersCrisisReply(?array $result, string $messageText): ?array
+    {
+        if (! is_array($result)
+            || ($result['action'] ?? null) !== 'ai_chat_response'
+            || trim((string) ($result['message'] ?? '')) === ''
+            || ! FortuneAIService::mentionsOthersSelfHarm($messageText)) {
+            return $result;
+        }
+
+        $result['action'] = 'crisis_support';
+        $result['offer_fortune'] = false;
+        $result['message'] = trim((string) preg_replace('/\s*\[(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE)\]\s*/u', ' ', (string) $result['message']));
+
+        return $result;
+    }
+
+    /** เนื้อเดิมของ tryAIChatResponse (แยกออกมาเพื่อให้ด่านวิกฤตครอบผลลัพธ์ได้ทุกทางออก) */
+    protected function aiChatResponseFor(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
+    {
         try {
             // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
             //   ถ้าลูกค้าถูก mark "ฟุ้งซ่านไม่ปิดการขาย" + ไม่มี keyword พร้อมซื้อ → return null
@@ -23688,7 +23739,7 @@ PROMPT;
             //   ตรวจก่อน AI call → ประหยัด token + ตัดเร็ว
             // 💬 (2026-05-28) ขยาย gate — นับ "ระบายวนไม่ดูดวง" (venting) ด้วย ไม่ใช่แค่ chitchat/meta
             //   เคส สุบิน สาวันดี 68 turns: venting ไม่เคยถูกนับ → ไม่ silence
-            //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้อง empathy + 1323)
+            //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้องปลอบเบา ๆ)
             //   🌙 (2026-10-30) chat_retry = ข้อความเดิมที่นับไปแล้วตอนลองรอบแรก — ห้ามนับซ้ำ
             $isChatRetry = ! empty($dmContext['chat_retry']);
             if (! $isChatRetry
@@ -24553,6 +24604,48 @@ PROMPT;
 
             return [];
         }
+    }
+
+    /**
+     * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง
+     *
+     * - แจ้งแอดมิน (Telegram) + ติดธง persona mental_fragile/crisis_resources_sent เสมอ
+     * - แอดมินคุยเองอยู่ (takeover) → ไม่แทรก คืน null ให้ flow takeover เดิมทำงาน
+     * - นอกนั้น → คำตอบห่วงใย action `crisis_support` (ส่งข้อความล้วน ไม่มีปุ่มดูดวง/ขาย)
+     *   และบันทึกลงประวัติแชท ให้ AI เทิร์นถัดไปรู้ว่าคุยเรื่องอะไรอยู่
+     *
+     * @return array|null null = ไม่ใช่ข้อความวิกฤต / แอดมินดูแลอยู่
+     */
+    protected function maybeHandleSelfHarmMessage(string $userId, string $messageText, ?array $userProfile): ?array
+    {
+        if (! FortuneAIService::isSelfHarmStatement($messageText)) {
+            return null;
+        }
+
+        $platform = $this->currentPlatform ?? $this->detectPlatformFromUserId($userId);
+
+        FortuneAIService::reportSelfHarmSignal('self_harm', $messageText, $userId,
+            'แชท '.$platform.(! empty($userProfile['name']) ? ' · '.$userProfile['name'] : ''));
+        app(\App\Services\Fortune\CustomerPersonaService::class)
+            ->flagCrisis($platform, $userId, $userProfile['name'] ?? null);
+
+        try {
+            if (app(\App\Services\FortuneTakeoverService::class)->isActiveByPlatform($platform, $userId)) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            // เช็ค takeover ไม่ได้ → ตอบลูกค้าไปเลย (เงียบใส่คนวิกฤตแย่กว่าตอบซ้อนแอดมิน)
+        }
+
+        $reply = FortuneAIService::buildAdversarialReply('self_harm');
+        $this->saveConversationMessage($userId, 'user', $messageText);
+        $this->saveConversationMessage($userId, 'assistant', $reply);
+
+        return [
+            'action' => 'crisis_support',
+            'message' => $reply,
+            'reading' => null,
+        ];
     }
 
     /**
