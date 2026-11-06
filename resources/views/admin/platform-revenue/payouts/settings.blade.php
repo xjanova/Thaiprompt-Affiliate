@@ -7,8 +7,8 @@
     <div class="max-w-4xl mx-auto">
         {{-- Header --}}
         <div class="mb-8">
-            <a href="{{ route('admin.platform-revenue.payouts.index') }}" class="text-orange-400 hover:text-orange-300 mb-4 inline-block">
-                <i class="fas fa-arrow-left mr-2"></i>กลับรายการ Payout
+            <a href="{{ route('admin.platform-revenue.index') }}" class="text-orange-400 hover:text-orange-300 mb-4 inline-block">
+                <i class="fas fa-arrow-left mr-2"></i>กลับหน้ารายได้แพลตฟอร์ม
             </a>
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
                 <i class="fas fa-cog text-orange-400"></i>
