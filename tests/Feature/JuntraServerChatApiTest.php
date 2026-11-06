@@ -127,6 +127,181 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('[[OFFER:', end($this->aiCalls)['system']);
     }
 
+    /** 💬 (2026-11-05) ปุ่มคำถามถัดไปที่ AI คิด — ขอด้วย suggest=1 · ป้ายไม่ถึงตาลูกค้า */
+    public function test_suggest_returns_the_ai_follow_up_questions_and_strips_the_tag(): void
+    {
+        $session = $this->start();
+        $this->aiReply = "ไพ่ถ้วยสองบอกว่าความรักกำลังไปได้ดีนะคะลูก ✨ [[OFFER:love]]\n[[ASK: แล้วเขาคิดยังไงกับหนู | ควรบอกความรู้สึกเมื่อไหร่ดี | ✨ มีอะไรต้องระวังไหม | ควรบอกความรู้สึกเมื่อไหร่ดี]]";
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'เรื่องความรักค่ะ', 'suggest' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.suggestions', ['แล้วเขาคิดยังไงกับหนู', 'ควรบอกความรู้สึกเมื่อไหร่ดี', 'มีอะไรต้องระวังไหม'])
+            ->assertJsonPath('data.kind', 'offer');
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $this->assertStringNotContainsString('ASK', $res->json('data.reply'));
+        $this->assertStringContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_without_suggest_the_prompt_and_json_stay_as_before_but_a_stray_tag_is_still_stripped(): void
+    {
+        $session = $this->start();
+        $this->aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก [[ASK: ถามต่อ | อีกข้อ]]';
+
+        $res = $this->send($session, 'สวัสดีค่ะ')->assertOk();
+
+        $this->assertArrayNotHasKey('suggestions', $res->json('data'));
+        $this->assertSame('แม่หมออยู่ตรงนี้นะคะลูก', $res->json('data.reply'));
+        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_a_tag_cut_off_by_the_token_limit_is_dropped_whole(): void
+    {
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk("ดวงช่วงนี้ดีค่ะลูก\n[[ASK: แล้วเรื่องงานล่ะ | ควรเริ่ม");
+        $this->assertSame('ดวงช่วงนี้ดีค่ะลูก', $reply);
+        $this->assertSame([], $asks);
+
+        [, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk('ค่ะ [[ASK: ดูที่ https://x.co | ค่าครูกี่บาท | <b>ใช่ค่ะ</b>]]');
+        $this->assertSame(['ใช่ค่ะ'], $asks);
+    }
+
+    /**
+     * 🔁 (รีวิว 2026-11-06) trim() ตัดเป็นไบต์ — ไบต์ของ “ ” • · อยู่ท้าย ย ผ ฝ ื เ ด้วย ข้อที่ลงท้ายตัวพวกนี้เคยเหลือ
+     * UTF-8 เสีย แล้ว response()->json โยน → 500 หลังจำคำตอบลงห้องและจ่ายโทเคนไปแล้ว
+     */
+    public function test_chips_ending_in_thai_letters_that_share_bytes_with_quote_marks_survive_intact(): void
+    {
+        $session = $this->start();
+        $this->aiReply = "แม่หมอฟังอยู่นะคะลูก\n[[ASK: “ดูเรื่องงานให้หน่อย” | - เขาเป็นคนยังไงเ | • ควรเชื่อคนนั้นไหมคื · | \"อยากถามเรื่องลูกผ\"]]";
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'สวัสดีค่ะ', 'suggest' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.suggestions', ['ดูเรื่องงานให้หน่อย', 'เขาเป็นคนยังไงเ', 'ควรเชื่อคนนั้นไหมคื', 'อยากถามเรื่องลูกผ'])
+            ->assertJsonPath('data.reply', 'แม่หมอฟังอยู่นะคะลูก');
+
+        [, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk('ค่ะ [[ASK: ควรบอกเขาเลย | ฝนจะตกไหมฝ | ด้วย]]');
+        $this->assertSame(['ควรบอกเขาเลย', 'ฝนจะตกไหมฝ', 'ด้วย'], $asks);
+        foreach ($asks as $q) {
+            $this->assertTrue(mb_check_encoding($q, 'UTF-8'), $q);
+        }
+        $this->assertNotFalse(json_encode($asks));
+    }
+
+    public function test_a_chip_that_is_not_valid_utf8_is_dropped_and_never_breaks_the_answer(): void
+    {
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk("ค่ะ [[ASK: ใช่ค่ะ | \xE0\xB8 | ไม่ใช่]]");
+        $this->assertSame('ค่ะ', $reply);
+        $this->assertSame(['ใช่ค่ะ', 'ไม่ใช่'], $asks);
+
+        // ไบต์เสียในตัวคำตอบเอง — ยังถอดป้ายได้ และคำตอบถูก scrub ให้ encode เป็น JSON ได้
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk("ดวงดีค่ะ\xFF [[ASK: ใช่ค่ะ]]");
+        $this->assertTrue(mb_check_encoding($reply, 'UTF-8'));
+        $this->assertStringStartsWith('ดวงดีค่ะ', $reply);
+        $this->assertStringNotContainsString('ASK', $reply);
+        $this->assertSame(['ใช่ค่ะ'], $asks);
+
+        $session = $this->start();
+        $this->aiReply = "แม่หมออยู่ตรงนี้ค่ะ [[ASK: ใช่ค่ะ | \xE0\xB8 | ไม่ใช่]]";
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'สวัสดีค่ะ', 'suggest' => true,
+        ])->assertOk()->assertJsonPath('data.suggestions', ['ใช่ค่ะ', 'ไม่ใช่']);
+    }
+
+    /** 🤍 (รีวิว) ลูกค้ามีสัญญาณทำร้ายตัวเอง = ไม่ขอปุ่มจาก AI และไม่ส่งปุ่มแม้ AI ใส่ป้ายมา */
+    public function test_a_customer_in_crisis_gets_no_suggestions_even_if_the_ai_adds_the_tag(): void
+    {
+        $session = $this->start();
+        $this->aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก โทรสายด่วนสุขภาพจิต 1323 ได้ตลอด 24 ชั่วโมง [[ASK: ดูเรื่องงานให้หน่อย | ดูดวงความรัก]]';
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'เหนื่อยมาก ไม่อยากอยู่แล้วค่ะ', 'suggest' => true,
+        ])->assertOk();
+
+        // ข้อความทำร้ายตัวเอง = คำปลอบสำเร็จรูป ไม่ถึง AI · เว็บที่ขอปุ่มได้ [] ไม่ใช่ไม่มีคีย์
+        $res->assertJsonPath('data.suggestions', [])->assertJsonPath('data.crisis', true);
+        $this->assertSame([], $this->aiCalls);
+        $this->assertStringNotContainsString('ASK', $res->json('data.reply'));
+
+        // รอบถัดไปลูกค้าตอบสั้น ๆ — ข้อความวิกฤตยังอยู่ในหน้าต่างที่ AI เห็น จึงยังไม่มีปุ่ม
+        $this->aiReply = 'แม่หมอฟังลูกอยู่นะคะ [[ASK: ดูดวงความรัก]]';
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ค่ะ', 'suggest' => true,
+        ])->assertOk()->assertJsonPath('data.suggestions', []);
+        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_a_crisis_care_reply_carries_no_suggestions_even_when_the_message_had_no_keyword(): void
+    {
+        $session = $this->start();
+        $this->aiReply = 'ลูกไม่ได้อยู่คนเดียวนะคะ ถ้าใจไม่ไหวโทร 1323 ได้เลย [[ASK: ดูเรื่องงานให้หน่อย]]';
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ช่วงนี้ชีวิตแย่มากเลยค่ะ', 'suggest' => true,
+        ])->assertOk()->assertJsonPath('data.suggestions', []);
+        // ปกติยังขอปุ่ม — ตัดสินจากคำตอบที่ให้เบอร์สายด่วน
+        $this->assertStringContainsString('[[ASK:', end($this->aiCalls)['system']);
+    }
+
+    public function test_an_unclosed_ask_tag_before_an_offer_keeps_the_offer(): void
+    {
+        $session = $this->start();
+        $this->aiReply = "แม่หมอจะเปิดไพ่ให้นะคะลูก เลือกด้านล่างได้เลย [[ASK: ความรัก | การงาน\n[[OFFER:love]]";
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ดูดวงให้หน่อยค่ะ', 'suggest' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.kind', 'offer')
+            ->assertJsonPath('data.offer_topic', 'love')
+            ->assertJsonPath('data.suggestions', [])
+            ->assertJsonPath('data.reply', 'แม่หมอจะเปิดไพ่ให้นะคะลูก เลือกด้านล่างได้เลย');
+
+        // ป้ายที่ปิดครบตามด้วยป้ายที่ลืมปิด — ข้อของป้ายแรกยังได้ ป้ายหลังไม่กินข้อความถัดไป
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk('ค่ะ [[ASK: ใช่ค่ะ | ไม่ใช่]] [[OFFER:love]]');
+        $this->assertSame('ค่ะ [[OFFER:love]]', $reply);
+        $this->assertSame(['ใช่ค่ะ', 'ไม่ใช่'], $asks);
+    }
+
+    public function test_a_tag_cut_off_after_a_single_bracket_or_mid_name_never_leaks(): void
+    {
+        foreach (["ดวงดีค่ะลูก\n[[ASK: งาน | เงิน]", 'ดวงดีค่ะลูก [[ASK: งาน | เงิน ]', 'ดวงดีค่ะลูก [[AS', 'ดวงดีค่ะลูก [[', 'ดวงดีค่ะลูก [[ASK'] as $raw) {
+            [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk($raw);
+            $this->assertSame('ดวงดีค่ะลูก', $reply, $raw);
+            $this->assertSame([], $asks, $raw);
+        }
+    }
+
+    /** 🔁 (รีวิว) คำตอบที่มีแต่ป้าย ASK = ว่างสำหรับลูกค้า → ไปคีย์ถัดไป/luna ไม่ใช่ 503 ทั้งที่ยังมีทางให้ลอง */
+    public function test_a_reply_that_is_only_an_ask_tag_counts_as_empty_and_falls_through(): void
+    {
+        $session = $this->start();
+        $this->aiScript = [
+            ['response' => '[[ASK: ใช่ค่ะ | ไม่ใช่]]', 'provider' => 'gemini'],
+            ['response' => 'แม่หมออยู่ตรงนี้นะคะลูก [[ASK: ดูดวงความรัก]]', 'provider' => 'openai'],
+        ];
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'สวัสดีค่ะ', 'suggest' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.reply', 'แม่หมออยู่ตรงนี้นะคะลูก')
+            ->assertJsonPath('data.suggestions', ['ดูดวงความรัก']);
+
+        $this->assertCount(2, $this->aiCalls);
+        $this->assertSame('openai', $this->aiCalls[1]['provider']);
+
+        // ทุกทางตอบแต่ป้าย = ไม่มีคำตอบจริง → 503 ให้เว็บแสดงข้อความที่เตรียมไว้
+        $this->aiScript = [
+            ['response' => '[[ASK: ใช่ค่ะ]]', 'provider' => 'gemini'],
+            ['response' => '[[ASK: ใช่ค่ะ]]', 'provider' => 'openai'],
+        ];
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'สวัสดีค่ะ', 'suggest' => true,
+        ])->assertStatus(503);
+    }
+
     public function test_unknown_offer_topic_falls_back_to_general(): void
     {
         $session = $this->start();
@@ -1185,6 +1360,17 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $system);
         $this->assertStringContainsString(\App\Services\Fortune\WebChatContinuityService::CRISIS_MEMORY_LINE, $system);
         $this->assertStringNotContainsString('อยากฆ่าตัวตาย', $system, 'ส่งแค่ธง ไม่ส่งข้อความเดิมของลูกค้า');
+
+        // 💬 ห้องโหมดวิกฤตจากแชทเพจ — AI ไม่เห็นข้อความเดิม แต่เว็บขอปุ่มก็ต้องไม่ได้ปุ่มคำถามถัดไป
+        $this->aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก [[ASK: ดูดวงความรัก | ดูเรื่องงานให้หน่อย]]';
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ค่ะ', 'suggest' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.reply', 'แม่หมออยู่ตรงนี้นะคะลูก')
+            ->assertJsonPath('data.suggestions', [])
+            ->assertJsonPath('data.crisis_room', true);
+        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+        $this->aiReply = 'แม่หมอจะเปิดไพ่เรื่องความรักให้นะคะลูก [[OFFER:love]]';
 
         // ห้องหมดอายุ / cache ถูกล้าง → สร้างความจำใหม่ ธงวิกฤตกลับมาด้วย
         Cache::flush();
