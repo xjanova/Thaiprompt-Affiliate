@@ -64,6 +64,12 @@ class PaymentGatewayService
      */
     public function processStripePayment(User $user, float $amount, string $paymentMethodId): array
     {
+        // 🚨 (2026-11-04) ปิดถาวรจนกว่าจะเชื่อม Stripe API จริง — โค้ดด้านล่างเติมเงินเข้ากระเป๋า
+        //    โดย "ไม่ได้ตัดบัตรเลย" (มีแค่ comment ว่า In production, integrate...) ถ้ามีใครเปิด
+        //    wallet setting stripe_enabled ผู้ใช้ทุกคนจะเสกเงินเข้ากระเป๋าได้ฟรี
+        //    ใช้ Stripe Checkout ของออเดอร์ (OrderStripeService) ซึ่งตรวจยอดจริงแทน
+        Log::warning('Blocked unverified Stripe wallet deposit attempt', ['user_id' => $user->id, 'amount' => $amount]);
+        throw new Exception('ช่องทาง Stripe สำหรับเติมกระเป๋ายังไม่เปิดให้บริการ — กรุณาใช้ PromptPay');
         if (! WalletSetting::isPaymentMethodEnabled('stripe')) {
             throw new Exception('Stripe ไม่สามารถใช้งานได้ในขณะนี้');
         }
@@ -110,6 +116,9 @@ class PaymentGatewayService
      */
     public function processPayPalPayment(User $user, float $amount, string $orderId): array
     {
+        // 🚨 (2026-11-04) ปิดถาวรจนกว่าจะเชื่อม PayPal API จริง — โค้ดด้านล่างเติมเงินโดยไม่ตรวจ/ไม่ capture order
+        Log::warning('Blocked unverified PayPal wallet deposit attempt', ['user_id' => $user->id, 'amount' => $amount]);
+        throw new Exception('ช่องทาง PayPal สำหรับเติมกระเป๋ายังไม่เปิดให้บริการ — กรุณาใช้ PromptPay');
         if (! WalletSetting::isPaymentMethodEnabled('paypal')) {
             throw new Exception('PayPal ไม่สามารถใช้งานได้ในขณะนี้');
         }
@@ -212,8 +221,8 @@ class PaymentGatewayService
      * ใช้ EMVCo payload ตามมาตรฐาน BOT + BaconQrCode render เป็น SVG
      * Fallback เป็น Google Charts API ถ้าไม่มี library
      *
-     * @param float $amount จำนวนเงิน (บาท)
-     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @param  float  $amount  จำนวนเงิน (บาท)
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      * @return string data URI ของ QR Code หรือ URL ของ QR Code
      */
     protected function generatePromptPayQRCode(float $amount, array $metadata = []): string

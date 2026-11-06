@@ -370,6 +370,8 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/wallets-dropdown', [WalletController::class, 'getWalletsDropdown'])->name('wallets-dropdown');
     Route::get('/export-transactions', [WalletController::class, 'exportTransactions'])->name('export-transactions');
     Route::post('/admin-transfer', [WalletController::class, 'adminTransfer'])->name('admin-transfer');
+    // ประวัติการปรับยอดโดยแอดมิน (audit trail) — ต้องอยู่ก่อน /{id}/show
+    Route::get('/adjustments', [WalletController::class, 'adjustments'])->name('adjustments');
     Route::get('/{id}/show', [WalletController::class, 'showWallet'])->name('show');
     Route::post('/{id}/adjust-balance', [WalletController::class, 'adjustBalance'])->name('adjust-balance');
     Route::post('/{id}/refund', [WalletController::class, 'refund'])->name('refund');
@@ -2077,34 +2079,22 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
     Route::get('/wallets/{wallet}', [PlatformRevenueController::class, 'showWallet'])
         ->name('wallets.show');
 
-    // Payouts
+    // Payout settings — holding_days ของผู้ขายที่ SellerPayoutService อ่านจริง
+    // (หน้าจอ payout_requests ถอดออกแล้ว 2026-11-06 ไม่มีอะไรสร้างแถวในตารางนั้น
+    //  คำขอถอนเงินของจริงอยู่ที่ /admin/withdrawals)
     Route::prefix('payouts')->name('payouts.')->group(function () {
-        Route::get('/', [PayoutController::class, 'index'])
-            ->name('index');
         Route::get('/settings', [PayoutController::class, 'settings'])
             ->name('settings');
         Route::put('/settings/{setting}', [PayoutController::class, 'updateSetting'])
             ->name('settings.update');
-        Route::post('/bulk-approve', [PayoutController::class, 'bulkApprove'])
-            ->name('bulk-approve');
-        Route::get('/api/pending', [PayoutController::class, 'apiPendingPayouts'])
-            ->name('api.pending');
-        Route::get('/{payout}', [PayoutController::class, 'show'])
-            ->name('show');
-        Route::post('/{payout}/approve', [PayoutController::class, 'approve'])
-            ->name('approve');
-        Route::post('/{payout}/reject', [PayoutController::class, 'reject'])
-            ->name('reject');
-        Route::post('/{payout}/process', [PayoutController::class, 'process'])
-            ->name('process');
     });
 
     // Earnings
     Route::prefix('earnings')->name('earnings.')->group(function () {
         Route::get('/', [PayoutController::class, 'earnings'])
             ->name('index');
-        Route::get('/{earning}', [PayoutController::class, 'showEarning'])
-            ->name('show');
+        // (ถอด earnings.show 2026-11-06 — ไม่เคยมี view admin.platform-revenue.earnings.show
+        //  เปิดแล้ว 500 ทุกครั้ง และไม่มีหน้าไหนลิงก์มา)
     });
 
     // Debts

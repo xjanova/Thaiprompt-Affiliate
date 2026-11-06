@@ -320,7 +320,10 @@ return [
             'order' => 20,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'กระเป๋าเงินทั้งหมด', 'route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet'],
+                // (2026-11-04) เดิมป้าย "กระเป๋าเงินทั้งหมด" ชี้ไปกระเป๋าของแอดมินเอง — แก้ป้ายให้ตรง + เพิ่มทางเข้าหน้าจัดการกระเป๋าผู้ใช้
+                ['label' => 'จัดการกระเป๋าผู้ใช้', 'route' => 'admin.wallet.all', 'icon' => 'fas fa-users-cog', 'description' => 'ค้นหากระเป๋า · เติม/หัก/คืนเงิน/ย้อนรายการ/โอนโดยแอดมิน'],
+                ['label' => 'ประวัติปรับยอดโดยแอดมิน', 'route' => 'admin.wallet.adjustments', 'icon' => 'fas fa-clipboard-list', 'description' => 'ใครทำ · เมื่อไร · ยอดก่อน/หลัง · เหตุผล'],
+                ['label' => 'กระเป๋าของฉัน (แอดมิน)', 'route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet'],
                 ['label' => 'ประวัติธุรกรรม', 'route' => 'admin.wallet.transactions', 'icon' => 'fas fa-history'],
                 ['label' => 'คำขอถอนเงิน', 'route' => 'admin.withdrawals.pending', 'icon' => 'fas fa-clock'],
                 ['label' => 'ประวัติการถอน', 'route' => 'admin.withdrawals.index', 'icon' => 'fas fa-money-bill-wave'],
@@ -370,7 +373,7 @@ return [
                 ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
                 ['label' => '📈 รายงานการเงิน', 'route' => 'admin.platform-revenue.reports', 'description' => 'รายงานรายได้รายวัน/เดือน'],
                 ['label' => '---', 'route' => null],
-                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.platform-revenue.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
+                ['label' => '⚙️ ตั้งค่าพักเงินผู้ขาย', 'route' => 'admin.platform-revenue.payouts.settings', 'description' => 'ระยะพักเงิน (holding days) ก่อนรายได้ผู้ขายเข้ากระเป๋า · คำขอถอนเงินอยู่ที่เมนูประวัติการถอน'],
                 ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
                 ['label' => '🔑 HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
             ],

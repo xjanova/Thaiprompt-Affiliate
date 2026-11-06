@@ -220,8 +220,9 @@ class JuntraServerChatApiTest extends TestCase
             'user_ref' => '42', 'session_id' => $session, 'text' => 'เหนื่อยมาก ไม่อยากอยู่แล้วค่ะ', 'suggest' => true,
         ])->assertOk();
 
-        $res->assertJsonPath('data.suggestions', []);
-        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+        // ข้อความทำร้ายตัวเอง = คำปลอบสำเร็จรูป ไม่ถึง AI · เว็บที่ขอปุ่มได้ [] ไม่ใช่ไม่มีคีย์
+        $res->assertJsonPath('data.suggestions', [])->assertJsonPath('data.crisis', true);
+        $this->assertSame([], $this->aiCalls);
         $this->assertStringNotContainsString('ASK', $res->json('data.reply'));
 
         // รอบถัดไปลูกค้าตอบสั้น ๆ — ข้อความวิกฤตยังอยู่ในหน้าต่างที่ AI เห็น จึงยังไม่มีปุ่ม
@@ -1227,6 +1228,241 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertSame(['9999999999'], DB::table('fortune_web_handoffs')->pluck('platform_user_id')->all());
     }
 
+    /**
+     * 🤍 (2026-11-04) ลูกค้าบอกว่าอยากฆ่าตัวตาย — ทุกห้อง (แม่หมอ/บุษบา/คุณไสย) ต้องได้คำปลอบเบา ๆ (ไม่มีเบอร์ ไม่ไล่ไปโทร)
+     * ไม่ใช่คำปัด "ไม่ตอบเรื่องแบบนั้น" · ไม่ส่งไปให้ AI · ❌ ไม่มีการ์ดเปิดไพ่ ต่อให้ AI จะแปะป้ายมา
+     * 🧾 (2026-11-06) data.crisis = true — เว็บใช้ตัดสินว่าไม่คิดค่าแชทเทิร์นนี้ (kind ยังเป็น guard)
+     */
+    public function test_self_harm_in_every_web_room_gets_gentle_comfort_and_never_an_offer_card(): void
+    {
+        $this->aiReply = 'แม่หมอจะเปิดไพ่ให้นะคะ [[OFFER:love]]';
+
+        foreach (['maemor' => '51', 'busaba' => '52', 'kunsai' => '53'] as $persona => $ref) {
+            $session = $this->startContinuity(['user_ref' => $ref, 'persona' => $persona])->assertStatus(201)->json('data.session_id');
+            $callsBefore = count($this->aiCalls);
+
+            $res = $this->send($session, 'ไม่ไหวแล้ว อยากฆ่าตัวตาย', $ref)->assertOk();
+
+            $res->assertJsonPath('data.offer_topic', null)->assertJsonPath('data.persona', $persona)
+                ->assertJsonPath('data.kind', 'guard')
+                ->assertJsonPath('data.crisis', true)
+                ->assertJsonPath('data.crisis_room', true);
+            $reply = $res->json('data.reply');
+            $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply, $persona);
+            $this->assertStringNotContainsString('1323', $reply, "{$persona}: ห้ามไล่ไปโทรหาใคร");
+            $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply, $persona);
+            $this->assertStringNotContainsString('[[', $reply, $persona);
+            $this->assertSame($callsBefore, count($this->aiCalls), "ห้องนี้ ({$persona}) ห้ามส่งข้อความวิกฤตไปให้ AI");
+        }
+    }
+
+    /** 🤍 ห้องที่ลูกค้าเคยส่งสัญญาณวิกฤต — เทิร์นถัด ๆ ไปไม่ยื่นการ์ดขาย และ AI ได้กติกาดูแลใจทุกรอบ */
+    public function test_after_a_crisis_the_room_never_offers_cards_but_other_rooms_still_do(): void
+    {
+        $session = $this->start('61');
+        $this->send($session, 'ไม่อยากอยู่แล้ว', '61')->assertOk();
+
+        $this->aiReply = 'แม่หมอจะเปิดไพ่เรื่องความรักให้นะคะลูก [[OFFER:love]]';
+        $res = $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '61')->assertOk();
+
+        $res->assertJsonPath('data.kind', 'reply')->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.crisis', false)->assertJsonPath('data.crisis_room', true);
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $call = end($this->aiCalls);
+        $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $call['system']);
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $call['user'], 'AI ต้องเห็นคำปลอบในประวัติห้อง');
+        $this->assertStringContainsString('ห้ามไล่ให้ไปโทรหาใคร', $call['system']);
+
+        // ห้องอื่นของลูกค้าคนอื่นไม่โดนผลกระทบ
+        $other = $this->start('62');
+        $this->send($other, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '62')->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'love')
+            ->assertJsonPath('data.crisis', false)->assertJsonPath('data.crisis_room', false);
+        $this->assertStringNotContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', end($this->aiCalls)['system']);
+    }
+
+    /**
+     * 🤍 (2026-11-06 รีวิว PR 2649) คำถามเรื่องพระ/สร้อยแขวนคอ งานที่ไม่อยากอยู่ และคำพูดเกินจริง ไม่ใช่วิกฤต
+     * — AI ตอบ การ์ดยังยื่นได้ ไม่มีกติกาวิกฤต
+     */
+    public function test_amulet_job_and_hyperbole_messages_are_not_a_crisis(): void
+    {
+        $this->aiReply = 'แม่หมอดูให้ได้นะคะลูก [[OFFER:general]]';
+
+        foreach (['ใส่พระแขวนคอองค์ไหนดีคะ', 'สร้อยแขวนคอสีอะไรเสริมดวง', 'บริษัทนี้ไม่อยากอยู่แล้ว ควรลาออกไหม', 'อายจนอยากตาย ดวงความรักช่วงนี้เป็นไง'] as $i => $text) {
+            $ref = (string) (70 + $i);
+            $session = $this->start($ref);
+            $before = count($this->aiCalls);
+
+            $this->send($session, $text, $ref)->assertOk()
+                ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'general')
+                ->assertJsonPath('data.crisis', false)->assertJsonPath('data.crisis_room', false);
+            $this->assertSame($before + 1, count($this->aiCalls), $text);
+            $system = end($this->aiCalls)['system'];
+            $this->assertStringNotContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $system, $text);
+            $this->assertStringNotContainsString('คนใกล้ตัวคิดหรือเคยทำร้าย', $system, $text);
+        }
+    }
+
+    /**
+     * 🤍 (2026-11-06) ลูกค้าเล่าว่า "คนอื่น" อยากทำร้ายตัวเอง — ไม่ใช่คำปลอบสำเร็จรูปของตัวลูกค้า
+     * ให้ AI ตอบด้วยกติกาดูแลใจ (เฉพาะเทิร์นนั้น) และ ❌ ไม่มีการ์ดขาย · ห้องไม่ถูกติดธงวิกฤต
+     */
+    public function test_someone_elses_self_harm_goes_to_the_ai_with_care_rules_and_no_offer_card(): void
+    {
+        $session = $this->start('75');
+        $this->aiReply = 'แม่หมอเข้าใจว่าหนักใจมากนะคะลูก [[OFFER:love]]';
+
+        $res = $this->send($session, 'แฟนขู่จะฆ่าตัวตายถ้าเลิก ควรเลิกไหม', '75')->assertOk();
+
+        $res->assertJsonPath('data.kind', 'reply')->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.crisis', false)->assertJsonPath('data.crisis_room', false);
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $this->assertCount(1, $this->aiCalls, 'ต้องให้ AI ตอบ ไม่ใช่คำปลอบสำเร็จรูป');
+        $system = $this->aiCalls[0]['system'];
+        $this->assertStringContainsString('ลูกค้าเล่าว่าคนใกล้ตัวคิดหรือเคยทำร้ายหรือจบชีวิตตัวเอง', $system);
+        $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ในคำตอบนี้', $system);
+        $this->assertStringNotContainsString('ลูกค้าคนนี้เคยบอกว่าอยากทำร้าย', $system);
+
+        // เทิร์นถัดไปเรื่องอื่น = ห้องปกติ ยื่นการ์ดได้
+        $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '75')->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'love');
+        $this->assertStringNotContainsString('คนใกล้ตัวคิดหรือเคยทำร้าย', end($this->aiCalls)['system']);
+    }
+
+    /**
+     * 🤍 (2026-11-06 รีวิว PR 2649) ลูกค้าที่เคยส่งสัญญาณอยากทำร้ายตัวเองในแชทเพจ (persona mental_fragile)
+     * เปิดห้องเว็บแล้วต้องเป็นห้องวิกฤตตั้งแต่ข้อความแรก — ไม่มีการ์ดขาย AI ได้กติกาดูแลใจ · ห้องหมดอายุแล้วก็ยังได้ธงกลับมา
+     * ส่งต่อแค่ธง ไม่ส่งข้อความเดิมของลูกค้า
+     */
+    public function test_a_room_opened_for_a_customer_flagged_fragile_in_the_page_starts_in_crisis_mode(): void
+    {
+        $this->buildContinuitySchema();
+        $uid = $this->makeUser('สมใจ', '1111111111');
+        $this->linkJuntra(42, $uid);
+        DB::table('fortune_customer_personas')->insert([
+            'platform' => 'facebook', 'platform_user_id' => '1111111111',
+            'traits' => json_encode(['ขี้กังวล'], JSON_UNESCAPED_UNICODE), 'risk_flags' => json_encode(['mental_fragile' => true]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->fbMessages('1111111111', [['user', 'ไม่ไหวแล้ว อยากฆ่าตัวตาย']]);
+        $h = FortuneWebHandoff::issue(['platform_user_id' => '1111111111', 'thaiprompt_user_id' => $uid]);
+
+        $start = $this->startContinuity(['user_ref' => '42', 'handoff' => $h->nonce])->assertStatus(201);
+        $start->assertJsonPath('data.offer_topic', null);
+        $session = $start->json('data.session_id');
+
+        $this->aiReply = 'แม่หมอจะเปิดไพ่เรื่องความรักให้นะคะลูก [[OFFER:love]]';
+        $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ')->assertOk()
+            ->assertJsonPath('data.kind', 'reply')->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.crisis', false)->assertJsonPath('data.crisis_room', true);
+        $system = end($this->aiCalls)['system'];
+        $this->assertStringContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', $system);
+        $this->assertStringContainsString(\App\Services\Fortune\WebChatContinuityService::CRISIS_MEMORY_LINE, $system);
+        $this->assertStringNotContainsString('อยากฆ่าตัวตาย', $system, 'ส่งแค่ธง ไม่ส่งข้อความเดิมของลูกค้า');
+
+        // 💬 ห้องโหมดวิกฤตจากแชทเพจ — AI ไม่เห็นข้อความเดิม แต่เว็บขอปุ่มก็ต้องไม่ได้ปุ่มคำถามถัดไป
+        $this->aiReply = 'แม่หมออยู่ตรงนี้นะคะลูก [[ASK: ดูดวงความรัก | ดูเรื่องงานให้หน่อย]]';
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ค่ะ', 'suggest' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.reply', 'แม่หมออยู่ตรงนี้นะคะลูก')
+            ->assertJsonPath('data.suggestions', [])
+            ->assertJsonPath('data.crisis_room', true);
+        $this->assertStringNotContainsString('[[ASK:', end($this->aiCalls)['system']);
+        $this->aiReply = 'แม่หมอจะเปิดไพ่เรื่องความรักให้นะคะลูก [[OFFER:love]]';
+
+        // ห้องหมดอายุ / cache ถูกล้าง → สร้างความจำใหม่ ธงวิกฤตกลับมาด้วย
+        Cache::flush();
+        $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ')->assertOk()
+            ->assertJsonPath('data.offer_topic', null)->assertJsonPath('data.crisis_room', true);
+
+        // ลูกค้าอีกคนที่ไม่มีธง — ห้องปกติ
+        $uid2 = $this->makeUser('สมหมาย', '2222222222');
+        $this->linkJuntra(43, $uid2);
+        $this->persona('2222222222', ['ขี้กังวล']);
+        $other = $this->startContinuity(['user_ref' => '43'])->assertStatus(201)->json('data.session_id');
+        $this->send($other, 'ช่วยดูดวงความรักให้หน่อยค่ะ', '43')->assertOk()
+            ->assertJsonPath('data.offer_topic', 'love')->assertJsonPath('data.crisis_room', false);
+        $this->assertStringNotContainsString(\App\Services\Fortune\WebChatContinuityService::CRISIS_MEMORY_LINE, end($this->aiCalls)['system']);
+    }
+
+    /**
+     * 🔑 (2026-11-06 รีวิว PR 2649) แจ้งแอดมินด้วยตัวตนที่ไม่ซ้ำ (เจ้าของห้อง) ไม่ใช่ชื่อที่แสดง — คนชื่อเดียวกันต้องได้แจ้งแยกกัน
+     * และบอกห้องให้แอดมินตามไปดูได้
+     */
+    public function test_the_admin_alert_is_keyed_by_the_customer_not_the_display_name(): void
+    {
+        $sent = [];
+        $this->mock(\App\Services\TelegramAlertService::class, function ($m) use (&$sent) {
+            $m->shouldReceive('send')->andReturnUsing(function (string $text, ?string $key = null) use (&$sent) {
+                $sent[] = ['text' => $text, 'key' => $key];
+
+                return true;
+            });
+        });
+
+        $a = $this->start('81');
+        $b = $this->start('82');
+        // ทั้งสองคนชื่อ "สมใจ" (ชื่อที่ helper send ส่งมา)
+        $this->send($a, 'อยากตาย', '81')->assertOk()->assertJsonPath('data.crisis', true);
+        $this->send($b, 'อยากตาย', '82')->assertOk()->assertJsonPath('data.crisis', true);
+
+        $this->assertCount(2, $sent);
+        $this->assertSame('fortune_self_harm:web:jw81', $sent[0]['key']);
+        $this->assertSame('fortune_self_harm:web:jw82', $sent[1]['key']);
+        $this->assertStringContainsString('web:jw81', $sent[0]['text']);
+        $this->assertStringContainsString($a, $sent[0]['text'], 'ต้องบอกห้องให้แอดมินหาแชทเจอ');
+        $this->assertStringContainsString('สมใจ', $sent[0]['text']);
+    }
+
+    /**
+     * 🪬 (2026-11-06 รีวิว PR 2649) ทุกห้อง รวมห้องคุณไสย ใช้กฎเดียวกัน — ปลอบเบา ๆ ไม่ยื่นเบอร์เอง ไม่มีคำว่า "สุขภาพจิต"
+     * เบอร์ 1323 อยู่ในพรอมต์ได้เฉพาะรูป "…เฉพาะเมื่อลูกค้า/ลูกถามหาที่ขอความช่วยเหลือเอง"
+     */
+    public function test_no_room_prompt_pushes_a_hotline(): void
+    {
+        $service = app(\App\Services\Fortune\JuntraChatService::class);
+        $check = function (string $prompt, string $where): void {
+            $this->assertStringNotContainsString('สุขภาพจิต', $prompt, $where);
+            $this->assertStringNotContainsString('1669', $prompt, $where);
+            $this->assertStringNotContainsString('แนะสายด่วน', $prompt, $where);
+            $this->assertStringNotContainsString('แนะนำสายด่วน', $prompt, $where);
+            preg_match_all('/1323.{0,20}/u', $prompt, $m);
+            foreach ($m[0] as $mention) {
+                $this->assertStringContainsString('เฉพาะเมื่อ', $mention, "{$where}: 1323 ต้องให้เฉพาะเมื่อถูกถาม — {$mention}");
+            }
+        };
+
+        foreach (['maemor', 'busaba', 'kunsai'] as $i => $persona) {
+            $owner = '9'.$i;
+            $room = $service->start($owner, null, $persona);
+            $service->send($owner, $room['session_id'], 'สวัสดีค่ะ', [], webOffers: true, fillerOnEmpty: true);
+            $check(end($this->aiCalls)['system'], "{$persona} chat");
+            $service->send($owner, $room['session_id'], 'ไพ่ใบนี้หมายถึงอะไร', [], webOffers: false, fillerOnEmpty: true, context: 'ไพ่: The Tower');
+            $check(end($this->aiCalls)['system'], "{$persona} reading");
+        }
+
+        $kunsai = \App\Services\Fortune\JuntraSpreadProfiles::get('kunsai');
+        $override = \App\Services\Fortune\JuntraSpreadProfiles::personaOverride($kunsai);
+        $this->assertNotSame('', $override);
+        foreach (['1323', '1669', 'สุขภาพจิต', 'สายด่วน'] as $word) {
+            $this->assertStringNotContainsString($word, $override, "kunsai reading override: {$word}");
+        }
+        $check(\App\Services\Fortune\JuntraSpreadProfiles::readingRules($kunsai), 'kunsai reading rules');
+    }
+
+    /** 🔮 คำดูดวงที่มีคำว่าตาย/Death ไม่ใช่วิกฤต — ยังคุยและยื่นการ์ดได้ตามปกติ */
+    public function test_fortune_words_about_death_are_not_a_crisis(): void
+    {
+        $session = $this->start('63');
+        $this->aiReply = 'ไพ่ Death หมายถึงการเปลี่ยนแปลงค่ะลูก [[OFFER:general]]';
+
+        $this->send($session, 'เปิดได้ไพ่ Death ดวงตายไหมคะ', '63')->assertOk()
+            ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'general');
+        $this->assertStringNotContainsString('ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี', end($this->aiCalls)['system']);
+    }
+
     /** 🔈 (2026-11-04) โหมดเสียงปิด = prompt + JSON เดิมทุกตัวอักษร (เว็บรุ่นเดิม/ลูกค้าที่ไม่ได้ซื้อ pass) */
     public function test_voice_mode_off_keeps_the_prompt_and_response_byte_for_byte(): void
     {
@@ -1338,5 +1574,22 @@ class JuntraServerChatApiTest extends TestCase
             ->assertJsonPath('data.kind', 'guard')
             ->assertJsonPath('data.voice_plan.source', 'guard')
             ->assertJsonPath('data.voice_plan.say', null);
+    }
+
+    /** 🤍🔈 เทิร์นวิกฤตในโหมดเสียง — เล่นคลิปปลอบที่อัดไว้ ไม่ใช่คลิป "ถามอะไรต่อไหม" และไม่สร้างเสียงใหม่ */
+    public function test_a_crisis_turn_in_voice_mode_plays_a_soothing_clip_only(): void
+    {
+        $session = $this->startContinuity(['user_ref' => '64', 'persona' => 'busaba'])->assertStatus(201)->json('data.session_id');
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '64', 'session_id' => $session, 'text' => 'ไม่อยากอยู่แล้ว', 'voice_mode' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.offer_topic', null)
+            ->assertJsonPath('data.voice_plan.source', 'crisis')
+            ->assertJsonPath('data.voice_plan.say', null)
+            ->assertJsonPath('data.voice_plan.post', null);
+        $this->assertStringStartsWith('soothe_', (string) $res->json('data.voice_plan.pre'));
+        $this->assertSame([], $this->aiCalls, 'เทิร์นวิกฤตห้ามส่งไปให้ AI');
     }
 }

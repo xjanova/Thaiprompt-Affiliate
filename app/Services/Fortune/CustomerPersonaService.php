@@ -203,7 +203,7 @@ class CustomerPersonaService
 
         // 🚩 (2026-05-25) Critical keyword → throttle สั้นลง 30→10 min
         //   เคสจริง conv 4936: "เคยคิดฆ่าตัวตาย 3 ครั้ง" / "กินยานอนหลับจนดื้อยา"
-        //   → ระบบต้อง flag เร็ว เพื่อปรับ tone ตอบ + แนะ 1323/1669
+        //   → ระบบต้อง flag เร็ว เพื่อปรับ tone ตอบเป็นปลอบเบา ๆ
         $isCritical = $this->hasCriticalKeyword($messageText);
         $throttleTtl = $isCritical
             ? self::EXTRACTION_THROTTLE_TTL_CRITICAL
@@ -279,6 +279,37 @@ class CustomerPersonaService
     public function invalidateCache(string $platform, string $userId): void
     {
         Cache::forget($this->injectCacheKey($platform, $userId));
+    }
+
+    /**
+     * 🤍 (2026-11-03) ลูกค้าเพิ่งบอกว่าอยากทำร้ายตัวเอง และบอทเพิ่งตอบคำปลอบไป (2026-11-04: ไม่มีเบอร์สายด่วน)
+     *
+     * - mental_fragile = true ทันที (ไม่รอ extraction job) → เทิร์นถัดไป AI ได้ MENTAL_FRAGILE: ตอบสั้น นุ่ม ห้าม pitch
+     *   และห้องแชทบนเว็บจันทราที่เปิดต่อจากลูกค้าคนนี้เริ่มเป็นห้องวิกฤต (WebChatContinuityService::personaInCrisis)
+     * - crisis_resources_sent = เวลาที่ตอบคำปลอบ (ชื่อคีย์เดิม — ไม่ได้แปลว่าให้เบอร์ไป)
+     * - ล้างธงปิดปาก (rambler silence) — คนกำลังวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป
+     *
+     * best-effort — ห้าม throw ขวางคำตอบถึงลูกค้า
+     */
+    public function flagCrisis(string $platform, string $userId, ?string $displayName = null): void
+    {
+        try {
+            $persona = FortuneCustomerPersona::getOrCreate($platform, $userId, $displayName);
+
+            $flags = $persona->risk_flags ?? [];
+            $flags['mental_fragile'] = true;
+            $persona->risk_flags = $flags;
+            $persona->chat_silenced_until = null;
+            $persona->markCrisisResourcesSent(); // save() อยู่ในนี้
+
+            $this->invalidateCache($platform, $userId);
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: flagCrisis ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -757,7 +788,7 @@ class CustomerPersonaService
      * แคบกว่า hasCriticalKeyword() มาก — ❌ ตัดคำหยาบ/โดนโกง/troll ออกทั้งหมด
      * (คนโกรธ/โดนหลอก/บ่น ≠ คนคิดสั้น — ห้ามยื่นสายด่วนใจให้จนรู้สึกถูกตราหน้าว่า "โรคจิต")
      *
-     * ใช้ gate การแสดงเบอร์ 1323 ให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
+     * ใช้ gate ประโยคปลอบให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
      * (ดู FortuneCustomerPersona::buildRiskGuidanceLines)
      */
     public function hasSelfHarmSignal(string $text): bool

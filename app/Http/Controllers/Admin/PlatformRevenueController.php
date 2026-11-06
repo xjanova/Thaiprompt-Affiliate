@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PayoutRequest;
 use App\Models\PlatformTransaction;
 use App\Models\PlatformWallet;
 use App\Models\WalletDebt;
+use App\Models\WithdrawalRequest;
 use App\Services\DebtCollectionService;
-use App\Services\PayoutService;
 use App\Services\PlatformRevenueService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -22,14 +21,11 @@ class PlatformRevenueController extends Controller
 {
     protected PlatformRevenueService $revenueService;
 
-    protected PayoutService $payoutService;
-
     protected DebtCollectionService $debtService;
 
     public function __construct()
     {
         $this->revenueService = new PlatformRevenueService;
-        $this->payoutService = new PayoutService;
         $this->debtService = new DebtCollectionService;
     }
 
@@ -50,11 +46,8 @@ class PlatformRevenueController extends Controller
         // สถิติรายได้เดือนนี้
         $monthlyStats = $this->revenueService->getMonthlyStats(now()->year, now()->month);
 
-        // สถิติ Payout
-        $payoutStats = $this->payoutService->getPayoutStats([
-            'date_from' => now()->startOfMonth(),
-            'date_to' => now(),
-        ]);
+        // สถิติคำขอถอนเงินเดือนนี้ (payout_requests เป็นตารางว่างเสมอ จึงอ่านของจริงจาก withdrawal_requests)
+        $payoutStats = $this->withdrawalStats(now()->startOfMonth(), now());
 
         // สถิติหนี้
         $debtStats = $this->debtService->getDebtStats();
@@ -65,8 +58,8 @@ class PlatformRevenueController extends Controller
             ->limit(10)
             ->get();
 
-        $pendingPayouts = PayoutRequest::with(['user'])
-            ->where('status', PayoutRequest::STATUS_PENDING)
+        $pendingPayouts = WithdrawalRequest::with('user')
+            ->pending()
             ->latest()
             ->limit(5)
             ->get();
@@ -267,6 +260,28 @@ class PlatformRevenueController extends Controller
     }
 
     /**
+     * สถิติคำขอถอนเงินในช่วงเวลา (แทน PayoutService::getPayoutStats ที่อ่านตารางว่าง)
+     *
+     * คีย์ยังเป็นชุดเดิมที่หน้า dashboard ใช้ แต่ตัวเลขมาจาก withdrawal_requests
+     * ซึ่งเป็นตารางที่ปุ่มถอนเงินของสมาชิก ผู้ขาย และแอปเขียนลงจริง
+     */
+    protected function withdrawalStats(Carbon $from, Carbon $to): array
+    {
+        $base = fn () => WithdrawalRequest::whereBetween('created_at', [$from, $to]);
+
+        return [
+            'total_requests' => $base()->count(),
+            'total_gross_amount' => (float) $base()->sum('amount'),
+            'total_fee_amount' => (float) $base()->sum('fee'),
+            'total_net_amount' => (float) $base()->sum('net_amount'),
+            'pending_count' => $base()->pending()->count(),
+            'pending_amount' => (float) $base()->pending()->sum('net_amount'),
+            'completed_count' => $base()->completed()->count(),
+            'completed_amount' => (float) $base()->completed()->sum('net_amount'),
+        ];
+    }
+
+    /**
      * ข้อมูลกราฟรายได้
      */
     protected function getRevenueChartData(int $days): array
@@ -288,11 +303,10 @@ class PlatformRevenueController extends Controller
             $data['vat'][] = $dailyStats['by_wallet']['vat'] ?? 0;
             $data['mlm_pool'][] = $dailyStats['by_wallet']['mlm_pool'] ?? 0;
 
-            // Payouts - ดึงยอดจ่ายที่จ่ายแล้ว
-            $payout = PayoutRequest::where('status', PayoutRequest::STATUS_PAID)
-                ->whereDate('paid_at', $date)
+            // ยอดที่โอนออกจริงของวันนั้น
+            $data['payout'][] = WithdrawalRequest::completed()
+                ->whereDate('transfer_completed_at', $date)
                 ->sum('net_amount');
-            $data['payout'][] = $payout;
         }
 
         return $data;
@@ -368,7 +382,7 @@ class PlatformRevenueController extends Controller
         $wallets = PlatformWallet::all();
         $todayStats = $this->revenueService->getDailyStats(now());
 
-        $pendingPayoutsCount = PayoutRequest::where('status', PayoutRequest::STATUS_PENDING)->count();
+        $pendingPayoutsCount = WithdrawalRequest::pending()->count();
         $activeDebtsCount = WalletDebt::where('status', WalletDebt::STATUS_ACTIVE)->count();
 
         return response()->json([
