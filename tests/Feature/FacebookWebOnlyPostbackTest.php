@@ -880,6 +880,12 @@ class FbWebOnlyRecordingSender extends FacebookWebhookService
         return true;
     }
 
+    // กดไลค์จริงยิง Graph — ในเทสต์ตอบสำเร็จเฉย ๆ
+    public function likeComment(string $commentId): bool
+    {
+        return true;
+    }
+
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
     {
         $this->images[] = $imageUrl;

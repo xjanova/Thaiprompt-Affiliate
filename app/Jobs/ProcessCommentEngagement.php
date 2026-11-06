@@ -192,6 +192,10 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
+            // 📇 จำเจ้าของคอมเมนต์ไว้อีกชั้น — งานนี้อาจถูก dispatch จากที่อื่นนอก processComment
+            //    (เช่น retry/backfill) ซึ่งไม่ได้จำให้ ⇒ Private Reply จะไม่รู้ว่าคนนี้เคยโดน 10903
+            $facebookService->rememberCommentAuthor((string) $commentId, (string) $userId);
+
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (กัน race condition จาก webhook retry)
             if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
                 Log::info('คอมเม้นต์ถูก engage ไปแล้ว (webhook retry)', [
@@ -529,6 +533,16 @@ class ProcessCommentEngagement implements ShouldQueue
 
             $publicReplySent = false;
             if ($publicReplyEnabled && ! empty($commentReply) && ! $alreadyRepliedBefore) {
+                // 3.0 👍 กด "ถูกใจ" คอมเมนต์ **ก่อน** ตอบ — ลูกค้าเห็นไลค์ขึ้นก่อนคำตอบ
+                //     ปกติ webhook กดไปแล้วตอนรับคอมเมนต์ → ตรงนี้คืน true จาก cache ไม่ยิงซ้ำ
+                //     dedupe + circuit breaker อยู่ใน likeComment() (ของเดิมตรงนี้ไม่มี breaker
+                //     เลย = ยิงตกน้ำทุกครั้งที่ตอบคอมเมนต์ ~450 call/วัน)
+                try {
+                    $facebookService->likeComment($commentId);
+                } catch (Throwable $e) {
+                    Log::debug('likeComment ล้ม (non-blocking): '.$e->getMessage());
+                }
+
                 try {
                     // ⚠️ (2026-11-05) replyToComment คืน false เมื่อ FB ปฏิเสธ (ไม่ throw) — ต้องเช็กค่าที่คืน
                     //    เดิมถือว่าส่งสำเร็จทุกครั้ง ⇒ DB บันทึกคำตอบที่ไม่ได้ขึ้นจริง + จองกันซ้ำไว้เปล่า ๆ
@@ -550,15 +564,6 @@ class ProcessCommentEngagement implements ShouldQueue
                         'comment_id' => $commentId,
                         'error' => $e->getMessage(),
                     ]);
-                }
-
-                // 3.5 💗 กด LIKE คอมเม้นต์อัตโนมัติ — boost engagement signal ให้ FB algorithm
-                //     (ไม่ block ถ้า fail — best-effort)
-                try {
-                    $facebookService->reactToComment($commentId, 'LIKE');
-                } catch (Throwable $e) {
-                    // non-blocking
-                    Log::debug('reactToComment LIKE ล้ม (non-blocking): '.$e->getMessage());
                 }
             }
 
