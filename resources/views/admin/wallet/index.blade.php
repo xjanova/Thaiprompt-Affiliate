@@ -69,28 +69,12 @@
                 <span class="text-3xl mr-3">💵</span>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">ฝากเงิน (Admin)</h3>
             </div>
-            <button @click="open = !open" class="w-full text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105" style="background: linear-gradient(to right, var(--arrow-x-success), var(--arrow-x-info))">
-                เติมเงิน
-            </button>
-
-            <!-- Deposit Form -->
-            <div x-show="open" x-transition class="mt-4" style="display: none;">
-                <form action="{{ route('admin.wallet.deposit') }}" method="POST" class="space-y-4">
-                    @csrf
-                    <input type="hidden" name="user_id" value="{{ auth()->id() }}">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน</label>
-                        <input type="number" name="amount" step="0.01" min="0.01" required class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ</label>
-                        <input type="text" name="description" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                    <button type="submit" class="w-full text-white font-semibold py-2 px-4 rounded-xl transition" style="background: var(--arrow-x-success)">
-                        ยืนยันการฝาก
-                    </button>
-                </form>
-            </div>
+            {{-- 🛡️ (2026-11-06) ฟอร์มเดิมส่ง user_id ของตัวเอง = super admin เติมเงินเข้ากระเป๋าตัวเองโดยไม่มีเหตุผล/บันทึก
+                 ตอนนี้แอดมินทุกคน (รวม super admin) แตะกระเป๋าตัวเองไม่ได้ → เติมเงินให้ผู้ใช้ที่หน้ากระเป๋าของผู้ใช้คนนั้นแทน --}}
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">เติมเงินให้ผู้ใช้ทำที่หน้ากระเป๋าของผู้ใช้คนนั้น — ต้องระบุเหตุผล ผ่านหน้าต่างยืนยัน และถูกบันทึกชื่อแอดมินทุกครั้ง (เติมเข้ากระเป๋าตัวเองไม่ได้)</p>
+            <a href="{{ route('admin.wallet.all') }}" class="block w-full text-center text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105" style="background: linear-gradient(to right, var(--arrow-x-success), var(--arrow-x-info))">
+                เลือกกระเป๋าผู้ใช้ →
+            </a>
         </div>
         @endif
 

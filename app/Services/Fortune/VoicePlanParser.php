@@ -19,7 +19,8 @@ namespace App\Services\Fortune;
  *   - วลีราคา/ยอดเงิน → ลอกออก (ราคาอยู่ในแชท/การ์ดเท่านั้น)
  *   - แท็กอารมณ์เกิน 1 / แท็กที่ไม่ได้ทดสอบ → ลอกออก · ยาวเกิน 220 → ตัดที่ขอบประโยค
  *   - ไม่มีบล็อก = ทางถอย: ตัดจากคำตอบเต็มที่ขอบประโยค ≤ 260 ตัว (ไม่ยิง AI ซ้ำ)
- *   - คำตอบวิกฤต (มีสายด่วน 1323/1669) → คลิปปลอบที่อัดไว้เท่านั้น เบอร์อยู่ในแชท
+ *   - คำตอบวิกฤต → คลิปปลอบที่อัดไว้เท่านั้น ไม่สร้างเสียงใหม่ (JuntraVoiceLibrary::crisisClip — เฉพาะบทที่ไม่พูดถึงสายด่วน)
+ *     เทิร์นปลอบของด่านวิกฤตเรียก crisis() ตรง ๆ · คำตอบของ AI ที่มีเบอร์ (ลูกค้าถามหาที่ขอความช่วยเหลือเอง) จับจาก CRISIS_PATTERN
  */
 final class VoicePlanParser
 {
@@ -32,7 +33,7 @@ final class VoicePlanParser
 
     public const MIN_SAY_CHARS = 8;
 
-    /** เบอร์สายด่วนที่บอกว่าคำตอบนี้เป็นการดูแลวิกฤต */
+    /** เบอร์สายด่วนในคำตอบของ AI (ให้เฉพาะเมื่อลูกค้าถามหาที่ขอความช่วยเหลือ) = คำตอบนี้เป็นการดูแลวิกฤต */
     private const CRISIS_PATTERN = '/(?<!\d)(?:1323|1669)(?!\d)/u';
 
     /** วลีราคา/ยอดเงิน — ตัวเลขคู่กับ บาท/฿/เครดิต (คำนำ "ราคา/เพียง/แค่" ไปด้วย) */
@@ -73,7 +74,7 @@ final class VoicePlanParser
             return self::result('guard', null, null, JuntraVoiceLibrary::first($persona, $available, 'ask_more'));
         }
         if (preg_match(self::CRISIS_PATTERN, $display)) {
-            return self::result('crisis', JuntraVoiceLibrary::first($persona, $available, 'soothe'), null, null);
+            return self::crisis($persona, $available);
         }
 
         if ($block !== null) {
@@ -127,6 +128,21 @@ final class VoicePlanParser
             'say_parts' => $say !== null ? self::split($say) : [],
             'post' => $post,
         ];
+    }
+
+    /**
+     * 🤍 (2026-11-04) แผนเสียงของเทิร์นที่ลูกค้าบอกว่าอยากทำร้ายตัวเอง — คลิปปลอบที่อัดไว้เท่านั้น ไม่สร้างเสียงใหม่
+     *
+     * คำตอบปลอบไม่มีเบอร์สายด่วนแล้ว (กฎเจ้าของ: ปลอบเบา ๆ ไม่ไล่ไปโทรหาใคร) → จับจาก CRISIS_PATTERN ไม่ได้
+     * 🤍 (2026-11-06) เล่นเฉพาะคลิปปลอบที่ไม่พูดถึงสายด่วน (soothe_2 เดิม "…โทรสายด่วนที่…พิมพ์ไว้ให้" ถูกข้าม)
+     * ผู้เรียกที่รู้ว่าเป็นเทิร์นวิกฤตจึงเรียกตัวนี้ตรง ๆ แทน plan(..., 'guard') ที่เล่นคลิป "ถามอะไรต่อไหม"
+     *
+     * @param  array<int,string>|null  $available  id คลิปที่เว็บมีไฟล์ (null = ถือว่ามีครบ)
+     * @return array{source:string,pre:?string,say:?string,say_parts:array<int,string>,post:?string}
+     */
+    public static function crisis(?string $persona, ?array $available): array
+    {
+        return self::result('crisis', JuntraVoiceLibrary::crisisClip($persona, $available), null, null);
     }
 
     /** @return array{pre:?string,say:?string,post:?string} */

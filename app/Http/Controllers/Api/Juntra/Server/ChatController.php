@@ -157,6 +157,10 @@ class ChatController extends Controller
             'kind' => $out['kind'],
             'offer_topic' => $out['offer_topic'],
             'persona' => $out['persona'],
+            // 🤍 (2026-11-06) crisis = true → เทิร์นนี้คือคำปลอบลูกค้าที่บอกว่าอยากทำร้ายตัวเอง (kind ยังเป็น guard เหมือนเดิม)
+            //    เว็บต้องไม่คิดค่าแชทเทิร์นนี้ · crisis_room = ห้องอยู่ในโหมดวิกฤต (ไม่มีการ์ดขายจนห้องหมดอายุ)
+            'crisis' => (bool) ($out['crisis'] ?? false),
+            'crisis_room' => (bool) ($out['crisis_room'] ?? false),
         ];
         // 🔈 มีเฉพาะเมื่อเปิดโหมดเสียง — เว็บรุ่นเดิมได้ JSON หน้าตาเดิม
         if ($voiceMode) {
