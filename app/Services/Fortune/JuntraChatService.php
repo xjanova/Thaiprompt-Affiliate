@@ -130,11 +130,12 @@ TXT;
     private const ASK_RULES = <<<'TXT'
 
 ปุ่มให้ลูกค้ากด (ลูกค้าไม่เห็นป้ายนี้ ระบบทำเป็นปุ่มใต้ช่องพิมพ์):
-- ปิดท้ายทุกคำตอบด้วยป้าย [[ASK: ข้อ1 | ข้อ2 | ข้อ3]] เป็นบรรทัดสุดท้าย (หลังป้ายอื่นทั้งหมด)
+- ปิดท้ายคำตอบด้วยป้าย [[ASK: ข้อ1 | ข้อ2 | ข้อ3]] เป็นบรรทัดสุดท้าย (หลังป้ายอื่นทั้งหมด) ยกเว้นกรณีที่บอกไว้ด้านล่าง
 - ถ้าคำตอบนี้ให้ลูกค้าเลือกหรือตอบสั้น ๆ (เลือกเรื่อง ใช่หรือไม่ ช่วงเวลา) ให้ใส่ตัวเลือกคำตอบที่กดได้ทันที 2-4 ข้อ
 - ถ้าไม่ได้ถามอะไร ให้ใส่ 3 คำถามที่ลูกค้าน่าจะอยากถามต่อจากเรื่องที่คุยกันอยู่ เขียนเป็นคำพูดของลูกค้าเอง
 - แต่ละข้อสั้นไม่เกิน 40 ตัวอักษร ไม่ซ้ำกัน ไม่มีอีโมจิ ราคา ตัวเลขเงิน ลิงก์ หรือชื่อคน
 - ถ้ากำลังขอให้ลูกค้าพิมพ์วันเกิด ชื่อ หรือเล่าเรื่องเอง ไม่ต้องใส่ป้ายนี้
+- ❌ ถ้าลูกค้ากำลังทุกข์หนัก ร้องไห้ หวาดกลัวจนตั้งสติไม่ได้ หรือมีสัญญาณอยากทำร้ายตัวเอง ไม่อยากอยู่ ห้ามใส่ป้ายนี้เด็ดขาด ดูแลใจลูกค้าก่อน
 TXT;
 
     /** โทเคนเผื่อป้าย [[ASK]] (3-4 ข้อ × ~40 ตัวอักษรไทย) */
@@ -616,7 +617,9 @@ TXT,
             $system .= $this->voiceModeRules($persona, $profile, $inputMode, $voiceClips);
             $config['max_tokens'] += self::VOICE_EXTRA_TOKENS;
         }
-        if ($suggest) {
+        // 🤍 (รีวิว) ห้องที่ลูกค้ามีสัญญาณทำร้ายตัวเองในบทสนทนาที่ AI เห็น = ไม่ขอปุ่มเลย (ปุ่ม "ดูเรื่องงาน" ไม่ควรโผล่ตอนนั้น)
+        $crisis = $suggest && $this->crisisInRoom($history);
+        if ($suggest && ! $crisis) {
             $system .= self::ASK_RULES;
             $config['max_tokens'] += self::ASK_EXTRA_TOKENS;
         }
@@ -685,38 +688,76 @@ TXT,
             $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, $voiceBlock, $voiceClips, $out['kind']);
         }
         if ($suggest) {
-            $out['suggestions'] = $suggestions;
+            // คำตอบที่ให้เบอร์สายด่วน (1323/1669) = AI กำลังดูแลวิกฤต — ไม่มีปุ่ม ไม่ว่า AI จะใส่ป้ายมาหรือไม่
+            $out['suggestions'] = $crisis || preg_match(VoicePlanParser::CRISIS_PATTERN, $reply) ? [] : $suggestions;
         }
 
         return $out;
     }
 
     /**
+     * 🤍 (รีวิว 2026-11-06) ข้อความลูกค้าในหน้าต่างที่ AI เห็น (รวมข้อความล่าสุด) มีสัญญาณทำร้ายตัวเอง/หมดหวัง
+     *
+     * ใช้คำชุดเดียวกับ CustomerPersonaService::hasSelfHarmSignal (ที่ gate เบอร์ 1323 ของแชทเพจ)
+     * ดูทั้งหน้าต่าง ไม่ใช่แค่ข้อความล่าสุด — ลูกค้าบอก "อยากตาย" แล้วตอบ "ค่ะ" รอบถัดไป ก็ยังไม่ควรมีปุ่มชวนดูดวง
+     *
+     * @param  array<int,array{role:string,text:string}>  $history
+     */
+    private function crisisInRoom(array $history): bool
+    {
+        $detector = app(CustomerPersonaService::class);
+        foreach (array_slice($history, -self::MAX_HISTORY) as $m) {
+            if (($m['role'] ?? '') === 'user' && $detector->hasSelfHarmSignal((string) ($m['text'] ?? ''))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * แยกป้าย [[ASK: ข้อ1 | ข้อ2 | …]] ออกจากคำตอบ
      *
-     * - ถอดทุกป้าย รวมป้ายที่ถูกตัดกลางคันเพราะ max_tokens ("[[ASK: ..." ที่ไม่มีวงเล็บปิดท้ายข้อความ)
+     * - ถอดทุกป้าย รวมป้ายที่ถูกตัดกลางคันเพราะ max_tokens ("[[ASK: ..." / "[[ASK: ...]" ที่ไม่มี ]] ปิด)
+     * - ป้ายไม่ข้าม "[[" — ป้าย ASK ที่ลืมปิดแล้วตามด้วย [[OFFER:x]] ต้องไม่กินป้าย OFFER ไปด้วย
      * - แต่ละข้อ: ตัดแท็ก ขึ้นบรรทัด อีโมจิ · ทิ้งข้อที่ยาวเกิน 60 ตัว มีลิงก์ หรือพูดเรื่องเงิน · ไม่ซ้ำ · สูงสุด 4 ข้อ
+     * - ข้อที่ไม่ใช่ UTF-8 ที่ถูกต้องถูกทิ้ง และคำตอบถูก scrub — ปุ่มเสียข้อเดียวต้องไม่ทำให้ JSON ทั้งคำตอบพัง
+     *
+     * regex ของป้ายไม่ใช้ /u (ป้ายเป็น ASCII ล้วน) — ข้อความที่มีไบต์เสียก็ยังถอดป้ายได้ ไม่คืน null
+     * ช่องว่างเขียนเป็น [ \t\r\n] ไม่ใช่ \s: นอกโหมด /u \s ตาม locale อาจตรงไบต์ 0xA0/0x85 กลางตัวอักษรไทย
      *
      * @return array{0:string,1:list<string>}
      */
     public static function extractAsk(string $reply): array
     {
         $items = [];
-        if (preg_match_all('/\[\[\s*ASK\s*:(.*?)\]\]/isu', $reply, $all)) {
+        if (preg_match_all('/\[\[[ \t\r\n]*ASK[ \t\r\n]*:((?:(?!\[\[|\]\]).)*)\]\]/is', $reply, $all)) {
             foreach ($all[1] as $body) {
                 array_push($items, ...explode('|', $body));
             }
         }
-        $reply = (string) preg_replace('/\s*\[\[\s*ASK\s*:.*?\]\]\s*/isu', ' ', $reply);
-        // ป้ายที่ถูกตัดท้าย (ไม่มี ]]) — ทิ้งทั้งก้อน ไม่เดาข้อที่ขาด
-        $reply = trim((string) preg_replace('/\s*\[\[\s*ASK\b[^\]]*$/isu', '', $reply));
+        $reply = preg_replace('/[ \t\r\n]*\[\[[ \t\r\n]*ASK[ \t\r\n]*:(?:(?!\[\[|\]\]).)*\]\][ \t\r\n]*/is', ' ', $reply) ?? $reply;
+        // ป้ายที่ไม่มี ]] ปิด (ถูกตัดท้าย หรือลืมปิดก่อนป้ายอื่น) — ทิ้งถึง "[[" ถัดไปหรือท้ายข้อความ ไม่เดาข้อที่ขาด
+        $reply = preg_replace('/[ \t\r\n]*\[\[[ \t\r\n]*ASK\b(?:(?!\[\[).)*/is', ' ', $reply) ?? $reply;
+        // เศษป้ายที่ถูกตัดก่อนพิมพ์ชื่อครบ ("[[", "[[AS") ท้ายข้อความ
+        $reply = preg_replace('/[ \t\r\n]*\[\[[ \t\r\n]*(?:A(?:S(?:K)?)?)?[ \t\r\n]*\]?[ \t\r\n]*$/i', '', $reply) ?? $reply;
+        $reply = trim($reply);
+        if (! mb_check_encoding($reply, 'UTF-8')) {
+            $reply = mb_scrub($reply, 'UTF-8');
+        }
 
         $out = [];
         foreach ($items as $raw) {
-            $q = strip_tags((string) $raw);
+            $raw = (string) $raw;
+            if (! mb_check_encoding($raw, 'UTF-8')) {
+                continue;
+            }
+            $q = strip_tags($raw);
             $q = (string) preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}]/u', '', $q);
-            $q = trim((string) preg_replace('/\s+/u', ' ', $q), " \t\n\r\0\x0B\"'“”-•·");
-            if ($q === '' || mb_strlen($q) > 60 || preg_match('/https?:|www\.|฿|บาท/iu', $q)) {
+            $q = (string) preg_replace('/\s+/u', ' ', $q);
+            // ตัดเครื่องหมายหัวท้ายแบบรู้จักตัวอักษร — trim() ตัดเป็นไบต์ ไบต์ของ “ ” • · ไปกินไบต์ท้ายของ ย ผ ฝ ื เ
+            $q = (string) preg_replace('/^[\s"\'“”‘’\-•·]+|[\s"\'“”‘’\-•·]+$/u', '', $q);
+            if ($q === '' || ! mb_check_encoding($q, 'UTF-8') || mb_strlen($q) > 60 || preg_match('/https?:|www\.|฿|บาท/iu', $q)) {
                 continue;
             }
             if (! in_array($q, $out, true)) {
@@ -833,7 +874,8 @@ TXT,
                     // 🛡 ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" เท่านั้น ห้ามตรวจ userMessage ที่ห่อไว้
                     guardText: $guardText,
                 );
-                if (trim((string) ($result['response'] ?? '')) !== '' || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
+                // 🔁 (รีวิว) คำตอบที่มีแต่ป้าย [[ASK]] / บล็อก [[VOICE]] = ว่างสำหรับลูกค้า → ลองคีย์ถัดไป ไม่ใช่ 503
+                if (self::hasVisibleText((string) ($result['response'] ?? '')) || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
                     return $result;
                 }
                 $failures[] = "{$label}: ตอบว่าง";
@@ -853,6 +895,18 @@ TXT,
             modelOverride: self::FALLBACK_MODEL,
             guardText: $guardText,
         );
+    }
+
+    /** เหลือข้อความให้ลูกค้าเห็นไหม หลังถอดป้ายที่ระบบเก็บไปเอง ([[ASK]] และบล็อก [[VOICE]]) */
+    private static function hasVisibleText(string $response): bool
+    {
+        if (trim($response) === '') {
+            return false;
+        }
+        [$text] = self::extractAsk($response);
+        [$text] = VoicePlanParser::extract($text);
+
+        return trim($text) !== '';
     }
 
     /**

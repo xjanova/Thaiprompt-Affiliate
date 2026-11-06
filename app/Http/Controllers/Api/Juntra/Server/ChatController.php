@@ -167,7 +167,11 @@ class ChatController extends Controller
             $payload['voice_plan'] = $out['voice_plan'] ?? null;
         }
         if ($suggest) {
-            $payload['suggestions'] = $out['suggestions'] ?? [];
+            // 🔁 (รีวิว) ปุ่มเป็นของเสริม — ข้อที่ encode เป็น JSON ไม่ได้ทิ้งไป ห้ามทำให้คำตอบที่จำลงห้องแล้วกลายเป็น 500
+            $payload['suggestions'] = array_values(array_filter(
+                (array) ($out['suggestions'] ?? []),
+                fn ($s) => is_string($s) && $s !== '' && mb_check_encoding($s, 'UTF-8'),
+            ));
         }
 
         return response()->json(['data' => $payload]);
