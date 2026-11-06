@@ -221,7 +221,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
         // รองรับทั้ง Unix (nohup + &) และ Windows (start /B)
         if (self::isWindows()) {
             // Windows: ใช้ start /B เพื่อรัน background
-            $bgCmd = "start /B {$cmd} >> \"{$logFile}\" 2>&1";
+            // "" = ชื่อหน้าต่าง — start ถือว่า argument ในเครื่องหมายคำพูดตัวแรกเป็น title
+            // ถ้าไม่ใส่ path ของ php จะกลายเป็น title แล้ว Windows เปิดไฟล์ artisan ตรงๆ (เด้ง "Pick an app")
+            $bgCmd = "start \"\" /B {$cmd} >> \"{$logFile}\" 2>&1";
             $descriptors = [
                 0 => ['file', 'NUL', 'r'],   // stdin
                 1 => ['file', 'NUL', 'w'],   // stdout (shell stdout)
