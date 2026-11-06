@@ -1085,8 +1085,13 @@ class FacebookRichMessageService
      *                           — เดิมไม่ส่งเลย ลูกค้าจึงไปโผล่ /dashboard ที่ไม่มีอะไรให้ทำ
      *                           ⚠️ ต้องผ่าน regex `#^/[A-Za-z0-9/_\-]*$#` ของ
      *                           FortuneWebLinkService (ห้ามมี query string/จุด/ภาษาไทย)
+     * @param  string|null  $handoffNonce  🌙 (2026-11-03) nonce ของแถว fortune_web_handoffs (ฝังใน token v2 เป็น h)
+     * @param  int|null  $pageId  🌙 (2026-11-03) fortune_page_id สาขาต้นทาง (ฝังใน token v2 เป็น pg)
+     *
+     * 🌙 (2026-11-03) เปลี่ยนจาก isEnabled() เป็น isEnabledFor('facebook')
+     *   → เปิด FB web-only แล้วมีลิงก์เสมอ แม้ enable_web_fortune_button ปิดอยู่ (ฝั่ง LINE ไม่ผ่านเมธอดนี้)
      */
-    public function getWebFortuneUrl(?string $psid, ?string $to = '/tarot/free'): ?string
+    public function getWebFortuneUrl(?string $psid, ?string $to = '/tarot/free', ?string $handoffNonce = null, ?int $pageId = null): ?string
     {
         if (empty($psid)) {
             return null;
@@ -1094,14 +1099,108 @@ class FacebookRichMessageService
 
         try {
             $svc = app(\App\Services\FortuneWebLinkService::class);
-            if (! $svc->isEnabled()) {
+            if (! $svc->isEnabledFor('facebook')) {
                 return null;
             }
 
-            return $svc->generateChatLink('facebook', $psid, $to);
+            return $svc->generateChatLink('facebook', $psid, $to, $handoffNonce, $pageId);
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /**
+     * 🌙 (2026-11-03) กล่อง "พาไปห้องแม่หมอ" สำหรับ FB web-only
+     *
+     * button template ที่มีปุ่ม web_url ปุ่มเดียว (ไม่มี LINE ไม่มีปุ่ม "ดูที่นี่")
+     * ชนิด KIND_CANNOT จะมีปุ่ม postback "❓ เข้ายังไงคะ" (WEB_ROOM_HOWTO) เพิ่มอีกปุ่ม
+     * ลิงก์สร้างใหม่ทุกครั้งที่เรียก (token อายุ 24 ชม. ใช้ครั้งเดียว)
+     *
+     * คืน null เมื่อสร้างลิงก์ไม่ได้ (ไม่มี PSID / ปิดทั้งสองสวิตช์ / service พัง)
+     * → ผู้เรียกต้อง fail-closed (ส่ง WebHandoffCopy::FAIL_CLOSED) **ห้ามตกกลับไปออกบิล**
+     *
+     * @param  string|null  $psid  PSID ของลูกค้า
+     * @param  string  $kind  ชนิดข้อความ (WebHandoffCopy::KIND_*)
+     * @param  string|null  $handoffNonce  nonce ของ handoff — มี = ปลายทาง /chat/continue/{nonce}, ไม่มี = /chat
+     * @param  int|null  $pageId  fortune_page_id สาขาต้นทาง
+     * @param  string|null  $name  ชื่อลูกค้า (ใส่ในข้อความเฉพาะชนิดที่มี {name})
+     * @return array|null payload ของ message (ส่งผ่าน sendButtonTemplate)
+     *
+     * @example
+     * $box = $rich->buildWebHandoffBox($psid, WebHandoffCopy::KIND_PRICE, $handoff->nonce, $pageId);
+     * if ($box === null) { // fail-closed }
+     */
+    public function buildWebHandoffBox(
+        ?string $psid,
+        string $kind = \App\Services\Fortune\WebHandoffCopy::KIND_READING,
+        ?string $handoffNonce = null,
+        ?int $pageId = null,
+        ?string $name = null
+    ): ?array {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+
+        // nonce ต้องเป็น uuid เท่านั้น (ไม่งั้น path ไม่ผ่าน regex ของ token) — ผิดรูปทรง = ไป /chat เฉย ๆ
+        $nonce = (is_string($handoffNonce) && preg_match(\App\Services\FortuneWebLinkService::UUID_REGEX, $handoffNonce))
+            ? strtolower($handoffNonce)
+            : null;
+        $to = $nonce !== null ? '/chat/continue/'.$nonce : '/chat';
+
+        $url = $this->getWebFortuneUrl($psid, $to, $nonce, ($pageId !== null && $pageId > 0) ? $pageId : null);
+        if (empty($url)) {
+            return null;
+        }
+
+        // 🔮 (2026-11-04) พาไปดูดวง = การ์ดรูป "เข้าสู่ระบบดูดวง" รูปเดียว — แตะรูปหรือแตะปุ่มก็เข้าหน้าเลือกห้อง
+        if ($copy::usesCard($kind)) {
+            return [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'generic',
+                        'image_aspect_ratio' => 'horizontal',
+                        'elements' => [[
+                            'title' => mb_substr($copy::CARD_TITLE, 0, $copy::CARD_TEXT_MAX),
+                            'subtitle' => mb_substr($copy::cardSubtitle($kind), 0, $copy::CARD_TEXT_MAX),
+                            'image_url' => asset($copy::CARD_IMAGE_PATH),
+                            'default_action' => [
+                                'type' => 'web_url',
+                                'url' => $url,
+                            ],
+                            'buttons' => [[
+                                'type' => 'web_url',
+                                'title' => $copy::LABEL_ENTER_READING,
+                                'url' => $url,
+                            ]],
+                        ]],
+                    ],
+                ],
+            ];
+        }
+
+        $buttons = [[
+            'type' => 'web_url',
+            'title' => $copy::LABEL_WEB_ROOM,
+            'url' => $url,
+        ]];
+
+        if ($kind === $copy::KIND_CANNOT) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => $copy::LABEL_HOWTO,
+                'payload' => $copy::PAYLOAD_WEB_ROOM_HOWTO,
+            ];
+        }
+
+        return [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($copy::reply($kind, $name), 0, $copy::BOX_TEXT_MAX),
+                    'buttons' => $buttons,
+                ],
+            ],
+        ];
     }
 
     public function getLineAddFriendUrl(): ?string

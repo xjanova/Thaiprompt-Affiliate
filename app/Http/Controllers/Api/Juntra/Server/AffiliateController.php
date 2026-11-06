@@ -37,6 +37,8 @@ class AffiliateController extends Controller
             'name' => 'required|string|max:190',
             'thaiprompt_user_id' => 'nullable|integer|min:1',
             'referral_code' => 'nullable|string|max:64',
+            // 🏬 (2026-11-03) fortune_pages.code ของสาขาที่พาลูกค้ามา — ไม่รู้จัก = ข้าม (ห้ามทำให้คำขอล้ม)
+            'page_code' => 'nullable|string|max:64',
         ]);
 
         try {
@@ -45,6 +47,7 @@ class AffiliateController extends Controller
                 $data['name'],
                 $data['thaiprompt_user_id'] ?? null,
                 $data['referral_code'] ?? null,
+                $data['page_code'] ?? null,
             );
         } catch (JuntraAffiliateException $e) {
             return $this->failure($e);
@@ -84,6 +87,8 @@ class AffiliateController extends Controller
             'referral_code' => 'nullable|string|max:64',
             // บิลก่อนเปิดระบบค่าแนะนำ — นับสิทธิ์ "เคยมีบิลที่ชำระแล้ว" แต่ไม่แจกค่าแนะนำ
             'history_only' => 'sometimes|boolean',
+            // 🏬 (2026-11-03) สาขาของบิล (ไม่บังคับ) — ไม่ส่ง = ใช้สาขาต้นทางของลูกค้า (users.fortune_origin_page_id)
+            'page_code' => 'nullable|string|max:64',
         ]);
 
         try {
@@ -96,6 +101,7 @@ class AffiliateController extends Controller
             'data' => [
                 'bill_reference' => $result['bill_reference'],
                 'reading_id' => $result['reading']?->id,
+                'fortune_page_id' => $result['reading']?->fortune_page_id,
                 'status' => $result['status'],
                 'history_only' => (bool) $result['reading']?->isJuntraHistoryBill(),
                 'duplicate' => $result['duplicate'],
@@ -141,6 +147,40 @@ class AffiliateController extends Controller
                 'already_voided' => $result['already_voided'],
                 'reverted' => $result['reverted'],
                 'warnings' => $result['warnings'],
+            ],
+        ]);
+    }
+
+    /**
+     * POST /affiliate/accounts/{userRef}/release — 🌙 (2026-11-03) จันทราลบบัญชีลูกค้าแล้ว (ส่งซ้ำได้)
+     *
+     * ปลดการผูกกับผู้ใช้ Thaiprompt — บัญชีจันทราใหม่ที่ผูก Thaiprompt คนเดิมจะชี้มาที่แถวเดิม
+     *   (สายงาน ตำแหน่ง ค่าแนะนำเดิมทั้งหมด) แทนที่จะได้ 409 thaiprompt_taken
+     * ไม่เคยรู้จัก user_ref นี้ = 404 unknown_account (จันทราถือว่าจบได้ ไม่มีอะไรให้ปลด)
+     */
+    public function releaseAccount(Request $request, int $userRef): JsonResponse
+    {
+        $data = $request->validate(['reason' => 'nullable|string|max:255']);
+
+        try {
+            $result = $this->affiliate->releaseAccount($userRef, $data['reason'] ?? null);
+        } catch (JuntraAffiliateException $e) {
+            return $this->failure($e);
+        }
+
+        if (! $result['found']) {
+            return response()->json([
+                'reason_code' => 'unknown_account',
+                'message' => 'แม่หมอไม่รู้จักบัญชีจันทรานี้ — ไม่มีอะไรให้ปลด',
+                'data' => ['released' => false, 'reason_code' => 'unknown_account'],
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'released' => true,
+                'already_released' => $result['already_released'],
+                'linked_via' => $result['linked_via'],
             ],
         ]);
     }

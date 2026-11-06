@@ -72,6 +72,12 @@ class SendMuOfferJob implements ShouldQueue
             // (สถานะอาจเปลี่ยนระหว่าง 1 ชม. เช่นลูกค้ากลับมาจ่ายเงินแล้ว)
             $reading = $this->readingId ? FortuneReading::find($this->readingId) : null;
 
+            // 🌐 (2026-11-03) FB web-only — การ์ดขายของที่หน่วงไว้ก่อนสลับธง ห้ามหลุดเข้า Messenger
+            //   (ใช้ platform ของบิลถ้ามี · LINE ไม่ผ่านด่านนี้)
+            if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($this->platform, $this->platformUserId, $reading, 'mu_offer_job')) {
+                return;
+            }
+
             $sent = $service->offer(
                 $this->platform,
                 $this->platformUserId,

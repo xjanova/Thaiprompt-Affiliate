@@ -96,7 +96,7 @@ class JuntraTarotProfilesTest extends TestCase
 
     public function test_every_web_package_has_a_profile_with_the_headings_the_web_can_split(): void
     {
-        foreach (['single', 'three', 'love', 'career', 'decision', 'celtic', 'year', 'kunsai'] as $key) {
+        foreach (['single', 'three', 'quick', 'love', 'career', 'decision', 'celtic', 'year', 'kunsai'] as $key) {
             $p = JuntraSpreadProfiles::get($key);
             $this->assertNotNull($p, $key);
             $spec = JuntraSpreadProfiles::formatSpec($p, [1 => ['position_name' => 'ก']], ['ต.ค. 2569'], true, true);
@@ -104,6 +104,47 @@ class JuntraTarotProfilesTest extends TestCase
             $first = $key === 'kunsai' ? JuntraSpreadProfiles::HEADINGS['diagnosis'] : JuntraSpreadProfiles::HEADINGS['verdict'];
             $this->assertStringStartsWith("## {$first}", $spec, $key);
         }
+    }
+
+    /** 🌸 (2026-11-04) ห้องน้องบุษบา — แบบทำนาย quick พูดเป็นบุษบา เรียกลูกค้าว่า "คุณ" · แบบอื่นยังเป็นแม่หมอทุกไบต์ */
+    public function test_quick_is_read_by_busaba_and_other_packages_stay_maemor(): void
+    {
+        $cards = [
+            $this->card(1, 'เรื่องนี้ตอนนี้', 'The Sun', 'พระอาทิตย์'),
+            $this->card(2, 'สิ่งที่ต้องระวัง', 'Five of Wands', 'ห้าไม้เท้า', true),
+            $this->card(3, 'ควรทำอะไรต่อ', 'Ace of Cups', 'เอซถ้วย'),
+        ];
+        $this->read(['spread_key' => 'quick', 'cards' => $cards, 'question' => 'เขาจะกลับมาไหม'])->assertOk();
+
+        $override = end($this->overrides);
+        $this->assertStringStartsWith('[⚠️ WEB TAROT OVERRIDE', $override);   // ค่าเดียว ไม่ทับ systemOverride
+        $this->assertStringContainsString('PERSONA OVERRIDE — บุษบา', $override);
+        $this->assertStringContainsString('ห้ามทำนายหรือพูดเป็นนัยถึงความตาย', $override);
+        $this->assertStringEndsWith('ภาษา: ตอบภาษาเดียวกับคำถามของลูกค้า', $override);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
+        $this->assertSame(1500, end($this->calls)['config']['max_tokens']);
+
+        $this->read(['spread_key' => 'three', 'cards' => $cards])->assertOk();
+        $this->assertStringNotContainsString('PERSONA OVERRIDE', end($this->overrides));
+        $this->assertStringEndsWith('ขึ้นต้นคำตอบด้วยหัวข้อแรกทันที', end($this->overrides));
+        $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
+    }
+
+    /** 🪬 (2026-11-04, owner) คุณไสย = แม่หมออีกร่าง ดุดัน เคร่งขรึม — พรอมต์ทำนายเดิม + บล็อกบุคลิกท้ายสุด ยังเรียก "ลูก" */
+    public function test_kunsai_is_read_by_the_stern_form_of_mae_mor(): void
+    {
+        $this->read(['spread_key' => 'kunsai', 'question' => 'โดนของไหม', 'cards' => $this->deck(10)])->assertOk();
+
+        $override = end($this->overrides);
+        $this->assertStringStartsWith('[⚠️ WEB TAROT OVERRIDE', $override);
+        $this->assertStringContainsString('KUNSAI ROOM OVERRIDE', $override);
+        $this->assertStringContainsString('ดุดัน เคร่งขรึม ตรงไปตรงมา', $override);
+        $this->assertStringContainsString('ห้ามโทษลูกว่าทำตัวเองให้โดนของ', $override);
+        $this->assertStringNotContainsString('PERSONA OVERRIDE — บุษบา', $override);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
+
+        $this->read(['spread_key' => 'celtic', 'question' => 'งานจะรุ่งไหม', 'cards' => $this->deck(10)])->assertOk();
+        $this->assertStringNotContainsString('KUNSAI ROOM OVERRIDE', end($this->overrides));
     }
 
     public function test_love_reads_on_the_prediction_lane_with_its_own_structure_and_length(): void
@@ -163,6 +204,16 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringContainsString('1323', $call['prompt']);
         $this->assertStringContainsString('ห้ามพิมพ์ตัวบท', $call['prompt']);
         $this->assertStringNotContainsString('ตาชั่งใช่/ไม่ใช่', $call['prompt']);
+        // QA prod 2026-11-03: คำทำนายคุณไสยเขียนว่า "ตำราที่แนบมา…" — กฎห้ามพูดถึงวัตถุดิบต้องอยู่ใน prompt เสมอ
+        $this->assertStringContainsString(JuntraSpreadProfiles::NO_SOURCE_TALK, $call['prompt']);
+    }
+
+    public function test_every_package_forbids_mentioning_the_attached_knowledge(): void
+    {
+        foreach (JuntraSpreadProfiles::keys() as $key) {
+            $prompt = JuntraSpreadProfiles::userPrompt(JuntraSpreadProfiles::get($key), [1 => $this->card(1, 'ตำแหน่ง 1', 'The Sun', 'พระอาทิตย์')], 'งานจะดีไหม');
+            $this->assertStringContainsString('ห้ามเอ่ยถึง "ตำราที่แนบมา"', $prompt, $key);
+        }
     }
 
     public function test_year_uses_real_month_names_and_never_guesses_a_calendar(): void

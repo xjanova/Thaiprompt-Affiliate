@@ -299,8 +299,11 @@ class FortuneCustomerPersona extends Model
      * @param  string|null  $currentMessage  ข้อความล่าสุดของลูกค้า — ใช้ตัดสินว่าควรยื่นสายด่วน
      *                                       เฉพาะตอนวิกฤตจริงในเทิร์นนี้ (proactive job ส่ง null)
      */
-    public function toAiContextBlock(?string $currentMessage = null): string
+    public function toAiContextBlock(?string $currentMessage = null, bool $forWeb = false): string
     {
+        // 🌙 (2026-11-03 FB web-only) $forWeb = ห้องแม่หมอบนเว็บจันทรา (ความต่อเนื่องจากแชท FB)
+        //   เก็บ risk guidance ไว้ครบ (ความปลอดภัยของลูกค้าตามไปทุกช่องทาง)
+        //   แต่ทิ้ง directive time-waster ("ปรับเข้าเรื่องดูดวงทันที") — บนเว็บคุยฟรี ไม่มีการปิดการขายในแชท
         $lines = [];
 
         // 🔗 (2026-08-15) ความจำจากสาขาอื่นของ "คนเดียวกัน"
@@ -408,7 +411,7 @@ class FortuneCustomerPersona extends Model
         //   เหตุผล: ลูกค้าฟุ้งซ่านไม่ปิดการขายเก่า → AI ต้องตอบสั้น ปฏิเสธ chitchat
         //   Threshold 40 = ติด silence แล้ว 2 รอบ (20 + 20) → low engagement ชัดเจน
         $timeWasterScore = (int) ($this->time_waster_score ?? 0);
-        if ($timeWasterScore >= self::SCORE_INJECT_THRESHOLD) {
+        if (! $forWeb && $timeWasterScore >= self::SCORE_INJECT_THRESHOLD) {
             $lines[] = "⚠️ score รบกวน: {$timeWasterScore}/100 (เคยคุยฟุ้งไม่ปิดการขาย) — ตอบสั้น ≤1 ประโยค ไม่ chitchat ปรับเข้าเรื่องดูดวงทันที";
         }
 

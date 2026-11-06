@@ -69,6 +69,16 @@ class FortuneMarketingSend extends Command
         $this->info("   หัวข้อ: {$campaign->topic}");
         $this->info("   เป้าหมาย: {$campaign->target_label} ({$campaign->target_platform})");
 
+        // 🌐 (2026-11-03) FB web-only — แคมเปญที่ยิงเฉพาะ FB ต้องพักไว้ทั้งก้อน (ไม่เรียก AI · ไม่ mark error)
+        //   แคมเปญ 'all' ยังเดินต่อ — executeCampaign กรองผู้รับ FB ทิ้งทีละคน (LINE ได้ตามเดิม)
+        //   เช็คที่นี่ตอนรันจริง ไม่ใช่ตอนตั้งแคมเปญ (แคมเปญที่ตั้งไว้ก่อนสลับธงต้องไม่หลุด)
+        if ((string) $campaign->target_platform === 'facebook' && \App\Services\Fortune\FbWebOnlyOutboundGuard::flagOn()) {
+            $this->warn('   🌐 พักแคมเปญ: ปิดการส่งเข้าแชท Facebook อยู่ (facebook_web_only) — ข้าม');
+            Log::info('🌐 FB web-only: พักแคมเปญการตลาดเป้าหมาย FB', ['campaign_id' => $campaign->id]);
+
+            return 0;
+        }
+
         // ถ้าต้อง regenerate ข้อความ (สำหรับส่งซ้ำรายวัน/สัปดาห์ ให้ AI สร้างใหม่ทุกครั้ง)
         if ($this->option('regenerate') || ($campaign->use_ai_generate && in_array($campaign->schedule_type, ['daily', 'weekly']))) {
             $this->info('   🤖 AI กำลังสร้างข้อความใหม่...');

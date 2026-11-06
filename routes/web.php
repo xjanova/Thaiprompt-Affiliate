@@ -1191,11 +1191,26 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
 
 // 🌐 (2026-07-24) Web Fortune Gateway — Magic Link "ดูดวงฟรีบนเว็บ" จากบอท FB/LINE
 //   ตรวจ token → หา/สร้างบัญชี → login อัตโนมัติ → ส่งต่อ SSO juntraweb (Passport)
-//   ทั้งระบบอยู่หลังสวิตช์ enable_web_fortune_button (default OFF)
-//   ต้องอยู่ใน web group ปกติ (ใช้ session สำหรับ Auth::login) + throttle กัน brute-force
+//   ทั้งระบบอยู่หลังสวิตช์ enable_web_fortune_button (default OFF) · FB เปิดเพิ่มได้ด้วย facebook_web_only
+//   ต้องอยู่ใน web group ปกติ (ใช้ session สำหรับ Auth::login)
+// 🔐 (2026-11-03) T13 — GET = หน้า interstitial ไม่มีผลข้างเคียง (crawler/prefetch ไม่กิน token)
+//   POST = ใช้ token จริง (single-use + CSRF) · throttle หลักนับต่อ token อยู่ใน controller (wfgo)
+//   throttle ต่อ IP ตั้งไว้กว้าง ๆ แค่กัน DoS (ลูกค้ามือถือใช้ CGNAT IP ร่วมกันเยอะ)
 Route::get('/web-fortune/go', [\App\Http\Controllers\WebFortuneGatewayController::class, 'go'])
     ->name('web-fortune.go')
+    ->middleware('throttle:240,1');
+Route::post('/web-fortune/go', [\App\Http\Controllers\WebFortuneGatewayController::class, 'consume'])
+    ->name('web-fortune.consume')
+    ->middleware('throttle:240,1');
+Route::get('/web-fortune/expired', [\App\Http\Controllers\WebFortuneGatewayController::class, 'expired'])
+    ->name('web-fortune.expired')
+    ->middleware('throttle:240,1');
+Route::post('/web-fortune/resend', [\App\Http\Controllers\WebFortuneGatewayController::class, 'resend'])
+    ->name('web-fortune.resend')
     ->middleware('throttle:30,1');
+Route::get('/web-fortune/sso', [\App\Http\Controllers\WebFortuneGatewayController::class, 'sso'])
+    ->name('web-fortune.sso')
+    ->middleware('throttle:60,1');
 
 // 🗑️ (2026-07-07) หน้าเช็คสถานะการลบข้อมูล (PDPA) — ลิงก์ที่ตอบกลับ Facebook ชี้มาที่นี่
 Route::get('/privacy/data-deletion-status/{code}', [FacebookDataDeletionController::class, 'status'])

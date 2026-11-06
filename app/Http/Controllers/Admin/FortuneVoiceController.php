@@ -31,7 +31,7 @@ class FortuneVoiceController extends Controller
     /**
      * Provider ที่รองรับ (ใช้ validate)
      */
-    protected const PROVIDERS = 'minimax,openai_tts,google_tts,gtts';
+    protected const PROVIDERS = 'minimax,openai_tts,google_tts,gtts,xdreamer';
 
     /**
      * แสดงหน้าจัดการเสียง
@@ -186,6 +186,7 @@ class FortuneVoiceController extends Controller
             ['name' => 'openai_tts', 'label' => '🎙️ OpenAI TTS (paid)'],
             ['name' => 'google_tts', 'label' => '🎙️ Google Cloud TTS (ฟรี 1M/เดือน)'],
             ['name' => 'gtts', 'label' => '🆓 gTTS (Google Translate, ไม่ต้องตั้ง key)'],
+            ['name' => 'xdreamer', 'label' => '🎭 X-DREAMER · ElevenLabs V3 (เสียงแม่หมอ)'],
         ];
 
         $checks = [];
@@ -214,6 +215,7 @@ class FortuneVoiceController extends Controller
             'openai_tts' => new OpenAITtsProvider($settings, app(\App\Services\AiApiKeyPoolService::class)),
             'google_tts' => new GoogleCloudTtsProvider($settings),
             'gtts' => new GttsProvider,
+            'xdreamer' => new \App\Services\Tts\XDreamerTtsProvider($settings),
             default => null,
         };
     }

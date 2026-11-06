@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property string $message ข้อความเชิญชวน (รองรับ {name} / {{web_link}} / {{line_link}})
  * @property string $category หมวดหมู่
- * @property string $mode โหมดที่ใช้ข้อความนี้: all | classic | transfer
+ * @property string $mode โหมดที่ใช้ข้อความนี้: all | classic | transfer | daily | web
  * @property int|null $hour_from ชั่วโมงเริ่มส่งได้ 0-23 (NULL = ทุกเวลา)
  * @property int|null $hour_to ชั่วโมงสุดท้ายที่ส่งได้ 0-23 (NULL = ทุกเวลา)
  * @property bool $is_active เปิดใช้งานหรือไม่
@@ -46,6 +46,30 @@ class FortuneInviteMessage extends Model
 
     /** 🌙 (2026-07-31) ชุดข้อความของโหมด DM ดูดวงรายวัน — ชวนบอกวันเกิดแลกคำทำนายฟรี */
     public const MODE_DAILY = 'daily';
+
+    /**
+     * 🌐 (2026-11-03) ชุดข้อความของ FB web-only — ชวน "เข้าห้องแม่หมอ" บนเว็บจันทรา
+     *
+     * ใต้ธง facebook_web_only ฝั่ง FB หยิบได้ **เฉพาะชุดนี้** (ห้ามตกไปชุด all — ชุดเดิม
+     * ชวนดูดวงในแชท/บอกราคา) ชุดว่าง = pickActive() คืน null
+     * ⚠️ ห้ามมีคำเรื่องเงิน/LINE/ฟรี และห้ามวาง URL ดิบ — ลิงก์อยู่ในปุ่มที่ตอบกลับเท่านั้น
+     */
+    public const MODE_WEB = 'web';
+
+    /** โหมดทั้งหมดที่โมเดลรู้จัก (หน้าแอดมิน validate จากรายการนี้) */
+    public const MODES = [
+        self::MODE_ALL,
+        self::MODE_CLASSIC,
+        self::MODE_TRANSFER,
+        self::MODE_DAILY,
+        self::MODE_WEB,
+    ];
+
+    /** URL ดิบ (http/https, www., m.me, โดเมนเว็บจันทรา) — ห้ามอยู่ในข้อความชุด web */
+    public const RAW_URL_REGEX = '#(https?://|www\.|m\.me/|จันทรา\.online|juntra)#iu';
+
+    /** จำนวนแถวสูงสุดที่สุ่มมาตรวจคำต้องห้ามต่อรอบ (ชุด web) */
+    protected const WEB_PICK_CANDIDATES = 20;
 
     /**
      * ⏰ (2026-08-08) ช่วงเวลาเริ่มต้นของข้อความเดิมที่ "เขียนผูกเวลา" ไว้
@@ -116,10 +140,18 @@ class FortuneInviteMessage extends Model
      * 🗂️ (2026-06-07) เคารพ "หมวดที่ปิด" (invite_disabled_categories) — ไม่สุ่มหมวดที่แอดมินปิด
      *   เป็น chokepoint เดียวของทุก DM path (comment/reaction/welcome) → ปิดหมวดที่นี่ครอบทั้งหมด
      *
+     * 🌐 (2026-11-03) FB web-only: ธงเปิด + ช่องทางเป็น facebook → หยิบเฉพาะชุด MODE_WEB
+     *   ชุดว่าง / ยังไม่มีคอลัมน์ mode = null (ไม่ส่ง) **ห้ามตกไปชุด all เด็ดขาด**
+     *   LINE/Telegram ไม่โดน (fbWebOnlyFor เช็คช่องทางก่อน)
+     *
+     * @param  string  $platform  ช่องทางที่จะส่ง ('facebook' | 'line' | 'telegram')
      * @return self|null null ถ้าไม่มีข้อความ active เลย (caller จะ fallback ไปส่งรูป/ทักทายปกติ)
      */
-    public static function pickActive(): ?self
+    public static function pickActive(string $platform = 'facebook'): ?self
     {
+        // 🌐 ตัดสินก่อนอ่านค่าอื่น — อ่านธงพังในบริบท FB = ถือว่าเปิด (fail-closed)
+        $webOnly = self::fbWebOnlyActive($platform);
+
         $settings = FortuneTellingSetting::getSettings();
         $disabled = $settings->getDisabledInviteCategories();
 
@@ -181,6 +213,17 @@ class FortuneInviteMessage extends Model
             return $fallback;
         };
 
+        // 🌐 FB web-only — ชุด web เท่านั้น (แถวที่มีคำต้องห้าม/URL ถูกข้าม) ว่าง = null
+        if ($webOnly) {
+            if (! $hasModeColumn) {
+                \Illuminate\Support\Facades\Log::warning('🌐 InviteMessage: FB web-only แต่ยังไม่มีคอลัมน์ mode → ไม่ส่งข้อความชวน');
+
+                return null;
+            }
+
+            return self::pickWebSafe($base, $hasWindow, $hour);
+        }
+
         // ยังไม่ได้ migrate → สุ่มแบบเดิมทั้งกอง (ดีกว่า DM เงียบทั้งระบบ)
         if (! $hasModeColumn) {
             return $pick([]);
@@ -201,7 +244,9 @@ class FortuneInviteMessage extends Model
         //   🎁 (2026-08-28) เส้นเดียวกันนี้ครอบสวิตช์ `daily_free_horoscope_enabled` ด้วย
         //     — isDailyServing() คืน false เมื่อแอดมินปิดระบบชวนดวงฟรี ⇒ DM กลับไปใช้
         //     "ชุดข้อความชวนดูดวงชุดแรก" (all/classic) ตามที่เจ้าของสั่ง โดยไม่ต้องแก้ที่นี่
-        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing()) {
+        //   🔁 (2026-11-03 รีวิว) ส่ง platform จริง — ค่าเริ่มต้นของ isDailyServing คือ facebook
+        //     ไม่ส่ง = LINE โดนธง FB web-only ไปด้วย (DM ชวนดวงรายวันของ LINE กลายเป็นชุด classic)
+        if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing($platform)) {
             $mode = \App\Services\Fortune\FortuneBotMode::MODE_CLASSIC;
         }
 
@@ -229,6 +274,86 @@ class FortuneInviteMessage extends Model
 
         // โหมด classic — ใช้ชุดกลาง + ชุดที่ทำไว้เฉพาะ classic (ตัดชุดของโหมดอื่นออก)
         return $pick([self::MODE_ALL, self::MODE_CLASSIC]);
+    }
+
+    /**
+     * 🌐 หยิบข้อความชุด web 1 ข้อความที่ผ่านการตรวจคำต้องห้าม
+     *
+     * สุ่มมาทีละกอง (ไม่เกิน WEB_PICK_CANDIDATES) แล้วคืนแถวแรกที่ปลอดภัย —
+     * กันเคสแอดมินแก้ข้อความชุด web แล้วเผลอใส่คำว่า "ฟรี"/"บาท"/ลิงก์
+     * กรองช่วงเวลาก่อน ถ้าชั่วโมงนี้ไม่มีเลยค่อยสุ่มทั้งชุด web (ยังเป็นชุด web เสมอ)
+     *
+     * @param  \Closure  $base  ตัวสร้าง query จาก pickActive()
+     */
+    protected static function pickWebSafe(\Closure $base, bool $hasWindow, int $hour): ?self
+    {
+        $rounds = $hasWindow ? [true, false] : [false];
+
+        foreach ($rounds as $applyWindow) {
+            $candidates = $base([self::MODE_WEB], $applyWindow)
+                ->inRandomOrder()
+                ->limit(self::WEB_PICK_CANDIDATES)
+                ->get();
+
+            foreach ($candidates as $row) {
+                if (self::isWebSafeText((string) $row->message)) {
+                    return $row;
+                }
+
+                \Illuminate\Support\Facades\Log::critical('🌐 InviteMessage: ข้อความชุด web มีคำต้องห้าม/ลิงก์ → ข้าม (แก้ที่หน้าแอดมิน)', [
+                    'invite_id' => $row->id,
+                ]);
+            }
+        }
+
+        \Illuminate\Support\Facades\Log::warning('🌐 InviteMessage: FB web-only แต่ไม่มีข้อความชุด web ที่ใช้ได้ → ไม่ส่ง (ไม่ตกไปชุด all)', [
+            'hour' => $hour,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * 🌐 ข้อความนี้ปลอดภัยสำหรับ FB web-only ไหม
+     *
+     * ห้าม: คำเรื่องเงิน/LINE/ฟรี (WebHandoffCopy::FORBIDDEN_REGEX), URL ดิบ,
+     * และ placeholder ลิงก์ ({{web_link}} / {{line_link}}) — ลิงก์ต้องอยู่ในปุ่มเท่านั้น
+     *
+     * @example FortuneInviteMessage::isWebSafeText('แม่หมอรออยู่ในห้องค่ะ 🌙'); // true
+     */
+    public static function isWebSafeText(?string $text): bool
+    {
+        $text = trim((string) $text);
+
+        if ($text === '') {
+            return false;
+        }
+
+        if (preg_match(\App\Services\Fortune\WebHandoffCopy::FORBIDDEN_REGEX, $text)) {
+            return false;
+        }
+
+        if (str_contains($text, '{{web_link}}') || str_contains($text, '{{line_link}}')) {
+            return false;
+        }
+
+        return ! preg_match(self::RAW_URL_REGEX, $text);
+    }
+
+    /**
+     * 🌐 ธง FB web-only มีผลกับช่องทางนี้ไหม (จุดเดียวของโมเดลนี้)
+     *
+     * อ่านค่าพังในบริบท facebook = true (fail-closed) / ช่องทางอื่น = false เสมอ
+     */
+    public static function fbWebOnlyActive(string $platform = 'facebook'): bool
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneBotMode(FortuneTellingSetting::getSettings()))
+                ->fbWebOnlyFor($platform, null);
+        } catch (\Throwable $e) {
+            return \App\Services\Fortune\FortuneBotMode::resolvePlatform($platform, null)
+                === \App\Services\Fortune\FortuneBotMode::FB_WEB_ONLY_PLATFORM;
+        }
     }
 
     /**
@@ -422,7 +547,7 @@ class FortuneInviteMessage extends Model
             return null;
         }
 
-        return self::pickActive();
+        return self::pickActive($platform);
     }
 
     /**
@@ -441,10 +566,19 @@ class FortuneInviteMessage extends Model
      * payload เป็น namespace ใหม่ (INVITE_*) ไม่ชนกับปุ่มเดิมในระบบ
      * route ผ่าน FacebookWebhookController::handleQuickReply()
      *
+     * 🌐 (2026-11-03) FB web-only: [🌙 เข้าห้องแม่หมอ → WEB_ROOM] [🔕 พัก 7 วัน] [🚫 ไม่ต้องส่งอีก]
+     *   ไม่มี INVITE_READ_NOW (ดูดวงในแชท) และไม่มี INVITE_FREE_WEB (คำว่า "ฟรี")
+     *   กด WEB_ROOM แล้ว webhook ตอบด้วยกล่องลิงก์ที่สร้างจาก sender.id (PSID จริง) ทุกครั้ง
+     *
      * @return array<int, array{content_type: string, title: string, payload: string}>
      */
     public static function quickReplies(): array
     {
+        // quick reply ชุดนี้ใช้กับ Facebook เท่านั้น (ทุก caller เป็นเส้น FB)
+        if (self::fbWebOnlyActive('facebook')) {
+            return self::webQuickReplies();
+        }
+
         $buttons = [];
 
         try {
@@ -458,6 +592,16 @@ class FortuneInviteMessage extends Model
         return array_merge($buttons, [
             ['content_type' => 'text', 'title' => '🔮 ดูดวงเลย', 'payload' => 'INVITE_READ_NOW'],
         ], static::optOutQuickReplies());
+    }
+
+    /**
+     * 🌐 quick reply ของ DM ชวนแบบ web-only (ตัวเดียวกับ WebHandoffCopy — ห้ามเขียนซ้ำ)
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    public static function webQuickReplies(): array
+    {
+        return \App\Services\Fortune\WebHandoffCopy::inviteQuickReplies();
     }
 
     /**
@@ -501,6 +645,14 @@ class FortuneInviteMessage extends Model
      */
     public function render(?string $name, ?string $platformUserId = null, string $platform = 'facebook'): string
     {
+        // 🌐 (2026-11-03) ชุด web / FB web-only — ห้ามมีลิงก์ดิบ ใช้กติกาชื่อแบบเดียวกับ WebHandoffCopy
+        //    LINE/Telegram ไม่เข้าเส้นนี้ (resolvePlatform ดูรูปทรง id ก่อน)
+        if ($this->mode === self::MODE_WEB
+            || (\App\Services\Fortune\FortuneBotMode::resolvePlatform($platform, $platformUserId) === 'facebook'
+                && self::fbWebOnlyActive('facebook'))) {
+            return $this->renderWeb($name);
+        }
+
         $clean = FortuneUserCredit::isHumanLikeName($name) ? trim((string) $name) : '';
 
         $text = str_replace('{name}', $clean, (string) $this->message);
@@ -508,6 +660,41 @@ class FortuneInviteMessage extends Model
 
         // เก็บกวาด double space ที่เกิดจาก {name} ว่าง (เช่น "ของคุณ  จะ")
         $text = preg_replace('/[ \t]{2,}/u', ' ', $text);
+
+        return trim($text);
+    }
+
+    /**
+     * 🌐 render แบบ web-only — ไม่สร้างลิงก์ใด ๆ (ลิงก์ไปอยู่ในปุ่มที่ตอบหลังลูกค้ากด WEB_ROOM)
+     *
+     * - {name}: ชื่อคนจริงที่ไม่ยาวเกิน 20 ตัว ไม่งั้นใช้คำแทนตามข้อ (WebHandoffCopy::NAME_FALLBACK)
+     *   ข้อความที่ไม่ได้มาจากชุดมาตรฐาน (แอดมินเขียนเอง) ใช้ "เจ้าชะตา"
+     * - บรรทัดที่มี {{web_link}} / {{line_link}} / URL ดิบ ถูกตัดทิ้งทั้งบรรทัด
+     */
+    protected function renderWeb(?string $name): string
+    {
+        $display = FortuneUserCredit::isHumanLikeName($name)
+            ? \App\Services\Fortune\WebHandoffCopy::displayName($name)
+            : null;
+
+        $fallback = \App\Services\Fortune\WebHandoffCopy::DEFAULT_NAME_FALLBACK;
+        foreach (\App\Services\Fortune\WebHandoffCopy::INVITES as $n => $row) {
+            if ($row['text'] === (string) $this->message) {
+                $fallback = \App\Services\Fortune\WebHandoffCopy::NAME_FALLBACK['invite_'.$n] ?? $fallback;
+                break;
+            }
+        }
+
+        $text = str_replace('{name}', $display ?? $fallback, (string) $this->message);
+
+        $kept = array_filter(
+            preg_split('/\r\n|\r|\n/', $text) ?: [],
+            fn ($line) => ! str_contains($line, '{{web_link}}')
+                && ! str_contains($line, '{{line_link}}')
+                && ! preg_match(self::RAW_URL_REGEX, $line)
+        );
+
+        $text = preg_replace('/[ \t]{2,}/u', ' ', implode("\n", $kept)) ?? '';
 
         return trim($text);
     }

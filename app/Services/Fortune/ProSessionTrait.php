@@ -379,7 +379,9 @@ trait ProSessionTrait
     protected function closingInviteLine(FortuneReading $reading, bool $recallLineShown = false): string
     {
         if (! $this->justHadPaidReadingToday($reading)) {
-            return '💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ ✨';
+            // 🌐 (2026-11-03) FB web-only — ห้ามชวน 'พิมพ์ "ดูดวง"' ในแชท FB → ชวนเข้าห้องแม่หมอแทน
+            //   (LINE / ธงปิด = ข้อความเดิมทุกตัวอักษร — ตัดสินที่ RepurchaseCta จุดเดียว)
+            return RepurchaseCta::forReading($reading, '💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ ✨');
         }
 
         return $recallLineShown
@@ -1049,7 +1051,8 @@ trait ProSessionTrait
             ."💜 พลังงานที่ส่งมาให้ — ขอให้คุ้มครองเจ้าชะตาเดินทางต่อด้วยใจสงบ\n\n"
             ."🌙 *ปิดการส่งพลังเรียบร้อยแล้ว*\n"
             ."ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ มีโชคลาภหนุนนำ และพบกันใหม่เมื่อพร้อมนะคะ ✨\n\n"
-            .'💎 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ';
+            // 🌐 (2026-11-03) FB web-only → CTA ห้องแม่หมอ (LINE คงข้อความเดิม)
+            .RepurchaseCta::forReading($reading, '💎 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ');
     }
 
     /**
@@ -1073,6 +1076,18 @@ trait ProSessionTrait
         $prompt = $type === 'celtic'
             ? $this->buildCelticProSessionPrompt($reading, $name, $remainingMin)
             : $this->buildDeepProSessionPrompt($reading, $name, $remainingMin);
+
+        // 🌐 (2026-11-03) FB web-only — งานที่จ่ายแล้วคุยต่อจนจบบน FB ได้ แต่พรอมต์ห้ามมีราคา/ชวนซื้อซ้ำ
+        //   (ไม่งั้น AI จะพูด "ลูกค้าจ่าย 99฿" / "สมราคา 99฿" กลับให้ลูกค้าในแชท FB) → เปลี่ยนวลี + scrub + กฎห้องแม่หมอ
+        //   LINE / Telegram / ธงปิด = ไม่แตะ (พรอมต์เดิมทุกตัวอักษร)
+        if (RepurchaseCta::appliesTo(null, null, $reading)) {
+            $prompt = strtr($prompt, [
+                'ลูกค้าจ่าย 39฿ จบแล้ว' => 'ลูกค้าดูดวงจบแล้ว',
+                'ลูกค้าจ่าย 99฿ ดูดวงไพ่ครบ 10 ใบ' => 'ลูกค้าเปิดไพ่ครบ 10 ใบแล้ว',
+                ' — ลึก สมราคา 99฿' => ' — ลึก มีน้ำหนัก',
+            ]);
+            $prompt = \App\Services\FortuneAIService::scrubFbWebOnlyPrompt($prompt);
+        }
 
         // 🏬 (2026-08-21) ตัวตนของเพจสาขา — แปะที่นี่จุดเดียวครอบทั้งเส้น Pro AI และเส้น fallback
         //   (เส้น fallback ใช้ $systemPrompt ก้อนเดียวกันนี้ต่อไปยัง chatWithCustomSystemPromptHistory)
@@ -1176,6 +1191,11 @@ trait ProSessionTrait
         $proTurnsDone = is_array($proHistoryForUpsell) ? intdiv(count($proHistoryForUpsell), 2) : 0;
         // เสนอ VIP ได้ "อย่างมากครั้งเดียว" = เฉพาะเทิร์นแรกของ session ; เทิร์นถัดไปห้ามเสนอ
         $allowCelticUpsell = $celticEnabledUpsell && $proTurnsDone < 1;
+        // 🌐 (2026-11-03) FB web-only — แชท FB ห้ามเสนอขาย/ราคา/ให้พิมพ์ "ดูดวง" → ปิด upsell ทั้งก้อน
+        //   (ซื้อใหม่ได้ที่ห้องแม่หมอบนเว็บเท่านั้น — LINE / ธงปิด = เหมือนเดิมทุกตัวอักษร)
+        if ($allowCelticUpsell && RepurchaseCta::appliesTo(null, null, $reading)) {
+            $allowCelticUpsell = false;
+        }
 
         $sellRule = $allowCelticUpsell
             ? "💎 *เสนอ VIP ไพ่ 10 ใบ {$celticPriceUpsell} บาท ได้มากสุดครั้งเดียว* ตามกติกา [💎] ด้านล่างเท่านั้น — ห้ามพูดราคา/แพคเกจอื่น"
@@ -1526,6 +1546,11 @@ trait ProSessionTrait
             // 📚 (2026-06-02) RAG-enriched prompt สำหรับ fallback chat — ดึงคำตอบแอดมินจริง
             //   primary generatePostReadingDeepResponse → generateProResponse inject เองแล้ว (ไม่ double)
             $systemPromptRag = $aiService->injectAdminQARagFewShot($systemPrompt, $messageText, $reading);
+            // 🌐 (2026-11-03) FB web-only — few-shot แอดมินจริงอาจมีราคา/เลขบัญชี/"พิมพ์ ดูดวง" → scrub ซ้ำหลัง RAG
+            //   (เส้นหลัก generateProResponse scrub เองแล้ว — นี่คือเส้น fallback)
+            if (RepurchaseCta::appliesTo(null, null, $reading)) {
+                $systemPromptRag = \App\Services\FortuneAIService::scrubFbWebOnlyPrompt($systemPromptRag);
+            }
 
             // Pro AI fallback chain — sensitive key → chat AI fallback
             // 🎚️ (2026-08-17) เลือกโมเดลตามบริบทเหมือน Celtic — luna ปกติ / sol เมื่อคำถามยาก

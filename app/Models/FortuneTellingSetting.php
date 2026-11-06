@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\Fortune\FortunePageContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * FortuneTellingSetting Model
@@ -421,6 +422,13 @@ class FortuneTellingSetting extends Model
         'minimax_group_id',
         'minimax_model',
         'minimax_voice_id',
+        // 🎭 (2026-11-03) เสียงตัวละคร แม่หมอจันทรา/น้องบุษบา ผ่าน X-DREAMER (ElevenLabs V3)
+        'xdreamer_api_key',
+        'xdreamer_tts_model',
+        'maemor_voice_id',
+        'busaba_voice_id',
+        'kunsai_voice_id',
+        'character_voice_daily_char_limit',
         'openai_tts_model',
         'openai_tts_voice',
         'google_tts_voice',
@@ -491,6 +499,9 @@ class FortuneTellingSetting extends Model
         'transfer_rollout_percent',
         'free_card_max_chars',
         'free_card_regrant_at',
+        // 🌐 (2026-11-03) FB web-only — ปิดดูดวง/รับเงินในแชท FB ย้ายทุกคนไปเว็บ (อ่านจากแถวกลางเท่านั้น)
+        'facebook_web_only',
+        'fb_web_only_since',
         // 🏦 (2026-07-14) KBank Slip Verification — provider ตรวจสลิปตัวที่ 2 (คู่ขนาน SlipOK)
         'enable_kbank_verify',
         'kbank_env',
@@ -528,6 +539,8 @@ class FortuneTellingSetting extends Model
         //    ⚠️ คอลัมน์นี้ใหม่และมีที่เดียวที่อ่าน — ใส่ cast ได้ปลอดภัย
         //       (ห้ามไปใส่ cast ให้ facebook_page_token ของเดิม ค่าที่บันทึกไว้แล้วเป็น plaintext จะถอดไม่ออก)
         'facebook_user_token' => 'encrypted',
+        // 🎭 (2026-11-03) key X-DREAMER (axm-…) — คอลัมน์ใหม่ อ่านผ่าน getXdreamerApiKey() ที่เดียว
+        'xdreamer_api_key' => 'encrypted',
         'facebook_user_token_checked_at' => 'datetime',
         // ⏳ (2026-08-11) null = ไม่มีวันหมด (Graph คืน 0) ห้ามเก็บ 0 ตรงๆ เดี๋ยวกลายเป็นปี 1970
         'facebook_user_token_expires_at' => 'datetime',
@@ -796,6 +809,9 @@ class FortuneTellingSetting extends Model
         'transfer_rollout_percent' => 'integer',
         'free_card_max_chars' => 'integer',
         'free_card_regrant_at' => 'datetime',
+        // 🌐 (2026-11-03) FB web-only
+        'facebook_web_only' => 'boolean',
+        'fb_web_only_since' => 'datetime',
         // 🏦 (2026-07-14) KBank Slip Verification — secret เก็บแบบเข้ารหัส
         'enable_kbank_verify' => 'boolean',
         'kbank_consumer_secret' => 'encrypted',
@@ -817,7 +833,7 @@ class FortuneTellingSetting extends Model
     protected $attributes = [
         'use_global_ai_settings' => true,
         'ai_provider' => 'gemini',
-        'ai_model' => 'gemini-2.5-flash',
+        'ai_model' => 'gemini-3.8-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
         'enable_deep_reading' => true, // 🌙 (2026-06-08) เปิด 39฿ กลับ — เวอร์ชันคุยโต้ตอบใหม่ (พื้นดวง + คุย 7 นาที)
@@ -1125,6 +1141,8 @@ class FortuneTellingSetting extends Model
         'transfer_fallback_days' => 30,
         'transfer_rollout_percent' => 100,
         'free_card_max_chars' => 0,   // 0 = คำทำนายฟรียาวแบบเดิม
+        // 🌐 (2026-11-03) FB web-only — default ปิด = พฤติกรรมเดิม 100% (เปิดหลัง preflight ผ่านเท่านั้น)
+        'facebook_web_only' => false,
         // 🏦 (2026-07-14) KBank Slip Verification — default ปิด (แอดมินกรอก cred + cert + เปิดสวิตช์ก่อน)
         'enable_kbank_verify' => false,
         'kbank_env' => 'sandbox',
@@ -1154,6 +1172,8 @@ class FortuneTellingSetting extends Model
         // 🏦 (2026-07-14) KBank secrets — ห้าม serialize ออกไป
         'kbank_consumer_secret',
         'kbank_cert_password',
+        // 🎭 (2026-11-03) X-DREAMER key — ห้าม serialize ออกไป
+        'xdreamer_api_key',
     ];
 
     /**
@@ -1229,7 +1249,7 @@ class FortuneTellingSetting extends Model
         if (! $settings) {
             $settings = self::create([
                 'ai_provider' => 'gemini',
-                'ai_model' => 'gemini-2.5-flash',
+                'ai_model' => 'gemini-3.8-flash',
                 'max_free_readings' => 3,
                 'reading_price' => 0,
                 'is_enabled' => true,
@@ -1238,6 +1258,19 @@ class FortuneTellingSetting extends Model
 
         return $settings;
     }
+
+    /**
+     * 🌐 (2026-11-03) คอลัมน์ที่เพจสาขา "ห้าม" override — อ่านจากแถวกลางเท่านั้น
+     *
+     * ธง FB web-only คือด่านกันเพจโดนแบน (สลิปใน Messenger) — ถ้าเพจสาขาเขียนทับได้
+     * เพจนั้นจะกลับไปออกบิล/รับสลิปบน FB เองเงียบ ๆ = เพจโดนแบนทั้งที่สั่งปิดไปแล้ว
+     *
+     * @var array<int, string>
+     */
+    public const PAGE_OVERRIDE_DENY_LIST = [
+        'facebook_web_only',
+        'fb_web_only_since',
+    ];
 
     /**
      * เขียนค่าของสาขาทับลงบนค่ากลาง แล้วคืน "สำเนา" (ไม่แตะแถวจริงใน DB)
@@ -1266,12 +1299,35 @@ class FortuneTellingSetting extends Model
                 continue;
             }
 
+            // 🌐 (2026-11-03) คีย์ระดับ "นโยบายทั้งระบบ" — เพจสาขาห้าม override เด็ดขาด
+            //    ไม่งั้นเพจสาขาตั้ง facebook_web_only=false แล้วกลับมารับเงินบน FB ได้เอง
+            if (in_array($column, self::PAGE_OVERRIDE_DENY_LIST, true)) {
+                continue;
+            }
+
             $merged->setAttribute($column, $value);
         }
 
         $merged->syncOriginal();
 
         return $merged;
+    }
+
+    /**
+     * 🌐 (2026-11-03) ประทับเวลา fb_web_only_since อัตโนมัติตอนเปิดธง FB web-only
+     *
+     * ใช้เป็นจุดตัด T0 (เงินกำพร้าหลัง T0 / audit) — ทุกทางที่เปิดธง (หน้าแอดมิน, คำสั่ง cutover,
+     * tinker) ได้เวลาเดียวกันหมดโดยไม่ต้องจำไปตั้งเอง · ปิดธง = เก็บเวลาเดิมไว้เป็นประวัติ
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $setting) {
+            if ($setting->isDirty('facebook_web_only')
+                && (bool) $setting->getAttribute('facebook_web_only')
+                && ! $setting->isDirty('fb_web_only_since')) {
+                $setting->setAttribute('fb_web_only_since', now());
+            }
+        });
     }
 
     /**
@@ -1833,13 +1889,12 @@ TXT;
         $provider = $this->getActualAIProvider();
 
         return match ($provider) {
-            'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
+            'gemini' => AiContentSetting::getValue('gemini_model', AiApiKey::defaultModelFor('gemini')),
             // 🔄 (2026-10-30) รุ่นที่ปิดแล้ว → default ของ Pool (AiApiKey::MODELS_BY_PROVIDER)
             'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-sonnet-5.5'),
-            'groq', 'deepseek', 'typhoon', 'grok' => AiApiKey::defaultModelFor($provider),
-            'openai' => 'gpt-4o',
-            'anthropic' => 'claude-sonnet-4-5',
-            default => 'gemini-2.5-flash',
+            // 🧹 (2026-11-04) gpt-4o / claude-sonnet-4-5 ลบจาก list แล้ว → default ของ Pool เหมือนค่ายอื่น
+            'groq', 'deepseek', 'typhoon', 'grok', 'openai', 'anthropic' => AiApiKey::defaultModelFor($provider),
+            default => AiApiKey::defaultModelFor('gemini'),
         };
     }
 
@@ -2980,15 +3035,13 @@ PROMPT;
     protected function defaultChatModelFor(string $provider): string
     {
         return match ($provider) {
-            // 🆕 (2026-08-17) 5.4-mini → 5.6-luna: ถูกกว่า 3.75 เท่า ($0.20/$1.20 vs $0.75/$4.50)
-            //   และฉลาดกว่า (AA index 52 vs ~41) — verified live บน /v1/responses key prod
-            'openai' => 'gpt-5.6-luna',
-            'gemini' => 'gemini-3.1-flash-lite',
+            // 🧹 (2026-11-04, owner) เหลือซีรีส์ล่าสุด — แชทใช้ตัวถูกของแต่ละค่าย
+            'openai' => AiApiKey::defaultModelFor('openai'),
+            'gemini' => 'gemini-3.5-flash-lite',
             // 🔄 (2026-10-30) Llama / grok-3 / deepseek-chat / typhoon-v2 ปิดแล้ว → default ของ Pool
-            'groq', 'grok', 'deepseek', 'typhoon' => AiApiKey::defaultModelFor($provider),
-            'openrouter' => 'openai/gpt-4o-mini',
-            'anthropic' => 'claude-haiku-4-5-20251001',
-            default => $this->chat_ai_model ?: 'gpt-5.6-luna',
+            'groq', 'grok', 'deepseek', 'typhoon', 'anthropic' => AiApiKey::defaultModelFor($provider),
+            'openrouter' => 'openai/gpt-6-luna',
+            default => $this->chat_ai_model ?: AiApiKey::defaultModelFor('openai'),
         };
     }
 
@@ -3486,6 +3539,7 @@ PROMPT;
                 'openai_tts' => ['google_tts', 'gtts'],
                 'google_tts' => ['gtts'],
                 'gtts' => [],
+                'xdreamer' => ['minimax', 'google_tts', 'gtts'],
                 default => ['google_tts', 'gtts'],
             };
         }
@@ -3616,5 +3670,191 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * 🎭 (2026-11-03) key X-DREAMER (axm-…) สำหรับเสียงตัวละคร — อ่านจากค่ากลางเสมอ
+     *
+     * ถอดรหัสใน try/catch: ถ้า APP_KEY เปลี่ยน cast 'encrypted' จะ throw → ถือว่ายังไม่ได้ตั้ง key
+     * (ห้ามโยน exception ต่อ เพราะข้อความ error อาจหลุดไปหน้าเว็บ)
+     */
+    public function getXdreamerApiKey(): ?string
+    {
+        try {
+            $key = $this->xdreamer_api_key;
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = is_string($key) ? trim($key) : '';
+
+        return $key !== '' ? $key : null;
+    }
+
+    /**
+     * key X-DREAMER แบบปิดบัง สำหรับแสดงในหน้าแอดมิน เช่น "axm-••••••••3f9a"
+     */
+    public function getXdreamerApiKeyMasked(): ?string
+    {
+        $key = $this->getXdreamerApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'axm-') ? 'axm-' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /** 🎭 (2026-11-04) แถวในตาราง settings (key/value) ที่เก็บค่า ElevenLabs ของเสียงตัวละคร */
+    public const ELEVENLABS_KEY_SETTING = 'fortune_elevenlabs_api_key';
+
+    public const ELEVENLABS_MODEL_SETTING = 'fortune_elevenlabs_tts_model';
+
+    /**
+     * 🎭 (2026-11-04) key ElevenLabs สำหรับเสียงตัวละคร — เก็บเข้ารหัสในตาราง settings
+     *
+     * ⚠️ ห้ามเพิ่มคอลัมน์ในตารางนี้อีก: ชนเพดาน row size 8,126 ไบต์ของ InnoDB แล้ว (แม้คอลัมน์ text ก็เพิ่มไม่ได้)
+     * ถอดรหัสไม่ได้ (APP_KEY เปลี่ยน) หรือไม่มีตาราง = ถือว่ายังไม่ได้ตั้ง key — ห้ามโยน exception ต่อ
+     */
+    public function getElevenlabsApiKey(): ?string
+    {
+        try {
+            $stored = Setting::get(self::ELEVENLABS_KEY_SETTING);
+            $key = is_string($stored) && $stored !== '' ? Crypt::decryptString($stored) : '';
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = trim($key);
+
+        return $key !== '' ? $key : null;
+    }
+
+    /**
+     * บันทึก/ลบ key ElevenLabs (null = ลบ)
+     */
+    public function setElevenlabsApiKey(?string $key): void
+    {
+        $key = $key !== null ? trim($key) : '';
+
+        if ($key === '') {
+            Setting::where('key', self::ELEVENLABS_KEY_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_KEY_SETTING, Crypt::encryptString($key), 'encrypted', 'fortune_voice');
+    }
+
+    /**
+     * key ElevenLabs แบบปิดบัง สำหรับแสดงในหน้าแอดมิน เช่น "sk_••••••••3f9a"
+     */
+    public function getElevenlabsApiKeyMasked(): ?string
+    {
+        $key = $this->getElevenlabsApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'sk_') ? 'sk_' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /** 🎬 (2026-11-04) กุญแจ Google Cloud Text-to-Speech ของเสียงอ่านคำทำนายฟรี — ตาราง settings เหมือน ElevenLabs */
+    public const GOOGLE_TTS_KEY_SETTING = 'fortune_google_tts_api_key';
+
+    /** กุญแจ Google TTS ที่แอดมินกรอก (ถอดรหัสไม่ได้/ไม่มีตาราง = ยังไม่ได้ตั้ง) */
+    public function getGoogleTtsApiKey(): ?string
+    {
+        try {
+            $stored = Setting::get(self::GOOGLE_TTS_KEY_SETTING);
+            $key = is_string($stored) && $stored !== '' ? Crypt::decryptString($stored) : '';
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $key = trim($key);
+
+        return $key !== '' ? $key : null;
+    }
+
+    /** บันทึก/ลบ กุญแจ Google TTS (null = ลบ) */
+    public function setGoogleTtsApiKey(?string $key): void
+    {
+        $key = $key !== null ? trim($key) : '';
+
+        if ($key === '') {
+            Setting::where('key', self::GOOGLE_TTS_KEY_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::GOOGLE_TTS_KEY_SETTING, Crypt::encryptString($key), 'encrypted', 'fortune_voice');
+    }
+
+    /** กุญแจ Google แบบปิดบัง เช่น "AIza••••••••x9Qk" */
+    public function getGoogleTtsApiKeyMasked(): ?string
+    {
+        $key = $this->getGoogleTtsApiKey();
+        if ($key === null) {
+            return null;
+        }
+
+        $prefix = str_starts_with($key, 'AIza') ? 'AIza' : '';
+
+        return $prefix.'••••••••'.(mb_strlen($key) > 12 ? mb_substr($key, -4) : '');
+    }
+
+    /**
+     * โมเดลเสียง ElevenLabs ที่แอดมินตั้ง (null = ใช้ค่าเริ่มต้นของ provider)
+     */
+    public function getElevenlabsTtsModel(): ?string
+    {
+        try {
+            $model = trim((string) Setting::get(self::ELEVENLABS_MODEL_SETTING, ''));
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $model !== '' ? $model : null;
+    }
+
+    public function setElevenlabsTtsModel(?string $model): void
+    {
+        $model = $model !== null ? trim($model) : '';
+
+        if ($model === '') {
+            Setting::where('key', self::ELEVENLABS_MODEL_SETTING)->delete();
+
+            return;
+        }
+
+        Setting::set(self::ELEVENLABS_MODEL_SETTING, $model, 'string', 'fortune_voice');
+    }
+
+    /** 🎚️ (2026-11-04) ค่าจูนเสียง ElevenLabs (JSON) — รวมทุกตัวละคร + ค่ารวม (คุณภาพไฟล์ / ภาษา / อ่านตัวเลข) */
+    public const ELEVENLABS_TUNING_SETTING = 'fortune_elevenlabs_tuning';
+
+    /**
+     * ค่าจูนเสียงที่แอดมินบันทึกไว้ — ยังไม่เคยตั้ง/อ่านไม่ได้ = [] (ไม่ส่งค่าจูนใดๆ ใช้ค่าของเสียงเอง)
+     *
+     * @return array{output_format?: string, language_code?: ?string, apply_text_normalization?: string, personas?: array<string, array>}
+     */
+    public function getElevenlabsTuning(): array
+    {
+        try {
+            $stored = Setting::get(self::ELEVENLABS_TUNING_SETTING);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    public function setElevenlabsTuning(array $tuning): void
+    {
+        Setting::set(self::ELEVENLABS_TUNING_SETTING, json_encode($tuning, JSON_UNESCAPED_UNICODE), 'json', 'fortune_voice');
     }
 }

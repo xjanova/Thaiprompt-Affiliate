@@ -100,11 +100,11 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {{-- Pending Payouts --}}
+            {{-- คำขอถอนเงินที่รออนุมัติ (withdrawal_requests) --}}
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-white">Payout รอดำเนินการ</h2>
-                    <a href="{{ route('admin.platform-revenue.payouts.index') }}"
+                    <h2 class="text-xl font-bold text-white">คำขอถอนเงินรออนุมัติ</h2>
+                    <a href="{{ route('admin.withdrawals.index') }}"
                        class="text-emerald-400 hover:text-emerald-300 text-sm">
                         ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
                     </a>
@@ -113,12 +113,12 @@
                 @if($pendingPayouts->isEmpty())
                 <div class="text-center py-8 text-white/40">
                     <i class="fas fa-check-circle text-4xl mb-3"></i>
-                    <p>ไม่มี Payout รอดำเนินการ</p>
+                    <p>ไม่มีคำขอถอนเงินรออนุมัติ</p>
                 </div>
                 @else
                 <div class="space-y-3">
                     @foreach($pendingPayouts as $payout)
-                    <a href="{{ route('admin.platform-revenue.payouts.show', $payout) }}"
+                    <a href="{{ route('admin.withdrawals.show', $payout) }}"
                        class="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition group">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -126,7 +126,7 @@
                             </div>
                             <div>
                                 <div class="text-white font-medium">{{ $payout->user->name ?? 'User #'.$payout->user_id }}</div>
-                                <div class="text-white/40 text-sm">{{ $payout->earning_type }}</div>
+                                <div class="text-white/40 text-sm">{{ $payout->request_id }}</div>
                             </div>
                         </div>
                         <div class="text-right">

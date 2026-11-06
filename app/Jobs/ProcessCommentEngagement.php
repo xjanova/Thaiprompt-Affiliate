@@ -6,6 +6,8 @@ use App\Models\FortuneCommentEngagement;
 use App\Models\FortunePostReaction;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\Fortune\FortuneBotMode;
+use App\Services\Fortune\WebHandoffCopy;
 use App\Services\FortuneAIService;
 use App\Services\FortuneBannerService;
 use Illuminate\Bus\Queueable;
@@ -38,6 +40,45 @@ class ProcessCommentEngagement implements ShouldQueue
     public $backoff = [10, 30];
 
     protected array $data;
+
+    /**
+     * 🌐 (2026-11-03) คำตอบใต้คอมเมนต์ตอน FB web-only + DM ติด cooldown (ไม่ได้ทัก inbox รอบนี้)
+     *
+     * ห้ามชวน "ดูดวงในแชท" และห้ามบอกว่าทักไปแล้ว (เพราะรอบนี้ไม่ได้ทักจริง)
+     * ไม่ใช้คลัง FortuneCommentReply เพราะชุดนั้นเขียนไว้ชวนเข้าแชทดูดวง
+     */
+    protected const WEB_ONLY_PUBLIC_REPLIES = [
+        'สาธุค่ะ 🙏 ขอให้สิ่งดี ๆ เข้ามาทุกวันนะคะ',
+        'ขอบคุณค่ะ 🌙 ส่งพลังบวกกลับไปให้นะคะ',
+        'ขอให้ทุกอย่างราบรื่นนะคะ ✨',
+        'น้อมรับพรดี ๆ ค่ะ 💜',
+    ];
+
+    /**
+     * 🌐 (2026-11-05) สัดส่วนคำตอบใต้คอมเมนต์ที่แนบลิงก์เว็บ จันทรา.online (เปอร์เซ็นต์)
+     *
+     * ไม่แนบทุกคอมเมนต์ — เพจที่ยิงลิงก์ออกนอก FB ซ้ำ ๆ หลายร้อยครั้ง/วัน เสี่ยงถูกจับเป็นสแปม
+     * และโดนลดการมองเห็น ที่เหลือยังเป็นคำขอบคุณล้วน (หมวด appreciation)
+     */
+    protected const WEB_INVITE_PERCENT = 20;
+
+    /** คนเดิมได้ลิงก์เว็บไม่เกิน 1 ครั้งต่อช่วงนี้ (วินาที) — 3 วัน */
+    protected const WEB_INVITE_COOLDOWN = 259200;
+
+    /**
+     * 🕊️ (2026-11-05) คอมเมนต์ปล่อยวาง / ให้อภัย / เจ็บใจ → คลังโทนสงบ (letting_go)
+     *
+     * วัดจากคอมเมนต์จริง 7 วัน (7,069 อัน): อโหสิ 1,263 · ไม่สน 160 · ไม่ให้ค่า 142 · ไม่แคร์ 99
+     * ⚠️ ห้ามใส่ "เจ็บ" เดี่ยว ๆ (ชนคำอวยพร "หมดโรคภัยไข้เจ็บ") และ "ท้อ" เดี่ยว ๆ (ชน "สะท้อน")
+     */
+    protected const LETTING_GO_PATTERN = '/อโหสิ|ไม่แคร์|ไม่สน|ไม่ให้ค่า|ช่างมัน|ช่างหัว|ปล่อยวาง|กรรมใคร|ไม่โกรธ|ไม่ถือโทษ|ไม่เอาเรื่อง|โน\s*สน|โน\s*แค|no\s*สน|no\s*care|แช่ง|ใส่ร้าย|นินทา|เกลียด|เจ็บใจ|เจ็บปวด|เจ็บแล้วจำ|เสียใจ|ร้องไห้|น้ำตา|ผิดหวัง|ท้อแท้|ท้อใจ/iu';
+
+    /**
+     * 🕊️ (2026-11-05) คอมเมนต์ตำหนิเพจ / การดูดวง → คลังโทนกลางสุภาพ (neutral) ไม่ร่าเริง ไม่แนบลิงก์
+     *
+     * ⚠️ ห้ามใส่ "หลอก" เดี่ยว ๆ — ลูกค้าพิมพ์ "หรอก" ผิดเป็น "หลอก" บ่อย ("ไม่สนใจหลอก")
+     */
+    protected const CRITICAL_PATTERN = '/หลอกลวง|หลอกเงิน|หลอกคน|หลอกขาย|หลอกกิน|ต้มตุ๋น|มิจฉาชีพ|แหกตา|งมงาย|ไร้สาระ|ไม่แม่น|มั่วซั่ว|โกหก|โกรหก|ไม่จริงสักอย่าง|ไม่จริงเลย|เพจปลอม|เพจหลอก|หากินกับ|สแกม|scam|อย่าไปเชื่อ|เชื่อไม่ได้/iu';
 
     /**
      * @param  array  $data  Expected keys:
@@ -119,7 +160,7 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
-            $facebookService = new FacebookWebhookService($settings);
+            $facebookService = $this->makeFacebookService($settings);
 
             // 💸 (2026-08-22) เอา `new FortuneAIService($settings)` ตรงนี้ออก
             //
@@ -173,12 +214,21 @@ class ProcessCommentEngagement implements ShouldQueue
             //       อ่าน fortune_page_id จาก payload) ⇒ ตรงนี้อ่านได้เลย ไม่ต้องส่งมาใน data
             $pageId = \App\Services\Fortune\FortunePageContext::currentId();
 
+            // 🌐 (2026-11-03) FB web-only — DM ชวนต้องพาเข้าห้องแม่หมอบนเว็บเท่านั้น
+            //    ไม่มีปุ่มราคา/การ์ด VIP/ดวงรายวันฟรี/แบนเนอร์ (ดู sendWebOnlyInvite)
+            //    เช็คใน handle() ทุกครั้ง — job อาจถูก dispatch ก่อนสลับธง
+            //    อ่านธงพัง = ถือว่าเปิด (fail-closed — fbWebOnlyFor จัดการให้)
+            $fbWebOnly = (new FortuneBotMode($settings))->fbWebOnlyFor('facebook', (string) $userId);
+
             $allowDm = ($this->data['allow_dm'] ?? true)
                 && ! (FortuneCommentEngagement::hasDmRecently($userId, 24, $pageId)
                     || FortunePostReaction::hasDmSuccessRecently($userId, 24, $pageId));
 
             $allowPublicReply = ($this->data['allow_public_reply'] ?? true)
                 && FortuneCommentEngagement::hasPublicReplyQuota($userId, $pageId);
+
+            // 🌐 (2026-11-05) ลิงก์เว็บใต้คอมเมนต์ — ปิดให้คนที่เพิ่งจ่ายดูดวง/กดพักข้อความ (ด่านข้างล่าง)
+            $webInviteOk = true;
 
             if (! $allowDm && ! $allowPublicReply) {
                 Log::info('Comment engagement skip — หมดสิทธิ์ทั้ง DM และตอบคอมเมนต์', [
@@ -195,22 +245,29 @@ class ProcessCommentEngagement implements ShouldQueue
             //    ลูกค้ายังติดต่อมาเองได้ปกติ (inbound) — guard นี้ block แค่ outbound DM
             // 🚫 (2026-08-01) กันซ้ำ 7 วันแบบทบ — เลิกใช้กฎ "เดือนปฏิทิน" แล้ว
             if (\App\Models\FortuneReading::hasPaidReadingWithinDays($userId)) {
-                Log::info('Comment engagement skip — user เพิ่งดูดวงแบบจ่ายเงิน (no re-pitch)', [
+                Log::info('Comment engagement: user เพิ่งดูดวงแบบจ่ายเงิน → ไม่ DM (ยังตอบคอมเมนต์)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                     'month' => now()->format('Y-m'),
                 ]);
 
-                return;
+                $allowDm = false;
+                $webInviteOk = false;
             }
 
             // 🔕 (2026-06-06) เคารพปุ่ม opt-out/snooze (safety — เผื่อ dispatch ก่อนลูกค้ากด opt-out)
             if (! \App\Models\FortuneUserCredit::canReceiveOutbound($userId, 'facebook')) {
-                Log::info('🔕 Comment engagement skip — ลูกค้าเลือกพัก/ไม่รับ DM', [
+                Log::info('🔕 Comment engagement: ลูกค้าเลือกพัก/ไม่รับ DM → ไม่ DM (ยังตอบคอมเมนต์)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
+                $allowDm = false;
+                $webInviteOk = false;
+            }
+
+            // 🙏 (2026-11-05) 2 ด่านบนตัดแค่ DM — คำขอบคุณใต้คอมเมนต์ยังส่งได้ (ตอบทุกคน)
+            if (! $allowDm && ! $allowPublicReply) {
                 return;
             }
 
@@ -279,43 +336,37 @@ class ProcessCommentEngagement implements ShouldQueue
             }
             $commentReply = '';
 
-            if ($publicReplyEnabled) {
-                // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
-                //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
-                //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
-                //    Speedup: AI call 2-3s → matcher 1-2ms = ~3× throughput per worker
-                $commentReply = $this->matchCommonGratitudePattern($commentText, $name);
-                $usedTemplate = $commentReply !== null;
-
-                if ($usedTemplate) {
-                    Log::info('⚡ Comment Engagement: matched common pattern (skip AI)', [
-                        'user_id' => $userId,
-                        'comment_preview' => mb_substr($commentText, 0, 30),
-                    ]);
-                } else {
-                    // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
-                    //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
-                    //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
-                    //    💸 (2026-08-22) USER SPEC: "ใช้ gemini เจนฟรีเท่านั้น"
-                    //       ตอบคอมเมนต์เป็นงานปริมาณมากและไม่มีรายได้ตรง → ห้ามแตะคีย์เสียเงิน
-                    //       ไม่มีคีย์ฟรีว่าง = ปล่อยให้ตกไปใช้ชุดสำเร็จรูปข้างล่าง
-                    //       (คอมเมนต์ทั่วไปตอบด้วยชุดสำเร็จรูปยังดีกว่าเผาเงินหรือเงียบ)
+            if ($publicReplyEnabled && $fbWebOnly) {
+                // 🌐 web-only — ห้ามใช้ AI/คลังชวนดูดวงในแชท ใช้ถ้อยคำกลางที่ตรวจแล้ว
+                //    DM ได้รอบนี้ = บอกว่าทักไปใน inbox / ไม่ได้ = อวยพรสั้น ๆ อย่างเดียว
+                $commentReply = $allowDm
+                    ? WebHandoffCopy::COMMENT_REPLY
+                    : self::WEB_ONLY_PUBLIC_REPLIES[array_rand(self::WEB_ONLY_PUBLIC_REPLIES)];
+            } elseif ($publicReplyEnabled) {
+                // 🙏 (2026-11-05) USER SPEC: "ตอบคอมเม้นต์อัตโนมัติ ทุกคนให้หมด ... ให้คำตอบมีหลากหลาย
+                //    ดูแล้วเหมือนเป็นการขอบคุณที่ร่วมแสดงความเห็น ... ถ้าเม้นต์ไหนออกความเห็นยาว
+                //    (มากกว่า 200 อักษร ที่เป็นความเห็นจริงไม่ใช่การฟลัด) ให้บอทเอไอวิเคราะห์แล้วตอบจริงๆ"
+                //    ⇒ ยาวจริง → Gemini ฟรี (ห้ามแตะคีย์เสียเงิน — กฎเดิม 2026-08-22)
+                //    ⇒ นอกนั้นทั้งหมด → คลังคำขอบคุณ 200 แบบ (หมวด appreciation) กันซ้ำ 8 ชุดล่าสุด/คน
+                //    เลิกใช้ pattern matcher + คลังชวนดูดวง (invite/blessing) สำหรับตอบใต้โพสต์
+                if ($this->isThoughtfulLongComment($commentText)) {
                     $geminiService = $this->makeFreeGeminiService($settings);
 
                     if ($geminiService === null) {
-                        Log::info('Comment Engagement: ไม่มีคีย์ Gemini ฟรีว่าง → ใช้ชุดสำเร็จรูปแทน', [
+                        Log::info('Comment Engagement: คอมเมนต์ยาวแต่ไม่มีคีย์ Gemini ฟรีว่าง → ใช้คลังขอบคุณ', [
                             'user_id' => $userId,
                         ]);
-                        $commentReply = '';
                     } else {
                         try {
-                            $engagement = $geminiService->generateCommentEngagement(
-                                $commentText,
-                                $userProfile
-                            );
-                            $commentReply = $engagement['comment_reply'] ?? '';
+                            $commentReply = $geminiService->generateThoughtfulCommentReply($commentText);
+                            Log::info('🧠 Comment Engagement: AI ตอบคอมเมนต์ยาว', [
+                                'user_id' => $userId,
+                                'comment_id' => $commentId,
+                                'comment_length' => mb_strlen($commentText),
+                                'ok' => $commentReply !== '',
+                            ]);
                         } catch (Throwable $aiError) {
-                            Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                            Log::warning('Comment Engagement: AI ล้ม → ใช้คลังขอบคุณ', [
                                 'user_id' => $userId,
                                 'error' => $aiError->getMessage(),
                             ]);
@@ -324,12 +375,37 @@ class ProcessCommentEngagement implements ShouldQueue
                     }
                 }
 
-                // Comment reply fallback ถ้า AI คืน empty
+                // 🕊️ (2026-11-05) คอมเมนต์ปล่อยวาง/เจ็บใจ/ตำหนิ → คลังโทนสงบหรือโทนกลาง และไม่แนบลิงก์
+                //    เดิมได้คำขอบคุณร่าเริง ("เห็นแล้วใจฟูเลยค่ะ") ใต้ "อโหสิกรรม"/"ไม่สนใจ" ดูเป็นบอทหรือประชด
+                //    ตรวจด้วยรายการคำในโค้ด — ฟรี ไม่ส่งให้ AI
+                $toneCategory = empty($commentReply) ? $this->detectCommentTone($commentText) : null;
+                if ($toneCategory !== null) {
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        $toneCategory,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
+                }
+
+                // 🌐 (2026-11-05) บางส่วนแนบลิงก์ชวนดูดวงที่เว็บ จันทรา.online (คำตอบ AI ไม่แนบ)
+                if (empty($commentReply) && $toneCategory === null && $webInviteOk && $this->claimWebInviteSlot((string) $userId)) {
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        \App\Models\FortuneCommentReply::CATEGORY_WEB_INVITE,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
+                }
+
                 if (empty($commentReply)) {
-                    // 💬 (2026-08-22) ลองคลังสำเร็จรูปก่อน — ได้ข้อความหลากหลายกว่า template เดี่ยว
-                    //    template ตัวเดียวยิงซ้ำทุกเคสที่ AI พลาด = สัญญาณสแปมชัดเจน
-                    //    ⚠️ $isLao ของ matchCommonGratitudePattern เป็น local ของเมธอดนั้น
-                    //       ตรงนี้ต้องอ่าน locale จาก $commentLocale ที่ resolve ไว้ด้านบน
+                    $commentReply = \App\Models\FortuneCommentReply::pickRendered(
+                        \App\Models\FortuneCommentReply::CATEGORY_APPRECIATION,
+                        $name,
+                        (string) $userId,
+                    ) ?? '';
+                }
+
+                // คลังยังไม่พร้อม (deploy ขึ้นก่อน migrate) → ชุดฝังโค้ดเดิม
+                if (empty($commentReply)) {
                     $commentReply = $this->pickCannedReply(
                         $name,
                         $commentLocale === \App\Services\FortuneLocaleService::LOCALE_LO,
@@ -353,7 +429,8 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 🌙 DM message — ดวงประจำวันสั้นๆ (มีวันเกิด → ดวงวันเกิด, ไม่มี → ชวนดูดวง)
             $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
-            $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
+            // 🌐 web-only ไม่ใช้ข้อความนี้ (ดวงสั้น ๆ = ทำนายในแชท) — sendWebOnlyInvite สร้างเอง
+            $dmMessage = $fbWebOnly ? '' : $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
             // 🌙 (2026-07-31) กล่องดวงรายวัน (บทความ AI 06:00 ของวันเดียวกัน)
             //   USER SPEC: กล่องดวง → แล้วค่อยข้อความ DM ปกติอีกกล่อง
@@ -364,7 +441,10 @@ class ProcessCommentEngagement implements ShouldQueue
             $horoscopeBox = null;
             $horoscopeMerged = false;   // รวมเนื้อดวงเข้ากับ DM ปกติแล้วหรือยัง (ใช้ตัดสินใจคืนสิทธิ์)
             try {
-                $horoscopeBox = $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
+                // 🌐 web-only = ห้ามส่งดวงรายวันในแชท FB (ทำนายย้ายไปเว็บทั้งหมด)
+                $horoscopeBox = $fbWebOnly
+                    ? null
+                    : $greetingService->buildDailyHoroscopeBox($userId, $name, 'facebook');
             } catch (Throwable $e) {
                 Log::warning('🌙 Comment Engagement: สร้างกล่องดวงรายวันล้ม (ข้าม)', [
                     'user_id' => $userId,
@@ -377,7 +457,9 @@ class ProcessCommentEngagement implements ShouldQueue
             //   คนที่ได้รูปแบนเนอร์ไปแล้วในสัปดาห์นี้ → ไม่ส่งรูปซ้ำ ส่งข้อความชวนแบบเนียน
             //   (สุ่มจาก fortune_invite_messages 100 ข้อความ) แทน
             //   ข้อดีแถม: text+QR ส่งถึงเสถียรกว่า image atomic (FB Reels race ~70% ภาพหาย)
-            $inviteMessage = \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
+            $inviteMessage = $fbWebOnly
+                ? null   // 🌐 web-only หยิบชุด web เองใน sendWebOnlyInvite
+                : \App\Models\FortuneInviteMessage::resolveFor($userId, 'facebook', 'comment');
             $useInviteText = $inviteMessage !== null;
             if ($useInviteText) {
                 // 🔗 (2026-07-28) ส่ง psid ด้วย — ข้อความชุด transfer ใช้ {{web_link}} ที่สร้างต่อคน
@@ -448,9 +530,21 @@ class ProcessCommentEngagement implements ShouldQueue
             $publicReplySent = false;
             if ($publicReplyEnabled && ! empty($commentReply) && ! $alreadyRepliedBefore) {
                 try {
-                    $facebookService->replyToComment($commentId, $commentReply);
-                    $publicReplySent = true;
-                    Cache::put($replyOnceKey, 1, 86400);
+                    // ⚠️ (2026-11-05) replyToComment คืน false เมื่อ FB ปฏิเสธ (ไม่ throw) — ต้องเช็กค่าที่คืน
+                    //    เดิมถือว่าส่งสำเร็จทุกครั้ง ⇒ DB บันทึกคำตอบที่ไม่ได้ขึ้นจริง + จองกันซ้ำไว้เปล่า ๆ
+                    //    FB 500 ชั่วคราว ("Please reduce the amount of data") ⇒ ลองซ้ำ 1 ครั้ง
+                    $publicReplySent = $facebookService->replyToComment($commentId, $commentReply);
+                    if (! $publicReplySent) {
+                        sleep(3);
+                        $publicReplySent = $facebookService->replyToComment($commentId, $commentReply);
+                        Log::info('Comment Engagement: ลองตอบคอมเมนต์ซ้ำ', [
+                            'comment_id' => $commentId,
+                            'ok' => $publicReplySent,
+                        ]);
+                    }
+                    if ($publicReplySent) {
+                        Cache::put($replyOnceKey, 1, 86400);
+                    }
                 } catch (Throwable $e) {
                     Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
                         'comment_id' => $commentId,
@@ -494,6 +588,23 @@ class ProcessCommentEngagement implements ShouldQueue
                     'comment_id' => $commentId,
                     'public_reply_sent' => $publicReplySent,
                 ]);
+
+                return;
+            }
+
+            // 🌐 (2026-11-03) FB web-only — ส่งข้อความชวนชุด web + ปุ่ม WEB_ROOM แล้วจบ
+            //    ข้ามทั้งปุ่มราคา (ดูดวง/VIP 99), การ์ดทางเข้า, เส้นดวงรายวัน และแบนเนอร์
+            if ($fbWebOnly) {
+                $this->sendWebOnlyInvite(
+                    $facebookService,
+                    (string) $userId,
+                    (string) $commentId,
+                    (string) $postId,
+                    (string) $commentText,
+                    (string) $name,
+                    $userProfile,
+                    ($publicReplySent || $alreadyRepliedBefore) ? $commentReply : null
+                );
 
                 return;
             }
@@ -882,6 +993,96 @@ class ProcessCommentEngagement implements ShouldQueue
     }
 
     /**
+     * สร้างตัวส่งข้อความ Facebook (แยกเป็นเมธอดให้เทสต์สลับเป็นตัวปลอมได้)
+     */
+    protected function makeFacebookService(FortuneTellingSetting $settings): FacebookWebhookService
+    {
+        return new FacebookWebhookService($settings);
+    }
+
+    /**
+     * 🌐 (2026-11-03) ส่ง DM ชวนแบบ FB web-only — ข้อความชุด web + [🌙 เข้าห้องแม่หมอ][🔕][🚫]
+     *
+     * - ข้อความ: FortuneInviteMessage::pickActive('facebook') (ใต้ธงหยิบเฉพาะชุด web)
+     *   ชุดว่าง/ข้อความไม่ผ่าน lint → ใช้ WebHandoffCopy::pickInvite() (ถ้อยคำกลางที่ตรวจแล้ว)
+     * - ไม่มี URL ในข้อความ — ลูกค้ากด WEB_ROOM แล้ว webhook ตอบกล่องลิงก์จาก PSID จริง
+     *   (ห้ามสร้างลิงก์จาก comment.from.id)
+     * - ส่งผ่าน Private Reply (comment_id) เหมือนเส้นเดิม — ข้ามกฎ 24 ชม. ได้
+     * - ส่งไม่ถึง = ไม่บันทึก engagement (ให้ retry ได้ เหมือนเส้นเดิม)
+     *
+     * @param  string|null  $commentReplySent  คำตอบใต้คอมเมนต์ที่ส่งจริง (null = ไม่ได้ตอบ)
+     * @return bool ส่ง DM ถึงหรือไม่
+     */
+    protected function sendWebOnlyInvite(
+        FacebookWebhookService $facebookService,
+        string $userId,
+        string $commentId,
+        string $postId,
+        string $commentText,
+        string $name,
+        $userProfile,
+        ?string $commentReplySent
+    ): bool {
+        $inviteMessage = null;
+        $dmMessage = null;
+
+        try {
+            $inviteMessage = \App\Models\FortuneInviteMessage::pickActive('facebook');
+            if ($inviteMessage !== null) {
+                $dmMessage = $inviteMessage->render($name, $userId, 'facebook');
+            }
+        } catch (Throwable $e) {
+            Log::warning('🌐 Comment Engagement (web-only): หยิบข้อความชุด web ล้ม → ใช้ถ้อยคำกลาง: '.$e->getMessage());
+            $inviteMessage = null;
+        }
+
+        if ($dmMessage === null || ! \App\Models\FortuneInviteMessage::isWebSafeText($dmMessage)) {
+            $inviteMessage = null;
+            $dmMessage = WebHandoffCopy::pickInvite($name, null, false, WebHandoffCopy::detectTopic($commentText));
+        }
+
+        $sent = (bool) $facebookService->sendQuickReplies(
+            $userId,
+            $dmMessage,
+            \App\Models\FortuneInviteMessage::webQuickReplies(),
+            [
+                'from_comment_engagement' => true,
+                'comment_id' => $commentId,
+            ]
+        );
+
+        if (! $sent) {
+            Log::warning('❌ Comment Engagement (web-only): DM ชวนเข้าห้องแม่หมอส่งไม่ถึง — ไม่สร้าง engagement record (allow retry)', [
+                'user_id' => $userId,
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
+
+        $inviteMessage?->recordSend();
+
+        FortuneCommentEngagement::create([
+            'facebook_user_id' => $userId,
+            'facebook_post_id' => $postId,
+            'facebook_comment_id' => $commentId,
+            'comment_text' => $commentText,
+            'comment_reply' => $commentReplySent,
+            'dm_message' => $dmMessage,
+            'user_profile' => $userProfile,
+            'engaged_at' => now(),
+        ]);
+
+        Log::info('🌐 Comment Engagement (web-only): ส่ง DM ชวนเข้าห้องแม่หมอสำเร็จ', [
+            'user_id' => $userId,
+            'comment_id' => $commentId,
+            'invite_id' => $inviteMessage?->id,
+        ]);
+
+        return true;
+    }
+
+    /**
      * จัดการเมื่อ job fail ทุก retry
      */
     public function failed(Throwable $exception): void
@@ -1202,6 +1403,45 @@ class ProcessCommentEngagement implements ShouldQueue
     }
 
     /**
+     * 🙏 (2026-11-05) คอมเมนต์นี้ "ยาวจริง เป็นความเห็นจริง" ไหม — ใช่ = ให้ AI ตอบ
+     *
+     * USER SPEC: ยาวมากกว่า 200 อักษร และเป็นคำแสดงความเห็นจริง ไม่ใช่การฟลัด
+     *
+     * วัดกับคอมเมนต์ยาวจริงบน prod 165 อัน (2026-11-05): ผ่าน 153 · ตัด 12
+     *   ลิงก์ (สแปม) · ตัวอักษรจริงน้อย (อีโมจิ/สัญลักษณ์) · ตัวอักษรไม่หลากหลาย · ก๊อปวลีซ้ำวน
+     * ตัววัด "ซ้ำวน" = อัตราบีบอัด gz ของตัวอักษร: ข้อความจริง ~0.33-0.39 ·
+     *   ก๊อปวลีเดิมวนหลายรอบ ~0.09 · ตั้ง 0.15 (0.2 เคยตัดความเห็นจริงที่ซ้ำแค่บางท่อน)
+     *
+     * @param  string  $text  ข้อความคอมเมนต์ดิบ
+     */
+    protected function isThoughtfulLongComment(string $text): bool
+    {
+        $text = trim($text);
+        if (mb_strlen($text) <= 200) {
+            return false;
+        }
+
+        if (preg_match('~https?://|www\.|bit\.ly|line\.me|\.(com|net|co|io|me)\b~iu', $text)) {
+            return false;
+        }
+
+        // ยุบตัวซ้ำติดกัน (55555, ๆๆๆ, !!!!) แล้วนับเฉพาะตัวอักษร/ตัวเลขจริง
+        $collapsed = preg_replace('/(.)\1{2,}/u', '$1', $text) ?? $text;
+        $letters = preg_replace('/[^\p{Thai}\p{L}\p{N}]/u', '', $collapsed) ?? '';
+        if (mb_strlen($letters) < 120) {
+            return false;
+        }
+
+        if (count(array_unique(mb_str_split($letters))) < 20) {
+            return false;
+        }
+
+        $ratio = strlen((string) gzcompress($letters, 9)) / max(1, strlen($letters));
+
+        return $ratio >= 0.15;
+    }
+
+    /**
      * คอมเมนต์นี้เป็นคำถามหรือเปล่า
      *
      * คำถาม = ต้องให้ AI ตอบ ห้ามยิงชุดสำเร็จรูปใส่
@@ -1237,5 +1477,39 @@ class ProcessCommentEngagement implements ShouldQueue
         }
 
         return false;
+    }
+
+    /**
+     * 🌐 (2026-11-05) รอบนี้แนบลิงก์เว็บ จันทรา.online ได้ไหม
+     *
+     * สุ่มตาม WEB_INVITE_PERCENT แล้วจองสิทธิ์ต่อคนด้วย Cache::add (atomic — คอมเมนต์ติดกันไม่ได้ลิงก์ซ้ำ)
+     */
+    protected function claimWebInviteSlot(string $userId): bool
+    {
+        if ($userId === '' || random_int(1, 100) > self::WEB_INVITE_PERCENT) {
+            return false;
+        }
+
+        return Cache::add('fcr:web_invite:'.md5($userId), 1, self::WEB_INVITE_COOLDOWN);
+    }
+
+    /**
+     * 🕊️ (2026-11-05) จับโทนคอมเมนต์จากรายการคำ (ฟรี ไม่ใช้ AI)
+     *
+     * ตำหนิมาก่อน (หายากกว่าและสัญญาณชัดกว่า) แล้วค่อยปล่อยวาง/เจ็บใจ
+     *
+     * @return string|null หมวดคลัง (neutral | letting_go) หรือ null = โทนปกติ ใช้คำขอบคุณ/ลิงก์ตามเดิม
+     */
+    protected function detectCommentTone(string $text): ?string
+    {
+        if (preg_match(self::CRITICAL_PATTERN, $text)) {
+            return \App\Models\FortuneCommentReply::CATEGORY_NEUTRAL;
+        }
+
+        if (preg_match(self::LETTING_GO_PATTERN, $text)) {
+            return \App\Models\FortuneCommentReply::CATEGORY_LETTING_GO;
+        }
+
+        return null;
     }
 }

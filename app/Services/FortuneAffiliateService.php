@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FortuneMessengerPsid;
 use App\Models\FortuneReading;
 use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
@@ -10,6 +11,10 @@ use App\Models\MlmPlan;
 use App\Models\MlmProspect;
 use App\Models\User;
 use App\Models\Wallet;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -213,20 +218,188 @@ class FortuneAffiliateService
      * หมายเหตุ: ไม่สร้าง MlmMember ที่นี่ — สิทธิ์รับรายได้เปิดผ่าน flow ปกติ
      * (autoRegisterFromFortune หลังดูดวง หรือหน้า affiliate บนเว็บ)
      *
+     * 🪪 (2026-11-03) FB web-only — ตัวตนเดียวข้ามสาขา (invariant M1):
+     *   1. หาบัญชีเดิม (คอลัมน์ facebook_psid → ตาราง PSID สำรอง → อีเมลบอท → บิลที่ผูกไว้)
+     *      เจอแล้ว (FB) → ผูก PSID ลงตาราง alias พร้อมเพจ (เติมเพจให้แถว backfill / บัญชีที่บอทสร้างเดิม)
+     *   2. 🔒 (2026-11-03 รีวิว) ยกเลิก "session alias" — เดิมผูก PSID ใหม่เข้าบัญชีที่ล็อกอินค้างอยู่
+     *      แค่เพราะ session มี wf_psid ของเพจอื่น ⇒ เครื่อง/IAB ที่ใช้ร่วมกัน ลิงก์ที่ถูกส่งต่อ หรือ login CSRF
+     *      ทำให้ PSID ของคนอื่นถูกผูกเข้าบัญชีนี้ถาวร (bind ไม่ย้ายเจ้าของ) = ยึดบัญชี/วอลเลต/สายงาน
+     *      session ไม่ใช่หลักฐานว่าเป็นคนเดียวกัน → สร้างบัญชีแยกไว้ก่อน รวมทีหลังด้วยมือ/ยืนยัน FB
+     *   3. ไม่เจอจริง → สร้างบัญชีบอท ตั้งชื่อจาก persona/เครดิต/บิล (ไม่ใช่ 'User')
+     *      ชน unique (กดซ้อนพร้อมกัน) → หาใหม่แล้วคืนบัญชีของผู้ชนะ
+     *   ครอบ Cache::lock ต่อ PSID อีกชั้น (ผู้เรียกที่ไม่ใช่ gateway ก็ได้ user เดียว)
+     *
      * @param  string  $platform  'facebook' | 'line'
      * @param  string  $platformUserId  PSID (FB) หรือ LINE user id
+     * @param  int|null  $pageId  fortune_pages.id ของเพจที่ออกลิงก์ (null = เพจหลัก/ไม่ทราบ)
+     *
+     * @example
+     * $user = $service->resolveOrCreateWebUser('facebook', '24680135792468013', 5);
      */
-    public function resolveOrCreateWebUser(string $platform, string $platformUserId): ?User
+    public function resolveOrCreateWebUser(string $platform, string $platformUserId, ?int $pageId = null): ?User
     {
+        $lock = Cache::lock('fortune:web-user:'.$platform.':'.sha1($platformUserId), 15);
+        $acquired = false;
+        try {
+            $acquired = (bool) $lock->block(5);
+        } catch (LockTimeoutException) {
+            // รอไม่ทัน — ไปต่อโดยไม่มี lock (unique ของ facebook_psid/email/alias ยังกันซ้ำได้)
+            Log::warning('Fortune Affiliate: รอ lock สร้างบัญชีเว็บไม่ทัน — ไปต่อด้วย unique guard', [
+                'platform' => $platform,
+            ]);
+        } catch (\Throwable $e) {
+            // cache store ไม่รองรับ lock / ล่ม — ไม่ให้ทางเข้าเว็บพังเพราะเรื่องนี้
+            Log::warning('Fortune Affiliate: ใช้ lock ไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            return $this->resolveOrCreateWebUserUnlocked($platform, $platformUserId, $pageId);
+        } finally {
+            if ($acquired) {
+                $lock->release();
+            }
+        }
+    }
+
+    /**
+     * แกนของ resolveOrCreateWebUser (ไม่มี lock)
+     */
+    private function resolveOrCreateWebUserUnlocked(string $platform, string $platformUserId, ?int $pageId): ?User
+    {
+        // 🔁 ของใหม่ทั้งหมด (เติมชื่อ / ตาราง alias) เฉพาะ FB + ธง facebook_web_only เปิด
+        //    LINE ทุกกรณี และ FB ตอนธงปิด = พฤติกรรมเดิม (ชื่อ 'User' · ไม่เขียนตาราง alias)
+        $webOnlyFb = $platform === 'facebook' && $this->fbWebOnlyOn();
+
         $existing = $this->findExistingUser($platformUserId, $platform);
         if ($existing) {
+            if ($webOnlyFb) {
+                $this->refreshPlaceholderName($existing, $platform, $platformUserId);
+
+                // 🪪 ผูก PSID ลงตาราง alias พร้อมเพจ — แถว backfill (fortune_page_id = null) ได้เพจเติม
+                //    และบัญชีที่บอทสร้างก่อนมีตาราง alias ก็ได้แถวของตัวเอง (bind ไม่ย้ายเจ้าของเด็ดขาด)
+                if (! $this->isPrivilegedAccount($existing)) {
+                    FortuneMessengerPsid::bind((int) $existing->id, $platformUserId, $pageId, 'web_gateway');
+                }
+            }
+
             return $existing;
         }
 
-        return $this->createUserFromPlatform($platformUserId, $platform, [
-            'name' => null,
+        // 🔒 ไม่มี session alias แล้ว (ดู docblock ข้อ 2) — PSID ที่ไม่รู้จัก = บัญชีใหม่เสมอ
+
+        $profile = [
+            // ธงปิด / LINE: name = null → createUserFromPlatform ตั้ง 'User' เหมือนเดิม
+            'name' => $webOnlyFb ? $this->resolveCustomerName($platform, $platformUserId) : null,
             'picture_url' => null,
-        ]);
+        ];
+
+        try {
+            $user = DB::transaction(function () use ($platformUserId, $platform, $profile, $pageId, $webOnlyFb) {
+                $user = $this->createUserFromPlatform($platformUserId, $platform, $profile);
+
+                // บันทึก PSID พร้อมเพจที่สังกัด — ใช้แยก "คนละคนในเพจเดียวกัน" ตอนพิจารณา alias ครั้งหน้า
+                if ($webOnlyFb) {
+                    FortuneMessengerPsid::bind($user->id, $platformUserId, $pageId, 'web_gateway');
+                }
+
+                return $user;
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            // กดซ้อนพร้อมกัน — อีกคำขอสร้างไปก่อนแล้ว → คืนบัญชีนั้น (ห้ามสร้างใบที่สอง)
+            $winner = $this->findExistingUser($platformUserId, $platform);
+            if ($winner) {
+                Log::info('Fortune Affiliate: ชน unique ตอนสร้างบัญชีเว็บ — ใช้บัญชีที่สร้างก่อน', [
+                    'user_id' => $winner->id,
+                    'platform' => $platform,
+                ]);
+
+                return $winner;
+            }
+
+            throw $e;
+        }
+
+        return $user;
+    }
+
+    /**
+     * 🌐 ธง facebook_web_only เปิดอยู่ไหม (นโยบายกลาง FortuneBotMode::fbWebOnly)
+     */
+    private function fbWebOnlyOn(): bool
+    {
+        return (new \App\Services\Fortune\FortuneBotMode($this->settings))->fbWebOnly();
+    }
+
+    /**
+     * บัญชีทีมงาน/แอดมิน — ห้ามรับ PSID ลูกค้าลงตาราง alias
+     */
+    private function isPrivilegedAccount(User $user): bool
+    {
+        // เกณฑ์กลาง — role_id ของบทบาทลูกค้า (เช่น seller) ไม่นับเป็นทีมงาน
+        return \App\Support\FortuneBackOfficeAccount::is($user);
+    }
+
+    /**
+     * 🏷️ ชื่อลูกค้าสำหรับบัญชีใหม่ — persona → เครดิต → บิลล่าสุด → 'User'
+     */
+    private function resolveCustomerName(string $platform, string $platformUserId): string
+    {
+        $candidates = [];
+
+        try {
+            $candidates[] = \App\Models\FortuneCustomerPersona::findByPlatformUser($platform, $platformUserId)?->display_name;
+        } catch (\Throwable) {
+            // ไม่มีตาราง/คอลัมน์ — ข้าม
+        }
+
+        try {
+            $candidates[] = \App\Models\FortuneUserCredit::query()
+                ->where('facebook_user_id', $platformUserId)
+                ->value('facebook_user_name');
+        } catch (\Throwable) {
+            // ข้าม
+        }
+
+        try {
+            $candidates[] = FortuneReading::query()
+                ->where(function ($q) use ($platformUserId) {
+                    $q->where('platform_user_id', $platformUserId)
+                        ->orWhere('facebook_user_id', $platformUserId);
+                })
+                ->whereNotNull('facebook_user_name')
+                ->orderByDesc('id')
+                ->value('facebook_user_name');
+        } catch (\Throwable) {
+            // ข้าม
+        }
+
+        foreach ($candidates as $name) {
+            $name = trim((string) $name);
+            if ($name !== '' && $name !== 'User' && \App\Models\FortuneUserCredit::isHumanLikeName($name)) {
+                return mb_substr($name, 0, 255);
+            }
+        }
+
+        return 'User';
+    }
+
+    /**
+     * บัญชีบอทเดิมที่ยังชื่อ 'User' → เติมชื่อจริงถ้าหาได้ (ไม่แตะบัญชีที่ลูกค้าตั้งชื่อเอง)
+     */
+    private function refreshPlaceholderName(User $user, string $platform, string $platformUserId): void
+    {
+        try {
+            if ($platform !== 'facebook' || $user->name !== 'User' || ! $user->bot_provisioned) {
+                return;
+            }
+
+            $name = $this->resolveCustomerName($platform, $platformUserId);
+            if ($name !== 'User') {
+                $user->forceFill(['name' => $name])->save();
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Fortune Affiliate: เติมชื่อบัญชีไม่สำเร็จ (ข้ามได้)', ['error' => $e->getMessage()]);
+        }
     }
 
     // ============================================================
@@ -268,10 +441,18 @@ class FortuneAffiliateService
         }
 
         // 3. ค้นหาจาก FortuneReading ที่ link กับ user อยู่แล้ว
+        // 🔒 (2026-11-03) FB + ธง facebook_web_only เปิด: เชื่อเฉพาะบิล FB — PSID ตรงกับ id ของแพลตฟอร์มอื่น
+        //    ไม่ได้แปลว่าเป็นคนเดียวกัน (ทางเข้าเว็บ auto-login ตามผลนี้)
+        //    แถวเก่าที่ platform เป็น NULL = facebook (ค่าเริ่มต้นของคอลัมน์) — ห้ามตัดทิ้ง ⇒ COALESCE
+        //    ธงปิด / LINE / อื่น ๆ = คิวรีเดิมทุกประการ (ไม่กรอง platform)
         $linkedReading = FortuneReading::where(function ($q) use ($platformUserId) {
             $q->where('platform_user_id', $platformUserId)
                 ->orWhere('facebook_user_id', $platformUserId);
         })
+            ->when(
+                $platform === 'facebook' && $this->fbWebOnlyOn(),
+                fn ($q) => $q->whereRaw("COALESCE(platform, 'facebook') = ?", ['facebook'])
+            )
             ->whereNotNull('user_id')
             ->latest()
             ->first();

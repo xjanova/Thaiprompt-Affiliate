@@ -333,6 +333,12 @@ trait PendingPaymentListenerTrait
         $intent = $this->classifyPendingPaymentListening($messageText);
         $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
 
+        // 🌐 (2026-11-03) FB web-only — บิลค้างระดับ B: ห้ามแนบสรุปยอด/QR/ทวง และห้ามให้ AI คุยเรื่องโอน
+        //   ตอบสั้น ไม่ขาย + ส่งต่อแอดมิน (design 1.4) · LINE ไม่ผ่านด่านนี้
+        if (FbWebOnlyOutboundGuard::blocks($reading->platform, $userId, $reading, 'pending_payment_listener')) {
+            return $this->respondWhilePendingPaymentFbWebOnly($reading, $messageText, $intent, $userId);
+        }
+
         // ⏰ บิลเลยเวลาแล้วแต่ตัวเก็บกวาดยังไม่ปิด (บิล 99 — บิล 39 ถูกปิดก่อนถึงตรงนี้)
         //   ห้ามบอก "ไม่ต้องรีบ รอได้" กับบิลที่หมดอายุ → บอกตรงๆ + ทางไปต่อ
         $expiresAt = $ctx['expires_at'] ?? null;
@@ -405,6 +411,84 @@ trait PendingPaymentListenerTrait
 
         // ค. AI ไม่ได้ผล → ตอบตามเจตนาที่จับได้
         return $this->pendingListenDeterministicReply($reading, $messageText, $intent ?? 'unknown', $ctx, $birth['prefix']);
+    }
+
+    /**
+     * 🌐 (2026-11-03) ตอบลูกค้า FB ที่มีบิลค้าง (ระดับ B) ใต้ FB web-only
+     *
+     * ต่างจากเส้นปกติ:
+     *  - ไม่มีบรรทัดสรุปยอด/QR/เวลาหมดอายุ (footer / partial_line) และไม่ทวง
+     *  - ไม่เรียก AI (พรอมต์รอโอนพูดเรื่องโอนเงินโดยกำเนิด = ชั้นส่งจะบล็อก ลูกค้าได้ความเงียบ)
+     *  - ทุกเรื่องที่ไม่ใช่คำรับทราบ ส่งต่อแอดมิน (เพดานเดิม 3 ข้อความ / 10 นาที / บิล)
+     *  - ตอบด้วยกล่องพาไปห้องแม่หมอ (sendWebHandoff — action transfer_box + web_handoff=true ผ่าน egress ได้)
+     *    "โอนแล้ว" → KIND_SLIP_FORWARDED · อื่น ๆ → KIND_ROOM · ภายใน 10 นาทีตอบครั้งเดียว
+     *  - ยังเก็บข้อมูลเกิดลงบิลตามเดิม (เป็นข้อมูล ไม่ใช่การขาย)
+     *
+     * @return array response ของ handler (transfer_box หรือ silent_skip)
+     */
+    protected function respondWhilePendingPaymentFbWebOnly(FortuneReading $reading, string $messageText, ?string $intent, string $userId): array
+    {
+        $silent = [
+            'action' => 'silent_skip',
+            'message' => null,
+            'reading' => $reading,
+        ];
+
+        try {
+            $this->pendingListenCaptureBirthInfo($reading, $messageText);
+        } catch (\Throwable $e) {
+            // เก็บวันเกิดไม่ได้ ไม่กระทบการตอบ
+        }
+
+        // คำรับทราบล้วน → เงียบ (ไม่มีอะไรต้องตอบ และห้ามทวง)
+        if (in_array($intent, ['ack', 'thanks'], true)) {
+            return $silent;
+        }
+
+        if ($userId !== '' && $this->pendingListenAdminQuotaLeft($reading)) {
+            $this->pendingListenNotifyAdmin($reading, $userId, $messageText);
+        }
+
+        // ตอบไปแล้วใน 10 นาที → เงียบ แต่จดข้อความลูกค้าไว้ในประวัติ (แอดมิน/แม่หมอบนเว็บเห็นต่อ)
+        $state = $this->pendingListenState($reading);
+        if ($this->pendingListenWithin($state['intents']['fb_web_only'] ?? null, $this->pendingListenWindowMinutes())) {
+            if ($userId !== '') {
+                $this->pendingListenRecordTurn($userId, 'user', $messageText);
+            }
+
+            return $silent;
+        }
+
+        if ($userId === '' || ! method_exists($this, 'sendWebHandoff')) {
+            return $silent;
+        }
+
+        try {
+            $response = $this->sendWebHandoff($userId, $messageText, [
+                'kind' => $intent === 'claim' ? WebHandoffCopy::KIND_SLIP_FORWARDED : WebHandoffCopy::KIND_ROOM,
+                'source' => 'pending_payment_listener',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: รอโอน — ส่งกล่องพาไปห้องแม่หมอไม่สำเร็จ (เงียบไว้ ไม่ทวงเงิน)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $silent;
+        }
+
+        if (! is_array($response)) {
+            return $silent;
+        }
+
+        $this->pendingListenMarkSpoke($reading, $state, 'fb_web_only', false);
+
+        Log::info('🌐 FB web-only: รอโอน — ตอบสั้นด้วยกล่องห้องแม่หมอ (ไม่แนบยอดบิล)', [
+            'reading_id' => $reading->id,
+            'intent' => $intent,
+        ]);
+
+        return $response;
     }
 
     /**

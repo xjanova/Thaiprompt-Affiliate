@@ -34,6 +34,16 @@ use Illuminate\Support\Facades\Log;
  *
  * 3. **fail-safe = classic** — ทุก error/ไม่แน่ใจ ต้องตกไปพฤติกรรมเดิม
  *    ห้ามให้ระบบใหม่ที่พังไปบล็อกลูกค้าที่กำลังจะจ่ายเงิน
+ *
+ *    🌐 (2026-11-03) **ยกเว้นใต้ FB web-only (`facebook_web_only`)** — กฎกลับด้านเป็น **fail-closed**
+ *    เพราะการออกบิล/รับสลิปบน FB = เพจโดนแบน (เจ้าของสั่ง: ไม่มีทางถอย)
+ *    ⇒ ใต้ธงนี้ ถ้าพังหรือไม่แน่ใจ ให้ส่ง "ข้อความพาไปห้องแม่หมอ" (เว็บ จันทรา.online)
+ *       **ห้ามตกกลับไปออกบิล** ห้ามมีทางถอย (hasFbFallback / attemptsExhausted = false)
+ *    ⚠️ fail-closed ใช้กับบริบท **facebook เท่านั้น** — LINE/Telegram ต้องเหมือนเดิมทุกบิต
+ *       ทุก guard ใหม่ต้องถามผ่าน fbWebOnlyFor() ซึ่ง resolve ช่องทางจาก reading/รูปทรง id
+ *       (ห้ามเชื่อ FortuneConversationService::$currentPlatform ตัวเดียว — default เป็น 'line'
+ *        และ FCS ที่สร้างจาก cron / SmsPaymentService / VerifySlipFallbackJob / Stripe webhook
+ *        ไม่เคยเรียก setPlatform)
  */
 class FortuneBotMode
 {
@@ -66,6 +76,23 @@ class FortuneBotMode
      *    (คนที่ย้ายจาก FB มา LINE ตามที่โหมด transfer พาไป กลับไม่มีของฟรีให้รับ)
      */
     public const DAILY_PLATFORMS = ['facebook', 'line'];
+
+    /** 🌐 (2026-11-03) ช่องทางที่ธง FB web-only ครอบ — ช่องทางเดียว ห้ามขยายเงียบ ๆ */
+    public const FB_WEB_ONLY_PLATFORM = 'facebook';
+
+    /**
+     * 🌐 (2026-11-03) ระยะ grace หลังส่งคำทำนายที่ยังถือว่า "ของที่จ่ายแล้วกำลังส่งอยู่" (นาที)
+     *
+     * ตัวเลขเดียวกับ shouldNudgeToTransfer() — ช่วงที่ธง pro_session_active อาจยังไม่ถูกตั้ง
+     */
+    public const LEGACY_PAID_GRACE_MINUTES = 30;
+
+    /** 🌐 สถานะบิล "รอจ่าย" ที่ถือเป็นบิล FB ค้างจ่ายระดับ B (รับสลิปต่อได้ ห้ามออกบิลใหม่) */
+    public const FB_PENDING_BILL_STATUSES = [
+        FortuneReading::STATUS_PENDING_PAYMENT,
+        FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+        FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+    ];
 
     protected FortuneTellingSetting $settings;
 
@@ -158,9 +185,16 @@ class FortuneBotMode
      *    (buildDailyBoxForDayIndex ย้อนหลังได้ 2 วันพร้อมบอกตามตรง / ไม่มีจริง ๆ
      *     ก็ยังมี buildDailyUnavailableMessage) — ห้ามเงียบใส่คนที่ตอบเรามาแล้ว
      */
-    public function isDailyServing(): bool
+    public function isDailyServing(string $platform = self::FB_WEB_ONLY_PLATFORM): bool
     {
         if (! $this->isDaily()) {
+            return false;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — DM ขาออกบน FB ห้ามชวน "บอกวันเกิดรับดวงฟรีในแชท"
+        //    (caller ปัจจุบันทั้ง 3 จุดเป็นเส้น FB จึงให้ default = facebook)
+        //    LINE ส่ง 'line' มา → ไม่โดนธงนี้
+        if ($this->fbWebOnlyFor($platform, '')) {
             return false;
         }
 
@@ -199,6 +233,13 @@ class FortuneBotMode
     public function dailyReplyAllowedFor(string $platform, ?string $platformUserId): bool
     {
         if ($this->isTransfer()) {
+            return false;
+        }
+
+        // 🌐 (2026-11-03) FB web-only — ห้ามทำนายดวงรายวันในแชท FB (ไปรับที่เว็บแทน)
+        //    resolve ช่องทางจากรูปทรง id ด้วย — caller บางที่ส่ง currentPlatform ('line' default) มา
+        //    ⚠️ LINE (`U…`) ไม่โดน — พฤติกรรมเดิมทุกบิต
+        if ($this->fbWebOnlyFor($platform, (string) $platformUserId)) {
             return false;
         }
 
@@ -348,8 +389,13 @@ class FortuneBotMode
      *
      * @param  string  $platform  'facebook' | 'line'
      */
-    public function freeCardEnabledFor(string $platform): bool
+    public function freeCardEnabledFor(string $platform, ?string $platformUserId = null): bool
     {
+        // 🌐 (2026-11-03) FB web-only — ไพ่ฟรีในแชท FB ปิด (ไปดูที่เว็บ) · LINE ไม่เปลี่ยน
+        if ($this->fbWebOnlyFor($platform, (string) $platformUserId)) {
+            return false;
+        }
+
         if ((bool) ($this->settings->enable_free_card_reading ?? false)) {
             return true;
         }
@@ -430,6 +476,282 @@ class FortuneBotMode
     }
 
     // ============================================================
+    // 🌐 (2026-11-03) FB web-only — ปิดดูดวง/รับเงินในแชท Facebook ทั้งหมด
+    // ============================================================
+
+    /**
+     * 🌐 ธง FB web-only เปิดอยู่ไหม (อ่านจากแถวกลาง — เพจสาขา override ไม่ได้)
+     *
+     * applyPageOverrides() ตัดคีย์นี้ทิ้ง (PAGE_OVERRIDE_DENY_LIST) ⇒ ค่าใน $this->settings
+     * เท่ากับแถวกลางเสมอ ไม่ว่าจะเป็นสำเนาที่ merge ค่าสาขามาแล้วหรือไม่
+     *
+     * ⚠️ อ่านค่าไม่ได้ = ถือว่า **เปิด** (fail-closed) — ใช้เมธอดนี้ตรง ๆ ได้เฉพาะบริบท FB
+     *    เส้นที่อาจเป็น LINE ต้องใช้ fbWebOnlyFor() ซึ่งเช็คช่องทางก่อนเสมอ
+     */
+    public function fbWebOnly(): bool
+    {
+        try {
+            return $this->readFbWebOnlyFlag();
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: อ่านธงไม่ได้ — ถือว่าเปิด (fail-closed ห้ามออกบิลบน FB)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * 🌐 เวลาที่เปิดธงล่าสุด (จุดตัด T0) — null = ยังไม่เคยเปิด / อ่านไม่ได้
+     */
+    public function fbWebOnlySince(): ?Carbon
+    {
+        try {
+            $at = $this->settings->fb_web_only_since ?? null;
+            if (empty($at)) {
+                return null;
+            }
+
+            return $at instanceof Carbon ? $at : Carbon::parse($at);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * 🌐 ลูกค้าคนนี้อยู่ใต้ FB web-only ไหม — **ด่านเดียว** ที่ guard ใหม่ทุกตัวต้องถาม
+     *
+     * จริงเมื่อ (1) ธงเปิด และ (2) ช่องทางที่ resolve ได้คือ facebook เท่านั้น
+     * LINE (`U` + hex 32) และ Telegram (`tg_…`) = false เสมอ (นอกขอบเขต)
+     *
+     * fail-closed: ถ้าเกิด exception ระหว่างตรวจ **และ** บริบทเป็น facebook → true (บล็อก)
+     *
+     * @param  string|null  $platform  ช่องทางที่ caller คิดว่าเป็น (ใช้เป็น hint เท่านั้น)
+     * @param  string|null  $platformUserId  id ลูกค้า (PSID / LINE uid / tg_…)
+     * @param  FortuneReading|null  $reading  บิลที่เกี่ยวข้อง (ถ้ามี — platform ของบิลชนะ hint)
+     *
+     * @example
+     * if ($mode->fbWebOnlyFor($this->currentPlatform, $uid)) { return $this->sendWebHandoff(...); }
+     */
+    public function fbWebOnlyFor(?string $platform, ?string $platformUserId, ?FortuneReading $reading = null): bool
+    {
+        $resolved = self::resolvePlatform($platform, $platformUserId, $reading);
+
+        if ($resolved !== self::FB_WEB_ONLY_PLATFORM) {
+            return false;
+        }
+
+        try {
+            return $this->readFbWebOnlyFlag();
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: ตรวจธงพังในบริบท FB — บล็อกไว้ก่อน (fail-closed)', [
+                'platform_user_id' => $platformUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
+    }
+
+    /**
+     * 🧭 resolve ช่องทางจริงของลูกค้า — 'facebook' | 'line' | 'telegram' (ห้ามโยน exception)
+     *
+     * ลำดับ (design 1.1):
+     *   1. รูปทรง id ชนะทุกอย่าง — LINE uid / tg_ ยิงเข้า FB ไม่ได้อยู่แล้ว
+     *   2. มีบิล → FortuneRecipient::platformOf($reading) (คอลัมน์ platform ของบิล)
+     *   3. id เป็นตัวเลขล้วน (= PSID ของ FB) → facebook **ไม่สน hint**
+     *      ⚠️ กันเคส FCS ที่สร้างจาก cron/SMS/Stripe ไม่ได้ setPlatform → currentPlatform='line'
+     *         แต่ลูกค้าเป็น FB จริง — ถ้าเชื่อ hint = รอดธงไปออกบิลบน FB ได้
+     *   4. id รูปทรงอื่น (ไม่ใช่ทั้ง LINE/tg/ตัวเลข) → ใช้ hint ถ้าเป็นค่าที่รู้จัก ไม่งั้น facebook
+     *      (id ว่าง + ไม่มี hint = facebook — ค่าเริ่มต้นเดียวกับคอลัมน์ platform)
+     */
+    public static function resolvePlatform(?string $platform, ?string $platformUserId, ?FortuneReading $reading = null): string
+    {
+        try {
+            $uid = trim((string) $platformUserId);
+
+            if ($uid !== '' && FortuneRecipient::looksLikeLineUserId($uid)) {
+                return FortuneRecipient::PLATFORM_LINE;
+            }
+
+            if ($uid !== '' && FortuneRecipient::looksLikeTelegramUserId($uid)) {
+                return FortuneRecipient::PLATFORM_TELEGRAM;
+            }
+
+            if ($reading !== null) {
+                return FortuneRecipient::platformOf($reading);
+            }
+
+            if ($uid !== '' && ctype_digit($uid)) {
+                return FortuneRecipient::PLATFORM_FACEBOOK;
+            }
+
+            $hint = strtolower(trim((string) $platform));
+            if (in_array($hint, [
+                FortuneRecipient::PLATFORM_FACEBOOK,
+                FortuneRecipient::PLATFORM_LINE,
+                FortuneRecipient::PLATFORM_TELEGRAM,
+            ], true)) {
+                return $hint;
+            }
+
+            return FortuneRecipient::PLATFORM_FACEBOOK;
+        } catch (\Throwable $e) {
+            // ไม่ควรเกิด — แต่ถ้าเกิด ใช้ hint ตรง ๆ (ค่าว่าง = facebook = ฝั่งที่ fail-closed)
+            $hint = strtolower(trim((string) $platform));
+
+            return $hint !== '' ? $hint : FortuneRecipient::PLATFORM_FACEBOOK;
+        }
+    }
+
+    /**
+     * 🅰️ ระดับ A — ลูกค้า FB คนนี้มี "ของที่จ่ายแล้วกำลังส่งอยู่" ไหม (ส่งต่อบน FB จนจบได้)
+     *
+     * ครอบ (design 1.2 ข้อ 3):
+     *   - is_paid + IN_PREDICTION_STATUSES (paid / celtic_*)
+     *   - is_paid + DEEP_ACTIVE_STATUSES (collecting_* ที่จ่ายแล้ว — IN_PREDICTION ไม่ครอบกลุ่มนี้!)
+     *   - CELTIC_ACTIVE_STATUSES (สถานะหลังจ่ายโดยนิยาม)
+     *   - pro_session_active บนบิลจ่ายแล้วล่าสุด
+     *   - deep_response ที่ค้างส่ง (เงื่อนไขเดียวกับ FacebookWebhookController pendingDelivery)
+     *   - grace 30 นาทีหลังส่งของ (บิลจ่ายแล้วล่าสุดเพิ่งขยับ)
+     *
+     * fail-closed: เช็คพัง → false (ไม่ใช่ legacy = ไม่ปลดล็อกเส้นเงิน) + log critical
+     * ⚠️ id ที่ไม่ใช่ FB (LINE/tg) → false เสมอ (เมธอดนี้มีความหมายเฉพาะ FB)
+     */
+    public function fbLegacyPaidInFlight(string $platformUserId): bool
+    {
+        return $this->findFbLegacyPaidReading($platformUserId) !== null;
+    }
+
+    /**
+     * 🅰️ บิลที่ทำให้ลูกค้าเป็น "legacy paid in-flight" (null = ไม่มี / ไม่ใช่ FB / เช็คพัง)
+     */
+    public function findFbLegacyPaidReading(string $platformUserId): ?FortuneReading
+    {
+        $uid = trim($platformUserId);
+        if ($uid === '' || self::resolvePlatform(self::FB_WEB_ONLY_PLATFORM, $uid) !== self::FB_WEB_ONLY_PLATFORM) {
+            return null;
+        }
+
+        try {
+            $byUser = function ($q) use ($uid) {
+                $q->where('facebook_user_id', $uid)
+                    ->orWhere('platform_user_id', $uid);
+            };
+
+            // 1) กำลังทำนาย/เก็บ input หลังจ่ายแล้ว
+            $active = FortuneReading::where($byUser)
+                ->where(function ($q) {
+                    $q->where(function ($paid) {
+                        $paid->where('is_paid', true)
+                            ->whereIn('conversation_status', array_values(array_unique(array_merge(
+                                FortuneReading::IN_PREDICTION_STATUSES,
+                                FortuneReading::DEEP_ACTIVE_STATUSES
+                            ))));
+                    })->orWhereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES);
+                })
+                ->latest('id')
+                ->first();
+
+            if ($active) {
+                return $active;
+            }
+
+            // 2) คำทำนาย Deep ที่ gen เสร็จแล้วแต่ยังไม่ได้ส่งถึงมือลูกค้า
+            $pendingDelivery = FortuneReading::where($byUser)
+                ->where('is_paid', true)
+                ->whereNotNull('deep_response')
+                ->where('deep_response', '!=', '')
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->latest('id')
+                ->first();
+
+            if ($pendingDelivery && ! $pendingDelivery->getConversationState('reading_sent_directly', false)) {
+                return $pendingDelivery;
+            }
+
+            // 3) Pro Session / grace หลังส่งของ — ดูบิลจ่ายแล้วล่าสุด
+            $latestPaid = FortuneReading::where($byUser)
+                ->where('is_paid', true)
+                ->latest('id')
+                ->first();
+
+            if ($latestPaid) {
+                if ($latestPaid->getConversationState('pro_session_active', false)) {
+                    return $latestPaid;
+                }
+
+                // 🔐 (รีวิว) นับ grace จากเวลาจ่าย (paid_at) — เดิมใช้ updated_at ซึ่งถูกขยับทุกครั้งที่เขียน state
+                //    (cron aftercare / redeliver / review invite ฯลฯ) ทำให้ระดับ A ยืดไม่จบ และโฟลขายเดิมหลุดออกมา
+                $anchor = $latestPaid->paid_at ?? $latestPaid->created_at;
+                if ($anchor && $anchor->gt(now()->subMinutes(self::LEGACY_PAID_GRACE_MINUTES))) {
+                    return $latestPaid;
+                }
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: เช็ค legacy-paid ไม่ได้ — ถือว่าไม่ใช่ (fail-closed)', [
+                'platform_user_id' => $uid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🅱️ ระดับ B — ลูกค้า FB คนนี้มีบิลค้างจ่ายที่ยังไม่หมดอายุไหม
+     *
+     * = pending_payment / celtic_pending_payment / pending_stripe_payment
+     *   และ updated_at อยู่ภายใน FortuneReading::billTimeoutMinutes() (ค่าเริ่มต้น 180)
+     *
+     * ระดับนี้ยังรับสลิป/ข้อความ "โอนแล้ว" ของบิลเดิมได้ แต่ **ห้ามออก QR/บิลใหม่/top-up/revive**
+     * fail-closed: เช็คพัง → false (ตกระดับ C = เก็บหลักฐาน ไม่เรียก SlipOK) + log critical
+     */
+    public function fbPendingBillOpen(string $platformUserId): bool
+    {
+        return $this->findFbPendingBill($platformUserId) !== null;
+    }
+
+    /**
+     * 🅱️ บิลค้างจ่ายระดับ B ล่าสุดของลูกค้า FB (null = ไม่มี / ไม่ใช่ FB / เช็คพัง)
+     */
+    public function findFbPendingBill(string $platformUserId): ?FortuneReading
+    {
+        $uid = trim($platformUserId);
+        if ($uid === '' || self::resolvePlatform(self::FB_WEB_ONLY_PLATFORM, $uid) !== self::FB_WEB_ONLY_PLATFORM) {
+            return null;
+        }
+
+        try {
+            return FortuneReading::where(function ($q) use ($uid) {
+                $q->where('facebook_user_id', $uid)
+                    ->orWhere('platform_user_id', $uid);
+            })
+                ->whereIn('conversation_status', self::FB_PENDING_BILL_STATUSES)
+                ->where('updated_at', '>=', now()->subMinutes(FortuneReading::billTimeoutMinutes()))
+                ->latest('id')
+                ->first();
+        } catch (\Throwable $e) {
+            Log::critical('🌐 FB web-only: เช็คบิลค้างจ่ายไม่ได้ — ถือว่าไม่มี (fail-closed)', [
+                'platform_user_id' => $uid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * อ่านธงดิบ (โยน exception ได้ — caller ต้องตัดสิน fail-closed เอง)
+     */
+    protected function readFbWebOnlyFlag(): bool
+    {
+        return (bool) ($this->settings->facebook_web_only ?? false);
+    }
+
+    // ============================================================
     // สถานะรายลูกค้า (เก็บใน fortune_user_credits — คงอยู่ข้าม deploy)
     // ============================================================
 
@@ -441,6 +763,11 @@ class FortuneBotMode
      */
     public function hasFbFallback(string $platform, string $platformUserId): bool
     {
+        // 🌐 (2026-11-03) FB web-only = ไม่มีทางถอยไปดูในแชท FB (ค่า fb_fallback_granted_at เก่าไม่มีผล)
+        if ($this->fbWebOnlyFor($platform, $platformUserId)) {
+            return false;
+        }
+
         $row = $this->creditRow($platform, $platformUserId);
 
         if (! $row || empty($row->fb_fallback_granted_at)) {
@@ -490,6 +817,11 @@ class FortuneBotMode
      */
     public function attemptsExhausted(string $platform, string $platformUserId): bool
     {
+        // 🌐 (2026-11-03) FB web-only = พยายามกี่ครั้งก็ไม่ยอมเปิดบิลบน FB
+        if ($this->fbWebOnlyFor($platform, $platformUserId)) {
+            return false;
+        }
+
         $limit = $this->fallbackAttempts();
 
         return $limit > 0 && $this->attempts($platform, $platformUserId) >= $limit;

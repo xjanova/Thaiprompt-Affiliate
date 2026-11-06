@@ -51,6 +51,12 @@ class SendPricingFollowUpJob implements ShouldQueue
             return;
         }
 
+        // 🌐 (2026-11-03) FB web-only — ห้ามอธิบาย "ค่าครู" ใน Messenger (job หน่วง 4 วิ อาจถูก dispatch ก่อนสลับธง)
+        //   ไม่ mark cache 7 วัน — ถ้าวันหน้าปิดธง ลูกค้ายังได้ฟังตามปกติ
+        if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($this->platform, $this->userId, null, 'pricing_followup_job')) {
+            return;
+        }
+
         // 🛡️ Cache guard — 1 ครั้ง/ลูกค้า/7 วัน
         $cacheKey = $this->getCacheKey();
         if (Cache::has($cacheKey)) {

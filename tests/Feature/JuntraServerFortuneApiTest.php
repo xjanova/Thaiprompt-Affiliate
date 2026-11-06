@@ -103,10 +103,20 @@ class JuntraServerFortuneApiTest extends TestCase
         foreach ($routes as $route) {
             $throttles = array_filter($route->gatherMiddleware(), fn ($m) => is_string($m) && str_starts_with($m, 'throttle:'));
             $this->assertNotEmpty($throttles, $route->getName().' has no throttle');
+            // 🚦 (2026-11-03) a named limiter is its own bucket (key = limiter name + limit key) —
+            // it must be registered, otherwise ThrottleRequests reads the name as 0 and blocks everything.
+            $prefixes = [];
             foreach ($throttles as $t) {
-                $this->assertCount(3, explode(',', substr($t, 9)), $route->getName()." uses unprefixed {$t}");
+                $args = explode(',', substr($t, 9));
+                if (count($args) === 1 && ! is_numeric($args[0])) {
+                    $this->assertNotNull(\Illuminate\Support\Facades\RateLimiter::limiter($args[0]), $route->getName()." uses unregistered limiter {$t}");
+                    $prefixes[] = $args[0];
+
+                    continue;
+                }
+                $this->assertCount(3, $args, $route->getName()." uses unprefixed {$t}");
+                $prefixes[] = $args[2];
             }
-            $prefixes = array_map(fn ($t) => explode(',', $t)[2], $throttles);
             $this->assertSame(array_unique($prefixes), $prefixes, $route->getName().' reuses a throttle bucket');
         }
     }

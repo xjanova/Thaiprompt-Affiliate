@@ -125,6 +125,11 @@
             — ดูได้ที่ <a href="{{ route('admin.fortune.bills.index', ['fortune_page' => 'none']) }}">ศูนย์รวมบิล → ไม่ระบุสาขา</a>
         </div>
     @endif
+    @if(($webOnlyBills ?? 0) > 0)
+        <div class="text-xs text-gray-500 dark:text-gray-400 px-1">
+            🌙 บิลเว็บจันทราที่ไม่ได้มาจากสาขาใด (ลูกค้าเริ่มบนเว็บเอง): {{ number_format($webOnlyBills) }} ใบ
+        </div>
+    @endif
 
     {{-- ===== ตารางสาขา ===== --}}
     <div class="tp-card" style="padding:22px;">
@@ -163,7 +168,15 @@
                                 <td style="padding:11px 12px; font-family:monospace; font-size:11px;">{{ $p->external_page_id }}</td>
                                 <td style="padding:11px 12px;">{{ number_format((int) ($s->customers ?? 0)) }}</td>
                                 <td style="padding:11px 12px;">{{ number_format((int) ($s->total_bills ?? 0)) }}</td>
-                                <td style="padding:11px 12px;">{{ number_format((int) ($s->paid_bills ?? 0)) }}</td>
+                                <td style="padding:11px 12px;">
+                                    {{ number_format((int) ($s->paid_bills ?? 0)) }}
+                                    {{-- 🌙 บิลเว็บจันทราของลูกค้าที่มาจากสาขานี้ (FB web-only) --}}
+                                    @if((int) ($s->juntra_paid_bills ?? 0) > 0)
+                                        <div class="text-[11px] text-gray-500 dark:text-gray-400" title="บิลที่ลูกค้าของสาขานี้จ่ายบนเว็บจันทรา (รวมอยู่ในยอดแล้ว)">
+                                            🌙 เว็บ {{ number_format((int) $s->juntra_paid_bills) }} · ฿{{ number_format((float) ($s->juntra_revenue ?? 0), 0) }}
+                                        </div>
+                                    @endif
+                                </td>
                                 <td style="padding:11px 12px; font-weight:700; color:#5aa07e;">฿{{ number_format((float) ($s->revenue ?? 0), 0) }}</td>
                                 <td style="padding:11px 12px;">
                                     @if($p->is_active)

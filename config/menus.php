@@ -83,6 +83,25 @@ return [
             'permissions' => [],
         ],
 
+        // =============================================
+        // 🔑 (2026-11-04) Account AI Pools — key ของทุกผู้ให้บริการ AI รวมไว้ที่เดียว
+        // เดิมหน้า ai-api-keys ไม่มีในเมนู ต้องกดลิงก์จากหน้าตั้งค่าดูดวงเข้าไป — เจ้าของขอให้ยกออกมาเป็นเมนูด้านนอก
+        // =============================================
+        [
+            'id' => 'ai-account-pools',
+            'label' => 'Account AI Pools',
+            'icon' => '🔑',
+            'route' => null,
+            'order' => 49.5,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '🔑 คีย์ AI ทั้งหมด (Pool)', 'route' => 'admin.ai-api-keys.index', 'description' => 'เพิ่ม/ปิด/ทดสอบ key ของ Gemini, OpenAI, Claude, Groq ฯลฯ — ระบบหมุนใช้อัตโนมัติ'],
+                ['label' => '📊 การใช้งาน & ค่าใช้จ่าย', 'route' => 'admin.ai-api-keys.usage-dashboard', 'description' => 'กราฟการใช้ token และค่าใช้จ่ายของแต่ละ key'],
+                ['label' => '📜 Log การเรียก AI', 'route' => 'admin.ai-api-keys.logs', 'description' => 'ประวัติการเรียกแต่ละครั้ง สำเร็จ/ล้มเหลว'],
+                ['label' => '🎙️ ElevenLabs (เสียงตัวละคร)', 'route' => 'admin.fortune.character-voices.index', 'description' => 'key ElevenLabs + เลือกโมเดลเสียง (v4 / v4 Turbo / v3)'],
+            ],
+        ],
+
         [
             'id' => 'ai-bots',
             'label' => 'AI Bots & ผู้ช่วย',
@@ -351,7 +370,7 @@ return [
                 ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
                 ['label' => '📈 รายงานการเงิน', 'route' => 'admin.platform-revenue.reports', 'description' => 'รายงานรายได้รายวัน/เดือน'],
                 ['label' => '---', 'route' => null],
-                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.platform-revenue.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
+                ['label' => '⚙️ ตั้งค่าพักเงินผู้ขาย', 'route' => 'admin.platform-revenue.payouts.settings', 'description' => 'ระยะพักเงิน (holding days) ก่อนรายได้ผู้ขายเข้ากระเป๋า · คำขอถอนเงินอยู่ที่เมนูประวัติการถอน'],
                 ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
                 ['label' => '🔑 HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
             ],
@@ -547,6 +566,7 @@ return [
                 ['label' => '⚙️ โหราศาสตร์', 'route' => 'admin.fortune.astrology.index', 'description' => 'ตารางเจ้าชนะ ดาวเคราะห์ ทดสอบ Birth Chart'],
                 ['label' => '⚙️ ระบบไพ่ทาโรต์', 'route' => 'admin.tarot.index', 'description' => 'จัดการไพ่และความหมาย'],
                 ['label' => '⚙️ จัดการเสียง (Voice)', 'route' => 'admin.fortune.voice.index', 'description' => 'ตั้งค่าโมเดล/เสียง · คลังเสียงระบบ · เสียงทำนาย · ตรวจระบบ'],
+                ['label' => '🎭 เสียงพากย์ตัวละคร', 'route' => 'admin.fortune.character-voices.index', 'description' => 'แม่หมอจันทรา / น้องบุษบา — ElevenLabs V3 ผ่าน X-DREAMER · ฟังเสียงตัวอย่างแล้วเลือก'],
                 ['label' => '⚙️ SlipOK Account Pool', 'route' => 'admin.fortune.slipok-accounts.index', 'description' => 'หลายบัญชี SlipOK หมุนเวียนกัน quota ฟรีตัน — failover + balance'],
                 ['label' => '⚙️ Rich Menu Editor', 'route' => 'admin.fortune.rich-menu.editor', 'description' => 'แก้ไขปุ่ม สี ข้อความ Rich Menu + อัปโหลดภาพเอง'],
                 ['label' => '⚙️ Rich Menu Deploy', 'route' => 'admin.fortune.rich-menu.index', 'description' => 'Deploy Rich Menu ไป LINE'],

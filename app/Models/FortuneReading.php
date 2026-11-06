@@ -1160,6 +1160,12 @@ class FortuneReading extends Model
      */
     public function reviveBillForRepay(): ?self
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามปลุกบิลที่หมดอายุกลับมารอจ่าย (= ออก QR ใหม่) บน FB
+        //   เงินที่เข้ามาหลังบิลตาย → คิวเงินกำพร้าให้แอดมินตัดสิน (caller ได้ null = จัดการแบบ revive ไม่ได้อยู่แล้ว)
+        if (\App\Services\Fortune\FbBillingGuard::blocks($this, null, null, 'reviveBillForRepay')) {
+            return null;
+        }
+
         // 🔒 (2026-05-03 audit fix #2) Race-safe via DB transaction + row lock
         //    เดิม: 2 messages พร้อมๆ → 2 UPAs สร้างพร้อมกัน → 1 UPA orphan
         //    ใหม่: lockForUpdate() บล็อกอีก message ให้รอ → re-check limit หลัง lock
@@ -1977,6 +1983,12 @@ class FortuneReading extends Model
                     continue;
                 }
 
+                // 🌐 (2026-11-03) FB web-only — บิล FB ที่ปล่อยหมดอายุเองหลังย้ายไปเว็บ:
+                //   ไม่ส่ง DM เตือนสติ/ปลุก (ข้อความเรื่องบิลใน Messenger) · ไม่ BillTrollGuard แบน
+                //   (เราตั้งใจปล่อยให้หมดอายุเอง ลูกค้าไม่ได้เบี้ยว) · เหตุผล = moved_to_web
+                //   ยังยกเลิก UPA + แจ้ง SMS Checker + ปิดบิลตามเดิม
+                $webOnly = \App\Services\Fortune\FbBillingGuard::appliesTo($reading);
+
                 // 1. ยกเลิก UniquePaymentAmount (ถ้ายัง reserved)
                 $upa = $reading->uniquePaymentAmount;
                 if ($upa && $upa->status === 'reserved') {
@@ -1985,7 +1997,7 @@ class FortuneReading extends Model
 
                 // 2. ส่ง DM "คำเตือนสติแบบนักปราชญ์" ให้ผู้ใช้ก่อนปิด conversation
                 //    (ส่งก่อน update status เพื่อให้ flow handler ไม่ตีเป็น completed)
-                if ($channelManager) {
+                if ($channelManager && ! $webOnly) {
                     try {
                         $platform = $reading->platform ?? 'facebook';
                         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
@@ -2028,7 +2040,10 @@ class FortuneReading extends Model
 
                 // 3. mark cancellation timestamp (ใช้สำหรับ AI rebuttal — กันส่งซ้ำ)
                 $reading->setConversationState('cancelled_at', now()->toIso8601String());
-                $reading->setConversationState('cancellation_reason', 'auto_expired');
+                $reading->setConversationState(
+                    'cancellation_reason',
+                    $webOnly ? \App\Services\Fortune\FbBillingGuard::CANCEL_REASON : 'auto_expired'
+                );
 
                 // 🛑 (2026-05-06) Pay-Later removed — ไม่มี fraud detection สำหรับ Request-Before-Pay
                 //   เดิม: เช็ค is_request_before_pay flag → mark fraud_risk + alert admin
@@ -2064,7 +2079,9 @@ class FortuneReading extends Model
                 // 🛡️ (2026-06-12) Bill-Troll Guard — บิลที่ 3 ที่ไม่ชำระ (หลังเตือนแล้ว) → แบนถาวร
                 //   best-effort: พังก็ไม่ block การยกเลิกบิลอื่นๆ
                 try {
-                    app(\App\Services\Fortune\BillTrollGuardService::class)->maybeBanAfterUnpaidCancel($reading);
+                    if (! $webOnly) {
+                        app(\App\Services\Fortune\BillTrollGuardService::class)->maybeBanAfterUnpaidCancel($reading);
+                    }
                 } catch (\Throwable $banErr) {
                     \Log::warning('FortuneReading: BillTrollGuard check ล้มเหลว (best-effort)', [
                         'reading_id' => $reading->id,
@@ -3521,6 +3538,11 @@ class FortuneReading extends Model
      */
     public function reissueThaiQrAmount(): ?UniquePaymentAmount
     {
+        // 🌐 (2026-11-03) FB web-only — ห้ามจองยอด QR ไทยใหม่ให้บิล FB (caller จัดการ null อยู่แล้ว)
+        if (\App\Services\Fortune\FbBillingGuard::blocks($this, null, null, 'reissueThaiQrAmount')) {
+            return null;
+        }
+
         $settings = FortuneTellingSetting::getSettings();
 
         $basePrice = $this->reading_type === self::READING_TYPE_CELTIC_CROSS

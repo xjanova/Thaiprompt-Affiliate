@@ -1,0 +1,620 @@
+<?php
+
+namespace App\Services\Tts;
+
+use App\Models\FortuneTellingSetting;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * 🎭 (2026-11-04) ElevenLabs ตรง — เสียงพากย์ตัวละคร (แม่หมอจันทรา / น้องบุษบา / แม่หมอโหมดคุณไสย)
+ *
+ * เจ้าของสั่งให้ต่อ ElevenLabs ตรง แทนการผ่าน X-DREAMER (X-DREAMER ยังไม่มีบริการเสียงนี้จริง)
+ *   POST {base}/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128   header xi-api-key
+ *        body {text, model_id} → ได้ไฟล์ mp3 กลับมาทันที (sync ไม่ต้อง poll)
+ *   GET  {base}/v1/voices               → เสียงในบัญชี (รวมเสียงมาตรฐานของ ElevenLabs)
+ *   GET  {base}/v1/user/subscription    → โควต้าตัวอักษรคงเหลือ (ใช้ทดสอบ key ด้วย ไม่เสียโควต้า)
+ *
+ * คิดเงินตามจำนวนตัวอักษร · แท็กอารมณ์ของ v3 เช่น [softly] [laughs] [whispers] ถูกอ่านเป็นน้ำเสียง ไม่อ่านออกเสียง
+ *
+ * 🔒 key ห้ามโผล่ใน log / error — error ทุกข้อความผ่าน scrub() และไม่ log header
+ */
+class ElevenLabsTtsProvider implements TtsProviderInterface
+{
+    public const BASE_URL = 'https://api.elevenlabs.io';
+
+    public const DEFAULT_MODEL = 'eleven_v3';
+
+    /** ตัวอักษรสูงสุดต่อคำสั่ง (เพดานต่ำสุดของโมเดล v3 — ห้องแชทตัดที่ 1,500 อยู่แล้ว) */
+    public const MAX_CHARS = 3000;
+
+    public const OUTPUT_FORMAT = 'mp3_44100_128';
+
+    /**
+     * เสียงมาตรฐานของ ElevenLabs — ใช้เมื่อดึงรายชื่อจากบัญชีไม่ได้ (รายชื่อจริงดึงสดที่ listVoices())
+     *
+     * @var array<int, array{id: string, name: string, gender: string}>
+     */
+    public const FALLBACK_VOICES = XDreamerTtsProvider::FALLBACK_VOICES;
+
+    /**
+     * โมเดลที่พูดไทยได้ — ใช้เมื่อดึงรายชื่อจากบัญชีไม่ได้ (ข้อมูลจาก /v1/models ของบัญชีจริง 2026-11-04)
+     *
+     * @var array<int, array{id: string, name: string, thai: bool, cost: float, max_chars: ?int}>
+     */
+    public const FALLBACK_MODELS = [
+        ['id' => 'eleven_v4', 'name' => 'Eleven v4', 'thai' => true, 'cost' => 1.0, 'max_chars' => 10000],
+        ['id' => 'eleven_v4_turbo', 'name' => 'Eleven v4 Turbo', 'thai' => true, 'cost' => 0.5, 'max_chars' => 10000],
+        ['id' => 'eleven_v3', 'name' => 'Eleven v3', 'thai' => true, 'cost' => 1.0, 'max_chars' => 5000],
+        ['id' => 'eleven_v3_conversational', 'name' => 'Eleven v3 Conversational', 'thai' => true, 'cost' => 0.5, 'max_chars' => 5000],
+    ];
+
+    /**
+     * 🎚️ (2026-11-04) คุณภาพไฟล์ที่เลือกได้ — เฉพาะ mp3 (ไฟล์เก็บเป็น .mp3 และเล่นในเบราว์เซอร์ทุกตัว)
+     * mp3_44100_192 ต้องแพ็ก Creator ขึ้นไป (บัญชีเจ้าของเป็น creator — เช็ค 2026-11-04)
+     */
+    public const OUTPUT_FORMATS = [
+        'mp3_22050_32' => 'mp3 22kHz 32kbps (ไฟล์เล็กสุด)',
+        'mp3_24000_48' => 'mp3 24kHz 48kbps',
+        'mp3_44100_32' => 'mp3 44.1kHz 32kbps',
+        'mp3_44100_64' => 'mp3 44.1kHz 64kbps',
+        'mp3_44100_96' => 'mp3 44.1kHz 96kbps',
+        'mp3_44100_128' => 'mp3 44.1kHz 128kbps (ค่าเริ่มต้น)',
+        'mp3_44100_192' => 'mp3 44.1kHz 192kbps (ชัดสุด — แพ็ก Creator ขึ้นไป)',
+    ];
+
+    /** ช่วงค่าที่ API รับ — speed ของ ElevenLabs อยู่ที่ 0.7–1.2 · pan −1 (ซ้าย) ถึง 1 (ขวา) · ที่เหลือ 0–1 */
+    public const SETTING_RANGES = [
+        'stability' => [0.0, 1.0],
+        'similarity_boost' => [0.0, 1.0],
+        'style' => [0.0, 1.0],
+        'speed' => [0.7, 1.2],
+        'clone_strength' => [0.0, 1.0],
+        'send_level' => [0.0, 1.0],
+        'distance' => [0.0, 1.0],
+        'pan' => [-1.0, 1.0],
+    ];
+
+    public const SEED_MAX = 4294967295;
+
+    /**
+     * เอฟเฟกต์เสียง — ใช้เมื่อดึง /v1/audio-effects/catalog ไม่ได้ (ดึงจากบัญชีจริง 2026-11-04)
+     * id ที่ไม่มีจริง ElevenLabs ตอบ 404 จึงต้องเลือกจากรายชื่อเท่านั้น
+     */
+    public const FALLBACK_AUDIO_EFFECTS = [
+        'filter_presets' => [
+            ['id' => 'old_radio', 'name' => 'Old Radio'],
+            ['id' => 'robot', 'name' => 'Robot'],
+            ['id' => 'cheap_microphone', 'name' => 'Cheap Microphone'],
+            ['id' => 'phone', 'name' => 'Phone'],
+            ['id' => 'low_quality_phone', 'name' => 'Low Quality Phone'],
+            ['id' => 'bright_phone', 'name' => 'Bright Phone'],
+        ],
+        'environments' => [
+            ['id' => 'small_room', 'name' => 'Small Room'],
+            ['id' => 'big_room', 'name' => 'Big Room'],
+            ['id' => 'hall', 'name' => 'Hall'],
+            ['id' => 'tunnel', 'name' => 'Tunnel'],
+            ['id' => 'street', 'name' => 'Street'],
+            ['id' => 'valley', 'name' => 'Valley'],
+            ['id' => 'forest', 'name' => 'Forest'],
+        ],
+        'background_noises' => [
+            ['id' => 'call_center', 'name' => 'Call center'],
+            ['id' => 'cafe', 'name' => 'Café'],
+            ['id' => 'city', 'name' => 'City'],
+            ['id' => 'keyboard', 'name' => 'Keyboard'],
+        ],
+    ];
+
+    /** ไฟล์เสียงใหญ่สุดที่ยอมรับ */
+    protected const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+
+    protected string $baseUrl;
+
+    /** โมเดลที่ใช้แทนค่าที่บันทึกไว้ (ลองฟังก่อนบันทึก) — ตั้งผ่าน withModel() เท่านั้น */
+    protected ?string $modelOverride = null;
+
+    /**
+     * @param  string|null  $apiKey  ส่งตรงได้ (หน้าแอดมินทดสอบ key ก่อนบันทึก) — null = อ่านจากค่ากลาง
+     */
+    public function __construct(
+        protected FortuneTellingSetting $settings,
+        protected ?string $apiKey = null,
+        ?string $baseUrl = null,
+    ) {
+        $this->baseUrl = rtrim($baseUrl ?: (string) config('services.elevenlabs.base_url', self::BASE_URL), '/');
+    }
+
+    public function name(): string
+    {
+        return 'elevenlabs';
+    }
+
+    public function isAvailable(): bool
+    {
+        return $this->key() !== null;
+    }
+
+    /**
+     * โมเดลเสียงที่ใช้ (แอดมินเปลี่ยนได้ ค่าเริ่มต้น Eleven v3)
+     */
+    public function model(): string
+    {
+        return $this->modelOverride ?? $this->settings->getElevenlabsTtsModel() ?? self::DEFAULT_MODEL;
+    }
+
+    /**
+     * 🎧 (2026-11-04) สำเนาที่ใช้โมเดลอื่นแทนค่าที่บันทึกไว้ — หน้าจูนเสียงลองฟังโมเดลที่เลือกได้ก่อนกดบันทึก
+     * ผู้เรียกต้องตรวจเองว่าโมเดลนี้มีในบัญชีและพูดไทยได้
+     */
+    public function hasModelOverride(): bool
+    {
+        return $this->modelOverride !== null;
+    }
+
+    public function withModel(string $model): static
+    {
+        $copy = clone $this;
+        $copy->modelOverride = $model;
+
+        return $copy;
+    }
+
+    /**
+     * สังเคราะห์ข้อความเป็น mp3 ลงไฟล์ output_path
+     *
+     * options: 'voice' (id เสียง ElevenLabs — ไม่ระบุ/ไม่ใช่รูปแบบ ElevenLabs = เสียงแม่หมอที่เลือกไว้), 'output_path'
+     */
+    public function synthesize(string $text, array $options = []): array
+    {
+        $startTime = microtime(true);
+        $voice = $options['voice'] ?? null;
+        // chain เสียงเดิมของบอทส่ง voice ของ provider อื่นมาได้ (เช่น id ของ MiniMax) — id ของ ElevenLabs = ตัวอักษร 20 ตัว
+        if (! is_string($voice) || ! preg_match('/^[A-Za-z0-9]{20}$/', $voice)) {
+            $voice = ($this->settings->maemor_voice_id ?: null) ?? self::FALLBACK_VOICES[0]['id'];
+        }
+        $outputPath = $options['output_path'] ?? null;
+
+        if (! $outputPath) {
+            return $this->failResult($startTime, 'output_path required', $voice);
+        }
+
+        $key = $this->key();
+        if ($key === null) {
+            return $this->failResult($startTime, 'ยังไม่ได้ตั้ง ElevenLabs API key', $voice);
+        }
+
+        $text = trim($text);
+        if ($text === '') {
+            return $this->failResult($startTime, 'ข้อความว่าง', $voice);
+        }
+        if (mb_strlen($text) > self::MAX_CHARS) {
+            $text = mb_substr($text, 0, self::MAX_CHARS);
+        }
+
+        // 🎚️ ค่าจูนเสียง (ถ้ามี) — กรองให้เหลือเฉพาะค่าที่โมเดลปัจจุบันรับได้
+        $tuned = $this->tuningPayload(is_array($options['tuning'] ?? null) ? $options['tuning'] : []);
+
+        try {
+            // ⚠️ ห้าม retry เอง — timeout หลังคำขอถึง ElevenLabs แล้ว = สั่งซ้ำ = เสียโควต้าสองรอบ
+            $response = Http::withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])
+                ->connectTimeout(12)
+                ->timeout((int) ($options['timeout'] ?? 90))
+                ->post($this->baseUrl.'/v1/text-to-speech/'.rawurlencode($voice).'?output_format='.($tuned['output_format'] ?? self::OUTPUT_FORMAT), [
+                    'text' => $text,
+                    'model_id' => $this->model(),
+                ] + ($tuned['body'] ?? []));
+        } catch (\Throwable $e) {
+            $error = 'เชื่อมต่อ ElevenLabs ไม่ได้: '.$this->scrub($e->getMessage());
+            Log::warning('ElevenLabs TTS: connection fail', ['error' => mb_substr($error, 0, 200)]);
+
+            return $this->failResult($startTime, $error, $voice);
+        }
+
+        if (! $response->successful()) {
+            $error = $this->errorFrom($response);
+            Log::warning('ElevenLabs TTS: HTTP fail', ['status' => $response->status(), 'error' => mb_substr($error, 0, 200)]);
+
+            return $this->failResult($startTime, $error, $voice);
+        }
+
+        $body = $response->body();
+        $bytes = strlen($body);
+        if ($bytes < 100 || str_starts_with(ltrim($body), '{')) {
+            return $this->failResult($startTime, 'ElevenLabs ส่งไฟล์เสียงว่างหรือเสียกลับมา', $voice);
+        }
+        if ($bytes > self::MAX_AUDIO_BYTES) {
+            return $this->failResult($startTime, 'ไฟล์เสียงใหญ่เกินกำหนด', $voice);
+        }
+
+        $dir = dirname($outputPath);
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        file_put_contents($outputPath, $body);
+
+        $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+        Log::info('🎭 ElevenLabs TTS สำเร็จ', [
+            'model' => $this->model(),
+            'voice' => $voice,
+            'chars' => mb_strlen($text),
+            'bytes' => $bytes,
+            'duration_ms' => $durationMs,
+        ]);
+
+        return [
+            'success' => true,
+            'audio_path' => $outputPath,
+            'error' => null,
+            'duration_ms' => $durationMs,
+            'voice_used' => $voice,
+            'audio_length_ms' => null,
+            'usage_chars' => mb_strlen($text),
+        ];
+    }
+
+    /**
+     * รายชื่อเสียงในบัญชี ElevenLabs (ดึงไม่ได้ = รายชื่อสำรองในไฟล์นี้)
+     *
+     * @return array{voices: array<int, array{id: string, name: string, gender: string}>, live: bool, max_chars: int}
+     */
+    public function listVoices(): array
+    {
+        $response = $this->get('/v1/voices');
+
+        if ($response['success']) {
+            $voices = [];
+            foreach (($response['data']['voices'] ?? []) as $v) {
+                if (! is_array($v) || empty($v['voice_id'])) {
+                    continue;
+                }
+                $labels = is_array($v['labels'] ?? null) ? $v['labels'] : [];
+                $hint = trim(implode(' · ', array_filter([
+                    $labels['accent'] ?? null,
+                    $labels['age'] ?? null,
+                    $labels['description'] ?? ($labels['descriptive'] ?? null),
+                ], fn ($x) => is_string($x) && $x !== '')));
+
+                $voices[] = [
+                    'id' => (string) $v['voice_id'],
+                    'name' => (string) ($v['name'] ?? $v['voice_id']).($hint !== '' ? ' — '.$hint : ''),
+                    'gender' => strtolower((string) ($labels['gender'] ?? '')),
+                ];
+            }
+
+            if ($voices !== []) {
+                return ['voices' => $voices, 'live' => true, 'max_chars' => self::MAX_CHARS];
+            }
+        }
+
+        return ['voices' => self::FALLBACK_VOICES, 'live' => false, 'max_chars' => self::MAX_CHARS];
+    }
+
+    /**
+     * โมเดลเสียงที่บัญชีนี้ใช้ได้ (เจ้าของสั่ง 2026-11-04 "eleven lab มี v4 เราเปลี่ยนไปเลือกได้ไหม")
+     *
+     * ดึงสดจาก /v1/models (ไม่เสียโควต้า) เก็บเฉพาะโมเดลที่สร้างเสียงจากข้อความได้
+     * thai = พูดไทยได้ · cost = ตัวคูณราคาต่อตัวอักษร (0.5 = ครึ่งราคาของ v3)
+     * ดึงไม่ได้ = รายชื่อสำรองในไฟล์นี้ (live = false)
+     *
+     * @return array{models: array<int, array{id: string, name: string, thai: bool, cost: float, max_chars: ?int}>, live: bool}
+     */
+    public function listModels(): array
+    {
+        $response = $this->get('/v1/models');
+
+        if ($response['success']) {
+            $models = [];
+            foreach ($response['data'] as $m) {
+                if (! is_array($m) || empty($m['model_id']) || ! ($m['can_do_text_to_speech'] ?? false)) {
+                    continue;
+                }
+                $languages = array_column(is_array($m['languages'] ?? null) ? $m['languages'] : [], 'language_id');
+                $cost = $m['model_rates']['character_cost_multiplier'] ?? 1;
+
+                $models[] = [
+                    'id' => (string) $m['model_id'],
+                    'name' => (string) ($m['name'] ?? $m['model_id']),
+                    'thai' => in_array('th', $languages, true),
+                    'cost' => is_numeric($cost) ? (float) $cost : 1.0,
+                    'max_chars' => isset($m['maximum_text_length_per_request']) ? (int) $m['maximum_text_length_per_request'] : null,
+                ];
+            }
+
+            if ($models !== []) {
+                return ['models' => $models, 'live' => true];
+            }
+        }
+
+        return ['models' => self::FALLBACK_MODELS, 'live' => false];
+    }
+
+    /**
+     * 🎚️ ค่า voice_settings ที่แต่ละโมเดลรับ (ตามเอกสาร ElevenLabs 2026-11)
+     * - v4 / v4 Turbo: Stability + Similarity (Style/Speed ไม่มี) · clone_strength ใช้กับเสียงโคลน Professional ที่จูนกับ v4
+     * - v3: Stability อย่างเดียว และรับแค่ 3 ระดับ 0 / 0.5 / 1 (Creative / Natural / Robust)
+     * - โมเดลรุ่นก่อน: ครบ 5 ค่า
+     *
+     * @return array<int, string>
+     */
+    public static function supportedVoiceSettings(string $model): array
+    {
+        return match (true) {
+            str_starts_with($model, 'eleven_v4') => ['stability', 'similarity_boost', 'clone_strength'],
+            str_starts_with($model, 'eleven_v3') => ['stability'],
+            default => ['stability', 'similarity_boost', 'style', 'use_speaker_boost', 'speed'],
+        };
+    }
+
+    /**
+     * แปลงค่าจูน (ของตัวละครหนึ่งตัว) เป็นส่วนที่ต้องเพิ่มในคำขอ TTS — คืน [] เมื่อไม่มีอะไรต่างจากค่าเริ่มต้น
+     *
+     * ค่าที่ได้ใช้เป็นส่วนหนึ่งของกุญแจแคชไฟล์เสียงด้วย: ไม่ได้ตั้งค่าจูน = [] = ไฟล์เดิมที่เก็บไว้ยังใช้ได้
+     *
+     * @param  array{output_format?: ?string, language_code?: ?string, apply_text_normalization?: ?string, seed?: ?int, voice?: ?array, effects?: ?array}  $tuning
+     * @return array{output_format?: string, body?: array}
+     */
+    public function tuningPayload(array $tuning): array
+    {
+        $model = $this->model();
+        $out = [];
+        $body = [];
+
+        $format = $tuning['output_format'] ?? null;
+        if (is_string($format) && $format !== self::OUTPUT_FORMAT && isset(self::OUTPUT_FORMATS[$format])) {
+            $out['output_format'] = $format;
+        }
+
+        // multilingual_v2 ไม่รับ language_code
+        $language = $tuning['language_code'] ?? null;
+        if (is_string($language) && preg_match('/^[a-z]{2}$/', $language) && ! str_contains($model, 'multilingual_v2')) {
+            $body['language_code'] = $language;
+        }
+
+        $normalization = $tuning['apply_text_normalization'] ?? null;
+        if (in_array($normalization, ['on', 'off'], true)) {
+            $body['apply_text_normalization'] = $normalization;
+        }
+
+        $seed = $tuning['seed'] ?? null;
+        if (is_int($seed) && $seed >= 0 && $seed <= self::SEED_MAX) {
+            $body['seed'] = $seed;
+        }
+
+        $voice = $tuning['voice'] ?? null;
+        if (is_array($voice)) {
+            $settings = [];
+            foreach (self::supportedVoiceSettings($model) as $field) {
+                if (! isset($voice[$field])) {
+                    continue;
+                }
+                if ($field === 'use_speaker_boost') {
+                    $settings[$field] = (bool) $voice[$field];
+
+                    continue;
+                }
+                $value = $this->clampSetting($field, $voice[$field]);
+                if ($field === 'stability' && str_starts_with($model, 'eleven_v3')) {
+                    $value = round($value * 2) / 2;
+                }
+                $settings[$field] = $value;
+            }
+            if ($settings !== []) {
+                $body['voice_settings'] = $settings;
+            }
+        }
+
+        $effects = $tuning['effects'] ?? null;
+        if (is_array($effects)) {
+            $fx = [];
+            foreach (['filter_preset_id', 'environment_id', 'background_noise_id'] as $field) {
+                if (is_string($effects[$field] ?? null) && preg_match('/^[a-z0-9_]{1,64}$/', $effects[$field])) {
+                    $fx[$field] = $effects[$field];
+                }
+            }
+            // ความก้องส่งเฉพาะตอนเลือกห้อง · ระยะห่าง/ซ้าย-ขวา ส่งเฉพาะเมื่อไม่ใช่ค่ากลาง
+            if (isset($fx['environment_id'], $effects['send_level'])) {
+                $fx['send_level'] = $this->clampSetting('send_level', $effects['send_level']);
+            }
+            foreach (['distance', 'pan'] as $field) {
+                if (isset($effects[$field]) && ($value = $this->clampSetting($field, $effects[$field])) != 0.0) {
+                    $fx[$field] = $value;
+                }
+            }
+            if ($fx !== []) {
+                $body['audio_effects'] = $fx;
+            }
+        }
+
+        if ($body !== []) {
+            $out['body'] = $body;
+        }
+
+        return $out;
+    }
+
+    /**
+     * เอฟเฟกต์เสียงที่บัญชีใช้ได้ — ดึงสดจาก /v1/audio-effects/catalog (ไม่เสียโควต้า) ดึงไม่ได้ = รายชื่อสำรอง
+     *
+     * @return array{effects: array{filter_presets: array, environments: array, background_noises: array}, live: bool}
+     */
+    public function listAudioEffects(): array
+    {
+        $response = $this->get('/v1/audio-effects/catalog');
+
+        if ($response['success']) {
+            $effects = [];
+            foreach (['filter_presets' => 'filter_preset_id', 'environments' => 'environment_id', 'background_noises' => 'background_noise_id'] as $group => $idField) {
+                $effects[$group] = [];
+                foreach (is_array($response['data'][$group] ?? null) ? $response['data'][$group] : [] as $item) {
+                    if (is_array($item) && is_string($item[$idField] ?? null) && preg_match('/^[a-z0-9_]{1,64}$/', $item[$idField])) {
+                        $effects[$group][] = ['id' => $item[$idField], 'name' => (string) ($item['name'] ?? $item[$idField])];
+                    }
+                }
+            }
+
+            if (array_filter($effects) !== []) {
+                return ['effects' => $effects, 'live' => true];
+            }
+        }
+
+        return ['effects' => self::FALLBACK_AUDIO_EFFECTS, 'live' => false];
+    }
+
+    /** ตัดค่าให้อยู่ในช่วงที่ API รับ แล้วปัด 2 ตำแหน่ง (ค่าเดียวกัน = กุญแจแคชเดียวกัน) */
+    protected function clampSetting(string $field, mixed $value): float
+    {
+        [$min, $max] = self::SETTING_RANGES[$field];
+
+        return round(min($max, max($min, is_numeric($value) ? (float) $value : $min)), 2);
+    }
+
+    /**
+     * โควต้าตัวอักษรคงเหลือของรอบบิล — ใช้ทดสอบ key ด้วย (ไม่เสียโควต้า)
+     *
+     * key ที่จำกัดสิทธิ์ (ไม่ได้เปิด user_read) อ่านโควต้าไม่ได้ แต่ยังสร้างเสียงได้ → นับว่า key ใช้ได้ (balance = null)
+     *
+     * @return array{success: bool, balance: ?int, limit: ?int, error: ?string, tier?: ?string, price_usd?: ?float}
+     */
+    public function credits(): array
+    {
+        $response = $this->get('/v1/user/subscription');
+
+        if ($response['success']) {
+            $used = (int) ($response['data']['character_count'] ?? 0);
+            $limit = (int) ($response['data']['character_limit'] ?? 0);
+            // ราคาแพ็กต่อรอบบิล (ก่อนภาษี) — ใช้ประมาณค่าเงินต่อเครดิตในหน้าตั้งค่า · ไม่มี = แสดงแค่เครดิต
+            $cents = $response['data']['next_invoice']['subtotal_cents'] ?? null;
+
+            return [
+                'success' => true, 'balance' => max(0, $limit - $used), 'limit' => $limit, 'error' => null,
+                'tier' => is_string($response['data']['tier'] ?? null) ? $response['data']['tier'] : null,
+                'price_usd' => is_numeric($cents) && $cents > 0 ? round($cents / 100, 2) : null,
+            ];
+        }
+
+        if ($response['detail_status'] === 'missing_permissions') {
+            return ['success' => true, 'balance' => null, 'limit' => null, 'error' => null];
+        }
+
+        return ['success' => false, 'balance' => null, 'limit' => null, 'error' => $response['error']];
+    }
+
+    /**
+     * GET แบบอ่านอย่างเดียว (retry เมื่อเชื่อมต่อไม่ได้)
+     *
+     * @return array{success: bool, data: array, error: ?string, detail_status: ?string}
+     */
+    protected function get(string $path): array
+    {
+        $key = $this->key();
+        if ($key === null) {
+            return ['success' => false, 'data' => [], 'error' => 'ยังไม่ได้ตั้ง ElevenLabs API key', 'detail_status' => null];
+        }
+
+        try {
+            $response = Http::withHeaders(['xi-api-key' => $key])
+                ->acceptJson()
+                ->connectTimeout(12)
+                ->timeout(20)
+                ->retry(2, 1500, fn ($e) => $e instanceof ConnectionException, throw: false)
+                ->get($this->baseUrl.$path);
+        } catch (\Throwable $e) {
+            return ['success' => false, 'data' => [], 'error' => 'เชื่อมต่อ ElevenLabs ไม่ได้: '.$this->scrub($e->getMessage()), 'detail_status' => null];
+        }
+
+        if (! $response->successful()) {
+            return ['success' => false, 'data' => [], 'error' => $this->errorFrom($response), 'detail_status' => $this->detailStatus($response)];
+        }
+
+        $json = $response->json();
+
+        return is_array($json)
+            ? ['success' => true, 'data' => $json, 'error' => null, 'detail_status' => null]
+            : ['success' => false, 'data' => [], 'error' => 'ElevenLabs ตอบกลับไม่ใช่ JSON', 'detail_status' => null];
+    }
+
+    /**
+     * แปลง error ของ ElevenLabs เป็นข้อความที่แอดมินอ่านแล้วรู้ว่าต้องทำอะไร
+     */
+    protected function errorFrom(Response $response): string
+    {
+        $status = $this->detailStatus($response);
+        $message = $this->detailMessage($response);
+
+        $known = match ($status) {
+            'invalid_api_key' => 'ElevenLabs ไม่รับ API key นี้ (key ผิดหรือถูกลบ)',
+            'missing_permissions' => 'key นี้ไม่มีสิทธิ์ใช้งานส่วนนี้ — เปิดสิทธิ์ Text to Speech ให้ key ในหน้า ElevenLabs',
+            'quota_exceeded' => 'โควต้าตัวอักษร ElevenLabs หมดแล้ว',
+            'voice_not_found' => 'ไม่พบเสียงนี้ในบัญชี ElevenLabs — เพิ่มเสียงเข้า My Voices หรือเลือกเสียงอื่น',
+            'too_many_concurrent_requests', 'system_busy' => 'ElevenLabs คิวเต็ม รอสักครู่แล้วลองใหม่',
+            default => null,
+        };
+
+        if ($known !== null) {
+            return $known;
+        }
+
+        return match (true) {
+            $response->status() === 401 => 'ElevenLabs ไม่รับ API key นี้'.($message ? ': '.$message : ''),
+            $response->status() === 429 => 'เรียก ElevenLabs ถี่เกินไป รอสักครู่แล้วลองใหม่',
+            default => 'ElevenLabs ตอบ HTTP '.$response->status().($message ? ': '.$message : ''),
+        };
+    }
+
+    protected function detailStatus(Response $response): ?string
+    {
+        $detail = $response->json('detail');
+
+        return is_array($detail) && isset($detail['status']) && is_string($detail['status']) ? $detail['status'] : null;
+    }
+
+    protected function detailMessage(Response $response): ?string
+    {
+        $detail = $response->json('detail');
+        $message = match (true) {
+            is_string($detail) => $detail,
+            is_array($detail) && isset($detail['message']) => (string) $detail['message'],
+            is_array($detail) && isset($detail[0]['msg']) => (string) $detail[0]['msg'],
+            default => null,
+        };
+
+        return $message !== null ? mb_substr($this->scrub($message), 0, 300) : null;
+    }
+
+    protected function key(): ?string
+    {
+        $key = $this->apiKey !== null ? trim($this->apiKey) : $this->settings->getElevenlabsApiKey();
+
+        return $key !== null && $key !== '' ? $key : null;
+    }
+
+    /**
+     * ลบ key ออกจากข้อความ (กันหลุดไปกับ error/log ทุกกรณี)
+     */
+    protected function scrub(string $message): string
+    {
+        $key = $this->key();
+        if ($key !== null) {
+            $message = str_replace($key, '[key]', $message);
+        }
+
+        return (string) preg_replace('/sk_[A-Za-z0-9]{8,}/', 'sk_[key]', $message);
+    }
+
+    protected function failResult(float $startTime, ?string $error, ?string $voice): array
+    {
+        return [
+            'success' => false,
+            'audio_path' => null,
+            'error' => $error ?: 'unknown',
+            'duration_ms' => (int) round((microtime(true) - $startTime) * 1000),
+            'voice_used' => $voice,
+            'audio_length_ms' => null,
+            'usage_chars' => 0,
+        ];
+    }
+}

@@ -1645,11 +1645,13 @@ Route::prefix('v1/juntra')->middleware(['juntra.user'])->name('api.juntra.')->gr
 //    throttle ที่ไม่มี prefix ใช้ key เดียวกันหมด: ซ้อนกันสองชั้น = นับคำขอเดียวสองครั้ง และแชทของ
 //    ลูกค้าทั้งเว็บจะไปแย่งถังเดียวกับการตรวจสลิป (เดิมคิดเป็นแชทได้ราว 45 ข้อความ/นาทีทั้งเว็บ)
 //    เพดานต่อลูกค้าอยู่ฝั่งเว็บ (throttle:chat-send / throttle:reading ต่อ user) — ที่นี่คือด่านกันรั่วรวม
+// 🚦 (2026-11-03 FB web-only) ใช้ named limiter แทนตัวเลข (นิยามที่ App\Support\JuntraServerRateLimits)
+//    แต่ละชื่อ = ถังแยกกันอยู่แล้ว · jwchat นับต่อลูกค้า (user_ref) + เพดานรวม · ตัวเลขอยู่ที่ config/ratelimit.php
 Route::prefix('v1/juntra/server')
-    ->middleware(['juntra.server', 'throttle:600,1,jwsrv'])
+    ->middleware(['juntra.server', 'throttle:jwsrv'])
     ->name('api.juntra.server.')
     ->group(function () {
-        Route::middleware('throttle:120,1,jwpay')->group(function () {
+        Route::middleware('throttle:jwpay')->group(function () {
             Route::post('/slips/verify', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'verify'])
                 ->name('slips.verify');
             Route::post('/slips/check', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'check'])
@@ -1664,32 +1666,69 @@ Route::prefix('v1/juntra/server')
         });
 
         // - chat/*    : แชทแม่หมอให้ลูกค้าเว็บทุกคน (ไม่ต้องมี token Thaiprompt) คุยฟรี ทำนาย = ชวนเปิดไพ่
-        Route::middleware('throttle:300,1,jwchat')->group(function () {
+        Route::middleware('throttle:jwchat')->group(function () {
             Route::post('/chat/start', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'start'])
                 ->name('chat.start');
             Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
                 ->name('chat.send');
+            // 🎬 คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เสียงออกลำโพง — ข้อมูลเฉพาะที่พูดได้)
+            Route::post('/chat/greeting', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'greeting'])
+                ->name('chat.greeting');
+        });
+
+        // - stats/live : 🔴 (2026-11-04) ตัวเลขสดหน้าห้องของเว็บ — คนกำลังทักแม่หมอทุกช่องทาง · บิลจ่ายแล้วทั้งหมด · คิวเปิดไพ่
+        //   ตัวเลขจริงล้วน แคช 15 วิใน FortuneLiveActivity (เว็บดึงจากทุกหน้าที่เปิดอยู่)
+        Route::middleware('throttle:jwchat')->get('/stats/live', [\App\Http\Controllers\Api\Juntra\Server\StatsController::class, 'live'])
+            ->name('stats.live');
+
+        // - voice/*   : 🎭 (2026-11-03) เสียงพากย์ข้อความแม่หมอ/บุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
+        //   on-demand + แคช — เว็บขอเฉพาะตอนลูกค้ากดฟัง ข้อความเดิม = ไฟล์เดิม · เพดานตัวอักษรต่อวันอยู่ใน service
+        Route::middleware('throttle:jwvoice')->prefix('voice')->name('voice.')->group(function () {
+            Route::post('/speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'speak'])
+                ->name('speak');
+            Route::get('/clips/{clip}', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'show'])
+                ->whereNumber('clip')
+                ->name('clips.show');
+            // 🔈 (2026-11-04) โหมดคุยด้วยเสียง — ถอดเสียงไมค์ (Scribe สำรอง) + สถานะระบบเสียง
+            Route::post('/transcribe', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'transcribe'])
+                ->name('transcribe');
+            Route::get('/health', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'health'])
+                ->name('health');
+            // 🎭 (2026-11-04) คลังคลิปคำรับ/คำเติมที่สร้างไฟล์แล้ว (id → url) — แอดมินจัดการในหน้าคลังบทพูด
+            Route::get('/library', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'library'])
+                ->name('library');
+            // 🎬 บทเล่าคำทำนายของโรงละคร (AI เขียน → ตรวจความตรง → ประโยคจากคำทำนาย)
+            Route::post('/narration', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'narration'])
+                ->name('narration');
+            // 🎬 เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) สำหรับคนที่ไม่ได้ซื้อเสียงสมจริง
+            Route::post('/free-speak', [\App\Http\Controllers\Api\Juntra\Server\VoiceController::class, 'freeSpeak'])
+                ->name('free-speak');
         });
 
         // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า
         //   🔴 (2026-09-15) เดิมมีแต่ทาง token → ลูกค้าที่สมัครด้วยเบอร์/อีเมล (ส่วนใหญ่) จ่ายเปิดไพ่
         //      แล้วได้ข้อความประกอบจากความหมายไพ่แทนคำทำนายจริง ส่วนดูดวงเชิงลึกถูกคืนเงินทุกครั้ง
         //   juntraweb หักเครดิตก่อนเรียกแล้ว ที่นี่ไม่คิดเงินซ้ำ (เหมือนทางเดิม)
-        Route::middleware('throttle:60,1,jwread')->prefix('fortune')->name('fortune.')->group(function () {
+        Route::middleware('throttle:jwread')->prefix('fortune')->name('fortune.')->group(function () {
             Route::post('/tarot/interpret', \App\Http\Controllers\Api\Juntra\TarotInterpretController::class)
                 ->name('tarot.interpret');
             Route::post('/tarot/free', \App\Http\Controllers\Api\Juntra\FreeTarotController::class)
                 ->name('tarot.free');
             Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
                 ->name('deep');
+            // 📈 (2026-11-04) กราฟชีวิตมหาทักษาให้โรงละครคำทำนาย — ไม่ใช้ AI ไม่คิดเงิน (ตัวเลขชุดเดียวกับรูปกราฟใน LINE)
+            Route::post('/lifegraph', \App\Http\Controllers\Api\Juntra\Server\LifeGraphController::class)
+                ->name('lifegraph');
         });
 
         // - affiliate/* : 🌙 (2026-09-21) ผังแม่หมอของลูกค้าจันทราทุกคน — จันทราไม่คำนวณค่าแนะนำเอง
         //   บิลเว็บ+แอพจันทราส่งมาที่นี่ แจกค่าแนะนำ % ของยอดบิล · คืนเงินที่จันทรา = ดึงค่าแนะนำคืน
-        Route::middleware('throttle:300,1,jwaff')->prefix('affiliate')->name('affiliate.')->group(function () {
+        Route::middleware('throttle:jwaff')->prefix('affiliate')->name('affiliate.')->group(function () {
             $affiliate = \App\Http\Controllers\Api\Juntra\Server\AffiliateController::class;
 
             Route::post('/accounts', [$affiliate, 'ensureAccount'])->name('accounts');
+            // 🌙 (2026-11-03) จันทราลบบัญชี → ปลดการผูกให้บัญชีใหม่ผูก Thaiprompt คนเดิมได้ (ไม่สร้างเงา)
+            Route::post('/accounts/{userRef}/release', [$affiliate, 'releaseAccount'])->whereNumber('userRef')->name('accounts.release');
             Route::post('/bills', [$affiliate, 'recordBill'])->name('bills');
             Route::post('/bills/{billId}/void', [$affiliate, 'voidBill'])->whereNumber('billId')->name('bills.void');
             Route::get('/members/{userRef}/stats', [$affiliate, 'stats'])->whereNumber('userRef')->name('members.stats');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Juntra;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneKnowledge;
 use App\Services\CelticCrossService;
+use App\Services\Fortune\JuntraSpreadProfiles;
 use App\Services\FortuneAIService;
 use App\Services\FortuneKnowledgeService;
 use Illuminate\Http\JsonResponse;
@@ -303,6 +304,8 @@ class FreeTarotController extends Controller
      */
     private function systemPrompt(int $minChars, int $maxChars): string
     {
+        $noSourceTalk = JuntraSpreadProfiles::NO_SOURCE_TALK;
+
         return <<<PROMPT
 คุณคือ "แม่หมอจันทรา" หมอดูไพ่ยิปซีที่แม่นและกล้าฟันธง
 ตอนนี้กำลังเปิดไพ่ให้ฟรี 1 ใบ ให้เจ้าชะตาที่เพิ่งเข้ามาบนเว็บจันทราพยากรณ์
@@ -314,6 +317,7 @@ class FreeTarotController extends Controller
 • บททดสอบตัวเอง: ถ้าประโยคนั้นเอาไปใช้กับไพ่ใบไหนก็ได้ = ตัดทิ้ง เขียนใหม่ให้ผูกกับหน้าไพ่
 • ไพ่กลับหัว = อ่านเป็นด้านกลับจริง ๆ ไม่ใช่แค่ "อ่อนลง"
 • เอ่ยชื่อไพ่อย่างน้อย 1 ครั้ง เพื่อให้เจ้าชะตาเห็นที่มาของคำทำนาย
+• {$noSourceTalk}
 
 ━━━━━━━━━━━━━━━━━
 🚫 ข้อมูลที่ "ไม่มี" — ห้ามแต่งขึ้นเอง

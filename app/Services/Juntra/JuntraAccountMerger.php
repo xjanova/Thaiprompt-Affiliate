@@ -79,6 +79,9 @@ class JuntraAccountMerger
                     'merge_failed_at' => null,
                     'merge_error' => null,
                 ]);
+
+                // 🔐 (รีวิว) ประวัติถาวร — แถวนี้อาจถูกแทนที่ภายหลัง (บัญชีจันทราใหม่รับ Thaiprompt คนเดิม)
+                JuntraAffiliateService::rememberMergeAlias((int) $shadow->id, (int) $real->id, (int) $account->juntra_user_id);
             });
         } catch (\Throwable $e) {
             return $this->markFailed($account->fresh() ?? $account, $real->id, $e->getMessage());
@@ -102,9 +105,16 @@ class JuntraAccountMerger
      */
     public function sweep(JuntraAccount $account): bool
     {
-        $shadowId = (int) $account->merged_from_user_id;
-        $realId = (int) $account->user_id;
-        if ($shadowId === 0 || $shadowId === $realId) {
+        return $this->sweepUsers((int) $account->merged_from_user_id, (int) $account->user_id, $account->id);
+    }
+
+    /**
+     * 🔐 (รีวิว) เก็บตกจากคู่ (เงา → บัญชีจริง) โดยตรง — ใช้กับประวัติใน juntra_account_merge_aliases ด้วย
+     */
+    public function sweepUsers(int $shadowId, int $realId, ?int $accountId = null): bool
+    {
+        $account = (object) ['id' => $accountId];
+        if ($shadowId === 0 || $realId === 0 || $shadowId === $realId) {
             return false;
         }
 

@@ -2077,34 +2077,22 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
     Route::get('/wallets/{wallet}', [PlatformRevenueController::class, 'showWallet'])
         ->name('wallets.show');
 
-    // Payouts
+    // Payout settings — holding_days ของผู้ขายที่ SellerPayoutService อ่านจริง
+    // (หน้าจอ payout_requests ถอดออกแล้ว 2026-11-06 ไม่มีอะไรสร้างแถวในตารางนั้น
+    //  คำขอถอนเงินของจริงอยู่ที่ /admin/withdrawals)
     Route::prefix('payouts')->name('payouts.')->group(function () {
-        Route::get('/', [PayoutController::class, 'index'])
-            ->name('index');
         Route::get('/settings', [PayoutController::class, 'settings'])
             ->name('settings');
         Route::put('/settings/{setting}', [PayoutController::class, 'updateSetting'])
             ->name('settings.update');
-        Route::post('/bulk-approve', [PayoutController::class, 'bulkApprove'])
-            ->name('bulk-approve');
-        Route::get('/api/pending', [PayoutController::class, 'apiPendingPayouts'])
-            ->name('api.pending');
-        Route::get('/{payout}', [PayoutController::class, 'show'])
-            ->name('show');
-        Route::post('/{payout}/approve', [PayoutController::class, 'approve'])
-            ->name('approve');
-        Route::post('/{payout}/reject', [PayoutController::class, 'reject'])
-            ->name('reject');
-        Route::post('/{payout}/process', [PayoutController::class, 'process'])
-            ->name('process');
     });
 
     // Earnings
     Route::prefix('earnings')->name('earnings.')->group(function () {
         Route::get('/', [PayoutController::class, 'earnings'])
             ->name('index');
-        Route::get('/{earning}', [PayoutController::class, 'showEarning'])
-            ->name('show');
+        // (ถอด earnings.show 2026-11-06 — ไม่เคยมี view admin.platform-revenue.earnings.show
+        //  เปิดแล้ว 500 ทุกครั้ง และไม่มีหน้าไหนลิงก์มา)
     });
 
     // Debts
@@ -2561,6 +2549,45 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/voice-diagnostic', fn () => redirect()->route('admin.fortune.voice.index'))->name('voice-diagnostic');
     Route::post('/voice-diagnostic/test/{provider}', [FortuneVoiceDiagnosticController::class, 'testProvider'])->name('voice-diagnostic.test');
     Route::post('/voice-diagnostic/regenerate/{reading}', [FortuneVoiceDiagnosticController::class, 'regenerateReading'])->name('voice-diagnostic.regenerate');
+
+    // 🎭 (2026-11-03) เสียงพากย์ตัวละคร แม่หมอจันทรา/น้องบุษบา (ElevenLabs V3 ผ่าน X-DREAMER)
+    Route::prefix('character-voices')->name('character-voices.')->group(function () {
+        $cv = \App\Http\Controllers\Admin\FortuneCharacterVoiceController::class;
+        Route::get('/', [$cv, 'index'])->name('index');
+        Route::put('/settings', [$cv, 'updateSettings'])->name('settings.update');
+        Route::put('/tuning', [$cv, 'updateTuning'])->name('tuning.update');
+        // ลองฟังค่าจูนก่อนบันทึก — สั่งงานที่เสียเครดิตเหมือนเสียงตัวอย่าง จำกัดความถี่เท่ากัน
+        Route::post('/tuning/preview', [$cv, 'previewTuning'])->middleware('throttle:30,1')->name('tuning.preview');
+        Route::delete('/key', [$cv, 'deleteKey'])->name('key.delete');
+        Route::post('/credits', [$cv, 'credits'])->name('credits');
+        Route::post('/refresh-voices', [$cv, 'refreshVoices'])->name('refresh-voices');
+        // สร้างเสียงตัวอย่างสั่งงานที่เสียเครดิต — จำกัดความถี่กันกดรัว
+        Route::post('/sample', [$cv, 'sample'])->middleware('throttle:30,1')->name('sample');
+        Route::get('/clips/{clip}', [$cv, 'clipStatus'])->name('clips.show');
+        Route::post('/select', [$cv, 'select'])->name('select');
+
+        // 🎭 (2026-11-04) ตัวละคร (เพิ่มสำหรับห้องใหม่ได้) + คลังบทพูด/สร้างเสียง + ตารางคลิปทั้งหมด
+        $vl = \App\Http\Controllers\Admin\FortuneVoiceLibraryController::class;
+        Route::get('/characters', [$vl, 'characters'])->name('characters');
+        Route::post('/characters', [$vl, 'storeCharacter'])->name('characters.store');
+        Route::put('/characters/{character}', [$vl, 'updateCharacter'])->name('characters.update');
+        Route::delete('/characters/{character}', [$vl, 'destroyCharacter'])->name('characters.destroy');
+        Route::get('/library', [$vl, 'library'])->name('library');
+        Route::post('/library/lines', [$vl, 'storeLine'])->name('library.lines.store');
+        Route::put('/library/lines/{line}', [$vl, 'updateLine'])->name('library.lines.update');
+        Route::delete('/library/lines/{line}', [$vl, 'destroyLine'])->name('library.lines.destroy');
+        // สร้างเสียงสั่งงานที่เสียเครดิต — หน้าเว็บยิงทีละบรรทัด ("สร้างทั้งหมด" = วนทีละตัว)
+        Route::post('/library/lines/{line}/generate', [$vl, 'generateLine'])->middleware('throttle:60,1')->name('library.lines.generate');
+        Route::get('/all-clips', [$vl, 'clips'])->name('clips.index');
+        Route::delete('/all-clips', [$vl, 'destroyClips'])->name('clips.destroy');
+
+        // 🎬 (2026-11-04) เสียงอ่านคำทำนายฟรี (Google Cloud → gTTS) — กุญแจ/เพดานเดือน/เสียงต่อห้อง
+        $fv = \App\Http\Controllers\Admin\FortuneFreeVoiceController::class;
+        Route::put('/google', [$fv, 'update'])->name('google.update');
+        Route::delete('/google/key', [$fv, 'deleteKey'])->name('google.key.delete');
+        Route::post('/google/test', [$fv, 'test'])->middleware('throttle:20,1')->name('google.test');
+        Route::post('/google/sample', [$fv, 'sample'])->middleware('throttle:20,1')->name('google.sample');
+    });
 
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');

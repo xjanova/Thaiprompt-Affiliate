@@ -116,6 +116,12 @@ class SendBillReminderJob implements ShouldQueue
         $platform = $reading->platform
             ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 
+        // 🌐 (2026-11-03) FB web-only — ห้ามทวงบิลใน Messenger (เช็คตอน handle เพราะ job อาจถูก dispatch ก่อนสลับธง)
+        //   ไม่ mark stage / ไม่เรียก AI — บิลค้างปล่อยหมดอายุเอง (design 1.5) · LINE ไม่ผ่านด่านนี้
+        if (\App\Services\Fortune\FbWebOnlyOutboundGuard::blocks($platform, (string) $userId, $reading, 'bill_reminder_job')) {
+            return;
+        }
+
         // 🚦 (2026-09-01) ทวงบิลฝั่ง LINE = push ไม่วิกฤต (นโยบายเจ้าของ 2026-08-31: push สงวนไว้
         //   ให้ของลูกค้าจ่ายแล้ว) — โควตาต่ำกว่ากันชน → "สละ" การทวง stage นี้ไปเลย ไม่เลื่อน
         //   ⚠️ ต้อง mark stage ว่าใช้แล้ว ไม่งั้น cron ทุกนาทีจะวนกลับมา gen AI ใหม่ตลอดอายุบิล
