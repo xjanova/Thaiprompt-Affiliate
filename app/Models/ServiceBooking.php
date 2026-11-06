@@ -391,6 +391,20 @@ class ServiceBooking extends Model
     /**
      * ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
      */
+    /**
+     * สถานะที่ผู้ให้บริการกด "เสร็จสิ้นบริการ" ได้ (audit F20)
+     */
+    public const COMPLETABLE_STATUSES = ['provider_accepted', 'provider_on_way', 'in_progress'];
+
+    /**
+     * จบงานได้ไหม: ต้องจ่ายเงินแล้ว และอยู่ระหว่างให้บริการ (ไม่ใช่ completed/cancelled/ยังไม่จ่าย)
+     */
+    public function canComplete(): bool
+    {
+        return $this->payment_status === 'paid'
+            && in_array($this->status, self::COMPLETABLE_STATUSES, true);
+    }
+
     public function canCancel(): bool
     {
         return in_array($this->status, [
@@ -565,6 +579,13 @@ class ServiceBooking extends Model
      */
     public function completeService(): void
     {
+        // 🛡️ F20: state guard — จบงานได้เฉพาะงานที่จ่ายเงินแล้วและยังทำอยู่ (เดิมไม่เช็ค → จบงานซ้ำจ่ายเงิน 2 รอบ)
+        if (! $this->canComplete()) {
+            throw new \Exception($this->payment_status !== 'paid'
+                ? 'การจองนี้ยังไม่ได้ชำระเงิน จบงานไม่ได้'
+                : 'การจองนี้อยู่ในสถานะที่จบงานไม่ได้ ('.$this->status.')');
+        }
+
         $this->update([
             'status' => 'completed',
             'completed_at' => now(),

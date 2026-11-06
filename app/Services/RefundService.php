@@ -125,7 +125,12 @@ class RefundService
 
             // 5. ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์ม + คืนรายจ่ายส่วนลดคูปอง
             //    คืนรายจ่ายเท่าที่เคยลงไว้จริงเท่านั้น (คูปองของร้านไม่เคยเป็นรายจ่ายแพลตฟอร์ม → ไม่มีอะไรให้คืน)
-            $report['platform_adjustments'] = $this->adjustPlatformWallets($locked, $reason);
+            //    F32: กองทุน MLM ย้อนได้ไม่เกิน "เงินของออเดอร์นี้ที่ยังอยู่ในกอง" (เก็บ − จ่ายที่ดึงคืนไม่ได้)
+            $report['platform_adjustments'] = $this->adjustPlatformWallets(
+                $locked,
+                $reason,
+                (float) ($report['mlm_clawback']['own_unrecovered_amount'] ?? 0)
+            );
             $discountExpense = $this->expenses->findExpense('fee', 'order_discount', 'Order', (int) $locked->id);
             if ($discountExpense && (float) $discountExpense->amount > 0) {
                 $this->expenses->reverseExpense('fee', (float) $discountExpense->amount, 'order_discount', 'Order', (int) $locked->id,
@@ -504,10 +509,19 @@ class RefundService
 
     /**
      * ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์มของออเดอร์ (ยกเว้นเงินพักผู้ขาย ซึ่งย้อนราย ledger แล้ว)
+     *
+     * 🛡️ F32: เดิมย้อนแบบ "ทั้งก้อนหรือไม่ย้อนเลย" — กองเหลือน้อยกว่ายอดเดิมแม้นิดเดียว = ไม่ย้อนเลย
+     *    แล้วบันทึก shortfall เต็มจำนวน (กองค้างเงินของออเดอร์ที่คืนแล้ว รายงานขาดเกินจริง)
+     *    ตอนนี้: ย้อนเท่าที่มี ส่วนที่ขาดจริงเท่านั้นเป็น shortfall
+     *    กองทุน MLM: ย้อนได้ไม่เกิน ยอดที่เก็บ − คอมของออเดอร์นี้ที่จ่ายไปแล้วแต่ดึงคืนไม่ได้ (เป็นหนี้)
+     *    → ไม่ไปหยิบเงินกองของออเดอร์อื่นมาปิดส่วนที่เป็นหนี้ (ส่วนนั้นบันทึกเป็น shortfall ผูกกับหนี้)
+     *
+     * @param  float  $mlmPoolUnrecovered  คอมของออเดอร์นี้ที่จ่ายแล้วแต่ดึงคืนไม่ได้ (หนี้ MlmClawback)
      */
-    protected function adjustPlatformWallets(Order $order, string $reason): array
+    protected function adjustPlatformWallets(Order $order, string $reason, float $mlmPoolUnrecovered = 0.0): array
     {
         $adjustments = [];
+        $mlmPoolUnrecovered = round(max(0.0, $mlmPoolUnrecovered), 2);
 
         // เฉพาะรายการที่เกิดจากการแบ่งเงิน (GP, VAT, กองทุน MLM, ร้านทางการ) — ไม่รวมเงินพักผู้ขาย
         // (ย้อนราย ledger แล้ว) และไม่รวมรายการคืนรายจ่ายโปรที่เพิ่งสร้างในการคืนเงินครั้งนี้
@@ -552,28 +566,57 @@ class RefundService
                 'original_sub_type' => $tx->sub_type,
                 'reversed_amount' => 0.0,
                 'shortfall' => 0.0,
+                'shortfall_from_debts' => 0.0,
             ];
 
-            try {
-                $reversal = $wallet->deductFunds($amount, 'refund_reversal', 'Order', (int) $order->id, [
-                    'original_tx_id' => $tx->id,
-                    'original_sub_type' => $tx->sub_type,
-                    'order_number' => $order->order_number,
-                    'reason' => $reason,
-                ]);
-                $reversal->update([
-                    'related_user_id' => $tx->related_user_id,
-                    'description' => mb_substr("ย้อนรายการ ({$tx->sub_type}) — คืนเงินออเดอร์ #{$order->order_number}", 0, 255),
-                ]);
-                $row['reversed_amount'] = $amount;
-            } catch (\Throwable $e) {
-                // เงินในกระเป๋าถูกใช้ไปแล้ว → แพลตฟอร์มรับภาระส่วนต่าง (ลูกค้ายังได้เงินคืนครบ)
-                $row['shortfall'] = $amount;
+            // ยอดที่ควรย้อน: กองทุน MLM หักส่วนที่ออกไปเป็นคอมแล้วดึงคืนไม่ได้ (ใช้ได้ครั้งเดียว — รายการ pool แรก)
+            $target = $amount;
+            if ($tx->sub_type === 'mlm_commission_pool' && $mlmPoolUnrecovered > 0) {
+                $row['shortfall_from_debts'] = round(min($amount, $mlmPoolUnrecovered), 2);
+                $target = round($amount - $row['shortfall_from_debts'], 2);
+                $mlmPoolUnrecovered = round($mlmPoolUnrecovered - $row['shortfall_from_debts'], 2);
+            }
+
+            // ย้อนเท่าที่กระเป๋ามีจริง (ล็อกแถวเพื่ออ่านยอดล่าสุด — deductFunds ล็อกซ้ำในตัว)
+            $available = round(max(0.0, (float) PlatformWallet::whereKey($wallet->id)->lockForUpdate()->value('balance')), 2);
+            $take = round(min($target, $available), 2);
+
+            if ($take > 0) {
+                try {
+                    $reversal = $wallet->deductFunds($take, 'refund_reversal', 'Order', (int) $order->id, [
+                        'original_tx_id' => $tx->id,
+                        'original_sub_type' => $tx->sub_type,
+                        'original_amount' => $amount,
+                        'shortfall' => round($amount - $take, 2),
+                        'shortfall_from_debts' => $row['shortfall_from_debts'],
+                        'order_number' => $order->order_number,
+                        'reason' => $reason,
+                    ]);
+                    $reversal->update([
+                        'related_user_id' => $tx->related_user_id,
+                        'description' => mb_substr("ย้อนรายการ ({$tx->sub_type}) — คืนเงินออเดอร์ #{$order->order_number}", 0, 255),
+                    ]);
+                    $row['reversed_amount'] = $take;
+                } catch (\Throwable $e) {
+                    Log::warning('Refund: platform wallet reversal failed', [
+                        'order_id' => $order->id,
+                        'wallet' => $wallet->slug,
+                        'amount' => $take,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // ส่วนที่ย้อนไม่ได้ → แพลตฟอร์มรับภาระ (ลูกค้ายังได้เงินคืนครบ) — ส่วนที่มาจากหนี้จะได้คืนตอนเก็บหนี้
+            $row['shortfall'] = round($amount - $row['reversed_amount'], 2);
+            if ($row['shortfall'] > 0) {
                 Log::warning('Refund: platform wallet reversal shortfall', [
                     'order_id' => $order->id,
                     'wallet' => $wallet->slug,
                     'amount' => $amount,
-                    'error' => $e->getMessage(),
+                    'reversed' => $row['reversed_amount'],
+                    'shortfall' => $row['shortfall'],
+                    'shortfall_from_debts' => $row['shortfall_from_debts'],
                 ]);
             }
 

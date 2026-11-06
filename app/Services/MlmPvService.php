@@ -110,6 +110,8 @@ class MlmPvService
             'previous_balance' => $previousBalance,
             'new_balance' => $newBalance,
             'attributed_leg' => $attributedLeg,
+            // F11/M6: ใครได้ PV ขา binary จากออเดอร์นี้ — MlmBinaryService เติมให้ตอนลงขา ([] = ไม่มีใครได้)
+            'binary_leg_credits' => [],
             'description' => 'PV from Order #'.$order->id,
         ]);
     }

@@ -127,8 +127,10 @@ class MlmCommissionsController extends Controller
             return $this->ok($this->result($fresh, $count === 0), $count > 0 ? 'จ่ายคอมมิชชั่นแล้ว' : 'คอมมิชชั่นนี้จ่ายไปแล้ว');
         }
 
-        // service ข้ามรายการนี้ (กองทุน MLM ไม่พอ / กระเป๋าเงินผู้รับถูกระงับ / ไม่มีผู้รับ) — รายละเอียดอยู่ใน log
-        return $this->fail('จ่ายคอมมิชชั่นไม่สำเร็จ (กองทุน MLM ไม่พอ หรือกระเป๋าเงินผู้รับใช้งานไม่ได้) กรุณาตรวจสอบแล้วลองใหม่', 'PAY_FAILED', 409, $this->result($fresh, false));
+        // service ข้ามรายการนี้ — เหตุผลถูกบันทึกบนแถว (audit F9) แจ้งตามจริง
+        $reason = $fresh->payout_blocked_label ?? 'กองทุน MLM ไม่พอ หรือกระเป๋าเงินผู้รับใช้งานไม่ได้';
+
+        return $this->fail('จ่ายคอมมิชชั่นไม่สำเร็จ ('.$reason.') กรุณาตรวจสอบแล้วลองใหม่', 'PAY_FAILED', 409, $this->result($fresh, false));
     }
 
     /**
@@ -141,6 +143,8 @@ class MlmCommissionsController extends Controller
             'status' => (string) $commission->status,
             'amount_thb' => round((float) $commission->commission_amount, 2),
             'already' => $already,
+            // F9: เหตุผลที่จ่ายไม่ได้ (null = ไม่ติด)
+            'payout_blocked_reason' => $commission->payout_blocked_reason,
         ];
     }
 

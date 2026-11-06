@@ -20,6 +20,7 @@ class MlmPvTransaction extends Model
         'previous_balance',
         'new_balance',
         'attributed_leg',
+        'binary_leg_credits',
         'description',
         'notes',
         'created_by',
@@ -32,7 +33,33 @@ class MlmPvTransaction extends Model
             'sales_amount' => 'decimal:2',
             'previous_balance' => 'decimal:2',
             'new_balance' => 'decimal:2',
+            'binary_leg_credits' => 'array',
         ];
+    }
+
+    /** PV ที่นับรักษายอด (ซื้อสินค้า/ดูดวง) */
+    public const RETENTION_TYPES = ['purchase', 'fortune_reading'];
+
+    /** แถวหัก PV ของออเดอร์ที่คืนเงิน (pv_amount ติดลบ) — audit F11 / M6 */
+    public const TYPE_REFUND = 'refund';
+
+    /**
+     * แถวที่นับเป็น PV รักษายอด: ซื้อสินค้า/ดูดวง ยกเว้นออเดอร์ที่คืนเงินแล้ว (มีแถว refund ของออเดอร์เดียวกัน)
+     *
+     * 🛡️ M6: PV ของออเดอร์ที่คืนเงินต้องไม่ทำให้สมาชิกยัง active ทั้งเดือน (F11 ฉาก 3)
+     */
+    public function scopeCountsForRetention($query)
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query->whereIn($table.'.transaction_type', self::RETENTION_TYPES)
+            ->whereNotExists(function ($sub) use ($table) {
+                $sub->selectRaw('1')
+                    ->from('mlm_pv_transactions as pv_refund')
+                    ->whereColumn('pv_refund.order_id', $table.'.order_id')
+                    ->whereColumn('pv_refund.mlm_member_id', $table.'.mlm_member_id')
+                    ->where('pv_refund.transaction_type', self::TYPE_REFUND);
+            });
     }
 
     /**

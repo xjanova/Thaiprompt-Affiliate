@@ -34,10 +34,27 @@ class MlmReferralBonusService
      * เรียกใช้หลังจากออเดอร์ได้รับชำระเงินแล้ว
      *
      * @param  Order  $order  ออเดอร์ที่ชำระแล้ว
+     * @param  float|null  $maxAmount  เพดานจาก budget ของออเดอร์ (audit F5 / M3) — null = ไม่จำกัด (ผู้เรียกเดิม)
+     *                                 0 หรือน้อยกว่า = ออเดอร์นี้ไม่มีเงินรองรับ → ไม่สร้างแถว (สิทธิ์ออเดอร์แรกไม่ถูกใช้)
      * @return MlmCommission|null รายการคอมมิชชันที่สร้าง หรือ null ถ้าไม่ผ่านเงื่อนไข
      */
-    public function calculateReferralBonus(Order $order): ?MlmCommission
+    public function calculateReferralBonus(Order $order, ?float $maxAmount = null): ?MlmCommission
     {
+        // 🛡️ F5: ออเดอร์ที่ไม่มีเงินเข้ากองเลย ห้ามสร้างค่าแนะนำ (เดิมจ่าย 100 จากเงินกองของออเดอร์อื่น)
+        if ($maxAmount !== null && $maxAmount <= 0) {
+            Log::info('Direct referral bonus skipped: order budget is zero', [
+                'order_id' => $order->id,
+                'max_amount' => $maxAmount,
+            ]);
+
+            return null;
+        }
+
+        // 🪙 M15: ซื้อด้วย Coins ไม่มีค่าแนะนำ
+        if ($order->isPaidWithCoins()) {
+            return null;
+        }
+
         // ตรวจสอบว่าเปิดใช้ระบบผังสายเลือด (Genealogy) หรือไม่
         if (! MlmGlobalSetting::get('genealogy_enabled', true)) {
             Log::debug('Genealogy commission system disabled', ['order_id' => $order->id]);
@@ -139,8 +156,15 @@ class MlmReferralBonusService
             return null;
         }
 
+        // 🛡️ F5: ไม่เกินเงินที่ออเดอร์นี้จ่ายได้ (ส่วนที่เหลือหลัง unilevel จะถูกตัดอีกครั้งใน processOrderCommissions)
+        $note = null;
+        if ($maxAmount !== null && $bonusAmount > $maxAmount) {
+            $note = 'ตัดตาม budget ของออเดอร์: ฿'.number_format($bonusAmount, 2).' → ฿'.number_format($maxAmount, 2);
+            $bonusAmount = round($maxAmount, 2);
+        }
+
         // สร้างรายการ commission
-        return $this->createReferralCommission($originalSponsor, $buyerMember, $order, $bonusAmount);
+        return $this->createReferralCommission($originalSponsor, $buyerMember, $order, $bonusAmount, $note);
     }
 
     /**
@@ -179,14 +203,16 @@ class MlmReferralBonusService
      * @param  MlmMember  $buyer  ผู้ซื้อ (ลูกทีมตรง)
      * @param  Order  $order  ออเดอร์
      * @param  float  $amount  จำนวนเงิน
+     * @param  string|null  $note  หมายเหตุเพิ่ม (เช่น ถูกตัดตาม budget ของออเดอร์)
      */
     protected function createReferralCommission(
         MlmMember $sponsor,
         MlmMember $buyer,
         Order $order,
-        float $amount
+        float $amount,
+        ?string $note = null
     ): MlmCommission {
-        return DB::transaction(function () use ($sponsor, $buyer, $order, $amount) {
+        return DB::transaction(function () use ($sponsor, $buyer, $order, $amount, $note) {
             // ⚠️ แก้ไข: ใช้ total_amount แทน total
             $commission = MlmCommission::create([
                 'mlm_member_id' => $sponsor->id,
@@ -202,7 +228,7 @@ class MlmReferralBonusService
                 'commission_amount' => $amount,
                 'percentage' => $this->getPercentageForRecord($order->total_amount, $amount),
                 'status' => 'pending',
-                'notes' => 'ค่าแนะนำตรงจากออเดอร์ #'.$order->order_number,
+                'notes' => 'ค่าแนะนำตรงจากออเดอร์ #'.$order->order_number.($note ? ' | '.$note : ''),
             ]);
 
             Log::info('Direct referral bonus created', [

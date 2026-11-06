@@ -45,9 +45,10 @@ class MlmRetentionHelper
         $requiredMonthlyPv = (float) MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
         $startOfMonth = Carbon::now()->startOfMonth();
 
+        // 🛡️ F11/M6: countsForRetention = ซื้อสินค้า/ดูดวง ยกเว้นออเดอร์ที่คืนเงินแล้ว
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
+            ->countsForRetention()
             ->sum('pv_amount');
 
         if ($monthlyPv >= $requiredMonthlyPv) {
@@ -67,7 +68,7 @@ class MlmRetentionHelper
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
+                ->countsForRetention()
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 
@@ -123,12 +124,12 @@ class MlmRetentionHelper
         $startOfMonth = Carbon::now()->startOfMonth();
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
+            ->countsForRetention()
             ->sum('pv_amount');
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
+                ->countsForRetention()
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 

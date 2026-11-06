@@ -141,7 +141,8 @@ class MlmGlobalSettingController extends Controller
         $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
 
         // Get constraints
-        $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
+        // F6: กติกาเดียวกับ engine — NULL/0 = ไม่จำกัด (null), ค่า > 0 = เพดาน
+        $maxPerLevel = MlmGlobalSetting::positiveCap('unilevel_max_commission_per_level');
         $maxPerDay = MlmGlobalSetting::get('binary_max_commission_per_day', null);
         $maxPairsPerDay = MlmGlobalSetting::get('binary_max_pairs_per_day', null);
 
@@ -170,7 +171,7 @@ class MlmGlobalSettingController extends Controller
                 $constraintUsed = null;
 
                 // Apply level constraint
-                if ($useConstraints && $maxPerLevel && $commission > $maxPerLevel) {
+                if ($useConstraints && $maxPerLevel !== null && $commission > $maxPerLevel) {
                     $commission = $maxPerLevel;
                     $constraintUsed = "Max/Level: ฿{$maxPerLevel}";
                     $constraintsApplied++;

@@ -7,6 +7,7 @@ use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\Order;
+use App\Models\PlatformWallet;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,13 @@ class MlmCalculationService
      */
     public function processOrderCommissions(Order $order)
     {
+        // 🪙 M15: ซื้อด้วย Coins ไม่ได้ PV/คอม
+        if ($order->isPaidWithCoins()) {
+            Log::info('Order paid with coins earns no MLM PV/commission (M15, legacy engine)', ['order_id' => $order->id]);
+
+            return true;
+        }
+
         DB::beginTransaction();
 
         try {
@@ -53,7 +61,8 @@ class MlmCalculationService
             // แก้ Warning: Dual Engine Guard - ป้องกัน duplicate commission จาก production engine (MlmCommissionService)
             $existingCommission = MlmCommission::where('source_type', Order::class)
                 ->where('source_id', $order->id)
-                ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair'])
+                // F8: นับแถวเงินกอง (pool_bonus) ของออเดอร์ด้วย
+                ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair', 'pool_bonus'])
                 ->exists();
 
             if ($existingCommission) {
@@ -152,9 +161,20 @@ class MlmCalculationService
     }
 
     /**
+     * รหัสเหตุผลของแถวที่จ่ายไม่ได้ในการเรียก payApprovedCommissions() ครั้งล่าสุด [commission_id => code]
+     */
+    protected array $lastPayoutBlocked = [];
+
+    /**
      * Pay approved commissions
      * แก้ Bug DIST-1: เพิ่มการหัก MLM Pool wallet เมื่อจ่ายคอมมิชชัน
      * แก้ Bug DIST-2: ใช้ atomic read สำหรับ balance_after
+     *
+     * 🛡️ audit F9: แถวที่จ่ายไม่ได้ต้องบันทึกเหตุผล (payout_blocked_reason) — เดิมค้าง approved เงียบๆ
+     *    และคอมของออเดอร์จ่ายได้ไม่เกินเงินที่ออเดอร์นั้นเก็บเข้ากอง (orders.mlm_commission_total)
+     *    เดิมกดจ่ายตอนกองโตพอ เงินก้อนนี้จะออกจากกองของออเดอร์อื่น
+     *
+     * @return int จำนวนแถวที่จ่ายสำเร็จ (แถวที่ติด ดูได้จาก getLastPayoutBlocked())
      */
     public function payApprovedCommissions($commissionIds = null)
     {
@@ -170,18 +190,27 @@ class MlmCalculationService
 
         $ids = $query->pluck('id');
         $paidCount = 0;
+        $this->lastPayoutBlocked = [];
         $walletService = app(WalletService::class);
         $revenueService = new PlatformRevenueService;
 
         foreach ($ids as $commissionId) {
             try {
-                $paid = DB::transaction(function () use ($commissionId, $walletService, $revenueService) {
+                $outcome = DB::transaction(function () use ($commissionId, $walletService, $revenueService) {
+                    // ล็อกออเดอร์ต้นทางก่อนแถวคอม (ลำดับเดียวกับการแบ่งเงิน/คืนเงินที่ล็อกออเดอร์ก่อน)
+                    // กัน 2 request จ่ายคอมของออเดอร์เดียวกันพร้อมกันจนเกินเงินที่ออเดอร์เก็บได้
+                    $source = MlmCommission::whereKey($commissionId)->first(['id', 'source_type', 'source_id']);
+                    $order = null;
+                    if ($source && $source->source_type === Order::class && $source->source_id) {
+                        $order = Order::whereKey($source->source_id)->lockForUpdate()->first();
+                    }
+
                     /** @var MlmCommission|null $commission */
                     $commission = MlmCommission::whereKey($commissionId)->lockForUpdate()->first();
 
                     // ถูกจ่าย/ยกเลิกไปแล้วโดย request อื่น → ข้าม
                     if (! $commission || $commission->status !== 'approved') {
-                        return false;
+                        return 'skip';
                     }
 
                     $amount = round((float) $commission->commission_amount, 2);
@@ -192,7 +221,7 @@ class MlmCalculationService
                             'commission_id' => $commission->id,
                         ]);
 
-                        return false;
+                        return $this->blockPayout($commission, $user ? 'zero_amount' : 'no_user');
                     }
 
                     // กันจ่ายซ้ำ: เคยมีรายการ wallet ของคอมนี้แล้ว → แค่ปิดสถานะ
@@ -203,7 +232,7 @@ class MlmCalculationService
                     if ($existingTx) {
                         $commission->markAsPaid($existingTx->id);
 
-                        return false;
+                        return 'skip';
                     }
 
                     $wallet = $walletService->getOrCreateWallet($user);
@@ -213,10 +242,39 @@ class MlmCalculationService
                             'user_id' => $user->id,
                         ]);
 
-                        return false;
+                        return $this->blockPayout($commission, 'wallet_inactive');
                     }
 
-                    // หักกองทุน MLM ก่อน (ไม่พอ = throw → ข้ามรายการนี้ทั้งก้อน)
+                    // 🛡️ F9: คอมของออเดอร์จ่ายได้ไม่เกินเงินที่ออเดอร์นั้นเก็บเข้ากอง (ห้ามใช้เงินกองของออเดอร์อื่น)
+                    if ($commission->source_type === Order::class) {
+                        if (! $order) {
+                            return $this->blockPayout($commission, 'source_order_missing');
+                        }
+
+                        $orderPool = round((float) $order->mlm_commission_total, 2);
+                        $paidForOrder = (float) MlmCommission::where('source_type', Order::class)
+                            ->where('source_id', $order->id)
+                            ->where('status', 'paid')
+                            ->sum('commission_amount');
+
+                        if (round($paidForOrder + $amount, 2) > $orderPool + 0.001) {
+                            Log::warning('MLM commission payout blocked: exceeds source order pool', [
+                                'commission_id' => $commission->id,
+                                'order_id' => $order->id,
+                                'order_pool' => $orderPool,
+                                'already_paid' => $paidForOrder,
+                                'amount' => $amount,
+                            ]);
+
+                            return $this->blockPayout($commission, 'order_budget_exceeded');
+                        }
+                    }
+
+                    // กองทุน MLM ไม่พอ → บันทึกเหตุผล ไม่จ่าย (deductFunds ล็อกและตรวจซ้ำอีกชั้น)
+                    if ((float) PlatformWallet::getMlmPoolWallet()->fresh()->balance + 0.0001 < $amount) {
+                        return $this->blockPayout($commission, 'pool_insufficient');
+                    }
+
                     $revenueService->payMlmCommission($amount, $user->id, 'MlmCommission', $commission->id, [
                         'commission_type' => $commission->type,
                         'from_member_id' => $commission->from_member_id,
@@ -241,24 +299,68 @@ class MlmCalculationService
                         MlmMember::whereKey($commission->mlm_member_id)->increment('total_earnings', $amount);
                     }
 
-                    return true;
+                    // 🧾 F14/M7: มีหนี้ค้าง (ดึงคืนคอม/คืนเงิน) → หักจากคอมที่เพิ่งเข้ากระเป๋าทันที 100%
+                    //    เดิมหนี้ถูกเก็บเฉพาะจาก EarningsLedger/ตอนถอน แต่คอม MLM เข้ากระเป๋าตรง → ไม่เคยถูกหัก
+                    (new DebtCollectionService)->collectFromWalletIncome(
+                        (int) $user->id,
+                        $amount,
+                        MlmCommission::class,
+                        (int) $commission->id,
+                        'คอม MLM #'.$commission->id
+                    );
+
+                    return 'paid';
                 });
 
-                if ($paid) {
+                if ($outcome === 'paid') {
                     $paidCount++;
+                } elseif ($outcome !== 'skip') {
+                    $this->lastPayoutBlocked[(int) $commissionId] = $outcome;
                 }
             } catch (\Throwable $e) {
-                // กองทุนไม่พอ/wallet มีปัญหา → ข้ามรายการนี้ รายการอื่นจ่ายต่อได้
+                // กองทุนไม่พอ (แข่งกับ request อื่น)/wallet มีปัญหา → ข้ามรายการนี้ รายการอื่นจ่ายต่อได้ แต่ต้องมีเหตุผลบนแถว
                 Log::warning('MLM commission payout failed', [
                     'commission_id' => $commissionId,
                     'error' => $e->getMessage(),
                 ]);
+
+                $code = str_contains($e->getMessage(), 'ไม่เพียงพอ') ? 'pool_insufficient' : 'payout_error';
+                MlmCommission::whereKey($commissionId)->where('status', 'approved')->update([
+                    'payout_blocked_reason' => $code,
+                    'payout_blocked_at' => now(),
+                ]);
+                $this->lastPayoutBlocked[(int) $commissionId] = $code;
             }
         }
 
-        Log::info('MLM commissions paid', ['count' => $paidCount, 'requested' => $ids->count()]);
+        Log::info('MLM commissions paid', [
+            'count' => $paidCount,
+            'requested' => $ids->count(),
+            'blocked' => $this->lastPayoutBlocked,
+        ]);
 
         return $paidCount;
+    }
+
+    /**
+     * แถวที่จ่ายไม่ได้ในการเรียก payApprovedCommissions() ครั้งล่าสุด [commission_id => รหัสเหตุผล]
+     */
+    public function getLastPayoutBlocked(): array
+    {
+        return $this->lastPayoutBlocked;
+    }
+
+    /**
+     * บันทึกเหตุผลที่จ่ายไม่ได้ลงแถว (สถานะยังเป็น approved ให้แอดมินตัดสินใจต่อ) แล้วคืนรหัสเหตุผล
+     */
+    protected function blockPayout(MlmCommission $commission, string $code): string
+    {
+        $commission->forceFill([
+            'payout_blocked_reason' => $code,
+            'payout_blocked_at' => now(),
+        ])->save();
+
+        return $code;
     }
 
     /**

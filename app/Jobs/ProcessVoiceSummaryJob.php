@@ -144,7 +144,8 @@ class ProcessVoiceSummaryJob implements ShouldQueue
         $logFile = \storage_path("logs/fortune-voice-{$readingId}.log");
 
         if (self::isWindows()) {
-            $bgCmd = "start /B {$cmd} >> \"{$logFile}\" 2>&1";
+            // "" = ชื่อหน้าต่าง — ถ้าไม่ใส่ start จะเอา path ของ php (ตัวแรกในเครื่องหมายคำพูด) ไปเป็น title
+            $bgCmd = "start \"\" /B {$cmd} >> \"{$logFile}\" 2>&1";
             $descriptors = [
                 0 => ['file', 'NUL', 'r'],
                 1 => ['file', 'NUL', 'w'],

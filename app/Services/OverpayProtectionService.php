@@ -177,6 +177,31 @@ class OverpayProtectionService
     }
 
     /**
+     * budget ค่าคอมของออเดอร์ 1 ใบ = เงินที่จ่ายเป็นค่าคอมได้จริงจากออเดอร์นี้ (audit F7)
+     *
+     * = min(PV × commission_per_pv × max_commission_percentage, เงินที่ออเดอร์เก็บเข้ากอง mlm_pool จริง)
+     * 🛡️ เดิมคิดจาก PV อย่างเดียว — ออเดอร์คูปองหนัก/GP สูงเก็บเข้ากองได้ 50 แต่สร้างคอมได้ 535
+     *    ส่วนที่เกินไปค้าง approved แล้วรอดูดเงินกองของออเดอร์อื่น (F9)
+     *
+     * @param  float  $totalPv  PV ของออเดอร์ (หลังเฉลี่ยตามส่วนลดแล้ว)
+     * @param  float|null  $poolCollected  เงินที่ออเดอร์เก็บเข้ากองจริง (null = ผู้เรียกไม่รู้ → ใช้สูตร PV อย่างเดียว)
+     */
+    public static function orderBudget(float $totalPv, ?float $poolCollected = null): float
+    {
+        if ($totalPv <= 0) {
+            return 0.0;
+        }
+
+        $pvBudget = (float) self::checkRuntimeOverpay($totalPv, 0)['max_allowed'];
+
+        if ($poolCollected === null) {
+            return round(max(0.0, $pvBudget), 2);
+        }
+
+        return round(max(0.0, min($pvBudget, $poolCollected)), 2);
+    }
+
+    /**
      * ตรวจสอบว่า Seller ยังได้เงินสุทธิเป็นบวกหรือไม่
      *
      * Seller จะถูกหัก: Platform Fee + VAT + MLM Commission

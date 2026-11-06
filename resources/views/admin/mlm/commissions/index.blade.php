@@ -22,6 +22,8 @@
         'rejected' => ['ปฏิเสธ', $c['bad']],
         'cancelled' => ['ยกเลิก', $c['mute']],
         'clawback' => ['ดึงคืน', $c['bad']],
+        // F8: เงินโรลอัพที่ไม่มีผู้รับ อยู่ในกองกลาง — อนุมัติ/จ่ายไม่ได้
+        'pooled' => ['อยู่ในกองกลาง', $c['mute']],
     ];
     // ค่าตรงกับ enum mlm_commissions.type (ตัวกรองเดิมใช้ unilevel/binary ที่ไม่มีใน DB → กรองแล้วไม่เจออะไร)
     $typeMeta = [
@@ -233,7 +235,15 @@
                                 <div class="tp-num" style="font-weight:800;">฿{{ number_format((float) $commission->commission_amount, 2) }}</div>
                                 @if((float) $commission->pv_amount > 0)<div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ number_format((float) $commission->pv_amount, 2) }} PV</div>@endif
                             </td>
-                            <td style="{{ $td }}"><span class="tp-pill" style="{{ $pill($sColor) }}">{{ $sLabel }}</span></td>
+                            <td style="{{ $td }}">
+                                <span class="tp-pill" style="{{ $pill($sColor) }}">{{ $sLabel }}</span>
+                                {{-- F9: แถวที่จ่ายไม่ได้ต้องเห็นเหตุผล ไม่ใช่ค้างเงียบ --}}
+                                @if($commission->status === 'approved' && $commission->payout_blocked_reason)
+                                    <div style="font-size:11.5px; color:{{ $c['bad'] }}; margin-top:4px; max-width:180px; white-space:normal;" title="{{ $commission->payout_blocked_at?->format('d/m/Y H:i') }}">
+                                        <i class="fas fa-triangle-exclamation"></i> {{ $commission->payout_blocked_label }}
+                                    </div>
+                                @endif
+                            </td>
                             <td style="{{ $td }} white-space:nowrap;">
                                 <div class="tp-num">{{ $commission->created_at?->format('d/m/Y') }}</div>
                                 <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $commission->created_at?->format('H:i') }}</div>

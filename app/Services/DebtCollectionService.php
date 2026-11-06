@@ -18,6 +18,141 @@ use Illuminate\Support\Facades\Log;
  */
 class DebtCollectionService
 {
+    /** สัดส่วนของรายได้ครั้งถัดไปที่ใช้หักหนี้ (เจ้าของตัดสิน M7 = 100%) */
+    public const INCOME_COLLECTION_RATE = 1.0;
+
+    /** reference_type ของรายการหักหนี้จากกระเป๋า (เงินเข้ากระเป๋าแล้วถูกหักทันที) */
+    public const WALLET_REF_DEBT_COLLECTION = 'WalletDebtCollection';
+
+    /**
+     * หนี้ที่ระบบต้นทางเก็บเอง (ไม่บล็อกการถอน/โอน และไม่ถูกหักจากรายได้อื่นเข้ากองทุนคืนเงิน)
+     *
+     * ค่า GP / ต้นทุนไรเดอร์ตลาดสด: ออกแบบให้ร้านค้าขายต่อได้ระหว่างมีหนี้ (เพดาน fresh_market.max_seller_gp_debt)
+     * และหักจากยอดโอนรอบถัดไปของร้านเอง (เงินต้องเข้ากระเป๋า GP ไม่ใช่ refund_pool)
+     * ⚠️ ขอให้เจ้าของยืนยัน: M7 เขียนว่า "ทุกระบบ" — ถ้าต้องการให้หนี้ตลาดสดบล็อกการถอนด้วย ให้ลบออกจากรายการนี้
+     */
+    public const SELF_COLLECTED_DEBT_SOURCES = [
+        FreshMarketService::DEBT_SOURCE_GP,
+        FreshMarketService::DEBT_SOURCE_RIDER_COST,
+    ];
+
+    /**
+     * query หนี้ที่ยังค้างซึ่งบล็อกการถอน/โอน และถูกหักจากรายได้ครั้งถัดไป (M7)
+     */
+    public static function blockingDebtQuery(int $userId)
+    {
+        return WalletDebt::forUser($userId)
+            ->active()
+            ->where('remaining_amount', '>', 0)
+            ->where(fn ($q) => $q->whereNull('source_type')->orWhereNotIn('source_type', self::SELF_COLLECTED_DEBT_SOURCES));
+    }
+
+    /**
+     * มีหนี้ค้างอยู่ไหม (M7: ระหว่างมีหนี้ห้ามถอน/โอนเงินออก)
+     */
+    public static function hasActiveDebt(int $userId): bool
+    {
+        return self::blockingDebtQuery($userId)->exists();
+    }
+
+    /**
+     * ยอดหนี้ที่บล็อกการถอน/โอน
+     */
+    public static function blockingDebtTotal(int $userId): float
+    {
+        return round((float) self::blockingDebtQuery($userId)->sum('remaining_amount'), 2);
+    }
+
+    /**
+     * ข้อความไทยเมื่อถอนไม่ได้เพราะมีหนี้ (null = ไม่มีหนี้)
+     */
+    public static function withdrawalBlockedMessage(int $userId): ?string
+    {
+        $total = self::blockingDebtTotal($userId);
+        if ($total <= 0) {
+            return null;
+        }
+
+        return 'ยังถอนหรือโอนเงินออกไม่ได้ เนื่องจากมียอดค้างชำระ '.number_format($total, 2)
+            .' บาท (เช่น หนี้จากการคืนเงิน/ดึงคืนค่าคอม) ระบบจะหักจากรายได้ครั้งถัดไปโดยอัตโนมัติ เมื่อชำระครบจึงทำรายการได้';
+    }
+
+    /**
+     * 🧾 M7: หักหนี้จากเงินที่เพิ่งเข้ากระเป๋า (รายได้ครั้งถัดไป) — เรียกใน transaction เดียวกับการจ่ายเงินเข้ากระเป๋า
+     *
+     * - หักได้ไม่เกิน min(หนี้คงค้าง, เงินที่เพิ่งเข้า × 100%, ยอดในกระเป๋า) → กระเป๋าไม่มีวันติดลบ
+     * - เงินที่หักได้เข้ากองทุนคืนเงิน (refund_pool) แบบเดียวกับ SellerPayoutService — หนี้เกิดจากเงินที่แพลตฟอร์มออกไปก่อน
+     * - หักหนี้ตาม priority (WalletDebt::deductAllDebts ล็อกแถวหนี้)
+     *
+     * @return float ยอดที่หักได้จริง
+     */
+    public function collectFromWalletIncome(int $userId, float $incomeAmount, string $referenceType, int $referenceId, string $label): float
+    {
+        $incomeAmount = round($incomeAmount, 2);
+        if ($incomeAmount <= 0 || ! self::hasActiveDebt($userId)) {
+            return 0.0;
+        }
+
+        return DB::transaction(function () use ($userId, $incomeAmount, $referenceType, $referenceId, $label) {
+            $debts = self::blockingDebtQuery($userId)->byPriority()->lockForUpdate()->get();
+            $totalDebt = round((float) $debts->sum('remaining_amount'), 2);
+
+            $wallet = \App\Models\Wallet::where('user_id', $userId)->lockForUpdate()->first();
+            if (! $wallet || $totalDebt <= 0 || ! $wallet->isActive()) {
+                return 0.0;
+            }
+
+            $take = round(min($totalDebt, $incomeAmount * self::INCOME_COLLECTION_RATE, max(0.0, (float) $wallet->balance)), 2);
+            if ($take <= 0) {
+                return 0.0;
+            }
+
+            app(WalletService::class)->deductForService(
+                $wallet,
+                $take,
+                mb_substr("หักหนี้ค้างชำระจากรายได้ ({$label})", 0, 500),
+                self::WALLET_REF_DEBT_COLLECTION,
+                (int) $debts->first()->id,
+                ['income_reference_type' => $referenceType, 'income_reference_id' => $referenceId, 'debt_ids' => $debts->pluck('id')->all()]
+            );
+
+            // หักเฉพาะหนี้ชุดเดียวกับที่ล็อกไว้ (ไม่แตะหนี้ที่ระบบต้นทางเก็บเอง)
+            $collected = 0.0;
+            $left = $take;
+            foreach ($debts as $debt) {
+                if ($left <= 0) {
+                    break;
+                }
+                $got = round((float) $debt->deduct($left), 2);
+                $collected = round($collected + $got, 2);
+                $left = round($left - $got, 2);
+            }
+
+            if ($collected > 0) {
+                $tx = \App\Models\PlatformWallet::getRefundPoolWallet()->addFunds(
+                    $collected,
+                    'debt_collected_from_income',
+                    $referenceType,
+                    $referenceId,
+                    ['user_id' => $userId, 'label' => $label]
+                );
+                $tx->update([
+                    'related_user_id' => $userId,
+                    'description' => mb_substr("หักหนี้จากรายได้ ({$label})", 0, 255),
+                ]);
+
+                Log::info('Debt collected from wallet income', [
+                    'user_id' => $userId,
+                    'income' => $incomeAmount,
+                    'collected' => $collected,
+                    'reference' => [$referenceType, $referenceId],
+                ]);
+            }
+
+            return $collected;
+        });
+    }
+
     /**
      * สร้างหนี้จาก Refund
      *
@@ -147,8 +282,8 @@ class DebtCollectionService
             ];
         }
 
-        // หักหนี้ (สูงสุด 50% ของรายได้)
-        $maxDeduction = $earningAmount * 0.5;
+        // 🧾 M7: หักหนี้จากรายได้ครั้งถัดไป 100% (เดิม 50% — หนี้ค้างนานและผู้ใช้ถอนส่วนที่เหลือออกไปได้)
+        $maxDeduction = $earningAmount * self::INCOME_COLLECTION_RATE;
         $toDeduct = min($totalDebt, $maxDeduction);
 
         $result = WalletDebt::deductAllDebts($userId, $toDeduct, $earningId);

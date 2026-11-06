@@ -134,7 +134,8 @@ class MlmUnilevelService
         $levels = MlmGlobalSetting::get('unilevel_levels', []);
         $maxDepth = MlmGlobalSetting::get('unilevel_max_depth', 10);
         $compressionEnabled = MlmGlobalSetting::get('unilevel_compression_enabled', true);
-        $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
+        // 🛡️ F6: ค่าตั้ง NULL = ไม่จำกัด (เดิม (float)null = 0 → เพดาน 0 ทุกชั้น)
+        $maxPerLevel = MlmGlobalSetting::positiveCap('unilevel_max_commission_per_level');
 
         // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
         $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
@@ -184,8 +185,7 @@ class MlmUnilevelService
                     }
                 }
 
-                // Apply max per level constraint
-                // แก้ Bug #24: ใช้ !== null เพื่อให้ค่า 0 ทำงานถูกต้อง
+                // Apply max per level constraint (null = ไม่จำกัด, ค่า > 0 = เพดาน — F6)
                 if ($maxPerLevel !== null && $commissionAmount > $maxPerLevel) {
                     $commissionAmount = $maxPerLevel;
                 }
