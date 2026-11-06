@@ -360,6 +360,12 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
             'user_name' => 'สมศรี ใจดี',
         ], $data);
 
+        // งานเสริมที่ job เรียกทุกครั้ง — ไม่ใช่สิ่งที่เทสต์นี้วัด (mock ของเทสต์ยัง override ได้)
+        if ($fb instanceof \Mockery\MockInterface) {
+            $fb->shouldReceive('rememberCommentAuthor')->byDefault();
+            $fb->shouldReceive('likeComment')->andReturn(true)->byDefault();
+        }
+
         return new class($data, $fb) extends ProcessCommentEngagement
         {
             public function __construct(array $data, private FacebookWebhookService $fakeFb)
@@ -447,7 +453,7 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
 
                 return true;
             });
-        $fb->shouldReceive('reactToComment')->andReturn(true);
+        $fb->shouldReceive('likeComment')->andReturn(true);
         $fb->shouldReceive('sendQuickReplies')->once()->andReturn(true);
         $fb->shouldNotReceive('sendPrivateReplyTemplate');
         $fb->shouldNotReceive('sendMessage');
