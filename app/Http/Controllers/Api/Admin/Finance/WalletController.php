@@ -110,7 +110,9 @@ class WalletController extends Controller
      * POST /api/admin/finance/wallets/{wallet}/adjust
      *
      * Body: { amount: number (not 0), reason: string, expected_balance?: number }
-     * Header (แนะนำ): Idempotency-Key: <uuid> — ส่งซ้ำด้วยคีย์เดิมจะไม่ปรับยอดซ้ำ
+     * Header (บังคับ): Idempotency-Key: <uuid> (1–64 ตัวอักษร) — สร้างใหม่ต่อ "การกดยืนยัน 1 ครั้ง"
+     *   แล้วใช้คีย์เดิมตอน retry · ส่งซ้ำด้วยคีย์เดิมจะไม่ปรับยอดซ้ำ (data.replayed = true)
+     *   ไม่ส่ง = 422 error_code IDEMPOTENCY_KEY_REQUIRED (2026-11-06: เดิมไม่บังคับ แอปเน็ตหลุดแล้ว retry = ปรับยอด 2 รอบ)
      */
     public function adjustBalance(Wallet $wallet, Request $request): JsonResponse
     {
@@ -119,6 +121,15 @@ class WalletController extends Controller
         // ตรวจสอบ permission
         if (! $this->canManageWallets($admin)) {
             return $this->forbidden();
+        }
+
+        $idempotencyKey = trim((string) $request->header('Idempotency-Key', ''));
+        if ($idempotencyKey === '' || mb_strlen($idempotencyKey) > 64) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ต้องส่ง Idempotency-Key (UUID ไม่เกิน 64 ตัวอักษร) ใน header ทุกครั้งที่ปรับยอด — กันกดซ้ำ/ส่งซ้ำแล้วปรับยอด 2 รอบ',
+                'error_code' => 'IDEMPOTENCY_KEY_REQUIRED',
+            ], 422);
         }
 
         $validator = Validator::make($request->all(), [
@@ -136,8 +147,6 @@ class WalletController extends Controller
         }
 
         try {
-            $idempotencyKey = mb_substr((string) $request->header('Idempotency-Key', ''), 0, 64) ?: null;
-
             $transaction = $this->walletService->adjustBalance(
                 wallet: $wallet,
                 amount: (float) $request->amount,

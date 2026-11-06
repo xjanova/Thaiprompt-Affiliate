@@ -709,11 +709,31 @@ class WalletService
     |  2. idempotency_key ต่อกระเป๋า — ส่งซ้ำได้ผลเดิม ไม่แตะเงินซ้ำ (เช็คหลัง lock + unique index สำรอง)
     |  3. expected_balance — ยอดที่แอดมินเห็นตอนกดยืนยัน ถ้ายอดจริงเปลี่ยนไปแล้วให้ยืนยันใหม่
     |  4. ทุกรายการลง wallet_admin_adjustments (ใคร/เมื่อไร/ยอดก่อน-หลัง/เหตุผล/IP)
-    |  5. แอดมินทั่วไปแตะกระเป๋าตัวเองไม่ได้ (super admin เท่านั้น)
+    |  5. แอดมินแตะกระเป๋าตัวเองไม่ได้ — รวม super admin ด้วย (2026-11-06 รีวิว PR 2662)
+    |  6. ย้อนรายการได้เฉพาะรายการที่แอดมินสร้างเอง (ADMIN_ROLLBACKABLE_REFERENCES) และไม่ใช่การคืนเงิน
+    |     รายการของระบบอื่น (ถอนเงิน/ชำระออเดอร์/คอมมิชชั่น/จ่ายผู้ขาย) มีขั้นตอนกลับรายการของตัวเอง
+    |     ถ้าย้อนจากตรงนี้ ระบบนั้นยังคิดว่ารายการยังอยู่ → จ่ายซ้ำ (เช่น ย้อนรายการถอนที่รออนุมัติ แล้วปฏิเสธ = ได้เงินคืน 2 รอบ)
+    |  7. คืนเงินต้องอ้างรายการหักเงินจริงของกระเป๋าใบเดียวกัน คืนรวมไม่เกินยอดที่หักไป (ตรวจหลัง lock)
+    |     และบันทึก reference_type = admin_refund เสมอ (ไม่รับค่าจากฟอร์ม)
     */
 
     /** ยอดสูงสุดต่อการทำรายการหนึ่งครั้งโดยแอดมิน (กันพิมพ์เลขศูนย์เกิน) */
     public const ADMIN_MAX_AMOUNT = 1000000;
+
+    /**
+     * reference_type ของรายการที่ "แอดมินสร้างเอง" — ย้อนรายการได้เฉพาะกลุ่มนี้
+     * (admin_deposit = ฟอร์มฝากเงินแบบเก่าก่อน 2026-11-04)
+     */
+    public const ADMIN_ROLLBACKABLE_REFERENCES = ['admin_adjustment', 'admin_deposit'];
+
+    /**
+     * ประเภทรายการหักเงินที่แอดมินคืนเงินอ้างอิงได้
+     *
+     * ไม่รวม withdrawal (ถอนเข้าบัญชีธนาคาร / ชำระออเดอร์ด้วยกระเป๋า / แลกคริปโต / NFC) — ทุกเส้นทางนั้น
+     * มีขั้นตอนคืนเงินของตัวเอง (ปฏิเสธคำขอถอน / คืนเงินออเดอร์) คืนจากตรงนี้ซ้ำอีกรอบ = จ่ายซ้ำ
+     * และไม่รวม transfer_out (อีกฝั่งยังถือเงินอยู่ — คืนฝั่งเดียว = เสกเงิน)
+     */
+    public const ADMIN_REFUNDABLE_DEBIT_TYPES = ['fee'];
 
     /**
      * แอดมินเติมเงิน (credit) หรือหักเงิน (debit) กระเป๋าผู้ใช้
@@ -793,24 +813,31 @@ class WalletService
     }
 
     /**
-     * แอดมินคืนเงินเข้ากระเป๋า (บันทึกเป็นประเภท refund)
+     * แอดมินคืนเงินเข้ากระเป๋า (บันทึกเป็นประเภท refund) — ต้องอ้างรายการหักเงินของกระเป๋าใบเดียวกัน
+     *
+     * - คืนได้เฉพาะรายการหักประเภท ADMIN_REFUNDABLE_DEBIT_TYPES ที่สำเร็จแล้ว และไม่ใช่รายการย้อน
+     * - คืนรวมทุกครั้งไม่เกินยอดที่หักไป (คำนวณหลัง lock กระเป๋า — กดพร้อมกัน 2 คนก็ไม่เกิน)
+     * - reference_type = admin_refund · reference_id = รายการหักที่อ้าง (ค่าคงที่ ไม่รับจากฟอร์ม
+     *   — เดิมรับจากฟอร์ม แอดมินส่ง reference_type=rollback แล้วทำให้รายการอื่น "ย้อนไม่ได้" ได้)
+     * - รายการคืนเงินย้อนไม่ได้ (rollbackTransaction ปฏิเสธ)
+     *
+     * @param  int  $originalTransactionId  รายการหักเงินที่คืนให้
      *
      * @throws WalletAdminException
      */
     public function refund(
         Wallet $wallet,
+        int $originalTransactionId,
         float $amount,
         string $reason,
         User $admin,
-        ?string $referenceType = null,
-        ?int $referenceId = null,
         ?string $idempotencyKey = null,
         ?float $expectedBalance = null
     ): WalletTransaction {
         $amount = $this->normalizeAdminAmount($amount);
         $reason = $this->normalizeAdminReason($reason);
 
-        return $this->runAdminChange($idempotencyKey, function () use ($wallet, $amount, $reason, $admin, $referenceType, $referenceId, $idempotencyKey, $expectedBalance) {
+        return $this->runAdminChange($idempotencyKey, function () use ($wallet, $originalTransactionId, $amount, $reason, $admin, $idempotencyKey, $expectedBalance) {
             $locked = $this->lockWalletForAdmin($wallet->id);
 
             if ($replay = $this->findAdminReplay($locked->id, $idempotencyKey)) {
@@ -820,26 +847,167 @@ class WalletService
             $this->assertAdminMayTouch($locked, $admin);
             $this->assertExpectedBalance($locked, $expectedBalance);
 
+            $original = WalletTransaction::whereKey($originalTransactionId)
+                ->where('wallet_id', $locked->id)
+                ->first();
+            if (! $original) {
+                throw new WalletAdminException('ไม่พบรายการหักเงินที่อ้างอิงในกระเป๋าใบนี้');
+            }
+
+            if ($block = $this->refundBlockReason($original)) {
+                throw new WalletAdminException($block);
+            }
+
+            $remaining = $this->adminRefundableRemaining($original);
+            if ($remaining < 0.005) {
+                throw new WalletAdminException('รายการนี้คืนเงินครบแล้ว (หรือถูกย้อนไปแล้ว) — คืนเพิ่มไม่ได้');
+            }
+            if ($amount - $remaining >= 0.005) {
+                throw new WalletAdminException(
+                    'คืนเงินได้สูงสุด ฿'.number_format($remaining, 2).' (หักไป ฿'.number_format((float) $original->amount, 2)
+                    .' คืนไปแล้ว ฿'.number_format(round((float) $original->amount - $remaining, 2), 2).')'
+                );
+            }
+
             return $this->writeAdminEntry($locked, $admin, [
                 'action' => 'refund',
                 'tx_type' => 'refund',
                 'amount' => $amount,
                 'reason' => $reason,
-                'description' => "คืนเงิน: {$reason}",
-                'reference_type' => $referenceType ?: 'admin_refund',
-                'reference_id' => $referenceId,
+                'description' => "คืนเงิน: {$reason} (รายการที่หัก: {$original->transaction_id})",
+                'reference_type' => 'admin_refund',
+                'reference_id' => $original->id,
+                'original_transaction_id' => $original->id,
                 'idempotency_key' => $idempotencyKey,
-                'metadata' => ['refunded_by' => $admin->id],
+                'metadata' => ['refunded_by' => $admin->id, 'original_transaction_id' => $original->id, 'original_type' => $original->type],
             ]);
         });
     }
 
     /**
+     * รายการนี้เป็นรายการที่แอดมินสร้างเองและย้อนได้หรือไม่ (ตรวจจากตัวรายการเท่านั้น ไม่ดูว่าย้อน/คืนไปแล้วหรือยัง)
+     * ใช้ทั้งใน service (บังคับฝั่งเซิร์ฟเวอร์) และหน้าจอ (ซ่อนปุ่ม "ย้อน")
+     */
+    public function isAdminRollbackable(WalletTransaction $transaction): bool
+    {
+        return $this->rollbackBlockReason($transaction) === null;
+    }
+
+    /**
+     * เหตุผลที่ย้อนรายการนี้ไม่ได้ (null = ย้อนได้ ในแง่ประเภทรายการ)
+     */
+    public function rollbackBlockReason(WalletTransaction $transaction): ?string
+    {
+        if ($transaction->status !== 'completed') {
+            return 'ย้อนได้เฉพาะรายการที่สำเร็จแล้วเท่านั้น';
+        }
+
+        if ($transaction->type === 'refund' || $transaction->reference_type === 'admin_refund') {
+            return 'รายการคืนเงินย้อนไม่ได้';
+        }
+
+        if (in_array($transaction->type, ['transfer_in', 'transfer_out'], true)) {
+            return 'รายการโอนย้อนฝั่งเดียวไม่ได้ (เงินจะเกิด/หายฝั่งเดียว) — ใช้ "โอนเงินโดยแอดมิน" โอนกลับแทน';
+        }
+
+        if ($transaction->reference_type === 'rollback') {
+            return 'รายการนี้เป็นการย้อนรายการอยู่แล้ว ย้อนซ้ำไม่ได้';
+        }
+
+        if (! in_array($transaction->reference_type, self::ADMIN_ROLLBACKABLE_REFERENCES, true)) {
+            return 'ย้อนได้เฉพาะรายการที่แอดมินเติม/หักเอง — รายการนี้เป็นของระบบอื่น (เช่น ถอนเงิน ชำระออเดอร์ คอมมิชชั่น)'
+                .' ต้องกลับรายการผ่านขั้นตอนของระบบนั้น ไม่งั้นจะจ่ายเงินซ้ำ';
+        }
+
+        if (! in_array($transaction->type, array_merge(self::CREDIT_TYPES, self::DEBIT_TYPES), true)) {
+            return 'ประเภทรายการนี้ย้อนไม่ได้';
+        }
+
+        return null;
+    }
+
+    /**
+     * เหตุผลที่แอดมินคืนเงินอ้างรายการนี้ไม่ได้ (null = อ้างได้ ในแง่ประเภทรายการ)
+     */
+    public function refundBlockReason(WalletTransaction $transaction): ?string
+    {
+        if ($transaction->status !== 'completed') {
+            return 'คืนเงินได้เฉพาะรายการหักเงินที่สำเร็จแล้ว';
+        }
+
+        if ($transaction->reference_type === 'rollback') {
+            return 'รายการนี้เป็นการย้อนรายการ คืนเงินอ้างรายการนี้ไม่ได้';
+        }
+
+        if (! in_array($transaction->type, self::ADMIN_REFUNDABLE_DEBIT_TYPES, true)) {
+            return 'คืนเงินได้เฉพาะรายการหักค่าบริการ/หักโดยแอดมิน — รายการถอนเงิน ชำระออเดอร์ หรือโอน'
+                .' มีขั้นตอนคืนเงินของตัวเอง (คืนจากตรงนี้จะจ่ายซ้ำ)';
+        }
+
+        return null;
+    }
+
+    /**
+     * ยอดที่แอดมินยังคืนได้สำหรับรายการหักนี้ = ยอดที่หัก − ที่แอดมินคืนไปแล้ว − ที่ระบบเจ้าของรายการคืนไปแล้ว
+     * (ถูกย้อนไปแล้ว = 0) — เรียกหลัง lock กระเป๋าเมื่อใช้ตัดสินจริง
+     */
+    public function adminRefundableRemaining(WalletTransaction $transaction): float
+    {
+        if ($this->refundBlockReason($transaction) !== null) {
+            return 0.0;
+        }
+
+        $rolledBack = WalletTransaction::where('wallet_id', $transaction->wallet_id)
+            ->where('reference_type', 'rollback')
+            ->where('reference_id', $transaction->id)
+            ->exists();
+        if ($rolledBack) {
+            return 0.0;
+        }
+
+        $refunded = (float) WalletAdminAdjustment::where('action', 'refund')
+            ->where('original_transaction_id', $transaction->id)
+            ->sum('amount');
+
+        // ระบบเจ้าของรายการ (เช่น บริการที่ยกเลิก) คืนเงินอ้างสิ่งเดียวกันไปแล้ว → นับด้วย
+        if ($transaction->reference_type && $transaction->reference_id
+            && ! str_starts_with((string) $transaction->reference_type, 'admin_')) {
+            $refunded += (float) WalletTransaction::where('wallet_id', $transaction->wallet_id)
+                ->where('type', 'refund')
+                ->where('status', 'completed')
+                ->where('reference_type', $transaction->reference_type)
+                ->where('reference_id', $transaction->reference_id)
+                ->sum('amount');
+        }
+
+        return max(0.0, round((float) $transaction->amount - $refunded, 2));
+    }
+
+    /**
+     * รายการหักเงินล่าสุดของกระเป๋าที่แอดมินคืนเงินอ้างอิงได้ (ยอดคงเหลือที่คืนได้ใน refundable_remaining)
+     *
+     * @return \Illuminate\Support\Collection<int, WalletTransaction>
+     */
+    public function adminRefundableDebits(Wallet $wallet, int $limit = 30)
+    {
+        return WalletTransaction::where('wallet_id', $wallet->id)
+            ->where('status', 'completed')
+            ->whereIn('type', self::ADMIN_REFUNDABLE_DEBIT_TYPES)
+            ->where(fn ($q) => $q->whereNull('reference_type')->orWhere('reference_type', '!=', 'rollback'))
+            ->latest('id')
+            ->take($limit)
+            ->get()
+            ->each(fn (WalletTransaction $tx) => $tx->setAttribute('refundable_remaining', $this->adminRefundableRemaining($tx)))
+            ->filter(fn (WalletTransaction $tx) => $tx->refundable_remaining >= 0.01)
+            ->values();
+    }
+
+    /**
      * แอดมินย้อนรายการ (สร้างรายการกลับทิศ ไม่ลบรายการเดิม)
      *
-     * - ย้อนได้ครั้งเดียวต่อรายการ
-     * - ไม่ย้อนรายการโอน (จะเกิดเงินฝั่งเดียว) → ให้ใช้ "โอนเงินโดยแอดมิน" กลับแทน
-     * - ไม่ย้อนรายการที่เป็นการย้อนอยู่แล้ว
+     * - ย้อนได้เฉพาะรายการที่แอดมินเติม/หักเอง (ADMIN_ROLLBACKABLE_REFERENCES) — ดู rollbackBlockReason()
+     * - ย้อนได้ครั้งเดียวต่อรายการ · รายการคืนเงิน/รายการย้อน/รายการโอน ย้อนไม่ได้
+     * - รายการหักที่มีการคืนเงินอ้างอยู่แล้ว ย้อนไม่ได้ (จะได้เงินคืน 2 ทาง)
      *
      * @throws WalletAdminException
      */
@@ -847,11 +1015,12 @@ class WalletService
         WalletTransaction $transaction,
         string $reason,
         User $admin,
-        ?string $idempotencyKey = null
+        ?string $idempotencyKey = null,
+        ?float $expectedBalance = null
     ): WalletTransaction {
         $reason = $this->normalizeAdminReason($reason);
 
-        return $this->runAdminChange($idempotencyKey, function () use ($transaction, $reason, $admin, $idempotencyKey) {
+        return $this->runAdminChange($idempotencyKey, function () use ($transaction, $reason, $admin, $idempotencyKey, $expectedBalance) {
             $locked = $this->lockWalletForAdmin($transaction->wallet_id);
 
             if ($replay = $this->findAdminReplay($locked->id, $idempotencyKey)) {
@@ -859,19 +1028,16 @@ class WalletService
             }
 
             $this->assertAdminMayTouch($locked, $admin);
+            $this->assertExpectedBalance($locked, $expectedBalance);
 
             // อ่านรายการเดิมใหม่หลัง lock (สถานะอาจเปลี่ยนระหว่างรอ)
-            $original = WalletTransaction::whereKey($transaction->id)->first();
-            if (! $original || $original->status !== 'completed') {
+            $original = WalletTransaction::whereKey($transaction->id)->where('wallet_id', $locked->id)->first();
+            if (! $original) {
                 throw new WalletAdminException('ย้อนได้เฉพาะรายการที่สำเร็จแล้วเท่านั้น');
             }
 
-            if (in_array($original->type, ['transfer_in', 'transfer_out'], true)) {
-                throw new WalletAdminException('รายการโอนย้อนฝั่งเดียวไม่ได้ (เงินจะเกิด/หายฝั่งเดียว) — ใช้ "โอนเงินโดยแอดมิน" โอนกลับแทน');
-            }
-
-            if ($original->reference_type === 'rollback') {
-                throw new WalletAdminException('รายการนี้เป็นการย้อนรายการอยู่แล้ว ย้อนซ้ำไม่ได้');
+            if ($block = $this->rollbackBlockReason($original)) {
+                throw new WalletAdminException($block);
             }
 
             $alreadyRolledBack = WalletAdminAdjustment::where('action', 'rollback')
@@ -884,8 +1050,15 @@ class WalletService
                 throw new WalletAdminException('รายการนี้ถูกย้อนไปแล้ว');
             }
 
+            $alreadyRefunded = WalletAdminAdjustment::where('action', 'refund')
+                ->where('original_transaction_id', $original->id)
+                ->exists();
+            if ($alreadyRefunded) {
+                throw new WalletAdminException('รายการนี้มีการคืนเงินอ้างอิงไปแล้ว — ย้อนไม่ได้ (เจ้าของกระเป๋าจะได้เงินคืน 2 ทาง)');
+            }
+
             // รายการเงินเข้า → ย้อนด้วยการหัก · รายการเงินออก → ย้อนด้วยการคืน
-            $wasCredit = in_array($original->type, ['deposit', 'commission', 'refund', 'bonus', 'cashback'], true);
+            $wasCredit = in_array($original->type, self::CREDIT_TYPES, true);
 
             return $this->writeAdminEntry($locked, $admin, [
                 'action' => 'rollback',
@@ -1020,12 +1193,13 @@ class WalletService
     }
 
     /**
-     * แอดมินทั่วไปห้ามแตะกระเป๋าตัวเอง (กันเติมเงินให้ตัวเอง) — super admin ทำได้และถูกบันทึกไว้
+     * แอดมินห้ามแตะกระเป๋าตัวเอง (กันเติมเงินให้ตัวเอง) — ใช้กับ super admin ด้วย (2026-11-06)
+     * ต้องให้แอดมินอีกคนทำ จะได้มีคนที่สองเห็นรายการเสมอ
      */
     private function assertAdminMayTouch(Wallet $wallet, User $admin): void
     {
-        if ((int) $wallet->user_id === (int) $admin->id && ! $admin->isSuperAdmin()) {
-            throw new WalletAdminException('แอดมินจัดการยอดเงินในกระเป๋าของตัวเองไม่ได้ — ให้ Super Admin ทำแทน');
+        if ((int) $wallet->user_id === (int) $admin->id) {
+            throw new WalletAdminException('แอดมินจัดการยอดเงินในกระเป๋าของตัวเองไม่ได้ (รวมถึง Super Admin) — ให้แอดมินคนอื่นทำแทน');
         }
     }
 

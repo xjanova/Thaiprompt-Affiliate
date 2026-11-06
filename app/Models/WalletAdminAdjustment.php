@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * ⚠️ ห้ามแก้/ลบแถวในตารางนี้จากหน้าจอใด ๆ — เป็นหลักฐานทางบัญชี (append-only)
  *
  * @property int $id
- * @property int $wallet_id
+ * @property int|null $wallet_id null = กระเป๋าถูกลบไปแล้ว (แถวตรวจสอบยังอยู่)
  * @property int $user_id เจ้าของกระเป๋า
  * @property int|null $admin_id แอดมินที่ทำรายการ
  * @property string|null $admin_name ชื่อแอดมิน ณ ตอนทำรายการ
@@ -94,9 +94,16 @@ class WalletAdminAdjustment extends Model
 
     /**
      * รายการนี้ทำให้ยอดเพิ่มหรือไม่
+     *
+     * ดูจากยอดก่อน/หลังที่บันทึกไว้ — ใช้ได้กับทุก action รวม rollback ซึ่งทิศทางขึ้นกับรายการเดิม
+     * (ย้อนรายการเติม = หัก · ย้อนรายการหัก = คืน)
      */
     public function getIsCreditAttribute(): bool
     {
+        if ($this->balance_before !== null && $this->balance_after !== null) {
+            return (float) $this->balance_after > (float) $this->balance_before;
+        }
+
         return in_array($this->action, self::CREDIT_ACTIONS, true);
     }
 }

@@ -137,19 +137,14 @@
                                     {{ $transaction->created_at->format('d/m/Y H:i') }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
-                                    @php
-                                        $canRollback = $transaction->status === 'completed'
-                                            && ! in_array($transaction->type, ['transfer_in', 'transfer_out'], true)
-                                            && $transaction->reference_type !== 'rollback'
-                                            && ! in_array($transaction->id, $rolledBackIds ?? [], true);
-                                    @endphp
-                                    @if($canRollback)
+                                    {{-- ย้อนได้เฉพาะรายการที่แอดมินเติม/หักเอง (คำนวณใน controller ด้วยกติกาเดียวกับ service) --}}
+                                    @if(in_array((int) $transaction->id, $rollbackableIds ?? [], true))
                                         <button type="button"
-                                            @click="$dispatch('wallet-rollback', { id: {{ (int) $transaction->id }}, txid: @js($transaction->transaction_id), amount: {{ json_encode(round((float) $transaction->amount, 2)) }}, isCredit: {{ in_array($transaction->type, ['deposit', 'commission', 'refund', 'bonus', 'cashback'], true) ? 'true' : 'false' }} })"
+                                            @click="$dispatch('wallet-rollback', { id: {{ (int) $transaction->id }}, txid: @js($transaction->transaction_id), amount: {{ json_encode(round((float) $transaction->amount, 2)) }}, isCredit: {{ in_array($transaction->type, \App\Services\WalletService::CREDIT_TYPES, true) ? 'true' : 'false' }} })"
                                             class="text-xs px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition">
                                             ↩ ย้อน
                                         </button>
-                                    @elseif(in_array($transaction->id, $rolledBackIds ?? [], true))
+                                    @elseif(in_array((int) $transaction->id, $rolledBackIds ?? [], true))
                                         <span class="text-xs text-gray-400 dark:text-gray-500">ย้อนแล้ว</span>
                                     @endif
                                 </td>
@@ -269,7 +264,8 @@
                         submitting: false,
                         errors: { adjust: '', refund: '', transfer: '', confirm: '' },
                         adjust: { direction: 'credit', amount: '', reason: '' },
-                        refund: { amount: '', reason: '' },
+                        refund: { txId: '', amount: '', reason: '' },
+                        refundables: Array.isArray(opts.refundables) ? opts.refundables : [],
                         transfer: { q: '', results: [], to: null, loading: false, searched: false, amount: '', reason: '', seq: 0 },
                         rollback: { tx: null, reason: '' },
                         confirm: { open: false, form: null, title: '', amount: 0, after: 0, isCredit: true, reason: '', target: '', checked: false },
@@ -280,6 +276,7 @@
                                 this[this.panel].amount = opts.old.amount || '';
                                 this[this.panel].reason = opts.old.reason || '';
                                 if (this.panel === 'adjust' && ['credit', 'debit'].includes(opts.old.direction)) this.adjust.direction = opts.old.direction;
+                                if (this.panel === 'refund') this.refund.txId = String(opts.old.transaction_id || '');
                             }
                             // กลับมาจากหน้าเดิม (bfcache) → ปลดล็อกปุ่ม ไม่งั้นค้าง "กำลังบันทึก..."
                             window.addEventListener('pageshow', () => { this.submitting = false; this.confirm.open = false; });
@@ -311,7 +308,11 @@
                                 isCredit = data.direction === 'credit';
                                 title = isCredit ? 'ยืนยันเติมเงิน' : 'ยืนยันหักเงิน';
                             } else if (form === 'refund') {
+                                const src = this.refundSource();
+                                if (!src) { this.errors.refund = 'กรุณาเลือกรายการหักเงินที่ต้องการคืน'; return; }
+                                if (a.v - src.remaining >= 0.005) { this.errors.refund = 'คืนเงินได้สูงสุด ฿' + this.fmt(src.remaining) + ' สำหรับรายการนี้'; return; }
                                 title = 'ยืนยันคืนเงิน';
+                                target = 'คืนให้รายการ ' + src.txid;
                             } else if (form === 'transfer') {
                                 if (!data.to) { this.errors.transfer = 'กรุณาเลือกกระเป๋าปลายทาง'; return; }
                                 isCredit = false;
@@ -324,6 +325,8 @@
                             this.confirm = { open: true, form, title, amount: a.v, after, isCredit, reason: data.reason.trim(), target, checked: false };
                             this.errors.confirm = '';
                         },
+
+                        refundSource() { return this.refundables.find(r => String(r.id) === String(this.refund.txId)) || null; },
 
                         openRollback(tx) {
                             this.rollback = { tx, reason: '' };
@@ -380,7 +383,8 @@
                     walletId: {{ (int) $wallet->id }},
                     searchUrl: @js(route('admin.wallet.wallets-dropdown')),
                     oldPanel: @js(old('_panel')),
-                    old: { direction: @js(old('direction', 'credit')), amount: @js((string) old('amount', '')), reason: @js((string) old('reason', '')) },
+                    old: { direction: @js(old('direction', 'credit')), amount: @js((string) old('amount', '')), reason: @js((string) old('reason', '')), transaction_id: @js((string) old('transaction_id', '')) },
+                    refundables: @js($refundableDebits->map(fn ($d) => ['id' => (int) $d->id, 'txid' => $d->transaction_id, 'remaining' => round((float) $d->refundable_remaining, 2)])->values()),
                 })"
                 @wallet-rollback.window="openRollback($event.detail)"
                 class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10">
@@ -450,6 +454,21 @@
                             <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
                             <input type="hidden" name="expected_balance" :value="balance.toFixed(2)">
                             <input type="hidden" name="confirmed" value="1">
+                            {{-- คืนเงินต้องอ้างรายการหักของกระเป๋านี้ คืนรวมไม่เกินยอดที่หัก (เซิร์ฟเวอร์ตรวจซ้ำหลัง lock) --}}
+                            <div>
+                                <label for="refund_tx" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">คืนเงินให้รายการหักเงิน <span class="text-red-500">*</span></label>
+                                @if($refundableDebits->isEmpty())
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">ไม่มีรายการหักค่าบริการ/หักโดยแอดมินที่ยังคืนได้ — รายการถอนเงิน ชำระออเดอร์ และโอน มีขั้นตอนคืนเงินของตัวเอง</p>
+                                @else
+                                    <select id="refund_tx" name="transaction_id" x-model="refund.txId"
+                                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <option value="">— เลือกรายการ —</option>
+                                        @foreach($refundableDebits as $debit)
+                                            <option value="{{ $debit->id }}">{{ $debit->created_at->format('d/m/Y H:i') }} · {{ Str::limit($debit->description, 40) }} · คืนได้ ฿{{ number_format((float) $debit->refundable_remaining, 2) }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            </div>
                             <div>
                                 <label for="refund_amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงินคืน (บาท)</label>
                                 <input id="refund_amount" type="text" inputmode="decimal" name="amount" x-model.trim="refund.amount" autocomplete="off"
@@ -533,6 +552,7 @@
                         @csrf
                         <input type="hidden" name="_panel" value="rollback">
                         <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                        <input type="hidden" name="expected_balance" :value="balance.toFixed(2)">
                         <input type="hidden" name="confirmed" value="1">
                         <input type="hidden" name="transaction_id" :value="rollback.tx ? rollback.tx.id : ''">
                         <input type="hidden" name="reason" :value="rollback.reason">

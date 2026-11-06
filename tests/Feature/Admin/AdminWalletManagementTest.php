@@ -22,7 +22,7 @@ use Tests\TestCase;
  * - โทเคนฟอร์มเดิมส่งซ้ำ = ไม่แตะเงินซ้ำ
  * - ยอดเปลี่ยนระหว่างยืนยัน (expected_balance ไม่ตรง) = ปฏิเสธ
  * - หักเกินยอด / ย้อนซ้ำ / ย้อนรายการโอนฝั่งเดียว = ปฏิเสธ
- * - แอดมินทั่วไปแตะกระเป๋าตัวเองไม่ได้
+ * - แอดมินแตะกระเป๋าตัวเองไม่ได้ (รวม super admin — 2026-11-06)
  * - service อ่านยอดจาก DB หลัง lock เสมอ (model เก่าในมือไม่ทำให้ยอดเพี้ยน)
  *
  * @group wallet
@@ -177,7 +177,7 @@ class AdminWalletManagementTest extends TestCase
         $this->assertSame(0, WalletAdminAdjustment::count());
     }
 
-    public function test_regular_admin_cannot_top_up_their_own_wallet_but_super_admin_can(): void
+    public function test_no_admin_can_top_up_their_own_wallet_not_even_a_super_admin(): void
     {
         $admin = $this->admin();
         $own = $this->walletFor($admin, 0);
@@ -187,12 +187,14 @@ class AdminWalletManagementTest extends TestCase
             ->assertSessionHas('error', fn ($msg) => str_contains($msg, 'ตัวเอง'));
         $this->assertEquals(0.0, (float) $own->fresh()->balance);
 
+        // (2026-11-06 รีวิว PR 2662) super admin ก็ต้องให้แอดมินคนอื่นทำ
         $super = $this->admin(super: true);
         $superWallet = $this->walletFor($super, 0);
         $this->actingAs($super)
             ->post(route('admin.wallet.adjust-balance', $superWallet->id), $this->form($superWallet))
-            ->assertSessionHas('success');
-        $this->assertEquals(150.50, (float) $superWallet->fresh()->balance);
+            ->assertSessionHas('error', fn ($msg) => str_contains($msg, 'ตัวเอง'));
+        $this->assertEquals(0.0, (float) $superWallet->fresh()->balance);
+        $this->assertSame(0, WalletAdminAdjustment::count());
     }
 
     public function test_service_reads_the_locked_row_not_the_stale_model(): void
@@ -217,16 +219,20 @@ class AdminWalletManagementTest extends TestCase
     public function test_refund_is_recorded_as_refund_and_audited(): void
     {
         $admin = $this->admin();
-        $wallet = $this->walletFor(balance: 10);
+        $wallet = $this->walletFor(balance: 60);
+        // คืนเงินต้องอ้างรายการหักของกระเป๋านี้ (ค่าบริการ 50 → เหลือ 10)
+        $fee = app(WalletService::class)->deductForService($wallet, 50, 'ค่าบริการ', 'service_booking', 1);
+        $wallet->refresh();
 
         $this->actingAs($admin)
-            ->post(route('admin.wallet.refund', $wallet->id), array_diff_key($this->form($wallet, ['amount' => '40']), ['direction' => 1]))
+            ->post(route('admin.wallet.refund', $wallet->id), array_diff_key($this->form($wallet, ['amount' => '40', 'transaction_id' => $fee->id]), ['direction' => 1]))
             ->assertSessionHas('success');
 
         $this->assertEquals(50.0, (float) $wallet->fresh()->balance);
         $audit = WalletAdminAdjustment::sole();
         $this->assertSame('refund', $audit->action);
         $this->assertSame('refund', $audit->walletTransaction->type);
+        $this->assertSame($fee->id, (int) $audit->original_transaction_id);
     }
 
     // ───────────────────────── ย้อนรายการ ─────────────────────────
@@ -237,6 +243,7 @@ class AdminWalletManagementTest extends TestCase
             'transaction_id' => $tx->id,
             'reason' => 'เติมผิดออเดอร์',
             'idempotency_key' => (string) Str::uuid(),
+            'expected_balance' => (string) Wallet::whereKey($tx->wallet_id)->value('balance'),
             'confirmed' => '1',
         ], $overrides);
     }
@@ -374,8 +381,9 @@ class AdminWalletManagementTest extends TestCase
         $this->assertEquals(60.0, (float) $wallet->fresh()->balance);
 
         // หักเกินยอด → 422 พร้อมข้อความไทย ไม่ใช่ 500 ข้อความดิบ
-        $this->postJson(route('api.admin.finance.wallets.adjust', $wallet->id), ['amount' => -500, 'reason' => 'เกินยอด'])
-            ->assertStatus(422)->assertJsonPath('success', false);
+        $this->postJson(route('api.admin.finance.wallets.adjust', $wallet->id), ['amount' => -500, 'reason' => 'เกินยอด'], ['Idempotency-Key' => (string) Str::uuid()])
+            ->assertStatus(422)->assertJsonPath('success', false)
+            ->assertJsonPath('message', fn ($msg) => str_contains($msg, 'ยอดเงินไม่พอ'));
     }
 
     public function test_admin_app_lock_and_unlock_no_longer_crash(): void
