@@ -96,6 +96,25 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     protected const MANAGE_COMMENT_BREAKER_KEY = 'fb_manage_comment_breaker';
 
     /**
+     * 🚦 กุญแจ breaker ของการกดไลค์คอมเมนต์ (แยกตามสาขา)
+     *
+     * ชื่อเดิมจาก FacebookWebhookController — ย้ายมาไว้ที่ service เพื่อให้ทุกจุดที่กดไลค์
+     * (webhook + ProcessCommentEngagement + flow template) ใช้ breaker ตัวเดียวกัน
+     */
+    protected const LIKE_COMMENT_BREAKER_KEY = 'fb_react_comment_breaker';
+
+    /** พักกดไลค์นานเท่าไรเมื่อ Graph ปฏิเสธเรื่องสิทธิ์ (ชั่วโมง) */
+    protected const LIKE_COMMENT_BREAKER_HOURS = 6;
+
+    /**
+     * 🚦 error code ที่แปลว่า "ยิงซ้ำก็ล้มแน่นอน" → ตัดวงจร
+     *
+     * 3 = app ไม่มีความสามารถเรียก endpoint นี้ · 10/200 = สิทธิ์ไม่พอ · 190 = token เสีย
+     * ⚠️ ไม่รวม 100 (คอมเมนต์ถูกลบ/หาไม่เจอ) — เป็นเรื่องของคอมเมนต์ตัวเดียว ไม่ใช่ทั้งเพจ
+     */
+    protected const LIKE_COMMENT_BREAKER_CODES = [3, 10, 190, 200];
+
+    /**
      * 🪦 comment_id ที่ "ตายแล้ว" — ยิง Private Reply ซ้ำไปก็ล้มแน่นอน
      *
      * หลักฐาน prod 2026-08-13 21:13-21:14: comment เดียวโดนยิง 6 call ใน 35 วินาที
@@ -2351,42 +2370,125 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     }
 
     /**
-     * 💗 ส่ง reaction (LIKE/LOVE/HAHA/WOW/SAD/ANGRY) ให้ comment
+     * 👍 เพจกด "ถูกใจ" คอมเมนต์ของลูกค้า
      *
-     * ใช้ Graph API: POST /{comment-id}/reactions?type=LOVE
+     * ใช้ Graph API: POST /{comment-id}/likes (ต้องการ scope pages_manage_engagement)
      *
-     * ผลพลอยได้:
-     * - FB algorithm เห็นว่า Page engage กับ comment → boost reach
-     * - User รู้สึกว่าเพจ active + ใส่ใจ
-     * - ลูกค้าจะ react กลับมาเยอะขึ้น (ส่งสัญญาณดีให้ FB)
+     * 🐛 (2026-11-06) ของเดิมยิง POST /{comment-id}/reactions?type=LIKE
+     *    Graph API **ไม่เปิดให้สร้าง reaction ผ่าน endpoint นั้น** → ตอบ
+     *    "(#3) Application does not have the capability to make this API call" ทุกครั้ง
+     *    วัดจาก prod: ล้ม 454/454 ครั้งใน 1 วัน ทั้งที่ replyToComment (scope เดียวกัน) สำเร็จ 442 ครั้ง
+     *    → ปัญหาไม่ใช่สิทธิ์ แต่เป็น endpoint ผิด ยืนยันแล้วว่า /likes ตอบ {"success":true}
      *
-     * @param  string  $type  LIKE | LOVE | HAHA | WOW | SAD | ANGRY (default: LOVE ❤️)
+     * ทุกจุดที่กดไลค์ต้องเรียกเมธอดนี้ — มันจัดการให้ครบ:
+     * - กดครั้งเดียวต่อคอมเมนต์ (cache 24 ชม.) — webhook กับ job เรียกซ้ำได้ ไม่ยิงซ้ำ
+     * - circuit breaker แยกตามสาขา เมื่อ Graph ปฏิเสธเรื่องสิทธิ์/ความสามารถของ app
+     *   (call ที่ล้มซ้ำ ๆ ทุกวัน = สัญญาณสแปมสะสม เคยทำให้เพจโดน #2022 เมื่อ 2026-08-09)
+     *
+     * @return bool true = เพจถูกใจคอมเมนต์นี้แล้ว (รวมกรณีเคยกดไปก่อนหน้า)
      */
-    public function reactToComment(string $commentId, string $type = 'LOVE'): bool
+    public function likeComment(string $commentId): bool
     {
-        try {
-            Http::timeout(15)
-                ->post($this->graphUrl("/{$commentId}/reactions"), [
-                    'type' => $type,
-                    'access_token' => $this->pageAccessToken,
-                ])->throw();
+        if ($commentId === '') {
+            return false;
+        }
 
-            Log::info('💗 React comment สำเร็จ', [
+        $likedKey = "fb_liked_comment_{$commentId}";
+        if (Cache::has($likedKey)) {
+            return true;
+        }
+
+        if (Cache::has($this->likeCommentBreakerKey())) {
+            return false;
+        }
+
+        try {
+            // timeout สั้น — processComment เรียกเมธอดนี้ตรง ๆ ในคำขอ webhook (sync)
+            //   Graph ตอบปกติ < 1 วิ ; ถ้าหน่วงก็ยอมข้ามไลค์ ดีกว่าให้ webhook ทั้งก้อนช้าตาม
+            $response = Http::timeout(5)
+                ->post($this->graphUrl("/{$commentId}/likes"), [
+                    'access_token' => $this->pageAccessToken,
+                ]);
+        } catch (Exception $e) {
+            // timeout/เครือข่าย — เป็นเรื่องชั่วคราว ไม่ตัดวงจร
+            Log::warning('👍 กดไลค์คอมเมนต์ล้ม (เครือข่าย): '.mb_substr(SafeLog::exceptionMessage($e), 0, 200), [
                 'comment_id' => $commentId,
-                'type' => $type,
             ]);
 
+            return false;
+        }
+
+        if ($response->successful()) {
+            Cache::put($likedKey, 1, now()->addHours(24));
+            Log::info('👍 กดไลค์คอมเมนต์สำเร็จ', ['comment_id' => $commentId]);
+
             return true;
-        } catch (Exception $e) {
-            $msg = SafeLog::exceptionMessage($e);
-            // 100/3 = comment ไม่พบหรือถูกลบ
-            // 403 = token ขาด pages_manage_engagement
-            Log::warning('React comment ล้มเหลว: '.mb_substr($msg, 0, 200), [
+        }
+
+        $code = (int) $response->json('error.code', 0);
+        $message = (string) $response->json('error.message', '');
+
+        Log::warning('👍 กดไลค์คอมเมนต์ล้ม', [
+            'comment_id' => $commentId,
+            'status' => $response->status(),
+            'code' => $code,
+            'message' => mb_substr($message, 0, 200),
+        ]);
+
+        if (in_array($code, self::LIKE_COMMENT_BREAKER_CODES, true) || $response->status() === 403) {
+            $this->tripLikeCommentBreaker($code, $message);
+        }
+
+        return false;
+    }
+
+    /**
+     * 💗 ส่ง reaction ให้คอมเมนต์ — เหลือไว้ให้โค้ดเดิมที่เรียกชื่อนี้
+     *
+     * Graph API ให้เพจกดได้แค่ "ถูกใจ" (LIKE) ผ่าน /likes เท่านั้น
+     * LOVE/HAHA/WOW/SAD/ANGRY สร้างผ่าน API ไม่ได้ → คืน false โดยไม่ยิง (กัน call ตกน้ำ)
+     *
+     * @param  string  $type  LIKE | LOVE | HAHA | WOW | SAD | ANGRY
+     */
+    public function reactToComment(string $commentId, string $type = 'LIKE'): bool
+    {
+        if (strtoupper($type) !== 'LIKE') {
+            Log::debug('reactToComment: Graph API ไม่รองรับ reaction ชนิดนี้ — ข้าม', [
                 'comment_id' => $commentId,
                 'type' => $type,
             ]);
 
             return false;
+        }
+
+        return $this->likeComment($commentId);
+    }
+
+    /**
+     * 🏬 กุญแจ breaker ของการกดไลค์ — แยกตามสาขา (แต่ละเพจถือ token คนละใบ สิทธิ์ไม่เท่ากัน)
+     */
+    protected function likeCommentBreakerKey(): string
+    {
+        return self::LIKE_COMMENT_BREAKER_KEY.':'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    /**
+     * 🚦 พักการกดไลค์ชั่วคราวเมื่อ Graph ปฏิเสธเรื่องสิทธิ์
+     *
+     * log warning ครั้งเดียวตอนตัดวงจร (Cache::add คืน false ถ้าตัดอยู่แล้ว)
+     * ครบ 6 ชม. ระบบลองใหม่เอง — ถ้าสิทธิ์กลับมาก็กดไลค์ต่อได้โดยไม่ต้องแก้โค้ด
+     */
+    protected function tripLikeCommentBreaker(int $code, string $reason): void
+    {
+        $until = now()->addHours(self::LIKE_COMMENT_BREAKER_HOURS);
+
+        if (Cache::add($this->likeCommentBreakerKey(), 1, $until)) {
+            Log::warning('🚦 พักการกดไลค์คอมเมนต์ชั่วคราว — Graph ปฏิเสธ', [
+                'code' => $code,
+                'reason' => mb_substr($reason, 0, 300),
+                'พักถึง' => $until->toDateTimeString(),
+                'fortune_page_id' => FortunePageContext::currentId(),
+            ]);
         }
     }
 
