@@ -4,11 +4,9 @@ namespace App\Services;
 
 use App\Models\EarningsLedger;
 use App\Models\PayoutRequest;
-use App\Models\PayoutSetting;
 use App\Models\PlatformWallet;
 use App\Models\User;
 use App\Models\WalletDebt;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +15,19 @@ use Illuminate\Support\Facades\Log;
  *
  * จัดการการจ่ายเงินให้ผู้ขาย/Affiliate
  * รองรับ 4 โหมด: manual, auto_schedule, realtime, hybrid
+ *
+ * ⚠️ ยังไม่มีทางเข้า: ไม่มีโค้ดไหนในระบบสร้างแถว payout_requests
+ *    `createPayoutRequest()` เป็นตัวเดียวที่สร้าง แต่เขียนทับ API ที่ไม่เคยมีจริง
+ *    (`PayoutSetting::getSettingByType()` — ของจริงชื่อ `getByType()`) มาตั้งแต่
+ *    commit c6e918bba "feat: add complete Platform Revenue System" และไม่มี route,
+ *    controller หรือ command ไหนเรียกมันเลย จึงถอดออกใน stage 2 (2026-11-06)
+ *    พร้อม helper ที่มีแต่มันเรียก (linkEarningsToPayout, calculatePayoutFee,
+ *    calculateNextPayoutDate, resolvePayoutType)
+ *
+ *    ผลที่ตามมา: หน้า /admin/payouts, ปุ่มอนุมัติ/ปฏิเสธ/จ่าย, bulk-approve และ
+ *    คำสั่ง payouts:process-scheduled ทำงานบนตารางที่ว่างเสมอ เงินจริงของผู้ขาย
+ *    เดินผ่าน SellerPayoutService + WithdrawalService ไม่ได้ผ่านทางนี้
+ *    ถ้าจะใช้ระบบนี้จริง ต้องเขียนตัวสร้างแถวใหม่ (ดู git show c6e918bba เป็นต้นแบบ)
  */
 class PayoutService
 {
@@ -25,242 +36,6 @@ class PayoutService
     public function __construct()
     {
         $this->revenueService = new PlatformRevenueService;
-    }
-
-    /**
-     * สร้าง Payout Request ใหม่
-     *
-     * @param  string  $earningType  seller_sale, mlm_commission, affiliate_commission
-     * @param  float|null  $requestedAmount  ถ้าไม่ระบุจะดึงทั้งหมดที่ available
-     */
-    public function createPayoutRequest(int $userId, string $earningType, ?float $requestedAmount = null): PayoutRequest
-    {
-        return DB::transaction(function () use ($userId, $earningType, $requestedAmount) {
-            // ดึง setting สำหรับ earning type นี้
-            $setting = PayoutSetting::getSettingByType($earningType);
-            if (! $setting || ! $setting->is_active) {
-                throw new \Exception('Payout สำหรับประเภทนี้ถูกปิดใช้งาน');
-            }
-
-            // ดึงรายได้ที่ available (ใช้ lockForUpdate ป้องกัน race condition double-payout)
-            $availableEarnings = EarningsLedger::where('user_id', $userId)
-                ->where('earning_type', $earningType)
-                ->available()
-                ->lockForUpdate()
-                ->get();
-
-            $totalAvailable = $availableEarnings->sum('net_amount');
-
-            if ($totalAvailable <= 0) {
-                throw new \Exception('ไม่มียอดเงินที่ถอนได้');
-            }
-
-            // ตรวจสอบยอดขั้นต่ำ
-            if ($totalAvailable < $setting->min_payout) {
-                throw new \Exception("ยอดขั้นต่ำในการถอนคือ ฿{$setting->min_payout}");
-            }
-
-            // คำนวณยอดที่จะถอน
-            $payoutAmount = $requestedAmount ?? $totalAvailable;
-
-            if ($payoutAmount > $totalAvailable) {
-                throw new \Exception("ยอดที่ขอถอน (฿{$payoutAmount}) มากกว่ายอดที่ถอนได้ (฿{$totalAvailable})");
-            }
-
-            if ($payoutAmount < $setting->min_payout) {
-                throw new \Exception("ยอดขั้นต่ำในการถอนคือ ฿{$setting->min_payout}");
-            }
-
-            // ตรวจสอบยอดสูงสุด
-            if ($setting->max_payout && $payoutAmount > $setting->max_payout) {
-                throw new \Exception("ยอดสูงสุดในการถอนคือ ฿{$setting->max_payout}");
-            }
-
-            // คำนวณค่าธรรมเนียม
-            $fee = $this->calculatePayoutFee($payoutAmount, $setting);
-            $netAmount = $payoutAmount - $fee;
-
-            // หักหนี้ (ถ้ามี)
-            // 🧾 F14/M7: หักหนี้จากยอดถอน 100% (เดิม 50% แล้วปล่อยถอนส่วนที่เหลือทั้งที่หนี้ยังค้าง)
-            //    หนี้มากกว่ายอดถอนสุทธิ = ห้ามถอน (ระหว่างมีหนี้ห้ามถอน) — ทั้งก้อน rollback ไม่มีอะไรถูกหัก
-            //    หนี้ที่ระบบต้นทางเก็บเอง (ตลาดสด) ไม่บล็อก แต่ยังถูกหักจากยอดนี้ได้ไม่เกินยอดสุทธิ (ไม่ติดลบ)
-            $debtDeduction = 0;
-            $totalDebt = round((float) WalletDebt::getTotalDebtForUser($userId), 2);
-            $blockingDebt = DebtCollectionService::blockingDebtTotal($userId);
-            if ($blockingDebt > 0 && $blockingDebt > round($netAmount * DebtCollectionService::INCOME_COLLECTION_RATE, 2)) {
-                throw new \Exception(DebtCollectionService::withdrawalBlockedMessage($userId) ?? 'มียอดค้างชำระ ยังถอนเงินไม่ได้');
-            }
-            if ($totalDebt > 0) {
-                $maxDeduction = round(min($totalDebt, $netAmount * DebtCollectionService::INCOME_COLLECTION_RATE), 2);
-                // หักหนี้ที่บล็อกการถอนก่อน (ให้หมดก่อนจ่าย) แล้วค่อยหักหนี้อื่นด้วยยอดที่เหลือ
-                $left = $maxDeduction;
-                foreach (DebtCollectionService::blockingDebtQuery($userId)->byPriority()->lockForUpdate()->get() as $debt) {
-                    if ($left <= 0) {
-                        break;
-                    }
-                    $got = round((float) $debt->deduct($left), 2);
-                    $debtDeduction = round($debtDeduction + $got, 2);
-                    $left = round($left - $got, 2);
-                }
-                if ($left > 0) {
-                    $debtDeduction = round($debtDeduction + (float) WalletDebt::deductAllDebts($userId, $left)['total_deducted'], 2);
-                }
-                $netAmount -= $debtDeduction;
-            }
-
-            // กำหนด status ตามโหมด
-            $status = PayoutRequest::STATUS_PENDING;
-            $scheduledAt = null;
-
-            if ($setting->payout_mode === 'auto_schedule') {
-                // คำนวณวันจ่ายถัดไป
-                $scheduledAt = $this->calculateNextPayoutDate($setting);
-                $status = PayoutRequest::STATUS_SCHEDULED;
-            } elseif ($setting->payout_mode === 'realtime' && ! $setting->requires_approval) {
-                $status = PayoutRequest::STATUS_APPROVED;
-            }
-
-            // สร้าง payout request
-            $payoutRequest = PayoutRequest::create([
-                'user_id' => $userId,
-                'payout_setting_id' => $setting->id,
-                // payout_type เป็นคอลัมน์ NOT NULL ต้องใส่เสมอ
-                // แปลงจาก earning_type เอง ไม่ใช้ $setting->payout_type
-                // เพราะคอลัมน์นั้นติด unique constraint เลยถูกบีบให้เหลือ 3 ค่า
-                // ทำให้ affiliate_commission ถูกแปะเป็น 'service' ซึ่งผิดความหมาย
-                'payout_type' => $this->resolvePayoutType($earningType),
-                'earning_type' => $earningType,
-                'amount' => $payoutAmount,
-                'fee' => $fee,
-                'debt_deduction' => $debtDeduction,
-                'net_amount' => $netAmount,
-                'status' => $status,
-                'payment_method' => 'bank_transfer', // default, อาจ expand ได้
-                'scheduled_at' => $scheduledAt,
-            ]);
-
-            // Link earnings to payout request
-            $this->linkEarningsToPayout($availableEarnings, $payoutRequest, $payoutAmount);
-
-            // ถ้า realtime และไม่ต้อง approve → ประมวลผลทันที
-            if ($setting->payout_mode === 'realtime' && ! $setting->requires_approval) {
-                $this->processPayout($payoutRequest);
-            }
-
-            Log::info('Payout request created', [
-                'payout_request_id' => $payoutRequest->id,
-                'user_id' => $userId,
-                'amount' => $payoutAmount,
-                'status' => $status,
-            ]);
-
-            return $payoutRequest;
-        });
-    }
-
-    /**
-     * Link earnings ไปยัง payout request
-     *
-     * @param  \Illuminate\Support\Collection  $earnings
-     */
-    protected function linkEarningsToPayout($earnings, PayoutRequest $payoutRequest, float $targetAmount): void
-    {
-        $linkedAmount = 0;
-        $linkedEarningIds = [];
-
-        foreach ($earnings as $earning) {
-            if ($linkedAmount >= $targetAmount) {
-                break;
-            }
-
-            $earning->payout_request_id = $payoutRequest->id;
-            $earning->status = EarningsLedger::STATUS_PROCESSING;
-            $earning->save();
-
-            $linkedAmount += $earning->net_amount;
-            $linkedEarningIds[] = $earning->id;
-        }
-
-        $payoutRequest->metadata = array_merge($payoutRequest->metadata ?? [], [
-            'linked_earning_ids' => $linkedEarningIds,
-        ]);
-        $payoutRequest->save();
-    }
-
-    /**
-     * คำนวณค่าธรรมเนียมการถอน
-     */
-    protected function calculatePayoutFee(float $amount, PayoutSetting $setting): float
-    {
-        $fee = 0;
-
-        // ค่าธรรมเนียมขั้นต่ำ
-        if ($setting->fee_fixed > 0) {
-            $fee += $setting->fee_fixed;
-        }
-
-        // ค่าธรรมเนียมเป็น %
-        if ($setting->fee_percentage > 0) {
-            $fee += $amount * ($setting->fee_percentage / 100);
-        }
-
-        return round($fee, 2); // ใช้ 2 ทศนิยมตามมาตรฐานสกุลเงินบาท
-    }
-
-    /**
-     * คำนวณวันจ่ายถัดไป
-     */
-    protected function calculateNextPayoutDate(PayoutSetting $setting): Carbon
-    {
-        $schedule = $setting->schedule;
-        $now = now();
-
-        if (! $schedule) {
-            return $now->addDay(); // default: วันถัดไป
-        }
-
-        // รองรับหลายรูปแบบ
-        if (isset($schedule['type'])) {
-            switch ($schedule['type']) {
-                case 'daily':
-                    return $now->addDay()->setTime($schedule['hour'] ?? 9, 0);
-
-                case 'weekly':
-                    $dayOfWeek = $schedule['day_of_week'] ?? 1; // 1 = Monday
-                    $next = $now->copy()->next($dayOfWeek);
-
-                    return $next->setTime($schedule['hour'] ?? 9, 0);
-
-                case 'biweekly':
-                    // ทุก 15 และสิ้นเดือน
-                    if ($now->day < 15) {
-                        return $now->copy()->day(15)->setTime($schedule['hour'] ?? 9, 0);
-                    } else {
-                        return $now->copy()->endOfMonth()->setTime($schedule['hour'] ?? 9, 0);
-                    }
-
-                case 'monthly':
-                    $dayOfMonth = $schedule['day_of_month'] ?? 1;
-                    $next = $now->copy()->addMonth()->day(min($dayOfMonth, $now->copy()->addMonth()->daysInMonth));
-
-                    return $next->setTime($schedule['hour'] ?? 9, 0);
-
-                case 'custom_days':
-                    // กำหนดวันที่เฉพาะ เช่น [1, 15, 28]
-                    $days = $schedule['days'] ?? [1, 15];
-                    sort($days);
-                    foreach ($days as $day) {
-                        if ($day > $now->day) {
-                            return $now->copy()->day($day)->setTime($schedule['hour'] ?? 9, 0);
-                        }
-                    }
-
-                    // ถ้าเลยทุกวันแล้ว → วันแรกเดือนหน้า
-                    return $now->copy()->addMonth()->day($days[0])->setTime($schedule['hour'] ?? 9, 0);
-            }
-        }
-
-        return $now->addDay();
     }
 
     /**
@@ -452,24 +227,6 @@ class PayoutService
 
             return $payoutRequest->fresh();
         });
-    }
-
-    /**
-     * แปลง earning_type (ละเอียด) → payout_type (กลุ่มกว้าง) ของ payout_requests
-     *
-     * จับกลุ่มให้ตรงกับ getSourceWallet() คือ mlm_commission และ
-     * affiliate_commission ถือเป็นเงินกอง MLM เหมือนกัน
-     */
-    protected function resolvePayoutType(string $earningType): string
-    {
-        return match ($earningType) {
-            EarningsLedger::TYPE_SELLER_SALE => PayoutRequest::TYPE_SELLER,
-            EarningsLedger::TYPE_SERVICE_PROVIDER => PayoutRequest::TYPE_SERVICE,
-            EarningsLedger::TYPE_MLM_COMMISSION,
-            EarningsLedger::TYPE_AFFILIATE_COMMISSION,
-            EarningsLedger::TYPE_REFERRAL_BONUS => PayoutRequest::TYPE_MLM,
-            default => PayoutRequest::TYPE_WITHDRAWAL,
-        };
     }
 
     /**
