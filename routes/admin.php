@@ -370,6 +370,8 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/wallets-dropdown', [WalletController::class, 'getWalletsDropdown'])->name('wallets-dropdown');
     Route::get('/export-transactions', [WalletController::class, 'exportTransactions'])->name('export-transactions');
     Route::post('/admin-transfer', [WalletController::class, 'adminTransfer'])->name('admin-transfer');
+    // ประวัติการปรับยอดโดยแอดมิน (audit trail) — ต้องอยู่ก่อน /{id}/show
+    Route::get('/adjustments', [WalletController::class, 'adjustments'])->name('adjustments');
     Route::get('/{id}/show', [WalletController::class, 'showWallet'])->name('show');
     Route::post('/{id}/adjust-balance', [WalletController::class, 'adjustBalance'])->name('adjust-balance');
     Route::post('/{id}/refund', [WalletController::class, 'refund'])->name('refund');
