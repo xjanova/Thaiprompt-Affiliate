@@ -192,6 +192,10 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
+            // 📇 จำเจ้าของคอมเมนต์ไว้อีกชั้น — งานนี้อาจถูก dispatch จากที่อื่นนอก processComment
+            //    (เช่น retry/backfill) ซึ่งไม่ได้จำให้ ⇒ Private Reply จะไม่รู้ว่าคนนี้เคยโดน 10903
+            $facebookService->rememberCommentAuthor((string) $commentId, (string) $userId);
+
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (กัน race condition จาก webhook retry)
             if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
                 Log::info('คอมเม้นต์ถูก engage ไปแล้ว (webhook retry)', [

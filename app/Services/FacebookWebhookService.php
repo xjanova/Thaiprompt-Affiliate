@@ -129,6 +129,45 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     protected const DEAD_COMMENT_TTL_HOURS = 48;
 
+    /**
+     * 🚷 (2026-11-06) คนที่ Meta ตอบ 10903 "This user can't reply to this activity" — พักไว้ 7 วัน
+     *
+     * dead comment ข้างบนจำแค่ "คอมเมนต์นั้น" — คนเดิมคอมเมนต์ใหม่ = comment_id ใหม่ = ยิงใหม่ ล้มใหม่
+     * หลักฐาน prod 28 ต.ค.–6 พ.ย.: 10903 รวม 1,327 ครั้งจาก 624 คน
+     *   622 คนไม่เคยส่งสำเร็จอีกเลย · บางคนโดนซ้ำ 25 ครั้งในสัปดาห์เดียว
+     *   จำลองกฎ "ล้มครั้งแรก + ไม่เคยส่งสำเร็จ ⇒ พัก" กับ log จริง: ประหยัด 671 call ที่ล้มแน่นอน
+     *   เสีย DM ที่จะส่งถึงจริง 2 จาก 10,309 ครั้ง
+     *
+     * ⚠️ 10903 ไม่ได้แปลว่า "ทั้งคน" เสมอ — ลูกค้าประจำคนหนึ่งได้ 10903 สองครั้งแต่ส่งสำเร็จ 52 ครั้ง
+     *    ⇒ ห้ามพักคนที่เคยรับ PR สำเร็จ (PR_DELIVERED_USER_TTL_DAYS) และห้ามพักคนที่เพิ่งทักเพจเอง
+     *    ⇒ พักแค่ Private Reply/DM — ตอบใต้คอมเมนต์ยังทำได้ตามปกติ
+     */
+    protected const PR_BLOCKED_USER_TTL_DAYS = 7;
+
+    /** คนที่เคยรับ Private Reply สำเร็จ — จำไว้ 30 วัน กันพักคนผิด */
+    protected const PR_DELIVERED_USER_TTL_DAYS = 30;
+
+    /** comment_id → เจ้าของคอมเมนต์ (Stage หลัง ๆ อาจยิงห่างจากตอนรับ webhook หลายชั่วโมง) */
+    protected const COMMENT_AUTHOR_TTL_HOURS = 48;
+
+    /**
+     * 🚦 (2026-11-06) พัก `GET /{psid}` (User Profile API) ทั้งเพจเมื่อล้มติดกัน
+     *
+     * หลักฐาน prod: "ดึงโปรไฟล์ผู้ใช้สำเร็จ" = 0 ครั้งติดกันอย่างน้อย 25 วัน (ถึง 2026-11-06)
+     *   ล้ม 350–2,700 คน/วัน × 2 call (full fields → retry minimal) = สูงสุด ~5,400 call ทิ้ง/วัน
+     *   error ส่วนใหญ่ 100 "Unsupported get request" — ชื่อลูกค้าได้จาก conversations API ~94% อยู่แล้ว
+     *   (ส.ค. ล้มแค่ 4% = รายคน · ตอนนี้ 100% = ระดับแอป/เพจ)
+     *
+     * เกณฑ์ 20 ครั้งติดกัน: ตอนที่ API ใช้ได้ปกติ (ล้มรายคน ~4%) โอกาสล้มติดกัน 20 ครั้ง ≈ 0
+     * ระหว่างพัก conversations API ถูกเรียกเท่าเดิม (ตอนนี้ก็ถูกเรียกทุกเคสอยู่แล้ว) — ไม่เพิ่มภาระ
+     */
+    protected const PROFILE_API_BREAKER_THRESHOLD = 20;
+
+    protected const PROFILE_API_BREAKER_HOURS = 24;
+
+    /** ต้องนานกว่า BREAKER_HOURS — ให้รอบ probe หลังพักครบ trip ซ้ำได้ด้วยการล้มครั้งเดียว */
+    protected const PROFILE_API_STREAK_TTL_HOURS = 30;
+
     protected $settings;
 
     protected $pageAccessToken;
@@ -1183,7 +1222,76 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     public function isDeadComment(string $commentId): bool
     {
-        return Cache::has('fb_dead_comment:'.$commentId);
+        if (Cache::has('fb_dead_comment:'.$commentId)) {
+            return true;
+        }
+
+        // 🚷 เจ้าของคอมเมนต์ถูกพัก (เคยโดน 10903 และไม่เคยรับ PR สำเร็จ) → ถือว่าคอมเมนต์นี้ตายด้วย
+        //    ทุก path ที่ยิง PR เช็คเมธอดนี้อยู่แล้ว ⇒ ไม่ต้องไล่แก้ทีละ caller
+        $author = $this->commentAuthor($commentId);
+        if ($author !== null && $this->isPrivateReplyBlockedUser($author)) {
+            Log::info('🚷 Private Reply skip — เจ้าของคอมเมนต์เคยโดน 10903 (พักไว้ไม่ยิงซ้ำ)', [
+                'comment_id' => $commentId,
+                'user_id' => $author,
+            ]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 📇 จำว่าคอมเมนต์นี้ของใคร — Private Reply ยิงด้วย comment_id อย่างเดียว ไม่รู้ตัวคน
+     */
+    public function rememberCommentAuthor(string $commentId, string $userId): void
+    {
+        if ($commentId === '' || $userId === '') {
+            return;
+        }
+
+        Cache::put('fb_comment_author:'.$commentId, $userId, now()->addHours(self::COMMENT_AUTHOR_TTL_HOURS));
+    }
+
+    protected function commentAuthor(string $commentId): ?string
+    {
+        $author = Cache::get('fb_comment_author:'.$commentId);
+
+        return is_string($author) && $author !== '' ? $author : null;
+    }
+
+    /**
+     * 🚷 คนนี้ถูกพัก Private Reply อยู่ไหม (ดูเหตุผลที่ PR_BLOCKED_USER_TTL_DAYS)
+     *
+     * ทางรอด: ลูกค้าทักเพจเองภายใน 24 ชม. = เปิดรับข้อความจากเพจแล้ว → ปล่อยให้ลองใหม่
+     */
+    public function isPrivateReplyBlockedUser(string $userId): bool
+    {
+        if (! Cache::has('fb_pr_blocked_user:'.$userId)) {
+            return false;
+        }
+
+        if (Cache::has('fb_last_inbound:'.$userId)) {
+            Cache::forget('fb_pr_blocked_user:'.$userId);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * ✅ PR ถึงลูกค้าแล้ว — จำว่าคนนี้รับได้ และยกเลิกการพัก (ถ้ามี)
+     */
+    protected function markPrivateReplyDelivered(string $commentId): void
+    {
+        $author = $this->commentAuthor($commentId);
+        if ($author === null) {
+            return;
+        }
+
+        Cache::put('fb_pr_ok_user:'.$author, 1, now()->addDays(self::PR_DELIVERED_USER_TTL_DAYS));
+        Cache::forget('fb_pr_blocked_user:'.$author);
     }
 
     /**
@@ -1241,6 +1349,20 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             'error_subcode' => $subcode,
             'source' => $source,
         ]);
+
+        // 🚷 10903 = ข้อจำกัดฝั่งผู้ใช้ — พักทั้งคน ไม่ใช่แค่คอมเมนต์นี้
+        //    ยกเว้นคนที่เคยรับ PR สำเร็จ (10903 ของเขาเป็นรายคอมเมนต์ ไม่ใช่รายคน)
+        if ((int) $code === 10903) {
+            $author = $this->commentAuthor($commentId);
+            if ($author !== null && ! Cache::has('fb_pr_ok_user:'.$author)) {
+                Cache::put('fb_pr_blocked_user:'.$author, 1, now()->addDays(self::PR_BLOCKED_USER_TTL_DAYS));
+                Log::info('🚷 พัก Private Reply ของคนนี้ '.self::PR_BLOCKED_USER_TTL_DAYS.' วัน (10903 + ไม่เคยรับสำเร็จ)', [
+                    'user_id' => $author,
+                    'comment_id' => $commentId,
+                    'error_subcode' => $subcode,
+                ]);
+            }
+        }
     }
 
     public function sendPrivateReplyImage(string $commentId, string $imageUrl): bool
@@ -1269,6 +1391,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ->post($this->graphUrl('/me/messages'), $payload);
 
             if ($response->successful()) {
+                $this->markPrivateReplyDelivered($commentId);
                 Log::info('✅ ส่งภาพผ่าน Private Reply สำเร็จ', [
                     'comment_id' => $commentId,
                     'image_url' => $imageUrl,
@@ -1368,6 +1491,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ->post($this->graphUrl('/me/messages'), $payload);
 
             if ($response->successful()) {
+                $this->markPrivateReplyDelivered($commentId);
                 Log::info('✅ Private Reply image+QR สำเร็จ (Option G atomic)', [
                     'comment_id' => $commentId,
                     'qr_count' => count($formatted),
@@ -1465,6 +1589,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             ]);
 
             if ($response->successful()) {
+                $this->markPrivateReplyDelivered($commentId);
                 Log::info('✅ Private Reply การ์ดสำเร็จ (generic template)', [
                     'comment_id' => $commentId,
                     'card_count' => count($templatePayload['attachment']['payload']['elements'] ?? []),
@@ -1544,6 +1669,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
                 $prResponse = Http::timeout(30)->post($this->graphUrl('/me/messages'), $prPayload);
                 if ($prResponse->successful()) {
+                    $this->markPrivateReplyDelivered($commentId);
                     Log::info('✅ ส่ง audio ผ่าน Private Reply สำเร็จ', [
                         'comment_id' => $commentId,
                     ]);
@@ -3068,6 +3194,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ->post($this->graphUrl('/me/messages'), $structuredPayload);
 
             if ($response->successful()) {
+                $this->markPrivateReplyDelivered($commentId);
                 Log::info('✅ Private Reply สำเร็จ (Send API + recipient.comment_id)', [
                     'comment_id' => $commentId,
                     'has_quick_replies' => ! empty($quickReplies),
@@ -3106,6 +3233,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ]);
 
             if ($textResponse->successful()) {
+                $this->markPrivateReplyDelivered($commentId);
                 Log::info('✅ Private Reply สำเร็จ (text-only)', [
                     'comment_id' => $commentId,
                 ]);
@@ -3164,6 +3292,14 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             return null;
         }
 
+        // 🚦 (2026-11-06) profile API พังทั้งเพจ → ไม่ยิงทิ้ง ไปถามกล่องข้อความเลย
+        //   ดูเหตุผลที่ PROFILE_API_BREAKER_HOURS
+        if (Cache::has($this->profileApiBreakerKey())) {
+            return $this->resolveProfileViaConversations($facebookUserId, $cacheKey, $missKey);
+        }
+
+        $httpStatus = null;
+
         try {
             // ดึงข้อมูลพื้นฐาน + ลอง fields เพิ่มเติม (gender, birthday, locale)
             // หมายเหตุ: gender/birthday/locale อาจไม่ได้รับจาก PSID เนื่องจาก Facebook API restrictions
@@ -3192,8 +3328,12 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             }
 
             if (! $response->successful()) {
+                $httpStatus = $response->status();
                 throw new Exception('FB Graph HTTP '.$response->status().': '.mb_substr($response->body(), 0, 300));
             }
+
+            // ✅ profile API ตอบได้ → ล้างตัวนับล้มติดกัน (ใช้ได้ทั้งเพจ ไม่ต้องพัก)
+            Cache::forget($this->profileApiFailStreakKey());
 
             $profile = $response->json();
 
@@ -3254,25 +3394,78 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 'error' => SafeLog::exceptionMessage($e),
                 'token_first_8' => mb_substr($this->pageAccessToken ?? '', 0, 8),
                 'token_len' => strlen($this->pageAccessToken ?? ''),
-                'hint' => 'HTTP 400 ที่ User Profile API = ข้อจำกัด "รายบัญชีลูกค้า" ฝั่ง Meta (privacy/region/บัญชีถูกจำกัด) — ไม่ใช่ token หมดอายุ ไม่ใช่ App Review และไม่บล็อกการส่ง DM. ยืนยันแล้ว prod 2026-08-19: token+เพจเดียวกัน resolve คนอื่นได้ปกติ 96% ⇒ ถ้าพังทุกคนค่อยสงสัย token/permission. กำลังลองต่อด้วย conversations API 👇',
+                'hint' => 'HTTP 400 ที่ User Profile API = ข้อจำกัด "รายบัญชีลูกค้า" ฝั่ง Meta (privacy/region/บัญชีถูกจำกัด) — ไม่ใช่ token หมดอายุ ไม่ใช่ App Review และไม่บล็อกการส่ง DM. ยืนยันแล้ว prod 2026-08-19: token+เพจเดียวกัน resolve คนอื่นได้ปกติ 96% ⇒ ถ้าพังทุกคนค่อยสงสัย token/permission (ถ้าพังติดกันทั้งเพจ ระบบจะพักเองแล้ว log 🚦). กำลังลองต่อด้วย conversations API 👇',
             ]);
+
+            // 🚦 นับเฉพาะ "Graph ตอบกลับว่าไม่ได้" — network timeout ไม่ใช่สัญญาณว่า API พัง
+            if ($httpStatus !== null) {
+                $this->recordProfileApiFailure($httpStatus, SafeLog::exceptionMessage($e));
+            }
 
             // 🪪 (2026-08-19) ชั้นที่ 3 — ถาม "กล่องข้อความ" แทน "โปรไฟล์"
             //   จุดที่เคยยอมแพ้ตรงนี้ = ต้นเหตุบิลไม่มีชื่อลูกค้าสะสม 754 บิล / 653 คน (26 บิลจ่ายเงินแล้ว)
-            $viaConv = $this->fetchNameViaConversations($facebookUserId);
-            if ($viaConv) {
-                Log::info('✅ กู้ชื่อลูกค้าคืนได้จาก conversations API (profile API ปฏิเสธ)', [
-                    'user_id' => $facebookUserId,
-                    'name_source' => $viaConv['name_source'],
-                ]);
-                Cache::put($cacheKey, $viaConv, now()->addHours(24));
+            return $this->resolveProfileViaConversations($facebookUserId, $cacheKey, $missKey);
+        }
+    }
 
-                return $viaConv;
-            }
+    /**
+     * 🪪 หาชื่อจากกล่องข้อความ แล้ว cache ผลแบบเดียวกับ profile API (hit 24 ชม. / miss 3 ชม.)
+     */
+    protected function resolveProfileViaConversations(string $facebookUserId, string $cacheKey, string $missKey): ?array
+    {
+        $viaConv = $this->fetchNameViaConversations($facebookUserId);
+        if ($viaConv) {
+            Log::info('✅ กู้ชื่อลูกค้าคืนได้จาก conversations API (profile API ปฏิเสธ/พักอยู่)', [
+                'user_id' => $facebookUserId,
+                'name_source' => $viaConv['name_source'],
+            ]);
+            Cache::put($cacheKey, $viaConv, now()->addHours(24));
 
-            Cache::put($missKey, true, now()->addHours(3));
+            return $viaConv;
+        }
 
-            return null;
+        Cache::put($missKey, true, now()->addHours(3));
+
+        return null;
+    }
+
+    protected function profileApiBreakerKey(): string
+    {
+        return 'fb_profile_api_breaker:'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    protected function profileApiFailStreakKey(): string
+    {
+        return 'fb_profile_api_fail_streak:'.(FortunePageContext::currentId() ?? 'default');
+    }
+
+    /**
+     * 🚦 นับ profile API ล้มติดกัน — ครบเกณฑ์ = พักทั้งเพจ
+     *
+     * ตัวนับอยู่ได้นานกว่าช่วงพัก (STREAK_TTL > BREAKER) ⇒ พอพักครบแล้วลองใหม่ 1 ครั้ง
+     * ถ้ายังล้มก็พักต่อทันที (= probe วันละครั้ง ไม่ใช่ยิงทิ้งอีก 20 ครั้ง)
+     * สำเร็จครั้งเดียว = ล้างตัวนับ (ดู getUserProfile)
+     */
+    protected function recordProfileApiFailure(int $status, string $reason): void
+    {
+        $streakKey = $this->profileApiFailStreakKey();
+        $streak = (int) Cache::get($streakKey, 0) + 1;
+        Cache::put($streakKey, $streak, now()->addHours(self::PROFILE_API_STREAK_TTL_HOURS));
+
+        if ($streak < self::PROFILE_API_BREAKER_THRESHOLD) {
+            return;
+        }
+
+        $until = now()->addHours(self::PROFILE_API_BREAKER_HOURS);
+        if (Cache::add($this->profileApiBreakerKey(), 1, $until)) {
+            Log::warning('🚦 พักการดึงโปรไฟล์ลูกค้า (GET /{psid}) ทั้งเพจ — ล้มติดกัน ใช้ชื่อจากกล่องข้อความแทน', [
+                'fail_streak' => $streak,
+                'http_status' => $status,
+                'reason' => mb_substr($reason, 0, 300),
+                'พักถึง' => $until->toDateTimeString(),
+                'fortune_page_id' => FortunePageContext::currentId(),
+                'hint' => 'ล้มทุกคนแบบนี้ = ระดับแอป/เพจ ไม่ใช่รายคน — เช็ค Meta App Dashboard (สิทธิ์อ่านโปรไฟล์ผู้ใช้ / Business Asset User Profile Access)',
+            ]);
         }
     }
 

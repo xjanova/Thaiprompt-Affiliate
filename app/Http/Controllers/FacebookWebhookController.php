@@ -1521,6 +1521,10 @@ class FacebookWebhookController extends Controller
         if (! empty($commentId)
             && ($comment['verb'] ?? 'add') !== 'remove'
             && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+            // 📇 จำว่าใครเป็นเจ้าของคอมเมนต์นี้ — ให้ Private Reply ทุก path รู้ว่ากำลังยิงหาใคร
+            //    (คนที่ Meta ตอบ 10903 จะถูกพักไม่ให้ยิงซ้ำ — ดู FacebookWebhookService::rememberCommentAuthor)
+            $this->facebookService->rememberCommentAuthor($commentId, (string) $fromId);
+
             try {
                 $this->facebookService->likeComment($commentId);
             } catch (\Throwable $e) {
