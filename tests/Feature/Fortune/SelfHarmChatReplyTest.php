@@ -136,10 +136,10 @@ class SelfHarmChatReplyTest extends TestCase
         $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
         $this->assertNotNull($persona, 'ต้องมี persona ไว้จำว่าลูกค้าเปราะบาง');
         $this->assertTrue($persona->hasRiskFlag('mental_fragile'));
-        $this->assertNotEmpty($persona->risk_flags['crisis_resources_sent'] ?? null, 'ต้องจดว่าให้สายด่วนไปแล้ว');
+        $this->assertNotEmpty($persona->risk_flags['crisis_resources_sent'] ?? null, 'ต้องจดว่าปลอบช่วงวิกฤตไปแล้ว');
     }
 
-    public function test_facebook_self_harm_gets_hotline_not_dismissal_and_admin_is_alerted(): void
+    public function test_facebook_self_harm_gets_gentle_comfort_not_dismissal_and_admin_is_alerted(): void
     {
         Queue::fake();
 
@@ -158,6 +158,7 @@ class SelfHarmChatReplyTest extends TestCase
         $this->assertStringContainsString(self::FB_UID, $alerts[0]);
         $this->assertStringContainsString('อยากฆ่าตัวตาย', $alerts[0]);
         $this->assertStringNotContainsString('[TURN', $alerts[0], 'แอดมินเห็นแค่ข้อความลูกค้า');
+        $this->assertStringContainsString('แชท facebook', $alerts[0], 'บอกแอดมินว่ามาจากช่องไหน');
 
         $this->assertPersonaFlagged('facebook', self::FB_UID);
     }
@@ -204,7 +205,7 @@ class SelfHarmChatReplyTest extends TestCase
         $this->assertPersonaFlagged('line', self::LINE_UID);
     }
 
-    public function test_mid_prediction_customer_still_gets_the_hotline_not_silence(): void
+    public function test_mid_prediction_customer_still_gets_comfort_not_silence(): void
     {
         Queue::fake();
         ReplyTokenVault::remember('line', self::LINE_UID, 'rt-fresh');
@@ -248,6 +249,42 @@ class SelfHarmChatReplyTest extends TestCase
 
         $this->assertSame(2, substr_count($this->sentBodies('graph.facebook.com'), 'อยู่ฟังตรงนี้'), 'ทุกข้อความต้องได้คำตอบ ไม่ตัดบท');
         $this->assertCount(1, $this->adminAlerts(), 'คนเดิมแจ้งแอดมินครั้งเดียวใน 6 ชม.');
+    }
+
+    /**
+     * 🤍 (2026-11-06 รีวิว PR 2649) ลูกค้าเล่าว่า "คนอื่น" อยากทำร้ายตัวเอง — ไม่ใช่วิกฤตของลูกค้าเอง
+     * ให้ AI ตอบ (ไม่ใช่คำปลอบสำเร็จรูป) แต่ ❌ ไม่มีปุ่มดูดวง/ขาย ไม่แจ้งแอดมิน ไม่ติดธง persona
+     */
+    public function test_someone_elses_self_harm_gets_an_ai_reply_without_any_sales_push(): void
+    {
+        Queue::fake();
+
+        $this->runFlush('facebook', self::FB_UID, 'แฟนขู่จะฆ่าตัวตายถ้าเลิก ควรเลิกไหมคะ');
+
+        $this->assertNotSame([], $this->aiCalls, 'ต้องให้ AI ตอบ');
+        $sent = $this->sentBodies('graph.facebook.com');
+        $this->assertStringContainsString('แม่หมอดูให้แล้วค่ะ', $sent);
+        $this->assertStringNotContainsString('อยู่ฟังตรงนี้', $sent, 'ไม่ใช่คำปลอบของคนที่อยากทำร้ายตัวเอง');
+        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มดูดวง/ปุ่มขาย');
+        $this->assertStringNotContainsString('START_FORTUNE', $sent);
+        $this->assertStringNotContainsString('OFFER_FORTUNE', $sent);
+        $this->assertSame([], $this->adminAlerts());
+        $persona = FortuneCustomerPersona::findByPlatformUser('facebook', self::FB_UID);
+        $this->assertFalse((bool) $persona?->hasRiskFlag('mental_fragile'));
+    }
+
+    /** 🤍 (2026-11-06 รีวิว PR 2649) ถามเรื่องพระแขวนคอ ไม่ใช่วิกฤต — ตอบตามปกติ ไม่แจ้งแอดมิน */
+    public function test_an_amulet_question_is_not_a_crisis(): void
+    {
+        Queue::fake();
+
+        $this->runFlush('facebook', self::FB_UID, 'ใส่พระแขวนคอองค์ไหนดีคะแม่หมอ');
+
+        $this->assertNotSame([], $this->aiCalls);
+        $this->assertStringNotContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
+        $this->assertSame([], $this->adminAlerts());
+        $persona = FortuneCustomerPersona::findByPlatformUser('facebook', self::FB_UID);
+        $this->assertFalse((bool) $persona?->hasRiskFlag('mental_fragile'));
     }
 
     /** 🟢 (2026-11-04) LINE reply ไม่ออก (token ตาย/ไม่มี) → ❌ ห้ามตกไป push · แอดมินยังได้แจ้งเตือน */

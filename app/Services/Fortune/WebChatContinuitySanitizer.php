@@ -17,6 +17,8 @@ use App\Services\FortuneAIService;
  *     - ข้อความของบอทที่พูดเรื่องจ่ายเงิน → แทนทั้งข้อความด้วย "(แม่หมอแจ้งรายละเอียดค่าบริการ)"
  *       (เว็บห้ามพูดเรื่องโอน/สลิป/บัญชี/ราคาในเพจ — ถ้าส่งเนื้อไป AI จะเอาไปพูดต่อ)
  *     - บรรทัดที่ detectAdversarialInput จับได้ → "(ข้อความถูกตัด)"
+ *       ยกเว้นบรรทัดที่ลูกค้าบอกว่าอยากทำร้ายตัวเอง (self_harm ไม่ใช่การโจมตี) → SELF_HARM_PLACEHOLDER
+ *       ไม่ส่งข้อความเดิม ส่งแค่ "ธง" ให้ห้องเว็บรู้ว่าต้องปลอบเบา ๆ และไม่ขาย (WebChatContinuityService::memoryCarriesCrisis)
  *     - ทำให้รั้ว ==== และป้าย [[ ... ]] ไร้ผล (กันลูกค้าฝังคำสั่งให้หลุดรั้วข้อมูล/ปลอมป้าย OFFER)
  *
  *   ขาออก (sanitizeOutbound) — ทุกคำตอบของห้องแชทเว็บก่อนถึงลูกค้า
@@ -30,6 +32,9 @@ final class WebChatContinuitySanitizer
 
     /** ข้อความแทนบรรทัดที่เป็นการโจมตี prompt */
     public const ADVERSARIAL_PLACEHOLDER = '(ข้อความถูกตัด)';
+
+    /** 🤍 (2026-11-06) ข้อความแทนบรรทัดที่ลูกค้าบอกว่าอยากทำร้ายตัวเอง — ไม่มีข้อความเดิม เป็นธงให้ห้องเว็บเข้าโหมดวิกฤต */
+    public const SELF_HARM_PLACEHOLDER = '(ลูกค้าเคยเล่าว่าทุกข์ใจมากจนอยากทำร้ายตัวเอง)';
 
     /** แท็ก action ที่ stripInternalContextTags ยกเว้นไว้ — บนเว็บไม่มีความหมาย ต้องถอดทิ้งเสมอ */
     private const ACTION_TAGS = 'OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE|SKIP|END_SESSION|OFF_TOPIC_REPICK';
@@ -87,8 +92,9 @@ final class WebChatContinuitySanitizer
         // 5) บรรทัดที่ด่านกันเจลเบรคจับได้ → แทนทั้งบรรทัด
         $lines = preg_split('/\R/u', $text) ?: [];
         foreach ($lines as $i => $line) {
-            if (trim($line) !== '' && FortuneAIService::detectAdversarialInput(trim($line)) !== null) {
-                $lines[$i] = self::ADVERSARIAL_PLACEHOLDER;
+            $attack = trim($line) !== '' ? FortuneAIService::detectAdversarialInput(trim($line)) : null;
+            if ($attack !== null) {
+                $lines[$i] = $attack === 'self_harm' ? self::SELF_HARM_PLACEHOLDER : self::ADVERSARIAL_PLACEHOLDER;
             }
         }
         $text = implode("\n", $lines);

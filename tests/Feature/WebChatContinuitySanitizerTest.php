@@ -73,6 +73,20 @@ class WebChatContinuitySanitizerTest extends TestCase
         $this->assertStringNotContainsString('system prompt', $out);
     }
 
+    /**
+     * 🤍 (2026-11-06) บรรทัดที่ลูกค้าบอกว่าอยากทำร้ายตัวเอง ไม่ใช่การโจมตี — ไม่ส่งข้อความเดิม แต่ส่ง "ธง" ไปให้ห้องเว็บ
+     */
+    public function test_a_self_harm_line_is_replaced_by_a_crisis_flag_not_the_raw_text(): void
+    {
+        $out = S::sanitizeInbound("แฟนทิ้งไปค่ะ\nไม่ไหวแล้ว อยากตาย\nช่วยดูหน่อยนะคะ");
+
+        $this->assertStringNotContainsString('อยากตาย', $out);
+        $this->assertStringContainsString(S::SELF_HARM_PLACEHOLDER, $out);
+        $this->assertStringNotContainsString(S::ADVERSARIAL_PLACEHOLDER, $out);
+        $this->assertTrue(\App\Services\Fortune\WebChatContinuityService::memoryCarriesCrisis($out));
+        $this->assertFalse(\App\Services\Fortune\WebChatContinuityService::memoryCarriesCrisis(S::sanitizeInbound('แฟนหายไปค่ะ')));
+    }
+
     public function test_a_customer_saying_khrap_is_not_rewritten(): void
     {
         $this->assertSame('ขอบคุณครับ', S::sanitizeInbound('ขอบคุณครับ'));

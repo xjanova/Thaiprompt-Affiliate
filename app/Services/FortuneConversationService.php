@@ -23563,6 +23563,39 @@ PROMPT;
             return $selfHarmReply;
         }
 
+        return $this->quietOthersCrisisReply(
+            $this->aiChatResponseFor($userId, $messageText, $userProfile, $dmContext, $bypassBuffer),
+            $messageText
+        );
+    }
+
+    /**
+     * 🤍 (2026-11-06) ลูกค้าเล่าว่าคนอื่นอยากทำร้ายตัวเอง ("แฟนขู่จะฆ่าตัวตาย" / "แม่ฆ่าตัวตายเมื่อปีก่อน")
+     *
+     * ไม่ใช่วิกฤตของลูกค้าเอง → ให้ AI ตอบตามปกติ (system prompt มีกฎดูแลใจเมื่อเจอคำวิกฤตอยู่แล้ว)
+     * แต่คำตอบเทิร์นนี้ต้องไม่มีอะไรขาย: เปลี่ยนเป็น action crisis_support = ข้อความล้วน ไม่มีปุ่มดูดวง/ชวนย้าย
+     * ไม่แทรกโฆษณาคอมมิชชั่น ไม่หน่วง 15 วิ และ LINE ตอบด้วย reply เท่านั้น
+     * ไม่ติดธงเปราะบาง ไม่แจ้งแอดมิน (ไม่ใช่ตัวลูกค้า)
+     */
+    protected function quietOthersCrisisReply(?array $result, string $messageText): ?array
+    {
+        if (! is_array($result)
+            || ($result['action'] ?? null) !== 'ai_chat_response'
+            || trim((string) ($result['message'] ?? '')) === ''
+            || ! FortuneAIService::mentionsOthersSelfHarm($messageText)) {
+            return $result;
+        }
+
+        $result['action'] = 'crisis_support';
+        $result['offer_fortune'] = false;
+        $result['message'] = trim((string) preg_replace('/\s*\[(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE)\]\s*/u', ' ', (string) $result['message']));
+
+        return $result;
+    }
+
+    /** เนื้อเดิมของ tryAIChatResponse (แยกออกมาเพื่อให้ด่านวิกฤตครอบผลลัพธ์ได้ทุกทางออก) */
+    protected function aiChatResponseFor(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
+    {
         try {
             // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
             //   ถ้าลูกค้าถูก mark "ฟุ้งซ่านไม่ปิดการขาย" + ไม่มี keyword พร้อมซื้อ → return null
@@ -24586,7 +24619,8 @@ PROMPT;
 
         $platform = $this->currentPlatform ?? $this->detectPlatformFromUserId($userId);
 
-        FortuneAIService::reportSelfHarmSignal('self_harm', $messageText, $userId);
+        FortuneAIService::reportSelfHarmSignal('self_harm', $messageText, $userId,
+            'แชท '.$platform.(! empty($userProfile['name']) ? ' · '.$userProfile['name'] : ''));
         app(\App\Services\Fortune\CustomerPersonaService::class)
             ->flagCrisis($platform, $userId, $userProfile['name'] ?? null);
 

@@ -1061,7 +1061,7 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         //     เท่านั้น — กัน guard false-positive บนคำสั่ง/แท็กภายในพรอมต์ (PROD-DOWN 2026-06-27)
         $attackType = self::detectAdversarialInput($guardText ?? $messageText);
         if ($attackType !== null) {
-            self::reportSelfHarmSignal($attackType, $guardText ?? $messageText);
+            self::reportSelfHarmSignal($attackType, $guardText ?? $messageText, self::userRefFromProfile($userProfile));
             Log::warning('FortuneAIService: ตรวจพบ adversarial input — block + canned reply', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),
@@ -1540,43 +1540,147 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
      * ตัวนั้นรวม "หมดหวัง/ไม่ไหวแล้ว" ไว้ใช้ปรับน้ำเสียง AI ส่วนตัวนี้ใช้ "แทนคำตอบของ AI ทั้งเทิร์น"
      * จึงจับเฉพาะคำที่ชัดว่าหมายถึงตัวเอง ความทุกข์ทั่วไปปล่อยให้ AI ตอบตามกฎใน system prompt
      *
-     * ไม่จับ (กันจับผิด):
+     * ไม่จับ (กันจับผิด — รายการเต็มอยู่ใน tests/Unit/Services/FortuneSelfHarmGuardTest.php):
      *   - ปฏิเสธ: "ไม่อยากตาย" / "don't want to die"
-     *   - ความฝัน: "ฝันว่าฆ่าตัวตาย" — เป็นคำถามทำนายฝันจริง
-     *   - "จบชีวิตคู่/จบชีวิตโสด" · "ไม่อยากอยู่บ้านนี้/กับแฟน" · "ร้อนจะตาย" · "ปีนี้จะตายไหม"
-     *   - "kill yourself" (ด่าบอท) → ยังเป็น off_topic_violence
+     *   - ถามทำนายฝัน: "ฝันว่าฆ่าตัวตาย" (แต่ "ความฝันพังหมด อยากตาย" ยังจับ)
+     *   - "จบชีวิตคู่/โสด/มนุษย์เงินเดือน" · "บริษัทนี้ไม่อยากอยู่แล้ว ควรลาออกไหม" · "ร้อนจะตาย" · "ปีนี้จะตายไหม"
+     *   - พูดเกินจริง: "อายจนอยากตาย" "ขำจนอยากตาย" "อยากตาย555" "หน้าแตกขอตาย" "อยากตายด้วยความรัก"
+     *   - เครื่องราง: "ใส่พระแขวนคอองค์ไหนดี" "สร้อยแขวนคอสีอะไร"
+     *   - คนอื่น: "แฟนขู่จะฆ่าตัวตาย" "แม่ฆ่าตัวตายเมื่อปีก่อน" → mentionsOthersSelfHarm() แทน
+     *   - "kill yourself" (ด่าบอท) → ยังเป็น off_topic_violence · "die my hair" · "cut myself cooking"
      */
     public static function isSelfHarmStatement(string $text): bool
     {
+        return self::scanSelfHarm($text)['self'];
+    }
+
+    /**
+     * 🤍 (2026-11-06) ลูกค้าเล่าว่า "คนอื่น" อยากทำร้าย/ทำร้ายตัวเอง (แฟนขู่จะฆ่าตัวตาย / เพื่อนอยากฆ่าตัวตาย / แม่ฆ่าตัวตาย)
+     *
+     * ไม่ใช่วิกฤตของลูกค้าเอง → ไม่ตอบคำปลอบสำเร็จรูป ไม่ติดธงเปราะบาง ไม่แจ้งแอดมิน
+     * แต่ผู้เรียกต้องให้ AI ตอบด้วยกติกาดูแลใจ และ ❌ ห้ามมีการ์ด/ปุ่มขายในเทิร์นนั้น
+     * ข้อความที่มีทั้งคนอื่นและตัวเอง ("แม่ฆ่าตัวตาย หนูก็อยากตายตาม") → isSelfHarmStatement() = true ชนะ
+     */
+    public static function mentionsOthersSelfHarm(string $text): bool
+    {
+        $scan = self::scanSelfHarm($text);
+
+        return $scan['others'] && ! $scan['self'];
+    }
+
+    /**
+     * ตัวตรวจเดียวของทั้งสองคำถามด้านบน
+     *
+     * @return array{self:bool,others:bool}
+     */
+    private static function scanSelfHarm(string $text): array
+    {
+        $none = ['self' => false, 'others' => false];
+
         // ลอกแท็กระบบที่ผู้เรียกแปะหน้าข้อความออกทั้งหมด (ตัวลอกใน detectAdversarialInput รู้จักไม่ครบทุกแท็ก)
         $t = mb_strtolower(trim((string) preg_replace('/^(?:\s*\[[^\]\n]{0,600}\])+/u', '', $text)));
-        if ($t === '') {
-            return false;
+        // ตัวอักษรล่องหน (zero-width / soft hyphen / BOM) — "อยาก​ตาย" ต้องเท่ากับ "อยากตาย"
+        $t = (string) preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}\x{00AD}]/u', '', $t);
+        if (trim($t) === '') {
+            return $none;
         }
 
-        // ตัดวลีปฏิเสธออกก่อน — "ไม่อยากตาย" ต้องไม่ถูกนับเป็น "อยากตาย"
-        $t = (string) preg_replace('/ไม่\s*(?:ได้\s*)?(?:อยาก|คิด(?:จะ)?)\s*(?:ฆ่าตัวตาย|ตาย|คิดสั้น)|(?:do\s*n[o\']?t|never|not)\s+(?:want|wanna|going)\s+(?:to\s+)?(?:die|kill\s+my\s*self)/iu', ' ', $t);
+        // ถามทำนายฝัน — ปล่อยให้ AI ตอบ (มีกฎดูแลคนวิกฤตใน system prompt อยู่แล้ว)
+        //   เฉพาะรูป "ฝันว่า / ฝันเห็น / ฝันถึง / ทำนายฝัน / เมื่อคืนฝัน" — ❌ ไม่รวม ความฝัน / ฝันสลาย / หมดฝัน
+        $compact = (string) preg_replace('/\s+/u', '', $t);
+        if (preg_match('/(?<!ความ)ฝัน(?:ว่า|เห็น|ถึง)|ทำนายฝัน|แก้ฝัน|(?:เมื่อคืน|เมื่อวาน(?:นี้)?|คืนก่อน|คืนนี้)(?:นอน)?ฝัน|ฝันแบบนี้|ฝันนี้(?:หมายถึง|แปลว่า)/u', $compact)) {
+            return $none;
+        }
 
-        // ทำนายฝัน — ปล่อยให้ AI ตอบ (มีกฎดูแลคนวิกฤตใน system prompt อยู่แล้ว)
-        if (mb_strpos($t, 'ฝัน') !== false) {
-            return false;
+        $others = false;
+
+        // ── ไทย ──────────────────────────────────────────────────────────────
+        // 1) "บริษัทนี้ไม่อยากอยู่แล้ว" — ที่ทำงาน/ที่อยู่ ติดกับ "ไม่อยากอยู่" (ดูบนข้อความที่ยังมีวรรค:
+        //    "ไม่มีงาน ไม่อยากอยู่แล้ว" มีวรรคคั่น = คนละวลี ยังจับ)
+        $th = (string) preg_replace('/\s+/u', ' ', $t);
+        $th = (string) preg_replace(
+            '/(?<!มี)(?<!ตก)(?<!หา)(?:บริษัท|ที่ทำงาน|ออฟฟิศ|office|งาน|บ้าน|หอ|คอนโด|ห้อง|ทีม|แผนก|โรงเรียน|มหาลัย|มหาวิทยาลัย|คณะ|ที่นี่|ตรงนี้|เมือง|จังหวัด|ประเทศ|กลุ่ม|ร้าน|โรงงาน|องค์กร|หน่วยงาน|สาขา)'
+            .'(?:นี้|นั้น|นี่|เดิม|ปัจจุบัน|ตอนนี้|เก่า)?(?:ก็|มัน)?(?:ผม|ฉัน|หนู|เรา|ดิฉัน|กู)?ไม่อยากอยู่(?:ต่อ)?(?:ไป)?(?:แล้ว)?/u',
+            ' ',
+            $th
+        );
+        // จากนี้ไปตรวจบนข้อความที่ไม่มีวรรค — "อยาก ตาย" / "ไม่อยาก อยู่แล้ว" / "อยาก จบ ชีวิต" = คำเดียวกัน
+        $th = (string) preg_replace('/\s+/u', '', $th);
+
+        // 2) ถามเรื่องลาออก/ย้ายที่ — "ไม่อยากอยู่(แล้ว)" ในข้อความนี้หมายถึงที่ทำงาน/ที่อยู่
+        if (preg_match('/ลาออก|ย้ายงาน|เปลี่ยนงาน|หางานใหม่|ย้ายบ้าน|ย้ายออก|ย้ายหอ|ย้ายห้อง|ย้ายที่|ย้ายโรงเรียน|ย้ายคณะ|ย้ายทีม|ย้ายแผนก|ย้ายสาขา|ย้ายบริษัท|ซิ่ว/u', $th)) {
+            $th = (string) preg_replace('/ไม่อยากอยู่(?:ต่อ)?(?:ไป)?(?:แล้ว)?/u', ' ', $th);
+        }
+
+        // 3) ปฏิเสธ — "ไม่อยากตาย" "ไม่เคยคิดสั้น" ต้องไม่ถูกนับเป็น "อยากตาย" "คิดสั้น"
+        $th = (string) preg_replace('/ไม่(?:ได้|เคย)?(?:อยาก|คิด)(?:จะ)?(?:ฆ่าตัวตาย|ตาย|คิดสั้น|จบชีวิต)/u', ' ', $th);
+
+        // 4) พูดเกินจริง — อาย/ขำ/เขิน…จนอยากตาย · อยากตาย555 · หน้าแตกขอตาย · อยากตายด้วยความรัก
+        //    (เครียด/เหนื่อย/เจ็บ…จนอยากตาย ยังจับ — ความทุกข์จริงต้องได้คำปลอบ)
+        $th = (string) preg_replace(
+            '/(?:ขำ|ฮา|ตลก|อาย|เขิน|หน้าแตก|หิว|ร้อน|หนาว|ง่วง|เมื่อย|อิ่ม|ฟิน|ดีใจ|สนุก|น่ารัก|ตื่นเต้น|เผ็ด|อร่อย|คิดถึง|ปลื้ม)(?:มาก|สุด|ๆ|จัง|ชะมัด|เลย|แทบ)*(?:จน)?(?:แทบ|จะ)*(?:อยาก|ขอ)ตาย'
+            .'|(?:อยาก|ขอ)ตาย(?:ไป)?(?:เลย)?(?:5{2,}|ฮ่า|lol|lmao|อิอิ|คิคิ|😂|🤣|😆|😅|😹)'
+            .'|(?:อยาก|ขอ)ตาย(?:ด้วยความรัก|ในอ้อมกอด|คาอก)/u',
+            ' ',
+            $th
+        );
+
+        // 5) เครื่องราง — "แขวนคอ" ที่ไม่มี "ตาย/ตัวเอง" ต่อท้าย ในข้อความที่พูดถึงพระ/สร้อย/เครื่องราง = ใส่ของมงคล
+        if (preg_match('/พระ|สร้อย|เครื่องราง|จี้|ตะกรุด|ล็อกเก็ต|ล็อคเก็ต|วัตถุมงคล|เหรียญ|ผ้ายันต์|ประคำ|ลูกปัด|หินสี|กำไล|พลอย|ของขลัง|เข็มกลัด/u', $th)) {
+            $th = (string) preg_replace('/แขวนคอ(?!ตาย|ตัวเอง)/u', ' ', $th);
+        }
+
+        // 6) คนอื่น — "แฟนขู่จะฆ่าตัวตาย" "เพื่อนอยากฆ่าตัวตาย" "แม่ฆ่าตัวตายเมื่อปีก่อน"
+        //    ⚠️ "แม่หนูจะฆ่าตัวตาย" / "เพื่อนผมอยากฆ่าตัวตาย" อ่านได้ว่าลูกค้าพูดถึงตัวเอง (เรียกแม่หมอว่า "แม่")
+        //       → ถ้ามีประธานบุรุษที่ 1 ติดกับคำ ถือว่าเป็นตัวเองไว้ก่อน (ปลอบเกิน ดีกว่าเมินคนที่วิกฤตจริง)
+        $verbs = '(?:ก็|เคย|ขู่|บอก|พูด|ว่า|จะ|อยาก|พยายาม|เพิ่ง|พึ่ง|ได้|คิด|กำลัง|ชอบ|เกือบ|ไป|แอบ|ลอง|เคยคิด|โพสต์|ประกาศ)';
+        $acts = '(?:ฆ่าตัว(?:ตาย)?|คิดสั้น|ทำร้ายตัวเอง|จบชีวิต(?:ตัวเอง)?|ผูกคอ(?:ตาย)?|แขวนคอ(?:ตาย)?|กระโดดตึก|กินยา(?:ฆ่าตัว)?ตาย|กินยา(?:นอนหลับ)?เกินขนาด|ปลิดชีพ(?:ตัวเอง)?|กรีดข้อมือ)';
+        $firstPerson = '/(?<!ของ)(?:หนู|ผม|ฉัน|กู|ดิฉัน|เรา)'.$verbs.'{0,6}'.$acts.'/u';
+        if (! preg_match($firstPerson, $th)) {
+            $subject = '(?:แฟน(?:เก่า)?|เพื่อน(?:สนิท|ร่วมงาน)?|(?:คุณ)?แม่(?!หมอ)|(?:คุณ)?พ่อ|สามี|ภรรยา|ภริยา|เมีย|ผัว|ญาติ|ป้า|ลุง|ปู่|ย่า|ยาย'
+                .'|เจ้านาย|หัวหน้า|ลูกน้อง|ลูก(?:ชาย|สาว)|น้อง(?:ชาย|สาว)|พี่(?:ชาย|สาว)|เขา|คนรัก|คนรู้จัก|คนข้างบ้าน|ดารา|นักร้อง|คนในครอบครัว)'
+                .'(?:ของ)?(?:ผม|ฉัน|หนู|เรา|ดิฉัน|กู)?';
+            $count = 0;
+            $th = (string) preg_replace('/'.$subject.$verbs.'{0,6}'.$acts.'/u', ' ', $th, -1, $count);
+            $others = $count > 0;
         }
 
         // ⚠️ คำดูดวงอย่าง "ดวงตาย" / "ไพ่ Death" / "ไพ่ความตาย" / "ปีนี้จะตายไหม" ต้องไม่ติด — ทุกแพตเทิร์นต้องมีคำที่ชี้ว่า "ตัวเองอยากทำ"
-        // 🤍 (2026-11-04) เพิ่ม: เว้นวรรคกลางคำ ฆ่า ตัว ตาย · คิดสั้น · ไม่อยากตื่นอีก · กินยาเกินขนาด · แขวนคอ · กระโดดน้ำ/สะพาน
-        $thai = '/ฆ่า\s*ตัว\s*ตาย|ฆ่าตัวเอง|ทำร้าย(?:ร่างกาย)?ตัวเอง|ทําร้าย(?:ร่างกาย)?ตัวเอง|ปลิดชีพ|อยากตาย|ขอตาย|อยากหายไปจากโลก'
-            .'|ไม่อยากมีชีวิต|ไม่อยากอยู่(?:บน|ใน)?โลก|ไม่อยากอยู่(?:ต่อ)?(?:ไป)?แล้ว|ไม่อยากอยู่(?:ต่อ)?\s*(?:ค่ะ|คะ|ครับ|นะ|อะ)?\s*(?:[.!?…]|$)'
-            .'|(?:อยาก|คิด|จะ|ขอ|พยายาม)\s*จบชีวิต(?!คู่|โสด|สมรส|การ|นัก|ราชการ)|จบชีวิตตัวเอง'
-            .'|(?:อยาก|จะ|กำลัง|เกือบ|เคย)\s*คิดสั้น|ไม่อยากตื่น(?:ขึ้นมา)?อีก|อยากหลับไม่(?:ต้อง)?ตื่น|ไม่อยากหายใจ(?:แล้ว|อีก)|เบื่อ(?:ที่จะ|การ)มีชีวิต'
+        // 🤍 (2026-11-04) เว้นวรรคกลางคำ · คิดสั้น · ไม่อยากตื่นอีก · กินยาเกินขนาด · กระโดดน้ำ/สะพาน
+        // 🤍 (2026-11-06) แขวนคอ ต้องมีเจตนา (อยาก/จะ/คิดจะ… หรือ แขวนคอตาย) · จบชีวิต ไม่รวม "จบชีวิต<บทบาท>"
+        $thai = '/ฆ่าตัวตาย|ฆ่าตัวเอง|ทำร้าย(?:ร่างกาย)?ตัวเอง|ทําร้าย(?:ร่างกาย)?ตัวเอง|ปลิดชีพ|อยากตาย|ขอตาย|อยากหายไปจากโลก'
+            .'|ไม่อยากมีชีวิต|ไม่อยากอยู่(?:บน|ใน)?โลก|ไม่อยากอยู่(?:ต่อ)?(?:ไป)?แล้ว|ไม่อยากอยู่(?:ต่อ)?(?:ค่ะ|คะ|ครับ|นะ|อะ)?(?:[.!?…]|$)'
+            .'|(?:อยาก|คิด|จะ|ขอ|พยายาม)จบชีวิต(?!คู่|โสด|สมรส|การ|นัก|ราชการ|ข้าราชการ|มนุษย์|ลูกจ้าง|พนักงาน|เด็ก|ทาส|หนี้|คนจน|ความ|รัก|แฟน|วัย|ฟรีแลนซ์|ลูกน้อง|เซลส์|ศิษย์|ชาว|มหาลัย|ใน)|จบชีวิตตัวเอง'
+            .'|(?:อยาก|จะ|กำลัง|เกือบ|เคย)คิดสั้น|ไม่อยากตื่น(?:ขึ้นมา)?อีก|อยากหลับไม่(?:ต้อง)?ตื่น|ไม่อยากหายใจ(?:แล้ว|อีก)|เบื่อ(?:ที่จะ|การ)มีชีวิต'
             .'|กรีดข้อมือ|กรีดแขน|กินยาตาย|กินยาฆ่าตัว|กินยา(?:นอนหลับ)?เกินขนาด|กินยา(?:นอนหลับ)?(?:ทั้ง|หมด)(?:แผง|ขวด|กระปุก)'
-            .'|ผูกคอตาย|แขวนคอ|กระโดดตึก|โดดตึกตาย|(?:กระโดด|โดด)(?:น้ำ|สะพาน)(?:ตาย|ให้ตาย)/u';
+            .'|ผูกคอตาย|แขวนคอ(?:ตาย|ตัวเอง)|(?:อยาก|จะ|คิด|เกือบ|พยายาม|เคย|ขอ|กำลัง|ไป)แขวนคอ|กระโดดตึก|โดดตึกตาย|(?:กระโดด|โดด)(?:น้ำ|สะพาน)(?:ตาย|ให้ตาย)/u';
+
+        // ── อังกฤษ ───────────────────────────────────────────────────────────
+        $en = (string) preg_replace('/\s+/u', ' ', $t);
+        $en = (string) preg_replace('/(?:do\s*n[o\']?t|never|not)\s+(?:want|wanna|going)\s+(?:to\s+)?(?:die|kill\s+my\s*self)/iu', ' ', $en);
+        $enOthersCount = 0;
+        $en = (string) preg_replace(
+            '/\b(?:my|his|her|our|their)\s+(?:\w+\s+)?(?:friend|mom|mum|mother|dad|father|brother|sister|son|daughter|husband|wife|boyfriend|girlfriend|partner|ex|cousin|aunt|uncle|grandma|grandpa|colleague|boss)\b(?:\s+\w+){0,4}?\s+(?:suicid(?:e|al)|wants?\s+to\s+die|(?:tried|threatens?|threatened)\s+to\s+kill\s+(?:him|her|them)sel(?:f|ves))'
+            .'|\b(?:he|she|they)\s+(?:is|was|are|were|feels?|felt|seems?|committed|attempted|tried|threatens?|threatened)\s+(?:to\s+)?(?:commit\s+)?suicid(?:e|al)/iu',
+            ' ',
+            $en,
+            -1,
+            $enOthersCount
+        );
+        $others = $others || $enOthersCount > 0;
 
         $english = '/\bsuicid(?:e|al)\b|\bkill(?:ing)?\s+my\s*self\b|\b(?:just|please|someone|somebody)\s+kill\s+me\b'
-            .'|\b(?:want|wanna)\s+(?:to\s+)?die\b|\bend\s+(?:my\s+(?:own\s+)?life|it\s+all)\b'
-            .'|\b(?:hurt|harm|cut)(?:ing)?\s+my\s*self\b|\bself[\s-]?harm\b'
+            .'|\b(?:want|wanna)\s+(?:to\s+)?die\b(?!\s+(?:my|your|his|her|their|the|it|this|that|them)\b)'
+            .'|\bend\s+(?:my\s+(?:own\s+)?life|it\s+all)\b'
+            .'|\bharm(?:ing)?\s+my\s*self\b|\bself[\s-]?harm\b'
+            .'|\b(?:want|wanna|going|gonna|tried|try|trying|urge|urges|thinking\s+(?:about|of)|keep|kept|started|been|feel\s+like)\s+(?:to\s+)?(?:hurt(?:ing)?|cut(?:ting)?)\s+my\s*self\b'
+            .'|\bcut\s+my\s*self\s+again\b'
             .'|\bdon\'?t\s+want\s+to\s+(?:live|be\s+alive|exist)\b|\bno\s+reason\s+to\s+live\b/i';
 
-        return preg_match($thai, $t) === 1 || preg_match($english, $t) === 1;
+        return [
+            'self' => preg_match($thai, $th) === 1 || preg_match($english, $en) === 1,
+            'others' => $others,
+        ];
     }
 
     /**
@@ -1586,8 +1690,13 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
      * - คนเดิมแจ้งซ้ำได้ทุก 6 ชม. (ข้อความถัด ๆ ไปในบทสนทนาเดียวกันไม่รัวแจ้ง)
      * - best-effort ห้าม throw ขวางคำตอบถึงลูกค้า
      * เรียกได้ทุกด่าน — ถ้า $attackType ไม่ใช่ self_harm จะไม่ทำอะไร
+     *
+     * @param  string|null  $userRef  🔑 (2026-11-06) id ที่ไม่ซ้ำกับใคร — ใช้เป็นคีย์กันแจ้งซ้ำ 6 ชม. และให้แอดมินตามหาแชทได้
+     *                                (PSID / LINE user id / "web:<owner>") ❌ ห้ามส่งชื่อที่แสดง — ชื่อซ้ำกันได้
+     *                                null = ไม่รู้ตัวตน (กันซ้ำด้วยข้อความ)
+     * @param  string|null  $where  บอกแอดมินว่าไปดูแชทได้ที่ไหน (ห้อง/ชื่อที่แสดง) — ไม่ใช้เป็นคีย์
      */
-    public static function reportSelfHarmSignal(string $attackType, string $text, ?string $userRef = null): void
+    public static function reportSelfHarmSignal(string $attackType, string $text, ?string $userRef = null, ?string $where = null): void
     {
         if ($attackType !== 'self_harm') {
             return;
@@ -1596,15 +1705,18 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
         try {
             // ข้อความในด่าน pool มีแท็กระบบ [TURN n] ฯลฯ นำหน้า — แอดมินควรเห็นแค่สิ่งที่ลูกค้าพิมพ์
             $text = trim((string) preg_replace('/^(?:\s*\[[^\]\n]{0,600}\])+/u', '', $text));
+            $userRef = $userRef !== null && trim($userRef) !== '' ? trim($userRef) : null;
 
             Log::warning('FortuneAIService: ลูกค้าส่งสัญญาณอยากทำร้ายตัวเอง — ตอบปลอบเบา ๆ (ไม่ทำนาย ไม่ขาย)', [
                 'user_ref' => $userRef,
+                'where' => $where,
                 'input_preview' => mb_substr($text, 0, 120),
             ]);
 
             app(TelegramAlertService::class)->send(
                 "🤍 ลูกค้าส่งสัญญาณอยากทำร้ายตัวเอง\n"
                 .'ผู้ใช้: '.($userRef ?? '(ไม่ทราบ — ดูแชทล่าสุดในวอร์รูม)')."\n"
+                .($where !== null && trim($where) !== '' ? 'ที่: '.mb_substr(trim($where), 0, 160)."\n" : '')
                 .'ข้อความ: '.mb_substr(trim($text), 0, 300)."\n\n"
                 .'บอทปลอบเบา ๆ แล้ว (ไม่ทำนาย ไม่ขาย ไม่ได้ให้เบอร์สายด่วน) — ถ้าสะดวกช่วยเข้าไปดูแลต่อในแชทนะคะ',
                 'fortune_self_harm:'.($userRef ?? md5($text)),
@@ -1615,6 +1727,18 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /** id ลูกค้าที่ไม่ซ้ำกับใครจากโปรไฟล์ที่ส่งเข้าด่าน (ใช้กับ reportSelfHarmSignal) — ไม่รู้ = null */
+    private static function userRefFromProfile(?array $userProfile, ?string $userContext = null): ?string
+    {
+        foreach ([$userContext, $userProfile['platform_user_id'] ?? null, $userProfile['id'] ?? null] as $id) {
+            if (is_scalar($id) && trim((string) $id) !== '') {
+                return trim((string) $id);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -2886,7 +3010,7 @@ PROMPT;
         // 🛡 (2026-05-26) Input sanitizer — same guard
         $attackType = self::detectAdversarialInput($messageText);
         if ($attackType !== null) {
-            self::reportSelfHarmSignal($attackType, $messageText);
+            self::reportSelfHarmSignal($attackType, $messageText, self::userRefFromProfile($userProfile));
             Log::warning('FortuneAIService: ตรวจพบ adversarial input (with-history path) — block', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),
@@ -3674,7 +3798,7 @@ PROMPT;
         //   ต้องมี guard ที่นี่เพราะ Step 1 (direct call) อาจไม่ถูก trigger
         $attackType = self::detectAdversarialInput($messageText);
         if ($attackType !== null) {
-            self::reportSelfHarmSignal($attackType, $messageText, $userContext);
+            self::reportSelfHarmSignal($attackType, $messageText, self::userRefFromProfile($userProfile, $userContext));
             Log::warning('FortuneAIService: ตรวจพบ adversarial input (pool path) — block', [
                 'attack_type' => $attackType,
                 'input_len' => mb_strlen($messageText),

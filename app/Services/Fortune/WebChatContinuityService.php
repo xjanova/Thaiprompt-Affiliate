@@ -43,7 +43,21 @@ class WebChatContinuityService
     /** role ของบัญชีที่ห้ามมีความจำลูกค้า (แอดมิน/ทีมงาน) */
     private const PRIVILEGED_ROLES = ['admin', 'super_admin', 'staff'];
 
+    /**
+     * 🤍 (2026-11-06) บรรทัดแรกของความจำเมื่อลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเองในแชทเพจ/LINE
+     * (persona ติดธง mental_fragile หรือประวัติที่ยกมามีบรรทัดแบบนั้น) — ไม่มีข้อความเดิมของลูกค้า
+     * วางบรรทัดแรกเสมอ (ไม่โดนตัดตอนความจำเต็มเพดาน) และเป็นธงให้ JuntraChatService เปิดห้องวิกฤต
+     */
+    public const CRISIS_MEMORY_LINE = '— ⚠️ ลูกค้าคนนี้เคยบอกในแชทเพจว่าอยากทำร้ายหรือจบชีวิตตัวเอง: ปลอบเบา ๆ รับฟัง ไม่สั่งสอน ไม่ไล่ไปโทรหาใคร ห้ามชวนเปิดไพ่ ห้ามขาย —';
+
     public function __construct(private FortuneLastReadingRecallService $recall) {}
+
+    /** ความจำนี้บอกว่าลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเอง → ห้องเว็บต้องเป็นห้องวิกฤต */
+    public static function memoryCarriesCrisis(?string $memory): bool
+    {
+        return is_string($memory) && $memory !== ''
+            && (str_contains($memory, self::CRISIS_MEMORY_LINE) || str_contains($memory, WebChatContinuitySanitizer::SELF_HARM_PLACEHOLDER));
+    }
 
     /**
      * เปิดห้องแชท: หา user, consume handoff, ประกอบความจำ
@@ -89,7 +103,9 @@ class WebChatContinuityService
             $memory = $this->buildMemory($user, $psids);
 
             $out['memory'] = $memory;
-            $out['returning'] = $memory !== null;
+            $out['crisis'] = self::memoryCarriesCrisis($memory);
+            // ธงวิกฤตอย่างเดียวไม่นับว่า "รู้จักลูกค้า" (คำทักทายลูกค้าเก่าต้องมีเรื่องจริงรองรับ)
+            $out['returning'] = $memory !== null && trim(str_replace(self::CRISIS_MEMORY_LINE, '', $memory)) !== '';
             $out['customer_name'] = $this->customerName($user, $psids);
 
             if ($handoff || $memory !== null) {
@@ -173,6 +189,7 @@ class WebChatContinuityService
             'continued_from' => null,
             'handoff_id' => null,
             'handoff_consumed' => false,
+            'crisis' => false,
         ];
     }
 
@@ -407,6 +424,12 @@ class WebChatContinuityService
             }
         }
 
+        // 🤍 (2026-11-06) ลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเอง (ธง persona หรือบรรทัดในประวัติที่ยกมา) → บรรทัดแรกของความจำ
+        if ($this->personaInCrisis($user, $psids)
+            || str_contains(implode(' ', $sections), WebChatContinuitySanitizer::SELF_HARM_PLACEHOLDER)) {
+            array_unshift($sections, self::CRISIS_MEMORY_LINE);
+        }
+
         if ($sections === []) {
             return null;
         }
@@ -423,6 +446,41 @@ class WebChatContinuityService
         }
 
         return $memory;
+    }
+
+    /**
+     * 🤍 (2026-11-06) persona ของลูกค้าคนนี้ (FB ทุก PSID + LINE ที่ผูกกับ user) ติดธง mental_fragile ไหม
+     *
+     * ธงนี้ติดเมื่อบอทตอบคำปลอบให้ (CustomerPersonaService::flagCrisis) หรือ extraction เห็นสัญญาณวิกฤต
+     *
+     * @param  array<int,string>  $psids
+     */
+    protected function personaInCrisis(User $user, array $psids): bool
+    {
+        try {
+            $query = FortuneCustomerPersona::query()->where(function ($q) use ($psids, $user) {
+                if ($psids !== []) {
+                    $q->orWhere(fn ($q2) => $q2->where('platform', 'facebook')->whereIn('platform_user_id', $psids));
+                }
+                $line = (string) ($user->getAttributes()['line_user_id'] ?? '');
+                if ($line !== '') {
+                    $q->orWhere(fn ($q2) => $q2->where('platform', 'line')->where('platform_user_id', $line));
+                }
+                if ($psids === [] && $line === '') {
+                    $q->whereRaw('1 = 0');
+                }
+            });
+
+            foreach ($query->limit(self::MAX_PSIDS + 1)->get() as $persona) {
+                if ($persona->hasRiskFlag('mental_fragile')) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // อ่าน persona ไม่ได้ — ไม่มีธง (ห้องปกติ)
+        }
+
+        return false;
     }
 
     /**
