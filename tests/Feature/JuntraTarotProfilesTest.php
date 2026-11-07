@@ -162,7 +162,7 @@ class JuntraTarotProfilesTest extends TestCase
             ->assertJsonPath('data.format_ok', true);
 
         $call = $this->calls[0];
-        $this->assertSame('prediction', $call['purpose']);
+        $this->assertSame('prediction_deep', $call['purpose']);
         $this->assertNull($call['models']);
         $this->assertSame(2400, $call['config']['max_tokens']);
         $this->assertLessThanOrEqual(50, $call['config']['budget_sec'], 'the web gives up at ~55 s');

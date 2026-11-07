@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneKnowledge;
 use App\Services\CelticCrossService;
 use App\Services\Fortune\JuntraSpreadProfiles;
+use App\Services\Fortune\PersonaBreakDetector;
 use App\Services\FortuneAIService;
 use App\Services\FortuneKnowledgeService;
 use Illuminate\Http\JsonResponse;
@@ -97,29 +98,52 @@ class FreeTarotController extends Controller
 
         $knowledge = $this->knowledgeBlock($kb, $cards);
 
-        try {
-            $result = $ai->chatWithCustomSystemPrompt(
-                $this->systemPrompt($minChars, $promptTarget),
-                $this->userMessage($cards[1], $knowledge, (string) ($data['customer_name'] ?? '')),
-                // +150 เผื่อบล็อก NEXTQ ที่อยู่ในคำตอบเดียวกัน · ×1.2 เผื่อ
-                // ภาษาไทย (~1 token ต่อ 1 ตัวอักษรบนโมเดลส่วนใหญ่)
-                // ตั้งชิดเป้าไว้ก่อน แล้วมี trimToLimit() เก็บส่วนเกินอีกชั้น —
-                // ตัดกลางประโยคอ่านไม่รู้เรื่อง แย่กว่ายาวเกินนิดหน่อย
-                ['temperature' => 0.85, 'max_tokens' => max(400, (int) ceil(($maxChars + 150) * 1.2))],
-            );
-        } catch (\Throwable $e) {
-            Log::warning('Juntra free tarot failed', [
-                'card' => $nameEn,
-                'err' => $e->getMessage(),
-            ]);
+        // 🛡️ (2026-11-07) ด่านหลุดบทแบบเข้ม — ไพ่ฟรีไม่มีข้อความลูกค้าเลย จึงไม่มีเหตุให้ปฏิเสธ/พูด "ครับ"/เผยคำสั่ง
+        //   (เหตุ Haiku 5-7 พ.ย.: เห็นคำสั่งในช่องผู้ใช้เป็น injection แล้วปฏิเสธ) หลุด → ลองอีกรอบ · ยังหลุด = 503 คืนสิทธิ์ฟรี
+        $attempts = 0;
+        do {
+            $attempts++;
+            try {
+                $result = $ai->chatWithCustomSystemPrompt(
+                    $this->systemPrompt($minChars, $promptTarget),
+                    $this->userMessage($cards[1], $knowledge, (string) ($data['customer_name'] ?? '')),
+                    // +150 เผื่อบล็อก NEXTQ ที่อยู่ในคำตอบเดียวกัน · ×1.2 เผื่อ
+                    // ภาษาไทย (~1 token ต่อ 1 ตัวอักษรบนโมเดลส่วนใหญ่)
+                    // ตั้งชิดเป้าไว้ก่อน แล้วมี trimToLimit() เก็บส่วนเกินอีกชั้น —
+                    // ตัดกลางประโยคอ่านไม่รู้เรื่อง แย่กว่ายาวเกินนิดหน่อย
+                    ['temperature' => 0.85, 'max_tokens' => max(400, (int) ceil(($maxChars + 150) * 1.2))],
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Juntra free tarot failed', [
+                    'card' => $nameEn,
+                    'err' => $e->getMessage(),
+                ]);
 
-            // 503 = juntraweb ต้อง "คืนสิทธิ์ฟรี" ให้ลูกค้า ไม่ใช่เผาทิ้ง
-            return response()->json(['message' => 'ระบบคำทำนายไม่พร้อมชั่วคราว'], 503);
-        }
+                // 503 = juntraweb ต้อง "คืนสิทธิ์ฟรี" ให้ลูกค้า ไม่ใช่เผาทิ้ง
+                return response()->json(['message' => 'ระบบคำทำนายไม่พร้อมชั่วคราว'], 503);
+            }
 
-        $text = trim((string) ($result['response'] ?? ''));
-        if ($text === '') {
-            return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
+            $text = trim((string) ($result['response'] ?? ''));
+            if ($text === '') {
+                return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
+            }
+
+            // ตรวจเฉพาะเสียงของแม่หมอ — บล็อก NEXTQ เป็นคำถามในเสียงลูกค้า (มี "ครับ" ได้)
+            $voice = $text;
+            CelticCrossService::pullNextQuestions($voice);
+            $broken = PersonaBreakDetector::reason($voice, true)
+                ?? (JuntraSpreadProfiles::looksLikeRefusal($voice) ? 'คำปฏิเสธ' : null);
+            if ($broken !== null) {
+                Log::warning('Juntra free tarot: model answer broke persona', [
+                    'card' => $nameEn, 'attempt' => $attempts, 'reason' => $broken,
+                    'provider' => $result['provider'] ?? null, 'model' => $result['model'] ?? null,
+                    'text' => mb_substr($text, 0, 120),
+                ]);
+            }
+        } while ($broken !== null && $attempts < 2);
+
+        if ($broken !== null) {
+            return response()->json(['message' => 'แม่หมออ่านไพ่ไม่สำเร็จ', 'reason_code' => 'model_refused'], 503);
         }
 
         // ดึง "คำถามที่ควรถามต่อ" ออกจากท้ายคำทำนาย (ตัด marker ทิ้งให้ด้วย)

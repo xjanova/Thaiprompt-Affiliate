@@ -145,10 +145,13 @@ TXT,
 TXT,
     ];
 
+    // 💳 (2026-11-07) ทุกแพ็กในนี้ลูกค้าจ่ายเงินก่อนอ่าน (9-139฿) → purpose ต้องอยู่ใน FortuneAIService::PAID_PURPOSES
+    //   เดิม 7 แพ็กใช้ 'prediction' (ไม่ใช่ purpose บิลจ่ายเงิน) → ทางกู้ฉุกเฉินหยิบ key แชทฟรีมาอ่านไพ่ที่ลูกค้าจ่ายได้
+    //   (เจ้าของสั่ง: "บิลจ่ายเงินต้องใช้ OpenAI") · prediction_deep = ขอบเขต key เดียวกับดูดวง 39฿ ในแชท
     private const PROFILES = [
         'single' => [
             'title' => 'ไพ่ใบเดียว',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 1200,
             'birth' => false,
@@ -167,7 +170,7 @@ TXT,
 
         'three' => [
             'title' => 'อดีต ปัจจุบัน อนาคต',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 1800,
             'birth' => false,
@@ -188,7 +191,7 @@ TXT,
         'quick' => [
             'title' => 'ไพ่ 3 ใบ ดูไว',
             'persona' => 'busaba',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 1500,
             'birth' => true,
@@ -213,7 +216,7 @@ TXT,
 
         'love' => [
             'title' => 'ไพ่ความรัก / เนื้อคู่',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 2400,
             'birth' => false,
@@ -233,7 +236,7 @@ TXT,
 
         'career' => [
             'title' => 'ไพ่การงาน / การเงิน',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 2400,
             'birth' => false,
@@ -252,7 +255,7 @@ TXT,
 
         'decision' => [
             'title' => 'ไพ่ทางแยก / ตัดสินใจ',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 2600,
             'birth' => false,
@@ -291,7 +294,7 @@ TXT,
 
         'year' => [
             'title' => 'พยากรณ์ 12 เดือน',
-            'purpose' => 'prediction',
+            'purpose' => 'prediction_deep',
             'strong_model' => false,
             'max_tokens' => 4200,
             'birth' => true,
