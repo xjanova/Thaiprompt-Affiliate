@@ -139,6 +139,16 @@ class ElevenLabsTtsProvider implements TtsProviderInterface
     }
 
     /**
+     * ลายนิ้วมือของ key (ไม่เปิดเผยตัว key) — ใช้เป็นกุญแจแคชผลเช็คบัญชี แอดมินเปลี่ยน key แล้วผลเก่าใช้ไม่ได้ทันที
+     */
+    public function keyFingerprint(): ?string
+    {
+        $key = $this->key();
+
+        return $key === null ? null : substr(hash('sha256', $key), 0, 16);
+    }
+
+    /**
      * โมเดลเสียงที่ใช้ (แอดมินเปลี่ยนได้ ค่าเริ่มต้น Eleven v3)
      */
     public function model(): string

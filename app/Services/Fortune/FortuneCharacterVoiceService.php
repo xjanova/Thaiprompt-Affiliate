@@ -199,6 +199,61 @@ class FortuneCharacterVoiceService
     }
 
     /**
+     * 🔈 (2026-11-07) เสียงพร้อมขายจริงไหม — เจ้าของสั่ง "ปุ่มพรีเมี่ยมจะไม่โชว์ถ้าเสียงไม่พร้อม"
+     *
+     * เดิมเช็คแค่ว่ามี key — key ผิด/เครดิตบัญชี ElevenLabs หมด/ElevenLabs ล่ม ปุ่มก็ยังโชว์ ลูกค้าจ่ายแล้วไม่ได้เสียง
+     * ตอนนี้เช็ค 3 ชั้น:
+     *   1) มี key
+     *   2) บัญชีตอบ /v1/user/subscription ได้ (ไม่เสียโควต้า · แคช 5 นาที, ล้มแคช 1 นาที) และเครดิตเหลือ
+     *   3) งานของลูกค้า 3 ชิ้นล่าสุดใน 15 นาทีไม่ได้ล้มทั้งหมด (ล้มติดกัน = ปิดขายชั่วคราว พ้น 15 นาทีเปิดเอง)
+     *
+     * @return array{ready: bool, reason: ?string, account_chars_left: ?int}
+     *                                                                       reason: no_key | account | no_credits | failing
+     */
+    public function readiness(): array
+    {
+        $fp = $this->provider->keyFingerprint();
+        if ($fp === null) {
+            return ['ready' => false, 'reason' => 'no_key', 'account_chars_left' => null];
+        }
+
+        $cacheKey = 'fortune:charvoice:account:'.$fp;
+        $acct = Cache::get($cacheKey);
+        if (! is_array($acct)) {
+            $acct = $this->provider->credits();
+            Cache::put($cacheKey, $acct, now()->addSeconds($acct['success'] ? 300 : 60));
+        }
+
+        if (! $acct['success']) {
+            return ['ready' => false, 'reason' => 'account', 'account_chars_left' => null];
+        }
+        $balance = $acct['balance'];   // null = key จำกัดสิทธิ์ อ่านเครดิตไม่ได้ แต่สร้างเสียงได้
+        if ($balance !== null && $balance <= 0) {
+            return ['ready' => false, 'reason' => 'no_credits', 'account_chars_left' => 0];
+        }
+        if ($this->isFailingLately()) {
+            return ['ready' => false, 'reason' => 'failing', 'account_chars_left' => $balance];
+        }
+
+        return ['ready' => true, 'reason' => null, 'account_chars_left' => $balance];
+    }
+
+    /** งานของลูกค้า 3 ชิ้นล่าสุดใน 15 นาทีล้มหมด (ไม่นับเสียงตัวอย่างของแอดมิน — แอดมินลองเสียงผิดต้องไม่ปิดขาย) */
+    protected function isFailingLately(): bool
+    {
+        $recent = FortuneVoiceUsage::query()
+            ->where('kind', 'tts')
+            ->where('provider', 'elevenlabs')
+            ->whereIn('purpose', self::METERED_PURPOSES)
+            ->where('created_at', '>=', now()->subMinutes(15))
+            ->orderByDesc('id')
+            ->limit(3)
+            ->pluck('success');
+
+        return $recent->count() >= 3 && $recent->every(fn ($ok) => ! $ok);
+    }
+
+    /**
      * ขอไฟล์เสียงของข้อความ — เจอในแคชคืนทันที ไม่เจอค่อยสั่งสร้าง
      *
      * @param  string  $purpose  'chat' (ห้องแชท) | 'greeting' (ทักลูกค้าคุ้นเคย) | 'narration' (เล่าคำทำนาย)
