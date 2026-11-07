@@ -3,20 +3,35 @@
 namespace App\Http\Controllers\Api\Juntra;
 
 use App\Http\Controllers\Controller;
+use App\Services\Fortune\AstroAspects;
+use App\Services\Fortune\DailyAstroBrief;
+use App\Services\Fortune\PlanetEphemeris;
+use App\Services\Fortune\ThaiAstrologyService;
+use App\Services\FortuneChartService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 /**
- * Server-side natal chart computation.
+ * ผูกดวงกำเนิด + ดาวจรรายวัน ให้แอพจันทรา
  *
- * For the first cut we use Meeus simplified formulas (same accuracy as the
- * Flutter client's local fallback). When/if the team licenses Swiss Ephemeris,
- * swap _sunLongitude/_moonLongitude with the SwissEph wrapper without
- * touching the response shape.
+ * 🪐 (2026-11-07) เลิกสูตรปลอม — เดิมพุธ/ศุกร์/อังคาร/พฤหัส/เสาร์ คือ "ลองจิจูดอาทิตย์ ± ค่าคงที่"
+ *    (+25/−35/+110/+200/+250) ลัคนา = LST×15 + ละติจูด×0.5 และคะแนนรายวัน = 60 + sin(JD)×30
+ *    ตอนนี้ใช้เครื่องเดียวกับบอทแม่หมอทุกตัว:
+ *      - PlanetEphemeris — ตำแหน่งดาวจริง 10 ดวง (นิรายนะ ลาหิรี · เกตุไทยสุริยยาตร์)
+ *      - ThaiAstrologyService::siderealLagnaAtJd — ลัคนาจริงจากเวลา + พิกัด
+ *      - FortuneChartService::CHAOCHANA — ดาวเจ้าชะตา มิตร ศัตรู ตามตำรา (ย่ำรุ่ง 06:00 · พุธกลางคืน = ราหู)
+ *      - DailyAstroBrief — ดวงรายวันของคนเกิดวันนั้น (ชุดเดียวกับโพสดวงรายวันของเพจ)
+ *    รูปทรง response เดิมยังอยู่ครบ (sun/moon/ascendant/planets/ascendant_lon · date/score/sun/moon/reading)
+ *    ราศีเป็นแบบไทย (นิรายนะ) — ฟิลด์ใหม่ `zodiac_frame` บอกไว้ และมี `lon_tropical` ให้ใครที่ต้องการแบบสากล
  */
 class NatalController extends Controller
 {
+    private const SIGNS_EN = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+
+    private const GLYPH = ['Sun' => '☉', 'Moon' => '☽', 'Mars' => '♂', 'Mercury' => '☿', 'Jupiter' => '♃', 'Venus' => '♀', 'Saturn' => '♄', 'Rahu' => '☊', 'Ketu' => '☋', 'Uranus' => '♅'];
+
     public function compute(Request $request): JsonResponse
     {
         $v = Validator::make($request->all(), [
@@ -32,130 +47,157 @@ class NatalController extends Controller
         if ($v->fails()) {
             return response()->json(['message' => $v->errors()->first()], 422);
         }
+        if (! checkdate((int) $request->input('month'), (int) $request->input('day'), (int) $request->input('year'))) {
+            return response()->json(['message' => 'วันที่ไม่มีอยู่จริง'], 422);
+        }
 
-        $jd = $this->julianDay(
-            (int) $request->input('year'),
-            (int) $request->input('month'),
-            (int) $request->input('day'),
-            (int) $request->input('hour'),
-            (int) $request->input('minute'),
-            (float) $request->input('tz_offset_hours'),
+        // เวลาท้องถิ่นของสถานที่เกิด → เวลาไทย (PlanetEphemeris รับเวลาไทย UTC+7)
+        $local = Carbon::create(
+            (int) $request->input('year'), (int) $request->input('month'), (int) $request->input('day'),
+            (int) $request->input('hour'), (int) $request->input('minute'), 0, 'UTC',
         );
-        $t = ($jd - 2451545.0) / 36525.0;
+        $thai = $local->copy()->addMinutes((int) round((7.0 - (float) $request->input('tz_offset_hours')) * 60));
 
-        $sunLon = $this->normalize($this->sunLongitude($t));
-        $moonLon = $this->normalize($this->moonLongitude($t));
-        $lst = $this->localSiderealTime($jd, (float) $request->input('lng'));
-        $ascLon = $this->normalize($lst * 15 + (float) $request->input('lat') * 0.5);
+        $eph = new PlanetEphemeris;
+        $astro = new ThaiAstrologyService;
+        $pos = $eph->positions($thai);
+        $jdUT = $eph->julianDay($thai) - 7.0 / 24.0;
+        $asc = $astro->siderealLagnaAtJd($jdUT, (float) $request->input('lat'), (float) $request->input('lng'), $eph);
+        $ascSign = (int) floor($asc / 30.0) % 12;
+
+        $planets = [];
+        foreach ($pos as $key => $p) {
+            $planets[] = [
+                'key' => strtolower($key),
+                'glyph' => self::GLYPH[$key] ?? '',
+                'label' => $p['th'],
+                'num' => $p['num'],
+                'lon' => round($p['lon'], 2),
+                'lon_tropical' => round($p['lon_tropical'], 2),
+                'sign' => $this->signOf($p['lon']),
+                'house' => ((int) $p['sign_index'] - $ascSign + 12) % 12 + 1,
+                'retro' => (bool) $p['retro'],
+            ];
+        }
+
+        // ดาวเจ้าชะตาตามตำรา — วันไทยเริ่มย่ำรุ่ง 06:00 · พุธหลัง 18:00 = พุธกลางคืน (ราหู)
+        $birthHour = $thai->hour + $thai->minute / 60;
+        $dayIndex = $astro->thaiWeekday($thai->dayOfWeek, $birthHour);
+        if ($astro->isWednesdayNight($dayIndex, $birthHour)) {
+            $dayIndex = FortuneChartService::WEDNESDAY_NIGHT;
+        }
+        $chaochana = FortuneChartService::chaochanaFor($dayIndex);
 
         return response()->json(['data' => [
-            'sun' => $this->signOf($sunLon),
-            'moon' => $this->signOf($moonLon),
-            'ascendant' => $this->signOf($ascLon),
-            'planets' => [
-                ['glyph' => '☉', 'label' => 'อาทิตย์', 'lon' => $sunLon, 'sign' => $this->signOf($sunLon)],
-                ['glyph' => '☽', 'label' => 'จันทร์',  'lon' => $moonLon, 'sign' => $this->signOf($moonLon)],
-                ['glyph' => '☿', 'label' => 'พุธ',    'lon' => $this->normalize($sunLon + 25),  'sign' => $this->signOf($this->normalize($sunLon + 25))],
-                ['glyph' => '♀', 'label' => 'ศุกร์',  'lon' => $this->normalize($sunLon - 35),  'sign' => $this->signOf($this->normalize($sunLon - 35))],
-                ['glyph' => '♂', 'label' => 'อังคาร', 'lon' => $this->normalize($sunLon + 110), 'sign' => $this->signOf($this->normalize($sunLon + 110))],
-                ['glyph' => '♃', 'label' => 'พฤหัส',  'lon' => $this->normalize($sunLon + 200), 'sign' => $this->signOf($this->normalize($sunLon + 200))],
-                ['glyph' => '♄', 'label' => 'เสาร์',  'lon' => $this->normalize($sunLon + 250), 'sign' => $this->signOf($this->normalize($sunLon + 250))],
+            'sun' => $this->signOf($pos['Sun']['lon']),
+            'moon' => $this->signOf($pos['Moon']['lon']),
+            'ascendant' => $this->signOf($asc),
+            'planets' => $planets,
+            'ascendant_lon' => round($asc, 2),
+            'zodiac_frame' => 'sidereal_lahiri',
+            'thai' => $chaochana === null ? null : [
+                'day_index' => $dayIndex,
+                'ruler' => $this->planetTh($chaochana['planet']),
+                'friends' => array_map(fn ($k) => $this->planetTh($k), $chaochana['friends'] ?? []),
+                'enemies' => array_map(fn ($k) => $this->planetTh($k), $chaochana['enemies'] ?? []),
             ],
-            'ascendant_lon' => $ascLon,
+            'aspects' => array_slice(array_values(array_filter(
+                AstroAspects::withinChart($pos),
+                fn ($a) => $a['tight'],
+            )), 0, 8),
         ]]);
     }
 
+    /**
+     * ดาวจรวันนี้ — ส่ง birth_date (Y-m-d) และ birth_hour (ไม่บังคับ) มาด้วย = ดวงรายวันของคนเกิดวันนั้นจริง
+     * ไม่ส่ง = ภาพรวมท้องฟ้าวันนี้ (คะแนนจากมุมดาวจริง ไม่ใช่สุ่ม)
+     */
     public function dailyTransit(Request $request): JsonResponse
     {
-        $now = now();
-        $jd = $this->julianDay($now->year, $now->month, $now->day, $now->hour, $now->minute, 7.0);
-        $t = ($jd - 2451545.0) / 36525.0;
-        $sun = $this->normalize($this->sunLongitude($t));
-        $moon = $this->normalize($this->moonLongitude($t));
-        $score = (int) round(60 + sin($jd) * 30);
+        $v = Validator::make($request->all(), [
+            'birth_date' => 'nullable|date_format:Y-m-d|before:tomorrow|after:1900-01-01',
+            'birth_hour' => 'nullable|numeric|between:0,23.99',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['message' => $v->errors()->first()], 422);
+        }
+
+        $now = Carbon::now('Asia/Bangkok');
+        $pos = (new PlanetEphemeris)->positions(Carbon::parse($now->format('Y-m-d').' 12:00:00', 'Asia/Bangkok'));
+        $sun = $this->signOf($pos['Sun']['lon']);
+        $moon = $this->signOf($pos['Moon']['lon']);
+        $retro = array_values(array_map(fn ($p) => $p['th'], array_filter($pos, fn ($p) => $p['retro'])));
+
+        $brief = null;
+        if ($request->filled('birth_date')) {
+            $astro = new ThaiAstrologyService;
+            $birth = Carbon::parse($request->input('birth_date'));
+            $hour = $request->filled('birth_hour') ? (float) $request->input('birth_hour') : null;
+            $day = $astro->thaiWeekday((int) $birth->dayOfWeek, $hour);
+            if ($astro->isWednesdayNight($day, $hour)) {
+                $day = FortuneChartService::WEDNESDAY_NIGHT;
+            }
+            $brief = (new DailyAstroBrief)->build($day, $now->copy()->startOfDay());
+            if (! ($brief['ok'] ?? false)) {
+                $brief = null;
+            }
+        }
+
+        if ($brief !== null) {
+            $score = (int) max(0, min(100, ($brief['score_hint'] ?? 3) * 20));
+            $reading = $this->personalReading($brief);
+        } else {
+            $tight = array_filter(AstroAspects::withinChart($pos), fn ($a) => $a['tight']);
+            $good = count(array_filter($tight, fn ($a) => $a['tone'] === 'ดี'));
+            $bad = count(array_filter($tight, fn ($a) => $a['tone'] === 'ร้าย'));
+            $score = (int) max(0, min(100, 60 + ($good - $bad) * 8 - count($retro) * 3));
+            $first = reset($tight) ?: null;
+            $reading = "วันนี้พระอาทิตย์สถิตราศี{$sun['th']} จันทร์อยู่ราศี{$moon['th']}"
+                .($first !== null ? " · {$first['a']}{$first['name']}{$first['b']} ({$first['nature']})" : '')
+                .($retro !== [] ? ' · ดาวที่พักร: '.implode(', ', $retro) : '');
+        }
+
         return response()->json(['data' => [
             'date' => $now->toDateString(),
-            'score' => max(0, min(100, $score)),
-            'sun' => $this->signOf($sun),
-            'moon' => $this->signOf($moon),
-            'reading' => $this->dailyReadingFor($sun, $moon),
+            'score' => $score,
+            'sun' => $sun,
+            'moon' => $moon,
+            'retrogrades' => $retro,
+            'reading' => $reading,
+            'personal' => $brief !== null,
         ]]);
     }
 
-    // ─── Meeus simplified ────────────────────────────────────
-
-    private function julianDay(int $y, int $m, int $d, int $hh, int $mm, float $tz): float
+    private function personalReading(array $b): string
     {
-        if ($m <= 2) { $y -= 1; $m += 12; }
-        $a = intdiv($y, 100);
-        $b = 2 - $a + intdiv($a, 4);
-        $dayFrac = $d + ($hh - $tz + $mm / 60.0) / 24.0;
-        return floor(365.25 * ($y + 4716))
-            + floor(30.6001 * ($m + 1))
-            + $dayFrac + $b - 1524.5;
+        $parts = ["คนเกิดวัน{$b['day_name']}"];
+        $lord = (string) ($b['lord']['th'] ?? '');
+        if ($lord !== '') {
+            $parts[] = "ดาวเจ้าชะตา{$lord}".(! empty($b['lord']['sign']) ? "สถิตราศี{$b['lord']['sign']}" : '').(! empty($b['lord']['retro']) ? ' (พักร)' : '');
+        }
+        foreach (array_slice($b['aspects'] ?? [], 0, 2) as $a) {
+            if (! empty($a['aspect']) && ! empty($a['other'])) {
+                $parts[] = "{$lord} {$a['aspect']} {$a['other']}".(! empty($a['nature']) ? " ({$a['nature']})" : '');
+            }
+        }
+
+        return implode(' · ', $parts);
     }
 
-    private function sunLongitude(float $t): float
+    private function planetTh(string $key): string
     {
-        $l0 = 280.46646 + 36000.76983 * $t + 0.0003032 * $t * $t;
-        $m = 357.52911 + 35999.05029 * $t - 0.0001537 * $t * $t;
-        $mr = $m * M_PI / 180;
-        $c = (1.914602 - 0.004817 * $t) * sin($mr)
-            + (0.019993 - 0.000101 * $t) * sin(2 * $mr)
-            + 0.000289 * sin(3 * $mr);
-        return $l0 + $c;
+        return FortuneChartService::PLANETS[$key]['name'] ?? $key;
     }
 
-    private function moonLongitude(float $t): float
-    {
-        $lp = 218.3164477 + 481267.88123421 * $t;
-        $d = 297.8501921 + 445267.1114034 * $t;
-        $m = 357.5291092 + 35999.0502909 * $t;
-        $mp = 134.9633964 + 477198.8675055 * $t;
-        $f = 93.2720950 + 483202.0175233 * $t;
-        $s = fn (float $x) => sin($x * M_PI / 180);
-        return $lp
-            + 6.289 * $s($mp)
-            - 1.274 * $s($mp - 2 * $d)
-            + 0.658 * $s(2 * $d)
-            - 0.214 * $s(2 * $mp)
-            - 0.186 * $s($m)
-            - 0.114 * $s(2 * $f);
-    }
-
-    private function localSiderealTime(float $jd, float $lng): float
-    {
-        $t = ($jd - 2451545.0) / 36525.0;
-        $gmst = 280.46061837 + 360.98564736629 * ($jd - 2451545.0)
-            + 0.000387933 * $t * $t - $t * $t * $t / 38710000.0;
-        return fmod($gmst + $lng, 360) / 15.0;
-    }
-
-    private function normalize(float $deg): float
-    {
-        $r = fmod($deg, 360);
-        return $r < 0 ? $r + 360 : $r;
-    }
-
+    /** @return array{idx:int, th:string, en:string, lon:float} */
     private function signOf(float $lon): array
     {
-        $signs = ['เมษ', 'พฤษภ', 'เมถุน', 'กรกฎ', 'สิงห์', 'กันย์',
-                  'ตุล', 'พิจิก', 'ธนู', 'มังกร', 'กุมภ์', 'มีน'];
-        $signsEn = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-                    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-        $idx = ((int) floor($lon / 30)) % 12;
-        return [
-            'idx' => $idx,
-            'th' => $signs[$idx],
-            'en' => $signsEn[$idx],
-            'lon' => round($lon, 2),
-        ];
-    }
+        $lon = fmod($lon, 360.0);
+        if ($lon < 0) {
+            $lon += 360.0;
+        }
+        $idx = (int) floor($lon / 30.0) % 12;
 
-    private function dailyReadingFor(float $sun, float $moon): string
-    {
-        $signs = $this->signOf($sun);
-        return "พระอาทิตย์อยู่ราศี{$signs['th']} — วันนี้เป็นวันที่เหมาะกับการเริ่มต้นสิ่งใหม่ๆ "
-            . "พระจันทร์ส่งพลังให้ลูกฟังเสียงในใจตัวเองมากขึ้น ✨";
+        return ['idx' => $idx, 'th' => PlanetEphemeris::SIGNS[$idx], 'en' => self::SIGNS_EN[$idx], 'lon' => round($lon, 2)];
     }
 }

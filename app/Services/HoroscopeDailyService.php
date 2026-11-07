@@ -599,7 +599,7 @@ PROMPT;
      *
      * @return array ['overall', 'love', 'career', 'finance', 'health', 'scores' => [...]]
      */
-    protected function parseAIPrediction(string $response): array
+    public function parseAIPrediction(string $response): array
     {
         $result = [
             'overall' => null,
