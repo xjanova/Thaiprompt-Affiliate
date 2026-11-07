@@ -43,6 +43,9 @@ class FortuneBranchRepostTest extends TestCase
     /** ให้ POST /photos ของสาขาหมดเวลา (ไม่ได้คำตอบ) กี่ครั้งแรก */
     private int $photoTimeouts = 0;
 
+    /** false = ทำตัวเหมือน Facebook จริง: ตั้งเวลารูป (published=false) ไม่คืน post_id */
+    private bool $photoReturnsPostId = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -158,7 +161,9 @@ class FortuneBranchRepostTest extends TestCase
                         return Http::response(['error' => ['message' => 'Invalid image (access_token='.self::BRANCH_TOKEN.')', 'code' => 324]], 400);
                     }
 
-                    return Http::response(['id' => 'ph'.count($this->writes), 'post_id' => '222_'.count($this->writes)]);
+                    return Http::response($this->photoReturnsPostId
+                        ? ['id' => 'ph'.count($this->writes), 'post_id' => '222_'.count($this->writes)]
+                        : ['id' => 'ph'.count($this->writes)]);
                 }
 
                 if (str_ends_with($path, '/222/videos')) {
@@ -199,6 +204,15 @@ class FortuneBranchRepostTest extends TestCase
                     ['width' => 720, 'source' => "https://cdn.test/{$m[1]}_720.jpg"],
                     ['width' => 1536, 'source' => "https://cdn.test/{$m[1]}_full.jpg"],
                 ]]);
+            }
+
+            // รูปที่ตั้งเวลาไว้ในสาขา → บอกรหัสโพสของมัน · โพสนั้นขึ้นหน้าเพจแล้ว
+            if (preg_match('#/ph(\d+)$#', $path, $m)) {
+                return Http::response(['id' => 'ph'.$m[1], 'page_story_id' => '222_st'.$m[1]]);
+            }
+
+            if (preg_match('#/222_st\d+$#', $path)) {
+                return Http::response(['is_published' => true]);
             }
 
             if (str_ends_with($path, '/vid2')) {
@@ -400,6 +414,26 @@ class FortuneBranchRepostTest extends TestCase
         $this->assertSame([], $this->writesTo('/222/videos'), 'ปิดวิดีโอไว้ ห้ามโพสวิดีโอ');
         $first = $this->writesTo('/222/photos')[0]->data();
         $this->assertSame("แผ่เมตตาก่อนนอน ปิดวันด้วยใจที่นุ่มนวล\n\nแม่หมอจันทรา สาขาจังหวัดเลย", $first['message']);
+    }
+
+    /**
+     * เจอบน prod (2026-11-07): Facebook ไม่คืน post_id ตอนตั้งเวลารูป
+     * → ต้องหารหัสโพสจากตัวรูปเอง ไม่งั้นรูปที่ขึ้นแล้วค้างสถานะ "ตั้งเวลา" ตลอดไป
+     */
+    public function test_reconcile_marks_photo_published_when_facebook_gave_no_post_id(): void
+    {
+        $this->photoReturnsPostId = false;
+
+        $this->service()->run($this->branch->fresh(), now: $this->now());
+        $row = FortunePageRepost::where('media_type', 'photo')->first();
+        $this->assertNull($row->target_post_id, 'จำลองให้ตรงกับ Facebook จริง');
+
+        $stats = $this->service()->reconcile($this->branch->fresh(), CarbonImmutable::parse('2026-11-07 10:00', 'Asia/Bangkok'));
+
+        $row->refresh();
+        $this->assertSame(FortunePageRepost::STATUS_PUBLISHED, $row->status);
+        $this->assertSame('222_st'.substr($row->target_object_id, 2), $row->target_post_id);
+        $this->assertGreaterThanOrEqual(1, $stats['published']);
     }
 
     public function test_cancel_deletes_scheduled_post_on_facebook(): void

@@ -848,6 +848,28 @@ class FortuneRepostService
 
         $postId = $repost->target_post_id;
 
+        // ⚠️ (2026-11-07) POST /photos แบบ published=false ไม่คืน post_id มาให้
+        //    เจอบน prod: รูปขึ้นหน้าเพจตรงเวลา แต่แถวค้าง "ตั้งเวลา" ตลอดไป เพราะไม่มีรหัสโพสให้เช็ค
+        //    → ถามรหัสโพสจากตัวรูป (page_story_id) แล้วจำไว้ในแถว (reconcile() เป็นคน save)
+        if (! $postId && $repost->target_object_id) {
+            $response = Http::timeout(20)->get(self::GRAPH.$repost->target_object_id, [
+                'fields' => 'page_story_id',
+                'access_token' => $token,
+            ]);
+
+            if ((int) $response->json('error.code') === 100) {
+                return 'missing';
+            }
+
+            $postId = (string) $response->json('page_story_id', '');
+
+            if ($postId === '') {
+                return null;
+            }
+
+            $repost->target_post_id = $postId;
+        }
+
         if (! $postId) {
             return null;
         }
