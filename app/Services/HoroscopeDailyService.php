@@ -6,6 +6,7 @@ use App\Models\HoroscopeDailyPrediction;
 use App\Models\HoroscopeZodiacSign;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\DailyAstroBrief;
+use App\Services\Fortune\PersonaBreakDetector;
 use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -166,12 +167,15 @@ class HoroscopeDailyService
             // สร้าง prompt
             $prompt = $this->buildZodiacPrompt($zodiac, $date);
 
-            // เรียก AI
-            $result = $this->aiService->generateWithRetryAndFallback(
-                questions: [$prompt],
-                promptTemplate: null,
-                readingType: 'basic'
-            );
+            // เรียก AI — 🤖 (2026-11-07) งานที่ระบบสั่งเอง: คำสั่งต้องอยู่ system role (ดู withSystemAuthoredTask)
+            $result = $this->aiService
+                ->withSystemAuthoredTask()
+                ->generateWithRetryAndFallback(
+                    questions: [$prompt],
+                    promptTemplate: null,
+                    readingType: 'basic'
+                );
+            $this->assertInCharacter($result);
 
             // แยกคำทำนายจาก AI response
             $parsed = $this->parseAIPrediction($result['response'] ?? '');
@@ -257,13 +261,17 @@ class HoroscopeDailyService
             $brief = (new DailyAstroBrief)->build($birthDay, $date);
             $prompt = $this->buildBirthDayPromptFromBrief($brief);
 
+            // 🤖 (2026-11-07) withSystemAuthoredTask — พรอมต์ทั้งก้อนเป็นคำสั่งของระบบ ไม่ใช่คำถามลูกค้า
+            //    ส่งเป็น "คำถาม" เข้า template ของดูดวง 39฿ → Claude Haiku เห็นคำสั่งยาวในช่องผู้ใช้แล้วปฏิเสธบท
             $result = $this->aiService
                 ->withConfigOverride(['key_wait_sec' => FortuneAIService::BATCH_KEY_WAIT_SEC])
+                ->withSystemAuthoredTask()
                 ->generateWithRetryAndFallback(
                     questions: [$prompt],
                     promptTemplate: null,
                     readingType: 'basic'
                 );
+            $this->assertInCharacter($result);
 
             $parsed = $this->parseAIPrediction($result['response'] ?? '');
 
@@ -352,6 +360,22 @@ class HoroscopeDailyService
             ]);
 
             throw $e;
+        }
+    }
+
+    /**
+     * 🎭 (2026-11-07) คำปฏิเสธบทห้ามถูกบันทึกเป็นคำทำนาย — โยนให้ catch ทำเครื่องหมาย failed
+     *
+     * failed = รอบกู้ 00:20 ลองใหม่ และ DM ไม่หยิบไปส่ง (อ่านเฉพาะ status=generated)
+     *
+     * @throws \RuntimeException
+     */
+    protected function assertInCharacter(array $result): void
+    {
+        $reason = PersonaBreakDetector::reason((string) ($result['response'] ?? ''), strict: true);
+
+        if ($reason !== null) {
+            throw new \RuntimeException("AI ตอบหลุดบทแม่หมอ ({$reason}) — ไม่บันทึกเป็นคำทำนาย");
         }
     }
 

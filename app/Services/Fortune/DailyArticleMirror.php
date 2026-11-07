@@ -169,6 +169,18 @@ class DailyArticleMirror
                 ->latest('id')
                 ->first();
 
+            // 🎭 (2026-11-07) บทความที่เป็นคำปฏิเสธบท (แถวเก่า 5-7 พ.ย.) ห้ามคัดลอกไปเลนแชท/DM
+            //    คืน null = เลนแชทยิง AI เอง (มีด่านกันอีกชั้น) แทนการส่งคำปฏิเสธให้ลูกค้า
+            if ($content !== null && PersonaBreakDetector::isBreak((string) $content->ai_prediction, strict: true)) {
+                Log::warning('DailyArticleMirror: บทความเลนโพสเป็นคำตอบหลุดบท — ไม่คัดลอก', [
+                    'content_id' => $content->id,
+                    'birth_day' => $birthDay,
+                    'reason' => PersonaBreakDetector::reason((string) $content->ai_prediction, strict: true),
+                ]);
+
+                return null;
+            }
+
             return $content === null ? null : $this->mirror($content);
         } catch (\Throwable $e) {
             Log::warning('DailyArticleMirror: หาบทความของเลนโพสไม่สำเร็จ', [

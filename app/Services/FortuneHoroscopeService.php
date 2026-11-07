@@ -11,6 +11,7 @@ use App\Services\Fortune\DailyAstroBrief;
 //    ลืม use = PHP resolve เป็น App\Services\FacebookContentPolicy → fatal ตอน runtime เท่านั้น
 //    (ดวงรายวัน 6 ก.ย. 2569 ตายทั้งวัน 0/7 ใบ — ดู FortuneHoroscopeServiceImportTest)
 use App\Services\Fortune\FacebookContentPolicy;
+use App\Services\Fortune\PersonaBreakDetector;
 use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
 use Exception;
@@ -412,14 +413,24 @@ class FortuneHoroscopeService
         // ใช้ FortuneAIService::generateWithRetryAndFallback
         // 🚦 (2026-10-31) งานหลังบ้าน รอคิว key ได้ — ใบที่ล้มตอนนี้จะหายจากโพส 00:05 เลย
         //    (รอบกู้ 00:20 ซ่อมได้แค่ฝั่งแชท โพสออกไปแล้ว)
+        // 🤖 (2026-11-07) withSystemAuthoredTask — งานนี้ระบบสั่งเอง ไม่มีลูกค้าพิมพ์
+        //    คำสั่งต้องขึ้นไปอยู่ system role ไม่งั้น Claude Haiku ปฏิเสธบท (โพส 5-7 พ.ย. 7/8 ใบเป็นคำปฏิเสธ)
         $result = $this->aiService
             ->withConfigOverride(['key_wait_sec' => FortuneAIService::BATCH_KEY_WAIT_SEC])
+            ->withSystemAuthoredTask()
             ->generateWithRetryAndFallback(
                 questions: ["ทำนายดวงวันนี้สำหรับคนเกิดวัน{$dayName}"],
                 userProfile: ['name' => "คนเกิดวัน{$dayName}"],
                 promptTemplate: $prompt,
                 readingType: 'basic',
             );
+
+        // 🎭 ด่านสุดท้ายก่อนบันทึก — คำปฏิเสธบทห้ามกลายเป็น "คำทำนาย" ที่ขึ้นโพสเพจ + DM ลูกค้า
+        //    โยน = แถวนี้ markFailed() → ไม่ขึ้นโพส ไม่ถูก mirror ไปเลนแชท
+        $breakReason = PersonaBreakDetector::reason((string) ($result['response'] ?? ''), strict: true);
+        if ($breakReason !== null) {
+            throw new \RuntimeException("AI ตอบหลุดบทแม่หมอ ({$breakReason}) — ไม่บันทึกเป็นคำทำนายวัน{$dayName}");
+        }
 
         return [
             'response' => $result['response'] ?? '',
