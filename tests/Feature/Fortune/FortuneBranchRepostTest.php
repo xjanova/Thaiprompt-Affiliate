@@ -300,6 +300,34 @@ class FortuneBranchRepostTest extends TestCase
         $this->assertSame(0, FortunePageRepost::count());
     }
 
+    public function test_command_page_option_picks_exactly_one_page(): void
+    {
+        // เคสจริงบน prod: มีเพจอื่นที่ id ตรงกับรหัสสาขา → --page ต้องได้แค่สาขา ไม่ใช่ทั้งคู่
+        $decoy = FortunePage::create([
+            'code' => 'other-page',
+            'name' => 'เพจอื่นที่ไม่ใช่สาขา',
+            'platform' => 'facebook',
+            'external_page_id' => '333',
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+        $this->branch->update(['code' => (string) $decoy->id]);
+
+        $this->artisan('fortune:repost-schedule', ['--page' => (string) $decoy->id, '--dry-run' => true])
+            ->expectsOutputToContain($this->branch->name)
+            ->doesntExpectOutputToContain($decoy->name)
+            ->assertSuccessful();
+
+        $this->artisan('fortune:repost-schedule', ['--page' => 'id:'.$decoy->id, '--dry-run' => true])
+            ->expectsOutputToContain($decoy->name)
+            ->doesntExpectOutputToContain($this->branch->name);
+
+        $this->artisan('fortune:repost-schedule', ['--page' => 'ไม่มีเพจนี้', '--dry-run' => true])
+            ->assertFailed();
+
+        $this->assertSame([], $this->writes);
+    }
+
     public function test_switch_off_means_no_posting(): void
     {
         $this->branch->update(['repost_enabled' => false]);
