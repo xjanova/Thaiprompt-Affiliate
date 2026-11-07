@@ -30,7 +30,7 @@ class FortunePageIdentity
     /**
      * ข้อมูลตัวตนของเพจที่กำลังคุยอยู่
      *
-     * @return array{page_id:int,label:string,platform:string,channel_word:string,url:?string,is_default:bool}|null
+     * @return array{page_id:int,label:string,platform:string,channel_word:string,url:?string,is_default:bool,branch_no:?string}|null
      */
     public static function describe(): ?array
     {
@@ -65,6 +65,8 @@ class FortunePageIdentity
                     ? "https://www.facebook.com/{$externalId}"
                     : null,
                 'is_default' => (bool) $page->is_default,
+                // 🔢 (2026-11-07) เจ้าของสั่ง: บอทต้อง "รู้ว่าตัวเองอยู่สาขา 5"
+                'branch_no' => $page->branchNumber(),
             ];
         } catch (\Throwable $e) {
             // ตาราง fortune_pages ยังไม่ migrate / DB สะดุด → ถือว่าไม่รู้เพจ
@@ -98,9 +100,17 @@ class FortunePageIdentity
         // 🏠 ช่องหลัก vs ช่องสาขา — เจ้าของสั่ง (2026-08-21): เพจหลักต้องตอบว่า
         //    "แม่หมอจันทรา ช่องหลัก" ไม่ใช่ชื่อระบบ/บริษัท
         $withLink = $info['url'] !== null ? ' พร้อมลิงก์ข้างบน' : '';
-        $channelLine = $info['is_default']
-            ? "- เพจนี้คือ **ช่องหลัก** ของ{$brand} → ถ้าลูกค้าถามว่า \"นี่เพจอะไร / ช่องไหน / ตามเพจได้ที่ไหน / ใช่เพจ...ไหม\" ให้ตอบว่า \"{$brand} ช่องหลัก\"{$withLink}"
-            : "- เพจนี้คือ **ช่องสาขา** ของ{$brand} → ถ้าลูกค้าถามว่า \"นี่เพจอะไร / ช่องไหน / ตามเพจได้ที่ไหน / ใช่เพจ...ไหม\" ให้ตอบชื่อ \"{$info['label']}\"{$withLink}";
+        $branchNo = $info['branch_no'] ?? null;
+
+        if ($info['is_default']) {
+            $channelLine = "- เพจนี้คือ **ช่องหลัก** ของ{$brand} → ถ้าลูกค้าถามว่า \"นี่เพจอะไร / ช่องไหน / ตามเพจได้ที่ไหน / ใช่เพจ...ไหม\" ให้ตอบว่า \"{$brand} ช่องหลัก\"{$withLink}";
+        } elseif ($branchNo !== null) {
+            // 🔢 มีเลขสาขา — ลูกค้าถาม "สาขาไหน/สาขาอะไร" ต้องตอบเลขได้ทันที ไม่ใช่ย้อนถามว่าหมายถึงสาขาอะไร
+            $channelLine = "- เพจนี้คือ **{$brand} สาขา {$branchNo}** (ช่องสาขา ไม่ใช่ช่องหลัก) → ถ้าลูกค้าถามว่า \"นี่เพจอะไร / ช่องไหน / สาขาไหน / สาขาอะไร / เพจใหม่เหรอ\" ให้ตอบว่า \"{$brand} สาขา {$branchNo}\" ชื่อเพจ \"{$info['label']}\"{$withLink}\n"
+                ."- ดูดวงที่สาขา {$branchNo} ได้ครบเหมือนช่องหลักทุกอย่าง (แม่หมอคนเดียวกัน บริการเดียวกัน)";
+        } else {
+            $channelLine = "- เพจนี้คือ **ช่องสาขา** ของ{$brand} → ถ้าลูกค้าถามว่า \"นี่เพจอะไร / ช่องไหน / ตามเพจได้ที่ไหน / ใช่เพจ...ไหม\" ให้ตอบชื่อ \"{$info['label']}\"{$withLink}";
+        }
 
         $block = self::PROMPT_MARKER." — ข้อเท็จจริง ห้ามเดาเอง]\n"
             .$line."\n"

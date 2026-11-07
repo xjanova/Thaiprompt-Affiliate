@@ -2635,6 +2635,14 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     //    ปุ่มนี้ไว้ใช้กับสาขาที่เพิ่มไว้ก่อนมีระบบนี้ หรือตอนต่อสายพลาดเพราะ Graph ล่ม
     Route::post('/pages/{fortunePage}/subscribe', [\App\Http\Controllers\Admin\FortunePagesController::class, 'subscribe'])->name('pages.subscribe');
 
+    // 🔁 (2026-11-07) รีโพสจากเพจหลักลงเพจสาขา — เปิด/ปิด ตั้งค่า ดูแผน ประวัติ (รายสาขา)
+    Route::get('/reposts', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'index'])->name('reposts.index');
+    Route::put('/reposts/{fortunePage}', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'update'])->name('reposts.update');
+    Route::patch('/reposts/{fortunePage}/toggle', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'toggle'])->name('reposts.toggle');
+    Route::get('/reposts/{fortunePage}/preview', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'preview'])->name('reposts.preview');
+    Route::post('/reposts/{fortunePage}/run', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'runNow'])->name('reposts.run');
+    Route::delete('/reposts/history/{repost}', [\App\Http\Controllers\Admin\FortuneRepostController::class, 'cancel'])->name('reposts.cancel');
+
     // Cloudflare Workers AI (สำหรับเจนภาพดวงประจำวัน)
     Route::put('/channels/cloudflare-ai', [FortuneChannelController::class, 'updateCloudflareAi'])->name('channels.cloudflare-ai.update');
     Route::post('/channels/test-cloudflare-ai', [FortuneChannelController::class, 'testCloudflareAi'])->name('channels.test-cloudflare-ai');
