@@ -120,6 +120,14 @@ class TarotInterpretController extends Controller
         if ($text === '') {
             return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
         }
+        // 🛡️ (2026-11-07) โมเดลปัดไม่ทำนาย ≠ คำทำนาย — 503 ให้แอพ/เว็บตกไปทางสำรองหรือคืนเงิน
+        if (JuntraSpreadProfiles::looksLikeRefusal($text)) {
+            Log::warning('Juntra tarot interpret: model refused to read', [
+                'provider' => $result['provider'] ?? null, 'model' => $result['model'] ?? null, 'text' => mb_substr($text, 0, 160),
+            ]);
+
+            return response()->json(['message' => 'แม่หมออ่านไพ่ไม่สำเร็จ', 'reason_code' => 'model_refused'], 503);
+        }
 
         return response()->json(['data' => [
             'interpretation' => $text,
@@ -199,35 +207,55 @@ class TarotInterpretController extends Controller
         }
 
         $prompt = JuntraSpreadProfiles::userPrompt($profile, $cards, $question, $months, $blocks);
+        $startedAt = microtime(true);
 
-        try {
-            // 🌸 บล็อกตัวละครต้องอยู่ท้ายสุดในค่าเดียวกัน — เรียก withReadingOverride ซ้ำจะทับ systemOverride ทิ้ง
-            $ai->withReadingOverride(rtrim(JuntraSpreadProfiles::systemOverride($profile, count($cards)).'
+        // 🛡️ (2026-11-07) โมเดลบางตัว (claude-haiku-5-5) เคยปฏิเสธไม่ทำนายเพราะเห็นกฎใน user message เป็น injection
+        //   → ลองใหม่อีก 1 ครั้งด้วย context อื่น (ลำดับ key ใหม่) · ยังปัดอีก = 503 ให้เว็บคืนเงิน ห้ามส่งข้อความปัดไปขาย
+        $attempts = 0;
+        do {
+            $attempts++;
+            try {
+                // 🌸 บล็อกตัวละครต้องอยู่ท้ายสุดในค่าเดียวกัน — เรียก withReadingOverride ซ้ำจะทับ systemOverride ทิ้ง
+                $ai->withReadingOverride(rtrim(JuntraSpreadProfiles::systemOverride($profile, count($cards)).'
 
 '.JuntraSpreadProfiles::personaOverride($profile)))
-                // หน้าเว็บรอได้ ~55 วิ — หยุดวนลอง key ก่อนนั้น (บอทรอได้ 150 วิ)
-                ->withConfigOverride(['max_tokens' => $profile['max_tokens'], 'temperature' => 0.6, 'budget_sec' => 50])
-                ->withCustomerContext(array_filter(['customer_name' => $data['customer_name'] ?? null]));
+                    // หน้าเว็บรอได้ ~55 วิ — หยุดวนลอง key ก่อนนั้น (บอทรอได้ 150 วิ)
+                    ->withConfigOverride(['max_tokens' => $profile['max_tokens'], 'temperature' => 0.6, 'budget_sec' => 50])
+                    ->withCustomerContext(array_filter(['customer_name' => $data['customer_name'] ?? null]));
 
-            $result = $ai->generateWithRetryAndFallback(
-                questions: [$prompt],
-                userProfile: null,
-                userPosts: null,
-                promptTemplate: '{questions}',
-                readingType: 'deep',
-                birthDate: null,
-                userContext: 'jw_tarot:'.$profile['key'],
-                purpose: $profile['purpose'],
-                // 🪬 คุณไสย์ → โมเดลตัวแรงทุกครั้ง (นโยบายเดียวกับบอท — FortuneModelRouter)
-                modelOverrides: $profile['strong_model'] ? ['openai' => FortuneModelRouter::strongModel()] : null,
-            );
-        } catch (\Throwable $e) {
-            Log::warning('Juntra tarot profile reading failed', ['profile' => $profile['key'], 'err' => $e->getMessage()]);
+                $result = $ai->generateWithRetryAndFallback(
+                    questions: [$prompt],
+                    userProfile: null,
+                    userPosts: null,
+                    promptTemplate: '{questions}',
+                    readingType: 'deep',
+                    birthDate: null,
+                    userContext: 'jw_tarot:'.$profile['key'].($attempts > 1 ? ':retry' : ''),
+                    purpose: $profile['purpose'],
+                    // 🪬 คุณไสย์ → โมเดลตัวแรงทุกครั้ง (นโยบายเดียวกับบอท — FortuneModelRouter)
+                    modelOverrides: $profile['strong_model'] ? ['openai' => FortuneModelRouter::strongModel()] : null,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Juntra tarot profile reading failed', ['profile' => $profile['key'], 'err' => $e->getMessage()]);
 
-            return response()->json(['message' => 'ระบบคำทำนายไม่พร้อมชั่วคราว'], 503);
+                return response()->json(['message' => 'ระบบคำทำนายไม่พร้อมชั่วคราว'], 503);
+            }
+
+            $text = self::cleanReading((string) ($result['response'] ?? ''));
+            $refused = JuntraSpreadProfiles::looksLikeRefusal($text);
+            if ($refused) {
+                Log::warning('Juntra tarot profile: model refused to read', [
+                    'profile' => $profile['key'], 'attempt' => $attempts,
+                    'provider' => $result['provider'] ?? null, 'model' => $result['model'] ?? null,
+                    'text' => mb_substr($text, 0, 160),
+                ]);
+            }
+            // ลองซ้ำเฉพาะเมื่อยังมีเวลาพอ (เว็บรอใน background ได้ ~150 วิ)
+        } while ($refused && $attempts < 2 && microtime(true) - $startedAt < 60);
+
+        if ($refused) {
+            return response()->json(['message' => 'แม่หมออ่านไพ่ไม่สำเร็จ', 'reason_code' => 'model_refused'], 503);
         }
-
-        $text = self::cleanReading((string) ($result['response'] ?? ''));
         if ($text === '') {
             return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
         }
