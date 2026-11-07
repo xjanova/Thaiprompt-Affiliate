@@ -73,6 +73,8 @@ class JuntraVoiceModeApiTest extends TestCase
 
             return match (true) {
                 str_starts_with($path, '/v1/text-to-speech/') => Http::response(str_repeat("\xFF\xFB\x90\x00", 400), 200, ['Content-Type' => 'audio/mpeg']),
+                // เครดิตบัญชีเหลือ 90,000 ตัว (health เช็คไม่เสียโควต้า)
+                $path === '/v1/user/subscription' => Http::response(['character_count' => 10000, 'character_limit' => 100000, 'tier' => 'creator']),
                 $path === '/v1/speech-to-text' => Http::response([
                     'language_code' => 'tha',
                     'text' => 'อยากรู้เรื่องความรักค่ะ',
@@ -236,7 +238,100 @@ class JuntraVoiceModeApiTest extends TestCase
             ->assertJsonPath('data.stt.available', true)
             ->assertJsonPath('data.stt.seconds_limit', FortuneVoiceTranscribeService::DEFAULT_DAILY_SECONDS)
             ->assertJsonPath('data.stt.seconds_used_today', 2.35);
-        // health ไม่ยิงไปหา ElevenLabs
-        $this->assertCount(1, $this->calls);
+
+        // health ถามบัญชี (ไม่เสียโควต้า) ครั้งเดียวแล้วจำไว้ — เรียกซ้ำไม่ยิงอีก
+        $this->withToken('server-token')->getJson('/api/v1/juntra/server/voice/health')->assertOk()
+            ->assertJsonPath('data.tts.reason', null)
+            ->assertJsonPath('data.tts.account_chars_left', 90000);
+        $this->assertSame(['/v1/speech-to-text', '/v1/user/subscription'], array_column($this->calls, 'path'));
+    }
+
+    private function health()
+    {
+        return $this->withToken('server-token')->getJson('/api/v1/juntra/server/voice/health')->assertOk();
+    }
+
+    public function test_health_is_not_ready_when_the_key_is_rejected(): void
+    {
+        $this->setKey();
+        $this->override = fn ($path) => $path === '/v1/user/subscription'
+            ? Http::response(['detail' => ['status' => 'invalid_api_key', 'message' => 'Invalid API key']], 401)
+            : null;
+
+        $this->health()->assertJsonPath('data.tts.available', false)->assertJsonPath('data.tts.reason', 'account');
+    }
+
+    public function test_health_is_not_ready_when_the_account_is_out_of_credits(): void
+    {
+        $this->setKey();
+        $this->override = fn ($path) => $path === '/v1/user/subscription'
+            ? Http::response(['character_count' => 100000, 'character_limit' => 100000])
+            : null;
+
+        $this->health()->assertJsonPath('data.tts.available', false)
+            ->assertJsonPath('data.tts.reason', 'no_credits')
+            ->assertJsonPath('data.tts.chars_left', 0);
+    }
+
+    public function test_chars_left_is_the_smaller_of_todays_quota_and_the_account_credits(): void
+    {
+        $this->setKey();
+        $this->override = fn ($path) => $path === '/v1/user/subscription'
+            ? Http::response(['character_count' => 98000, 'character_limit' => 100000])
+            : null;
+
+        // โควต้าวันนี้เหลือ 30,000 แต่บัญชีเหลือ 2,000 → ขายได้แค่ 2,000 (เว็บซ่อนปุ่มเองเมื่อไม่พอเล่าหนึ่งชุด)
+        $this->health()->assertJsonPath('data.tts.available', true)->assertJsonPath('data.tts.chars_left', 2000);
+    }
+
+    public function test_a_key_that_cannot_read_credits_still_counts_as_ready(): void
+    {
+        $this->setKey();
+        $this->override = fn ($path) => $path === '/v1/user/subscription'
+            ? Http::response(['detail' => ['status' => 'missing_permissions', 'message' => 'user_read']], 401)
+            : null;
+
+        $this->health()->assertJsonPath('data.tts.available', true)
+            ->assertJsonPath('data.tts.account_chars_left', null)
+            ->assertJsonPath('data.tts.chars_left', 30000);
+    }
+
+    public function test_three_customer_voice_failures_in_a_row_close_the_sale_for_a_while(): void
+    {
+        $this->setKey();
+        $log = fn (string $purpose, bool $ok, int $minutesAgo = 0) => FortuneVoiceUsage::forceCreate([
+            'kind' => 'tts', 'purpose' => $purpose, 'provider' => 'elevenlabs', 'persona' => 'busaba',
+            'chars' => 100, 'success' => $ok, 'created_at' => now()->subMinutes($minutesAgo),
+        ]);
+
+        // เสียงตัวอย่างของแอดมินล้มไม่นับ
+        foreach (range(1, 3) as $_) {
+            $log('sample', false);
+        }
+        $this->health()->assertJsonPath('data.tts.available', true);
+
+        $log('narration', false);
+        $log('chat', false);
+        $this->health()->assertJsonPath('data.tts.available', true);   // ล้ม 2 ยังขาย
+
+        $log('narration', false);
+        $this->health()->assertJsonPath('data.tts.available', false)->assertJsonPath('data.tts.reason', 'failing');
+
+        // สำเร็จหนึ่งครั้ง = กลับมาขาย
+        $log('narration', true);
+        $this->health()->assertJsonPath('data.tts.available', true);
+    }
+
+    public function test_old_failures_do_not_keep_the_sale_closed(): void
+    {
+        $this->setKey();
+        foreach (range(1, 3) as $_) {
+            FortuneVoiceUsage::forceCreate([
+                'kind' => 'tts', 'purpose' => 'narration', 'provider' => 'elevenlabs', 'persona' => 'busaba',
+                'chars' => 100, 'success' => false, 'created_at' => now()->subMinutes(20),
+            ]);
+        }
+
+        $this->health()->assertJsonPath('data.tts.available', true);
     }
 }

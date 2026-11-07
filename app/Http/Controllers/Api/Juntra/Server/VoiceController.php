@@ -156,6 +156,12 @@ class VoiceController extends Controller
         $stt = new FortuneVoiceTranscribeService;
         $ttsLimit = $tts->dailyCharLimit();
         $ttsUsed = $tts->charsUsedToday();
+        // 🔈 (2026-11-07) พร้อมจริง = key ใช้ได้ + บัญชีมีเครดิต + ไม่ได้ล้มติดกัน · เหลือ = น้อยกว่าระหว่างโควต้าวันนี้กับเครดิตบัญชี
+        $ready = $tts->readiness();
+        $ttsLeft = max(0, $ttsLimit - $ttsUsed);
+        if ($ready['account_chars_left'] !== null) {
+            $ttsLeft = min($ttsLeft, $ready['account_chars_left']);
+        }
         $sttLimit = $stt->dailySecondsLimit();
         $sttUsed = $stt->secondsUsedToday();
         $free = new FortuneFreeVoiceService;
@@ -163,11 +169,13 @@ class VoiceController extends Controller
 
         return response()->json(['success' => true, 'data' => [
             'tts' => [
-                'available' => $tts->provider()->isAvailable(),
+                'available' => $ready['ready'],
+                'reason' => $ready['reason'],
                 'provider' => 'elevenlabs',
                 'chars_used_today' => $ttsUsed,
                 'chars_limit' => $ttsLimit,
-                'chars_left' => max(0, $ttsLimit - $ttsUsed),
+                'chars_left' => $ttsLeft,
+                'account_chars_left' => $ready['account_chars_left'],
             ],
             'stt' => [
                 'available' => $stt->provider()->isAvailable(),
