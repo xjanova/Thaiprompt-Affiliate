@@ -112,6 +112,9 @@ class ChatController extends Controller
             'voice_clips.*' => 'string|max:40|regex:/^[a-z_]+_\d+$/',
             // 💬 (2026-11-05) ขอปุ่มคำถามถัดไปที่ AI คิดจากบริบท · ไม่ส่ง = JSON หน้าตาเดิม
             'suggest' => 'sometimes|boolean',
+            // 🪐 (2026-11-07) วันเกิด/เวลาเกิดในโปรไฟล์เว็บ → ผังดวงจริงชุดเดียวกับบิลของเพจ · ไม่ส่ง = ไม่มีผังดวง
+            'birth_date' => 'sometimes|nullable|date_format:Y-m-d|before:today',
+            'birth_time' => 'sometimes|nullable|date_format:H:i',
         ]);
         $suggest = $request->boolean('suggest');
 
@@ -141,6 +144,11 @@ class ChatController extends Controller
                 inputMode: $data['input_mode'] ?? 'text',
                 voiceClips: isset($data['voice_clips']) ? array_values($data['voice_clips']) : null,
                 suggest: $suggest,
+                // 🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บเอง (ระบบเดียวกับแชทเพจ) — ทุกลูกค้าเว็บ ไม่ต้องผูก FB
+                webMemory: true,
+                astro: ! empty($data['birth_date'])
+                    ? ['birth_date' => $data['birth_date'], 'birth_time' => $data['birth_time'] ?? null]
+                    : null,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
