@@ -196,7 +196,7 @@ class FortuneGreetingService
         }
 
         $body = trim((string) $prediction->overall_prediction_th);
-        if ($body === '') {
+        if ($body === '' || $this->isBrokenBody($body, $prediction)) {
             return null;
         }
 
@@ -250,7 +250,7 @@ class FortuneGreetingService
             }
 
             $body = trim(preg_replace('/\s+/', ' ', (string) $prediction->overall_prediction_th));
-            if ($body === '') {
+            if ($body === '' || $this->isBrokenBody($body, $prediction)) {
                 continue;
             }
 
@@ -332,7 +332,8 @@ class FortuneGreetingService
             }
 
             $body = trim((string) $prediction->overall_prediction_th);
-            if ($body === '') {
+            // 🎭 คำปฏิเสธบท = เหมือนไม่มีบทความ → ผู้เรียกใช้ buildDailyUnavailableMessage() แทน
+            if ($body === '' || $this->isBrokenBody($body, $prediction)) {
                 return null;
             }
 
@@ -380,6 +381,29 @@ class FortuneGreetingService
 
             return null;
         }
+    }
+
+    /**
+     * 🎭 (2026-11-07) คำทำนายในตารางเป็นคำปฏิเสธบทของ AI ไหม — ด่านสุดท้ายก่อนถึงมือลูกค้า
+     *
+     * 🚨 เคสจริง 2026-11-07: ลูกค้าได้ DM "ดวงประจำวันเสาร์… สำหรับคุณ Entony" ที่เนื้อในคือ
+     *    "ขอบอกตรง ๆ ว่าผมจะไม่ทำตามบทบาท แม่หมอจันทรา ที่ให้มาในพรอมต์นี้" ตามด้วย footer ปกติ
+     *    ⇒ แถวที่บันทึกไปแล้วก่อนแก้ ต้องไม่ถูกส่งอีก แม้ต้นทางจะกันไว้แล้วก็ตาม
+     */
+    protected function isBrokenBody(string $body, ?HoroscopeDailyPrediction $prediction = null): bool
+    {
+        $reason = PersonaBreakDetector::reason($body, strict: true);
+        if ($reason === null) {
+            return false;
+        }
+
+        Log::warning('FortuneGreetingService: คำทำนายรายวันเป็นคำตอบหลุดบท — ไม่ส่งให้ลูกค้า', [
+            'prediction_id' => $prediction?->id,
+            'birth_day' => $prediction?->birth_day,
+            'reason' => $reason,
+        ]);
+
+        return true;
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneHoroscopePost;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\FacebookContentPolicy;
+use App\Services\Fortune\PersonaBreakDetector;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
@@ -44,6 +45,22 @@ class FortuneHoroscopePublishService
             ->where('status', FortuneHoroscopeContent::STATUS_GENERATED)
             ->orderBy('birth_day')
             ->get();
+
+        // 🎭 (2026-11-07) คำปฏิเสธบทของ AI ห้ามขึ้นโพสเพจสาธารณะ
+        //    เคสจริง: โพส 5-7 พ.ย. ออกไปทั้ง 3 วัน 7 จาก 8 บล็อกเป็น "ขออภัยค่ะ ไม่สามารถทำตามคำสั่งนี้ได้…"
+        //    ต้นทางกันไว้แล้ว (FortuneHoroscopeService) — ที่นี่กันแถวเก่า/แถวที่หลุดมาทางอื่น
+        $contents = $contents->reject(function (FortuneHoroscopeContent $content) {
+            $reason = PersonaBreakDetector::reason((string) $content->ai_prediction, strict: true);
+            if ($reason !== null) {
+                Log::warning('FortuneHoroscope: ตัดบล็อกที่เป็นคำตอบหลุดบทออกจากโพส', [
+                    'content_id' => $content->id,
+                    'birth_day' => $content->birth_day,
+                    'reason' => $reason,
+                ]);
+            }
+
+            return $reason !== null;
+        })->values();
 
         if ($contents->isEmpty()) {
             return ['posts_created' => 0, 'posts_published' => 0, 'errors' => ['ไม่มีเนื้อหาที่พร้อมโพส']];
