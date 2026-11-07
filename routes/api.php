@@ -1580,6 +1580,17 @@ Route::prefix('v1/juntra')->middleware(['juntra.user'])->name('api.juntra.')->gr
         // (juntraweb หักเครดิตแล้วก่อนเรียก ที่นี่ไม่คิดเงินซ้ำ)
         Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
             ->middleware('throttle:20,1')->name('deep');
+
+        // 🪐 (2026-11-07) ดาวจริงให้เว็บจันทรา — เส้นที่ juntraweb เรียกมานานแต่ไม่เคยมี (404)
+        //   horoscope/daily = ดวง 12 ราศีจากตำแหน่งดาวจริง (ฟรี · แคชวันละครั้งต่อราศี)
+        //   auspicious = คำแนะนำฤกษ์ ตรวจซ้ำด้วยปฏิทินโหร ThaiRuekYam (ลูกค้าจ่ายที่ juntraweb แล้ว)
+        //   palm = ดูลายมือด้วย vision พูลเดียวกับบอท (ลูกค้าจ่ายที่ juntraweb แล้ว)
+        Route::post('/horoscope/daily', \App\Http\Controllers\Api\Juntra\HoroscopeDailyController::class)
+            ->middleware('throttle:60,1')->name('horoscope.daily');
+        Route::post('/auspicious', \App\Http\Controllers\Api\Juntra\AuspiciousController::class)
+            ->middleware('throttle:20,1')->name('auspicious');
+        Route::post('/palm', \App\Http\Controllers\Api\Juntra\PalmReadingController::class)
+            ->middleware('throttle:10,1')->name('palm');
     });
 
     Route::prefix('chat/mae-mor')->name('chat.')->group(function () {
@@ -1719,6 +1730,13 @@ Route::prefix('v1/juntra/server')
             // 📈 (2026-11-04) กราฟชีวิตมหาทักษาให้โรงละครคำทำนาย — ไม่ใช้ AI ไม่คิดเงิน (ตัวเลขชุดเดียวกับรูปกราฟใน LINE)
             Route::post('/lifegraph', \App\Http\Controllers\Api\Juntra\Server\LifeGraphController::class)
                 ->name('lifegraph');
+            // 🪐 (2026-11-07) ดาวจริง — controller ตัวเดียวกับทาง token ของลูกค้า (ดูกลุ่ม v1/juntra/fortune)
+            Route::post('/horoscope/daily', \App\Http\Controllers\Api\Juntra\HoroscopeDailyController::class)
+                ->name('horoscope.daily');
+            Route::post('/auspicious', \App\Http\Controllers\Api\Juntra\AuspiciousController::class)
+                ->name('auspicious');
+            Route::post('/palm', \App\Http\Controllers\Api\Juntra\PalmReadingController::class)
+                ->name('palm');
         });
 
         // - affiliate/* : 🌙 (2026-09-21) ผังแม่หมอของลูกค้าจันทราทุกคน — จันทราไม่คำนวณค่าแนะนำเอง
