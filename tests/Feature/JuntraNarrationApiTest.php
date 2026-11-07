@@ -224,7 +224,8 @@ class JuntraNarrationApiTest extends TestCase
         $ai = [['anchor' => 'graph', 'say' => 'ปีนี้ขึ้น ๆ ลง ๆ แต่ปลายปีสว่าง']];
         foreach ($months as $i => $m) {
             $reading .= "## 📅 {$m} · ดี\nธีม: ".str_repeat('เดือนนี้มีเรื่องให้ทำมากมาย ', 4)."\n";
-            $ai[] = ['anchor' => 'month:'.($i + 1), 'tone' => 'good', 'energy' => 3, 'say' => $m.' '.str_repeat('มีเรื่องให้ทำมากมาย ', 10).'จบเดือน'];
+            // ยาวเกิน cap ที่บอก AI (250) — prod: AI เขียนเกินนิดเดียวแล้ววลีท้ายหลุด
+            $ai[] = ['anchor' => 'month:'.($i + 1), 'tone' => 'good', 'energy' => 3, 'say' => $m.' '.str_repeat('มีเรื่องให้ทำมากมาย ', 15).'จบเดือน'];
         }
         $reading .= "## 🧭 คำแนะนำ\nวางแผนการเงินให้ดี";
         $ai[] = ['anchor' => 'summary', 'say' => 'ปีนี้ดีกว่าปีก่อน วางแผนการเงินให้ดี'];
@@ -235,6 +236,7 @@ class JuntraNarrationApiTest extends TestCase
         $this->assertCount(15, $chapters);
         foreach (array_slice($chapters, 1, 12) as $c) {
             // ครบทั้งบท จนถึงคำสุดท้าย — งบเดิม 950 ตัวแบ่ง 14 บทจะเหลือบทละ ~60 ตัว
+            $this->assertGreaterThan(250, mb_strlen($c['say']), $c['anchor']);
             $this->assertStringEndsWith('จบเดือน', $c['say'], $c['anchor']);
         }
         $this->assertGreaterThan(950, array_sum(array_map(fn ($c) => mb_strlen($c['say']), $chapters)));

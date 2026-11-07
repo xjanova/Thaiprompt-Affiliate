@@ -242,7 +242,8 @@ class JuntraNarrationService
                 if ($c['ai']) {
                     $plan[$anchor]['cap'] = $c['kind'] === 'graph'
                         ? self::GRAPH_UNLIMITED
-                        : min(self::CHAPTER_MAX, max(self::CHAPTER_MIN, mb_strlen($c['source'])));
+                        // เล่าเป็นภาษาพูดยาวกว่าต้นฉบับเสมอ → เผื่อ 1.5 เท่า
+                        : min(self::CHAPTER_MAX, max(self::CHAPTER_MIN, (int) ceil(mb_strlen($c['source']) * 1.5)));
                 }
             }
 
@@ -346,7 +347,9 @@ class JuntraNarrationService
                 continue;
             }
             $out[$anchor] = [
-                'say' => VoicePlanParser::cleanSay((string) ($row['say'] ?? ''), $plan[$anchor]['cap']),
+                // ไม่อั้น: cap เป็นแค่ไกด์ให้ AI — ตัดจริงเฉพาะเกิน CHAPTER_MAX
+                //   prod 2026-11-07: AI เขียนสรุปเกิน cap นิดเดียว → วลีท้ายหลุด จบค้าง "…และถ้าอีกฝ่ายไม่ร่วมแก้ปัญหา"
+                'say' => VoicePlanParser::cleanSay((string) ($row['say'] ?? ''), $unlimited ? self::CHAPTER_MAX : $plan[$anchor]['cap']),
                 'tone' => $row['tone'] ?? null,
                 'energy' => $row['energy'] ?? null,
             ];
