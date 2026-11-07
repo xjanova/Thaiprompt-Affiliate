@@ -106,7 +106,7 @@ class JuntraTarotProfilesTest extends TestCase
         }
     }
 
-    /** 🌸 (2026-11-04) ห้องน้องบุษบา — แบบทำนาย quick พูดเป็นบุษบา เรียกลูกค้าว่า "คุณ" · แบบอื่นยังเป็นแม่หมอทุกไบต์ */
+    /** 🌸 (2026-11-04) ห้องน้องบุษบา — quick (และตั้งแต่ 2026-11-06 single/three) พูดเป็นบุษบา เรียกลูกค้าว่า "คุณ" · แพ็กเกจห้องแม่หมอยังเป็นแม่หมอทุกไบต์ */
     public function test_quick_is_read_by_busaba_and_other_packages_stay_maemor(): void
     {
         $cards = [
@@ -124,7 +124,15 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
         $this->assertSame(1500, end($this->calls)['config']['max_tokens']);
 
+        // 🌸 (2026-11-06) ไพ่ 1 ใบ / 3 ใบ ย้ายไปห้องบุษบา — พูดเป็นบุษบาเหมือน quick
         $this->read(['spread_key' => 'three', 'cards' => $cards])->assertOk();
+        $this->assertStringContainsString('PERSONA OVERRIDE — บุษบา', end($this->overrides));
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
+        $this->read(['spread_key' => 'single', 'cards' => [$cards[0]]])->assertOk();
+        $this->assertStringContainsString('PERSONA OVERRIDE — บุษบา', end($this->overrides));
+
+        // แพ็กเกจของห้องแม่หมอยังเป็นแม่หมอทุกไบต์
+        $this->read(['spread_key' => 'love', 'cards' => $this->loveCards()])->assertOk();
         $this->assertStringNotContainsString('PERSONA OVERRIDE', end($this->overrides));
         $this->assertStringEndsWith('ขึ้นต้นคำตอบด้วยหัวข้อแรกทันที', end($this->overrides));
         $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);

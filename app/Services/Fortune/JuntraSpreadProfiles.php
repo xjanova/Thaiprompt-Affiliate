@@ -146,8 +146,11 @@ TXT,
     ];
 
     private const PROFILES = [
+        // 🌸 (2026-11-06 เจ้าของสั่ง) ไพ่ 1 ใบ / 3 ใบ ย้ายไปห้องบุษบา (juntraweb config/chat_rooms.php busaba.spreads)
+        //    "ไพ่ 1 ใบ บุษบาเป็นคนดูแลไม่ใช่แม่หมอ" → ผู้พูดในคำทำนาย = บุษบา
         'single' => [
             'title' => 'ไพ่ใบเดียว',
+            'persona' => 'busaba',
             'purpose' => 'prediction',
             'strong_model' => false,
             'max_tokens' => 1200,
@@ -167,6 +170,7 @@ TXT,
 
         'three' => [
             'title' => 'อดีต ปัจจุบัน อนาคต',
+            'persona' => 'busaba',
             'purpose' => 'prediction',
             'strong_model' => false,
             'max_tokens' => 1800,

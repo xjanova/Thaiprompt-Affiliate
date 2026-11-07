@@ -31,6 +31,7 @@ use Throwable;
  *     💬 (2026-11-04 เจ้าของสั่ง) ความจำ = RPG/อุปนิสัย + ประวัติเปิดไพ่ เท่านั้น (ไม่มีแชทเพจ/เรื่องที่ทักมา)
  *        ใช้ได้ทุกห้องที่ลูกค้าเปิด ไม่ต้องมาจากลิงก์ handoff · ธง facebook_web_only ปิด = ห้องแบบเดิมทุกอย่าง
  *   - 🎭 (2026-11-03) `persona` = maemor | busaba | kunsai (ไม่ส่ง = maemor · ไม่รู้จัก = 422) ล็อกตั้งแต่ start
+ *   - 🧭 (2026-11-06) `room_status` (ไม่บังคับ) = สถานะห้องจริงจากเว็บทุกข้อความ → system message เท่านั้น
  *   - 🔈 (2026-11-04) `voice_mode` + `input_mode` + `voice_clips` (ไม่บังคับ) = โหมดคุยด้วยเสียง → ตอบ `voice_plan`
  *     {source, pre, say, say_parts, post} ให้เว็บเล่นคลิปคลัง → (เสียงใหม่ผ่าน /voice/speak) → คลิปคลัง
  *   - 🎬 (2026-11-04) `POST /chat/greeting` คำทักทายเฉพาะตัวของลูกค้าคุ้นเคย (เว็บนับบิลเอง ≥ 6)
@@ -112,6 +113,8 @@ class ChatController extends Controller
             'voice_clips.*' => 'string|max:40|regex:/^[a-z_]+_\d+$/',
             // 💬 (2026-11-05) ขอปุ่มคำถามถัดไปที่ AI คิดจากบริบท · ไม่ส่ง = JSON หน้าตาเดิม
             'suggest' => 'sometimes|boolean',
+            // 🧭 (2026-11-06) สถานะห้องจริงจากเว็บ (บทบาท/ห้อง/เมนู+ราคา/เครดิต/บิลค้าง/เวลาเหลือ) · ไม่ส่ง = prompt เดิม
+            'room_status' => 'sometimes|nullable|string|max:4000',
         ]);
         $suggest = $request->boolean('suggest');
 
@@ -141,6 +144,7 @@ class ChatController extends Controller
                 inputMode: $data['input_mode'] ?? 'text',
                 voiceClips: isset($data['voice_clips']) ? array_values($data['voice_clips']) : null,
                 suggest: $suggest,
+                roomStatus: $data['room_status'] ?? null,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
