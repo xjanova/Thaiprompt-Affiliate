@@ -46,6 +46,8 @@ class JuntraServerCapacityTest extends TestCase
 
         // controller ของแชท/คำทำนายถูกสร้างตอนรวบรวม middleware — ห้ามแตะ AI จริง (และตารางตั้งค่า AI)
         $ai = \Mockery::mock(\App\Services\FortuneAIService::class);
+        // 📚 แชทเว็บดึงคำตอบตัวอย่างของแอดมิน (RAG) ก่อนยิง AI — ในเทสต์ส่ง system message ผ่านไปเฉย ๆ
+        $ai->shouldReceive('injectAdminQARagFewShot')->andReturnUsing(fn (string $system) => $system);
         $ai->shouldReceive('withCustomerContext')->andReturnSelf();
         $ai->shouldNotReceive('chatWithCustomSystemPrompt');
         $this->app->instance(\App\Services\FortuneAIService::class, $ai);

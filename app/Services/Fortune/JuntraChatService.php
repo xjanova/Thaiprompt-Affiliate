@@ -124,6 +124,17 @@ TXT;
 TXT;
 
     /**
+     * 📚 (2026-11-07) ต่อท้ายตัวอย่างคำตอบของแอดมิน (Admin Q&A) — ตัวอย่างเก็บมาจากแชทเพจ Facebook/LINE
+     * ยืมได้แค่น้ำเสียงและแนวคิด ห้ามยกขั้นตอนบิล/คำสั่งพิมพ์/ราคา/เวลา/จำนวนไพ่ของแชทเพจมาใช้ในเว็บ
+     */
+    private const WEB_RAG_NOTE = <<<'TXT'
+
+⚠️ ตัวอย่างคำตอบข้างบนมาจากแชทในเพจ Facebook/LINE ไม่ใช่ห้องนี้ — ยืมได้แค่น้ำเสียงและวิธีคิดของแม่หมอ
+ห้ามยกขั้นตอนของแชทเพจมาใช้: ห้ามบอกให้โอนเงิน ส่งสลิป สแกน QR ห้ามบอกราคา เวลาที่เหลือ จำนวนไพ่/จำนวนคำถาม
+และห้ามสั่งให้ลูก "พิมพ์" คำสั่งใด ๆ — ยึดกติกาของห้องนี้เท่านั้น
+TXT;
+
+    /**
      * 💬 (2026-11-05) ปุ่มคำถามถัดไปที่ AI คิดจากบริบท — เจ้าของสั่ง "ให้ขึ้นคำถาม ทางเลือก ที่เอไอทำขึ้นเพื่อให้ผู้ใช้ได้กด"
      * ต่อท้าย prompt เฉพาะเว็บที่ขอ (suggest=1) · ป้ายถูกถอดออกเสมอ ลูกค้าไม่เห็น ไม่เข้าประวัติห้อง
      */
@@ -695,6 +706,32 @@ TXT,
             $config['max_tokens'] += self::ASK_EXTRA_TOKENS;
         }
 
+        // 📚 (2026-11-07) คำตอบตัวอย่างที่แอดมินสอนไว้ (Admin Q&A RAG) — ตัวเดียวกับที่บอทแชทเพจใช้
+        //    ⚠️ เฉพาะหมวดที่ใช้กับเว็บได้: ทั่วไป + หลังอ่านคำทำนาย (ห้องที่คุยต่อจากคำพยากรณ์)
+        //       หมวดอื่นเป็นขั้นตอนบิลของแชทเพจ (โอน QR / ส่งสลิป / กรอกวันเกิด / เลือกไพ่ 99฿)
+        //       เว็บจ่ายด้วยเครดิตวอลเลต — ยกมา = แม่หมอบอกลูกค้าเว็บให้โอนเงินผิดช่องทาง
+        //    ห้องวิกฤต/เล่าว่าคนอื่นวิกฤต = ไม่ใส่เลย (ตัวอย่างสายขายห้ามโผล่ตอนนั้น)
+        if (! $crisisRoom && ! $othersCrisis) {
+            $keep = [\App\Models\FortuneAdminQA::CATEGORY_GENERAL];
+            if ($reading !== null) {
+                $keep[] = \App\Models\FortuneAdminQA::CATEGORY_POST_READING;
+            }
+            // หมวดทั่วไป/หลังอ่านคำทำนายบน prod ยังมีคำตอบสายบิลแชทเพจปนอยู่ ~12% ("เปิดบิลให้โอนค่าบูชาครู",
+            //   "39บาทค่ะ", "พิมพ์ ดูดวง") → ตัดตัวอย่างที่พูดเรื่องโอน/ราคา/บิลทิ้งรายตัว
+            $withExamples = $this->ai->injectAdminQARagFewShot(
+                $system,
+                $text,
+                null,
+                array_values(array_diff(\App\Models\FortuneAdminQA::CATEGORIES, $keep)),
+                array_map(fn ($m) => ['role' => $m['role'], 'content' => $m['text']], array_slice($history, 0, -1)),
+                fn ($qa) => ! self::isPageBillAnswer((string) $qa->a_text),
+            );
+            // ตัวกรองคำไม่มีวันครบ — บอก AI ตรง ๆ ว่าตัวอย่างมาจากแชทเพจ ยืมได้แค่น้ำเสียง/แนวคิด
+            if ($withExamples !== $system) {
+                $system = $withExamples.self::WEB_RAG_NOTE;
+            }
+        }
+
         $result = $this->ask(
             $system,
             "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียง".($profile['voice'] ?? $profile['display_name']),
@@ -949,7 +986,15 @@ TXT,
                 );
                 // 🔁 (รีวิว) คำตอบที่มีแต่ป้าย [[ASK]] / บล็อก [[VOICE]] = ว่างสำหรับลูกค้า → ลองคีย์ถัดไป ไม่ใช่ 503
                 if (self::hasVisibleText((string) ($result['response'] ?? '')) || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
-                    return $result;
+                    // 🎭 (2026-11-07) หลุดบท ("ในฐานะ AI…" / พูดถึงพรอมต์ / สรรพนามผู้ชาย) = ลองคีย์ถัดไป
+                    //    แบบเดียวกับคีย์พูลคำทำนายของบอท FB (generateWithRetryAndFallback ข้ามโมเดลที่หลุดบท)
+                    $broken = self::personaBreak((string) ($result['response'] ?? ''));
+                    if ($broken === null) {
+                        return $result;
+                    }
+                    $failures[] = "{$label}: หลุดบท ({$broken})";
+
+                    continue;
                 }
                 $failures[] = "{$label}: ตอบว่าง";
             } catch (\Throwable $e) {
@@ -960,7 +1005,7 @@ TXT,
 
         Log::warning('JuntraChat: ทางหลักไม่ตอบ — สลับไป OpenAI luna', ['tried' => $failures]);
 
-        return $this->ai->chatWithCustomSystemPrompt(
+        $result = $this->ai->chatWithCustomSystemPrompt(
             systemMessage: $system,
             userMessage: $userMessage,
             config: $config + ['timeout' => self::FALLBACK_TIMEOUT_SEC],
@@ -968,6 +1013,44 @@ TXT,
             modelOverride: self::FALLBACK_MODEL,
             guardText: $guardText,
         );
+
+        // 🎭 ทางสุดท้ายก็หลุดบท = ห้ามส่งถึงลูกค้า → โยนต่อ (ผู้เรียกตอบ 503 · เว็บไม่คิดเครดิตเทิร์นนี้)
+        if (($broken = self::personaBreak((string) ($result['response'] ?? ''))) !== null) {
+            Log::warning('JuntraChat: luna หลุดบทด้วย — ไม่ส่งคำตอบนี้', ['reason' => $broken, 'tried' => $failures]);
+
+            throw new RuntimeException('AI reply broke persona: '.$broken);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 📚 (2026-11-07) คำตอบตัวอย่างของแอดมินที่สอนขั้นตอนบิลของแชทเพจ — ห้ามเป็นแบบอย่างให้แชทเว็บ
+     *   (เว็บจ่ายด้วยเครดิตวอลเลต ราคาแพ็กเกจต่างจากบิลแชทเพจ และไม่มีคำสั่ง "พิมพ์ ดูดวง")
+     *   + ตัวเลขยาว ๆ (เบอร์โทร/เลขบัญชีที่แอดมินเคยพิมพ์ในเพจ) — ห้ามหลุดไปให้ลูกค้าคนอื่น
+     *   เช็คกับข้อมูลจริงบน prod 2026-11-07: หมวดทั่วไป+หลังอ่าน 1,185 ตัวอย่าง ตัดทิ้ง ~470 เหลือแนวน้ำเสียง ~710
+     */
+    public static function isPageBillAnswer(string $answer): bool
+    {
+        return preg_match(
+            '/โอน|qr|คิวอาร์|สแกน|สลิป|พร้อมเพย์|เลขบัญชี|บัญชีธนาคาร|บาท|฿|\d+\s*บ\.|บิล|ค่าครู|บูชาครู|เปิดให้บูชา|ค่าดู|ปรึกษาฟรี|มี\s*\d+\s*แบบ|(?<!\d)(?:39|49|59|79|99|199|299|399)(?!\d)|\d[\d\s-]{7,}\d|รับยอด|ยอดเงิน|จ่าย|ชำระ|ขั้นตอน|\d+\s*นาที|\d+\s*ใบ|\d+\s*คำถาม|กด\s*["“\']?\s*อ่าน|พิม(?:พ์)?[\s\/]*(?:ว่า|คำว่า)?[\s\/]*["“\']?\s*(?:ดู|โอน|อ่าน|เปิด)|พิม(?:พ์)?\s*$/iu',
+            $answer
+        ) === 1;
+    }
+
+    /**
+     * 🎭 (2026-11-07) เหตุที่คำตอบแชทนี้หลุดบทตัวละคร — null = ใช้ได้
+     *
+     * ตรวจเฉพาะข้อความที่ลูกค้าจะเห็น (ถอด [[ASK]] / บล็อก [[VOICE]] ก่อน) · ระดับปกติ ไม่ใช่โหมดเข้ม
+     *   (แชทมีเหตุให้ "ขออภัย…ไม่สามารถ" ได้จริง เช่นปัดคำขอนอกขอบเขต — จับแค่คำพูดเรื่องเบื้องหลัง)
+     *   ตัวละครทุกตัวของห้องเป็นผู้หญิง (แม่หมอ/บุษบา) สรรพนามผู้ชาย = หลุดบทเสมอ
+     */
+    private static function personaBreak(string $response): ?string
+    {
+        [$text] = self::extractAsk($response);
+        [$text] = VoicePlanParser::extract($text);
+
+        return PersonaBreakDetector::reason($text);
     }
 
     /** เหลือข้อความให้ลูกค้าเห็นไหม หลังถอดป้ายที่ระบบเก็บไปเอง ([[ASK]] และบล็อก [[VOICE]]) */

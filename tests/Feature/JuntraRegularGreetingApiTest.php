@@ -50,6 +50,8 @@ class JuntraRegularGreetingApiTest extends TestCase
         Passport::actingAsClient($client, [], 'api-oauth');
 
         $ai = Mockery::mock(FortuneAIService::class);
+        // 📚 แชทเว็บดึงคำตอบตัวอย่างของแอดมิน (RAG) ก่อนยิง AI — ในเทสต์ส่ง system message ผ่านไปเฉย ๆ
+        $ai->shouldReceive('injectAdminQARagFewShot')->andReturnUsing(fn (string $system) => $system);
         $ai->shouldReceive('chatWithCustomSystemPrompt')->andReturnUsing(function (...$args) {
             $this->aiCalls[] = ['system' => $args[0], 'user' => $args[1]];
             $next = array_shift($this->aiScript);
