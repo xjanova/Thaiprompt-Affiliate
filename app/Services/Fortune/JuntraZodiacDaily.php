@@ -38,7 +38,7 @@ class JuntraZodiacDaily
         if (! isset(ZodiacAstroBrief::SLUGS[$slug])) {
             return null;
         }
-        $key = 'juntra:zodiac-daily:v1:'.$slug.':'.$date->format('Y-m-d');
+        $key = 'juntra:zodiac-daily:v2:'.$slug.':'.$date->format('Y-m-d');
         if (is_array($hit = Cache::get($key))) {
             return $hit;
         }
@@ -173,7 +173,7 @@ class JuntraZodiacDaily
             'lucky_card' => null,
             'scores' => $brief['scores'],
             'astro' => [
-                'frame' => 'tropical',
+                'frame' => 'sidereal_lahiri',
                 'ruler' => $brief['ruler'] !== null ? array_intersect_key($brief['ruler'], array_flip(['th', 'sign', 'deg', 'house', 'retro'])) : null,
                 'moon' => $brief['moon'] !== null ? array_intersect_key($brief['moon'], array_flip(['th', 'sign', 'deg', 'house'])) : null,
                 'retrogrades' => $brief['retrogrades'],

@@ -106,17 +106,18 @@ class JuntraRealAstroTest extends TestCase
 
     public function test_zodiac_brief_places_the_real_sun_in_the_right_house(): void
     {
-        // 7 พ.ย. 2569 เที่ยงวัน — อาทิตย์สายนะ ~225° (พิจิก 15°)
+        // 7 พ.ย. 2569 เที่ยงวัน — อาทิตย์นิรายนะ ~201° (ตุลย์ 21°) · ราศีแบบไทยเหมือนผังดวงของบอท (สายนะจะเป็นพิจิก)
         $date = Carbon::parse('2026-11-07', 'Asia/Bangkok');
-        $sun = (new PlanetEphemeris)->positions(Carbon::parse('2026-11-07 12:00', 'Asia/Bangkok'))['Sun']['lon_tropical'];
-        $this->assertEqualsWithDelta(225.0, $sun, 1.5);
+        $sun = (new PlanetEphemeris)->positions(Carbon::parse('2026-11-07 12:00', 'Asia/Bangkok'))['Sun']['lon'];
+        $this->assertEqualsWithDelta(201.0, $sun, 1.5);
 
-        $scorpio = (new ZodiacAstroBrief)->build('scorpio', $date);
+        $libra = (new ZodiacAstroBrief)->build('libra', $date);
         $aries = (new ZodiacAstroBrief)->build('aries', $date);
 
-        $this->assertTrue($scorpio['ok']);
-        $this->assertSame(1, $scorpio['planets']['Sun']['house'], 'ราศีที่อาทิตย์อยู่ = ภพที่ 1 ของราศีนั้น');
-        $this->assertSame(8, $aries['planets']['Sun']['house']);
+        $this->assertTrue($libra['ok']);
+        $this->assertSame(1, $libra['planets']['Sun']['house'], 'ราศีที่อาทิตย์อยู่ = ภพที่ 1 ของราศีนั้น');
+        $this->assertSame('ตุลย์', $libra['planets']['Sun']['sign']);
+        $this->assertSame(7, $aries['planets']['Sun']['house']);
         $this->assertSame('อังคาร', $aries['ruler']['th']);
         $this->assertStringContainsString('ดาวเจ้าเรือนราศี: อังคาร', $aries['text']);
         foreach ($aries['scores'] as $s) {
@@ -124,7 +125,7 @@ class JuntraRealAstroTest extends TestCase
             $this->assertLessThanOrEqual(5, $s);
         }
         $this->assertSame($aries['scores'], (new ZodiacAstroBrief)->build('aries', $date)['scores'], 'วันเดิมต้องได้คะแนนเดิม (ไม่สุ่ม)');
-        $this->assertNotSame($aries['text'], $scorpio['text'], '12 ราศีต้องได้ข้อเท็จจริงคนละชุด');
+        $this->assertNotSame($aries['text'], $libra['text'], '12 ราศีต้องได้ข้อเท็จจริงคนละชุด');
     }
 
     public function test_zodiac_brief_rejects_an_unknown_sign(): void
