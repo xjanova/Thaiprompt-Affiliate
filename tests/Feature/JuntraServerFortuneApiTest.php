@@ -55,7 +55,9 @@ class JuntraServerFortuneApiTest extends TestCase
 
             return ['response' => 'ไพ่ถ้วยสองบอกว่าความรักของลูกกำลังเบ่งบานค่ะ', 'provider' => 'gemini', 'model' => 'flash'];
         });
-        $ai->shouldReceive('generateFortuneTelling')->andReturnUsing(function (...$args) {
+        // Deep (ทั้งบิล) ใช้คีย์พูลจ่ายเงิน prediction_deep ผ่าน generateWithRetryAndFallback — ชุดเดียวกับบอท FB
+        $ai->shouldReceive('withConfigOverride')->andReturnSelf();
+        $ai->shouldReceive('generateWithRetryAndFallback')->andReturnUsing(function (...$args) {
             $this->aiCalls[] = $args;
 
             return ['response' => 'ดวงเชิงลึกของลูกช่วงนี้เด่นเรื่องการงานค่ะ', 'provider' => 'gemini', 'model' => 'pro'];

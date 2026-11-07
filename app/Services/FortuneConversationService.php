@@ -121,6 +121,11 @@ class FortuneConversationService
     public const DEEP_READING_PRICE = 39;
 
     /**
+     * ⏱️ (2026-11-07) เหลือเวลาน้อยกว่านี้ (วิ) = ไม่ลองคำทำนายข้อเดิมซ้ำ (ใช้เฉพาะ caller ที่ส่ง budgetSec มา — เว็บจันทรา)
+     */
+    public const DEEP_MIN_RETRY_SEC = 20;
+
+    /**
      * จำนวนคำถามที่ต้องการ — ลดเหลือ 1 ข้อ เพื่อโฟกัสคำทำนายให้แม่นยำ
      *
      * ⚠️ ห้าม hardcode "1 คำถาม" หรือ "2 คำถาม" ในข้อความ — ใช้ self::REQUIRED_QUESTIONS เสมอ
@@ -11279,176 +11284,25 @@ class FortuneConversationService
                     break; // หยุดถามข้อต่อไป ส่งผลลัพธ์ที่ได้แล้ว
                 }
 
-                // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามก่อน generate
-                //   ถ้าเข้าข่ายละเอียดอ่อน (ตาย/ป่วย/หย่า/ฆ่าตัวตาย/อารมณ์รุนแรง)
-                //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
-                // 🎯 (2026-05-13) Default = 'prediction_deep' (เจาะจง Deep 39฿)
-                //   scope `forPurpose('prediction_deep')` fallback chain:
-                //     prediction_deep → prediction → any → null
-                //   → ถ้า admin มาร์ค key 'prediction_deep' จะใช้ก่อน,
-                //     ไม่งั้น fallback ไป 'prediction' หรือ 'any' (backward compat)
-                $deepPurpose = 'prediction_deep';
-                $deepPlatform = $platform ?? ($this->currentPlatform ?? 'facebook');
-                $deepUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
-                $deepDecision = $this->resolveSensitiveDecision(
+                // 🔮 (2026-11-07) ส่วนเรียก AI ต่อข้อย้ายไป generateDeepAnswer() — เว็บจันทรา (Api\Juntra\DeepReadingController)
+                //   เรียกตัวเดียวกัน ลูกค้าเว็บที่จ่าย 39฿ จึงได้เลน/ด่าน/retry ชุดเดียวกับบอท ไม่ใช่ตรรกะก๊อป
+                $deepGen = $this->generateDeepAnswer(
                     (string) $question,
-                    (string) $deepUserId,
-                    $deepPlatform,
-                    'paid_prediction',
-                    [],
-                    []
-                );
-                if ($deepDecision['use_pro']) {
-                    $deepPurpose = 'sensitive';
-                    Log::info('Fortune Deep: คำถามข้อ '.$questionNum.' เข้าข่ายละเอียดอ่อน → ใช้ Pro model', [
-                        'reading_id' => $reading->id ?? null,
-                        'reasons' => $deepDecision['detection']['reasons'] ?? [],
-                        'mood' => $deepDecision['detection']['mood_level'] ?? null,
-                        'complexity' => $deepDecision['detection']['complexity'] ?? null,
-                    ]);
-                }
-
-                // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ (Deep ยิงทีละคำถาม
-                //   → ต้องเรียกในลูปทุกข้อ ไม่ใช่ครั้งเดียวก่อนลูป)
-                // 🗺️ (2026-09-11) จังหวัดเกิดของผังท้ายพรอมต์ — one-shot เหมือนกัน ต้องเป็นค่าเดียวกับ {transit_info}
-                $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
-                // 🕛 (2026-09-12) ล็อกเวลา+จังหวัด "ต่อบิล" — ผังท้ายพรอมต์ต้องไม่อ่านจากข้อความข้อนี้เอง
-                if ($chartInputs !== null) {
-                    $this->aiService->withChartInputs($chartInputs);
-                }
-
-                $aiResult = $this->aiService->generateWithRetryAndFallback(
-                    [$question],
-                    $userProfile,
-                    null,
+                    $questionNum,
                     $perQuestionPrompt,
-                    'deep',
+                    $userProfile,
                     $birthDate,
-                    null,
-                    $deepPurpose
+                    $birthProvince,
+                    $chartInputs,
+                    $platform ?? ($this->currentPlatform ?? 'facebook'),
+                    (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? ''),
+                    $reading
                 );
-
-                // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune deep)
-                LineGatekeeperService::recordAICall('fortune');
-
-                // 🌟 Log + budget tracking ถ้าใช้ Pro
-                if ($deepPurpose === 'sensitive') {
-                    $deepCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
-                        (int) ($aiResult['tokens_used'] ?? 0),
-                        $aiResult['model'] ?? ''
-                    );
-                    app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
-                        ->recordUse($deepPlatform, (string) $deepUserId, $deepCostThb);
-                    $this->logSensitiveEvent(
-                        $deepPlatform,
-                        (string) $deepUserId,
-                        'deep_question',
-                        (string) $question,
-                        $deepDecision['detection'],
-                        [
-                            'used_pro_model' => true,
-                            'pro_provider' => $aiResult['provider'] ?? null,
-                            'pro_model' => $aiResult['model'] ?? null,
-                            'tokens_used' => (int) ($aiResult['tokens_used'] ?? 0),
-                            'cost_thb' => $deepCostThb,
-                        ]
-                    );
-                } elseif ($deepDecision['detection']['is_sensitive'] ?? false) {
-                    // detection trigger แต่ไม่ใช้ Pro (ไม่มี key / mode='off') → log
-                    $this->logSensitiveEvent(
-                        $deepPlatform,
-                        (string) $deepUserId,
-                        'deep_question',
-                        (string) $question,
-                        $deepDecision['detection'],
-                        ['used_pro_model' => false]
-                    );
-                }
-
-                $totalTokens += $aiResult['tokens_used'] ?? 0;
+                $aiResult = $deepGen['ai'];
+                $answerText = $deepGen['text'];
+                $totalTokens += $deepGen['tokens'];
                 $lastProvider = $aiResult['provider'] ?? '';
                 $lastModel = $aiResult['model'] ?? '';
-
-                // 🛡️ (2026-06-17) Completeness gate — กัน "ทำนายไม่ครบ" (เคสจริง FTU-260617-M4983 / reading 7053)
-                //   อาการ: gemini-3.5-flash หลุด scaffold อังกฤษ "Block 2: Mars (Winas/Patni)" แล้วตัดจบ
-                //     → คำทำนายเหลือ ~30 ตัวอักษร แต่ระบบเดิมรับเป็น valid → ส่งของไม่ครบให้ลูกค้าที่จ่ายเงินแล้ว
-                //   แก้ 3 ชั้น: (1) sanitize scaffold ที่หลุด (2) validate ยาวพอ+เป็นไทย (3) retry 1 ครั้ง
-                $answerText = \App\Services\FortuneAIService::stripInternalContextTags(
-                    (string) ($aiResult['response'] ?? '')
-                );
-                // retry สูงสุด 1 ครั้ง — cap ไว้กัน gen เกิน gen-lock TTL → check-pending (ทุกนาที) dispatch ซ้ำ/AI ซ้ำซ้อน
-                $deepRetry = 0;
-                while (! $this->isCompleteDeepAnswer($answerText)
-                    && $deepRetry < 1
-                    && LineGatekeeperService::canCallAI('fortune')) {
-                    $deepRetry++;
-                    Log::warning('Fortune Deep: คำทำนายข้อ '.$questionNum.' ไม่ครบ — retry ครั้งที่ '.$deepRetry, [
-                        'reading_id' => $reading->id ?? null,
-                        'length' => mb_strlen($answerText),
-                        'preview' => mb_substr($answerText, 0, 80),
-                        'prev_model' => $lastModel,
-                    ]);
-
-                    // retry: ใช้ purpose เดิม ($deepPurpose) ที่มี fallback chain ปกติ
-                    //   ⚠️ ห้าม force 'sensitive' — scope นั้น strict ไม่ fallback: ถ้า prod ไม่มี key purpose=sensitive
-                    //   จะ downgrade เงียบ ๆ (เปลือง) หรือ throw → abort ทั้ง reading ทิ้งข้อที่ดีไปด้วย (regression)
-                    //   pool หมุน key/โมเดลใหม่ให้เองตอน generate รอบใหม่ (โอกาส sample ใหม่ไม่ตัดจบ)
-                    //   try/catch กัน key pool หมด → ไม่ abort ทั้ง reading, ใช้ candidate ที่ดีที่สุดเท่าที่มี
-                    try {
-                        // 🪪 (2026-08-17) retry = อีก 1 call จริง มีต้นทุน token ของตัวเอง
-                        //   ต้องผูก reading_id ซ้ำ ไม่งั้น token ของ retry ตกหล่นจากบิลใบนี้
-                        // 🗺️ จังหวัดเกิดก็ถูกล้างหลัง call แรกแล้ว — ไม่ตั้งซ้ำ = retry ได้ลัคนากรุงเทพ ขัดกับ {transit_info}
-                        $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
-                        // 🕛 ค่า "ต่อบิล" ก็ one-shot — ไม่ตั้งซ้ำ = retry กลับไปอ่านเวลาจากข้อความข้อนี้
-                        if ($chartInputs !== null) {
-                            $this->aiService->withChartInputs($chartInputs);
-                        }
-
-                        $retryResult = $this->aiService->generateWithRetryAndFallback(
-                            [$question],
-                            $userProfile,
-                            null,
-                            $perQuestionPrompt,
-                            'deep',
-                            $birthDate,
-                            null,
-                            $deepPurpose
-                        );
-                    } catch (\Throwable $deepRetryErr) {
-                        Log::warning('Fortune Deep: retry คำทำนายข้อ '.$questionNum.' ล้มเหลว — ใช้ candidate ที่ดีที่สุด', [
-                            'reading_id' => $reading->id ?? null,
-                            'error' => $deepRetryErr->getMessage(),
-                        ]);
-                        break;
-                    }
-                    LineGatekeeperService::recordAICall('fortune');
-                    $totalTokens += $retryResult['tokens_used'] ?? 0;
-
-                    // budget guard: ถ้า purpose=sensitive (Pro) ต้องบันทึกค่าใช้จ่าย retry ด้วย (กัน budget tally drift)
-                    if ($deepPurpose === 'sensitive') {
-                        try {
-                            $retryCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
-                                (int) ($retryResult['tokens_used'] ?? 0),
-                                $retryResult['model'] ?? ''
-                            );
-                            app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
-                                ->recordUse($deepPlatform, (string) $deepUserId, $retryCostThb);
-                        } catch (\Throwable $retryBudgetErr) {
-                            // non-blocking — ห้ามให้การบันทึก budget ขวาง flow ทำนาย
-                        }
-                    }
-
-                    $retryText = \App\Services\FortuneAIService::stripInternalContextTags(
-                        (string) ($retryResult['response'] ?? '')
-                    );
-                    // เก็บ candidate ที่ดีกว่า (ยาวกว่า = ครบกว่า)
-                    if (mb_strlen($retryText) > mb_strlen($answerText)) {
-                        $answerText = $retryText;
-                        $aiResult = $retryResult;
-                        $lastProvider = $retryResult['provider'] ?? $lastProvider;
-                        $lastModel = $retryResult['model'] ?? $lastModel;
-                    }
-                }
 
                 // ใช้ข้อความที่ sanitize+best-candidate แล้วเป็นคำตอบจริง (กัน scaffold หลุดถึงลูกค้า)
                 $aiResult['response'] = $answerText;
@@ -27783,6 +27637,290 @@ PROMPT;
         }
 
         return $combined;
+    }
+
+    /**
+     * 🔮 (2026-11-07) ทำนายดูดวง 39฿ "หนึ่งข้อ" — เลนเดียวกันทั้งบอท (FB/LINE/Telegram) และเว็บจันทรา
+     *
+     * ย้ายมาจากลูปใน processPaymentConfirmed ทั้งก้อน (ไม่แก้ตรรกะ):
+     *   - Sensitive AI Mode: คำถามละเอียดอ่อน → purpose 'sensitive' (Pro) ไม่งั้น 'prediction_deep'
+     *     ทั้งคู่อยู่ใน FortuneAIService::PAID_PURPOSES = กู้ได้แค่ด้วย OpenAI ห้ามตกไป key แชท
+     *   - คีย์พูล + ด่านหลุดบท (PersonaBreakDetector) ใน generateWithRetryAndFallback
+     *   - ล้าง scaffold ที่หลุด (stripInternalContextTags) + ด่านความครบ (isCompleteDeepAnswer) + retry 1 ครั้ง
+     *   - บันทึกงบ Pro + log เหตุการณ์ sensitive
+     *
+     * ทำไมแยก: เว็บจันทราเคยเรียก generateFortuneTelling ครั้งเดียว (ไม่มี purpose/พูล/ด่าน) → key แชท Haiku
+     *   ตอบคำปฏิเสธแทนคำทำนายที่ลูกค้าจ่ายเงิน (เหตุ 5-7 พ.ย. 2569) ตอนนี้เว็บเรียก method นี้แทน
+     *
+     * ⚠️ throw ได้ (พูลหมด/ทุกโมเดลหลุดบท) — ผู้เรียกตัดสินเองว่าจะคืนเงิน/แจ้งแอดมินอย่างไร
+     *
+     * @param  string  $platform  ช่องทางของลูกค้า (facebook/line/telegram/juntra) ใช้กับงบ Pro + log
+     * @param  string  $userId  id ลูกค้าในช่องทางนั้น
+     * @param  float|null  $budgetSec  เพดานเวลารวมของข้อนี้ (วิ) — null = งบเดิมของบอท (DEEP_TOTAL_BUDGET_SEC)
+     *                                  เว็บส่งมาเพราะคำขอ HTTP หนึ่งรอได้ไม่ถึงนาที
+     * @return array{ai: array, text: string, complete: bool, tokens: int, purpose: string}
+     *                                                                                     (text = คำทำนายที่ล้างแล้ว · complete = ผ่านด่านความครบ)
+     */
+    public function generateDeepAnswer(
+        string $question,
+        int $questionNum,
+        string $perQuestionPrompt,
+        ?array $userProfile,
+        ?string $birthDate,
+        ?string $birthProvince,
+        ?array $chartInputs,
+        string $platform,
+        string $userId,
+        ?FortuneReading $reading = null,
+        ?float $budgetSec = null
+    ): array {
+        $startedAt = microtime(true);
+        $totalTokens = 0;
+        $lastProvider = '';
+        $lastModel = '';
+
+        // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามก่อน generate
+        //   ถ้าเข้าข่ายละเอียดอ่อน (ตาย/ป่วย/หย่า/ฆ่าตัวตาย/อารมณ์รุนแรง)
+        //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
+        // 🎯 (2026-05-13) Default = 'prediction_deep' (เจาะจง Deep 39฿)
+        //   scope `forPurpose('prediction_deep')` fallback chain:
+        //     prediction_deep → prediction → any → null
+        //   → ถ้า admin มาร์ค key 'prediction_deep' จะใช้ก่อน,
+        //     ไม่งั้น fallback ไป 'prediction' หรือ 'any' (backward compat)
+        $deepPurpose = 'prediction_deep';
+        $deepPlatform = $platform;
+        $deepUserId = $userId;
+        $deepDecision = $this->resolveSensitiveDecision(
+            (string) $question,
+            (string) $deepUserId,
+            $deepPlatform,
+            'paid_prediction',
+            [],
+            []
+        );
+        if ($deepDecision['use_pro']) {
+            $deepPurpose = 'sensitive';
+            Log::info('Fortune Deep: คำถามข้อ '.$questionNum.' เข้าข่ายละเอียดอ่อน → ใช้ Pro model', [
+                'reading_id' => $reading->id ?? null,
+                'reasons' => $deepDecision['detection']['reasons'] ?? [],
+                'mood' => $deepDecision['detection']['mood_level'] ?? null,
+                'complexity' => $deepDecision['detection']['complexity'] ?? null,
+            ]);
+        }
+
+        // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ (Deep ยิงทีละคำถาม
+        //   → ต้องเรียกในลูปทุกข้อ ไม่ใช่ครั้งเดียวก่อนลูป)
+        // 🗺️ (2026-09-11) จังหวัดเกิดของผังท้ายพรอมต์ — one-shot เหมือนกัน ต้องเป็นค่าเดียวกับ {transit_info}
+        $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
+        // 🕛 (2026-09-12) ล็อกเวลา+จังหวัด "ต่อบิล" — ผังท้ายพรอมต์ต้องไม่อ่านจากข้อความข้อนี้เอง
+        if ($chartInputs !== null) {
+            $this->aiService->withChartInputs($chartInputs);
+        }
+
+        if ($budgetSec !== null) {
+            $this->aiService->withConfigOverride(['budget_sec' => $budgetSec]);
+        }
+
+        $aiResult = $this->aiService->generateWithRetryAndFallback(
+            [$question],
+            $userProfile,
+            null,
+            $perQuestionPrompt,
+            'deep',
+            $birthDate,
+            null,
+            $deepPurpose
+        );
+
+        // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune deep)
+        LineGatekeeperService::recordAICall('fortune');
+
+        // 🌟 Log + budget tracking ถ้าใช้ Pro
+        if ($deepPurpose === 'sensitive') {
+            $deepCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                (int) ($aiResult['tokens_used'] ?? 0),
+                $aiResult['model'] ?? ''
+            );
+            app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
+                ->recordUse($deepPlatform, (string) $deepUserId, $deepCostThb);
+            $this->logSensitiveEvent(
+                $deepPlatform,
+                (string) $deepUserId,
+                'deep_question',
+                (string) $question,
+                $deepDecision['detection'],
+                [
+                    'used_pro_model' => true,
+                    'pro_provider' => $aiResult['provider'] ?? null,
+                    'pro_model' => $aiResult['model'] ?? null,
+                    'tokens_used' => (int) ($aiResult['tokens_used'] ?? 0),
+                    'cost_thb' => $deepCostThb,
+                ]
+            );
+        } elseif ($deepDecision['detection']['is_sensitive'] ?? false) {
+            // detection trigger แต่ไม่ใช้ Pro (ไม่มี key / mode='off') → log
+            $this->logSensitiveEvent(
+                $deepPlatform,
+                (string) $deepUserId,
+                'deep_question',
+                (string) $question,
+                $deepDecision['detection'],
+                ['used_pro_model' => false]
+            );
+        }
+
+        $totalTokens += $aiResult['tokens_used'] ?? 0;
+        $lastProvider = $aiResult['provider'] ?? '';
+        $lastModel = $aiResult['model'] ?? '';
+
+        // 🛡️ (2026-06-17) Completeness gate — กัน "ทำนายไม่ครบ" (เคสจริง FTU-260617-M4983 / reading 7053)
+        //   อาการ: gemini-3.5-flash หลุด scaffold อังกฤษ "Block 2: Mars (Winas/Patni)" แล้วตัดจบ
+        //     → คำทำนายเหลือ ~30 ตัวอักษร แต่ระบบเดิมรับเป็น valid → ส่งของไม่ครบให้ลูกค้าที่จ่ายเงินแล้ว
+        //   แก้ 3 ชั้น: (1) sanitize scaffold ที่หลุด (2) validate ยาวพอ+เป็นไทย (3) retry 1 ครั้ง
+        $answerText = \App\Services\FortuneAIService::stripInternalContextTags(
+            (string) ($aiResult['response'] ?? '')
+        );
+        // retry สูงสุด 1 ครั้ง — cap ไว้กัน gen เกิน gen-lock TTL → check-pending (ทุกนาที) dispatch ซ้ำ/AI ซ้ำซ้อน
+        $deepRetry = 0;
+        while (! $this->isCompleteDeepAnswer($answerText)
+            && $deepRetry < 1
+            && LineGatekeeperService::canCallAI('fortune')
+            // ⏱️ เว็บมีเพดานเวลาต่อคำขอ — เหลือเวลาไม่พอรอบใหม่ = ส่ง candidate เดิมให้ผู้เรียกตัดสิน
+            && ($budgetSec === null || $budgetSec - (microtime(true) - $startedAt) >= self::DEEP_MIN_RETRY_SEC)) {
+            $deepRetry++;
+            Log::warning('Fortune Deep: คำทำนายข้อ '.$questionNum.' ไม่ครบ — retry ครั้งที่ '.$deepRetry, [
+                'reading_id' => $reading->id ?? null,
+                'length' => mb_strlen($answerText),
+                'preview' => mb_substr($answerText, 0, 80),
+                'prev_model' => $lastModel,
+            ]);
+
+            // retry: ใช้ purpose เดิม ($deepPurpose) ที่มี fallback chain ปกติ
+            //   ⚠️ ห้าม force 'sensitive' — scope นั้น strict ไม่ fallback: ถ้า prod ไม่มี key purpose=sensitive
+            //   จะ downgrade เงียบ ๆ (เปลือง) หรือ throw → abort ทั้ง reading ทิ้งข้อที่ดีไปด้วย (regression)
+            //   pool หมุน key/โมเดลใหม่ให้เองตอน generate รอบใหม่ (โอกาส sample ใหม่ไม่ตัดจบ)
+            //   try/catch กัน key pool หมด → ไม่ abort ทั้ง reading, ใช้ candidate ที่ดีที่สุดเท่าที่มี
+            try {
+                // 🪪 (2026-08-17) retry = อีก 1 call จริง มีต้นทุน token ของตัวเอง
+                //   ต้องผูก reading_id ซ้ำ ไม่งั้น token ของ retry ตกหล่นจากบิลใบนี้
+                // 🗺️ จังหวัดเกิดก็ถูกล้างหลัง call แรกแล้ว — ไม่ตั้งซ้ำ = retry ได้ลัคนากรุงเทพ ขัดกับ {transit_info}
+                $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
+                // 🕛 ค่า "ต่อบิล" ก็ one-shot — ไม่ตั้งซ้ำ = retry กลับไปอ่านเวลาจากข้อความข้อนี้
+                if ($chartInputs !== null) {
+                    $this->aiService->withChartInputs($chartInputs);
+                }
+
+                if ($budgetSec !== null) {
+                    $this->aiService->withConfigOverride(['budget_sec' => max(5.0, $budgetSec - (microtime(true) - $startedAt))]);
+                }
+
+                $retryResult = $this->aiService->generateWithRetryAndFallback(
+                    [$question],
+                    $userProfile,
+                    null,
+                    $perQuestionPrompt,
+                    'deep',
+                    $birthDate,
+                    null,
+                    $deepPurpose
+                );
+            } catch (\Throwable $deepRetryErr) {
+                Log::warning('Fortune Deep: retry คำทำนายข้อ '.$questionNum.' ล้มเหลว — ใช้ candidate ที่ดีที่สุด', [
+                    'reading_id' => $reading->id ?? null,
+                    'error' => $deepRetryErr->getMessage(),
+                ]);
+                break;
+            }
+            LineGatekeeperService::recordAICall('fortune');
+            $totalTokens += $retryResult['tokens_used'] ?? 0;
+
+            // budget guard: ถ้า purpose=sensitive (Pro) ต้องบันทึกค่าใช้จ่าย retry ด้วย (กัน budget tally drift)
+            if ($deepPurpose === 'sensitive') {
+                try {
+                    $retryCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                        (int) ($retryResult['tokens_used'] ?? 0),
+                        $retryResult['model'] ?? ''
+                    );
+                    app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
+                        ->recordUse($deepPlatform, (string) $deepUserId, $retryCostThb);
+                } catch (\Throwable $retryBudgetErr) {
+                    // non-blocking — ห้ามให้การบันทึก budget ขวาง flow ทำนาย
+                }
+            }
+
+            $retryText = \App\Services\FortuneAIService::stripInternalContextTags(
+                (string) ($retryResult['response'] ?? '')
+            );
+            // เก็บ candidate ที่ดีกว่า (ยาวกว่า = ครบกว่า)
+            if (mb_strlen($retryText) > mb_strlen($answerText)) {
+                $answerText = $retryText;
+                $aiResult = $retryResult;
+                $lastProvider = $retryResult['provider'] ?? $lastProvider;
+                $lastModel = $retryResult['model'] ?? $lastModel;
+            }
+        }
+
+        $aiResult['response'] = $answerText;
+
+        return [
+            'ai' => $aiResult,
+            'text' => $answerText,
+            'complete' => $this->isCompleteDeepAnswer($answerText),
+            'tokens' => (int) $totalTokens,
+            'purpose' => $deepPurpose,
+        ];
+    }
+
+    /**
+     * 🌐 (2026-11-07) ดูดวง 39฿ ของเว็บจันทรา "ทีละข้อ" — พรอมต์ + เลน AI ชุดเดียวกับบิลในแชท
+     *
+     * เว็บเรียกทีละข้อ (คำขอ HTTP หนึ่งรอได้ไม่ถึงนาที แต่ 3 ข้อของบอทใช้หลายนาที)
+     *   ส่งคำถามทั้งชุดมาทุกครั้ง (เลขข้อ/ผังต่อบิลอ่านจากข้อ 1 เหมือนบอท) + คำตอบข้อก่อน ๆ (ให้ timeline สอดคล้อง)
+     *
+     * ได้ของเหมือนบอท: ผังดวงกำเนิดจริง · ดาวจรจริง · กราฟชีวิต (ข้อ 1) · ฤกษ์เมื่อถามฤกษ์ · Section A (ข้อ 1)
+     *   · บทสรุปปิดท้าย (ข้อสุดท้าย) · template ที่แอดมินแก้ในหลังบ้าน · Sensitive → Pro · PAID_PURPOSES
+     * ไม่มีของบอท: ไพ่ยิปซีต่อข้อ (เว็บแพ็กนี้ไม่ได้เปิดไพ่) · เวลา/จังหวัดเกิดจาก DB (เว็บอ่านจากคำถามข้อ 1)
+     *
+     * @param  array<int,string>  $questions  คำถามทั้งบิล (ลำดับเดิม)
+     * @param  int  $index  ข้อที่จะทำนาย (เริ่ม 0)
+     * @param  array<int,array{question:string,answer:string}>  $previous  คำตอบข้อก่อนหน้าในบิลเดียวกัน
+     * @param  string  $userRef  รหัสลูกค้าฝั่งเว็บ (งบ Pro + log) — ว่าง = นับรวมเป็นลูกค้าเว็บไม่ระบุตัว
+     * @return array{ai: array, text: string, complete: bool, tokens: int, purpose: string}
+     */
+    public function answerDeepQuestionForWeb(
+        array $questions,
+        int $index,
+        array $previous,
+        ?array $userProfile,
+        ?string $birthDate,
+        string $userRef = '',
+        ?float $budgetSec = null
+    ): array {
+        $questions = array_values(array_map(fn ($q) => (string) $q, $questions));
+        if (! isset($questions[$index])) {
+            throw new \InvalidArgumentException('question index out of range');
+        }
+
+        // ค่า "ต่อบิล" แบบเดียวกับบอท — อ่านเวลา/จังหวัดเกิดจากข้อ 1 ทุกครั้ง จึงได้ผังเดียวกันทุกคำขอ
+        $chartInputs = $birthDate ? $this->deepChartImageInputs($questions, null, false) : null;
+
+        $prev = [];
+        foreach (array_values($previous) as $i => $p) {
+            $prev[] = [
+                'question_number' => $i + 1,
+                'question' => (string) ($p['question'] ?? ''),
+                'answer' => (string) ($p['answer'] ?? ''),
+            ];
+        }
+
+        $prompt = $this->buildPerQuestionDeepPrompt(
+            $userProfile, $questions[$index], $index + 1, count($questions), $birthDate, $prev, null, null, $chartInputs
+        );
+
+        return $this->generateDeepAnswer(
+            $questions[$index], $index + 1, $prompt, $userProfile, $birthDate, null, $chartInputs,
+            'juntra', $userRef !== '' ? $userRef : 'juntra-web', null, $budgetSec
+        );
     }
 
     /**

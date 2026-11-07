@@ -208,6 +208,15 @@ class Deep39StoredBirthProvinceTest extends TestCase
             'ค่า "ต่อบิล" ต้อง resolve ครั้งเดียว (ตัวเดียวกับรูปผัง)'
         );
 
+        // 🔮 (2026-11-07) ตัว call AI ต่อข้อย้ายไป generateDeepAnswer() (ใช้ร่วมกับเว็บจันทรา)
+        //   ลูปต้องส่งจังหวัด + ค่า "ต่อบิล" ชุดเดียวกับพรอมต์เข้าไป แล้วตรวจ call ในนั้นแทน
+        $this->assertMatchesRegularExpression(
+            '/generateDeepAnswer\([^;]*\$perQuestionPrompt[^;]*\$birthProvince\s*,\s*\$chartInputs\s*,/s',
+            $body,
+            'ลูปต้องส่งพรอมต์ต่อข้อ + จังหวัด + ค่า "ต่อบิล" ชุดเดียวกันให้ generateDeepAnswer'
+        );
+        $body .= $this->methodSource(FortuneConversationService::class, 'generateDeepAnswer');
+
         // ทุก AI call ที่ใช้พรอมต์ต่อคำถาม ต้องตั้งจังหวัดใหม่หลัง call ก่อนหน้า (one-shot ล้างทุก call)
         $chunks = explode('generateWithRetryAndFallback(', $body);
         $calls = 0;
