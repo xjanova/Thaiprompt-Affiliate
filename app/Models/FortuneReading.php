@@ -1626,6 +1626,37 @@ class FortuneReading extends Model
     public const PAID_PROCESSING_TIMEOUT_MINUTES = 10;
 
     /**
+     * 🛟 (2026-11-07 FTU-261105-Y7178) บิลที่ "เปิด Pro Session มาไม่นาน" — ไม่ใช่แค่ "จ่ายมาไม่นาน"
+     *
+     * ต้นตอ: บิล #14643 จ่าย 5 พ.ย. 23:40 แต่ทำนายใหม่แล้วส่งให้ลูกค้า 7 พ.ย. 16:35
+     *   ตัวค้นหา session เดิมกรองด้วย `paid_at >= now - 24 ชม.` อย่างเดียว ⇒ บิลนี้ตกรอบทุกตัว
+     *   (หา session ไม่เจอ / cron ตามถาม / cron แจ้งหมดเวลา) ⇒ ลูกค้าถามแล้วไหลไปแชทฟรีจนเงียบหาย
+     *
+     * เงื่อนไข: จ่ายภายในช่วงนี้ **หรือ** เปิด session ภายในช่วงนี้ (pro_session_opened_at)
+     *   ⚠️ สาขาที่สองต้องมี `updated_at >= since` นำหน้าเสมอ — เปิด session ทีไรเขียน state = updated_at เด้ง
+     *      จึงเป็นเงื่อนไขจำเป็นที่ถูกต้องเสมอ และช่วยไม่ให้ต้องแกะ JSON ทั้งตาราง (cron รันทุกนาที)
+     *   ⚠️ `LIKE '20%'` กันค่า JSON null — JSON_UNQUOTE(null) = สตริง 'null' ซึ่งเทียบตัวอักษรแล้ว "มากกว่า" '2026…'
+     *   เทียบเวลาเป็นสตริง ISO ได้เพราะทุกค่าบันทึกด้วย timezone เดียวกันของแอป (+07:00)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \DateTimeInterface  $since  จุดตัดเวลา (เช่น now()->subDay())
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeProSessionRecentSince($query, \DateTimeInterface $since)
+    {
+        $iso = \Carbon\Carbon::instance($since)->toIso8601String();
+
+        return $query->where(function ($q) use ($since, $iso) {
+            $q->where('paid_at', '>=', $since)
+                ->orWhere(function ($opened) use ($since, $iso) {
+                    $opened->where('updated_at', '>=', $since)
+                        ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(conversation_state, '$.pro_session_opened_at')) LIKE '20%'")
+                        ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(conversation_state, '$.pro_session_opened_at')) >= ?", [$iso]);
+                });
+        });
+    }
+
+    /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่
      *
      * 🛡️ (2026-05-24) USER RULE — ลูกค้าโอนตรงยอด ตัดบิลแล้ว แต่ยังไม่ใช้บริการเสร็จสิ้น
