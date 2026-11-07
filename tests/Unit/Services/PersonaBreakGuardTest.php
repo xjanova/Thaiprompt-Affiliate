@@ -152,6 +152,11 @@ class PersonaBreakGuardTest extends TestCase
         $this->assertNull(PersonaBreakDetector::reason('งานนี้เจ้าชะตาจะได้รับบทบาทผู้นำในทีมค่ะ'));
         $this->assertNull(PersonaBreakDetector::reason('ระวังลูกน้องไม่ทำตามคำสั่งนะคะ'));
         $this->assertNull(PersonaBreakDetector::reason('ผมยาวสลวยช่วยเสริมเสน่ห์ค่ะ'));
+
+        // โหมดเข้ม (ดวงรายวัน) — ประโยคดวงที่มีคำว่า "ไม่สามารถทำตาม" / "จะไม่ทำตาม" ต้องผ่าน
+        $this->assertNull(PersonaBreakDetector::reason('ช่วงบ่ายงานอาจไม่สามารถทำตามแผนที่วางไว้ ใจเย็นนะคะ', strict: true));
+        $this->assertNull(PersonaBreakDetector::reason('ระวังคนรอบตัวจะไม่ทำตามสัญญาค่ะ', strict: true));
+        $this->assertSame('ไม่ทำตามคำสั่ง', PersonaBreakDetector::reason('แม่หมอจะไม่ทำตามที่ขอมานะคะ', strict: true));
     }
 
     public function test_คำถามลูกค้าผู้ชายที่ถูกยกมาไม่ถูกตีว่าแม่หมอใช้สรรพนามชาย(): void
