@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Schema;
 class FortuneRepostSchedule extends Command
 {
     protected $signature = 'fortune:repost-schedule
-                            {--page= : เฉพาะสาขา (รหัสสาขา / id / ไอดีเพจ Facebook)}
+                            {--page= : เฉพาะสาขาเดียว (รหัสสาขา → ไอดีเพจ Facebook → id · หรือ id:<เลข>)}
                             {--dry-run : แสดงแผนเฉยๆ ไม่ตั้งเวลาโพสจริง}';
 
     protected $description = '🔁 รีโพสคอนเทนต์จากเพจหลักลงเพจสาขา ตามตารางเวลาเหลื่อม (เช่น +30 นาที)';
@@ -40,21 +40,24 @@ class FortuneRepostSchedule extends Command
         $dryRun = (bool) $this->option('dry-run');
         $only = trim((string) $this->option('page'));
 
-        $query = FortunePage::query()->where('platform', 'facebook');
-
         if ($only !== '') {
-            $query->where(function ($q) use ($only) {
-                $q->where('code', $only)->orWhere('external_page_id', $only);
+            $page = $this->resolveOnePage($only);
 
-                if (ctype_digit($only)) {
-                    $q->orWhere('id', (int) $only);
-                }
-            });
+            if (! $page) {
+                $this->error("❌ ไม่พบสาขา \"{$only}\" (ลองใช้รหัสสาขา / ไอดีเพจ Facebook / id:<เลข>)");
+
+                return self::FAILURE;
+            }
+
+            $pages = collect([$page]);
         } else {
-            $query->where('repost_enabled', true)->where('is_active', true);
+            $pages = FortunePage::query()
+                ->where('platform', 'facebook')
+                ->where('repost_enabled', true)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->get();
         }
-
-        $pages = $query->orderBy('id')->get();
 
         if ($pages->isEmpty()) {
             $this->info('ℹ️  ไม่มีสาขาที่เปิดรีโพส');
@@ -111,5 +114,25 @@ class FortuneRepostSchedule extends Command
         }
 
         return $failed > 0 && $only !== '' ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * หา "สาขาเดียว" จากค่าที่พิมพ์ — ห้ามคืนหลายเพจ
+     *
+     * ⚠️ เจอบน prod (2026-11-07): --page=5 เคยจับทั้ง id 5 (เพจอื่นที่ไม่ใช่สาขา)
+     *    และรหัสสาขา "5" (id 14) พร้อมกัน → ไล่ตามลำดับแทน: รหัสสาขา → ไอดีเพจ Facebook → id
+     *    อยากระบุ id ตรงๆ ใช้ "id:14"
+     */
+    protected function resolveOnePage(string $value): ?FortunePage
+    {
+        $base = fn () => FortunePage::query()->where('platform', 'facebook');
+
+        if (preg_match('/^id:(\d+)$/i', $value, $m)) {
+            return $base()->whereKey((int) $m[1])->first();
+        }
+
+        return $base()->where('code', $value)->first()
+            ?? $base()->where('external_page_id', $value)->first()
+            ?? (ctype_digit($value) ? $base()->whereKey((int) $value)->first() : null);
     }
 }
