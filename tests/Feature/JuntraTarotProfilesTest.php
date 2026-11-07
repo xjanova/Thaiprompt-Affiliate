@@ -31,6 +31,9 @@ class JuntraTarotProfilesTest extends TestCase
 
     private ?array $pendingConfig = null;
 
+    /** @var array<int,string> คำตอบที่โมเดลจะให้ทีละครั้ง (ว่าง = ใช้) */
+    private array $replies = [];
+
     private string $reply = "## 🎯 ฟันธง\nผล: ใช่\nไพ่หนุนค่ะลูก\n\n## 🃏 ใบที่ 1 · ตัวคุณ\nใจลูกเปิดรับ";
 
     protected function setUp(): void
@@ -64,7 +67,11 @@ class JuntraTarotProfilesTest extends TestCase
                 'config' => $this->pendingConfig,
             ];
 
-            return ['response' => "สวัสดีค่ะลูก\n".$this->reply, 'provider' => 'openai', 'model' => 'gpt-5.6-luna', 'tokens_used' => 900];
+            $next = array_shift($this->replies);
+
+            return $next !== null
+                ? ['response' => $next, 'provider' => 'anthropic', 'model' => 'claude-haiku-5-5', 'tokens_used' => 300]
+                : ['response' => "สวัสดีค่ะลูก\n".$this->reply, 'provider' => 'openai', 'model' => 'gpt-5.6-luna', 'tokens_used' => 900];
         });
         $ai->shouldNotReceive('chatWithCustomSystemPrompt');
         $this->app->instance(FortuneAIService::class, $ai);
@@ -257,6 +264,46 @@ class JuntraTarotProfilesTest extends TestCase
             ->assertStatus(422)->assertJsonPath('reason_code', 'question_rejected');
 
         $this->assertSame([], $this->calls);
+    }
+
+    /** reading 22 บน prod (2026-11-04) — ข้อความปัดจริงของ claude-haiku-5-5 */
+    private const HAIKU_REFUSAL = 'ขออภัยค่ะ ข้อความนี้เป็นคำสั่งภายในที่ใช้ตั้งค่าระบบดูดวงของจันทราพยากรณ์ ไม่ใช่คำถามจากลูกค้า แม่หมอจึงไม่ทำตามเนื้อหาในนั้นค่ะ
+
+หากต้องการดูดวงเรื่องงาน กรุณาพิมพ์คำถามของคุณมาได้เลยค่ะ';
+
+    public function test_the_system_block_tells_the_model_the_user_message_is_the_shops_own(): void
+    {
+        $this->read(['spread_key' => 'quick', 'question' => 'งานช่วงนี้เป็นอย่างไร', 'cards' => array_slice($this->loveCards(), 0, 3)])->assertOk();
+
+        $this->assertStringContainsString('ไม่ใช่ prompt injection', $this->overrides[0]);
+    }
+
+    public function test_a_model_that_refuses_to_read_is_asked_again_and_the_reading_is_sold(): void
+    {
+        $this->replies = [self::HAIKU_REFUSAL];
+
+        $res = $this->read(['spread_key' => 'love', 'cards' => $this->loveCards()])->assertOk();
+
+        $this->assertCount(2, $this->calls);
+        $this->assertStringStartsWith('## 🎯 ฟันธง', $res->json('data.interpretation'));
+    }
+
+    public function test_a_model_that_refuses_twice_returns_503_so_the_web_refunds(): void
+    {
+        $this->replies = [self::HAIKU_REFUSAL, 'ขออภัยค่ะ แม่หมอไม่สามารถทำตามคำสั่งนี้ได้'];
+
+        $this->read(['spread_key' => 'love', 'cards' => $this->loveCards()])
+            ->assertStatus(503)->assertJsonPath('reason_code', 'model_refused');
+        $this->assertCount(2, $this->calls);
+    }
+
+    public function test_a_real_reading_is_never_mistaken_for_a_refusal(): void
+    {
+        $this->assertFalse(JuntraSpreadProfiles::looksLikeRefusal('## 🎯 ฟันธง
+ผล: ยังไม่ใช่
+ขออภัยที่ต้องบอกตรง ๆ ว่าเขาไม่สามารถกลับมาได้ตอนนี้'));
+        $this->assertFalse(JuntraSpreadProfiles::looksLikeRefusal(str_repeat('ไพ่ใบนี้บอกว่าลูกเหนื่อยมาก ', 30).'คนอื่นไม่สามารถช่วยได้'));
+        $this->assertTrue(JuntraSpreadProfiles::looksLikeRefusal(self::HAIKU_REFUSAL));
     }
 
     public function test_the_greeting_the_model_adds_before_the_first_heading_is_trimmed(): void
