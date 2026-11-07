@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\TPIXStake;
 use App\Models\TPIXStakingPool;
+use App\Models\TPIXTokenBalance;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -158,14 +160,21 @@ class StakingApiController extends Controller
     }
 
     /**
-     * Stake tokens
+     * Stake เหรียญเข้าพูล
+     *
+     * ใช้ชื่อคอลัมน์จริงของตาราง (tpix_token_balances.available_balance, tpix_stakes.amount/unlock_at/token_id,
+     * tpix_staking_pools.current_stakers) — เดิมอ้าง amount/staked_amount/apy/lock_period_days ที่ไม่มีอยู่จริง
+     * จึงล้มเหลวทุกครั้ง
+     * - APY และระยะล็อกยึดตามพูล (ตาราง tpix_stakes ไม่มีคอลัมน์เก็บ APY/ระยะล็อกรายรายการ)
+     * - รับเฉพาะพูลสถานะ active ที่อยู่ในช่วงเวลา และยังไม่เต็มเพดาน/จำนวนผู้ Stake
+     * - มี Stake ที่ยังเปิดอยู่ในพูลเดิม = Stake เพิ่ม (สะสมรางวัลถึงตอนนี้ก่อน แล้วเริ่มนับระยะล็อกใหม่)
      */
     public function stake(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'pool_id' => 'required|exists:tpix_staking_pools,id',
+            'pool_id' => 'required|integer|exists:tpix_staking_pools,id',
             'amount' => 'required|numeric|min:0.00000001',
-            'lock_period_days' => 'required|integer|in:0,7,30,90,180,365',
+            'lock_period_days' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -178,53 +187,89 @@ class StakingApiController extends Controller
 
         DB::beginTransaction();
         try {
-            $pool = TPIXStakingPool::with('token')->findOrFail($request->pool_id);
-            $user = auth()->user();
+            $user = $request->user();
+            $amount = $this->normalizeAmount((string) $request->amount);
 
-            // Validate amount
-            if ($request->amount < $pool->min_stake_amount) {
-                throw new \Exception("Minimum stake amount is {$pool->min_stake_amount} {$pool->token->symbol}");
+            // ล็อกแถวพูลกันการ Stake พร้อมกันจนเกินเพดาน
+            $pool = TPIXStakingPool::with('token')->whereKey($request->pool_id)->lockForUpdate()->firstOrFail();
+            $symbol = $pool->token->symbol ?? '';
+
+            $this->assertPoolOpen($pool);
+
+            $lockDays = (int) $pool->lock_period_days;
+            if ($request->filled('lock_period_days') && (int) $request->lock_period_days !== $lockDays) {
+                throw new \DomainException("พูลนี้กำหนดระยะล็อก {$lockDays} วัน");
             }
 
-            if ($pool->max_stake_amount && $request->amount > $pool->max_stake_amount) {
-                throw new \Exception("Maximum stake amount is {$pool->max_stake_amount} {$pool->token->symbol}");
+            if ($pool->min_stake_amount !== null && bccomp($amount, (string) $pool->min_stake_amount, 8) < 0) {
+                throw new \DomainException('ต่ำกว่าจำนวน Stake ขั้นต่ำ '.$this->plain($pool->min_stake_amount).' '.$symbol);
             }
 
-            // Check user balance
-            $balance = $user->tokenBalances()
-                ->where('token_id', $pool->token_id)
+            $existing = TPIXStake::where('user_id', $user->id)
+                ->where('pool_id', $pool->id)
+                ->where('status', 'active')
+                ->lockForUpdate()
                 ->first();
 
-            if (! $balance || $balance->amount < $request->amount) {
-                throw new \Exception('Insufficient balance');
+            $newTotal = $existing ? bcadd((string) $existing->amount, $amount, 8) : $amount;
+            if ($pool->max_stake_amount !== null && bccomp($newTotal, (string) $pool->max_stake_amount, 8) > 0) {
+                throw new \DomainException('เกินจำนวน Stake สูงสุดต่อคน '.$this->plain($pool->max_stake_amount).' '.$symbol);
             }
 
-            // Calculate APY based on lock period
-            $apy = $this->calculateAPY($pool->apy, $request->lock_period_days);
+            if ($pool->pool_cap !== null && bccomp(bcadd((string) $pool->total_staked, $amount, 8), (string) $pool->pool_cap, 8) > 0) {
+                throw new \DomainException('พูลนี้ใกล้เต็มเพดานแล้ว กรุณาลดจำนวนลง');
+            }
 
-            // Calculate unlock date
-            $unlockDate = $request->lock_period_days > 0
-                ? now()->addDays($request->lock_period_days)
-                : null;
+            if (! $existing && $pool->max_stakers && (int) $pool->current_stakers >= (int) $pool->max_stakers) {
+                throw new \DomainException('พูลนี้มีผู้ Stake ครบจำนวนแล้ว');
+            }
 
-            // Create stake
-            $stake = TPIXStake::create([
-                'user_id' => $user->id,
-                'pool_id' => $pool->id,
-                'staked_amount' => $request->amount,
-                'lock_period_days' => $request->lock_period_days,
-                'apy' => $apy,
-                'unlock_date' => $unlockDate,
-                'status' => 'active',
-                'rewards_earned' => 0,
-            ]);
+            // ตรวจและย้ายยอด: available → staked (balance รวมยังเท่าเดิม)
+            $balance = TPIXTokenBalance::where('user_id', $user->id)
+                ->where('token_id', $pool->token_id)
+                ->lockForUpdate()
+                ->first();
 
-            // Deduct from user balance
-            $balance->decrement('amount', $request->amount);
+            if (! $balance || $balance->is_frozen || bccomp((string) $balance->available_balance, $amount, 8) < 0) {
+                throw new \DomainException('ยอดคงเหลือไม่พอ');
+            }
 
-            // Update pool statistics
-            $pool->increment('total_staked', $request->amount);
-            $pool->increment('staker_count');
+            $balance->forceFill([
+                'available_balance' => bcsub((string) $balance->available_balance, $amount, 8),
+                'staked_balance' => bcadd((string) $balance->staked_balance, $amount, 8),
+                'last_activity_at' => now(),
+            ])->save();
+
+            $unlockAt = $lockDays > 0 ? now()->addDays($lockDays) : null;
+
+            if ($existing) {
+                $this->accrueRewards($existing, $pool);
+                $existing->forceFill([
+                    'amount' => $newTotal,
+                    'unlock_at' => $unlockAt,
+                ])->save();
+                $stake = $existing;
+            } else {
+                $stake = new TPIXStake;
+                $stake->forceFill([
+                    'user_id' => $user->id,
+                    'pool_id' => $pool->id,
+                    'token_id' => $pool->token_id,
+                    'amount' => $amount,
+                    'rewards_earned' => '0',
+                    'rewards_claimed' => '0',
+                    'staked_at' => now(),
+                    'unlock_at' => $unlockAt,
+                    'last_reward_claim_at' => now(),
+                    'status' => 'active',
+                    'stake_tx_hash' => '0x'.bin2hex(random_bytes(32)),
+                ])->save();
+            }
+
+            $pool->forceFill([
+                'total_staked' => bcadd((string) $pool->total_staked, $amount, 8),
+                'current_stakers' => (int) $pool->current_stakers + ($existing ? 0 : 1),
+            ])->save();
 
             DB::commit();
 
@@ -233,29 +278,28 @@ class StakingApiController extends Controller
                 'message' => 'Staking successful',
                 'data' => [
                     'stake_id' => $stake->id,
-                    'amount' => (float) $stake->staked_amount,
-                    'apy' => (float) $stake->apy,
-                    'unlock_date' => $stake->unlock_date ? $stake->unlock_date->toISOString() : null,
+                    'amount' => (string) $stake->amount,
+                    'apy' => (float) $pool->apy,
+                    'lock_period_days' => $lockDays,
+                    'unlock_date' => $unlockAt?->toISOString(),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Staking failed',
-                'error' => $e->getMessage(),
-            ], 400);
+            return $this->failure($e, 'Staking failed');
         }
     }
 
     /**
-     * Unstake tokens
+     * ถอน Stake พร้อมรางวัลที่ยังไม่ได้รับ
+     *
+     * พูลไม่มีการตั้งค่าค่าปรับถอนก่อนกำหนด จึงถอนได้เมื่อพ้นช่วงล็อกแล้วเท่านั้น
      */
     public function unstake(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'pool_id' => 'required|exists:tpix_staking_pools,id',
+            'pool_id' => 'required|integer|exists:tpix_staking_pools,id',
         ]);
 
         if ($validator->fails()) {
@@ -268,53 +312,44 @@ class StakingApiController extends Controller
 
         DB::beginTransaction();
         try {
-            $stake = auth()->user()
-                ->stakes()
-                ->with('pool.token')
-                ->where('pool_id', $request->pool_id)
-                ->where('status', 'active')
-                ->firstOrFail();
+            $user = $request->user();
+            $pool = TPIXStakingPool::whereKey($request->pool_id)->lockForUpdate()->firstOrFail();
+            $stake = $this->activeStake($user->id, $pool->id);
 
-            // Calculate penalty if unstaking early
-            $penalty = 0;
-            $amountToReturn = $stake->staked_amount;
-
-            if ($stake->unlock_date && now()->lt($stake->unlock_date)) {
-                $penalty = bcmul(
-                    $stake->staked_amount,
-                    bcdiv($stake->pool->early_withdrawal_penalty_percent, '100', 8),
-                    8
-                );
-                $amountToReturn = bcsub($stake->staked_amount, $penalty, 8);
+            if ($stake->unlock_at && $stake->unlock_at->isFuture()) {
+                throw new \DomainException('ยังอยู่ในช่วงล็อก ถอนได้หลังวันปลดล็อก');
             }
 
-            // Calculate and add pending rewards
-            $pendingRewards = $this->calculatePendingRewards($stake);
-            $stake->rewards_earned = bcadd($stake->rewards_earned, $pendingRewards, 8);
-
-            // Return tokens to user
-            $balance = auth()->user()->tokenBalances()
-                ->where('token_id', $stake->pool->token_id)
-                ->first();
-
-            if ($balance) {
-                $balance->increment('amount', bcadd($amountToReturn, $stake->rewards_earned, 8));
-            } else {
-                auth()->user()->tokenBalances()->create([
-                    'token_id' => $stake->pool->token_id,
-                    'amount' => bcadd($amountToReturn, $stake->rewards_earned, 8),
-                ]);
+            $this->accrueRewards($stake, $pool);
+            $amount = (string) $stake->amount;
+            $rewards = bcsub((string) $stake->rewards_earned, (string) $stake->rewards_claimed, 8);
+            if (bccomp($rewards, '0', 8) < 0) {
+                $rewards = '0';
             }
 
-            // Update pool statistics
-            $stake->pool->decrement('total_staked', $stake->staked_amount);
-            $stake->pool->decrement('staker_count');
+            // คืนเหรียญ: staked → available และบวกรางวัลเข้ายอด
+            $balance = TPIXTokenBalance::lockOrCreateFor($user->id, (int) $pool->token_id);
+            $staked = bcsub((string) $balance->staked_balance, $amount, 8);
+            $balance->forceFill([
+                'balance' => bcadd((string) $balance->balance, $rewards, 8),
+                'available_balance' => bcadd(bcadd((string) $balance->available_balance, $amount, 8), $rewards, 8),
+                'staked_balance' => bccomp($staked, '0', 8) < 0 ? '0' : $staked,
+                'last_activity_at' => now(),
+            ])->save();
 
-            // Update stake status
-            $stake->update([
-                'status' => 'withdrawn',
+            $stake->forceFill([
+                'rewards_claimed' => bcadd((string) $stake->rewards_claimed, $rewards, 8),
+                'status' => 'unstaked',
                 'unstaked_at' => now(),
-            ]);
+                'unstake_tx_hash' => '0x'.bin2hex(random_bytes(32)),
+            ])->save();
+
+            $totalStaked = bcsub((string) $pool->total_staked, $amount, 8);
+            $pool->forceFill([
+                'total_staked' => bccomp($totalStaked, '0', 8) < 0 ? '0' : $totalStaked,
+                'current_stakers' => max(0, (int) $pool->current_stakers - 1),
+                'total_rewards_distributed' => bcadd((string) $pool->total_rewards_distributed, $rewards, 8),
+            ])->save();
 
             DB::commit();
 
@@ -322,30 +357,26 @@ class StakingApiController extends Controller
                 'success' => true,
                 'message' => 'Unstaking successful',
                 'data' => [
-                    'amount_returned' => (float) $amountToReturn,
-                    'rewards' => (float) $stake->rewards_earned,
-                    'penalty' => (float) $penalty,
-                    'total_received' => (float) bcadd($amountToReturn, $stake->rewards_earned, 8),
+                    'amount_returned' => $amount,
+                    'rewards' => $rewards,
+                    'penalty' => '0',
+                    'total_received' => bcadd($amount, $rewards, 8),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unstaking failed',
-                'error' => $e->getMessage(),
-            ], 400);
+            return $this->failure($e, 'Unstaking failed');
         }
     }
 
     /**
-     * Claim rewards
+     * รับรางวัล Stake ที่สะสมถึงตอนนี้
      */
     public function claim(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'pool_id' => 'required|exists:tpix_staking_pools,id',
+            'pool_id' => 'required|integer|exists:tpix_staking_pools,id',
         ]);
 
         if ($validator->fails()) {
@@ -358,38 +389,31 @@ class StakingApiController extends Controller
 
         DB::beginTransaction();
         try {
-            $stake = auth()->user()
-                ->stakes()
-                ->with('pool.token')
-                ->where('pool_id', $request->pool_id)
-                ->where('status', 'active')
-                ->firstOrFail();
+            $user = $request->user();
+            $pool = TPIXStakingPool::whereKey($request->pool_id)->lockForUpdate()->firstOrFail();
+            $stake = $this->activeStake($user->id, $pool->id);
 
-            // Calculate pending rewards
-            $pendingRewards = $this->calculatePendingRewards($stake);
+            $this->accrueRewards($stake, $pool);
+            $claimable = bcsub((string) $stake->rewards_earned, (string) $stake->rewards_claimed, 8);
 
-            if (bccomp($pendingRewards, '0', 8) <= 0) {
-                throw new \Exception('No rewards to claim');
+            if (bccomp($claimable, '0', 8) <= 0) {
+                throw new \DomainException('ยังไม่มีรางวัลให้รับ');
             }
 
-            // Add rewards to user balance
-            $balance = auth()->user()->tokenBalances()
-                ->where('token_id', $stake->pool->token_id)
-                ->first();
+            $balance = TPIXTokenBalance::lockOrCreateFor($user->id, (int) $pool->token_id);
+            $balance->forceFill([
+                'balance' => bcadd((string) $balance->balance, $claimable, 8),
+                'available_balance' => bcadd((string) $balance->available_balance, $claimable, 8),
+                'last_activity_at' => now(),
+            ])->save();
 
-            if ($balance) {
-                $balance->increment('amount', $pendingRewards);
-            } else {
-                auth()->user()->tokenBalances()->create([
-                    'token_id' => $stake->pool->token_id,
-                    'amount' => $pendingRewards,
-                ]);
-            }
+            $stake->forceFill([
+                'rewards_claimed' => bcadd((string) $stake->rewards_claimed, $claimable, 8),
+            ])->save();
 
-            // Update stake
-            $stake->rewards_earned = bcadd($stake->rewards_earned, $pendingRewards, 8);
-            $stake->last_reward_claim_at = now();
-            $stake->save();
+            $pool->forceFill([
+                'total_rewards_distributed' => bcadd((string) $pool->total_rewards_distributed, $claimable, 8),
+            ])->save();
 
             DB::commit();
 
@@ -397,18 +421,14 @@ class StakingApiController extends Controller
                 'success' => true,
                 'message' => 'Rewards claimed successfully',
                 'data' => [
-                    'claimed_amount' => (float) $pendingRewards,
-                    'total_rewards_earned' => (float) $stake->rewards_earned,
+                    'claimed_amount' => $claimable,
+                    'total_rewards_earned' => (string) $stake->rewards_earned,
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Claiming failed',
-                'error' => $e->getMessage(),
-            ], 400);
+            return $this->failure($e, 'Claiming failed');
         }
     }
 
@@ -511,56 +531,155 @@ class StakingApiController extends Controller
     }
 
     /**
-     * Helper: Get lock periods with APY
+     * ระยะล็อก/APY ของพูล — พูลกำหนดระยะล็อกเดียว (ไม่มีตัวคูณตามระยะล็อกแล้ว)
      */
     private function getLockPeriods($pool): array
     {
+        $days = (int) $pool->lock_period_days;
+
         return [
-            ['days' => 0, 'apy' => (float) ($pool->apy * 0.5), 'label' => 'Flexible'],
-            ['days' => 7, 'apy' => (float) ($pool->apy * 0.7), 'label' => '7 Days'],
-            ['days' => 30, 'apy' => (float) ($pool->apy * 0.9), 'label' => '30 Days'],
-            ['days' => 90, 'apy' => (float) $pool->apy, 'label' => '90 Days'],
-            ['days' => 180, 'apy' => (float) ($pool->apy * 1.2), 'label' => '180 Days'],
-            ['days' => 365, 'apy' => (float) ($pool->apy * 1.5), 'label' => '365 Days'],
+            ['days' => $days, 'apy' => (float) $pool->apy, 'label' => $days > 0 ? $days.' Days' : 'Flexible'],
         ];
     }
 
     /**
-     * Helper: Calculate APY based on lock period
+     * รางวัลที่ยังไม่ได้สะสมเข้า rewards_earned
+     * = amount × APY ของพูล × เวลาที่ผ่านไปตั้งแต่จุดสะสมล่าสุด (last_reward_claim_at) จนถึงตอนนี้หรือวันสิ้นสุดพูล
      */
-    private function calculateAPY(float $baseAPY, int $lockDays): float
+    private function calculatePendingRewards(TPIXStake $stake, ?TPIXStakingPool $pool = null): string
     {
-        return match ($lockDays) {
-            0 => $baseAPY * 0.5,
-            7 => $baseAPY * 0.7,
-            30 => $baseAPY * 0.9,
-            90 => $baseAPY,
-            180 => $baseAPY * 1.2,
-            365 => $baseAPY * 1.5,
-            default => $baseAPY,
-        };
+        $pool ??= $stake->pool;
+        if (! $pool) {
+            return '0';
+        }
+
+        $from = $stake->last_reward_claim_at ?? $stake->staked_at ?? $stake->created_at;
+        $until = now();
+        if ($pool->ends_at && $pool->ends_at->lt($until)) {
+            $until = $pool->ends_at;
+        }
+        if (! $from || $from->gte($until)) {
+            return '0';
+        }
+
+        $seconds = (string) abs((int) $from->diffInSeconds($until));
+        $years = bcdiv($seconds, '31536000', 18); // 365 × 24 × 60 × 60
+        $apy = bcdiv((string) $pool->apy, '100', 18);
+
+        return bcmul(bcmul((string) $stake->amount, $apy, 18), $years, 8);
     }
 
     /**
-     * Helper: Calculate pending rewards
+     * สะสมรางวัลถึงตอนนี้เข้า rewards_earned แล้วเลื่อนจุดสะสม (last_reward_claim_at) มาเป็นตอนนี้
      */
-    private function calculatePendingRewards($stake): string
+    private function accrueRewards(TPIXStake $stake, TPIXStakingPool $pool): void
     {
-        $lastClaim = $stake->last_reward_claim_at ?? $stake->created_at;
-        $now = now();
+        $pending = $this->calculatePendingRewards($stake, $pool);
 
-        // Calculate time elapsed in years
-        $secondsElapsed = $now->diffInSeconds($lastClaim);
-        $yearsElapsed = bcdiv((string) $secondsElapsed, '31536000', 18); // 365 * 24 * 60 * 60
+        $stake->forceFill([
+            'rewards_earned' => bcadd((string) $stake->rewards_earned, $pending, 8),
+            'last_reward_claim_at' => now(),
+        ])->save();
+    }
 
-        // Calculate rewards: staked_amount * APY * time_elapsed
-        $apyDecimal = bcdiv($stake->apy, '100', 18);
-        $rewards = bcmul(
-            bcmul($stake->staked_amount, $apyDecimal, 18),
-            $yearsElapsed,
-            8
-        );
+    /**
+     * Stake ที่ยังเปิดอยู่ของสมาชิกในพูล (ล็อกแถว)
+     */
+    private function activeStake(int $userId, int $poolId): TPIXStake
+    {
+        $stake = TPIXStake::where('user_id', $userId)
+            ->where('pool_id', $poolId)
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first();
 
-        return $rewards;
+        if (! $stake) {
+            throw new \DomainException('ไม่พบ Stake ที่ยังเปิดอยู่ในพูลนี้');
+        }
+
+        return $stake;
+    }
+
+    /**
+     * พูลต้องเปิดรับ Stake อยู่: สถานะ active และอยู่ในช่วง starts_at – ends_at
+     * (เดิมรับ Stake พูล draft/paused/ended ได้ เพราะตรวจแค่ว่ามี id อยู่จริง)
+     */
+    private function assertPoolOpen(TPIXStakingPool $pool): void
+    {
+        if ($pool->status !== 'active' || ! $pool->token) {
+            throw new \DomainException('พูลนี้ไม่ได้เปิดรับ Stake ในตอนนี้');
+        }
+        if ($pool->starts_at && $pool->starts_at->isFuture()) {
+            throw new \DomainException('พูลนี้ยังไม่เปิดรับ Stake');
+        }
+        if ($pool->ends_at && $pool->ends_at->isPast()) {
+            throw new \DomainException('พูลนี้ปิดรับ Stake แล้ว');
+        }
+    }
+
+    /**
+     * แปลงจำนวนเป็นสตริงทศนิยมสำหรับ bcmath (กัน 1e3 / ค่าติดลบ)
+     */
+    private function normalizeAmount(string $amount): string
+    {
+        $amount = trim($amount);
+        if (! preg_match('/^\d+(\.\d+)?$/', $amount)) {
+            if (! is_numeric($amount) || (float) $amount <= 0) {
+                throw new \DomainException('จำนวนไม่ถูกต้อง');
+            }
+            $amount = number_format((float) $amount, 8, '.', '');
+        }
+
+        $amount = bcadd($amount, '0', 8);
+        if (bccomp($amount, '0', 8) <= 0) {
+            throw new \DomainException('จำนวนไม่ถูกต้อง');
+        }
+
+        return $amount;
+    }
+
+    /**
+     * ตัวเลขสำหรับข้อความ (ตัดศูนย์ท้าย)
+     */
+    private function plain($value): string
+    {
+        $s = bcadd((string) $value, '0', 8);
+
+        return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
+    }
+
+    /**
+     * ตอบข้อผิดพลาดของการทำรายการ
+     * - \DomainException = เงื่อนไขทางธุรกิจ ข้อความภาษาไทยส่งให้สมาชิกเห็นได้
+     * - อื่นๆ บันทึก log แล้วตอบข้อความกลาง ไม่ส่งข้อความ exception ดิบ (SQL / ชื่อคอลัมน์) ออกไป
+     */
+    private function failure(\Throwable $e, string $fallback): JsonResponse
+    {
+        if ($e instanceof \DomainException) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+        if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบพูล Stake',
+                'error' => 'Not found',
+            ], 404);
+        }
+
+        Log::error('Staking action failed: '.$fallback, [
+            'user_id' => auth()->id(),
+            'exception' => $e,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $fallback,
+            'error' => 'Request failed',
+        ], 500);
     }
 }
