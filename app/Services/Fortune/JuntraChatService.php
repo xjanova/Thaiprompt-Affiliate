@@ -124,6 +124,63 @@ TXT;
 TXT;
 
     /**
+     * 📚 (2026-11-07) ต่อท้ายตัวอย่างคำตอบของแอดมิน (Admin Q&A) — ตัวอย่างเก็บมาจากแชทเพจ Facebook/LINE
+     * ยืมได้แค่น้ำเสียงและแนวคิด ห้ามยกขั้นตอนบิล/คำสั่งพิมพ์/ราคา/เวลา/จำนวนไพ่ของแชทเพจมาใช้ในเว็บ
+     */
+    private const WEB_RAG_NOTE = <<<'TXT'
+
+⚠️ ตัวอย่างคำตอบข้างบนมาจากแชทในเพจ Facebook/LINE ไม่ใช่ห้องนี้ — ยืมได้แค่น้ำเสียงและวิธีคิดของแม่หมอ
+ห้ามยกขั้นตอนของแชทเพจมาใช้: ห้ามบอกให้โอนเงิน ส่งสลิป สแกน QR ห้ามบอกราคา เวลาที่เหลือ จำนวนไพ่/จำนวนคำถาม
+และห้ามสั่งให้ลูก "พิมพ์" คำสั่งใด ๆ — ยึดกติกาของห้องนี้เท่านั้น
+TXT;
+
+    /**
+     * 🪐 (2026-11-07) พื้นดวงจริงของลูกค้าจากวันเกิดในโปรไฟล์เว็บ — ผังชุดเดียวกับที่บอทแชทเพจใช้ทำนายในบิล
+     * ห้องคุยทั่วไปได้แค่ "พื้นดวง" (ราศี ดาวเจ้าชนะ นิสัย ดาวเสวยอายุ) — คำทำนายยังเป็นของที่ลูกเลือกเปิดไพ่
+     */
+    private const ASTRO_RULES_FREE = <<<'TXT'
+
+พื้นดวงจริงของลูก (คำนวณจากวันเกิดในโปรไฟล์ — ระบบผูกดวงเดียวกับผังดวงในคำทำนายของแม่หมอ):
+====
+%s
+====
+- ใช้เพื่อรู้จักลูกและคุยเรื่องนิสัย พื้นดวง ราศี ดาวเจ้าชนะ — อ้างได้เฉพาะที่มีในบล็อกนี้ ห้ามแต่งดาว/ราศีเพิ่ม
+- ห้ามอ่านทวนเป็นรายการ เล่าเป็นภาษาแม่หมอแทรกตามจังหวะ · คุยเรื่องอื่นอยู่ ไม่ต้องยกขึ้นมา
+- คำทำนายเรื่องข้างหน้ายังเป็นไปตามกติกาของห้องนี้ (ชวนเปิดไพ่) — พื้นดวงไม่ใช่ใบอนุญาตให้ทำนายในแชท
+TXT;
+
+    /** 🪐 ห้องที่คุยต่อจากคำพยากรณ์ที่จ่ายแล้ว — ได้ผังเต็ม (ดวงพื้น 10 ดาว ภพ มุม ดาวจรวันนี้) แบบบิลดูดวงของเพจ */
+    private const ASTRO_RULES_READING = <<<'TXT'
+
+ผังดวงจริงของลูก (คำนวณจากวันเกิดในโปรไฟล์ — ชุดเดียวกับผังดวงในบิลดูดวงของแม่หมอ):
+====
+%s
+====
+- ผูกคำตอบเรื่องไพ่ชุดนี้เข้ากับดาวในผังได้ แต่อ้างได้เฉพาะดาว ราศี ภพ มุม ดาวจร ที่มีในผังเท่านั้น ห้ามแต่งเพิ่ม
+- ห้ามอ่านผังทวนเป็นรายการ เล่าเป็นภาษาแม่หมอ · คำพยากรณ์จากไพ่ยังเป็นหลัก ผังเป็นตัวเสริม
+TXT;
+
+    /**
+     * 🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บ — ระบบเดียวกับแชทเพจ (CustomerPersonaService) platform "web"
+     * ทุกเทิร์นบนเว็บป้อนกลับเข้าความจำ (ExtractCustomerPersonaJob) เหมือนแชทเพจ
+     */
+    private const WEB_PERSONA_RULES = <<<'TXT'
+
+สิ่งที่แม่หมอจำได้เกี่ยวกับลูกคนนี้ (จากการคุยบนเว็บครั้งก่อน ๆ):
+====
+%s
+====
+- ใช้ให้คุยต่อเนื่องเป็นธรรมชาติเหมือนคนที่เคยคุยกัน — ห้ามอ่านทวนเป็นรายการ ห้ามบอกว่ามีระบบจดข้อมูล
+- ห้ามพูดป้ายในวงเล็บเหลี่ยมหรือชื่อหัวข้อในบล็อกนี้ออกไปให้ลูกเห็น
+TXT;
+
+    /** แพลตฟอร์มของลูกค้าเว็บในตารางความจำ (fortune_customer_personas.platform) */
+    public const MEMORY_PLATFORM = 'web';
+
+    /** บล็อกพื้นดวงของห้องคุยทั่วไป — ตัดไม่เกินนี้ (ส่วนหัวของผังก่อน "ดวงพื้น" ~800 ตัว) */
+    private const ASTRO_FREE_MAX_CHARS = 1500;
+
+    /**
      * 💬 (2026-11-05) ปุ่มคำถามถัดไปที่ AI คิดจากบริบท — เจ้าของสั่ง "ให้ขึ้นคำถาม ทางเลือก ที่เอไอทำขึ้นเพื่อให้ผู้ใช้ได้กด"
      * ต่อท้าย prompt เฉพาะเว็บที่ขอ (suggest=1) · ป้ายถูกถอดออกเสมอ ลูกค้าไม่เห็น ไม่เข้าประวัติห้อง
      */
@@ -545,6 +602,10 @@ TXT,
      * @param  string  $inputMode  text | voice (ข้อความมาจากไมค์ — ให้ถามทวนเมื่อชื่อ/วันเกิดไม่ชัด)
      * @param  array<int,string>|null  $voiceClips  id คลิปคลังที่เว็บมีไฟล์จริง (null = ถือว่ามีครบ)
      * @param  bool  $suggest  💬 (2026-11-05) เว็บขอปุ่มคำถามถัดไป — AI ปิดท้ายด้วย [[ASK: …]] คืนเป็น suggestions
+     * @param  bool  $webMemory  🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บเอง (CustomerPersonaService platform "web")
+     *                           — **ทางเซิร์ฟเวอร์เท่านั้น** (เจ้าของห้อง "jw{user_ref}") · false = ไม่อ่าน/ไม่เขียนความจำนี้
+     * @param  array{birth_date?:?string,birth_time?:?string}|null  $astro  🪐 (2026-11-07) วันเกิดในโปรไฟล์เว็บ
+     *                                                                      → ผังดวงจริงชุดเดียวกับบิลของเพจ · null = ไม่มีผังดวง (ทางเดิม)
      *
      * ผลลัพธ์: crisis = เทิร์นนี้เป็นคำปลอบคนที่อยากทำร้ายตัวเอง (ไม่ใช่บริการ — ห้ามคิดเงิน)
      * · crisis_room = ห้องนี้อยู่ในโหมดวิกฤต (ไม่มีการ์ดขาย)
@@ -567,6 +628,8 @@ TXT,
         string $inputMode = 'text',
         ?array $voiceClips = null,
         bool $suggest = false,
+        bool $webMemory = false,
+        ?array $astro = null,
     ): array {
         $history = $this->history($owner, $sessionId);
         // ห้องยังอยู่ (มีอย่างน้อยคำทักทาย) = รู้อยู่แล้วว่ามี/ไม่มีความจำ · ว่าง = ห้องหมดอายุ/cache ถูกล้าง
@@ -615,6 +678,16 @@ TXT,
             Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
         }
 
+        // 🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บเอง — ชุดเดียวกับแชทเพจ · ความจำติดธงเปราะบาง = ห้องวิกฤต
+        //    (ลูกค้าเคยบอกว่าอยากทำร้ายตัวเองในห้องก่อน ๆ — ห้องใหม่ต้องไม่ยื่นการ์ดขาย)
+        $personaBlock = null;
+        if ($webMemory) {
+            [$personaBlock, $fragile] = $this->webPersona($owner, $text);
+            if ($fragile) {
+                Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
+            }
+        }
+
         // 🤍 (2026-11-04) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง — ปลอบเบา ๆ (ไม่มีเบอร์) ก่อนด่านอื่นทั้งหมด
         //    (ด่าน scope อาจปัด "ช่วยเขียนจดหมายลาตาย" เป็นคำขอเขียนให้) ไม่ส่งไปให้ AI · ❌ ไม่มีการ์ดเปิดไพ่
         //    และติดธงห้องไว้ — เทิร์นถัด ๆ ไปในห้องนี้ก็ไม่ยื่นการ์ดขาย ต่อให้ AI แปะป้ายมาเอง
@@ -623,6 +696,10 @@ TXT,
             FortuneAIService::reportSelfHarmSignal('self_harm', $text, 'web:'.$owner,
                 'เว็บจันทรา ห้อง '.$sessionId.' ('.$persona.')'.(! empty($customer['customer_name']) ? ' · '.$customer['customer_name'] : ''));
             Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
+            // 🧠 ติดธงในความจำระยะยาวด้วย (แบบแชทเพจ) — ห้องถัด ๆ ไปของลูกค้าคนนี้เริ่มเป็นห้องวิกฤต
+            if ($webMemory) {
+                $this->personaService()?->flagCrisis(self::MEMORY_PLATFORM, $owner);
+            }
             $reply = FortuneAIService::buildAdversarialReply('self_harm');
             $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
 
@@ -678,6 +755,14 @@ TXT,
         if ($memory !== null) {
             $system .= self::CONTINUITY_RULES."\n====\n".$memory."\n====";
         }
+        if ($personaBlock !== null) {
+            $system .= sprintf(self::WEB_PERSONA_RULES, $personaBlock);
+        }
+        // 🪐 ห้องวิกฤต = ไม่มีผังดวง (คุยเรื่องใจ ไม่ใช่เรื่องดวง)
+        $astroBlock = ($crisisRoom || $othersCrisis) ? null : $this->astroBlock($astro, $reading !== null);
+        if ($astroBlock !== null) {
+            $system .= sprintf($reading !== null ? self::ASTRO_RULES_READING : self::ASTRO_RULES_FREE, $astroBlock);
+        }
         if ($reading !== null) {
             $system .= self::READING_RULES.($profile['reading_rules'] ?? '')."\n====\n".$reading."\n====";
             $config = ['temperature' => 0.6, 'max_tokens' => 600];
@@ -695,11 +780,39 @@ TXT,
             $config['max_tokens'] += self::ASK_EXTRA_TOKENS;
         }
 
+        // 📚 (2026-11-07) คำตอบตัวอย่างที่แอดมินสอนไว้ (Admin Q&A RAG) — ตัวเดียวกับที่บอทแชทเพจใช้
+        //    ⚠️ เฉพาะหมวดที่ใช้กับเว็บได้: ทั่วไป + หลังอ่านคำทำนาย (ห้องที่คุยต่อจากคำพยากรณ์)
+        //       หมวดอื่นเป็นขั้นตอนบิลของแชทเพจ (โอน QR / ส่งสลิป / กรอกวันเกิด / เลือกไพ่ 99฿)
+        //       เว็บจ่ายด้วยเครดิตวอลเลต — ยกมา = แม่หมอบอกลูกค้าเว็บให้โอนเงินผิดช่องทาง
+        //    ห้องวิกฤต/เล่าว่าคนอื่นวิกฤต = ไม่ใส่เลย (ตัวอย่างสายขายห้ามโผล่ตอนนั้น)
+        if (! $crisisRoom && ! $othersCrisis) {
+            $keep = [\App\Models\FortuneAdminQA::CATEGORY_GENERAL];
+            if ($reading !== null) {
+                $keep[] = \App\Models\FortuneAdminQA::CATEGORY_POST_READING;
+            }
+            // หมวดทั่วไป/หลังอ่านคำทำนายบน prod ยังมีคำตอบสายบิลแชทเพจปนอยู่ ~12% ("เปิดบิลให้โอนค่าบูชาครู",
+            //   "39บาทค่ะ", "พิมพ์ ดูดวง") → ตัดตัวอย่างที่พูดเรื่องโอน/ราคา/บิลทิ้งรายตัว
+            $withExamples = $this->ai->injectAdminQARagFewShot(
+                $system,
+                $text,
+                null,
+                array_values(array_diff(\App\Models\FortuneAdminQA::CATEGORIES, $keep)),
+                array_map(fn ($m) => ['role' => $m['role'], 'content' => $m['text']], array_slice($history, 0, -1)),
+                fn ($qa) => ! self::isPageBillAnswer((string) $qa->a_text),
+            );
+            // ตัวกรองคำไม่มีวันครบ — บอก AI ตรง ๆ ว่าตัวอย่างมาจากแชทเพจ ยืมได้แค่น้ำเสียง/แนวคิด
+            if ($withExamples !== $system) {
+                $system = $withExamples.self::WEB_RAG_NOTE;
+            }
+        }
+
         $result = $this->ask(
             $system,
             "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียง".($profile['voice'] ?? $profile['display_name']),
             $config,
             $text,
+            // 🛡 (2026-11-07) ด่านกันแชทมโนว่าเปิดไพ่ให้แล้ว (ตัวเดียวกับแชทเพจ) — ห้องคำพยากรณ์ = คุยเรื่องไพ่ได้
+            paidContext: $reading !== null,
         );
 
         $reply = trim((string) ($result['response'] ?? ''));
@@ -735,7 +848,7 @@ TXT,
 
         // 🧼 (2026-11-03) ห้องที่มีบล็อกความจำ — กรองขาออก: แท็กภายใน [CUSTOMER_*]/[PAST_CASE_*] และ prefix "แม่หมอ:"
         //    (ความจำมีบรรทัดจากแชท FB ที่ AI อาจสะท้อนกลับมา) · ห้องที่ไม่มีความจำ = ทางเดิม ไม่กรอง
-        if ($memory !== null) {
+        if ($memory !== null || $personaBlock !== null) {
             $reply = WebChatContinuitySanitizer::sanitizeOutbound($reply);
 
             if ($reply === '') {
@@ -747,6 +860,15 @@ TXT,
         }
 
         $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
+
+        // 🧠 (2026-11-07) ป้อนเทิร์นนี้เข้าความจำระยะยาว (แบบแชทเพจ — คิวทีหลัง กันช้า · กันยิงถี่ในตัวเอง)
+        if ($webMemory) {
+            try {
+                $this->personaService()?->dispatchExtraction(self::MEMORY_PLATFORM, $owner, $text);
+            } catch (\Throwable $e) {
+                Log::debug('JuntraChat: ส่งงานจำลูกค้าไม่สำเร็จ (non-blocking)', ['error' => $e->getMessage()]);
+            }
+        }
 
         $out = [
             'reply' => $reply,
@@ -926,6 +1048,7 @@ TXT,
         string $guardText,
         int $primaryTimeout = self::PRIMARY_TIMEOUT_SEC,
         int $geminiBudget = self::GEMINI_BUDGET_SEC,
+        ?bool $paidContext = null,
     ): array {
         $started = microtime(true);
         $failures = [];
@@ -949,7 +1072,15 @@ TXT,
                 );
                 // 🔁 (รีวิว) คำตอบที่มีแต่ป้าย [[ASK]] / บล็อก [[VOICE]] = ว่างสำหรับลูกค้า → ลองคีย์ถัดไป ไม่ใช่ 503
                 if (self::hasVisibleText((string) ($result['response'] ?? '')) || ($result['provider'] ?? null) === self::FALLBACK_PROVIDER) {
-                    return $result;
+                    // 🎭 (2026-11-07) หลุดบท ("ในฐานะ AI…" / พูดถึงพรอมต์ / สรรพนามผู้ชาย) = ลองคีย์ถัดไป
+                    //    แบบเดียวกับคีย์พูลคำทำนายของบอท FB (generateWithRetryAndFallback ข้ามโมเดลที่หลุดบท)
+                    $broken = self::badReply((string) ($result['response'] ?? ''), $paidContext);
+                    if ($broken === null) {
+                        return $result;
+                    }
+                    $failures[] = "{$label}: หลุดบท ({$broken})";
+
+                    continue;
                 }
                 $failures[] = "{$label}: ตอบว่าง";
             } catch (\Throwable $e) {
@@ -960,7 +1091,7 @@ TXT,
 
         Log::warning('JuntraChat: ทางหลักไม่ตอบ — สลับไป OpenAI luna', ['tried' => $failures]);
 
-        return $this->ai->chatWithCustomSystemPrompt(
+        $result = $this->ai->chatWithCustomSystemPrompt(
             systemMessage: $system,
             userMessage: $userMessage,
             config: $config + ['timeout' => self::FALLBACK_TIMEOUT_SEC],
@@ -968,6 +1099,67 @@ TXT,
             modelOverride: self::FALLBACK_MODEL,
             guardText: $guardText,
         );
+
+        // 🎭 ทางสุดท้ายก็หลุดบท = ห้ามส่งถึงลูกค้า → โยนต่อ (ผู้เรียกตอบ 503 · เว็บไม่คิดเครดิตเทิร์นนี้)
+        if (($broken = self::badReply((string) ($result['response'] ?? ''), $paidContext)) !== null) {
+            Log::warning('JuntraChat: luna หลุดบทด้วย — ไม่ส่งคำตอบนี้', ['reason' => $broken, 'tried' => $failures]);
+
+            throw new RuntimeException('AI reply broke persona: '.$broken);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 📚 (2026-11-07) คำตอบตัวอย่างของแอดมินที่สอนขั้นตอนบิลของแชทเพจ — ห้ามเป็นแบบอย่างให้แชทเว็บ
+     *   (เว็บจ่ายด้วยเครดิตวอลเลต ราคาแพ็กเกจต่างจากบิลแชทเพจ และไม่มีคำสั่ง "พิมพ์ ดูดวง")
+     *   + ตัวเลขยาว ๆ (เบอร์โทร/เลขบัญชีที่แอดมินเคยพิมพ์ในเพจ) — ห้ามหลุดไปให้ลูกค้าคนอื่น
+     *   เช็คกับข้อมูลจริงบน prod 2026-11-07: หมวดทั่วไป+หลังอ่าน 1,185 ตัวอย่าง ตัดทิ้ง ~470 เหลือแนวน้ำเสียง ~710
+     */
+    public static function isPageBillAnswer(string $answer): bool
+    {
+        return preg_match(
+            '/โอน|qr|คิวอาร์|สแกน|สลิป|พร้อมเพย์|เลขบัญชี|บัญชีธนาคาร|บาท|฿|\d+\s*บ\.|บิล|ค่าครู|บูชาครู|เปิดให้บูชา|ค่าดู|ปรึกษาฟรี|มี\s*\d+\s*แบบ|(?<!\d)(?:39|49|59|79|99|199|299|399)(?!\d)|\d[\d\s-]{7,}\d|รับยอด|ยอดเงิน|จ่าย|ชำระ|ขั้นตอน|\d+\s*นาที|\d+\s*ใบ|\d+\s*คำถาม|กด\s*["“\']?\s*อ่าน|พิม(?:พ์)?[\s\/]*(?:ว่า|คำว่า)?[\s\/]*["“\']?\s*(?:ดู|โอน|อ่าน|เปิด)|พิม(?:พ์)?\s*$/iu',
+            $answer
+        ) === 1;
+    }
+
+    /**
+     * 🎭 (2026-11-07) เหตุที่คำตอบแชทนี้หลุดบทตัวละคร — null = ใช้ได้
+     *
+     * ตรวจเฉพาะข้อความที่ลูกค้าจะเห็น (ถอด [[ASK]] / บล็อก [[VOICE]] ก่อน) · ระดับปกติ ไม่ใช่โหมดเข้ม
+     *   (แชทมีเหตุให้ "ขออภัย…ไม่สามารถ" ได้จริง เช่นปัดคำขอนอกขอบเขต — จับแค่คำพูดเรื่องเบื้องหลัง)
+     *   ตัวละครทุกตัวของห้องเป็นผู้หญิง (แม่หมอ/บุษบา) สรรพนามผู้ชาย = หลุดบทเสมอ
+     */
+    /**
+     * 🛡 (2026-11-07) คำตอบแชทที่ห้ามถึงลูกค้า — หลุดบท หรือ (เฉพาะแชท) มโนว่าเปิดไพ่/ทำพิธีให้แล้ว
+     *
+     * ด่านมโนไพ่ = FortuneAIService::detectHallucinatedReading ตัวเดียวกับแชทเพจ (โหมด chat / paid_chat)
+     *   แชทเว็บเปิดไพ่จริงไม่ได้ — ไพ่จริงอยู่ในโรงละครที่ลูกเลือกเปิดเอง · คำตอบที่ชวนเปิดไพ่ ([[OFFER:…]]) ผ่านเสมอ
+     *   (แบบเดียวกับที่แชทเพจปล่อยคำตอบที่ปิดท้ายด้วย [OFFER_FORTUNE])
+     *
+     * @param  bool|null  $paidContext  null = ไม่ใช่แชท (บทเล่าคำทำนาย ฯลฯ) ตรวจแค่หลุดบท
+     *                                  true = ห้องคุยต่อจากคำพยากรณ์ที่จ่ายแล้ว (คุยเรื่องไพ่ได้)
+     */
+    private static function badReply(string $response, ?bool $paidContext): ?string
+    {
+        $broken = self::personaBreak($response);
+        if ($broken !== null || $paidContext === null || preg_match('/\[\[\s*OFFER\s*:/iu', $response)) {
+            return $broken;
+        }
+        [$text] = self::extractAsk($response);
+        [$text] = VoicePlanParser::extract($text);
+        $fake = FortuneAIService::detectHallucinatedReading(trim($text), $paidContext);
+
+        return $fake !== null ? "มโนว่าเปิดไพ่ ({$fake})" : null;
+    }
+
+    private static function personaBreak(string $response): ?string
+    {
+        [$text] = self::extractAsk($response);
+        [$text] = VoicePlanParser::extract($text);
+
+        return PersonaBreakDetector::reason($text);
     }
 
     /** เหลือข้อความให้ลูกค้าเห็นไหม หลังถอดป้ายที่ระบบเก็บไปเอง ([[ASK]] และบล็อก [[VOICE]]) */
@@ -1042,6 +1234,97 @@ TXT,
     }
 
     /** ความจำ: ว่าง = null · ยาวเกิน = ตัดท้าย · ทำให้รั้ว ==== ข้างในไร้ผลอีกชั้น (กันผู้เรียกลืมกรอง) */
+    /** ความจำระยะยาวของแชทเพจ — best-effort: resolve ไม่ได้ = ไม่มีความจำ (ห้ามขวางคำตอบ) */
+    private function personaService(): ?CustomerPersonaService
+    {
+        try {
+            return app(CustomerPersonaService::class);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * 🧠 ความจำระยะยาวของลูกค้าเว็บ (ระบบเดียวกับแชทเพจ) + ธงเปราะบาง
+     *
+     * เอาแค่บล็อกบุคลิกลูกค้า (FortuneCustomerPersona::toAiContextBlock) — ไม่ใช้ buildInjectBlock ทั้งก้อน:
+     *   หัว timeline นับจาก "บิลแชทเพจที่จ่ายแล้ว" ลูกค้าเว็บทุกคนจะได้ป้าย "ยังไม่เคยดูดวงแบบจ่ายเงิน" ทั้งที่จ่ายบนเว็บมาแล้ว
+     *   และคำทำนายเก่าห้องคำพยากรณ์ส่ง context มาเองอยู่แล้ว
+     *
+     * @return array{0:?string,1:bool} [บล็อกความจำ (null = ยังไม่มี), ติดธงเปราะบาง]
+     */
+    private function webPersona(string $owner, string $text): array
+    {
+        $svc = $this->personaService();
+        if ($svc === null) {
+            return [null, false];
+        }
+
+        try {
+            $persona = $svc->getCached(self::MEMORY_PLATFORM, $owner);
+            if ($persona === null) {
+                return [null, false];
+            }
+            $block = trim($persona->toAiContextBlock($text, forWeb: true));
+            $fragile = (bool) (($persona->risk_flags ?? [])['mental_fragile'] ?? false);
+        } catch (\Throwable $e) {
+            Log::debug('JuntraChat: อ่านความจำลูกค้าไม่สำเร็จ (non-blocking)', ['error' => $e->getMessage()]);
+
+            return [null, false];
+        }
+
+        return [$block !== '' ? mb_substr($block, 0, self::MAX_MEMORY_CHARS) : null, $fragile];
+    }
+
+    /**
+     * 🪐 ผังดวงจริงจากวันเกิดในโปรไฟล์เว็บ — ThaiAstrologyService::formatPersonBlock ตัวเดียวกับบิลดูดวงของเพจ
+     *
+     * ห้องคำพยากรณ์ = ผังเต็มพร้อมดาวจรวันนี้ · ห้องคุยทั่วไป = ส่วนหัวของผัง (พื้นดวง) เท่านั้น
+     * cache รายวัน (ดาวจรเปลี่ยนตามวัน) · วันเกิดอ่านไม่ออก/อนาคต = ไม่มีผัง
+     *
+     * @param  array{birth_date?:?string,birth_time?:?string}|null  $astro
+     */
+    private function astroBlock(?array $astro, bool $full): ?string
+    {
+        $date = is_string($astro['birth_date'] ?? null) ? trim($astro['birth_date']) : '';
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return null;
+        }
+        $hour = null;
+        $time = is_string($astro['birth_time'] ?? null) ? trim($astro['birth_time']) : '';
+        if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $time, $m)) {
+            $hour = (int) $m[1] + (int) $m[2] / 60;
+        }
+
+        try {
+            $tz = 'Asia/Bangkok';
+            if (\Carbon\Carbon::parse($date, $tz)->greaterThanOrEqualTo(\Carbon\Carbon::today($tz))) {
+                return null;
+            }
+            $key = 'juntra_chat:astro:'.($full ? 'full' : 'base').':'.$date.':'.($time ?: '-').':'.now($tz)->format('Ymd');
+
+            $block = Cache::remember($key, 60 * 60 * 6, function () use ($date, $hour, $full) {
+                $text = (new ThaiAstrologyService)->formatPersonBlock($date, $hour, $full);
+                if (str_starts_with($text, '(วันเกิด:')) {
+                    return '';
+                }
+                if (! $full) {
+                    // ส่วนหัวของผัง = ราศี ดาวเจ้าชนะ ธาตุ นิสัย ทักษา ดาวเสวยอายุ — ก่อนบล็อก "ดวงพื้น" (ตำแหน่งดาวทั้ง 10)
+                    $cut = mb_strpos($text, '🌀');
+                    $text = mb_substr($cut !== false ? mb_substr($text, 0, $cut) : $text, 0, self::ASTRO_FREE_MAX_CHARS);
+                }
+
+                return trim($text);
+            });
+        } catch (\Throwable $e) {
+            Log::debug('JuntraChat: ผูกดวงลูกค้าไม่สำเร็จ (non-blocking)', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        return is_string($block) && $block !== '' ? $block : null;
+    }
+
     private function cleanMemory(?string $memory): ?string
     {
         $memory = trim((string) $memory);

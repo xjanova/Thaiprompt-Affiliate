@@ -4395,6 +4395,8 @@ PROMPT;
      * @param  \App\Models\FortuneReading|null  $reading  reading ปัจจุบันของลูกค้า (ถ้ามี) ใช้ classify category
      * @param  array<string>|null  $excludeCategories  หมวดที่ห้าม inject (null = โหมดปกติ classify+filter)
      * @param  array  $history  ประวัติสนทนา [['role'=>'user'|'assistant','content'=>...], ...] — ใช้ขยาย query สั้นๆ
+     * @param  (\Closure(\App\Models\FortuneAdminQA): bool)|null  $keep  🔎 (2026-11-07) กรองตัวอย่างรายตัว (ใช้คู่กับ excludeCategories)
+     *        — แชทเว็บจันทราตัดคำตอบที่สอนขั้นตอนบิลแชทเพจ (โอน/QR/สลิป/ราคา) · null = ไม่กรอง (บอทแชทเพจทางเดิม)
      */
     public function injectAdminQARagFewShot(
         string $systemMessage,
@@ -4402,6 +4404,7 @@ PROMPT;
         ?\App\Models\FortuneReading $reading = null,
         ?array $excludeCategories = null,
         array $history = [],
+        ?\Closure $keep = null,
     ): string {
         $messageText = trim($messageText);
         if ($messageText === '') {
@@ -4439,7 +4442,8 @@ PROMPT;
                 $candidates = $retriever->searchSimilar($retrievalQuery, $topK + count($exclude) + 5, $threshold, null);
                 $results = array_values(array_filter(
                     $candidates,
-                    fn ($r) => ! in_array($r['qa']->category, $exclude, true),
+                    fn ($r) => ! in_array($r['qa']->category, $exclude, true)
+                        && ($keep === null || $keep($r['qa'])),
                 ));
                 $results = array_slice($results, 0, $topK);
             } else {

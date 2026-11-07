@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ExtractCustomerPersonaJob;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneWebHandoff;
 use App\Services\FortuneAIService;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -40,6 +42,8 @@ class JuntraServerChatApiTest extends TestCase
         $this->buildJuntraServerSchema();
         config(['services.juntra.server_client_ids' => []]);
         Cache::flush();
+        // 🧠 งานจดความจำลูกค้า (ระบบเดียวกับแชทเพจ) — ไม่ยิง AI จริงในเทสต์ · ตรวจแยกใน JuntraChatBrainTest
+        Bus::fake([ExtractCustomerPersonaJob::class]);
 
         $client = app(ClientRepository::class)->create(
             null,
@@ -50,6 +54,8 @@ class JuntraServerChatApiTest extends TestCase
         Passport::actingAsClient($client, [], 'api-oauth');
 
         $ai = Mockery::mock(FortuneAIService::class);
+        // 📚 แชทเว็บดึงคำตอบตัวอย่างของแอดมิน (RAG) ก่อนยิง AI — ในเทสต์ส่ง system message ผ่านไปเฉย ๆ
+        $ai->shouldReceive('injectAdminQARagFewShot')->andReturnUsing(fn (string $system) => $system);
         $ai->shouldReceive('withCustomerContext')->andReturnSelf();
         $ai->shouldReceive('chatWithCustomSystemPrompt')->andReturnUsing(function (...$args) {
             $this->aiCalls[] = ['system' => $args[0], 'user' => $args[1], 'config' => $args[2] ?? [],
@@ -1210,6 +1216,32 @@ class JuntraServerChatApiTest extends TestCase
         $this->send($session, 'รู้สึกเหมือนโดนของค่ะ')->assertOk()
             ->assertJsonPath('data.kind', 'offer')->assertJsonPath('data.offer_topic', 'kunsai');
         $this->assertStringContainsString('kunsai', end($this->aiCalls)['system']);
+    }
+
+    /**
+     * 🪐 (2026-11-07) วันเกิดในโปรไฟล์เว็บ → แม่หมอเห็นพื้นดวงจริงชุดเดียวกับผังในบิลของเพจ
+     * 🧠 และทุกเทิร์นบนเว็บส่งไปจำต่อแบบแชทเพจ (platform web · เจ้าของห้อง jw{user_ref})
+     */
+    public function test_the_birth_date_from_the_web_profile_reaches_the_oracle_as_a_real_chart(): void
+    {
+        $session = $this->start();
+
+        $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ช่วงนี้รู้สึกเหนื่อยกับงานมากเลยค่ะ',
+            'birth_date' => '1990-11-07', 'birth_time' => '08:30',
+        ])->assertOk();
+
+        $system = end($this->aiCalls)['system'];
+        $this->assertStringContainsString('พื้นดวงจริงของลูก', $system);
+        $this->assertStringContainsString('ราศี: ตุลย์', $system);
+        Bus::assertDispatched(ExtractCustomerPersonaJob::class, fn ($job) => $job->platform === 'web' && $job->userId === 'jw42');
+
+        // วันเกิดในอนาคต/ผิดรูป = 422 (ห้ามเดาผังจากข้อมูลเสีย)
+        foreach (['2999-01-01', '07/11/1990'] as $bad) {
+            $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+                'user_ref' => '42', 'session_id' => $session, 'text' => 'สวัสดีค่ะ', 'birth_date' => $bad,
+            ])->assertStatus(422);
+        }
     }
 
     public function test_pdpa_deletion_removes_web_handoffs_by_psid_and_by_user(): void
