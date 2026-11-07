@@ -331,6 +331,31 @@ Schedule::command('fortune:content:publish')
     });
 
 // ════════════════════════════════════════════════════════════════
+// 🔁 (2026-11-07) รีโพสจากเพจหลักลงเพจสาขา — ตารางเหลื่อมเวลา (เช่น +30 นาที)
+// ════════════════════════════════════════════════════════════════
+// แต่ละรอบเติมช่องที่ยังว่างในอีก N ชม.ข้างหน้า (ตั้งเวลาใน Facebook ไว้ล่วงหน้า)
+// รันซ้ำได้ปลอดภัย: ช่องที่มีโพสแล้วข้าม · โพสต้นฉบับ 1 ใบลงสาขาเดียวได้ครั้งเดียว
+// Toggle: fortune_pages.repost_enabled รายสาขา (หลังบ้าน → 🔁 รีโพสลงเพจสาขา)
+Schedule::command('fortune:repost-schedule')
+    ->everyFifteenMinutes()
+    ->timezone('Asia/Bangkok')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-branch-repost')
+    ->runInBackground()
+    ->when(function () {
+        try {
+            return \Illuminate\Support\Facades\Schema::hasColumn('fortune_pages', 'repost_enabled')
+                && \App\Models\FortunePage::query()
+                    ->where('repost_enabled', true)
+                    ->where('is_active', true)
+                    ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    });
+
+// ════════════════════════════════════════════════════════════════
 // 🪙 (2026-10-13) ชำระด้วยเหรียญ TPIX — ตรวจธุรกรรมบนเชน 4289 + บันทึกราคาพูล DEX ทุกนาที
 // ════════════════════════════════════════════════════════════════
 // เงินที่ลูกค้าโอนแล้วแต่ไม่ได้ส่งเลขธุรกรรม / รอ confirmation / เชนล่มตอนส่ง → ตัวนี้ตามเก็บให้

@@ -49,6 +49,26 @@ class FortunePage extends Model
         'comment_reply_enabled',
         'is_default',
         'notes',
+        // 🔁 (2026-11-07) รีโพสจากเพจต้นทาง
+        'repost_enabled',
+        'repost_source_page_id',
+        'repost_offset_minutes',
+        'repost_max_per_day',
+        'repost_settings',
+    ];
+
+    /**
+     * 🔁 ค่าเริ่มต้นของ repost_settings (คีย์ที่ไม่ได้ตั้ง = ใช้ค่านี้)
+     *
+     * exclude_keywords: โพสที่ผูกกับวันที่ (ดวงรายวัน) เอาไปลงวันอื่น = ข้อมูลผิด ต้องตัดทิ้ง
+     */
+    public const REPOST_DEFAULTS = [
+        'pick_order' => 'newest',            // newest / oldest / random
+        'caption_suffix' => '',
+        'exclude_keywords' => ['ดวงรายวัน', 'ดวงประจำวัน'],
+        'media_types' => ['photo', 'video', 'text'],
+        'lookback_days' => 30,                // ดึงคลังโพสต้นทางย้อนหลังกี่วัน
+        'lookahead_hours' => 24,              // วางแผนล่วงหน้ากี่ชั่วโมง
     ];
 
     protected $casts = [
@@ -61,6 +81,11 @@ class FortunePage extends Model
         //    cast 'boolean' คง null ไว้เป็น null (ไม่แปลงเป็น false) — ต้องพึ่งพฤติกรรมนี้
         'comment_reply_enabled' => 'boolean',
         'is_default' => 'boolean',
+        'repost_enabled' => 'boolean',
+        'repost_source_page_id' => 'integer',
+        'repost_offset_minutes' => 'integer',
+        'repost_max_per_day' => 'integer',
+        'repost_settings' => 'array',
     ];
 
     /**
@@ -183,6 +208,69 @@ class FortunePage extends Model
 
         // null = ไม่ได้ตั้งค่ารายเพจ ⇒ ตามค่ากลาง (ซึ่งเปิดอยู่ถึงมาถึงบรรทัดนี้)
         return $this->comment_reply_enabled ?? true;
+    }
+
+    /**
+     * 🔢 เลขสาขาที่ลูกค้าเรียก (เช่น "5") — null = ไม่มีเลข / เป็นช่องหลัก
+     *
+     * ลำดับ: settings_override.branch_no (แอดมินตั้งเอง) → code ที่เป็นตัวเลขล้วน
+     *        → เลขท้ายชื่อเพจ เช่น "จันทราพยากรณ์ จ.เลย - 5" / "... สาขา 5"
+     */
+    public function branchNumber(): ?string
+    {
+        if ($this->is_default) {
+            return null;
+        }
+
+        $override = is_array($this->settings_override) ? ($this->settings_override['branch_no'] ?? null) : null;
+
+        if ($override !== null && trim((string) $override) !== '') {
+            return trim((string) $override);
+        }
+
+        $code = trim((string) $this->code);
+
+        if ($code !== '' && ctype_digit($code)) {
+            return ltrim($code, '0') ?: '0';
+        }
+
+        if (preg_match('/(?:สาขา(?:ที่)?|-)\s*(\d{1,4})\s*$/u', (string) $this->name, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * 🔁 ค่ารีโพสที่ใช้จริง (รวมค่าเริ่มต้น + ตรวจชนิดข้อมูลให้แล้ว)
+     *
+     * @return array{pick_order:string,caption_suffix:string,exclude_keywords:array<int,string>,media_types:array<int,string>,lookback_days:int,lookahead_hours:int}
+     */
+    public function repostConfig(): array
+    {
+        $raw = is_array($this->repost_settings) ? $this->repost_settings : [];
+        $cfg = array_merge(self::REPOST_DEFAULTS, array_intersect_key($raw, self::REPOST_DEFAULTS));
+
+        $cfg['pick_order'] = in_array($cfg['pick_order'], ['newest', 'oldest', 'random'], true) ? $cfg['pick_order'] : 'newest';
+        $cfg['caption_suffix'] = trim((string) $cfg['caption_suffix']);
+        $cfg['exclude_keywords'] = array_values(array_filter(array_map(
+            fn ($k) => trim((string) $k),
+            is_array($cfg['exclude_keywords']) ? $cfg['exclude_keywords'] : []
+        ), fn ($k) => $k !== ''));
+        $types = is_array($cfg['media_types']) ? $cfg['media_types'] : [];
+        $cfg['media_types'] = array_values(array_intersect(['photo', 'video', 'text'], $types));
+        $cfg['lookback_days'] = max(1, min(180, (int) $cfg['lookback_days']));
+        $cfg['lookahead_hours'] = max(1, min(48, (int) $cfg['lookahead_hours']));
+
+        return $cfg;
+    }
+
+    /**
+     * 🔁 เพจต้นทางที่ตั้งไว้ (null = ยังไม่ได้ตั้ง → ใช้สาขาหลัก)
+     */
+    public function repostSource(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'repost_source_page_id');
     }
 
     /**
