@@ -31,6 +31,27 @@ class WebChatOfferTagSurvivesSanitizerTest extends TestCase
         $this->assertStringNotContainsString('[VOICE]', FortuneAIService::stripInternalContextTags('ค่ะ [VOICE] ค่ะ'));
     }
 
+    /**
+     * 💬 (2026-11-07) ปุ่มคำถามถัดไป [[ASK: …]] — เคสจริงบน prod: Gemini ส่ง "[[ASK: …]]" มาครบ
+     * แต่ถึง JuntraChatService เป็น "[]" → ปุ่มคำถามที่ AI คิดไม่เคยขึ้น + ลูกค้าเห็น "[]" ท้ายคำตอบ
+     */
+    public function test_the_web_ask_tag_survives_for_the_chat_service(): void
+    {
+        $raw = "แม่หมออยู่ตรงนี้นะคะ ☾\n\n[[OFFER:career]]\n[[ASK: แล้วเรื่องเงินล่ะคะ | ควรเริ่มเมื่อไหร่ดี | มีอะไรต้องระวังไหม]]";
+        $out = FortuneAIService::stripInternalContextTags($raw);
+
+        $this->assertStringContainsString('[[ASK: แล้วเรื่องเงินล่ะคะ | ควรเริ่มเมื่อไหร่ดี | มีอะไรต้องระวังไหม]]', $out);
+        $this->assertStringContainsString('[[OFFER:career]]', $out);
+        $this->assertStringNotContainsString('[]', $out);
+
+        [$reply, $asks] = \App\Services\Fortune\JuntraChatService::extractAsk($out);
+        $this->assertSame(['แล้วเรื่องเงินล่ะคะ', 'ควรเริ่มเมื่อไหร่ดี', 'มีอะไรต้องระวังไหม'], $asks);
+        $this->assertStringNotContainsString('ASK', $reply);
+
+        // ชั้นเดียวยังโดนลอก
+        $this->assertStringNotContainsString('ASK', FortuneAIService::stripInternalContextTags('ค่ะ [ASK: ใช่ | ไม่] ค่ะ'));
+    }
+
     public function test_leaked_single_bracket_tags_are_still_stripped(): void
     {
         $out = FortuneAIService::stripInternalContextTags('แม่หมออยู่ตรงนี้ [OFFER:love] [TURN 3] [DM_COUNT 4] นะลูก [OFFER_FORTUNE]');

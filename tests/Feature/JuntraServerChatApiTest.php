@@ -271,6 +271,26 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertSame(['ใช่ค่ะ', 'ไม่ใช่'], $asks);
     }
 
+    public function test_empty_brackets_the_ai_types_never_reach_the_customer(): void
+    {
+        foreach ([
+            "ดวงดีค่ะลูก ☾\n\n[]" => 'ดวงดีค่ะลูก ☾',
+            'ดวงดีค่ะลูก [] ✨' => 'ดวงดีค่ะลูก ✨',
+            'ดวงดีค่ะลูก [[]]' => 'ดวงดีค่ะลูก',
+            'ดวงดีค่ะลูก {}' => 'ดวงดีค่ะลูก',
+            '[]' => '',
+        ] as $raw => $want) {
+            $this->assertSame($want, \App\Services\Fortune\JuntraChatService::extractAsk($raw)[0], $raw);
+        }
+
+        // ป้ายจริงยังอยู่ — เฉพาะวงเล็บเปล่าที่หาย
+        $session = $this->start();
+        $this->aiReply = "แม่หมอจะเปิดไพ่ให้นะคะลูก ☾\n\n[] [[OFFER:love]]";
+        $res = $this->send($session, 'ช่วยดูดวงความรักให้หน่อยค่ะ')->assertOk();
+        $res->assertJsonPath('data.offer_topic', 'love');
+        $this->assertStringNotContainsString('[', $res->json('data.reply'));
+    }
+
     public function test_a_tag_cut_off_after_a_single_bracket_or_mid_name_never_leaks(): void
     {
         foreach (["ดวงดีค่ะลูก\n[[ASK: งาน | เงิน]", 'ดวงดีค่ะลูก [[ASK: งาน | เงิน ]', 'ดวงดีค่ะลูก [[AS', 'ดวงดีค่ะลูก [[', 'ดวงดีค่ะลูก [[ASK'] as $raw) {
