@@ -43,6 +43,9 @@ class FortuneConversationService
 
     // 👂 (2026-09-15) ฟังลูกค้าระหว่างรอโอน — ใช้ร่วมกันทั้งบิล 39 และ Celtic 99
     use \App\Services\Fortune\PendingPaymentListenerTrait;
+
+    // 🕊️ (2026-11-07) ถามต่อหลังช่วงคุยต่อ Deep 39 ปิด — เปิดต่อสั้น ๆ / ตอบสุภาพ แทนความเงียบ
+    use \App\Services\Fortune\ProSessionGraceTrait;
     use \App\Services\Fortune\ProSessionTrait;
 
     // ⏳ (2026-09-02) รอลูกค้าเล่าจบก่อนรวบตอบ — ต้องอยู่หลัง Celtic/ProSession (ทั้งคู่เรียกใช้)
@@ -2910,6 +2913,17 @@ class FortuneConversationService
                 //
                 // เก็บ findRecentCompletedDeepReading + handlePostReadingDiscussion ไว้เป็น
                 //   internal helpers สำหรับ unit tests / admin tools — แต่ไม่เรียกใน main flow แล้ว
+
+                // 🕊️ (2026-11-07 FTU-261105-Y7178) ลูกค้า Deep 39 ถามต่อ "หลัง" ช่วงคุยต่อปิด
+                //   เดิม: ไหลลงแชทฟรี → buffer บน cache → deploy ล้าง → เงียบใส่คนที่เพิ่งจ่ายเงิน
+                //   ใหม่: ใน 15 นาที → เปิดต่อสั้น ๆ ให้ตอบผ่านเส้น Pro Session (จด DB ก่อน buffer)
+                //         เลยจากนั้น (≤24 ชม.) → ตอบสุภาพทันทีว่าช่วงถามต่อปิดแล้ว + อ่านคำทำนายเดิมได้
+                //   ⚠️ ต้องอยู่ **ก่อน** transfer/ไพ่ฟรีอัตโนมัติ — ไม่งั้นคนที่เพิ่งจ่ายจะได้กล่องย้ายช่องทาง/ไพ่ฟรีแทนคำตอบ
+                //   ขอบคุณ/ลา/ฟิลเลอร์/ดูดวงใหม่/ถามราคา → คืน null = พฤติกรรมเดิมทุกอย่าง (ดู ProSessionGraceTrait)
+                $postSession = $this->maybeHandlePostProSessionFollowup($facebookUserId, $messageText, $userProfile);
+                if ($postSession !== null) {
+                    return $postSession;
+                }
 
                 // 🔀 (2026-07-26) โหมด transfer — ประตูที่ 1: ลูกค้าที่ไม่มีบิล/ไม่มีโฟลค้าง
                 //    ต้องอยู่ **ก่อน** บันไดคัดคำทั้งหมด (ฟรี/39/99/ราคา/generic) ไม่งั้น

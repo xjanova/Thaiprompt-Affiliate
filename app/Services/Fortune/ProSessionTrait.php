@@ -127,6 +127,37 @@ trait ProSessionTrait
             $window = max($window, $this->settings->getCelticAftercareTotalMinutes());
         }
 
+        // 🛟 (2026-11-07 FTU-261105-Y7178) ล้างนาฬิกา/ธงของ "รอบก่อน" บนบิลใบเดิมทุกครั้งที่เปิดรอบใหม่
+        //   ต้นตอ: บิล #14643 เปิด session รอบแรก 5 พ.ย. (ลูกค้าถาม → started_at = 5 พ.ย. 23:44)
+        //   แล้วถูกทำนายใหม่ + เปิด session อีกรอบ 7 พ.ย. 16:35 — แต่ started_at ของ 5 พ.ย. ยังค้าง
+        //   ⇒ isInProSession() เห็นว่า "เริ่มไป 2 วันแล้ว" = หมดเวลาตั้งแต่วินาทีแรก
+        //   ⇒ ลูกค้าได้ข้อความ "แม่หมออยู่ตอบเพิ่มอีก 7 นาที" แต่ถามไปกลับไม่มีใครตอบ
+        //   ⇒ timeout_notified=true ค้างด้วย = ไม่มีแม้แต่ข้อความปิดท้าย
+        //   (BirthdateCorrectionTrait ล้างเองอยู่แล้วเพราะรู้ปัญหานี้ — ย้ายมาล้างที่ต้นทางเลย ทุกเส้นได้หมด)
+        //   ⚠️ setConversationState = 1 UPDATE ต่อคีย์ → เขียนเฉพาะคีย์ที่ "มีค่าค้างจริง"
+        //      บิลที่เปิด session ครั้งแรก (เคสปกติเกือบทั้งหมด) จึงไม่มี query เพิ่มเลย
+        $staleResets = [
+            'pro_session_started_at' => null,
+            'pro_session_pending_exit_at' => null,
+            'pro_session_timeout_notified' => false,
+            'pro_session_timeout_notified_at' => null,
+            'time_notice_sent' => false,
+            'pro_session_nudge_count' => 0,
+            'pro_session_last_nudge_at' => null,
+            'pro_session_idle_streak' => 0,
+            'pro_session_idle_ask_at' => null,
+            'pro_session_closed_at' => null,
+            'pro_session_grace_used' => false,
+            'pro_session_post_polite_at' => null,
+        ];
+        foreach ($staleResets as $key => $fresh) {
+            $current = $reading->getConversationState($key);
+            if ($current !== null && $current !== $fresh) {
+                $reading->setConversationState($key, $fresh);
+            }
+        }
+        $this->clearPendingProSessionQuestion($reading, 'deep');
+
         $reading->setConversationState('pro_session_active', true);
         $reading->setConversationState('pro_session_type', $type);
         $reading->setConversationState('pro_session_window_minutes', $window);
@@ -290,6 +321,8 @@ trait ProSessionTrait
         $reading->setConversationState('pro_session_idle_ask_at', null);
         // 🛟 (2026-08-21) ปิด session = ไม่มีคำถามค้างให้กู้แล้ว — กันคำถามเก่าโผล่มาตอบข้ามวัน
         $this->clearPendingProSessionQuestion($reading);
+        // 🕊️ (2026-11-07) จดเวลาปิด — ใช้นับ "ช่วงผ่อนผัน" หลังหมดเวลา (ProSessionGraceTrait)
+        $reading->setConversationState('pro_session_closed_at', now()->toIso8601String());
     }
 
     /**
@@ -572,6 +605,8 @@ trait ProSessionTrait
         $reading->setConversationState('pro_session_pending_exit', false);
         $reading->setConversationState('pro_session_timeout_notified', true);
         $reading->setConversationState('pro_session_timeout_notified_at', now()->toIso8601String());
+        // 🕊️ (2026-11-07) จดเวลาปิด — ใช้นับ "ช่วงผ่อนผัน" หลังหมดเวลา (ProSessionGraceTrait)
+        $reading->setConversationState('pro_session_closed_at', now()->toIso8601String());
 
         $name = $reading->resolveCustomerName();
 
@@ -609,10 +644,11 @@ trait ProSessionTrait
      */
     public function getTimedOutDeepProSessions(int $limit = 30, ?int $specificId = null): \Illuminate\Support\Collection
     {
+        // 🛟 (2026-11-07) proSessionRecentSince = จ่าย **หรือ** เปิด session ใน 2 ชม. (บิลที่ทำนายใหม่ทีหลัง)
         $query = FortuneReading::query()
             ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
             ->where('is_paid', true)
-            ->where('paid_at', '>=', now()->subHours(2)); // window 7 นาที — 2 ชม. ครอบ stragglers
+            ->proSessionRecentSince(now()->subHours(2)); // window 7 นาที — 2 ชม. ครอบ stragglers
 
         if ($specificId) {
             $query->where('id', (int) $specificId);
@@ -2106,13 +2142,16 @@ trait ProSessionTrait
     protected function findActiveProSessionReading(string $userId): ?FortuneReading
     {
         // ดึง 3 readings ล่าสุดที่ paid ภายใน 24 ชม. — เผื่อมีหลาย reading + admin restore
+        // 🛟 (2026-11-07 FTU-261105-Y7178) + บิลที่ "เปิด session" ใน 24 ชม. แม้จ่ายมานานกว่านั้น
+        //   (#14643 จ่าย 5 พ.ย. ทำนายใหม่ 7 พ.ย. → เดิมหาไม่เจอ = ลูกค้าที่ยังอยู่ใน session ถูกปล่อยลงแชทฟรี)
+        //   เรียงตาม updated_at — session ที่ยังเปิดอยู่คือใบที่เพิ่งถูกแตะล่าสุด
         $candidates = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
                 ->orWhere('platform_user_id', $userId);
         })
             ->where('is_paid', true)
-            ->where('paid_at', '>=', now()->subMinutes(1440))
-            ->orderBy('paid_at', 'desc')
+            ->proSessionRecentSince(now()->subMinutes(1440))
+            ->orderBy('updated_at', 'desc')
             ->limit(3)
             ->get();
 
@@ -2245,7 +2284,8 @@ trait ProSessionTrait
                 FortuneReading::READING_TYPE_CELTIC_CROSS,
             ])
             ->where('is_paid', true)
-            ->where('paid_at', '>=', now()->subHours(2)); // ready ภายใน ~2 ชม. หลังจ่าย
+            // ready ภายใน ~2 ชม. หลังจ่าย — 🛟 (2026-11-07) หรือหลังเปิด session (บิลที่ทำนายใหม่ทีหลัง)
+            ->proSessionRecentSince(now()->subHours(2));
 
         if ($specificId) {
             $query->where('id', (int) $specificId);

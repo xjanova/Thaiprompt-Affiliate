@@ -82,7 +82,9 @@ class FortuneProSessionAnswerRecover extends Command
 
         $candidates = FortuneReading::query()
             ->where('is_paid', true)
-            ->where('paid_at', '>=', now()->subMinutes(1440))
+            // 🛟 (2026-11-07 FTU-261105-Y7178) จ่าย **หรือ** เปิด session ใน 24 ชม. — บิลที่ทำนายใหม่ทีหลัง
+            //   (จ่ายมาเกินวัน) เดิมตกรอบ ⇒ คำถามค้างของ session รอบใหม่ไม่มีตาข่ายกู้
+            ->proSessionRecentSince(now()->subMinutes(1440))
             ->where('updated_at', '>=', now()->subMinutes($lookbackMin))
             ->orderBy('updated_at', 'asc')
             ->limit($limit)
