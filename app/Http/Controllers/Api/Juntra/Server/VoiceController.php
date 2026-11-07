@@ -203,7 +203,8 @@ class VoiceController extends Controller
             'cards.*.name_th' => 'nullable|string|max:60',
             'cards.*.reversed' => 'sometimes|boolean',
             'birth_known' => 'sometimes|boolean',
-            'budget_chars' => 'sometimes|nullable|integer|min:100|max:2000',
+            // 0 = ไม่อั้น (เสียงพรีเมียม) · 100–2000 = งบรวมทุกบท
+            'budget_chars' => ['sometimes', 'nullable', 'integer', 'max:2000', fn ($a, $v, $fail) => (int) $v === 0 || (int) $v >= 100 ? null : $fail('budget_chars ต้องเป็น 0 (ไม่อั้น) หรือ 100 ขึ้นไป')],
             'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
         ]);
 

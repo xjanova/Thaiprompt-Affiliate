@@ -198,6 +198,8 @@ final class VoicePlanParser
 
             return ' ';
         }, $text);
+        // แท็กแปลก ๆ ที่ไม่รู้จัก ({-sighs} {ถอนใจ}) ห้ามถึง TTS — ElevenLabs อ่านออกเสียงตรง ๆ
+        $text = (string) preg_replace('/[\[\{][^\[\]\{\}]{1,24}[\]\}]/u', ' ', $text);
 
         $text = (string) preg_replace(self::PRICE_PATTERN, ' ', $text);
         $text = trim((string) preg_replace('/\s+/u', ' ', $text));
