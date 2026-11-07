@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FortuneVoiceUsage;
+use App\Services\Fortune\VoicePlanParser;
 use App\Services\FortuneAIService;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Passport\ClientRepository;
@@ -212,8 +213,55 @@ class JuntraNarrationApiTest extends TestCase
         $this->assertLessThanOrEqual(950, array_sum(array_map(fn ($c) => mb_strlen($c['say']), $chapters)));
     }
 
+    /**
+     * 🎙️ (2026-11-07, owner) "ตั้งเพดาน เสียงพากย์ พรีเมี่ยมไว้ ไม่อั้น"
+     * budget_chars = 0 → ไม่แบ่งงบรวม แต่ละบทเล่าได้ครบเท่าเนื้อหาหัวข้อ ไม่โดนตัดกลางประโยค
+     */
+    public function test_an_unlimited_budget_keeps_every_chapter_whole(): void
+    {
+        $months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        $reading = "## 🎯 ฟันธง\nผล: ปีนี้ดีกว่าปีก่อน\n";
+        $ai = [['anchor' => 'graph', 'say' => 'ปีนี้ขึ้น ๆ ลง ๆ แต่ปลายปีสว่าง']];
+        foreach ($months as $i => $m) {
+            $reading .= "## 📅 {$m} · ดี\nธีม: ".str_repeat('เดือนนี้มีเรื่องให้ทำมากมาย ', 4)."\n";
+            $ai[] = ['anchor' => 'month:'.($i + 1), 'tone' => 'good', 'energy' => 3, 'say' => $m.' '.str_repeat('มีเรื่องให้ทำมากมาย ', 10).'จบเดือน'];
+        }
+        $reading .= "## 🧭 คำแนะนำ\nวางแผนการเงินให้ดี";
+        $ai[] = ['anchor' => 'summary', 'say' => 'ปีนี้ดีกว่าปีก่อน วางแผนการเงินให้ดี'];
+        $this->aiScript = [$this->aiJson($ai)];
+
+        $res = $this->narrate(['spread' => 'year', 'reading_text' => $reading, 'cards' => [], 'birth_known' => false, 'budget_chars' => 0])->assertOk();
+        $chapters = $res->json('data.chapters');
+        $this->assertCount(15, $chapters);
+        foreach (array_slice($chapters, 1, 12) as $c) {
+            // ครบทั้งบท จนถึงคำสุดท้าย — งบเดิม 950 ตัวแบ่ง 14 บทจะเหลือบทละ ~60 ตัว
+            $this->assertStringEndsWith('จบเดือน', $c['say'], $c['anchor']);
+        }
+        $this->assertGreaterThan(950, array_sum(array_map(fn ($c) => mb_strlen($c['say']), $chapters)));
+
+        // AI ถูกบอกให้เล่าครบ + มี token พอสำหรับบทยาว
+        $this->assertStringContainsString('เล่าให้ครบทุกใจความ', $this->aiCalls[0]['system']);
+        $this->assertStringContainsString('month:1: มกราคม เท่านั้น · ไม่เกิน 250 ตัวอักษร', $this->aiCalls[0]['user']);
+        $this->assertGreaterThan(3000, $this->aiCalls[0]['config']['max_tokens']);
+
+        // งบเดิมยังเป็นค่าตั้งต้นของคนที่ไม่ส่ง budget_chars (เสียงฟรี)
+        Cache::flush();
+        $this->aiScript = [$this->aiJson($ai)];
+        $capped = $this->narrate(['spread' => 'year', 'reading_text' => $reading, 'cards' => [], 'birth_known' => false])->assertOk();
+        $this->assertLessThanOrEqual(950, array_sum(array_map(fn ($c) => mb_strlen($c['say']), $capped->json('data.chapters'))));
+        $this->assertStringContainsString('เล่าใจความสำคัญที่สุด', $this->aiCalls[1]['system']);
+    }
+
+    public function test_unknown_or_tag_only_chapters_never_reach_the_voice(): void
+    {
+        $this->assertSame('', VoicePlanParser::cleanSay('{-sighs}', 300));
+        $this->assertSame('[sighs] ดวงดี', VoicePlanParser::cleanSay('{sighs} {ถอนใจ} ดวงดี', 300));
+    }
+
     public function test_bad_input_is_rejected(): void
     {
+        $this->narrate(['budget_chars' => 50])->assertStatus(422);
+        $this->narrate(['budget_chars' => 5000])->assertStatus(422);
         $this->narrate(['persona' => 'stranger'])->assertStatus(422);
         $this->narrate(['spread' => '../etc'])->assertStatus(422);
         $this->narrate(['user_ref' => 'a b'])->assertStatus(422);
