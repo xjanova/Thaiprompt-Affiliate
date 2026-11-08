@@ -949,7 +949,7 @@ print_info "Removing untracked files and directories..."
 #                                    ของจริงย้ายออกนอก git tree ที่ STEP 4.5.2 (บรรทัดนี้กันรอบแรกที่ยังเป็นโฟลเดอร์จริง)
 #   ⚠️ โฟลเดอร์ private ใหม่ใต้ storage/app ต้องใส่ 3 ที่: -e บรรทัดนี้ · persist_private_storage_dir (STEP 4.5.2) · .gitignore
 #      tests/Unit/DeployPrivateStorageTest.php เช็คให้ครบทั้ง 3 ที่
-git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/kyc-private' -e 'storage/app/riders' -e 'storage/app/rider_jobs' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
+git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/kyc-private' -e 'storage/app/riders' -e 'storage/app/rider_jobs' -e 'storage/app/backup-key' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1024,6 +1024,8 @@ persist_private_storage_dir "storage/app/kyc-private" "$(dirname "$SCRIPT_DIR")/
 #   เดิมไม่อยู่ทั้งในรายการ -e และที่นี่ ⇒ git clean -fdx ลบทุก deploy (ตรวจ prod 2026-10-29: ยังไม่มีไรเดอร์ จึงยังไม่มีไฟล์หาย)
 persist_private_storage_dir "storage/app/riders" "$(dirname "$SCRIPT_DIR")/rider_data"
 persist_private_storage_dir "storage/app/rider_jobs" "$(dirname "$SCRIPT_DIR")/rider_job_data"
+# 🗄️ (2026-11-08) แม่กุญแจ (public key) ของ backup:r2 — หายเมื่อไหร่ การสำรองขึ้น R2 หยุดทุกคืน
+persist_private_storage_dir "storage/app/backup-key" "$(dirname "$SCRIPT_DIR")/backup_key_data"
 
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
 print_substep "4.6" "Syncing .env with .env.example..."

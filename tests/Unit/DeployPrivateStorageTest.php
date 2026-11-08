@@ -26,6 +26,7 @@ class DeployPrivateStorageTest extends TestCase
         'storage/app/kyc-private' => 'App\Services\Kyc\KycDocumentStorage',
         'storage/app/riders' => 'App\Services\RiderAccountService::DOCUMENT_DISK',
         'storage/app/rider_jobs' => 'App\Services\Rider\HandoverService::PHOTO_DISK',
+        'storage/app/backup-key' => 'config/backup.php public_key_path (แม่กุญแจ backup:r2)',
     ];
 
     public function test_every_runtime_private_dir_is_persisted_by_deploy(): void

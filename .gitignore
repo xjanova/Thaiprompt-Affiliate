@@ -128,3 +128,7 @@ storage/app/private/juntra-oauth-*.json
 
 # แคชไฟล์เสียงพูดของน้อง Eve (สร้างใหม่จาก Google TTS ได้เอง — ไม่ต้องเก็บใน git)
 /storage/app/eve-tts/
+
+# backup:r2 — temp + public key (ไม่เข้า git)
+storage/app/backup-tmp/
+storage/app/backup-key
