@@ -1009,29 +1009,6 @@ Schedule::command('admin-app:push-alerts')
 \App\Console\AutoMigrateSchedule::register(app(\Illuminate\Console\Scheduling\Schedule::class));
 
 // ════════════════════════════════════════════════════════════════
-// 🗄️ (2026-11-08) สำรองข้อมูลขึ้น Cloudflare R2 (เข้ารหัส) — เจ้าของสั่ง
-// ════════════════════════════════════════════════════════════════
-// ฐานข้อมูลทั้งก้อน ทุกวัน 02:00 → 7 ช่องตามวันในสัปดาห์ (db-1-mon … db-7-sun) เขียนทับวน = ย้อนหลัง 7 วัน
-// ทั้งเว็บ (ไฟล์ + ฐานข้อมูล) วันที่ 10 และ 25 เวลา 02:00 → ช่อง day10 / day25 เขียนทับทุกเดือน
-// ล้มเหลว → Telegram แจ้งแอดมิน · ชุดเก่าไม่ถูกทับจนกว่าชุดใหม่จะขึ้นครบ
-// รายละเอียด/วิธีกู้: docs/BACKUP_R2.md · app/Services/Backup/R2BackupService.php
-Schedule::command('backup:r2 db')
-    ->dailyAt('02:00')
-    ->timezone('Asia/Bangkok')
-    ->withoutOverlapping(240)
-    ->onOneServer()
-    ->name('backup-r2-db')
-    ->runInBackground();
-
-Schedule::command('backup:r2 site')
-    ->cron('0 2 10,25 * *')
-    ->timezone('Asia/Bangkok')
-    ->withoutOverlapping(240)
-    ->onOneServer()
-    ->name('backup-r2-site')
-    ->runInBackground();
-
-// ════════════════════════════════════════════════════════════════
 // ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
 //   - snake-game:spawn-items     — command file ไม่พบ
 //   - line:cleanup-conversations — command file ไม่พบ

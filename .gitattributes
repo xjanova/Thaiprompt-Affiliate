@@ -156,6 +156,8 @@ desktop.ini export-ignore
 # Shell scripts
 *.sh text eol=lf
 *.bash text eol=lf
+# ชุดสำรอง/กู้คืนเซิร์ฟเวอร์ — ทุกไฟล์ถูกคัดลอกขึ้น Linux ตรงๆ (.py .conf .cron ด้วย) CRLF = พัง
+deployment/server-backup/** text eol=lf
 
 # Documentation
 *.md text eol=lf
