@@ -227,6 +227,38 @@ class SelfHarmChatReplyTest extends TestCase
         $this->assertSame(FortuneReading::STATUS_PAID, $reading->fresh()->conversation_status, 'ห้ามแตะสถานะคำทำนายที่จ่ายแล้ว');
     }
 
+    /**
+     * 🤍 (2026-11-09) prod #14660 — ระหว่างเลือกแพคเกจ ลูกค้าบอกอ้อม ๆ ว่าคนอื่นเจอแบบนี้คงโดดน้ำ/ผูกคอไปแล้ว
+     * เดิมด่านไม่ติด → ได้คำตอบ AI + เมนู 39/99 + ปุ่มแพคเกจ
+     */
+    public function test_package_choice_customer_hinting_at_self_harm_gets_comfort_not_the_package_menu(): void
+    {
+        Queue::fake();
+        $reading = $this->makeReading([
+            'platform' => 'facebook',
+            'platform_user_id' => self::FB_UID,
+            'facebook_user_id' => self::FB_UID,
+            'conversation_status' => FortuneReading::STATUS_TIER_CHOICE,
+        ]);
+
+        $result = app(FortuneChannelManager::class)->processMessage(
+            'facebook',
+            self::FB_UID,
+            'ถ้าเป็นคนอื่นขอโทษนะครับที่ผมใช้คำคำนี้ถ้าเป็นคนอื่นโดดน้ำหรือผูกคอหนือไม่ก็บ้าไปแล้วครับ',
+            ['name' => 'ลูกค้าทดสอบ']
+        );
+
+        $this->assertSame('crisis_support', $result['action']);
+        $sent = $this->sentBodies('graph.facebook.com');
+        $this->assertStringContainsString('อยู่ฟังตรงนี้', $sent);
+        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มแพคเกจ');
+        $this->assertStringNotContainsString('TIER_DEEP_39', $sent);
+        $this->assertStringNotContainsString('sticker', $sent, 'ห้ามสติกเกอร์มือชี้เร่งเลือก');
+        $this->assertSame([], $this->aiCalls);
+        $this->assertCount(1, $this->adminAlerts());
+        $this->assertSame(FortuneReading::STATUS_TIER_CHOICE, $reading->fresh()->conversation_status);
+    }
+
     public function test_silenced_customer_is_answered_and_unsilenced(): void
     {
         Queue::fake();
