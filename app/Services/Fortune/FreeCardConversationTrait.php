@@ -541,14 +541,22 @@ trait FreeCardConversationTrait
             }
         }
 
+        // 🛒 (2026-11-09) คำของแพคเกจในประโยคที่ "ถาม/ผัดเวลา" ≠ การเลือก — ดู TierPickIntent
+        //   ("39 บาทใช่ไหมคะ" · "ไว้ว่างแล้วจะดูแบบละเอียดนะคะ") → ตกไป chitchat ด้านล่าง ไม่เปิดเลนซื้อ
+        $kwText = TierPickIntent::keywordText($messageText);
+        $notAPick = TierPickIntent::isNotAPick($messageText);
+
         // 🔮 99฿ Celtic — เช็คก่อน 39 (กันชน)
-        if ($celticEnabled) {
+        if ($celticEnabled && ! $notAPick) {
             $celticKeywords = [
-                (string) $celticPriceInt, 'celtic', 'เซลติก', 'เต็มสำรับ', 'ไพ่ยิปซีเต็ม',
+                'celtic', 'เซลติก', 'เต็มสำรับ', 'ไพ่ยิปซีเต็ม',
                 'แพคเกจ 2', 'แพคเกจที่ 2', 'แบบที่ 2', 'tier_celtic', 'tier_celtic_99',
             ];
+            if (TierPickIntent::mentionsPrice($kwText, $celticPriceInt)) {
+                $celticKeywords = [''];  // ราคาเดี่ยวตรง = เลือกแล้ว (mb_strpos กับ '' = 0 เสมอ)
+            }
             foreach ($celticKeywords as $kw) {
-                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                if ($kw === '' || mb_strpos($kwText, mb_strtolower($kw)) !== false) {
                     Log::info('FreeCard: ลูกค้าเลือก Celtic 99฿ หลังทำนายฟรี', [
                         'reading_id' => $reading->id,
                     ]);
@@ -564,14 +572,19 @@ trait FreeCardConversationTrait
         //   ⚠️ ถ้า Deep ปิด ห้ามจับ keyword 'ดูดวง'/'ทำนาย' แล้ว redirect ไป Deep เพราะ
         //     - ระบบจะตกไป startDeepReadingFlow → tier menu (ที่ถูก guard แล้ว) → Celtic ตรง
         //     - แต่ถ้า Deep ปิด + Celtic ปิด → flow break ลูกค้าค้าง chitchat
-        if ($deepEnabled) {
+        if ($notAPick) {
+            // ถาม/ผัดเวลา → ข้ามทั้งสองสาขาด้านล่าง ตกไป chitchat
+        } elseif ($deepEnabled) {
             $deepKeywords = [
-                (string) $deepPriceInt, 'ดูดวง 39', 'เชิงลึก', 'ละเอียด', 'พื้นฐาน',
+                'ดูดวง 39', 'เชิงลึก', 'ละเอียด', 'พื้นฐาน',
                 'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'tier_deep', 'tier_deep_39',
                 'ดูดวง', 'ทำนาย', // ลูกค้าพิมพ์ "ดูดวง" lone หลังฟรี = อยากซื้อต่อ
             ];
+            if (TierPickIntent::mentionsPrice($kwText, $deepPriceInt)) {
+                $deepKeywords = [''];  // ราคาเดี่ยวตรง = เลือกแล้ว
+            }
             foreach ($deepKeywords as $kw) {
-                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                if ($kw === '' || mb_strpos($kwText, mb_strtolower($kw)) !== false) {
                     Log::info('FreeCard: ลูกค้าเลือก Deep 39฿ หลังทำนายฟรี', [
                         'reading_id' => $reading->id,
                     ]);
