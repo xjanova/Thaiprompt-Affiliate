@@ -527,6 +527,25 @@ trait CelticCrossConversationTrait
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
         $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
+
+        // 🛒 (2026-11-09) คำของแพคเกจในประโยค ≠ การเลือกแพคเกจ — ดู TierPickIntent
+        //   เดิมทุกสาขาด้านล่างจับแบบ substring แล้วออกบิลทันที ⇒ "39 บาทใช่ไหมคะ" /
+        //   "ลายละเอียดครูหมอต้องโปรไหน" / "แบบละเอียด…ขอเวลาอีกไม่นาน" ได้บิลที่ไม่ได้สั่ง
+        //   (prod #14558 #14605 #14660 — ไม่มีใบไหนจ่าย)
+        //   - $kwText   = ตัดคำผสมหลอก ('รายละเอียด', 'ผิดปกติ' …) ออกก่อนจับคำ
+        //   - $notAPick = ถาม/ผัดเวลา/ปฏิเสธ → ข้ามสาขาออกบิล ตกไป chitchat (AI ตอบ + เตือนวิธีเลือก)
+        //   ⚠️ ไม่แตะเส้นกดปุ่ม (force_tier cache / ป้ายปุ่มตรงตัวใน processMessage) — นั่นคือการเลือกจริง
+        $kwText = TierPickIntent::keywordText($messageText);
+        $notAPick = TierPickIntent::isNotAPick($messageText);
+        $holdBack = function (string $tier, string $keyword) use ($reading, $messageText): void {
+            Log::info('handleTierChoice: มีคำของแพคเกจแต่ประโยคเป็นคำถาม/ผัดเวลา → ไม่ออกบิล ให้ AI ตอบตามบริบท', [
+                'reading_id' => $reading->id,
+                'tier' => $tier,
+                'keyword' => $keyword,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+        };
+
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
         $deepWindow = (int) ($this->settings->deep_reading_qa_window_minutes ?? 7);
         $deepEnabledLocal = $this->settings->isDeepReadingEnabled();
@@ -557,6 +576,12 @@ trait CelticCrossConversationTrait
             ];
             foreach ($acceptKeywords as $kw) {
                 if ($textLower === mb_strtolower($kw) || mb_strpos($textLower, mb_strtolower($kw)) === 0) {
+                    // "เอาไว้ก่อนนะคะ" / "โอเคค่ะ แต่ยังไม่สะดวก" ขึ้นต้นด้วยคำรับ แต่ไม่ใช่การรับ
+                    if ($notAPick) {
+                        $holdBack('celtic', $kw);
+                        break;
+                    }
+
                     \Illuminate\Support\Facades\Log::info('Fortune: Celtic-only intro accepted', [
                         'reading_id' => $reading->id,
                         'keyword' => $kw,
@@ -577,7 +602,13 @@ trait CelticCrossConversationTrait
             //   ตามว่ายังมี reading อยู่ไหม ([[rule_button_path_needs_own_guards]])
             $bmKeywords = \App\Services\Fortune\FortunePackageOffer::BLACK_MAGIC_KEYWORDS;
             foreach ($bmKeywords as $kw) {
-                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                if (mb_strpos($kwText, mb_strtolower($kw)) !== false) {
+                    // "คุณไสยมีจริงไหมคะ" = ถาม ไม่ใช่สั่งดู 99
+                    if ($notAPick) {
+                        $holdBack('celtic_blackmagic', $kw);
+                        break;
+                    }
+
                     $bmUserId = $reading->facebook_user_id ?? $reading->platform_user_id;
                     $reading->setConversationState('black_magic_mode', true);
                     if (! empty($bmUserId)) {
@@ -602,8 +633,9 @@ trait CelticCrossConversationTrait
 
         // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
         // ⚠️ เช็ค Celtic ก่อน Deep เผื่อข้อความมีทั้ง "99" และ "39" (ไม่ค่อยเกิด แต่กันไว้)
+        // 💲 ราคา "99" เช็คแยกด้วย TierPickIntent::mentionsPrice (ตัวเลขเดี่ยว) — ไม่ใช่ substring
+        //   กัน "ปี 1999" / "เบอร์ 099…" กลายเป็นบิล 99
         $celticKeywords = [
-            (string) $celticPriceInt,  // "99" (ดึงจาก service ไม่ hardcode)
             'celtic', 'เซลติก', 'เต็มสำรับ', 'เต็ม สำรับ', 'ไพ่ยิปซีเต็ม', 'ทาโรต์เต็ม',
             'พรีเมียม', 'premium', 'แพคเกจ 2', 'แพคเกจที่ 2', 'แบบที่ 2',
             // 🆕 (2026-05-31) ลูกค้าพิมพ์ตามปุ่มเก่า "โอนค่าบูชาครู" → เข้า Celtic flow (กดหรือพิมพ์ก็ได้)
@@ -639,43 +671,61 @@ trait CelticCrossConversationTrait
             $celticKeywords[] = 'ส่วนตัว';
         }
 
-        foreach ($celticKeywords as $kw) {
-            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                // ⚡ (2026-08-03) พิมพ์/กด "99" หรือ "celtic" = เลือกแพคเกจแล้ว รู้ราคาแล้ว
-                //   → ออกบิล + QR ทันที ไม่ถาม "QR หรือ บัตร?" ซ้ำอีกด่าน
-                //   (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก" — อยากจ่ายบัตรพิมพ์ "บัตร" หลังบิลออกได้)
-                return $this->startCelticCrossFlow($reading, skipStripeGate: true);
+        $celticHit = TierPickIntent::mentionsPrice($kwText, $celticPriceInt) ? (string) $celticPriceInt : null;
+        foreach ($celticHit === null ? $celticKeywords : [] as $kw) {
+            if (mb_strpos($kwText, mb_strtolower($kw)) !== false) {
+                $celticHit = $kw;
+                break;
             }
+        }
+        if ($celticHit !== null && $notAPick) {
+            $holdBack('celtic', $celticHit);
+            $celticHit = null;
+        }
+        if ($celticHit !== null) {
+            // ⚡ (2026-08-03) พิมพ์/กด "99" หรือ "celtic" = เลือกแพคเกจแล้ว รู้ราคาแล้ว
+            //   → ออกบิล + QR ทันที ไม่ถาม "QR หรือ บัตร?" ซ้ำอีกด่าน
+            //   (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก" — อยากจ่ายบัตรพิมพ์ "บัตร" หลังบิลออกได้)
+            return $this->startCelticCrossFlow($reading, skipStripeGate: true);
         }
 
         // 🔹 39฿ Basic Deep — keyword: "39", "ปกติ", "พื้นฐาน", "deep", "เชิงลึก", "ละเอียด"
         // ⚠️ ใช้ราคาจาก getDeepReadingPrice() (admin override ได้) — ไม่ hardcode
+        // 💲 ราคา "39" เช็คแยกด้วย mentionsPrice (ตัวเลขเดี่ยว) — "เกิด 12/3/2539" ต้องไม่ใช่บิล 39
         $deepKeywords = [
-            (string) $deepPriceInt,  // "39" (หรือราคาที่ admin ตั้งไว้)
             'ปกติ', 'พื้นฐาน', 'พื้น ฐาน', 'basic',
             'deep', 'เชิงลึก', 'เชิง ลึก', 'ละเอียด', 'แบบเชิงลึก', 'แบบละเอียด',
             'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'อันแรก',
             'tier_deep', 'tier_deep_39',  // payload จาก FB button
         ];
-        foreach ($deepKeywords as $kw) {
-            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                // 💰 (2026-05-10 v3) Pay-First — ปิด legacy COLLECTING_BIRTHDATE
-                //   เดิม comment บอก "ทุกคนเข้า pay-first" แต่ logic ส่งไป COLLECTING_BIRTHDATE legacy
-                //   จริง — ลูกค้าเก็บวันเกิด/คำถาม/เปิดไพ่ จนเสร็จ → เปิดไพ่ไม่ไปขั้นชำระเงิน
-                //   ใหม่: เลือก 39 → สร้างบิลทันที → ลูกค้าจ่าย → ค่อยขอวันเกิด
-                $updateData = [
-                    'reading_type' => FortuneReading::READING_TYPE_DEEP,
-                ];
-                if (empty($reading->bill_reference)) {
-                    $updateData['bill_reference'] = FortuneReading::generateBillReference();
-                }
-                $reading->update($updateData);
-
-                // 💳 (2026-05-22) Route ตาม payment mode
-                // ⚡ (2026-08-03) พิมพ์/กด "39" = เลือกแพคเกจแล้ว รู้ราคาแล้ว → QR ทันที
-                //   ไม่ถาม "QR หรือ บัตร?" ซ้ำ (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก")
-                return $this->routePayFirstDeep($reading, skipPaymentGate: true);
+        $deepHit = TierPickIntent::mentionsPrice($kwText, $deepPriceInt) ? (string) $deepPriceInt : null;
+        foreach ($deepHit === null ? $deepKeywords : [] as $kw) {
+            if (mb_strpos($kwText, mb_strtolower($kw)) !== false) {
+                $deepHit = $kw;
+                break;
             }
+        }
+        if ($deepHit !== null && $notAPick) {
+            $holdBack('deep', $deepHit);
+            $deepHit = null;
+        }
+        if ($deepHit !== null) {
+            // 💰 (2026-05-10 v3) Pay-First — ปิด legacy COLLECTING_BIRTHDATE
+            //   เดิม comment บอก "ทุกคนเข้า pay-first" แต่ logic ส่งไป COLLECTING_BIRTHDATE legacy
+            //   จริง — ลูกค้าเก็บวันเกิด/คำถาม/เปิดไพ่ จนเสร็จ → เปิดไพ่ไม่ไปขั้นชำระเงิน
+            //   ใหม่: เลือก 39 → สร้างบิลทันที → ลูกค้าจ่าย → ค่อยขอวันเกิด
+            $updateData = [
+                'reading_type' => FortuneReading::READING_TYPE_DEEP,
+            ];
+            if (empty($reading->bill_reference)) {
+                $updateData['bill_reference'] = FortuneReading::generateBillReference();
+            }
+            $reading->update($updateData);
+
+            // 💳 (2026-05-22) Route ตาม payment mode
+            // ⚡ (2026-08-03) พิมพ์/กด "39" = เลือกแพคเกจแล้ว รู้ราคาแล้ว → QR ทันที
+            //   ไม่ถาม "QR หรือ บัตร?" ซ้ำ (เจ้าของ: "ไม่ใช่มาถาม แล้วถามอีก")
+            return $this->routePayFirstDeep($reading, skipPaymentGate: true);
         }
 
         // 💳 (2026-06-20) ลูกค้าบอก "พร้อมจ่าย/ขอ QR" แต่ยังไม่เลือกแพคเกจ (เช่น "QR","พร้อมโอน","โอนเลย")
