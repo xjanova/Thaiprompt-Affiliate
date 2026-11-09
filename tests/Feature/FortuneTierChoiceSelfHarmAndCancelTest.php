@@ -64,6 +64,11 @@ class FortuneTierChoiceSelfHarmAndCancelTest extends TestCase
                 return $this->handleTierChoice($reading, $text);
             }
 
+            public function cont(FortuneReading $reading, string $text): array
+            {
+                return $this->continueConversation($reading, $text);
+            }
+
             protected function routePayFirstDeep(FortuneReading $reading, bool $skipPaymentGate = false): array
             {
                 $this->billedTier[] = 'deep';
@@ -158,6 +163,25 @@ class FortuneTierChoiceSelfHarmAndCancelTest extends TestCase
         $this->assertSame(FortuneReading::CANCEL_NOTICE, $result['message']);
         $this->assertSame(FortuneReading::STATUS_COMPLETED, $reading->fresh()->conversation_status);
         $this->assertSame([], $svc->aiContexts, 'ยกเลิกไม่ต้องเรียก AI');
+    }
+
+    #[Test]
+    public function typing_cancel_on_a_pending_bill_cancels_at_once_without_asking_why(): void
+    {
+        $svc = $this->service();
+        $reading = $this->menuRow();
+        $reading->forceFill([
+            'conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT,
+            'bill_reference' => 'FTU-261109-ZZ999',
+        ])->save();
+
+        $result = $svc->cont($reading->fresh(), 'ยกเลิก');
+
+        // เดิม = cancel_dialog_ask "ก่อนยกเลิก แม่หมอขอถามได้ไหมคะ เกิดอะไรขึ้น?" + โชว์ของขาย
+        $this->assertSame('cancelled', $result['action']);
+        $this->assertSame(FortuneReading::CANCEL_NOTICE, $result['message']);
+        $this->assertNotSame(FortuneReading::STATUS_PENDING_PAYMENT, $reading->fresh()->conversation_status, 'บิลต้องถูกปิดทันที');
+        $this->assertFalse(Cache::has('fortune:cancel_dialog:facebook:'.self::PSID), 'ไม่เปิดบทสนทนาถามเหตุผล');
     }
 
     #[Test]

@@ -2558,35 +2558,8 @@ class FortuneConversationService
 
                     // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                     if ($this->isCancelRequest($messageText)) {
-                        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment (กันลูกค้าหาย)
-                        //   user spec: "กดยกเลิก สอบถามยูสเซ่อร์ก่อนว่าติดปัญหาอะไร"
-                        //   เฉพาะ pending_payment + celtic_pending_payment เท่านั้น
-                        //   (สถานะอื่น เช่น collecting_birthdate → ยกเลิกได้เลย ไม่มีบิลเสียหาย)
-                        // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
-                        $pendingPaymentStatuses = [
-                            FortuneReading::STATUS_PENDING_PAYMENT,
-                            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
-                            FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
-                        ];
-                        if (in_array($activeReading->conversation_status, $pendingPaymentStatuses, true)) {
-                            $platformKey = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
-                            $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$facebookUserId}";
-                            $hasAsked = Cache::has($cancelCacheKey);
-
-                            // explicit confirm phrases → bypass prompt
-                            $explicitConfirm = $this->matchesExactKeyword($messageText, [
-                                'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
-                                'cancel confirm', 'confirm cancel',
-                            ]);
-
-                            if (! $hasAsked && ! $explicitConfirm) {
-                                // เข้า cancel dialogue (AI-driven)
-                                return $this->enterCancelDialogue($activeReading);
-                            }
-
-                            // มี cache flag หรือ explicit confirm → ดำเนินการ cancel ปกติ
-                            Cache::forget($cancelCacheKey);
-                        }
+                        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — เลิก "ถามก่อนยกเลิก" (cancel dialogue) แล้ว
+                        //   บิลที่รอจ่ายก็ยกเลิกทันทีเหมือนสถานะอื่น ไม่ถามเหตุผล ไม่โน้มน้าว ไม่โชว์ของขาย
 
                         // 🩹 (2026-05-08 audit fix UX-6) — paid Celtic picking/QA "ยกเลิก" → admin alert
                         //   ลูกค้าจ่าย 99฿ + กำลังเปิดไพ่/ถามอยู่ → "ยกเลิก" → silently exit ไม่ได้
@@ -6050,34 +6023,8 @@ class FortuneConversationService
         // 🩹 (2026-05-08 audit fix CRIT-1) — route ผ่าน closeAllActiveConversations
         //   เพื่อให้ UPA cancel + FCM push + แจ้งยกเลิกบิล ทำงาน
         //   เดิม: update status ตรงๆ → SMS app ยังเห็นบิลค้าง → user เห็น "บิลกลับมา"
-        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment — ตรงกับ guard ด้านบน
+        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — บิลที่รอจ่ายยกเลิกทันที (เลิก "ถามก่อนยกเลิก" แล้ว)
         if ($this->isCancelRequest($messageText)) {
-            // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
-            $pendingPaymentStatuses = [
-                FortuneReading::STATUS_PENDING_PAYMENT,
-                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
-                FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
-            ];
-            if (in_array($status, $pendingPaymentStatuses, true)) {
-                $platformKey = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
-                $userKey = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
-                $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$userKey}";
-                $hasAsked = ! empty($userKey) && Cache::has($cancelCacheKey);
-
-                $explicitConfirm = $this->matchesExactKeyword($messageText, [
-                    'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
-                    'cancel confirm', 'confirm cancel',
-                ]);
-
-                if (! $hasAsked && ! $explicitConfirm) {
-                    return $this->enterCancelDialogue($reading);
-                }
-
-                if (! empty($userKey)) {
-                    Cache::forget($cancelCacheKey);
-                }
-            }
-
             // 🔒 (2026-09-16 FTU-260916-C5482) ดูดวง 39 จ่ายแล้วกลางขั้นตอน — "ยกเลิก" ไม่มีผล (คู่กับด่านใน processMessage)
             if (($hold = $this->paidDeepStepHoldReply($reading)) !== null) {
                 Log::info('Fortune continueConversation: ขอยกเลิกระหว่างทำนาย (จ่ายแล้ว) → คงบิล พากลับขั้นเดิม', [
@@ -20674,68 +20621,6 @@ class FortuneConversationService
      * เคสที่เจอ: ลูกค้าเก่าโอน slip หาย / สแกน QR ไม่ได้ / ต้องการบัญชีไว้โอนเอง
      */
     /**
-     * 🛑 (2026-05-15 v2) AI-driven Cancel Dialogue — ถามลูกค้าก่อนยกเลิกแบบสนทนาจริง
-     *
-     * user spec:
-     *   "ถามเหตุผล ทำไมยกเลิก แล้วให้เอไอเข้ามาถามคุยเพื่อหาปัญหา ตามจริง ไม่ใช่แพทเทิร์น
-     *    แล้วบอทต้องเข้าใจว่าลูกต้องการให้ช่วยอะไร บอทก็จะพาไปแก้ปัญหา
-     *    แต่ถ้าโน้มน้าวแล้ว ลูกค้าเหมือนจะเริ่มรำคาญจะยกเลิก ให้ได้ ก็ให้ยืนยันแล้วยกเลิก
-     *    ตัดเข้าการสนทนาปกติ"
-     *
-     * Flow:
-     *   1. enterCancelDialogue() — set cache + AI ส่งคำถามเปิด (รอบ 1)
-     *   2. tryHandleCancelDialogue() — early-route ถัดมา → AI ฟัง + decide
-     *   3. AI tags ที่ parse:
-     *      - [HELP_TRANSFER] → presentPaymentInfo
-     *      - [ROUTE_ADMIN]   → AI message + guide ให้พิมพ์ "คุยกับแม่หมอ"
-     *      - [ACCEPT_CANCEL] → executeCancelAndReturnToChat
-     *      - [KEEP_BILL]     → ลูกค้าเปลี่ยนใจ → clear cache + กลับ flow ปกติ
-     *      - (no tag)        → keep asking (max 3 rounds, then force ACCEPT_CANCEL)
-     *   4. Annoyance detection:
-     *      - keyword: "พอแล้ว"/"ปล่อย"/"รำคาญ"/"!!" → force ACCEPT_CANCEL
-     *      - round ≥ 3 → force ACCEPT_CANCEL (ไม่กดดัน)
-     *
-     * Cache: fortune:cancel_dialog:{platform}:{userId} TTL 15 min
-     */
-    protected function enterCancelDialogue(FortuneReading $reading): array
-    {
-        $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
-        $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
-
-        if (! empty($userId)) {
-            Cache::put(
-                "fortune:cancel_dialog:{$platform}:{$userId}",
-                [
-                    'reading_id' => $reading->id,
-                    'rounds' => 1,
-                    'reasons' => [],
-                    'started_at' => now()->toIso8601String(),
-                    'bill_ref' => $reading->bill_reference,
-                ],
-                now()->addMinutes(15)
-            );
-        }
-
-        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
-
-        Log::info('Fortune: เข้า cancel dialogue (AI-driven)', [
-            'reading_id' => $reading->id,
-            'platform' => $platform,
-            'user_id' => $userId,
-            'bill_reference' => $reading->bill_reference,
-        ]);
-
-        return [
-            'action' => 'cancel_dialog_ask',
-            'message' => "🙏 รอสักครู่นะคะ คุณ{$name}\n\n"
-                ."ก่อนยกเลิก — แม่หมอขอถามได้ไหมคะ เกิดอะไรขึ้น?\n"
-                ."ลูกค้าหลายคนติดปัญหานิดเดียว แต่แม่หมอช่วยได้นะ ✨\n\n"
-                .'_(พิมพ์ "ยืนยันยกเลิก" ถ้าต้องการยกเลิกแน่นอน)_',
-            'reading' => $reading,
-        ];
-    }
-
-    /**
      * 🔒 (2026-05-24) ตรวจว่าลูกค้าถามต่อยอด fortune หลังจบ Celtic 5Q
      *
      * User spec: "ใครที่ถามเกิน 5 คำถาม ก็ตอบ ต้องเปิดไพ่ชุดใหม่"
@@ -21217,6 +21102,9 @@ class FortuneConversationService
 
     /**
      * 🛑 (2026-05-15 v2) Handle cancel dialogue — AI listens, parses tags, decides action
+     *
+     * 🙏 (2026-11-09 owner) เลิกเปิด cancel dialogue แล้ว (ลบ enterCancelDialogue) — เส้นนี้ทำงานเฉพาะห้องที่เปิดค้างไว้
+     *   ก่อน deploy (cache fortune:cancel_dialog:* TTL 15 นาที) ให้ปิดจบเรียบร้อย · ลบทั้งชุดได้ในรอบถัดไป
      */
     protected function tryHandleCancelDialogue(string $platform, string $userId, string $messageText, ?array $userProfile = null): ?array
     {
