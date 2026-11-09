@@ -2003,8 +2003,8 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // ไม่ตอบคอมเม้นต์จากเพจเอง
-            if ($fromId === $this->settings->facebook_page_id) {
+            // ไม่ตอบคอมเม้นต์จากเพจเอง — 🪞 (2026-11-09) รวมเพจสาขาอื่นของเราด้วย (กันลูปบอทข้ามเพจ)
+            if ($this->isOurOwnFacebookPage((string) $fromId)) {
                 Log::info('🗨️ Comment Engagement: Own page comment - skipping');
 
                 return;
@@ -2207,7 +2207,30 @@ class FacebookWebhookController extends Controller
                     ]);
                     $this->sendTemplateEngagement($comment, $allowDm, $allowPublicReply);
                 } else {
-                    ProcessCommentEngagement::dispatch([
+                    // ⏱️ (2026-11-09) งานที่จะตอบใต้คอมเมนต์ → จองจังหวะกับ CommentReplyPacer แล้วหน่วง job
+                    //    (หน่วงสุ่ม + เว้นระยะต่อเพจ + เพดานต่อโพสต์/เพจ) — เดิมตอบภายในไม่กี่วินาทีทุกอัน
+                    //    เกินเพดาน ⇒ ปิดสิทธิ์ตอบสาธารณะรอบนี้ (DM ยังไปตามเดิม)
+                    $delay = null;
+                    if ($allowPublicReply) {
+                        $delay = \App\Services\Fortune\CommentReplyPacer::reserve(
+                            \App\Services\Fortune\CommentReplyPacer::pageKey($this->settings->facebook_page_id ?? null),
+                            is_string($postId) ? $postId : null
+                        );
+                        if ($delay === null) {
+                            $allowPublicReply = false;
+                        }
+                    }
+
+                    if (! $allowDm && ! $allowPublicReply) {
+                        Log::info('Comment Engagement: เกินเพดานตอบคอมเมนต์ + DM ติด cooldown → ข้าม', [
+                            'user_id' => $fromId,
+                            'comment_id' => $commentId,
+                        ]);
+
+                        return;
+                    }
+
+                    $pending = ProcessCommentEngagement::dispatch([
                         'facebook_user_id' => $fromId,
                         'facebook_post_id' => $postId,
                         'facebook_comment_id' => $commentId,
@@ -2219,6 +2242,9 @@ class FacebookWebhookController extends Controller
                         'allow_dm' => $allowDm,
                         'allow_public_reply' => $allowPublicReply,
                     ]);
+                    if ($delay !== null && $delay > 0) {
+                        $pending->delay(now()->addSeconds($delay));
+                    }
                 }
             }
 
@@ -6897,6 +6923,11 @@ class FacebookWebhookController extends Controller
             return false;
         }
 
+        // 🪞 (2026-11-09) คอมเมนต์จากเพจของเราเอง (เพจหลัก/สาขาไหนก็ได้) → ไม่ตอบ ไม่ DM
+        if ($this->isOurOwnFacebookPage($fromId)) {
+            return false;
+        }
+
         // webhook retry / คอมเมนต์เดิม → ไม่ส่งซ้ำ
         try {
             if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
@@ -6939,20 +6970,25 @@ class FacebookWebhookController extends Controller
             }
         }
 
-        // ตอบใต้คอมเมนต์ — พูดว่า "ทักไปใน inbox แล้ว" ได้เฉพาะเมื่อมี DM จริง (เพิ่งส่ง/ติด cooldown เพราะเพิ่งส่ง)
+        // ตอบใต้คอมเมนต์ — พูดว่า "ทักไปใน inbox แล้ว" ได้เฉพาะเมื่อ DM ส่งถึงจริงในรอบนี้
+        // 🗨️ (2026-11-09) เดิมตอบประโยคเดียว (COMMENT_REPLY) ทุกคอมเมนต์ — 177/184 อันใน 1 วัน = สัญญาณสแปม
+        //    ตอนนี้แต่งใหม่ทุกครั้งตามเรื่องที่คอมเมนต์ + กันซ้ำต่อเพจ และทยอยตอบผ่านคิว (CommentReplyPacer)
+        //    DM ไม่ได้ส่ง (ติด cooldown) ⇒ คำขอบคุณ/อวยพรเฉย ๆ ห้ามอ้างว่าทักไปแล้ว
         $publicReplySent = false;
+        $publicReply = null;
+        $replyStatus = 'off';
         $replyOnceKey = 'fcr:replied:'.$commentId;
         if ($allowPublicReply && ($dmSent || ! $allowDm) && ! Cache::has($replyOnceKey)) {
-            try {
-                $this->facebookService->replyToComment($commentId, $copy::COMMENT_REPLY);
-                $publicReplySent = true;
-                Cache::put($replyOnceKey, 1, 86400);
-            } catch (\Throwable $e) {
-                Log::warning('🌐 FB web-only: ตอบใต้คอมเมนต์ไม่สำเร็จ', [
-                    'comment_id' => $commentId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $pageKey = \App\Services\Fortune\CommentReplyPacer::pageKey($this->settings->facebook_page_id ?? null);
+            $publicReply = \App\Services\Fortune\CommentReplyComposer::compose(
+                $commentText,
+                is_string($name) ? $name : null,
+                $dmSent,
+                $pageKey,
+                $fromId
+            );
+            $replyStatus = $this->deliverCommentReply($commentId, is_string($postId) ? $postId : null, $fromId, $commentText, $publicReply, $pageKey);
+            $publicReplySent = $replyStatus === 'sent';
         }
 
         if ($dmSent || $publicReplySent) {
@@ -6962,7 +6998,8 @@ class FacebookWebhookController extends Controller
                     'facebook_post_id' => $postId,
                     'facebook_comment_id' => $commentId,
                     'comment_text' => $commentText,
-                    'comment_reply' => $publicReplySent ? $copy::COMMENT_REPLY : null,
+                    // เข้าคิวหน่วงเวลา = ยังไม่ขึ้นจริง ⇒ null ไว้ก่อน (job เติมเมื่อส่งสำเร็จ)
+                    'comment_reply' => $publicReplySent ? $publicReply : null,
                     'dm_message' => $dmSent ? $dmText : null,
                     'engaged_at' => now(),
                 ]);
@@ -6984,10 +7021,79 @@ class FacebookWebhookController extends Controller
             'comment_id' => $commentId,
             'explicit_request' => $explicitRequest,
             'dm_sent' => $dmSent,
-            'public_reply_sent' => $publicReplySent,
+            'public_reply' => $replyStatus,
         ]);
 
         return $dmSent;
+    }
+
+    /**
+     * ⏱️ (2026-11-09) ส่งคำตอบใต้คอมเมนต์ — มีคิว ⇒ จองจังหวะกับ CommentReplyPacer แล้วหน่วงส่ง / คิว sync ⇒ ส่งทันที
+     *
+     * @return string 'sent' (ขึ้นแล้ว) | 'queued' (รอคิว) | 'skipped' (เกินเพดาน/ซ้ำ) | 'failed' (FB ปฏิเสธ)
+     */
+    protected function deliverCommentReply(string $commentId, ?string $postId, string $userId, string $commentText, string $reply, string $pageKey): string
+    {
+        $replyOnceKey = 'fcr:replied:'.$commentId;
+
+        // คิว sync (dev/เทสต์) — หน่วงไม่ได้ ส่งทันทีแบบเดิม
+        if (config('queue.default', 'sync') === 'sync') {
+            try {
+                // replyToComment คืน false เมื่อ FB ปฏิเสธ (ไม่ throw) — ต้องเช็กค่าที่คืน
+                if ($this->facebookService->replyToComment($commentId, $reply)) {
+                    Cache::put($replyOnceKey, 1, 86400);
+
+                    return 'sent';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('🗨️ ตอบใต้คอมเมนต์ไม่สำเร็จ', ['comment_id' => $commentId, 'error' => $e->getMessage()]);
+            }
+
+            return 'failed';
+        }
+
+        // webhook retry ระหว่างรอคิว → ไม่จองซ้ำ
+        if (! Cache::add('fcr:reply_queued:'.$commentId, 1, 7200)) {
+            return 'skipped';
+        }
+
+        $delay = \App\Services\Fortune\CommentReplyPacer::reserve($pageKey, $postId);
+        if ($delay === null) {
+            return 'skipped';
+        }
+
+        \App\Jobs\SendFacebookCommentReply::dispatch([
+            'comment_id' => $commentId,
+            'post_id' => $postId,
+            'user_id' => $userId,
+            'comment_text' => mb_substr($commentText, 0, 1000),
+            'reply' => $reply,
+        ])->delay(now()->addSeconds($delay));
+
+        return 'queued';
+    }
+
+    /**
+     * 🪞 (2026-11-09) id นี้เป็นเพจของเราเองไหม (เพจที่กำลังทำงาน หรือเพจสาขาใดก็ได้ในระบบ)
+     *
+     * กันบอทตอบคอมเมนต์ของเพจเราเองข้ามสาขา (เพจหลักคอมเมนต์ใต้โพสต์สาขา ฯลฯ) จนเป็นลูป
+     */
+    protected function isOurOwnFacebookPage(?string $fromId): bool
+    {
+        $fromId = (string) $fromId;
+        if ($fromId === '') {
+            return false;
+        }
+
+        if ($fromId === (string) ($this->settings->facebook_page_id ?? '')) {
+            return true;
+        }
+
+        try {
+            return \App\Services\Fortune\FortunePageContext::resolveByExternalId($fromId) !== null;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

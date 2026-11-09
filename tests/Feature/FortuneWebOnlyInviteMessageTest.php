@@ -170,8 +170,8 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
             $this->assertStringStartsWith('web-', $row['category']);
         }
 
-        // คำตอบใต้คอมเมนต์ของ job (ตอน DM ติด cooldown) ต้องผ่าน lint เดียวกัน
-        $publicReplies = (new \ReflectionClassConstant(ProcessCommentEngagement::class, 'WEB_ONLY_PUBLIC_REPLIES'))->getValue();
+        // คำตอบใต้คอมเมนต์ของโหมด web-only (คลังของ CommentReplyComposer) ต้องผ่าน lint เดียวกัน
+        $publicReplies = \App\Services\Fortune\CommentReplyComposer::allLines();
         foreach (array_merge($publicReplies, [WebHandoffCopy::COMMENT_REPLY]) as $line) {
             $this->assertTrue(FortuneInviteMessage::isWebSafeText($line), $line);
             $this->assertDoesNotMatchRegularExpression('/(ดูดวงในแชท|ทักมา)/u', $line);
@@ -460,9 +460,12 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
 
         $this->makeJob($fb)->handle();
 
-        $this->assertSame(WebHandoffCopy::COMMENT_REPLY, $reply);
+        // 🗨️ (2026-11-09) ไม่ใช่ประโยคตายตัวแล้ว — แต่งตามเรื่องที่คอมเมนต์ + บอกว่าทักไปแล้ว (DM ได้รอบนี้)
+        $this->assertIsString($reply);
+        $this->assertTrue(FortuneInviteMessage::isWebSafeText($reply), (string) $reply);
+        $this->assertMatchesRegularExpression('/(inbox|แชท|Messenger|กล่องข้อความ|ข้อความ)/u', (string) $reply);
         $this->assertSame(
-            WebHandoffCopy::COMMENT_REPLY,
+            $reply,
             FortuneCommentEngagement::where('facebook_user_id', self::PSID)->value('comment_reply')
         );
     }

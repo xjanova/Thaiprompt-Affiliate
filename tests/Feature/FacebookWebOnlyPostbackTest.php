@@ -677,7 +677,13 @@ class FacebookWebOnlyPostbackTest extends TestCase
         $dm = $this->sender->messages[0];
         $this->assertSame('111_222', $dm['options']['comment_id'] ?? null, 'ต้องเป็น Private Reply ผูกคอมเมนต์');
         $this->assertWebInviteDm($dm, 'comment:explicit');
-        $this->assertSame([['comment_id' => '111_222', 'text' => WebHandoffCopy::COMMENT_REPLY]], $this->sender->commentReplies);
+        // ⏱️ (2026-11-09) มีคิว ⇒ คำตอบใต้คอมเมนต์ไม่ยิงทันที เข้าคิวหน่วงเวลาแทน (ข้อความแต่งใหม่ ไม่ใช่ประโยคตายตัว)
+        $this->assertSame([], $this->sender->commentReplies, 'ห้ามตอบใต้คอมเมนต์ทันทีเมื่อมีคิว');
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SendFacebookCommentReply::class, function ($job) {
+            return $job->data['comment_id'] === '111_222'
+                && \App\Models\FortuneInviteMessage::isWebSafeText($job->data['reply'])
+                && $job->delay !== null;
+        });
         $this->assertSame([], $this->sender->templates, 'ห้ามสร้างลิงก์จาก comment.from.id');
 
         // webhook retry คอมเมนต์เดิม → ไม่ส่งซ้ำ
@@ -685,6 +691,7 @@ class FacebookWebOnlyPostbackTest extends TestCase
         $c->callProtected('processComment', $this->comment('ดูดวง ความรักปีนี้จะเป็นยังไง'));
         $this->assertSame([], $this->sender->messages);
         $this->assertSame([], $this->sender->commentReplies);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SendFacebookCommentReply::class, 1);
     }
 
     public function test_ธงปิด_คอมเมนต์ดูดวง_ยัง_dispatch_เหมือนเดิม(): void
@@ -714,7 +721,10 @@ class FacebookWebOnlyPostbackTest extends TestCase
         $this->assertCount(1, $this->sender->messages, $all);
         $this->assertWebInviteDm($this->sender->messages[0], 'comment:money');
         $this->assertStringContainsString('แม่หมอเปิดห้องรอไว้แล้ว', $this->sender->messages[0]['text']);
-        $this->assertSame(WebHandoffCopy::COMMENT_REPLY, $this->sender->commentReplies[0]['text'] ?? null);
+        // 🗨️ (2026-11-09) คำตอบแต่งใหม่ (ไม่ใช่ประโยคตายตัว) — DM ส่งแล้วจึงบอกว่าทักไปแล้วได้
+        $reply = (string) ($this->sender->commentReplies[0]['text'] ?? '');
+        $this->assertTrue(\App\Models\FortuneInviteMessage::isWebSafeText($reply), $reply);
+        $this->assertMatchesRegularExpression('/(inbox|แชท|Messenger|กล่องข้อความ|ข้อความ)/u', $reply);
         $this->assertSame(1, (int) $invite->fresh()->send_count);
     }
 
@@ -728,6 +738,83 @@ class FacebookWebOnlyPostbackTest extends TestCase
 
         $this->assertSame([], $this->sender->messages, 'ชุด web ว่าง = ไม่ส่ง (ห้ามตกไปชุดเดิม)');
         $this->assertSame([], $this->sender->commentReplies);
+    }
+
+    public function test_คอมเมนต์หลายคนติดกัน_คำตอบใต้คอมเมนต์ไม่ซ้ำกันเลย(): void
+    {
+        // 🗨️ (2026-11-09) prod: เปิด web-only แล้ว 177/184 คอมเมนต์ได้ "แม่หมอทักไปใน inbox แล้วนะคะ 🌙" เหมือนกันหมด
+        $this->webOnly(['comment_engagement_enabled' => true, 'enable_public_comment_reply' => true]);
+        $this->seedWebInvite();
+
+        $c = $this->controller();
+        $texts = ['สาธุค่ะ', 'น้อมรับพรครับสาธุๆๆ', 'ชั้นต้องรวย', '', 'ขอน้อมรับค่ะขอให้มาจริงๆนะ', 'รับชีวิด', 'อยากมีแฟน', 'สาธุ'];
+        foreach ($texts as $i => $text) {
+            $c->callProtected('handleCommentEngagement', [
+                'item' => 'comment',
+                'verb' => 'add',
+                'message' => $text,
+                'from' => ['id' => '6155000000100'.$i, 'name' => 'ลูกค้า'.$i],
+                'comment_id' => '900_'.$i,
+                'post_id' => '900',
+            ]);
+        }
+
+        $replies = array_column($this->sender->commentReplies, 'text');
+        $this->assertCount(count($texts), $replies, json_encode($this->sender->commentReplies, JSON_UNESCAPED_UNICODE));
+        $this->assertCount(count($texts), array_unique($replies), 'คำตอบซ้ำกัน: '.json_encode($replies, JSON_UNESCAPED_UNICODE));
+        $this->assertNotContains(WebHandoffCopy::COMMENT_REPLY, $replies);
+        foreach ($replies as $reply) {
+            $this->assertTrue(\App\Models\FortuneInviteMessage::isWebSafeText($reply), $reply);
+        }
+
+        // แถว engagement เก็บคำตอบที่ขึ้นจริง
+        $this->assertSame(
+            $replies,
+            \App\Models\FortuneCommentEngagement::whereIn('facebook_comment_id', array_map(fn ($i) => '900_'.$i, array_keys($texts)))
+                ->orderBy('id')->pluck('comment_reply')->all()
+        );
+    }
+
+    public function test_คอมเมนต์จากเพจสาขาของเราเอง_ไม่ตอบและไม่DM(): void
+    {
+        $this->webOnly(['comment_engagement_enabled' => true, 'enable_public_comment_reply' => true]);
+        $this->seedWebInvite();
+        \App\Models\FortunePage::create([
+            'platform' => 'facebook',
+            'external_page_id' => '777000111',
+            'name' => 'สาขาทดสอบ',
+            'code' => 'test-branch-own',
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+
+        $c = $this->controller();
+        $comment = [
+            'item' => 'comment',
+            'verb' => 'add',
+            'message' => 'สาธุค่ะ',
+            'from' => ['id' => '777000111', 'name' => 'สาขาทดสอบ'],
+            'comment_id' => '901_1',
+            'post_id' => '901',
+        ];
+        $c->callProtected('handleCommentEngagement', $comment);
+        $c->callProtected('sendFbWebOnlyCommentEngagement', $comment, true, true);
+
+        $this->assertSame([], $this->sender->messages, 'ห้าม DM หาเพจของเราเอง');
+        $this->assertSame([], $this->sender->commentReplies, 'ห้ามตอบคอมเมนต์ของเพจเราเอง (กันลูป)');
+    }
+
+    public function test_ส่งตอบใต้คอมเมนต์ไม่สำเร็จ_ไม่บันทึกว่าตอบแล้ว(): void
+    {
+        $this->webOnly(['comment_engagement_enabled' => true, 'enable_public_comment_reply' => true]);
+        $this->seedWebInvite();
+        $this->sender->failCommentReplies = true;
+
+        $c = $this->controller();
+        $c->callProtected('handleCommentEngagement', $this->comment('สาธุค่ะ', '902_1'));
+
+        $this->assertFalse(Cache::has('fcr:replied:902_1'), 'FB ปฏิเสธ = ยังไม่นับว่าตอบแล้ว');
+        $this->assertNull(\App\Models\FortuneCommentEngagement::where('facebook_comment_id', '902_1')->value('comment_reply'));
     }
 
     public function test_รีแอคชัน_d_m_ใช้ชุดweb_ไม่มีกล่องดวงรายวัน_ไม่มีแบนเนอร์(): void
@@ -868,8 +955,15 @@ class FbWebOnlyRecordingSender extends FacebookWebhookService
     /** @var string[] รูปที่ส่ง (แบนเนอร์/การ์ด) (T7) */
     public array $images = [];
 
+    /** จำลอง FB ปฏิเสธการตอบใต้คอมเมนต์ (replyToComment คืน false ไม่ throw) */
+    public bool $failCommentReplies = false;
+
     public function replyToComment(string $commentId, string $message): bool
     {
+        if ($this->failCommentReplies) {
+            return false;
+        }
+
         $this->commentReplies[] = ['comment_id' => $commentId, 'text' => $message];
 
         return true;

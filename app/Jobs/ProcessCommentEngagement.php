@@ -42,19 +42,6 @@ class ProcessCommentEngagement implements ShouldQueue
     protected array $data;
 
     /**
-     * 🌐 (2026-11-03) คำตอบใต้คอมเมนต์ตอน FB web-only + DM ติด cooldown (ไม่ได้ทัก inbox รอบนี้)
-     *
-     * ห้ามชวน "ดูดวงในแชท" และห้ามบอกว่าทักไปแล้ว (เพราะรอบนี้ไม่ได้ทักจริง)
-     * ไม่ใช้คลัง FortuneCommentReply เพราะชุดนั้นเขียนไว้ชวนเข้าแชทดูดวง
-     */
-    protected const WEB_ONLY_PUBLIC_REPLIES = [
-        'สาธุค่ะ 🙏 ขอให้สิ่งดี ๆ เข้ามาทุกวันนะคะ',
-        'ขอบคุณค่ะ 🌙 ส่งพลังบวกกลับไปให้นะคะ',
-        'ขอให้ทุกอย่างราบรื่นนะคะ ✨',
-        'น้อมรับพรดี ๆ ค่ะ 💜',
-    ];
-
-    /**
      * 🌐 (2026-11-05) สัดส่วนคำตอบใต้คอมเมนต์ที่แนบลิงก์เว็บ จันทรา.online (เปอร์เซ็นต์)
      *
      * ไม่แนบทุกคอมเมนต์ — เพจที่ยิงลิงก์ออกนอก FB ซ้ำ ๆ หลายร้อยครั้ง/วัน เสี่ยงถูกจับเป็นสแปม
@@ -340,12 +327,20 @@ class ProcessCommentEngagement implements ShouldQueue
             }
             $commentReply = '';
 
+            // 🗨️ (2026-11-09) ตัวระบุเพจ — ให้คลังกันซ้ำต่อเพจด้วย ไม่ใช่แค่ต่อคน
+            $replyPageKey = \App\Services\Fortune\CommentReplyPacer::pageKey($settings->facebook_page_id ?? null);
+
             if ($publicReplyEnabled && $fbWebOnly) {
-                // 🌐 web-only — ห้ามใช้ AI/คลังชวนดูดวงในแชท ใช้ถ้อยคำกลางที่ตรวจแล้ว
-                //    DM ได้รอบนี้ = บอกว่าทักไปใน inbox / ไม่ได้ = อวยพรสั้น ๆ อย่างเดียว
-                $commentReply = $allowDm
-                    ? WebHandoffCopy::COMMENT_REPLY
-                    : self::WEB_ONLY_PUBLIC_REPLIES[array_rand(self::WEB_ONLY_PUBLIC_REPLIES)];
+                // 🌐 web-only — ห้ามใช้ AI/คลังชวนดูดวงในแชท ใช้ถ้อยคำที่ผ่าน lint แล้ว
+                //    DM ได้รอบนี้ = บอกว่าทักไปใน inbox / ไม่ได้ = ขอบคุณ/อวยพรอย่างเดียว
+                //    🗨️ (2026-11-09) เดิมคืนประโยคเดียว (COMMENT_REPLY) ทุกครั้ง → แต่งใหม่ตามเรื่องที่คอมเมนต์ + กันซ้ำต่อเพจ
+                $commentReply = \App\Services\Fortune\CommentReplyComposer::compose(
+                    $commentText,
+                    $name,
+                    $allowDm,
+                    $replyPageKey,
+                    (string) $userId
+                );
             } elseif ($publicReplyEnabled) {
                 // 🙏 (2026-11-05) USER SPEC: "ตอบคอมเม้นต์อัตโนมัติ ทุกคนให้หมด ... ให้คำตอบมีหลากหลาย
                 //    ดูแล้วเหมือนเป็นการขอบคุณที่ร่วมแสดงความเห็น ... ถ้าเม้นต์ไหนออกความเห็นยาว
@@ -388,6 +383,8 @@ class ProcessCommentEngagement implements ShouldQueue
                         $toneCategory,
                         $name,
                         (string) $userId,
+                        'th',
+                        $replyPageKey,
                     ) ?? '';
                 }
 
@@ -397,6 +394,8 @@ class ProcessCommentEngagement implements ShouldQueue
                         \App\Models\FortuneCommentReply::CATEGORY_WEB_INVITE,
                         $name,
                         (string) $userId,
+                        'th',
+                        $replyPageKey,
                     ) ?? '';
                 }
 
@@ -405,6 +404,8 @@ class ProcessCommentEngagement implements ShouldQueue
                         \App\Models\FortuneCommentReply::CATEGORY_APPRECIATION,
                         $name,
                         (string) $userId,
+                        'th',
+                        $replyPageKey,
                     ) ?? '';
                 }
 
@@ -1505,7 +1506,7 @@ class ProcessCommentEngagement implements ShouldQueue
      *
      * @return string|null หมวดคลัง (neutral | letting_go) หรือ null = โทนปกติ ใช้คำขอบคุณ/ลิงก์ตามเดิม
      */
-    protected function detectCommentTone(string $text): ?string
+    public static function detectCommentTone(string $text): ?string
     {
         if (preg_match(self::CRITICAL_PATTERN, $text)) {
             return \App\Models\FortuneCommentReply::CATEGORY_NEUTRAL;
