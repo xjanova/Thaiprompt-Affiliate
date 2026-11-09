@@ -472,64 +472,6 @@ trait CelticCrossConversationTrait
     }
 
     /**
-     * 🤍 (2026-11-09) ด่านวิกฤตของขั้น "เลือกแพคเกจ"
-     *
-     * - ลูกค้าพูดถึงการทำร้าย/จบชีวิตตัวเอง → คำปลอบเดียวกับ processMessage (maybeHandleSelfHarmMessage)
-     *   ปกติ processMessage ดักไปก่อนแล้ว — ตรงนี้กันเส้นที่เรียก handleTierChoice โดยไม่ผ่านด่านนั้น
-     *   แอดมินคุยเองอยู่ (takeover) → เงียบ ไม่ส่งเมนูทับแอดมิน
-     * - ลูกค้าเล่าว่า "คนอื่น" อยากทำร้ายตัวเอง → AI ตอบด้วยความห่วงใย ไม่มีเมนู/ราคา/ปุ่ม
-     *   (กติกาเดียวกับแชท AI — quietOthersCrisisReply) AI ล้ม/ติด throttle/หลุดคำขาย → คำปลอบสำเร็จรูป
-     *
-     * ไม่แตะสถานะ reading — ข้อความถัดไปเลือกแพคเกจต่อได้ตามปกติ
-     * action `crisis_support` = FB ข้อความล้วน / LINE reply อย่างเดียว ห้าม push · ไม่แทรกโฆษณาคอมมิชชั่น
-     *
-     * @return array|null null = ไม่ใช่เรื่องวิกฤต ไปต่อ flow เลือกแพคเกจ
-     */
-    protected function crisisReplyDuringPackageChoice(FortuneReading $reading, string $messageText): ?array
-    {
-        $userId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id);
-
-        if (\App\Services\FortuneAIService::isSelfHarmStatement($messageText)) {
-            $profile = is_array($reading->user_profile) ? $reading->user_profile : null;
-
-            return $this->maybeHandleSelfHarmMessage($userId, $messageText, $profile)
-                ?? ['action' => 'silent_skip', 'message' => null, 'reading' => null];
-        }
-
-        if (! \App\Services\FortuneAIService::mentionsOthersSelfHarm($messageText)) {
-            return null;
-        }
-
-        $reply = '';
-        try {
-            $reply = trim($this->buildAIAssistedStepReminder(
-                $messageText,
-                '',
-                is_array($reading->user_profile) ? $reading->user_profile : null,
-                'crisis_care'
-            ));
-        } catch (\Throwable $e) {
-            $reply = '';
-        }
-
-        // AI หลุดเรื่องขาย/ขั้นตอน (พรอมต์ร่วมของ step reminder ชวนใบ้ขั้นตอนได้) → ใช้คำปลอบสำเร็จรูปแทน
-        if ($reply === '' || preg_match('/แพ(?:ค|ก)เกจ|ราคา|บาท|฿|โอน|จ่าย|บูชาครู|ดูดวง|เปิดไพ่|\b(?:39|99)\b|\[(?:OFFER|DEEP|ASK|USE)_/u', $reply)) {
-            $reply = \App\Services\FortuneAIService::buildAdversarialReply('self_harm');
-        }
-
-        Log::info('handleTierChoice: ลูกค้าเล่าเรื่องคนใกล้ตัวอยากทำร้ายตัวเอง → ตอบห่วงใย ไม่แนบเมนูแพคเกจ', [
-            'reading_id' => $reading->id,
-            'text_preview' => mb_substr($messageText, 0, 60),
-        ]);
-
-        return [
-            'action' => 'crisis_support',
-            'message' => $reply,
-            'reading' => null,
-        ];
-    }
-
-    /**
      * State: STATUS_TIER_CHOICE — ลูกค้าเลือกแพคเกจ
      *
      * 🎯 รับการเลือกของลูกค้า — ต้องเลือกอย่างใดอย่างหนึ่ง:
@@ -544,21 +486,14 @@ trait CelticCrossConversationTrait
      */
     protected function handleTierChoice(FortuneReading $reading, string $messageText): array
     {
-        // 🤍 (2026-11-09) เรื่องวิกฤตมาก่อนเมนู — คำตอบเทิร์นนี้ห้ามมีแพคเกจ/ราคา/ปุ่ม/สติกเกอร์มือชี้
-        //   เคส prod #14660: ลูกค้าเล่าเรื่องโดดน้ำ/ผูกคอตอนเลือกแพคเกจ → ได้คำตอบ AI + เมนู 39/99 (tier_choice_chitchat)
-        $crisisReply = $this->crisisReplyDuringPackageChoice($reading, $messageText);
-        if ($crisisReply !== null) {
-            return $crisisReply;
-        }
-
         // ❌ ยกเลิก
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop'])) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return [
                 'action' => 'cancelled',
-                // 🌐 (2026-11-03) FB web-only → ชวนเข้าห้องแม่หมอแทน 'พิมพ์ "ดูดวง"' (LINE/ธงปิด = ข้อความเดิม)
-                'message' => "🙏 ยกเลิกแล้วค่ะ\n\n".RepurchaseCta::forReading($reading, "หากเปลี่ยนใจอยากให้หมอจันทราดูดวงให้\nพิมพ์ *\"ดูดวง\"* ได้ตลอดเลยนะคะ 🔮✨"),
+                // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่ชวนดูดวงใหม่/ไม่ชวนเข้าห้องแม่หมอ
+                'message' => FortuneReading::CANCEL_NOTICE,
                 'reading' => $reading,
             ];
         }
@@ -1466,20 +1401,20 @@ trait CelticCrossConversationTrait
 
         // 🔓 ยกเลิก
         // 🩹 (2026-05-08 audit fix CRIT-1b) — route ผ่าน closeAllActiveConversations
-        //   เพื่อ cancel UPA Celtic + FCM push + wisdom DM ครบ
+        //   เพื่อ cancel UPA Celtic + FCM push ครบ
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop', 'ไม่จ่าย'])) {
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (! empty($userId) && method_exists($this, 'closeAllActiveConversations')) {
-                // 📜 (2026-06-06) ส่ง messageText → แยกเจตนายกเลิก (เบี้ยว → รูป+เตือนแรง / สุดวิสัย → ปกติ)
+                // ส่ง messageText = ลูกค้าพิมพ์ยกเลิกเอง → ไม่ส่งแจ้งยกเลิกบิลซ้ำกับคำตอบด้านล่าง
                 $this->closeAllActiveConversations($userId, $messageText);
             } else {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
             }
 
             return [
+                // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่ชวนดูใหม่
                 'action' => 'celtic_cancelled',
-                'message' => "ยกเลิก Celtic Cross แล้วค่ะ — ไม่เป็นไรนะคะ\n\n"
-                    ."หากต้องการดูใหม่ พิมพ์ 'celtic cross' หรือ 'ไพ่ยิปซีเต็ม' ได้เลย 🔮",
+                'message' => FortuneReading::CANCEL_NOTICE,
                 'reading' => $reading,
             ];
         }

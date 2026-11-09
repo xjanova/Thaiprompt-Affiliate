@@ -80,7 +80,7 @@ class DeepReadingController extends Controller
             $userRef = 'tp:'.$userId;
         }
 
-        if (($rejected = $this->rejectQuestion($questions[$index], $profile['name'] ?? null, $userRef)) !== null) {
+        if (($rejected = $this->rejectQuestion($questions[$index])) !== null) {
             return $rejected;
         }
 
@@ -129,7 +129,7 @@ class DeepReadingController extends Controller
     private function wholeBill(FortuneAIService $ai, array $data, array $questions, array $profile, ?int $userId): JsonResponse
     {
         foreach ($questions as $q) {
-            if (($rejected = $this->rejectQuestion($q, $profile['name'] ?? null, (string) ($data['user_ref'] ?? ''))) !== null) {
+            if (($rejected = $this->rejectQuestion($q)) !== null) {
                 return $rejected;
             }
         }
@@ -174,10 +174,12 @@ class DeepReadingController extends Controller
     }
 
     /**
-     * ด่านกันเจลเบรค/สัญญาณวิกฤตบนคำถามดิบของลูกค้า (ทางนี้ไม่ผ่าน chatWithCustomSystemPrompt)
-     *   422 = เว็บคืนเงิน · crisis = true → เว็บแสดงคำปลอบแทนข้อความปัด (แบบเดียวกับไพ่ยิปซี)
+     * ด่านกันเจลเบรคบนคำถามดิบของลูกค้า (ทางนี้ไม่ผ่าน chatWithCustomSystemPrompt) — 422 = เว็บคืนเงิน
+     *
+     * 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm/วิกฤตแล้ว — คำถามแบบนั้นทำนายตามปกติ
+     *   คงคีย์ crisis ไว้เป็น false เสมอ ให้เว็บรุ่นเก่าที่ยังอ่านคีย์นี้ไม่พัง
      */
-    private function rejectQuestion(string $question, ?string $name, string $userRef = ''): ?JsonResponse
+    private function rejectQuestion(string $question): ?JsonResponse
     {
         $attack = FortuneAIService::detectAdversarialInput($question);
         if ($attack === null) {
@@ -185,12 +187,8 @@ class DeepReadingController extends Controller
         }
 
         Log::warning('Juntra deep reading: question rejected by adversarial guard', ['attack' => $attack]);
-        FortuneAIService::reportSelfHarmSignal($attack, $question, $userRef !== '' ? $userRef : null,
-            'เว็บจันทรา ดูดวงเชิงลึก'.($name ? ' · '.$name : ''));
 
-        $message = $attack === 'self_harm' ? FortuneAIService::buildAdversarialReply($attack) : 'คำถามนี้แม่หมอทำนายให้ไม่ได้';
-
-        return response()->json(['message' => $message, 'reason_code' => 'question_rejected', 'crisis' => $attack === 'self_harm'], 422);
+        return response()->json(['message' => 'คำถามนี้แม่หมอทำนายให้ไม่ได้', 'reason_code' => 'question_rejected', 'crisis' => false], 422);
     }
 
     /**

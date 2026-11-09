@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  *   3. ลูกค้ากด "พร้อมบูชาครู" → processMessage detect → handleConsentAcceptIfPending()
  *        → ตั้ง flag consent_ok → re-dispatch start flow (รอบนี้ผ่าน gate → ออก QR)
  *   4. ลูกค้ากด "ยังไม่พร้อม/ยกเลิก" → flow เดิมจับ → closeAllActiveConversations()
- *        → sendCancelConsentOrWakeup() เตือนสติ (แยกเจตนาเบี้ยว vs เหตุสุดวิสัย)
+ *        → sendCancelNotice() แจ้งยกเลิกบรรทัดเดียว (ไม่เตือน/ไม่ชวนซื้อ)
  *
  * "เด้งทุกครั้ง": Cache::pull() กิน flag consent_ok ทิ้งหลังผ่าน 1 ครั้ง → บิลถัดไปต้องยอมรับใหม่
  */
@@ -287,7 +287,8 @@ trait FortuneConsentGateTrait
 
                 return [
                     'action' => 'cancelled',
-                    'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\nไว้พร้อมเมื่อไหร่ พิมพ์ \"ดูดวง\" ทักมาหาแม่หมอได้เสมอค่ะ ✨",
+                    // 🙏 (2026-11-09 owner) ปฏิเสธ/ยกเลิก = รับทราบเท่านั้น ไม่ชวนพิมพ์ "ดูดวง"
+                    'message' => '🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ',
                     'reading' => null,
                 ];
             }
@@ -631,8 +632,8 @@ trait FortuneConsentGateTrait
 
             return [
                 'action' => 'cancelled',
-                'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\n"
-                    .'เมื่อไหร่ที่เจ้าชะตาพร้อมและตั้งใจดูดวงจริง ๆ พิมพ์ "ดูดวง" ทักแม่หมอมาได้เสมอค่ะ ✨',
+                // 🙏 (2026-11-09 owner) ปฏิเสธ/ยกเลิก = รับทราบเท่านั้น ไม่ชวนพิมพ์ "ดูดวง"
+                'message' => '🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ',
                 'reading' => null,
             ];
         }
@@ -907,7 +908,8 @@ trait FortuneConsentGateTrait
 
             return [
                 'action' => 'cancelled',
-                'message' => "🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ\n\nไว้พร้อมเมื่อไหร่ พิมพ์ \"ดูดวง\" ทักมาได้เสมอค่ะ ✨",
+                // 🙏 (2026-11-09 owner) ปฏิเสธ/ยกเลิก = รับทราบเท่านั้น ไม่ชวนพิมพ์ "ดูดวง"
+                'message' => '🙏 รับทราบค่ะ ไม่เป็นไรเลยนะคะ',
                 'reading' => null,
             ];
         }
@@ -1065,18 +1067,22 @@ trait FortuneConsentGateTrait
     }
 
     /**
-     * 💭 ส่งคำเตือน/เตือนสติเมื่อลูกค้ายกเลิกบิล — แยกเจตนา
+     * 🙏 แจ้งยกเลิกบิลแบบกลาง ๆ — เรียกจาก closeAllActiveConversations()
      *
-     * เรียกจาก closeAllActiveConversations() แทน loop wakeup เดิม
+     * (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น"
+     *   - ลูกค้าพิมพ์ยกเลิกเอง ($cancelReasonText != null) → ไม่ส่งอะไรเพิ่ม
+     *     เพราะ caller ตอบกลับ "ยกเลิกให้แล้วค่ะ" ในเทิร์นเดียวกันอยู่แล้ว (กันข้อความซ้ำ + ไม่เปลือง push LINE)
+     *   - ระบบปิดบิลเดิมให้ระหว่าง flow ($cancelReasonText=null) → แจ้งบรรทัดเดียวพร้อมเลขบิล
+     *   ไม่มีรูปเตือน / ข้อความเรื่องกรรม / ข้อคิดชวนซื้อ อีกต่อไป
      *
-     * - เหตุสุดวิสัย (โอนไม่ได้/แอพมีปัญหา) หรือ caller flow-internal ($cancelReasonText=null)
-     *     → wakeup เดิม (นุ่มนวล) — "ยกเลิกปกติ"
-     * - เจตนาเบี้ยว/ฝืนกติกา → รูป (scope cancel) + ข้อความเตือนแรง (ครั้งเดียว/บิล)
-     *
-     * @param  string|null  $cancelReasonText  ข้อความที่ลูกค้าพิมพ์ตอนยกเลิก (null = ไม่ทราบ/flow internal)
+     * @param  string|null  $cancelReasonText  ข้อความที่ลูกค้าพิมพ์ตอนยกเลิก (null = flow internal)
      */
-    protected function sendCancelConsentOrWakeup(FortuneReading $cancelledReading, ?string $cancelReasonText): void
+    protected function sendCancelNotice(FortuneReading $cancelledReading, ?string $cancelReasonText): void
     {
+        if ($cancelReasonText !== null) {
+            return;
+        }
+
         $platform = $cancelledReading->platform ?? 'facebook';
         $userId = $cancelledReading->platform_user_id ?? $cancelledReading->facebook_user_id;
         if (empty($userId)) {
@@ -1088,52 +1094,6 @@ trait FortuneConsentGateTrait
             return;
         }
 
-        // เจตนาเบี้ยวหรือไม่ — ต้องมี cancelReasonText (= ลูกค้ากดยกเลิกจริง) + ไม่ใช่เหตุสุดวิสัย
-        $intentional = $cancelReasonText !== null;
-        $forceMajeure = $intentional
-            && method_exists($this, 'looksLikeNeedPaymentHelp')
-            && $this->looksLikeNeedPaymentHelp($cancelReasonText);
-        $alreadyWarned = (bool) $cancelledReading->getConversationState('cancel_warning_sent');
-
-        // 🔇 (2026-06-27 owner) ปิดสวิตช์ "ถามก่อนยกเลิกบิล" (fortune_consent_cancel_enabled) +
-        //   ลูกค้ากดยกเลิกเอง → เงียบสนิท "ยกเลิกได้เลย ไม่เตือน" (ตรงตามคำโฆษณา toggle หน้า celtic-cross)
-        //   BUG เดิม: ปิด toggle ตัดแค่ "รูป+เตือนแรง" (deliverCancelWarning คืน false) แต่ยัง fall-through
-        //   ส่ง buildCancelWakeupMessage ("💭 ก่อนจากกัน ขอฝากข้อคิด...") = owner เห็นว่า "ยังเตือน/ถาม"
-        //   เฉพาะ $intentional (ลูกค้าพิมพ์ยกเลิกเอง 2 จุด) — flow-internal (cancelReasonText=null) คง wakeup เดิม
-        //   auto-expire ใช้ deliverCancelWarning(mode=expire) คนละ toggle (fortune_consent_expire_enabled) ไม่กระทบ
-        if ($intentional && ! $this->settings->isConsentCancelEnabled()) {
-            Log::info('Fortune: ยกเลิกบิล (ลูกค้ากดเอง) + ปิด "ถามก่อนยกเลิก" → เงียบ ไม่ส่งข้อความ', [
-                'user_id' => $userId,
-                'reading_id' => $cancelledReading->id,
-            ]);
-
-            return;
-        }
-
-        $shouldWarnHard = $intentional && ! $forceMajeure && ! $alreadyWarned;
-
-        // 🔴 เจตนาเบี้ยว → รูป (scope cancel) + ข้อความเตือนแรง
-        //   helper เช็ค consent_cancel_enabled เอง → ปิด/fail = false → fallthrough wakeup เดิม
-        if ($shouldWarnHard && FortuneConsentImage::deliverCancelWarning($platformService, (string) $userId)) {
-            $cancelledReading->setConversationState('cancel_warning_sent', true);
-
-            Log::info('Fortune: ส่งคำเตือนยกเลิก (เจตนาเบี้ยว) + รูป', [
-                'user_id' => $userId,
-                'reading_id' => $cancelledReading->id,
-            ]);
-
-            return;
-        }
-
-        // 🟢 เหตุสุดวิสัย / ปิดระบบ / flow-internal → wakeup เดิม (นุ่มนวล)
-        $wakeupMessage = FortuneReading::buildCancelWakeupMessage($cancelledReading, 'user_cancelled');
-        $platformService->sendMessage($userId, $wakeupMessage);
-
-        if ($forceMajeure) {
-            Log::info('Fortune: ยกเลิกเหตุสุดวิสัย → wakeup ปกติ (ไม่เตือนแรง)', [
-                'user_id' => $userId,
-                'reading_id' => $cancelledReading->id,
-            ]);
-        }
+        $platformService->sendMessage($userId, FortuneReading::buildCancelNotice($cancelledReading, 'user_cancelled'));
     }
 }

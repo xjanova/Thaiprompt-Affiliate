@@ -280,17 +280,6 @@ class FortuneCustomerPersona extends Model
     }
 
     /**
-     * 🚩 (2026-05-25) บันทึก timestamp ที่ตอบลูกค้าในภาวะวิกฤต (ชื่อเมธอดเดิม — 2026-11-04 เลิกยื่นเบอร์สายด่วนแล้ว)
-     */
-    public function markCrisisResourcesSent(): void
-    {
-        $flags = $this->risk_flags ?? [];
-        $flags['crisis_resources_sent'] = now()->toIso8601String();
-        $this->risk_flags = $flags;
-        $this->save();
-    }
-
-    /**
      * 🎯 สร้าง context block สำหรับ inject ใน AI system prompt
      *
      * แสดงแค่ข้อมูลที่มี (ไม่เปลือง token)
@@ -436,7 +425,7 @@ class FortuneCustomerPersona extends Model
      * แต่ละ flag → 1 บรรทัด directive ที่ AI ต้องปฏิบัติ
      * ใช้ใน toAiContextBlock() — append หลัง persona lines
      *
-     * @param  string|null  $currentMessage  ข้อความล่าสุด — gate การยื่นสายด่วนใจให้ออกเฉพาะตอนวิกฤตจริง
+     * @param  string|null  $currentMessage  ข้อความล่าสุด (คงพารามิเตอร์ไว้ให้ผู้เรียกเดิม — 2026-11-09 เลิกใช้ตรวจคำวิกฤตแล้ว)
      */
     public function buildRiskGuidanceLines(?string $currentMessage = null): array
     {
@@ -453,19 +442,8 @@ class FortuneCustomerPersona extends Model
             $lines[] = '⚠️ MENTAL_FRAGILE: ลูกค้าเคยพูดเรื่องวิกฤต/ทำร้ายตัวเอง → ตอบสั้น 1-2 บรรทัด / ห้าม pitch / ไม่ถามขุดอารมณ์'
                 .' / ❌ ห้ามใช้คำว่า "สุขภาพจิต/จิตแพทย์/โรคจิต/ป่วยทางใจ" ที่ทำให้ลูกค้ารู้สึกถูกตราหน้า';
 
-            // 🫂 (2026-11-04) กฎเจ้าของ "อย่าไล่เขาไปโทรหาใคร อย่ารู้ดี ปลอบเบาๆ ก็พอ" → ไม่ยื่นเบอร์สายด่วนแล้ว ปลอบอย่างเดียว
-            // 🤍 (2026-06-03) ประโยคปลอบ → ใส่เฉพาะตอน "ข้อความปัจจุบันมีสัญญาณคิดสั้น/หมดหวังจริง" เท่านั้น
-            //   เดิม: ยิงทุกแชทแม้ลูกค้าถามความรัก/การเงิน → รู้สึกเหมือนถูกหาว่าเป็น "โรคจิต"
-            //   (cadence 7 วันเดิมพังด้วย เพราะ markCrisisResourcesSent() ไม่เคยถูกเรียก → ยิงทุกเทิร์น)
-            //   ใหม่: gate ด้วย hasSelfHarmSignal(ข้อความนี้) — แคบเฉพาะคิดสั้น/หมดหวัง (ไม่รวมคำหยาบ/โดนโกง)
-            //   proactive job (เตือนบิล/follow-up) ส่ง currentMessage=null → ไม่ยื่นเบอร์เด็ดขาด
-            $currentlyInCrisis = is_string($currentMessage)
-                && trim($currentMessage) !== ''
-                && app(\App\Services\Fortune\CustomerPersonaService::class)->hasSelfHarmSignal($currentMessage);
-            if ($currentlyInCrisis) {
-                $lines[] = '   → ปิดท้ายด้วยประโยคปลอบเบา ๆ อย่างเพื่อน เช่น "ไม่ต้องรีบนะคะ อยากระบายอะไร พิมพ์มาได้เลย แม่หมออยู่ฟังตรงนี้ 🤍"'
-                    .' (❌ ห้ามคำว่า "สุขภาพจิต/โรคจิต" ❌ ห้ามสั่งสอน ห้ามไล่ไปโทรหาใคร — ให้สายด่วนใจ 1323 เฉพาะเมื่อลูกค้าถามหาที่ขอความช่วยเหลือเอง)';
-            }
+            // 🤍 (2026-11-09 owner) เลิกตรวจคำวิกฤตรายข้อความ (hasSelfHarmSignal) แล้ว
+            //   ไม่แนบคำสั่ง "ปิดท้ายด้วยประโยคปลอบ" ตามคีย์เวิร์ดอีก — ให้ AI แม่หมอตอบตามปกติ
         }
 
         // over_emotional — อ่อนไหวมาก

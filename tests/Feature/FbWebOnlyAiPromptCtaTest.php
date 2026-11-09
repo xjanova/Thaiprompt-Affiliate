@@ -235,8 +235,8 @@ class FbWebOnlyAiPromptCtaTest extends TestCase
         $tierReading = $this->fbReading(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
         $cancel = $fcs->tierChoice($tierReading, 'ยกเลิก');
         $this->assertSame('cancelled', $cancel['action']);
-        $this->assertDoesNotMatchRegularExpression(self::TYPE_DUDUANG_REGEX, $cancel['message']);
-        $this->assertStringContainsString(RepurchaseCta::webText(), $cancel['message']);
+        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่แนบลิงก์ชวนเข้าเว็บแล้ว
+        $this->assertSame(FortuneReading::CANCEL_NOTICE, $cancel['message']);
     }
 
     public function test_closing_messages_unchanged_on_line(): void
@@ -250,10 +250,8 @@ class FbWebOnlyAiPromptCtaTest extends TestCase
 
         $tierReading = $this->lineReading(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
         $cancel = $fcs->tierChoice($tierReading, 'ยกเลิก');
-        $this->assertSame(
-            "🙏 ยกเลิกแล้วค่ะ\n\nหากเปลี่ยนใจอยากให้หมอจันทราดูดวงให้\nพิมพ์ *\"ดูดวง\"* ได้ตลอดเลยนะคะ 🔮✨",
-            $cancel['message']
-        );
+        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่ชวนพิมพ์ "ดูดวง" แล้ว
+        $this->assertSame(FortuneReading::CANCEL_NOTICE, $cancel['message']);
     }
 
     public function test_celtic_repick_line_goes_through_repurchase_cta(): void

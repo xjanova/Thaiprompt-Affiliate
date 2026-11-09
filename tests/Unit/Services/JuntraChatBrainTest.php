@@ -190,18 +190,13 @@ class JuntraChatBrainTest extends TestCase
         $this->assertStringContainsString('ลัคนา', $system);
     }
 
-    public function test_ไม่มีวันเกิด_วันเกิดผิดรูป_หรือห้องวิกฤต_ไม่มีผังดวง(): void
+    public function test_ไม่มีวันเกิด_หรือวันเกิดผิดรูป_ไม่มีผังดวง(): void
     {
         foreach ([null, ['birth_date' => '07/11/1990'], ['birth_date' => now()->addDay()->toDateString()]] as $i => $astro) {
             $ai = $this->fakeAi([self::CLEAN]);
             (new JuntraChatService($ai))->send('jw1', "s7{$i}", 'ช่วงนี้เหนื่อยจัง', astro: $astro);
             $this->assertStringNotContainsString('พื้นดวงจริงของลูก', $ai->calls[0]['system']);
         }
-
-        // เล่าว่าคนอื่นอยากทำร้ายตัวเอง = คุยเรื่องใจ ไม่ยกผังดวง
-        $ai = $this->fakeAi([self::CLEAN]);
-        (new JuntraChatService($ai))->send('jw1', 's8', 'แฟนขู่ว่าจะฆ่าตัวตายถ้าเลิกกัน', astro: ['birth_date' => '1990-11-07']);
-        $this->assertStringNotContainsString('พื้นดวงจริงของลูก', $ai->calls[0]['system']);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -243,7 +238,8 @@ class JuntraChatBrainTest extends TestCase
         Bus::assertNotDispatched(ExtractCustomerPersonaJob::class);
     }
 
-    public function test_ความจำติดธงเปราะบาง_ห้องใหม่ไม่มีการ์ดขาย(): void
+    /** 🤍 (2026-11-09 owner) เลิกห้องวิกฤตแล้ว — ธง mental_fragile ในความจำไม่ปิดการ์ดเสนอไพ่อีก */
+    public function test_ความจำติดธงเปราะบาง_ไม่ทำให้เป็นห้องวิกฤต(): void
     {
         $this->personaTable();
         Bus::fake([ExtractCustomerPersonaJob::class]);
@@ -255,19 +251,24 @@ class JuntraChatBrainTest extends TestCase
 
         $out = (new JuntraChatService($ai))->send('jw8', 's11', 'อยากดูดวงเรื่องงานค่ะ', webOffers: true, webMemory: true);
 
-        $this->assertNull($out['offer_topic']);
-        $this->assertTrue($out['crisis_room']);
+        $this->assertSame('career', $out['offer_topic']);
+        $this->assertArrayNotHasKey('crisis', $out);
+        $this->assertArrayNotHasKey('crisis_room', $out);
     }
 
-    public function test_ลูกค้าบอกว่าอยากทำร้ายตัวเอง_ติดธงในความจำระยะยาว(): void
+    /** 🤍 (2026-11-09 owner) "อยากตาย ไม่ไหวแล้ว" ในแชทเว็บ → ส่งให้ AI ตอบตามปกติ ไม่มีคำปลอบสำเร็จรูป ไม่ติดธง */
+    public function test_ข้อความอยากตาย_ไปให้_AI_ตอบตามปกติ(): void
     {
         $this->personaTable();
         Bus::fake([ExtractCustomerPersonaJob::class]);
-        $ai = $this->fakeAi([]);
+        $ai = $this->fakeAi([self::CLEAN]);
 
-        $out = (new JuntraChatService($ai))->send('jw9', 's12', 'ไม่อยากอยู่แล้ว อยากตาย', webMemory: true);
+        $out = (new JuntraChatService($ai))->send('jw9', 's12', 'อยากตาย ไม่ไหวแล้ว', webMemory: true);
 
-        $this->assertTrue($out['crisis']);
-        $this->assertTrue((bool) (FortuneCustomerPersona::where('platform', 'web')->where('platform_user_id', 'jw9')->first()?->risk_flags['mental_fragile'] ?? false));
+        $this->assertCount(1, $ai->calls, 'ต้องเรียก AI');
+        $this->assertSame('reply', $out['kind']);
+        $this->assertSame(self::CLEAN, $out['reply']);
+        $this->assertStringNotContainsString('ลูกค้าคนนี้เคยบอกว่าอยากทำร้าย', $ai->calls[0]['system']);
+        $this->assertFalse((bool) (FortuneCustomerPersona::where('platform', 'web')->where('platform_user_id', 'jw9')->first()?->risk_flags['mental_fragile'] ?? false));
     }
 }

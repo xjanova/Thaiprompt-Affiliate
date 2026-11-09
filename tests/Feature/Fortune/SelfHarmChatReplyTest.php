@@ -5,13 +5,11 @@ namespace Tests\Feature\Fortune;
 use App\Jobs\ProcessBufferedChatMessageJob;
 use App\Models\AiApiKey;
 use App\Models\FortuneCustomerPersona;
-use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneChatLogService;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\Fortune\ReplyTokenVault;
 use App\Services\Fortune\TakeoverSendGuard;
-use App\Services\FortuneChannelManager;
 use App\Services\LineAlertService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -23,11 +21,11 @@ use Tests\Concerns\BuildsAdminAppWorld;
 use Tests\TestCase;
 
 /**
- * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้ายตัวเอง — บอทแม่หมอบน FB และ LINE ต้อง
+ * 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm/วิกฤตแล้ว — "ให้ AI แม่หมอตอบตามปกติ" ทั้งบอท FB และ LINE
  *
- * - ปลอบเบา ๆ ไม่ไล่ไปโทรหาใคร (ไม่ใช่ "ไม่ตอบเรื่องแบบนั้น") ไม่ทำนาย ไม่ส่งไปให้ AI
- * - ไม่มีปุ่มชวนดูดวง/ขาย
- * - แจ้งแอดมินทาง Telegram — LINE ต้องตอบด้วย reply เท่านั้น ห้าม push
+ * - ข้อความแบบ "อยากฆ่าตัวตาย" ไปให้ AI ตอบ ไม่มีคำปลอบสำเร็จรูป ไม่มีคำปัด "ไม่ตอบเรื่องแบบนั้น"
+ * - ไม่แจ้งแอดมินทาง Telegram · ไม่ติดธง crisis_resources_sent
+ * - LINE ยังตอบด้วย reply ห้าม push (กฎโควต้า)
  */
 #[Group('self-harm-guard')]
 class SelfHarmChatReplyTest extends TestCase
@@ -131,207 +129,40 @@ class SelfHarmChatReplyTest extends TestCase
             ->implode("\n");
     }
 
-    private function assertPersonaFlagged(string $platform, string $userId): void
+    /** ไม่มีการแจ้งแอดมินเรื่อง self-harm และไม่มีคำตอบสำเร็จรูปของด่านเดิม */
+    private function assertTreatedAsNormalChat(string $sent, string $platform, string $userId): void
     {
+        $this->assertNotEmpty($this->aiCalls, 'ต้องส่งให้ AI ตอบตามปกติ');
+        $this->assertStringNotContainsString('อยู่ฟังตรงนี้', $sent, 'ไม่มีคำปลอบสำเร็จรูปของด่านเดิม');
+        $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $sent, 'ไม่ใช่คำปัดของด่านความรุนแรง');
+        foreach ($this->adminAlerts() as $alert) {
+            $this->assertStringNotContainsString($userId, $alert, 'ไม่แจ้งแอดมินเรื่อง self-harm แล้ว');
+        }
         $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
-        $this->assertNotNull($persona, 'ต้องมี persona ไว้จำว่าลูกค้าเปราะบาง');
-        $this->assertTrue($persona->hasRiskFlag('mental_fragile'));
-        $this->assertNotEmpty($persona->risk_flags['crisis_resources_sent'] ?? null, 'ต้องจดว่าปลอบช่วงวิกฤตไปแล้ว');
+        $this->assertEmpty($persona?->risk_flags['crisis_resources_sent'] ?? null);
     }
 
-    public function test_facebook_self_harm_gets_gentle_comfort_not_dismissal_and_admin_is_alerted(): void
+    public function test_facebook_self_harm_message_goes_to_the_normal_ai_reply(): void
     {
         Queue::fake();
 
         $this->runFlush('facebook', self::FB_UID, 'ไม่ไหวแล้วค่ะ อยากฆ่าตัวตาย');
 
         $sent = $this->sentBodies('graph.facebook.com');
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $sent, 'ลูกค้า FB ต้องได้คำปลอบ');
-        $this->assertStringNotContainsString('1323', $sent, 'ห้ามไล่ไปโทรหาใคร');
-        $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $sent);
-        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มดูดวง/ปุ่มขาย');
-        $this->assertStringNotContainsString('START_FORTUNE', $sent);
-        $this->assertSame([], $this->aiCalls, 'ห้ามส่งไปให้ AI ทำนาย');
-
-        $alerts = $this->adminAlerts();
-        $this->assertCount(1, $alerts);
-        $this->assertStringContainsString(self::FB_UID, $alerts[0]);
-        $this->assertStringContainsString('อยากฆ่าตัวตาย', $alerts[0]);
-        $this->assertStringNotContainsString('[TURN', $alerts[0], 'แอดมินเห็นแค่ข้อความลูกค้า');
-        $this->assertStringContainsString('แชท facebook', $alerts[0], 'บอกแอดมินว่ามาจากช่องไหน');
-
-        $this->assertPersonaFlagged('facebook', self::FB_UID);
+        $this->assertStringContainsString('แม่หมอดูให้แล้วค่ะ', $sent, 'ลูกค้า FB ต้องได้คำตอบจาก AI');
+        $this->assertTreatedAsNormalChat($sent, 'facebook', self::FB_UID);
     }
 
-    public function test_line_self_harm_is_answered_by_reply_never_push(): void
+    public function test_line_self_harm_message_goes_to_the_normal_ai_reply_by_reply_never_push(): void
     {
         Queue::fake();
         ReplyTokenVault::remember('line', self::LINE_UID, 'rt-fresh');
 
-        $this->runFlush('line', self::LINE_UID, 'I want to kill myself');
+        $this->runFlush('line', self::LINE_UID, 'อยากตาย ไม่ไหวแล้ว');
 
         $reply = $this->sentBodies('/message/reply');
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply);
-        $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
-        $this->assertStringNotContainsString('quickReply', $reply, 'ห้ามมี quick reply ดูดวง');
+        $this->assertStringContainsString('แม่หมอดูให้แล้วค่ะ', $reply, 'ลูกค้า LINE ต้องได้คำตอบจาก AI ทาง reply');
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
-        $this->assertSame([], $this->aiCalls);
-
-        $alerts = $this->adminAlerts();
-        $this->assertCount(1, $alerts);
-        $this->assertStringContainsString(self::LINE_UID, $alerts[0]);
-
-        $this->assertPersonaFlagged('line', self::LINE_UID);
-    }
-
-    public function test_webhook_entry_answers_before_buffering_on_facebook_and_line(): void
-    {
-        Queue::fake();
-        $channels = app(FortuneChannelManager::class);
-
-        $fb = $channels->processMessage('facebook', self::FB_UID, 'อยากจบชีวิตตัวเอง', ['name' => 'ลูกค้าทดสอบ']);
-        $line = $channels->processMessage('line', self::LINE_UID, 'suicide', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-line']);
-
-        $this->assertSame('crisis_support', $fb['action']);
-        $this->assertSame('crisis_support', $line['action']);
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
-        $this->assertStringNotContainsString('quick_replies', $this->sentBodies('graph.facebook.com'));
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('/message/reply'));
-        $this->assertStringNotContainsString('quickReply', $this->sentBodies('/message/reply'));
-        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
-        $this->assertSame([], $this->aiCalls);
-        $this->assertCount(2, $this->adminAlerts());
-        $this->assertPersonaFlagged('facebook', self::FB_UID);
-        $this->assertPersonaFlagged('line', self::LINE_UID);
-    }
-
-    public function test_mid_prediction_customer_still_gets_comfort_not_silence(): void
-    {
-        Queue::fake();
-        ReplyTokenVault::remember('line', self::LINE_UID, 'rt-fresh');
-        // ระหว่าง AI กำลังทำนาย ปกติบอทเงียบทุกข้อความ (silent_skip)
-        $reading = $this->makeReading([
-            'platform' => 'line',
-            'platform_user_id' => self::LINE_UID,
-            'facebook_user_id' => self::LINE_UID,
-            'conversation_status' => FortuneReading::STATUS_PAID,
-            'is_paid' => true,
-            'amount_paid' => 39,
-        ]);
-
-        $result = app(FortuneChannelManager::class)
-            ->processMessage('line', self::LINE_UID, 'ไม่อยากอยู่แล้ว', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-fresh']);
-
-        $this->assertSame('crisis_support', $result['action']);
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('/message/reply'));
-        $this->assertSame(FortuneReading::STATUS_PAID, $reading->fresh()->conversation_status, 'ห้ามแตะสถานะคำทำนายที่จ่ายแล้ว');
-    }
-
-    /**
-     * 🤍 (2026-11-09) prod #14660 — ระหว่างเลือกแพคเกจ ลูกค้าบอกอ้อม ๆ ว่าคนอื่นเจอแบบนี้คงโดดน้ำ/ผูกคอไปแล้ว
-     * เดิมด่านไม่ติด → ได้คำตอบ AI + เมนู 39/99 + ปุ่มแพคเกจ
-     */
-    public function test_package_choice_customer_hinting_at_self_harm_gets_comfort_not_the_package_menu(): void
-    {
-        Queue::fake();
-        $reading = $this->makeReading([
-            'platform' => 'facebook',
-            'platform_user_id' => self::FB_UID,
-            'facebook_user_id' => self::FB_UID,
-            'conversation_status' => FortuneReading::STATUS_TIER_CHOICE,
-        ]);
-
-        $result = app(FortuneChannelManager::class)->processMessage(
-            'facebook',
-            self::FB_UID,
-            'ถ้าเป็นคนอื่นขอโทษนะครับที่ผมใช้คำคำนี้ถ้าเป็นคนอื่นโดดน้ำหรือผูกคอหนือไม่ก็บ้าไปแล้วครับ',
-            ['name' => 'ลูกค้าทดสอบ']
-        );
-
-        $this->assertSame('crisis_support', $result['action']);
-        $sent = $this->sentBodies('graph.facebook.com');
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $sent);
-        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มแพคเกจ');
-        $this->assertStringNotContainsString('TIER_DEEP_39', $sent);
-        $this->assertStringNotContainsString('sticker', $sent, 'ห้ามสติกเกอร์มือชี้เร่งเลือก');
-        $this->assertSame([], $this->aiCalls);
-        $this->assertCount(1, $this->adminAlerts());
-        $this->assertSame(FortuneReading::STATUS_TIER_CHOICE, $reading->fresh()->conversation_status);
-    }
-
-    public function test_silenced_customer_is_answered_and_unsilenced(): void
-    {
-        Queue::fake();
-        $persona = FortuneCustomerPersona::getOrCreate('facebook', self::FB_UID);
-        $persona->chat_silenced_until = now()->addHours(5);
-        $persona->save();
-
-        $this->runFlush('facebook', self::FB_UID, 'อยากตาย');
-
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
-        $this->assertNull($persona->fresh()->chat_silenced_until, 'คนวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป');
-    }
-
-    public function test_follow_up_messages_still_get_answered_but_admin_is_not_spammed(): void
-    {
-        Queue::fake();
-
-        $this->runFlush('facebook', self::FB_UID, 'อยากตาย');
-        $this->runFlush('facebook', self::FB_UID, 'ไม่อยากอยู่แล้ว');
-
-        $this->assertSame(2, substr_count($this->sentBodies('graph.facebook.com'), 'อยู่ฟังตรงนี้'), 'ทุกข้อความต้องได้คำตอบ ไม่ตัดบท');
-        $this->assertCount(1, $this->adminAlerts(), 'คนเดิมแจ้งแอดมินครั้งเดียวใน 6 ชม.');
-    }
-
-    /**
-     * 🤍 (2026-11-06 รีวิว PR 2649) ลูกค้าเล่าว่า "คนอื่น" อยากทำร้ายตัวเอง — ไม่ใช่วิกฤตของลูกค้าเอง
-     * ให้ AI ตอบ (ไม่ใช่คำปลอบสำเร็จรูป) แต่ ❌ ไม่มีปุ่มดูดวง/ขาย ไม่แจ้งแอดมิน ไม่ติดธง persona
-     */
-    public function test_someone_elses_self_harm_gets_an_ai_reply_without_any_sales_push(): void
-    {
-        Queue::fake();
-
-        $this->runFlush('facebook', self::FB_UID, 'แฟนขู่จะฆ่าตัวตายถ้าเลิก ควรเลิกไหมคะ');
-
-        $this->assertNotSame([], $this->aiCalls, 'ต้องให้ AI ตอบ');
-        $sent = $this->sentBodies('graph.facebook.com');
-        $this->assertStringContainsString('แม่หมอดูให้แล้วค่ะ', $sent);
-        $this->assertStringNotContainsString('อยู่ฟังตรงนี้', $sent, 'ไม่ใช่คำปลอบของคนที่อยากทำร้ายตัวเอง');
-        $this->assertStringNotContainsString('quick_replies', $sent, 'ห้ามมีปุ่มดูดวง/ปุ่มขาย');
-        $this->assertStringNotContainsString('START_FORTUNE', $sent);
-        $this->assertStringNotContainsString('OFFER_FORTUNE', $sent);
-        $this->assertSame([], $this->adminAlerts());
-        $persona = FortuneCustomerPersona::findByPlatformUser('facebook', self::FB_UID);
-        $this->assertFalse((bool) $persona?->hasRiskFlag('mental_fragile'));
-    }
-
-    /** 🤍 (2026-11-06 รีวิว PR 2649) ถามเรื่องพระแขวนคอ ไม่ใช่วิกฤต — ตอบตามปกติ ไม่แจ้งแอดมิน */
-    public function test_an_amulet_question_is_not_a_crisis(): void
-    {
-        Queue::fake();
-
-        $this->runFlush('facebook', self::FB_UID, 'ใส่พระแขวนคอองค์ไหนดีคะแม่หมอ');
-
-        $this->assertNotSame([], $this->aiCalls);
-        $this->assertStringNotContainsString('อยู่ฟังตรงนี้', $this->sentBodies('graph.facebook.com'));
-        $this->assertSame([], $this->adminAlerts());
-        $persona = FortuneCustomerPersona::findByPlatformUser('facebook', self::FB_UID);
-        $this->assertFalse((bool) $persona?->hasRiskFlag('mental_fragile'));
-    }
-
-    /** 🟢 (2026-11-04) LINE reply ไม่ออก (token ตาย/ไม่มี) → ❌ ห้ามตกไป push · แอดมินยังได้แจ้งเตือน */
-    public function test_line_crisis_reply_never_falls_back_to_push(): void
-    {
-        Queue::fake();
-        $this->lineReplyRejected = true;
-
-        $channels = app(FortuneChannelManager::class);
-        $withDeadToken = $channels->processMessage('line', self::LINE_UID, 'อยากฆ่าตัวตาย', ['name' => 'ลูกค้าทดสอบ'], ['reply_token' => 'rt-dead']);
-        $withoutToken = $channels->processMessage('line', self::LINE_UID, 'อยากตาย', ['name' => 'ลูกค้าทดสอบ']);
-
-        $this->assertSame('crisis_support', $withDeadToken['action']);
-        $this->assertSame('crisis_support', $withoutToken['action']);
-        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/message/push'));
-        $this->assertCount(1, $this->adminAlerts(), 'แอดมินต้องรู้ แม้ส่งถึงลูกค้าไม่ได้');
+        $this->assertTreatedAsNormalChat($reply, 'line', self::LINE_UID);
     }
 }
