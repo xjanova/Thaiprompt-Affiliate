@@ -1670,6 +1670,14 @@ Route::prefix('v1/juntra/server')
             Route::post('/slips/claim', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'claim'])
                 ->name('slips.claim');
 
+            // 🧾 (2026-11-10) สลิปที่ลูกค้าส่งในแชทเพจ บอทตรวจแล้วพักไว้ให้เว็บจันทรามารับไปเติมกระเป๋า
+            Route::post('/chat-slips/fetch', [\App\Http\Controllers\Api\Juntra\Server\ChatSlipController::class, 'fetch'])
+                ->name('chat-slips.fetch');
+            Route::post('/chat-slips/pending', [\App\Http\Controllers\Api\Juntra\Server\ChatSlipController::class, 'pending'])
+                ->name('chat-slips.pending');
+            Route::post('/chat-slips/resolve', [\App\Http\Controllers\Api\Juntra\Server\ChatSlipController::class, 'resolve'])
+                ->name('chat-slips.resolve');
+
             Route::post('/amounts/reserve', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'reserve'])
                 ->name('amounts.reserve');
             Route::post('/amounts/release', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'release'])
