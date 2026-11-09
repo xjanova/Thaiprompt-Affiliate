@@ -150,6 +150,23 @@ class SmsPaymentController extends Controller
             $orderDetails['customer_name'] = $order->user?->name ?? $txn->user?->name ?? null;
         }
 
+        // 🏦 (2026-11-09) บิลเติมเงินแบบโอนธนาคาร + แนบสลิป → ส่งเส้นทางรูปสลิป (รูปดึงได้เฉพาะเครื่องแอดมิน)
+        //    รูปแบบเดียวกับ slip ของบิลดูดวง ให้แอพโชว์ปุ่มดูสลิปก่อนกดอนุมัติ
+        if ($txn->payment_method === \App\Services\PaymentGatewayService::BANK_SLIP_METHOD) {
+            $orderDetails['product_name'] = 'เติมเงินกระเป๋า (โอนธนาคาร + สลิป) — รอตรวจสลิป';
+            if (! empty($txn->metadata['slip_path'])) {
+                $orderDetails['slip'] = [
+                    'log_id' => null,
+                    'image_path' => 'api/v1/sms-payment/orders/'.rawurlencode((string) $txn->transaction_id).'/slip-image',
+                    'trans_ref' => null,
+                    'sender_name' => null,
+                    'receiver_account' => null,
+                    'amount' => (float) $txn->amount,
+                    'checked_at' => $txn->created_at?->toIso8601String(),
+                ];
+            }
+        }
+
         // ดึง matched notification ถ้ามี
         $notification = null;
         $matchedNotification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
@@ -1155,6 +1172,31 @@ class SmsPaymentController extends Controller
         }
 
         $resolved = $this->resolveOrderByIdentifier($identifier);
+
+        // 🏦 (2026-11-09) บิลเติมเงินแบบโอนธนาคาร + แนบสลิป — แอดมินต้องเห็นสลิปก่อนกดอนุมัติ
+        //    สลิปเก็บใน disk 'local' (ส่วนตัว) path อยู่ใน metadata.slip_path
+        if ($resolved && $resolved['type'] === 'transaction'
+            && ($resolved['model']->payment_method ?? null) === \App\Services\PaymentGatewayService::BANK_SLIP_METHOD) {
+            $path = (string) ($resolved['model']->metadata['slip_path'] ?? '');
+
+            if ($path === '' || ! Storage::disk('local')->exists($path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบรูปสลิปของบิลนี้',
+                ], 404);
+            }
+
+            $device->update([
+                'last_active_at' => now(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            return Storage::disk('local')->response($path, null, [
+                'Content-Type' => Storage::disk('local')->mimeType($path) ?: 'image/jpeg',
+                'Cache-Control' => 'private, no-store',
+            ]);
+        }
+
         if (! $resolved || $resolved['type'] !== 'fortune') {
             return response()->json([
                 'success' => false,

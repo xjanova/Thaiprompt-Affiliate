@@ -843,9 +843,11 @@ class WalletController extends Controller
                 ]
             );
 
+            // รหัสอ้างอิง = เลขบิลจริงใน payment_transactions (แอดมินค้นเจอในแอป SMS Checker)
             return redirect()->route('user.wallet.index')
-                ->with('success', 'อัพโหลดสลิปเรียบร้อยแล้ว รหัสอ้างอิง: '.$result['reference'].' กรุณารอการตรวจสอบจากแอดมิน 1-24 ชั่วโมง');
+                ->with('success', 'ส่งคำขอฝากเงินเรียบร้อย รหัสอ้างอิง: '.$result['reference'].' กรุณารอแอดมินตรวจสลิป 1-24 ชั่วโมง');
         } catch (Exception $e) {
+            // service โยนเฉพาะข้อความไทยที่แสดงลูกค้าได้ (ไม่มี error ดิบของระบบ)
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }

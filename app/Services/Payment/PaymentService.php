@@ -324,6 +324,20 @@ class PaymentService
 
             $transaction->markAsCompleted();
 
+            // 🐛 (2026-11-09) markAsCompleted() เงียบ (ไม่เปลี่ยนสถานะ) ถ้าบิลเป็น failed/cancelled/refunded
+            //    เดิมโค้ดเดินต่อไปเติมเงินทั้งที่บิลยังไม่ completed → เรียกซ้ำ (เช่นปุ่ม retry ของแอดมิน)
+            //    ก็ผ่าน isCompleted() อีก = เติมเงินซ้ำได้ไม่จำกัด
+            //    บิลเติมเงินต้อง completed จริงก่อนจึงเติม (ทาง force approve ของแอป reset เป็น pending ให้ก่อนแล้ว)
+            //    จำกัดเฉพาะ wallet_topup — ออเดอร์ (Stripe/Razorpay webhook) คงพฤติกรรมเดิม
+            if ($transaction->type === 'wallet_topup' && ! $transaction->isCompleted()) {
+                Log::warning('PaymentService: skip wallet topup credit — transaction is not completable', [
+                    'transaction_id' => $transaction->transaction_id,
+                    'status' => $transaction->status,
+                ]);
+
+                return false;
+            }
+
             // Handle different transaction types
             switch ($transaction->type) {
                 case 'order_payment':
@@ -511,11 +525,15 @@ class PaymentService
             'transaction_amount' => $transaction->amount,
         ]);
 
-        // Get or create wallet
-        $wallet = Wallet::firstOrCreate(
+        // Get or create wallet แล้ว lock แถว
+        // 🐛 (2026-11-09) เดิมอ่าน balance จาก object ที่ไม่ได้ lock แล้วเขียนทับ balance+ยอด
+        //    ถ้ามีการตัดเงิน/โอนเงินของกระเป๋าเดียวกันพร้อมกัน ยอดของอีกฝั่งจะหายหรือถูกเขียนทับ
+        //    (completePayment ครอบ DB::transaction อยู่แล้ว → lock อยู่จนจบ transaction)
+        Wallet::firstOrCreate(
             ['user_id' => $user->id],
             ['balance' => 0]
         );
+        $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->firstOrFail();
 
         // Create wallet transaction
         // ⚠️ ต้องใส่ user_id, balance_before, status='completed' ให้ถูกต้องตาม schema
@@ -526,7 +544,9 @@ class PaymentService
             'amount' => $depositAmount,
             'balance_before' => $wallet->balance,
             'balance_after' => $wallet->balance + $depositAmount,
-            'description' => 'เติมเงินผ่าน '.$transaction->payment_method,
+            'description' => 'เติมเงินผ่าน '.($transaction->payment_method === \App\Services\PaymentGatewayService::BANK_SLIP_METHOD
+                ? 'โอนธนาคาร (แนบสลิป)'
+                : $transaction->payment_method),
             'status' => 'completed',
             'completed_at' => now(),
             'metadata' => [
