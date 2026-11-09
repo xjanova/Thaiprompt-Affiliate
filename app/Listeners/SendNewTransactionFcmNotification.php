@@ -36,8 +36,8 @@ class SendNewTransactionFcmNotification implements ShouldQueue
             return;
         }
 
-        // ส่ง FCM เฉพาะบิลที่ต้องรอชำระเงิน (promptpay/bank_transfer)
-        if (! in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+        // ส่ง FCM เฉพาะบิลที่ต้องรอชำระเงิน/รอตรวจ (promptpay/bank_transfer/โอนแล้วแนบสลิป)
+        if (! in_array($transaction->payment_method, ['promptpay', 'bank_transfer', \App\Services\PaymentGatewayService::BANK_SLIP_METHOD])) {
             return;
         }
 

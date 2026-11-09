@@ -201,6 +201,18 @@ class WalletSettingSeeder extends Seeder
                 'sort_order' => 13,
             ],
             [
+                // 🆕 (2026-11-09) เดิมช่องทางนี้เปิดแบบ hardcode ไม่มีปุ่มปิด/เปิด
+                'key' => 'bank_transfer_enabled',
+                'group' => 'payment_methods',
+                'value' => '0',
+                'type' => 'boolean',
+                'label' => 'เปิดใช้งานโอนผ่านธนาคาร (แนบสลิป)',
+                'description' => 'ให้ผู้ใช้โอนเงินแล้วแนบสลิป — ทุกรายการรอแอดมินอนุมัติในแอป SMS Checker ก่อนเงินเข้า',
+                'is_active' => true,
+                'is_public' => true,
+                'sort_order' => 13,
+            ],
+            [
                 'key' => 'stripe_enabled',
                 'group' => 'payment_methods',
                 'value' => '0',
