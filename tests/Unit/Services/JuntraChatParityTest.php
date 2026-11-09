@@ -203,14 +203,16 @@ class JuntraChatParityTest extends TestCase
         $this->assertNotContains('ทำไงดี', array_column($history, 'content'));
     }
 
-    /** เล่าว่าคนอื่นอยากทำร้ายตัวเอง — ห้องดูแลใจ ไม่ใส่ตัวอย่าง (สายขายห้ามโผล่) */
-    public function test_ห้องที่เล่าเรื่องวิกฤตของคนอื่น_ไม่ใส่ตัวอย่าง(): void
+    /** 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm แล้ว — เล่าว่าคนอื่นอยากทำร้ายตัวเองก็ได้ตัวอย่างตามปกติ (ตัดหมวดสายขายเหมือนทุกเทิร์น) */
+    public function test_ห้องที่เล่าเรื่องคนอื่นอยากตาย_ได้ตัวอย่างตามปกติ(): void
     {
         $ai = $this->fakeAi([self::CLEAN]);
 
         $this->chat($ai)->send('u1', 's9', 'เพื่อนสนิทบอกว่าอยากตาย หนูควรทำยังไงดีคะ');
 
-        $this->assertSame([], $ai->rag);
+        $this->assertCount(1, $ai->rag);
+        $this->assertSame('เพื่อนสนิทบอกว่าอยากตาย หนูควรทำยังไงดีคะ', $ai->rag[0]['messageText']);
+        $this->assertContains('pre_purchase', $ai->rag[0]['excludeCategories'], 'ยังตัดตัวอย่างสายขายเหมือนเดิม');
     }
 
     /** ข้อมูลจริงจาก fortune_admin_qa บน prod (หมวดทั่วไป/หลังอ่าน) */

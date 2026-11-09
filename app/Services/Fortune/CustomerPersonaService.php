@@ -282,37 +282,6 @@ class CustomerPersonaService
     }
 
     /**
-     * 🤍 (2026-11-03) ลูกค้าเพิ่งบอกว่าอยากทำร้ายตัวเอง และบอทเพิ่งตอบคำปลอบไป (2026-11-04: ไม่มีเบอร์สายด่วน)
-     *
-     * - mental_fragile = true ทันที (ไม่รอ extraction job) → เทิร์นถัดไป AI ได้ MENTAL_FRAGILE: ตอบสั้น นุ่ม ห้าม pitch
-     *   และห้องแชทบนเว็บจันทราที่เปิดต่อจากลูกค้าคนนี้เริ่มเป็นห้องวิกฤต (WebChatContinuityService::personaInCrisis)
-     * - crisis_resources_sent = เวลาที่ตอบคำปลอบ (ชื่อคีย์เดิม — ไม่ได้แปลว่าให้เบอร์ไป)
-     * - ล้างธงปิดปาก (rambler silence) — คนกำลังวิกฤตต้องไม่เจอบอทเงียบในข้อความถัดไป
-     *
-     * best-effort — ห้าม throw ขวางคำตอบถึงลูกค้า
-     */
-    public function flagCrisis(string $platform, string $userId, ?string $displayName = null): void
-    {
-        try {
-            $persona = FortuneCustomerPersona::getOrCreate($platform, $userId, $displayName);
-
-            $flags = $persona->risk_flags ?? [];
-            $flags['mental_fragile'] = true;
-            $persona->risk_flags = $flags;
-            $persona->chat_silenced_until = null;
-            $persona->markCrisisResourcesSent(); // save() อยู่ในนี้
-
-            $this->invalidateCache($platform, $userId);
-        } catch (\Throwable $e) {
-            Log::warning('CustomerPersonaService: flagCrisis ล้มเหลว (non-blocking)', [
-                'platform' => $platform,
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
      * 🔊 (2026-07-11) ลูกค้าจ่ายเงินแล้ว → ล้างธง "ปิดปาก" (rambler/time-waster silence) ทิ้ง + invalidate cache
      *
      * เคส FTU-260711-T4317 (reading 9003): ลูกค้าจ่าย Deep 39฿ แต่โดน chat_silenced_until ค้าง
@@ -774,39 +743,6 @@ class CustomerPersonaService
         ];
 
         foreach ($critical as $kw) {
-            if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 🤍 (2026-06-03) ตรวจ "สัญญาณคิดสั้น/ทำร้ายตัวเอง/หมดหวัง" เฉพาะข้อความปัจจุบัน
-     *
-     * แคบกว่า hasCriticalKeyword() มาก — ❌ ตัดคำหยาบ/โดนโกง/troll ออกทั้งหมด
-     * (คนโกรธ/โดนหลอก/บ่น ≠ คนคิดสั้น — ห้ามยื่นสายด่วนใจให้จนรู้สึกถูกตราหน้าว่า "โรคจิต")
-     *
-     * ใช้ gate ประโยคปลอบให้ออกเฉพาะตอนวิกฤตจริงในเทิร์นนั้น
-     * (ดู FortuneCustomerPersona::buildRiskGuidanceLines)
-     */
-    public function hasSelfHarmSignal(string $text): bool
-    {
-        $lower = mb_strtolower(trim($text));
-        if ($lower === '') {
-            return false;
-        }
-
-        // เฉพาะสัญญาณทำร้ายตัวเอง / สิ้นหวังหนัก — ไม่รวมคำหยาบ / scam / ขี้บ่น
-        $signals = [
-            'ฆ่าตัวตาย', 'ฆ่าตัวเอง', 'อยากตาย', 'ไม่อยากอยู่', 'ไม่อยากมีชีวิต',
-            'อยากจบชีวิต', 'จบชีวิต', 'ปลิดชีพ', 'ทำร้ายตัวเอง', 'ทําร้ายตัวเอง',
-            'กรีดข้อมือ', 'กินยาตาย', 'กระโดดตึก', 'ผูกคอ',
-            'หมดหวัง', 'สิ้นหวัง', 'ไม่ไหวแล้ว', 'อยู่ไปก็เท่านั้น', 'หายไปจากโลก',
-        ];
-
-        foreach ($signals as $kw) {
             if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
                 return true;
             }

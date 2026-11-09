@@ -712,17 +712,6 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // 🤍 (2026-11-03) สัญญาณอยากทำร้ายตัวเอง — ปลอบเบา ๆ ก่อนทุก flow
-            // ═══════════════════════════════════════════════════════════════
-            //   จุดนี้ทุกข้อความ FB/LINE/Telegram ผ่าน ⇒ ครอบทั้งแชท AI, เส้น Pro sensitive (ไม่มี guard),
-            //   partial hold และกลางบททำนาย (ข้อยกเว้นของกฎ "ห้ามแทรกระหว่างทำนาย" — ชีวิตคนมาก่อน)
-            //   ไม่แตะสถานะ reading/บิล — ข้อความถัดไปกลับเข้า flow เดิมได้ตามปกติ
-            $selfHarmReply = $this->maybeHandleSelfHarmMessage($facebookUserId, $messageText, $userProfile);
-            if ($selfHarmReply !== null) {
-                return $selfHarmReply;
-            }
-
-            // ═══════════════════════════════════════════════════════════════
             // 🤝 Admin Handover Hard Guard — ใช้ shouldBypassTakeover (DRY)
             // ═══════════════════════════════════════════════════════════════
             try {
@@ -2569,35 +2558,8 @@ class FortuneConversationService
 
                     // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                     if ($this->isCancelRequest($messageText)) {
-                        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment (กันลูกค้าหาย)
-                        //   user spec: "กดยกเลิก สอบถามยูสเซ่อร์ก่อนว่าติดปัญหาอะไร"
-                        //   เฉพาะ pending_payment + celtic_pending_payment เท่านั้น
-                        //   (สถานะอื่น เช่น collecting_birthdate → ยกเลิกได้เลย ไม่มีบิลเสียหาย)
-                        // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
-                        $pendingPaymentStatuses = [
-                            FortuneReading::STATUS_PENDING_PAYMENT,
-                            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
-                            FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
-                        ];
-                        if (in_array($activeReading->conversation_status, $pendingPaymentStatuses, true)) {
-                            $platformKey = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
-                            $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$facebookUserId}";
-                            $hasAsked = Cache::has($cancelCacheKey);
-
-                            // explicit confirm phrases → bypass prompt
-                            $explicitConfirm = $this->matchesExactKeyword($messageText, [
-                                'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
-                                'cancel confirm', 'confirm cancel',
-                            ]);
-
-                            if (! $hasAsked && ! $explicitConfirm) {
-                                // เข้า cancel dialogue (AI-driven)
-                                return $this->enterCancelDialogue($activeReading);
-                            }
-
-                            // มี cache flag หรือ explicit confirm → ดำเนินการ cancel ปกติ
-                            Cache::forget($cancelCacheKey);
-                        }
+                        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — เลิก "ถามก่อนยกเลิก" (cancel dialogue) แล้ว
+                        //   บิลที่รอจ่ายก็ยกเลิกทันทีเหมือนสถานะอื่น ไม่ถามเหตุผล ไม่โน้มน้าว ไม่โชว์ของขาย
 
                         // 🩹 (2026-05-08 audit fix UX-6) — paid Celtic picking/QA "ยกเลิก" → admin alert
                         //   ลูกค้าจ่าย 99฿ + กำลังเปิดไพ่/ถามอยู่ → "ยกเลิก" → silently exit ไม่ได้
@@ -2653,12 +2615,13 @@ class FortuneConversationService
                             return $hold;
                         }
 
-                        // 📜 (2026-06-06) ส่ง messageText → sendCancelConsentOrWakeup แยกเจตนา (เบี้ยว vs สุดวิสัย)
+                        // ส่ง messageText = ลูกค้าพิมพ์ยกเลิกเอง → sendCancelNotice ไม่ส่งซ้ำ (คำตอบด้านล่างพอแล้ว)
                         $this->closeAllActiveConversations($facebookUserId, $messageText);
 
+                        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่ชวนพิมพ์ดูดวง
                         return [
                             'action' => 'cancelled',
-                            'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                            'message' => FortuneReading::CANCEL_NOTICE,
                             'reading' => $activeReading,
                         ];
                     }
@@ -4721,6 +4684,8 @@ class FortuneConversationService
      * ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
      * เรียกก่อนสร้าง conversation ใหม่เสมอ
      *
+     * @param  string|null  $cancelReasonText  ไม่ null = ลูกค้าขอยกเลิกเอง และ caller ตอบ "ยกเลิกให้แล้ว" ในเทิร์นนี้เอง
+     *                                           → ไม่ส่งข้อความแจ้งยกเลิกบิลแยกอีก (กันข้อความซ้ำ) · null = แจ้งบรรทัดเดียว
      * @param  int|null  $exceptReadingId  แถวที่ห้ามปิด — แถวเมนูที่กำลังจะใช้ต่อเป็นบิล (ดู findTierMenuReadingToReuse)
      */
     protected function closeAllActiveConversations(string $facebookUserId, ?string $cancelReasonText = null, ?int $exceptReadingId = null): int
@@ -4821,18 +4786,15 @@ class FortuneConversationService
                 ]);
             }
 
-            // 💭 ส่งคำเตือนสติให้ลูกค้าที่กดยกเลิกบิลเอง (เฉพาะกรณีมีบิล PENDING_PAYMENT)
-            //   เหตุผล: ลูกค้าตัดสินใจไม่จ่ายค่าครู ก็เหมือนกับ auto-expire — ใช้โอกาสได้ educate
-            //   header แตกต่างจาก auto: "✋ รับทราบ — ยกเลิกตามคำขอ" แทน "🚫 ยกเลิกอัตโนมัติ"
+            // 🙏 (2026-11-09 owner) แจ้งยกเลิกบิลแบบกลาง ๆ (เฉพาะกรณีมีบิล PENDING_PAYMENT)
+            //   ลูกค้าพิมพ์ยกเลิกเอง → ไม่ส่งเพิ่ม (caller ตอบแล้ว) · ระบบปิดบิลเดิมระหว่าง flow → แจ้งบรรทัดเดียว
             if ($pendingReadings->isNotEmpty()) {
                 try {
                     foreach ($pendingReadings as $cancelledReading) {
-                        // 📜 (2026-06-06) แยกเจตนา: ฝืนกติกา/เบี้ยว → รูป + เตือนแรง /
-                        //   เหตุสุดวิสัย (โอนไม่ได้) หรือ flow-internal ($cancelReasonText=null) → wakeup เดิม
-                        $this->sendCancelConsentOrWakeup($cancelledReading, $cancelReasonText);
+                        $this->sendCancelNotice($cancelledReading, $cancelReasonText);
                     }
                 } catch (\Throwable $wakeupErr) {
-                    Log::warning('Fortune: ส่งคำเตือนสติ user_cancelled ล้มเหลว (best-effort)', [
+                    Log::warning('Fortune: ส่งข้อความแจ้งยกเลิกบิลล้มเหลว (best-effort)', [
                         'facebook_user_id' => $facebookUserId,
                         'error' => $wakeupErr->getMessage(),
                     ]);
@@ -6059,36 +6021,10 @@ class FortuneConversationService
 
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
         // 🩹 (2026-05-08 audit fix CRIT-1) — route ผ่าน closeAllActiveConversations
-        //   เพื่อให้ UPA cancel + FCM push + wisdom DM ทำงาน
+        //   เพื่อให้ UPA cancel + FCM push + แจ้งยกเลิกบิล ทำงาน
         //   เดิม: update status ตรงๆ → SMS app ยังเห็นบิลค้าง → user เห็น "บิลกลับมา"
-        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment — ตรงกับ guard ด้านบน
+        // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — บิลที่รอจ่ายยกเลิกทันที (เลิก "ถามก่อนยกเลิก" แล้ว)
         if ($this->isCancelRequest($messageText)) {
-            // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
-            $pendingPaymentStatuses = [
-                FortuneReading::STATUS_PENDING_PAYMENT,
-                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
-                FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
-            ];
-            if (in_array($status, $pendingPaymentStatuses, true)) {
-                $platformKey = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
-                $userKey = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
-                $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$userKey}";
-                $hasAsked = ! empty($userKey) && Cache::has($cancelCacheKey);
-
-                $explicitConfirm = $this->matchesExactKeyword($messageText, [
-                    'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
-                    'cancel confirm', 'confirm cancel',
-                ]);
-
-                if (! $hasAsked && ! $explicitConfirm) {
-                    return $this->enterCancelDialogue($reading);
-                }
-
-                if (! empty($userKey)) {
-                    Cache::forget($cancelCacheKey);
-                }
-            }
-
             // 🔒 (2026-09-16 FTU-260916-C5482) ดูดวง 39 จ่ายแล้วกลางขั้นตอน — "ยกเลิก" ไม่มีผล (คู่กับด่านใน processMessage)
             if (($hold = $this->paidDeepStepHoldReply($reading)) !== null) {
                 Log::info('Fortune continueConversation: ขอยกเลิกระหว่างทำนาย (จ่ายแล้ว) → คงบิล พากลับขั้นเดิม', [
@@ -6101,7 +6037,8 @@ class FortuneConversationService
 
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (! empty($userId)) {
-                $this->closeAllActiveConversations($userId);
+                // ส่ง messageText = ลูกค้าพิมพ์ยกเลิกเอง → ไม่ส่งแจ้งยกเลิกบิลซ้ำกับคำตอบด้านล่าง
+                $this->closeAllActiveConversations($userId, $messageText);
             } else {
                 // fallback ถ้า userId หาย — update status ตรงๆ
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -6109,7 +6046,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'cancelled',
-                'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                'message' => FortuneReading::CANCEL_NOTICE,
                 'reading' => $reading,
             ];
         }
@@ -8553,7 +8490,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'cancelled',
-                'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                'message' => FortuneReading::CANCEL_NOTICE,
                 'reading' => $reading,
             ];
         }
@@ -20684,68 +20621,6 @@ class FortuneConversationService
      * เคสที่เจอ: ลูกค้าเก่าโอน slip หาย / สแกน QR ไม่ได้ / ต้องการบัญชีไว้โอนเอง
      */
     /**
-     * 🛑 (2026-05-15 v2) AI-driven Cancel Dialogue — ถามลูกค้าก่อนยกเลิกแบบสนทนาจริง
-     *
-     * user spec:
-     *   "ถามเหตุผล ทำไมยกเลิก แล้วให้เอไอเข้ามาถามคุยเพื่อหาปัญหา ตามจริง ไม่ใช่แพทเทิร์น
-     *    แล้วบอทต้องเข้าใจว่าลูกต้องการให้ช่วยอะไร บอทก็จะพาไปแก้ปัญหา
-     *    แต่ถ้าโน้มน้าวแล้ว ลูกค้าเหมือนจะเริ่มรำคาญจะยกเลิก ให้ได้ ก็ให้ยืนยันแล้วยกเลิก
-     *    ตัดเข้าการสนทนาปกติ"
-     *
-     * Flow:
-     *   1. enterCancelDialogue() — set cache + AI ส่งคำถามเปิด (รอบ 1)
-     *   2. tryHandleCancelDialogue() — early-route ถัดมา → AI ฟัง + decide
-     *   3. AI tags ที่ parse:
-     *      - [HELP_TRANSFER] → presentPaymentInfo
-     *      - [ROUTE_ADMIN]   → AI message + guide ให้พิมพ์ "คุยกับแม่หมอ"
-     *      - [ACCEPT_CANCEL] → executeCancelAndReturnToChat
-     *      - [KEEP_BILL]     → ลูกค้าเปลี่ยนใจ → clear cache + กลับ flow ปกติ
-     *      - (no tag)        → keep asking (max 3 rounds, then force ACCEPT_CANCEL)
-     *   4. Annoyance detection:
-     *      - keyword: "พอแล้ว"/"ปล่อย"/"รำคาญ"/"!!" → force ACCEPT_CANCEL
-     *      - round ≥ 3 → force ACCEPT_CANCEL (ไม่กดดัน)
-     *
-     * Cache: fortune:cancel_dialog:{platform}:{userId} TTL 15 min
-     */
-    protected function enterCancelDialogue(FortuneReading $reading): array
-    {
-        $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
-        $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
-
-        if (! empty($userId)) {
-            Cache::put(
-                "fortune:cancel_dialog:{$platform}:{$userId}",
-                [
-                    'reading_id' => $reading->id,
-                    'rounds' => 1,
-                    'reasons' => [],
-                    'started_at' => now()->toIso8601String(),
-                    'bill_ref' => $reading->bill_reference,
-                ],
-                now()->addMinutes(15)
-            );
-        }
-
-        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
-
-        Log::info('Fortune: เข้า cancel dialogue (AI-driven)', [
-            'reading_id' => $reading->id,
-            'platform' => $platform,
-            'user_id' => $userId,
-            'bill_reference' => $reading->bill_reference,
-        ]);
-
-        return [
-            'action' => 'cancel_dialog_ask',
-            'message' => "🙏 รอสักครู่นะคะ คุณ{$name}\n\n"
-                ."ก่อนยกเลิก — แม่หมอขอถามได้ไหมคะ เกิดอะไรขึ้น?\n"
-                ."ลูกค้าหลายคนติดปัญหานิดเดียว แต่แม่หมอช่วยได้นะ ✨\n\n"
-                .'_(พิมพ์ "ยืนยันยกเลิก" ถ้าต้องการยกเลิกแน่นอน)_',
-            'reading' => $reading,
-        ];
-    }
-
-    /**
      * 🔒 (2026-05-24) ตรวจว่าลูกค้าถามต่อยอด fortune หลังจบ Celtic 5Q
      *
      * User spec: "ใครที่ถามเกิน 5 คำถาม ก็ตอบ ต้องเปิดไพ่ชุดใหม่"
@@ -21227,6 +21102,9 @@ class FortuneConversationService
 
     /**
      * 🛑 (2026-05-15 v2) Handle cancel dialogue — AI listens, parses tags, decides action
+     *
+     * 🙏 (2026-11-09 owner) เลิกเปิด cancel dialogue แล้ว (ลบ enterCancelDialogue) — เส้นนี้ทำงานเฉพาะห้องที่เปิดค้างไว้
+     *   ก่อน deploy (cache fortune:cancel_dialog:* TTL 15 นาที) ให้ปิดจบเรียบร้อย · ลบทั้งชุดได้ในรอบถัดไป
      */
     protected function tryHandleCancelDialogue(string $platform, string $userId, string $messageText, ?array $userProfile = null): ?array
     {
@@ -21687,7 +21565,8 @@ PROMPT;
     {
         $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
         if (! empty($userId)) {
-            $this->closeAllActiveConversations($userId);
+            // ส่ง reason (ไม่ null) → ไม่ส่งแจ้งยกเลิกบิลซ้ำ — คำตอบด้านล่างบอกแล้วว่ายกเลิก
+            $this->closeAllActiveConversations($userId, $reason);
         } else {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
         }
@@ -21699,10 +21578,9 @@ PROMPT;
         ]);
 
         return [
+            // 🙏 (2026-11-09 owner) "ยกเลิกก็ยกเลิกแค่นั้น" — ไม่ชวนพิมพ์ดูดวง
             'action' => 'cancelled_to_chat',
-            'message' => "🙏 ยกเลิกบิลให้แล้วค่ะ\n\n"
-                ."ถ้าเจ้าชะตามีอะไรอยากปรึกษา แม่หมออยู่ตรงนี้นะคะ ✨\n"
-                .'_พิมพ์ "ดูดวง" เมื่อพร้อมเริ่มใหม่_',
+            'message' => FortuneReading::CANCEL_NOTICE,
             'reading' => $reading,
         ];
     }
@@ -22868,9 +22746,6 @@ PROMPT;
                     'pending_payment' => 'ผู้ใช้มีบิลรอชำระอยู่ — ต้องโอนเงินตามยอดในบิล หรือพิมพ์ "ยกเลิก". ถ้าถาม "ดูก่อนจ่ายทีหลังได้ไหม/ทำไมต้องจ่ายก่อน/ฟรีไหม" → บอกสุภาพว่าบริการนี้ชำระก่อนนะคะ เพราะแม่หมอเปิดไพ่ทำนายให้ทันทีหลังโอน (เป็นค่าครู/ค่าเปิดไพ่) — ไม่กดดัน ถ้ายังไม่พร้อมบอก "ไว้คราวหน้าได้นะคะ"',
                     // 💳 (2026-05-09) Stripe payment states
                     'awaiting_payment_method' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกวิธีชำระเงิน" — มี 2 ปุ่ม: "QR ไทย" หรือ "บัตร ตปท." (Visa/Mastercard +15 บาท). *ถ้าผู้ใช้ถามคำถาม ต้องตอบคำถามนั้นก่อน*: "ดูดวงก่อนแล้วจ่ายทีหลังได้ไหม/ทำไมต้องจ่ายก่อน/ฟรีไหม" → บอกสุภาพตามจริงว่าบริการนี้ชำระก่อนรับบริการนะคะ เพราะแม่หมอจะเปิดไพ่ทำนายให้ทันทีหลังชำระ (เป็นค่าครู/ค่าเปิดไพ่) ไม่ใช่ระบบดูฟรีก่อน — *ไม่กดดัน ไม่ตื้อ* ถ้ายังไม่พร้อมบอก "ไม่เป็นไรค่ะ ไว้พร้อมแล้วทักมาได้เลยนะคะ" / ราคา → บอกตามจริง / เชื่อได้ไหม → ให้กำลังใจ. ตอบเสร็จระบบจะแนบปุ่มวิธีจ่ายให้เอง',
-                    // 🤍 (2026-11-09) ลูกค้าเล่าว่าคนใกล้ตัวอยากทำร้ายตัวเอง ระหว่างเลือกแพคเกจ (crisisReplyDuringPackageChoice)
-                    //   กฎเจ้าของ: ปลอบเบา ๆ อย่างเดียว ไม่ไล่ไปโทรหาใคร ไม่สั่งสอน ไม่ขาย
-                    'crisis_care' => 'ลูกค้ากำลังเล่าเรื่องหนักใจที่มีคนใกล้ตัวคิดทำร้ายตัวเอง — ตอนนี้ไม่ใช่เวลาขายหรือพาไปขั้นตอนใด ๆ: ตอบด้วยความห่วงใยสั้น ๆ รับฟัง และชวนเล่าต่อถ้าอยากเล่า. ❌ ห้ามพูดถึงแพคเกจ ราคา การจ่ายเงิน การดูดวง หรือการเปิดไพ่ ❌ ห้ามแนะนำให้โทรหาใครหรือให้เบอร์ใด ๆ ❌ ห้ามสั่งสอนว่าควรทำอะไร',
                     'pending_stripe_payment' => 'ผู้ใช้กำลังรอจ่ายผ่านบัตรเครดิต Stripe — ระบบส่งลิงก์ checkout ให้แล้ว — แนะให้กดลิงก์ หรือพิมพ์ "qr ไทย" เพื่อกลับมาเลือก QR Thai',
                     // 🎴 (2026-05-19 Batch 3) Tier choice — ลูกค้าเลือกแพคเกจ
                     // 🌙 (2026-05-23) dynamic — ใส่ tier ตามที่ enable เท่านั้น
@@ -23431,46 +23306,6 @@ PROMPT;
     }
 
     public function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
-    {
-        // 🤍 (2026-11-03) ProcessBufferedChatMessageJob เรียกตรงนี้โดยไม่ผ่าน processMessage
-        //   → ดักซ้ำที่นี่ ก่อนด่านปิดปาก rambler (คนวิกฤตห้ามโดนเงียบ)
-        $selfHarmReply = $this->maybeHandleSelfHarmMessage($userId, $messageText, $userProfile);
-        if ($selfHarmReply !== null) {
-            return $selfHarmReply;
-        }
-
-        return $this->quietOthersCrisisReply(
-            $this->aiChatResponseFor($userId, $messageText, $userProfile, $dmContext, $bypassBuffer),
-            $messageText
-        );
-    }
-
-    /**
-     * 🤍 (2026-11-06) ลูกค้าเล่าว่าคนอื่นอยากทำร้ายตัวเอง ("แฟนขู่จะฆ่าตัวตาย" / "แม่ฆ่าตัวตายเมื่อปีก่อน")
-     *
-     * ไม่ใช่วิกฤตของลูกค้าเอง → ให้ AI ตอบตามปกติ (system prompt มีกฎดูแลใจเมื่อเจอคำวิกฤตอยู่แล้ว)
-     * แต่คำตอบเทิร์นนี้ต้องไม่มีอะไรขาย: เปลี่ยนเป็น action crisis_support = ข้อความล้วน ไม่มีปุ่มดูดวง/ชวนย้าย
-     * ไม่แทรกโฆษณาคอมมิชชั่น ไม่หน่วง 15 วิ และ LINE ตอบด้วย reply เท่านั้น
-     * ไม่ติดธงเปราะบาง ไม่แจ้งแอดมิน (ไม่ใช่ตัวลูกค้า)
-     */
-    protected function quietOthersCrisisReply(?array $result, string $messageText): ?array
-    {
-        if (! is_array($result)
-            || ($result['action'] ?? null) !== 'ai_chat_response'
-            || trim((string) ($result['message'] ?? '')) === ''
-            || ! FortuneAIService::mentionsOthersSelfHarm($messageText)) {
-            return $result;
-        }
-
-        $result['action'] = 'crisis_support';
-        $result['offer_fortune'] = false;
-        $result['message'] = trim((string) preg_replace('/\s*\[(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE)\]\s*/u', ' ', (string) $result['message']));
-
-        return $result;
-    }
-
-    /** เนื้อเดิมของ tryAIChatResponse (แยกออกมาเพื่อให้ด่านวิกฤตครอบผลลัพธ์ได้ทุกทางออก) */
-    protected function aiChatResponseFor(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
     {
         try {
             // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
@@ -24475,48 +24310,6 @@ PROMPT;
 
             return [];
         }
-    }
-
-    /**
-     * 🤍 (2026-11-03) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง
-     *
-     * - แจ้งแอดมิน (Telegram) + ติดธง persona mental_fragile/crisis_resources_sent เสมอ
-     * - แอดมินคุยเองอยู่ (takeover) → ไม่แทรก คืน null ให้ flow takeover เดิมทำงาน
-     * - นอกนั้น → คำตอบห่วงใย action `crisis_support` (ส่งข้อความล้วน ไม่มีปุ่มดูดวง/ขาย)
-     *   และบันทึกลงประวัติแชท ให้ AI เทิร์นถัดไปรู้ว่าคุยเรื่องอะไรอยู่
-     *
-     * @return array|null null = ไม่ใช่ข้อความวิกฤต / แอดมินดูแลอยู่
-     */
-    protected function maybeHandleSelfHarmMessage(string $userId, string $messageText, ?array $userProfile): ?array
-    {
-        if (! FortuneAIService::isSelfHarmStatement($messageText)) {
-            return null;
-        }
-
-        $platform = $this->currentPlatform ?? $this->detectPlatformFromUserId($userId);
-
-        FortuneAIService::reportSelfHarmSignal('self_harm', $messageText, $userId,
-            'แชท '.$platform.(! empty($userProfile['name']) ? ' · '.$userProfile['name'] : ''));
-        app(\App\Services\Fortune\CustomerPersonaService::class)
-            ->flagCrisis($platform, $userId, $userProfile['name'] ?? null);
-
-        try {
-            if (app(\App\Services\FortuneTakeoverService::class)->isActiveByPlatform($platform, $userId)) {
-                return null;
-            }
-        } catch (\Throwable $e) {
-            // เช็ค takeover ไม่ได้ → ตอบลูกค้าไปเลย (เงียบใส่คนวิกฤตแย่กว่าตอบซ้อนแอดมิน)
-        }
-
-        $reply = FortuneAIService::buildAdversarialReply('self_harm');
-        $this->saveConversationMessage($userId, 'user', $messageText);
-        $this->saveConversationMessage($userId, 'assistant', $reply);
-
-        return [
-            'action' => 'crisis_support',
-            'message' => $reply,
-            'reading' => null,
-        ];
     }
 
     /**

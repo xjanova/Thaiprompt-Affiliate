@@ -216,17 +216,18 @@ class JuntraDeepReadingTest extends TestCase
             ->assertJsonPath('reason_code', 'bad_index');
     }
 
-    /** คำถามที่เป็นสัญญาณอยากทำร้ายตัวเอง → ไม่ทำนาย ไม่เรียก AI · 422 crisis ให้เว็บคืนเงินและปลอบ */
-    public function test_self_harm_question_is_not_read(): void
+    /** 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm แล้ว — คำถามแบบนี้ไปให้ AI ทำนายตามปกติ (ไม่ปัด 422) */
+    public function test_self_harm_question_goes_to_the_normal_reading(): void
     {
         Sanctum::actingAs(User::factory()->create());
 
-        $this->mock(FortuneConversationService::class, fn ($mock) => $mock->shouldNotReceive('answerDeepQuestionForWeb'));
+        $this->mock(FortuneConversationService::class, function ($mock) {
+            $mock->shouldReceive('answerDeepQuestionForWeb')->once()->andThrow(new \RuntimeException('ถึง AI แล้ว'));
+        });
 
+        // ถึงเส้นทำนายจริง (AI ล้มในเทสต์ = 503) — ไม่ใช่ 422 question_rejected แบบเดิม
         $this->postJson(self::URL, $this->payload(['questions' => ['อยากตายมาก ไม่อยากอยู่แล้ว'], 'question_index' => 0]))
-            ->assertStatus(422)
-            ->assertJsonPath('reason_code', 'question_rejected')
-            ->assertJsonPath('crisis', true);
+            ->assertStatus(503);
     }
 
     public function test_rejects_empty_or_oversized_question_list(): void

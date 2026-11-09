@@ -7,169 +7,35 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 🤍 (2026-11-03) ด่าน guard ต้องแยก "คนที่อยากทำร้ายตัวเอง" ออกจาก "ความรุนแรง"
+ * 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm/วิกฤตแล้ว — "ให้ AI แม่หมอตอบตามปกติ"
  *
- * เดิม "ฆ่าตัวเอง / kill myself" ถูกจัดเป็น off_topic_violence → ได้คำตอบปัดตก
- * และ "ฆ่าตัวตาย" ไม่ถูกจับเลย
+ * ข้อความที่ลูกค้าบอกว่าอยากทำร้ายตัวเอง ต้องไม่ถูกนับเป็นการโจมตี (ไม่มี strike ไม่มีคำตอบสำเร็จรูป)
+ * แต่ด่านอื่นที่ไม่เกี่ยว (ด่าบอท / ความรุนแรงต่อคนอื่น) ยังอยู่ครบ
  */
 class FortuneSelfHarmGuardTest extends TestCase
 {
     public static function selfHarmMessages(): array
     {
         return [
+            'อยากตาย ไม่ไหวแล้ว' => ['อยากตาย ไม่ไหวแล้ว'],
             'ฆ่าตัวตาย' => ['เหนื่อยมาก อยากฆ่าตัวตาย'],
             'ฆ่าตัวเอง' => ['คิดจะฆ่าตัวเองค่ะ'],
-            'อยากตาย' => ['ไม่มีใครรักเลย อยากตาย'],
             'ไม่อยากอยู่แล้ว' => ['ไม่อยากอยู่แล้วค่ะแม่หมอ'],
-            'ไม่อยากอยู่ ท้ายประโยค' => ['ชีวิตพังหมดแล้ว ไม่อยากอยู่'],
-            'ไม่อยากมีชีวิตอยู่' => ['ไม่อยากมีชีวิตอยู่ต่อไปแล้ว'],
             'อยากจบชีวิต' => ['อยากจบชีวิตตัวเองให้มันจบ ๆ'],
-            'ทำร้ายตัวเอง' => ['เมื่อคืนทำร้ายตัวเองอีกแล้ว'],
-            'กินยาตาย' => ['จะกินยาตายคืนนี้'],
-            'kill myself' => ['i want to kill myself'],
-            'kill my self' => ['Gonna kill my self tonight'],
-            'suicide' => ['thinking about suicide'],
-            'suicidal' => ['I feel suicidal'],
-            'want to die' => ['I just want to die'],
-            'end my life' => ['I want to end my life'],
-            'just kill me' => ['just kill me already'],
-            'มีแท็กระบบนำหน้า' => ['[TURN 4] [OFFER_COOLDOWN] [RETURNING_CUSTOMER past_topics="การงาน"] อยากตายค่ะ'],
-            'ระบายยาวเกิน 2000 ตัว' => [str_repeat('เรื่องงานหนักมาก ', 200).'อยากฆ่าตัวตาย'],
-            // 🤍 (2026-11-04) ขยาย regex
-            'ฆ่าตัวตาย เดี่ยว ๆ' => ['ฆ่าตัวตาย'],
-            'ฆ่า ตัว ตาย เว้นวรรค' => ['คิดเรื่อง ฆ่า ตัว ตาย ทุกคืน'],
             'คิดสั้น' => ['ช่วงนี้อยากคิดสั้นค่ะ'],
-            'เกือบคิดสั้น' => ['เมื่อคืนเกือบคิดสั้นไปแล้ว'],
-            'ทำร้ายร่างกายตัวเอง' => ['ทำร้ายร่างกายตัวเองบ่อยมาก'],
-            'กินยานอนหลับเกินขนาด' => ['คิดจะกินยานอนหลับเกินขนาด'],
-            'กินยาหมดแผง' => ['จะกินยาหมดแผงเลย'],
             'แขวนคอ' => ['อยากแขวนคอ'],
-            'กระโดดสะพาน' => ['จะไปกระโดดสะพานตาย'],
-            'ไม่อยากตื่นอีก' => ['หลับไปแล้วไม่อยากตื่นขึ้นมาอีก'],
-            'เบื่อที่จะมีชีวิต' => ['เบื่อที่จะมีชีวิตอยู่แล้ว'],
-            // 🤍 (2026-11-06 รีวิว PR 2649) คำว่า "ความฝัน" ไม่ใช่คำถามทำนายฝัน
-            'ความฝันพัง อยากตาย' => ['ความฝันพังหมด อยากตาย'],
-            'หมดความฝัน อยากฆ่าตัวตาย' => ['หมดความฝันแล้ว อยากฆ่าตัวตาย'],
-            'ฝันสลาย ไม่อยากอยู่แล้ว' => ['ฝันสลาย ไม่อยากอยู่แล้ว'],
-            // เว้นวรรค / ตัวอักษรล่องหนกลางวลี
-            'อยาก ตาย' => ['อยาก ตาย'],
-            'ไม่อยาก อยู่แล้ว' => ['ไม่อยาก อยู่แล้ว'],
-            'อยาก จบ ชีวิต' => ['อยาก จบ ชีวิต'],
-            'zero-width กลางคำ' => ["อยาก\u{200B}ตาย"],
-            // แขวนคอที่มีเจตนา
-            'อยากแขวนคอตาย' => ['อยากแขวนคอตาย'],
-            'จะแขวนคอ' => ['จะแขวนคอ'],
-            'คิดจะแขวนคอ' => ['คิดจะแขวนคอ'],
-            // ไม่อยากอยู่ที่ไม่มีที่ทำงาน/ที่อยู่ติดกัน — ยังเป็นสัญญาณจริง
-            'ไม่มีงาน ไม่อยากอยู่แล้ว' => ['ไม่มีงาน ไม่อยากอยู่แล้ว'],
-            'ทำงานเหนื่อย ไม่อยากอยู่แล้ว' => ['ทำงานเหนื่อยมาก ไม่อยากอยู่แล้ว'],
-            'ตกงานไม่อยากอยู่แล้ว' => ['ตกงานไม่อยากอยู่แล้ว'],
-            // ความทุกข์จริง "…จนอยากตาย" ยังจับ (ตัดเฉพาะ อาย/ขำ/เขิน…)
-            'เครียดจนอยากตาย' => ['เครียดจนอยากตาย'],
-            // คนอื่น + ตัวเอง ในข้อความเดียว → ตัวเองชนะ
-            'แม่ฆ่าตัวตาย หนูก็อยากตายตาม' => ['แม่ฆ่าตัวตายเมื่อปีก่อน หนูก็อยากตายตาม'],
-            // เรียกแม่หมอว่า "แม่" แล้วพูดถึงตัวเอง — ต้องไม่ถูกอ่านเป็นแม่ของลูกค้า
-            'แม่ หนูจะฆ่าตัวตาย' => ['แม่ หนูจะฆ่าตัวตาย'],
-            'แม่หมอคะ หนูอยากตาย' => ['แม่หมอคะ หนูอยากตาย'],
-            'keep cutting myself' => ['I keep cutting myself'],
-            // 🤍 (2026-11-09) เทียบตัวเองกับคนอื่น — prod #14660 ระหว่างเลือกแพคเกจ (เดิมหลุด ได้เมนู 39/99)
-            'prod #14660 ถ้าเป็นคนอื่นโดดน้ำหรือผูกคอ' => ['ถ้าเป็นคนอื่นขอโทษนะครับที่ผมใช้คำคำนี้ถ้าเป็นคนอื่นโดดน้ำหรือผูกคอหนือไม่ก็บ้าไปแล้วครับ'],
-            'ถ้าเป็นคนอื่นป่านนี้คงโดดน้ำ' => ['ถ้าเป็นคนอื่นป่านนี้คงโดดน้ำไปแล้วค่ะ'],
-            'ถ้าเป็นคนอื่นเขาก็ผูกคอ' => ['เรื่องแบบนี้ถ้าเป็นคนอื่นเขาก็ผูกคอไปแล้ว'],
-            'คนอื่นเจอแบบผมคงกระโดดตึก' => ['คนอื่นเจอแบบผมคงกระโดดตึกไปนานแล้วครับ'],
-            'หากเป็นคนอื่นคงคิดสั้น' => ['หากเป็นคนอื่น คงคิดสั้นไปแล้ว'],
-            'ถ้าเป็นคนอื่นคงกินยานอนหลับหมดแผง' => ['ถ้าเป็นคนอื่นคงกินยานอนหลับหมดแผงไปแล้ว'],
-        ];
-    }
-
-    #[DataProvider('selfHarmMessages')]
-    public function test_self_harm_is_its_own_group_not_violence(string $text): void
-    {
-        $this->assertSame('self_harm', FortuneAIService::detectAdversarialInput($text));
-    }
-
-    public static function notSelfHarmMessages(): array
-    {
-        return [
-            'ปฏิเสธ' => ['ป่วยหนัก แต่ไม่อยากตายค่ะ ดวงสุขภาพเป็นยังไง'],
-            'ปฏิเสธ อังกฤษ' => ["I don't want to die young, how is my health?"],
-            'ทำนายฝัน' => ['ฝันว่าตัวเองฆ่าตัวตาย หมายความว่าอะไรคะ'],
-            'จบชีวิตคู่' => ['อยากจบชีวิตคู่ ควรหย่าไหมคะ'],
-            'จบชีวิตโสด' => ['ปีนี้จะได้จบชีวิตโสดไหม'],
-            'ไม่อยากอยู่บ้าน' => ['ไม่อยากอยู่บ้านนี้แล้ว ควรย้ายไหม'],
-            'ไม่อยากอยู่กับแฟน' => ['ไม่อยากอยู่กับแฟนต่อ'],
-            'สำนวนร้อนจะตาย' => ['ร้อนจะตาย ขอดูดวงเรื่องงาน'],
-            'ถามดวงเรื่องความตาย' => ['ปีนี้จะตายไหมคะ'],
-            'going to die' => ['am i going to die this year?'],
-            'ดูดวงปกติ' => ['อยากถามเรื่องความรักค่ะ'],
-            // 🔮 (2026-11-04) คำดูดวงที่มีคำว่า "ตาย/Death" ต้องไม่ติด
-            'ดวงตาย' => ['ดวงตายไหมปีนี้คะ'],
-            'ไพ่ Death' => ['เปิดได้ไพ่ Death หมายถึงอะไรคะ'],
-            'ไพ่ความตาย' => ['ได้ไพ่ความตาย น่ากลัวไหม'],
-            'death card' => ['I got the Death card, what does it mean?'],
-            'ปฏิเสธคิดสั้น' => ['ไม่อยากคิดสั้นหรอก แค่เหนื่อย'],
-            'ผูกคอเสื้อ' => ['ใส่เสื้อผูกคอสีอะไรดีวันสัมภาษณ์'],
-            // 🤍 (2026-11-06 รีวิว PR 2649) เครื่องราง/สร้อย — "แขวนคอ" = ใส่ของมงคล
-            'พระแขวนคอ' => ['ใส่พระแขวนคอองค์ไหนดีคะ'],
-            'สร้อยแขวนคอ' => ['สร้อยแขวนคอสีอะไรเสริมดวง'],
-            'เครื่องรางแขวนคอ' => ['ควรแขวนคอด้วยเครื่องรางอะไร'],
-            'ตะกรุดแขวนคอ' => ['จะแขวนคอด้วยตะกรุดดีไหม'],
-            // ที่ทำงาน / ที่อยู่ / บทบาท
-            'บริษัทนี้ไม่อยากอยู่แล้ว' => ['บริษัทนี้ไม่อยากอยู่แล้ว ควรลาออกไหม'],
-            'บริษัทนี้ (วรรค) ไม่อยากอยู่แล้ว' => ['บริษัทนี้ ไม่อยากอยู่แล้ว ควรลาออกไหม'],
-            'ที่ทำงานไม่อยากอยู่ต่อแล้ว' => ['ที่ทำงานไม่อยากอยู่ต่อแล้วค่ะ'],
-            'จบชีวิตมนุษย์เงินเดือน' => ['อยากจบชีวิตมนุษย์เงินเดือน'],
-            'จบชีวิตลูกจ้าง' => ['อยากจบชีวิตลูกจ้างแล้วค่ะ'],
-            // พูดเกินจริง / สำนวน
-            'อายจนอยากตาย' => ['อายจนอยากตาย'],
-            'ขำจนอยากตาย' => ['ขำจนอยากตาย'],
-            'อยากตาย555' => ['อยากตาย555'],
-            'หน้าแตกขอตาย' => ['หน้าแตกขอตาย'],
-            'อยากตายด้วยความรัก' => ['อยากตายด้วยความรัก'],
-            // อังกฤษ
-            'die my hair' => ['I want to die my hair red'],
-            'cut myself cooking' => ['I cut myself cooking'],
-            // 🤍 (2026-11-09) "ถ้าเป็นคนอื่น…" ที่ไม่ใช่วิธีจบชีวิต
-            'ถ้าเป็นคนอื่นใส่เสื้อผูกคอ' => ['ถ้าเป็นคนอื่นคงใส่เสื้อผูกคอไปสัมภาษณ์'],
-            'ถ้าเป็นคนอื่นชวนโดดน้ำเล่น' => ['ถ้าเป็นคนอื่นชวนไปโดดน้ำเล่นที่น้ำตกแล้ว'],
-            'ถ้าเป็นคนอื่นคงไม่โดดน้ำ' => ['ถ้าเป็นคนอื่นก็คงไม่กระโดดน้ำหรอกค่ะ'],
-            'ถ้าเป็นคนอื่นพระแขวนคอ' => ['ถ้าเป็นคนอื่นเขาใส่พระแขวนคอองค์ไหนกันคะ'],
-            'ถ้าเป็นคนอื่นคงจบชีวิตคู่' => ['ถ้าเป็นคนอื่นคงจบชีวิตคู่ไปนานแล้ว ควรเลิกไหมคะ'],
-            'ถ้าเป็นคนอื่นคงเลิกไปแล้ว' => ['ถ้าเป็นคนอื่นคงเลิกไปแล้ว'],
-            'เรื่องหนักแต่ไม่ได้พูดถึงการทำร้ายตัวเอง' => ['ชีวิตผมมันเจอเรื่องหนักที่สุดของมนุษย์โลกครับแม่สุดของที่สุดครับ'],
-        ];
-    }
-
-    #[DataProvider('notSelfHarmMessages')]
-    public function test_ordinary_or_negated_messages_are_not_self_harm(string $text): void
-    {
-        $this->assertNotSame('self_harm', FortuneAIService::detectAdversarialInput($text));
-        $this->assertFalse(FortuneAIService::isSelfHarmStatement($text));
-    }
-
-    public static function othersSelfHarmMessages(): array
-    {
-        return [
             'แฟนขู่จะฆ่าตัวตาย' => ['แฟนขู่จะฆ่าตัวตายถ้าเลิก ควรเลิกไหม'],
-            'เพื่อนอยากฆ่าตัวตาย' => ['เพื่อนอยากฆ่าตัวตาย ทำยังไงดีคะ'],
-            'แม่ฆ่าตัวตายเมื่อปีก่อน' => ['แม่ฆ่าตัวตายเมื่อปีก่อน อยากรู้ว่าท่านไปสบายไหม'],
-            'my friend is suicidal' => ['my friend is suicidal, what should I do'],
+            'prod #14660' => ['ถ้าเป็นคนอื่นขอโทษนะครับที่ผมใช้คำคำนี้ถ้าเป็นคนอื่นโดดน้ำหรือผูกคอหนือไม่ก็บ้าไปแล้วครับ'],
+            'kill myself' => ['i want to kill myself'],
+            'suicide' => ['thinking about suicide'],
+            'want to die' => ['I just want to die'],
         ];
     }
 
-    /** 🤍 (2026-11-06) คนอื่นอยากทำร้ายตัวเอง — ไม่ใช่วิกฤตของลูกค้า (ไม่ใช่คำปลอบสำเร็จรูป) แต่ผู้เรียกต้องรู้เพื่อไม่ขายของ */
-    #[DataProvider('othersSelfHarmMessages')]
-    public function test_someone_elses_self_harm_is_not_the_customers_crisis_but_is_flagged(string $text): void
-    {
-        $this->assertFalse(FortuneAIService::isSelfHarmStatement($text));
-        $this->assertNotSame('self_harm', FortuneAIService::detectAdversarialInput($text));
-        $this->assertTrue(FortuneAIService::mentionsOthersSelfHarm($text));
-    }
-
     #[DataProvider('selfHarmMessages')]
-    public function test_the_customers_own_crisis_is_never_reported_as_someone_elses(string $text): void
+    public function test_self_harm_text_is_not_an_attack(string $text): void
     {
-        $this->assertFalse(FortuneAIService::mentionsOthersSelfHarm($text));
+        $this->assertNull(FortuneAIService::detectAdversarialInput($text));
     }
 
     public function test_insulting_the_bot_stays_violence(): void
@@ -178,31 +44,15 @@ class FortuneSelfHarmGuardTest extends TestCase
         $this->assertSame('off_topic_violence', FortuneAIService::detectAdversarialInput('อยากฆ่าคน'));
     }
 
-    public function test_self_harm_reply_is_gentle_comfort_without_sending_them_to_call_anyone(): void
+    public function test_the_self_harm_detector_and_its_canned_reply_are_gone(): void
     {
-        $reply = FortuneAIService::buildAdversarialReply('self_harm');
-
-        $this->assertStringNotContainsString('สุขภาพจิต', $reply, 'กฎเจ้าของ: ห้ามคำที่ตราหน้าว่าป่วย (rule_no_mental_illness_labeling)');
-        // 🫂 กฎเจ้าของ (2026-11-04): "อย่าไล่เขาไปโทรหาใคร อย่ารู้ดี ปลอบเบาๆ ก็พอ"
-        foreach (['1323', '1300', '1669', 'โทร', 'สายด่วน', 'ควร'] as $pushy) {
-            $this->assertStringNotContainsString($pushy, $reply, "ห้ามไล่ไปโทรหาใครหรือสั่งสอน ({$pushy})");
+        foreach (['isSelfHarmStatement', 'mentionsOthersSelfHarm', 'reportSelfHarmSignal'] as $method) {
+            $this->assertFalse(method_exists(FortuneAIService::class, $method), $method);
         }
-        $this->assertStringContainsString('อยู่ฟังตรงนี้', $reply);
-        $this->assertStringContainsString('พิมพ์มาได้เลย', $reply, 'ต้องชวนคุยต่อ ไม่ตัดบท');
-        $this->assertStringNotContainsString('ไม่ตอบเรื่องแบบนั้น', $reply);
-        foreach (['ดูดวง', 'เปิดไพ่', 'ไพ่', 'ราคา', 'บาท', '[OFFER', '[[OFFER'] as $sales) {
-            $this->assertStringNotContainsString($sales, $reply, "ห้ามชวนดูดวง/ขายในเทิร์นนี้ ({$sales})");
-        }
-        // 🎭 ใช้ข้อความเดียวทุกตัวละคร — ห้ามเรียกชื่อตัวเองหรือเรียกลูกค้าแบบของตัวละครใดตัวหนึ่ง
-        foreach (['แม่หมอ', 'บุษบา', 'ลูก', 'ครับ'] as $personaWord) {
-            $this->assertStringNotContainsString($personaWord, $reply, "ต้องเป็นกลางทุกตัวละคร ({$personaWord})");
-        }
-    }
-
-    public function test_violence_never_swallows_self_harm_any_more(): void
-    {
-        foreach (['อยากฆ่าตัวเอง', 'ฆ่าตัวตาย', 'kill myself'] as $text) {
-            $this->assertNotSame('off_topic_violence', FortuneAIService::detectAdversarialInput($text), $text);
-        }
+        // ไม่มีคำปลอบสำเร็จรูปของ self_harm แล้ว — ได้คำตอบกลางแบบเดียวกับ type ที่ไม่รู้จัก
+        $this->assertSame(
+            FortuneAIService::buildAdversarialReply('no_such_type'),
+            FortuneAIService::buildAdversarialReply('self_harm')
+        );
     }
 }

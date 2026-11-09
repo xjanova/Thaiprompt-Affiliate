@@ -199,30 +199,6 @@ TXT;
     private const ASK_EXTRA_TOKENS = 260;   // (2026-11-07) 120 → 260: บน prod Gemini ถูกตัดกลางป้าย "[[ASK: วันนี้มีเรื่อง…"
 
     /**
-     * 🤍 (2026-11-04) ห้องที่ลูกค้าเคยบอกว่าอยากทำร้ายตัวเอง — ต่อท้ายทุกเทิร์นจนห้องหมดอายุ (ทุกตัวละคร)
-     * (2026-11-06) รวมห้องที่เปิดต่อจากแชทเพจของลูกค้าที่ persona ติดธง mental_fragile ด้วย
-     */
-    private const CRISIS_RULES = <<<'TXT'
-
-⚠️ ลูกค้าคนนี้เคยบอกว่าอยากทำร้ายหรือจบชีวิตตัวเอง:
-- ปลอบเบา ๆ พูดสั้น อ่อนโยน ไม่ร่าเริง รับฟังและเห็นใจ ให้ลูกค้าได้ระบาย
-- ❌ ห้ามสั่งสอน ห้ามบอกว่าควรทำอะไร ห้ามไล่ให้ไปโทรหาใครหรือไปหาใคร (ให้เบอร์สายด่วนใจ 1323 เฉพาะเมื่อลูกค้าถามหาที่ขอความช่วยเหลือเอง)
-- ❌ ห้ามชวนเปิดไพ่ ห้ามขาย ห้ามพูดราคา ห้ามใส่ป้าย [[OFFER:...]] ทุกกรณี
-TXT;
-
-    /**
-     * 🤍 (2026-11-06) เทิร์นที่ลูกค้าเล่าว่า "คนอื่น" อยากทำร้ายตัวเอง (แฟนขู่จะฆ่าตัวตาย / แม่ฆ่าตัวตาย)
-     * ไม่ใช่วิกฤตของลูกค้าเอง จึงไม่ใช้คำปลอบสำเร็จรูป — ให้ AI ตอบ แต่ต่อท้ายกติกานี้เฉพาะเทิร์นนั้น และไม่มีการ์ดขาย
-     */
-    private const OTHERS_CRISIS_RULES = <<<'TXT'
-
-⚠️ ข้อความนี้ลูกค้าเล่าว่าคนใกล้ตัวคิดหรือเคยทำร้ายหรือจบชีวิตตัวเอง:
-- พักเรื่องดวงไว้ก่อน รับฟังและเห็นใจลูกค้า พูดอ่อนโยน ไม่ร่าเริง ❌ ห้ามทำนายว่าคนนั้นจะเป็นอะไรหรือจะตายไหม
-- ❌ ห้ามสั่งสอน ห้ามโทษใคร ห้ามไล่ให้ไปโทรหาใคร (ให้เบอร์สายด่วนใจ 1323 เฉพาะเมื่อลูกค้าถามหาที่ขอความช่วยเหลือเอง)
-- ❌ ห้ามชวนเปิดไพ่ ห้ามขาย ห้ามพูดราคา ห้ามใส่ป้าย [[OFFER:...]] ในคำตอบนี้
-TXT;
-
-    /**
      * 💬 (2026-09-21) ห้องที่ผูกกับคำพยากรณ์ที่ลูกค้าจ่ายแล้ว — ต่อท้ายด้วยบริบทคำพยากรณ์เสมอ
      *
      * เคยเห็นบน prod: แม่หมอ "เปิดไพ่ใบใหม่" ในแชท แล้วทำนายขัดกับคำพยากรณ์ที่ลูกค้าเพิ่งจ่ายเงินไป
@@ -534,13 +510,6 @@ TXT,
             // '' = รู้แล้วว่าไม่มีความจำ (รอบ send ไม่ต้องสร้างใหม่ทุกข้อความ)
             Cache::put($this->memoryKey($owner, $sessionId), $memory ?? '', self::SESSION_TTL_SEC);
         }
-        // 🤍 (2026-11-06) ลูกค้าที่เคยส่งสัญญาณอยากทำร้ายตัวเองในแชทเพจ — ห้องเว็บเริ่มเป็นห้องวิกฤต (ไม่มีการ์ดขาย)
-        //    ส่งต่อแค่ธง ไม่ส่งข้อความเดิมของลูกค้า
-        if ($continuity !== null && (! empty($continuity['crisis']) || ($memory !== null && WebChatContinuityService::memoryCarriesCrisis($memory)))) {
-            Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
-            $offerTopic = null;
-        }
-
         return [
             'session_id' => $sessionId,
             'greeting' => $greeting,
@@ -607,9 +576,8 @@ TXT,
      * @param  array{birth_date?:?string,birth_time?:?string}|null  $astro  🪐 (2026-11-07) วันเกิดในโปรไฟล์เว็บ
      *                                                                      → ผังดวงจริงชุดเดียวกับบิลของเพจ · null = ไม่มีผังดวง (ทางเดิม)
      *
-     * ผลลัพธ์: crisis = เทิร์นนี้เป็นคำปลอบคนที่อยากทำร้ายตัวเอง (ไม่ใช่บริการ — ห้ามคิดเงิน)
-     * · crisis_room = ห้องนี้อยู่ในโหมดวิกฤต (ไม่มีการ์ดขาย)
-     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string,crisis:bool,crisis_room:bool,voice_plan?:array,suggestions?:list<string>}
+     * 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm/วิกฤตแล้ว — ทุกข้อความไปให้ AI ตอบตามปกติ (ไม่มี crisis/crisis_room ในผลลัพธ์)
+     * @return array{reply:string,provider:?string,kind:string,offer_topic:?string,persona:string,voice_plan?:array,suggestions?:list<string>}
      *
      * @throws RuntimeException AI ไม่ได้ตอบอะไร และไม่ได้ขอข้อความรองรับ
      */
@@ -672,50 +640,8 @@ TXT,
             $memory = is_string($stored) && $stored !== '' ? $stored : null;
         }
 
-        // 🤍 (2026-11-06) ความจำจากแชทเพจบอกว่าลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเอง (persona ติดธง mental_fragile)
-        //    → ห้องนี้เป็นห้องวิกฤตตั้งแต่ข้อความแรก (ห้องหมดอายุแล้วสร้างความจำใหม่ก็ได้ธงกลับมา)
-        if ($memory !== null && WebChatContinuityService::memoryCarriesCrisis($memory)) {
-            Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
-        }
-
-        // 🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บเอง — ชุดเดียวกับแชทเพจ · ความจำติดธงเปราะบาง = ห้องวิกฤต
-        //    (ลูกค้าเคยบอกว่าอยากทำร้ายตัวเองในห้องก่อน ๆ — ห้องใหม่ต้องไม่ยื่นการ์ดขาย)
-        $personaBlock = null;
-        if ($webMemory) {
-            [$personaBlock, $fragile] = $this->webPersona($owner, $text);
-            if ($fragile) {
-                Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
-            }
-        }
-
-        // 🤍 (2026-11-04) ลูกค้าบอกว่าอยากทำร้าย/จบชีวิตตัวเอง — ปลอบเบา ๆ (ไม่มีเบอร์) ก่อนด่านอื่นทั้งหมด
-        //    (ด่าน scope อาจปัด "ช่วยเขียนจดหมายลาตาย" เป็นคำขอเขียนให้) ไม่ส่งไปให้ AI · ❌ ไม่มีการ์ดเปิดไพ่
-        //    และติดธงห้องไว้ — เทิร์นถัด ๆ ไปในห้องนี้ก็ไม่ยื่นการ์ดขาย ต่อให้ AI แปะป้ายมาเอง
-        if (FortuneAIService::isSelfHarmStatement($text)) {
-            // 🔑 (2026-11-06) คีย์กันแจ้งซ้ำ = ตัวตนที่ไม่ซ้ำ (เจ้าของห้อง) ไม่ใช่ชื่อที่แสดง · บอกห้องให้แอดมินตามไปดูได้
-            FortuneAIService::reportSelfHarmSignal('self_harm', $text, 'web:'.$owner,
-                'เว็บจันทรา ห้อง '.$sessionId.' ('.$persona.')'.(! empty($customer['customer_name']) ? ' · '.$customer['customer_name'] : ''));
-            Cache::put($this->crisisKey($owner, $sessionId), true, self::SESSION_TTL_SEC);
-            // 🧠 ติดธงในความจำระยะยาวด้วย (แบบแชทเพจ) — ห้องถัด ๆ ไปของลูกค้าคนนี้เริ่มเป็นห้องวิกฤต
-            if ($webMemory) {
-                $this->personaService()?->flagCrisis(self::MEMORY_PLATFORM, $owner);
-            }
-            $reply = FortuneAIService::buildAdversarialReply('self_harm');
-            $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
-
-            // crisis = true → เทิร์นนี้เป็นคำปลอบ ไม่ใช่บริการ (เว็บต้องไม่คิดเงินเทิร์นนี้)
-            $out = ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona,
-                'crisis' => true, 'crisis_room' => true];
-            // 🔈 โหมดเสียง: คลิปปลอบที่อัดไว้ (ไม่ใช่คลิป "ถามอะไรต่อไหม" ของ guard ทั่วไป)
-            if ($voiceMode) {
-                $out['voice_plan'] = VoicePlanParser::crisis($persona, $voiceClips);
-            }
-
-            return $out;
-        }
-        $crisisRoom = Cache::has($this->crisisKey($owner, $sessionId));
-        // 🤍 (2026-11-06) เล่าว่า "คนอื่น" อยากทำร้ายตัวเอง — ไม่ใช่วิกฤตของลูกค้าเอง ให้ AI ตอบด้วยกติกาดูแลใจ ไม่มีการ์ดขาย
-        $othersCrisis = ! $crisisRoom && FortuneAIService::mentionsOthersSelfHarm($text);
+        // 🧠 (2026-11-07) ความจำระยะยาวของลูกค้าเว็บเอง — ชุดเดียวกับแชทเพจ
+        $personaBlock = $webMemory ? $this->webPersona($owner, $text) : null;
 
         // 🪬 (2026-09-05 owner) ด่านกัน "ใช้แม่หมอเป็น AI ฟรี" — ขอบทสวด/สูตร/แปล/สรุป/เขียนให้
         $scopeHit = FortuneScopeGuard::detectExtraction($text);
@@ -723,8 +649,7 @@ TXT,
             $reply = FortuneScopeGuard::deflect($scopeHit);
             $this->remember($owner, $sessionId, $history, $reply, $reading, $allowMemory);
 
-            $out = ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona,
-                'crisis' => false, 'crisis_room' => $crisisRoom];
+            $out = ['reply' => $reply, 'provider' => 'guard', 'kind' => 'guard', 'offer_topic' => null, 'persona' => $persona];
             if ($voiceMode) {
                 $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, null, $voiceClips, 'guard');
             }
@@ -745,11 +670,6 @@ TXT,
         //    อุณหภูมิต่ำลง (ไม่แต่งเกินคำพยากรณ์) · max_tokens 350 ตัดคำอธิบาย "เดือน X หมายถึงอะไร" กลางประโยค → 600
         // 🌸 (2026-11-04) ตัวละครที่มี offer_rules ของตัวเอง ใช้แทน WEB_OFFER_RULES ทั้งก้อน (ไม่ต่อท้าย กันกติกาสองชุดขัดกัน)
         $system = $profile['system'].($webOffers ? ($profile['offer_rules'] ?? self::WEB_OFFER_RULES) : '');
-        if ($crisisRoom) {
-            $system .= self::CRISIS_RULES;
-        } elseif ($othersCrisis) {
-            $system .= self::OTHERS_CRISIS_RULES;
-        }
         $config = ['temperature' => 0.85, 'max_tokens' => 350];
         // 🌙 (2026-11-03) ความจำอยู่ใน system message เท่านั้น — ห้ามไปอยู่ใน userMessage (ด่านเจลเบรคตรวจแค่ข้อความดิบ)
         if ($memory !== null) {
@@ -758,8 +678,7 @@ TXT,
         if ($personaBlock !== null) {
             $system .= sprintf(self::WEB_PERSONA_RULES, $personaBlock);
         }
-        // 🪐 ห้องวิกฤต = ไม่มีผังดวง (คุยเรื่องใจ ไม่ใช่เรื่องดวง)
-        $astroBlock = ($crisisRoom || $othersCrisis) ? null : $this->astroBlock($astro, $reading !== null);
+        $astroBlock = $this->astroBlock($astro, $reading !== null);
         if ($astroBlock !== null) {
             $system .= sprintf($reading !== null ? self::ASTRO_RULES_READING : self::ASTRO_RULES_FREE, $astroBlock);
         }
@@ -772,10 +691,7 @@ TXT,
             $system .= $this->voiceModeRules($persona, $profile, $inputMode, $voiceClips);
             $config['max_tokens'] += self::VOICE_EXTRA_TOKENS;
         }
-        // 🤍 (รีวิว) ห้องที่ลูกค้ามีสัญญาณทำร้ายตัวเองในบทสนทนาที่ AI เห็น = ไม่ขอปุ่มเลย (ปุ่ม "ดูเรื่องงาน" ไม่ควรโผล่ตอนนั้น)
-        //    รวมห้องโหมดวิกฤต (ธงใน cache — มาจากแชทเพจได้ แม้ AI ไม่เห็นข้อความนั้น) และเทิร์นที่เล่าว่าคนอื่นอยากทำร้ายตัวเอง
-        $noAsk = $suggest && ($crisisRoom || $othersCrisis || $this->crisisInRoom($history));
-        if ($suggest && ! $noAsk) {
+        if ($suggest) {
             $system .= self::ASK_RULES;
             $config['max_tokens'] += self::ASK_EXTRA_TOKENS;
         }
@@ -784,26 +700,23 @@ TXT,
         //    ⚠️ เฉพาะหมวดที่ใช้กับเว็บได้: ทั่วไป + หลังอ่านคำทำนาย (ห้องที่คุยต่อจากคำพยากรณ์)
         //       หมวดอื่นเป็นขั้นตอนบิลของแชทเพจ (โอน QR / ส่งสลิป / กรอกวันเกิด / เลือกไพ่ 99฿)
         //       เว็บจ่ายด้วยเครดิตวอลเลต — ยกมา = แม่หมอบอกลูกค้าเว็บให้โอนเงินผิดช่องทาง
-        //    ห้องวิกฤต/เล่าว่าคนอื่นวิกฤต = ไม่ใส่เลย (ตัวอย่างสายขายห้ามโผล่ตอนนั้น)
-        if (! $crisisRoom && ! $othersCrisis) {
-            $keep = [\App\Models\FortuneAdminQA::CATEGORY_GENERAL];
-            if ($reading !== null) {
-                $keep[] = \App\Models\FortuneAdminQA::CATEGORY_POST_READING;
-            }
-            // หมวดทั่วไป/หลังอ่านคำทำนายบน prod ยังมีคำตอบสายบิลแชทเพจปนอยู่ ~12% ("เปิดบิลให้โอนค่าบูชาครู",
-            //   "39บาทค่ะ", "พิมพ์ ดูดวง") → ตัดตัวอย่างที่พูดเรื่องโอน/ราคา/บิลทิ้งรายตัว
-            $withExamples = $this->ai->injectAdminQARagFewShot(
-                $system,
-                $text,
-                null,
-                array_values(array_diff(\App\Models\FortuneAdminQA::CATEGORIES, $keep)),
-                array_map(fn ($m) => ['role' => $m['role'], 'content' => $m['text']], array_slice($history, 0, -1)),
-                fn ($qa) => ! self::isPageBillAnswer((string) $qa->a_text),
-            );
-            // ตัวกรองคำไม่มีวันครบ — บอก AI ตรง ๆ ว่าตัวอย่างมาจากแชทเพจ ยืมได้แค่น้ำเสียง/แนวคิด
-            if ($withExamples !== $system) {
-                $system = $withExamples.self::WEB_RAG_NOTE;
-            }
+        $keep = [\App\Models\FortuneAdminQA::CATEGORY_GENERAL];
+        if ($reading !== null) {
+            $keep[] = \App\Models\FortuneAdminQA::CATEGORY_POST_READING;
+        }
+        // หมวดทั่วไป/หลังอ่านคำทำนายบน prod ยังมีคำตอบสายบิลแชทเพจปนอยู่ ~12% ("เปิดบิลให้โอนค่าบูชาครู",
+        //   "39บาทค่ะ", "พิมพ์ ดูดวง") → ตัดตัวอย่างที่พูดเรื่องโอน/ราคา/บิลทิ้งรายตัว
+        $withExamples = $this->ai->injectAdminQARagFewShot(
+            $system,
+            $text,
+            null,
+            array_values(array_diff(\App\Models\FortuneAdminQA::CATEGORIES, $keep)),
+            array_map(fn ($m) => ['role' => $m['role'], 'content' => $m['text']], array_slice($history, 0, -1)),
+            fn ($qa) => ! self::isPageBillAnswer((string) $qa->a_text),
+        );
+        // ตัวกรองคำไม่มีวันครบ — บอก AI ตรง ๆ ว่าตัวอย่างมาจากแชทเพจ ยืมได้แค่น้ำเสียง/แนวคิด
+        if ($withExamples !== $system) {
+            $system = $withExamples.self::WEB_RAG_NOTE;
         }
 
         $result = $this->ask(
@@ -842,7 +755,7 @@ TXT,
             $topic = in_array($candidate, self::OFFER_TOPICS, true) ? $candidate : 'general';
             $reply = trim((string) preg_replace('/\s*\[\[\s*OFFER\s*:[^\]]*\]\]\s*/iu', ' ', $reply));
         }
-        if (! $webOffers || $crisisRoom || $othersCrisis) {
+        if (! $webOffers) {
             $topic = null;
         }
 
@@ -876,38 +789,15 @@ TXT,
             'kind' => $topic !== null ? 'offer' : 'reply',
             'offer_topic' => $topic,
             'persona' => $persona,
-            'crisis' => false,
-            'crisis_room' => $crisisRoom,
         ];
         if ($voiceMode) {
             $out['voice_plan'] = VoicePlanParser::plan($persona, $reply, $voiceBlock, $voiceClips, $out['kind']);
         }
         if ($suggest) {
-            // คำตอบที่ให้เบอร์สายด่วน (1323/1669) = AI กำลังดูแลวิกฤต — ไม่มีปุ่ม ไม่ว่า AI จะใส่ป้ายมาหรือไม่
-            $out['suggestions'] = $noAsk || preg_match(VoicePlanParser::CRISIS_PATTERN, $reply) ? [] : $suggestions;
+            $out['suggestions'] = $suggestions;
         }
 
         return $out;
-    }
-
-    /**
-     * 🤍 (รีวิว 2026-11-06) ข้อความลูกค้าในหน้าต่างที่ AI เห็น (รวมข้อความล่าสุด) มีสัญญาณทำร้ายตัวเอง/หมดหวัง
-     *
-     * ใช้คำชุดเดียวกับ CustomerPersonaService::hasSelfHarmSignal (ที่ gate เบอร์ 1323 ของแชทเพจ)
-     * ดูทั้งหน้าต่าง ไม่ใช่แค่ข้อความล่าสุด — ลูกค้าบอก "อยากตาย" แล้วตอบ "ค่ะ" รอบถัดไป ก็ยังไม่ควรมีปุ่มชวนดูดวง
-     *
-     * @param  array<int,array{role:string,text:string}>  $history
-     */
-    private function crisisInRoom(array $history): bool
-    {
-        $detector = app(CustomerPersonaService::class);
-        foreach (array_slice($history, -self::MAX_HISTORY) as $m) {
-            if (($m['role'] ?? '') === 'user' && $detector->hasSelfHarmSignal((string) ($m['text'] ?? ''))) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -1247,35 +1137,34 @@ TXT,
     }
 
     /**
-     * 🧠 ความจำระยะยาวของลูกค้าเว็บ (ระบบเดียวกับแชทเพจ) + ธงเปราะบาง
+     * 🧠 ความจำระยะยาวของลูกค้าเว็บ (ระบบเดียวกับแชทเพจ)
      *
      * เอาแค่บล็อกบุคลิกลูกค้า (FortuneCustomerPersona::toAiContextBlock) — ไม่ใช้ buildInjectBlock ทั้งก้อน:
      *   หัว timeline นับจาก "บิลแชทเพจที่จ่ายแล้ว" ลูกค้าเว็บทุกคนจะได้ป้าย "ยังไม่เคยดูดวงแบบจ่ายเงิน" ทั้งที่จ่ายบนเว็บมาแล้ว
      *   และคำทำนายเก่าห้องคำพยากรณ์ส่ง context มาเองอยู่แล้ว
      *
-     * @return array{0:?string,1:bool} [บล็อกความจำ (null = ยังไม่มี), ติดธงเปราะบาง]
+     * @return string|null บล็อกความจำ (null = ยังไม่มี)
      */
-    private function webPersona(string $owner, string $text): array
+    private function webPersona(string $owner, string $text): ?string
     {
         $svc = $this->personaService();
         if ($svc === null) {
-            return [null, false];
+            return null;
         }
 
         try {
             $persona = $svc->getCached(self::MEMORY_PLATFORM, $owner);
             if ($persona === null) {
-                return [null, false];
+                return null;
             }
             $block = trim($persona->toAiContextBlock($text, forWeb: true));
-            $fragile = (bool) (($persona->risk_flags ?? [])['mental_fragile'] ?? false);
         } catch (\Throwable $e) {
             Log::debug('JuntraChat: อ่านความจำลูกค้าไม่สำเร็จ (non-blocking)', ['error' => $e->getMessage()]);
 
-            return [null, false];
+            return null;
         }
 
-        return [$block !== '' ? mb_substr($block, 0, self::MAX_MEMORY_CHARS) : null, $fragile];
+        return $block !== '' ? mb_substr($block, 0, self::MAX_MEMORY_CHARS) : null;
     }
 
     /**
@@ -1379,12 +1268,6 @@ TXT,
     private function memoryKey(string $owner, string $sessionId): string
     {
         return "juntra:chat:{$owner}:{$sessionId}:mem";
-    }
-
-    /** 🤍 ห้องที่ลูกค้าเคยส่งสัญญาณอยากทำร้ายตัวเอง — ไม่ยื่นการ์ดขายจนห้องหมดอายุ */
-    private function crisisKey(string $owner, string $sessionId): string
-    {
-        return "juntra:chat:{$owner}:{$sessionId}:crisis";
     }
 
     /** คีย์แยกจากประวัติ — ห้องเดิม/ทางเดิมที่อ่านประวัติ (show) ได้รูปข้อมูลเหมือนเดิมทุกอย่าง */

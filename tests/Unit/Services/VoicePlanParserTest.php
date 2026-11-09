@@ -128,35 +128,13 @@ class VoicePlanParserTest extends TestCase
         $this->assertStringEndsWith('ไพ่ใบนี้บอกว่าดี', $plan['say']);
     }
 
-    public function test_a_crisis_reply_only_plays_a_recorded_soothing_clip(): void
+    /** 🤍 (2026-11-09 owner) เลิกจับ "คำตอบวิกฤต" แล้ว — คำตอบที่มีเบอร์สายด่วนได้แผนเสียงตามปกติ */
+    public function test_a_reply_with_a_hotline_number_is_voiced_normally(): void
     {
-        $reply = "บุษบาเป็นห่วงนะคะ โทร 1323 ได้ฟรี 24 ชั่วโมง\n[[VOICE]]\nsay: โทรหาสายด่วน 1323 นะคะ\n[[/VOICE]]";
+        $reply = "บุษบาเป็นห่วงนะคะ โทร 1323 ได้ฟรี 24 ชั่วโมง\n[[VOICE]]\nsay: บุษบาเป็นห่วงนะคะ โทรหาสายด่วน 1323 ได้เลยนะคะ\n[[/VOICE]]";
         $plan = $this->plan($reply);
-        $this->assertSame('crisis', $plan['source']);
-        $this->assertSame('soothe_1', $plan['pre']);
-        $this->assertNull($plan['say']);
-    }
-
-    /**
-     * 🤍 (2026-11-06) คำปลอบไม่มีเบอร์แล้ว — คลิป soothe_2 เดิม ("…โทรสายด่วนที่…พิมพ์ไว้ให้") ห้ามเล่นในเทิร์นวิกฤต
-     */
-    public function test_a_crisis_turn_never_plays_a_clip_that_mentions_a_hotline(): void
-    {
-        foreach (['maemor', 'busaba', 'kunsai'] as $persona) {
-            $this->assertMatchesRegularExpression('/โทร|สายด่วน/u', JuntraVoiceLibrary::clips($persona)['soothe_2'], "{$persona}: บทเดิมยังพูดถึงสายด่วน");
-
-            $plan = VoicePlanParser::crisis($persona, null);
-            $this->assertSame('crisis', $plan['source']);
-            $this->assertNotNull($plan['pre'], $persona);
-            $this->assertDoesNotMatchRegularExpression('/โทร|สายด่วน/u', JuntraVoiceLibrary::clips($persona)[$plan['pre']], $persona);
-
-            // เว็บมีแต่ไฟล์ soothe_2 → เงียบดีกว่าเล่นคลิปที่ไล่ไปโทร (คำปลอบอยู่ในแชทแล้ว)
-            $this->assertNull(VoicePlanParser::crisis($persona, ['soothe_2'])['pre'], $persona);
-            $this->assertSame('soothe_1', VoicePlanParser::crisis($persona, ['soothe_2', 'soothe_1'])['pre'], $persona);
-        }
-
-        // คำตอบของ AI ที่ให้เบอร์ (ลูกค้าถามหาที่ขอความช่วยเหลือเอง) ก็ใช้คลิปชุดเดียวกัน
-        $this->assertNull($this->plan("โทร 1323 ได้ฟรีนะคะ\n[[VOICE]]\nsay: โทร 1323 นะคะ\n[[/VOICE]]", 'busaba', ['soothe_2'])['pre']);
+        $this->assertSame('ai', $plan['source']);
+        $this->assertNotNull($plan['say']);
     }
 
     public function test_a_guard_reply_never_synthesizes(): void

@@ -152,15 +152,10 @@ class TarotInterpretController extends Controller
         //   ปฏิเสธ (ไม่ใช่คำตอบสำเร็จรูป) — juntraweb จะคืนเงิน ลูกค้าไม่ต้องจ่ายเพื่อได้ข้อความปัด
         if ($question !== '' && ($attack = FortuneAIService::detectAdversarialInput($question)) !== null) {
             Log::warning('Juntra tarot profile: question rejected by adversarial guard', ['attack' => $attack, 'profile' => $profile['key']]);
-            // 🔑 ทางนี้ไม่มี id ลูกค้า — กันแจ้งซ้ำด้วยข้อความ แล้วบอกชื่อ/แพ็กเกจให้แอดมินตามหา
-            FortuneAIService::reportSelfHarmSignal($attack, $question, null,
-                'เว็บจันทรา เปิดไพ่ '.$profile['key'].(! empty($data['customer_name']) ? ' · '.$data['customer_name'] : ''));
 
-            // 🤍 (2026-11-03) คำถามที่ส่งสัญญาณอยากทำร้ายตัวเอง → ไม่ทำนาย แต่ปลอบเบา ๆ แทนข้อความปัด
-            $message = $attack === 'self_harm' ? FortuneAIService::buildAdversarialReply($attack) : 'คำถามนี้แม่หมอทำนายให้ไม่ได้';
-
-            // crisis = true → เว็บคืนเงินเหมือนทุก 422 และแสดง message (คำปลอบ) แทนข้อความปัด
-            return response()->json(['message' => $message, 'reason_code' => 'question_rejected', 'crisis' => $attack === 'self_harm'], 422);
+            // 🤍 (2026-11-09 owner) เลิกตรวจจับ self-harm/วิกฤตแล้ว — คำถามแบบนั้นทำนายตามปกติ
+            //   คงคีย์ crisis ไว้เป็น false เสมอ ให้เว็บรุ่นเก่าที่ยังอ่านคีย์นี้ไม่พัง
+            return response()->json(['message' => 'คำถามนี้แม่หมอทำนายให้ไม่ได้', 'reason_code' => 'question_rejected', 'crisis' => false], 422);
         }
 
         $blocks = ['knowledge' => $this->knowledgeBlock($kb, $cards, $question, $profile['key'])];
