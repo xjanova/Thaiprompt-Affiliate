@@ -130,10 +130,10 @@ class JuntraPayoutAccountTest extends TestCase
     }
 
     /**
-     * 🏦 (2026-11-09) เลขบัญชีให้โอนตรง = บัญชีหลักของระบบ แม้ QR จะเป็นบัญชีดูดวงคนละใบ
-     *   เจ้าของ: "ให้แจ้งเลขบัญชีธนาคารสวยๆ ของไทยพาณิชย์ด้วย"
+     * 🏦 (2026-11-09) เลขบัญชีให้โอนตรง = บัญชีที่ติ๊กไว้ให้ดูดวง (ใบเดียวกับ QR) ไม่ใช่บัญชีหลักของระบบ
+     *   เจ้าของ: "ต้องเป็นบัญชีกสิกร ... ไม่ใช่ไทยพาณิชย์"
      */
-    public function test_transfer_account_is_the_system_default_even_when_the_qr_uses_another_account(): void
+    public function test_transfer_account_is_the_ticked_fortune_account_not_the_system_default(): void
     {
         Sanctum::actingAs(User::factory()->create());
 
@@ -146,32 +146,37 @@ class JuntraPayoutAccountTest extends TestCase
         $this->getJson(self::URL)
             ->assertOk()
             ->assertJsonPath('data.promptpay_id', '0900000002')
-            ->assertJsonPath('data.transfer_account.bank_code', 'SCB')
-            ->assertJsonPath('data.transfer_account.account_number', '1111111111')
-            ->assertJsonPath('data.transfer_account.account_name', 'ร้านค้า ทดสอบ');
+            ->assertJsonPath('data.transfer_account.bank_code', 'KBANK')
+            ->assertJsonPath('data.transfer_account.account_number', '2222222222')
+            ->assertJsonPath('data.transfer_account.account_name', 'จันทราพยากรณ์ ทดสอบ');
     }
 
-    /** บัญชีหลักไม่มีตัวจับ SMS = โอนแล้วบิลไม่ตัดเอง → ใช้บัญชีที่มี SMS แทน */
-    public function test_transfer_account_skips_accounts_without_sms_checking(): void
+    /** บัญชีที่ทำ QR ไม่มีเลขบัญชี → ใช้บัญชีดูดวงใบถัดไปที่ติ๊กไว้และเปิด SMS */
+    public function test_transfer_account_falls_to_another_ticked_account_with_sms(): void
     {
         Sanctum::actingAs(User::factory()->create());
 
-        $this->shopAccount();   // default แต่ไม่ได้เปิด SMS
-        $fortune = $this->fortuneAccount();
-        $fortune->update(['sms_checker_enabled' => true]);
-        $this->tickAccounts([$fortune->id]);
+        $qr = $this->fortuneAccount();
+        $qr->update(['sms_checker_enabled' => true, 'account_number' => '', 'sort_order' => 0]);
+        $second = $this->shopAccount();
+        $second->update(['sms_checker_enabled' => true, 'is_default' => false, 'sort_order' => 5]);
+        $this->tickAccounts([$qr->id, $second->id]);
 
         $this->getJson(self::URL)
             ->assertOk()
-            ->assertJsonPath('data.transfer_account.account_number', '2222222222');
+            ->assertJsonPath('data.promptpay_id', '0900000002')
+            ->assertJsonPath('data.transfer_account.account_number', '1111111111');
     }
 
-    public function test_transfer_account_is_null_when_no_account_has_sms_checking(): void
+    /** บัญชีดูดวงไม่ได้เปิด SMS = โอนแล้วบิลไม่ตัดเอง → ไม่ส่งเลขบัญชี (ไม่หยิบบัญชีหลักของระบบมาแทน) */
+    public function test_transfer_account_is_null_when_the_fortune_account_has_no_sms_checking(): void
     {
         Sanctum::actingAs(User::factory()->create());
 
-        $this->shopAccount();
-        $this->fortuneAccount();
+        $shop = $this->shopAccount();
+        $shop->update(['sms_checker_enabled' => true]);
+        $fortune = $this->fortuneAccount();
+        $this->tickAccounts([$fortune->id]);
 
         $this->getJson(self::URL)
             ->assertOk()

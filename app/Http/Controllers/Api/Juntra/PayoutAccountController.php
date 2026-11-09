@@ -59,31 +59,30 @@ class PayoutAccountController extends Controller
             'bank_name'      => $account->bank_name,
             // เว็บใช้ตัดสินใจว่าจะเปิดโหมดจับยอดอัตโนมัติได้ไหม
             'sms_checker_enabled' => (bool) $account->sms_checker_enabled,
-            'transfer_account' => self::transferAccount(),
+            'transfer_account' => self::transferAccount($account, $settings),
         ]]);
     }
 
     /**
      * 🏦 (2026-11-09) เลขบัญชีให้ลูกค้าโอนตรงแทนการสแกน — แสดงคู่กับ QR ในห้องแชทของเว็บ
      *
-     * เจ้าของ: "มันแจ้งแต่ qrcode ให้แจ้งเลขบัญชีธนาคารสวยๆ ของไทยพาณิชย์ด้วย"
-     *   = บัญชีหลักของระบบ (is_default) ไม่ใช่บัญชีที่ใช้ทำ QR ซึ่งอาจเป็นคนละใบ
+     * เจ้าของ: "ให้แจ้งเลขบัญชีธนาคารด้วย" แล้วแก้ว่า "ต้องเป็นบัญชีกสิกร ... ไม่ใช่ไทยพาณิชย์"
+     *   = บัญชีที่ติ๊กไว้ให้ระบบดูดวง (ใบเดียวกับ QR ก่อน) ไม่ใช่บัญชีหลักของทั้งระบบ
+     *   ลูกค้าเห็นชื่อบัญชีเดียวกับ QR และเป็นบัญชีเดียวกับที่บอท FB/LINE ให้โอน
      *
      * ต้องเป็นบัญชีที่ตัวจับ SMS เปิดอยู่เท่านั้น — เว็บตัดบิลด้วยยอดเศษสตางค์จาก SMS
      *   ถ้าส่งบัญชีที่ไม่มี SMS เข้ามา ลูกค้าโอนถูกแต่บิลไม่ตัด ต้องรอแอดมินตรวจมือ
-     *   ไม่มีบัญชีแบบนั้น = null (เว็บแสดงแค่ QR เหมือนเดิม)
+     *   ไม่มีบัญชีแบบนั้นในบัญชีดูดวง = null (เว็บแสดงแค่ QR เหมือนเดิม)
      *
      * @return array{bank_code:?string,bank_name:?string,account_number:string,account_name:?string}|null
      */
-    private static function transferAccount(): ?array
+    private static function transferAccount(PaymentBankAccount $qrAccount, FortuneTellingSetting $settings): ?array
     {
-        $acc = PaymentBankAccount::active()
-            ->smsCheckerEnabled()
-            ->whereNotNull('account_number')
-            ->where('account_number', '!=', '')
-            ->orderByDesc('is_default')
-            ->ordered()
-            ->first();
+        $acc = collect([$qrAccount])
+            ->concat($settings->getFortuneBankAccounts())
+            ->first(fn (PaymentBankAccount $a) => $a->is_active
+                && $a->sms_checker_enabled
+                && trim((string) $a->account_number) !== '');
 
         if (! $acc) {
             return null;
