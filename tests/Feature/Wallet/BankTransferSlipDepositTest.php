@@ -101,8 +101,20 @@ class BankTransferSlipDepositTest extends TestCase
 
     public function test_migration_adds_the_switch_turned_off(): void
     {
-        $this->assertDatabaseHas('wallet_settings', ['key' => 'bank_transfer_enabled', 'value' => '0']);
+        // รัน up() ตรง ๆ — ทั้งชุดเทสต์มีไฟล์อื่นล้างตาราง wallet_settings ทิ้ง (TRUNCATE commit ทันที)
+        // จึงพึ่งแถวที่ migrate ไว้ตอนเริ่มไม่ได้
+        $migration = require database_path('migrations/2026_11_09_120000_add_bank_transfer_enabled_wallet_setting.php');
+        WalletSetting::where('key', 'bank_transfer_enabled')->delete();
+
+        $migration->up();
+        $this->assertDatabaseHas('wallet_settings', ['key' => 'bank_transfer_enabled', 'value' => '0', 'group' => 'payment_methods']);
         $this->assertFalse(WalletSetting::isPaymentMethodEnabled('bank_transfer'));
+
+        // แอดมินเปิดไว้แล้ว รันซ้ำต้องไม่ทับค่าเดิม
+        WalletSetting::where('key', 'bank_transfer_enabled')->update(['value' => '1']);
+        $migration->up();
+        $this->assertSame(1, WalletSetting::where('key', 'bank_transfer_enabled')->count());
+        $this->assertSame('1', WalletSetting::where('key', 'bank_transfer_enabled')->value('value'));
     }
 
     public function test_disabled_bank_transfer_is_hidden_and_rejected_without_leaving_a_file(): void
