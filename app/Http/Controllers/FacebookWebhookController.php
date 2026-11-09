@@ -6735,6 +6735,13 @@ class FacebookWebhookController extends Controller
 
         if ($this->fbWebOnlyImageLooksLikeSlip($imageUrl)) {
             $path = $this->storeFbWebOnlySlipEvidence($senderId, $imageUrl);
+
+            // 🧾 (2026-11-10) เจ้าของ: "อยากให้ระบบเก่า ก็สามารถตรวจสลิปได้อยู่ด้วย แม้จะส่งลูกค้ามาเว็บ"
+            //    ตรวจ SlipOK แล้วส่งต่อให้เว็บจันทราจับคู่บิล/เติมกระเป๋า — ตรวจไม่ได้ = ทางเดิมด้านล่าง
+            if ($path !== null && $this->relayFbWebOnlyChatSlip($senderId, $path)) {
+                return;
+            }
+
             $this->alertAdminFbWebOnlySlip($senderId, self::FB_WEB_ONLY_TIER_OTHER, null, $path);
             $this->sendFbWebHandoff($senderId, $copy::KIND_SLIP_FORWARDED, 'slip_tier_c');
 
@@ -6747,6 +6754,63 @@ class FacebookWebhookController extends Controller
         }
 
         $this->sendFbWebOnlyImageBox($senderId, 'image_tier_c');
+    }
+
+    /**
+     * 🧾 (2026-11-10) สลิประดับ C → ตรวจ SlipOK แล้วส่งต่อเว็บจันทรา (JuntraChatSlipRelay)
+     *
+     * @return bool true = ตอบลูกค้าแล้ว (จบที่นี่) · false = ตรวจไม่ได้ ให้ผู้เรียกใช้ทางเดิม
+     */
+    protected function relayFbWebOnlyChatSlip(string $senderId, string $path): bool
+    {
+        $copy = \App\Services\Fortune\WebHandoffCopy::class;
+        $relay = \App\Services\Juntra\JuntraChatSlipRelay::class;
+
+        try {
+            $result = app($relay)->handle('facebook', $senderId, $path);
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: ส่งต่อสลิปให้เว็บจันทราพัง → ทางเดิม', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        $outcome = $result['outcome'] ?? $relay::UNVERIFIED;
+        $message = $relay::customerMessage($result);
+        if ($outcome === $relay::UNVERIFIED || $message === null) {
+            return false;
+        }
+
+        try {
+            $this->facebookService->sendMessage($senderId, $message);
+        } catch (\Throwable $e) {
+            Log::warning('🌐 FB web-only: ส่งผลตรวจสลิปให้ลูกค้าไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        // เติมแล้ว = ไม่ต้องรบกวนแอดมิน · ที่เหลือ (รอตรวจ/ซ้ำ/ไม่เจอบัญชี/ผิดบัญชี/เก่า) = เข้าคิว + แจ้งแอดมิน
+        if ($outcome !== $relay::CREDITED) {
+            $this->alertAdminFbWebOnlySlip($senderId, self::FB_WEB_ONLY_TIER_OTHER, null, $path, sprintf(
+                'ตรวจสลิปจากแชทแล้ว: %s · ยอด %s%s',
+                $outcome,
+                isset($result['amount']) ? number_format((float) $result['amount'], 2) : '-',
+                ! empty($result['topup_ref']) ? ' · บิลเว็บ '.$result['topup_ref'] : ''
+            ));
+        }
+
+        $this->sendFbWebHandoff(
+            $senderId,
+            $outcome === $relay::CREDITED ? $copy::KIND_ROOM : $copy::KIND_SLIP_FORWARDED,
+            'slip_tier_c_'.$outcome
+        );
+
+        Log::info('🌐 FB web-only: สลิประดับ C ตรวจแล้วส่งต่อเว็บจันทรา', [
+            'user_id' => $senderId,
+            'outcome' => $outcome,
+            'trans_ref' => $result['trans_ref'] ?? null,
+            'topup_ref' => $result['topup_ref'] ?? null,
+            'evidence_path' => $path,
+        ]);
+
+        return true;
     }
 
     /**
@@ -6829,7 +6893,7 @@ class FacebookWebhookController extends Controller
      *
      * แจ้งซ้ำได้ทุก 30 นาทีต่อคน แต่ "คิว" บันทึกทุกครั้งที่มีหลักฐานใหม่
      */
-    protected function alertAdminFbWebOnlySlip(string $senderId, string $tier, ?int $readingId, ?string $evidencePath): void
+    protected function alertAdminFbWebOnlySlip(string $senderId, string $tier, ?int $readingId, ?string $evidencePath, ?string $note = null): void
     {
         $tierLabel = $tier === self::FB_WEB_ONLY_TIER_PENDING
             ? 'ระดับ B — บิลค้างก่อนย้ายไปเว็บ'
@@ -6840,7 +6904,8 @@ class FacebookWebhookController extends Controller
                 platformUserId: $senderId,
                 question: "🧾 [FB web-only] ลูกค้าส่งรูปที่อาจเป็นสลิป ({$tierLabel})"
                     .($readingId ? " · reading #{$readingId}" : '')
-                    .($evidencePath ? " · หลักฐาน: {$evidencePath}" : ' · เก็บรูปไม่สำเร็จ ดูในกล่องข้อความเพจ'),
+                    .($evidencePath ? " · หลักฐาน: {$evidencePath}" : ' · เก็บรูปไม่สำเร็จ ดูในกล่องข้อความเพจ')
+                    .($note ? ' · '.$note : ''),
                 reason: 'fb_web_only_slip',
                 platform: 'facebook'
             );
@@ -6860,6 +6925,7 @@ class FacebookWebhookController extends Controller
                     'tier' => $tierLabel,
                     'reading_id' => $readingId ?? '-',
                     'evidence' => $evidencePath ?? '-',
+                    'slip_check' => $note ?? '-',
                     'admin_action' => 'ตรวจยอดเงินเข้าแล้วเติมให้ลูกค้าบนเว็บจันทรา (ห้ามตอบเรื่องเงินในแชท FB)',
                 ]
             );

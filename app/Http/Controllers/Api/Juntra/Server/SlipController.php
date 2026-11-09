@@ -145,11 +145,14 @@ class SlipController extends Controller
             'sending_bank' => 'nullable|string|max:8',
             'receiving_bank' => 'nullable|string|max:8',
             'trans_timestamp' => 'nullable|string|max:64',
+            // 🧾 (2026-11-10) สลิปจากแชทเพจที่บอทพักไว้ให้ลูกค้าคนนี้ — "chat:{platform}:{id}"
+            'chat_owner' => 'nullable|string|max:100',
         ]);
 
         $transRef = trim((string) $validated['trans_ref']);
         $userRef = trim((string) $validated['user_ref']);
         $topupRef = trim((string) $validated['topup_ref']);
+        $chatOwner = trim((string) ($validated['chat_owner'] ?? ''));
 
         try {
             SlipVerification::create([
@@ -173,11 +176,11 @@ class SlipController extends Controller
                 'verified_at' => now(),
             ]);
         } catch (UniqueConstraintViolationException $e) {
-            return $this->respondToExistingClaim($registry, $transRef, $userRef, $topupRef);
+            return $this->respondToExistingClaim($registry, $transRef, $userRef, $topupRef, $chatOwner);
         } catch (QueryException $e) {
             // driver เก่าบางตัวไม่แปลงเป็น UniqueConstraintViolationException — SQLSTATE 23000 = ซ้ำ
             if ((string) $e->getCode() === '23000' && $registry->findByRef($transRef) !== null) {
-                return $this->respondToExistingClaim($registry, $transRef, $userRef, $topupRef);
+                return $this->respondToExistingClaim($registry, $transRef, $userRef, $topupRef, $chatOwner);
             }
 
             throw $e;
@@ -199,8 +202,40 @@ class SlipController extends Controller
     /**
      * เลขอ้างอิงนี้มีเจ้าของแล้ว — ถ้าเป็น "การเคลมเดิมของจันทรา" ตอบสำเร็จซ้ำ (idempotent) ไม่งั้น 409
      */
-    protected function respondToExistingClaim(SlipUsageRegistry $registry, string $transRef, string $userRef, string $topupRef): JsonResponse
+    protected function respondToExistingClaim(SlipUsageRegistry $registry, string $transRef, string $userRef, string $topupRef, string $chatOwner = ''): JsonResponse
     {
+        // 🧾 (2026-11-10) สลิปที่บอทพักไว้ให้ลูกค้าแชทคนนี้ → ผูกเข้าบิลของเว็บ (ครั้งเดียว)
+        //    update แบบมีเงื่อนไข "ยังเป็นของตัวตนแชทอยู่" — สองคำขอพร้อมกัน ผูกได้คำขอเดียว
+        if ($chatOwner !== '' && str_starts_with($chatOwner, 'chat:')) {
+            $row = $registry->findByRef($transRef);
+            if ($row !== null
+                && $row->consumed_by_platform === self::PLATFORM
+                && (string) $row->consumed_by_user_id === $chatOwner) {
+                $raw = is_array($row->raw) ? $row->raw : [];
+                $bound = SlipVerification::whereKey($row->id)
+                    ->where('consumed_by_user_id', $chatOwner)
+                    ->update([
+                        'consumed_by_user_id' => $userRef,
+                        'raw' => json_encode(array_merge($raw, [
+                            'topup_ref' => $topupRef,
+                            'bound_from' => $chatOwner,
+                        ]), JSON_UNESCAPED_UNICODE),
+                        'updated_at' => now(),
+                    ]);
+
+                if ($bound === 1) {
+                    Log::info('Juntra server slip claim: ผูกสลิปจากแชทเพจเข้าบิลเว็บจันทรา', [
+                        'trans_ref' => $transRef,
+                        'chat_owner' => $chatOwner,
+                        'user_ref' => $userRef,
+                        'topup_ref' => $topupRef,
+                    ]);
+
+                    return response()->json(['data' => ['claimed' => true, 'from_chat' => true]], 201);
+                }
+            }
+        }
+
         $existing = $registry->findByRef($transRef);
 
         if ($existing === null) {

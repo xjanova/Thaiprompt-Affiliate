@@ -329,6 +329,9 @@ return [
         'url' => rtrim((string) env('JUNTRA_URL', 'https://xn--82c4af5bzdj.online'), '/'),
         // ส่วนดูดวง/ไพ่ทาโรต์บนเว็บนี้ (/tarot/*, /horoscope/*) เด้งไปเว็บจันทราทั้งหมด — false = หน้าเดิมกลับมาทำงาน
         'redirect_fortune' => (bool) env('JUNTRA_REDIRECT_FORTUNE', true),
+        // 🧾 (2026-11-10) สลิปที่ส่งในแชทเพจ (โหมด web-only ไม่มีบิลค้าง) → ตรวจ SlipOK แล้วส่งต่อให้เว็บจันทราเติมกระเป๋า
+        //    false = กลับไปแบบเดิม: เก็บรูปเป็นหลักฐาน + แจ้งแอดมิน (ไม่ยิง SlipOK)
+        'chat_slip_relay' => (bool) env('JUNTRA_CHAT_SLIP_RELAY', true),
         'server_client_ids' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('JUNTRA_SERVER_CLIENT_IDS', ''))
