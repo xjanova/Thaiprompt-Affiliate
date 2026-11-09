@@ -59,6 +59,41 @@ class PayoutAccountController extends Controller
             'bank_name'      => $account->bank_name,
             // เว็บใช้ตัดสินใจว่าจะเปิดโหมดจับยอดอัตโนมัติได้ไหม
             'sms_checker_enabled' => (bool) $account->sms_checker_enabled,
+            'transfer_account' => self::transferAccount(),
         ]]);
+    }
+
+    /**
+     * 🏦 (2026-11-09) เลขบัญชีให้ลูกค้าโอนตรงแทนการสแกน — แสดงคู่กับ QR ในห้องแชทของเว็บ
+     *
+     * เจ้าของ: "มันแจ้งแต่ qrcode ให้แจ้งเลขบัญชีธนาคารสวยๆ ของไทยพาณิชย์ด้วย"
+     *   = บัญชีหลักของระบบ (is_default) ไม่ใช่บัญชีที่ใช้ทำ QR ซึ่งอาจเป็นคนละใบ
+     *
+     * ต้องเป็นบัญชีที่ตัวจับ SMS เปิดอยู่เท่านั้น — เว็บตัดบิลด้วยยอดเศษสตางค์จาก SMS
+     *   ถ้าส่งบัญชีที่ไม่มี SMS เข้ามา ลูกค้าโอนถูกแต่บิลไม่ตัด ต้องรอแอดมินตรวจมือ
+     *   ไม่มีบัญชีแบบนั้น = null (เว็บแสดงแค่ QR เหมือนเดิม)
+     *
+     * @return array{bank_code:?string,bank_name:?string,account_number:string,account_name:?string}|null
+     */
+    private static function transferAccount(): ?array
+    {
+        $acc = PaymentBankAccount::active()
+            ->smsCheckerEnabled()
+            ->whereNotNull('account_number')
+            ->where('account_number', '!=', '')
+            ->orderByDesc('is_default')
+            ->ordered()
+            ->first();
+
+        if (! $acc) {
+            return null;
+        }
+
+        return [
+            'bank_code' => $acc->bank_code,
+            'bank_name' => $acc->bank_name,
+            'account_number' => (string) $acc->account_number,
+            'account_name' => $acc->account_name,
+        ];
     }
 }

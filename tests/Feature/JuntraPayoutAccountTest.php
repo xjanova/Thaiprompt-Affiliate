@@ -128,4 +128,53 @@ class JuntraPayoutAccountTest extends TestCase
 
         $this->getJson(self::URL)->assertNotFound();
     }
+
+    /**
+     * 🏦 (2026-11-09) เลขบัญชีให้โอนตรง = บัญชีหลักของระบบ แม้ QR จะเป็นบัญชีดูดวงคนละใบ
+     *   เจ้าของ: "ให้แจ้งเลขบัญชีธนาคารสวยๆ ของไทยพาณิชย์ด้วย"
+     */
+    public function test_transfer_account_is_the_system_default_even_when_the_qr_uses_another_account(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $shop = $this->shopAccount();
+        $shop->update(['sms_checker_enabled' => true]);
+        $fortune = $this->fortuneAccount();
+        $fortune->update(['sms_checker_enabled' => true]);
+        $this->tickAccounts([$fortune->id]);
+
+        $this->getJson(self::URL)
+            ->assertOk()
+            ->assertJsonPath('data.promptpay_id', '0900000002')
+            ->assertJsonPath('data.transfer_account.bank_code', 'SCB')
+            ->assertJsonPath('data.transfer_account.account_number', '1111111111')
+            ->assertJsonPath('data.transfer_account.account_name', 'ร้านค้า ทดสอบ');
+    }
+
+    /** บัญชีหลักไม่มีตัวจับ SMS = โอนแล้วบิลไม่ตัดเอง → ใช้บัญชีที่มี SMS แทน */
+    public function test_transfer_account_skips_accounts_without_sms_checking(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->shopAccount();   // default แต่ไม่ได้เปิด SMS
+        $fortune = $this->fortuneAccount();
+        $fortune->update(['sms_checker_enabled' => true]);
+        $this->tickAccounts([$fortune->id]);
+
+        $this->getJson(self::URL)
+            ->assertOk()
+            ->assertJsonPath('data.transfer_account.account_number', '2222222222');
+    }
+
+    public function test_transfer_account_is_null_when_no_account_has_sms_checking(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->shopAccount();
+        $this->fortuneAccount();
+
+        $this->getJson(self::URL)
+            ->assertOk()
+            ->assertJsonPath('data.transfer_account', null);
+    }
 }
