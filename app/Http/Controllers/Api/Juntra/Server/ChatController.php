@@ -115,6 +115,8 @@ class ChatController extends Controller
             // 🪐 (2026-11-07) วันเกิด/เวลาเกิดในโปรไฟล์เว็บ → ผังดวงจริงชุดเดียวกับบิลของเพจ · ไม่ส่ง = ไม่มีผังดวง
             'birth_date' => 'sometimes|nullable|date_format:Y-m-d|before:today',
             'birth_time' => 'sometimes|nullable|date_format:H:i',
+            // 🧭 (2026-11-10) คู่มือใช้เว็บเฉพาะหัวข้อที่ตรงคำถาม + สถานะบัญชีจริง (เว็บเลือกเอง) · ไม่ส่ง = เทิร์นปกติ
+            'site_help' => 'sometimes|nullable|string|max:'.JuntraChatService::MAX_SITE_HELP_CHARS,
         ]);
         $suggest = $request->boolean('suggest');
 
@@ -149,6 +151,9 @@ class ChatController extends Controller
                 astro: ! empty($data['birth_date'])
                     ? ['birth_date' => $data['birth_date'], 'birth_time' => $data['birth_time'] ?? null]
                     : null,
+                siteHelp: $data['site_help'] ?? null,
+                // 🧭 ห้องแชทเว็บทุกห้อง — พาไปก้าวถัดไป ไม่ชวนคุยเรื่อยเปื่อย ไม่แต่งฟีเจอร์
+                webFocus: true,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [
