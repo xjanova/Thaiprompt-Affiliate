@@ -87,6 +87,17 @@ class FortuneCommentReply extends Model
     /** อายุความจำ (วินาที) — 7 วัน */
     protected const RECENT_TTL = 604800;
 
+    /**
+     * 🗨️ (2026-11-09) จำนวนชุดล่าสุดที่ "ห้ามหยิบซ้ำ" ต่อ 1 เพจ (สาขา)
+     *
+     * ความจำต่อคนอย่างเดียวไม่พอ — คนละคนแต่เพจเดียวกันยังได้ข้อความเดิมติดกันได้
+     * และสิ่งที่ Facebook เห็นคือ "เพจนี้ตอบประโยคเดิมซ้ำ ๆ" ไม่ใช่ต่อคน
+     */
+    protected const RECENT_SCOPE_MEMORY = 20;
+
+    /** อายุความจำต่อเพจ (วินาที) — 1 วัน */
+    protected const RECENT_SCOPE_TTL = 86400;
+
     protected $fillable = [
         'message',
         'category',
@@ -136,30 +147,39 @@ class FortuneCommentReply extends Model
      * @param  string  $category  หมวดที่ต้องการ
      * @param  string|null  $userKey  ตัวระบุลูกค้า (PSID) — null = ไม่ต้องกันซ้ำ
      * @param  string  $locale  ภาษา
+     * @param  string|null  $scopeKey  ตัวระบุเพจ/สาขา — null = ไม่กันซ้ำระดับเพจ
      * @return string|null ข้อความที่ยังไม่ได้แทน {name} — null = ไม่มีของในคลัง
      *
      * @example
      * $msg = FortuneCommentReply::pick('invite', $psid);
      * // "ขอบคุณที่แวะมาค่ะ {name} 🙏 กดติดตามเพจไว้ รับดวงฟรีทุกเช้าเลยนะคะ"
      */
-    public static function pick(string $category, ?string $userKey = null, string $locale = 'th'): ?string
+    public static function pick(string $category, ?string $userKey = null, string $locale = 'th', ?string $scopeKey = null): ?string
     {
         if (! self::isReady()) {
             return null;
         }
 
         $recent = $userKey ? self::recentIds($userKey) : [];
+        $recentScope = $scopeKey ? self::recentScopeIds($scopeKey) : [];
 
         $base = fn () => self::query()
             ->active()
             ->where('category', $category)
             ->where('locale', $locale);
 
-        // รอบแรก: ตัดชุดที่เพิ่งใช้ไปกับคนนี้
+        // รอบแรก: ตัดชุดที่เพิ่งใช้ไปกับคนนี้ + ที่เพิ่งใช้บนเพจนี้
+        $avoid = array_values(array_unique(array_merge($recent, $recentScope)));
         $row = $base()
-            ->when(! empty($recent), fn ($q) => $q->whereNotIn('id', $recent))
+            ->when(! empty($avoid), fn ($q) => $q->whereNotIn('id', $avoid))
             ->inRandomOrder()
             ->first();
+
+        // รอบสอง (คลังเล็ก): ตัดแค่ของคนนี้ + ตัวล่าสุดของเพจ (ห้ามซ้ำติดกันบนเพจเดียวกัน)
+        if ($row === null && ! empty($recentScope)) {
+            $avoid = array_values(array_unique(array_merge($recent, [end($recentScope)])));
+            $row = $base()->whereNotIn('id', $avoid)->inRandomOrder()->first();
+        }
 
         // 🔁 รอบสอง: คลังหมวดนี้เล็กกว่าความจำ → ทุกชุดโดนตัดหมด
         //    ⚠️ ห้ามคืน null เพราะตัวกันซ้ำ — คอมเมนต์เงียบแย่กว่าตอบซ้ำ
@@ -174,6 +194,10 @@ class FortuneCommentReply extends Model
             self::rememberUsed($userKey, $row->id);
         }
 
+        if ($scopeKey) {
+            self::rememberScopeUsed($scopeKey, $row->id);
+        }
+
         $row->recordUse();
 
         return $row->message;
@@ -186,15 +210,17 @@ class FortuneCommentReply extends Model
      * @param  string  $name  ชื่อลูกค้า
      * @param  string|null  $userKey  ตัวระบุลูกค้า (PSID)
      * @param  string  $locale  ภาษา
+     * @param  string|null  $scopeKey  ตัวระบุเพจ/สาขา (กันซ้ำระดับเพจ)
      * @return string|null
      */
     public static function pickRendered(
         string $category,
         string $name,
         ?string $userKey = null,
-        string $locale = 'th'
+        string $locale = 'th',
+        ?string $scopeKey = null
     ): ?string {
-        $message = self::pick($category, $userKey, $locale);
+        $message = self::pick($category, $userKey, $locale, $scopeKey);
 
         if ($message === null) {
             return null;
@@ -278,6 +304,43 @@ class FortuneCommentReply extends Model
         }
 
         Cache::put($key, $ids, self::RECENT_TTL);
+    }
+
+    /**
+     * รายการ id ที่เพิ่งใช้บนเพจนี้ (ทุกหมวดรวมกัน — id ไม่ชนข้ามหมวดอยู่แล้ว)
+     *
+     * @param  string  $scopeKey  ตัวระบุเพจ
+     * @return array<int>
+     */
+    protected static function recentScopeIds(string $scopeKey): array
+    {
+        $ids = Cache::get(self::recentScopeKey($scopeKey), []);
+
+        return is_array($ids) ? $ids : [];
+    }
+
+    /**
+     * จำว่าเพิ่งใช้ชุดไหนบนเพจนี้
+     *
+     * @param  string  $scopeKey  ตัวระบุเพจ
+     * @param  int  $id  id ของชุดที่ใช้
+     * @return void
+     */
+    protected static function rememberScopeUsed(string $scopeKey, int $id): void
+    {
+        $ids = self::recentScopeIds($scopeKey);
+        $ids[] = $id;
+
+        if (count($ids) > self::RECENT_SCOPE_MEMORY) {
+            $ids = array_slice($ids, -self::RECENT_SCOPE_MEMORY);
+        }
+
+        Cache::put(self::recentScopeKey($scopeKey), array_values($ids), self::RECENT_SCOPE_TTL);
+    }
+
+    protected static function recentScopeKey(string $scopeKey): string
+    {
+        return 'fcr:recent_page:'.md5($scopeKey);
     }
 
     /**
