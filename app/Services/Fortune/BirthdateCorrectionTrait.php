@@ -223,7 +223,7 @@ trait BirthdateCorrectionTrait
             return [
                 'action' => 'birthdate_correction_confirm',
                 'message' => ($isCeltic
-                    ? '🙏 วันเกิด *'.$this->formatThaiDate((string) $pendingDate).'* เป็นของลูกเองใช่ไหมคะ'
+                    ? '🙏 วันเกิด *'.$this->formatThaiDate((string) $pendingDate).'* เป็นของคุณเองใช่ไหมคะ'
                     : '🙏 ยืนยันไหมคะว่าจะให้แม่หมอทำนายใหม่ด้วยวันเกิด *'.$this->formatThaiDate((string) $pendingDate).'*')
                     ."\n\n".'กดปุ่มด้านล่าง หรือพิมพ์ "ยืนยัน" / "ไม่ใช่" ค่ะ',
                 'reading' => $reading,
@@ -347,7 +347,7 @@ trait BirthdateCorrectionTrait
         return [
             'action' => 'birthdate_correction_ask',
             'message' => $isCeltic
-                ? "🎂 ได้ค่ะ ขอ*วันเดือนปีเกิดที่ถูกต้อง*ของลูกนะคะ\n"
+                ? "🎂 ได้ค่ะ ขอ*วันเดือนปีเกิดที่ถูกต้อง*ของคุณนะคะ\n"
                     ."📝 *ตัวอย่าง:* 15 มีนาคม 2538 หรือ 15/3/2538 (มีเวลา/จังหวัดเกิดพิมพ์ต่อท้ายได้เลย)\n\n"
                     .'แก้แล้วคำตอบต่อจากนี้แม่หมอผูกดวงจากวันเกิดใหม่ให้ค่ะ'
                 : "🙏 ขอโทษด้วยนะคะ เดี๋ยวแม่หมอทำนายใหม่ให้เลย\n\n"
@@ -376,7 +376,7 @@ trait BirthdateCorrectionTrait
         $candidates = \App\Support\StatedBirthDayName::datesMatching($y, $m, $conflict['stated_day']);
 
         return "🎂 เอ๊ะ... แม่หมอขอเช็กนิดนึงนะคะ\n\n"
-            ."ลูกบอกว่าเกิด *วัน{$statedName}* แต่วันที่ *".$this->formatThaiDate($ymd)."* ตรงกับ *วัน{$parsedName}* ค่ะ 🤔\n"
+            ."คุณบอกว่าเกิด *วัน{$statedName}* แต่วันที่ *".$this->formatThaiDate($ymd)."* ตรงกับ *วัน{$parsedName}* ค่ะ 🤔\n"
             .($candidates !== []
                 ? '📅 ใน'.$this->getThaiMonth($m).' '.($y + 543)." วัน{$statedName} คือวันที่ ".implode(', ', $candidates)."\n"
                 : '')
@@ -514,7 +514,7 @@ trait BirthdateCorrectionTrait
             : '';
 
         $body = $isCeltic
-            ? "วันเกิดนี้เป็นของ *ลูกเอง* ใช่ไหมคะ — ถ้าใช่ แม่หมอจะแก้ในบิล แล้วผูกดวงจากวันเกิดนี้ในคำตอบต่อจากนี้ค่ะ\n"
+            ? "วันเกิดนี้เป็นของ *คุณเอง* ใช่ไหมคะ — ถ้าใช่ แม่หมอจะแก้ในบิล แล้วผูกดวงจากวันเกิดนี้ในคำตอบต่อจากนี้ค่ะ\n"
             : "ถ้าถูกต้องแล้ว แม่หมอจะคำนวณดวงและทำนายให้ใหม่ทั้งหมดค่ะ\n"
                 .'⚠️ _ใช้ได้ *ครั้งเดียวต่อบิล* — ยืนยันแล้วเปลี่ยนอีกไม่ได้นะคะ_'."\n";
 
@@ -522,7 +522,7 @@ trait BirthdateCorrectionTrait
             'action' => 'birthdate_correction_confirm',
             'message' => "🎂 *ตรวจสอบวันเกิดใหม่*\n\n"
                 .$oldLine
-                .'🔹 '.($isCeltic ? 'ที่ลูกพิมพ์มา' : 'ใหม่').': *'.$this->formatThaiDate($newDate)."*\n\n"
+                .'🔹 '.($isCeltic ? 'ที่คุณพิมพ์มา' : 'ใหม่').': *'.$this->formatThaiDate($newDate)."*\n\n"
                 .$body
                 ."\nกดปุ่มด้านล่าง หรือพิมพ์ \"ยืนยัน\" / \"ไม่ใช่\" ค่ะ\n"
                 .'_(ถ้าเป็นวันเกิดของคนอื่น ตอบ "ไม่ใช่" แล้วพิมพ์ถามพร้อมบอกว่าเป็นของใครได้เลยค่ะ)_',

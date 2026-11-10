@@ -150,7 +150,7 @@ class FortuneRemindStuckCeltic extends Command
                 continue;
             }
 
-            $name = $reading->facebook_user_name ?? 'ลูก';
+            $name = $reading->facebook_user_name ?? ''; // ว่าง → "คุณคะ" (owner 2026-11-10 เลิกเรียก "ลูก")
             $billRef = $reading->bill_reference ?? '-';
             $picked = count($reading->getCelticCards());
 
@@ -159,19 +159,19 @@ class FortuneRemindStuckCeltic extends Command
             $waitingBirthTime = (bool) $reading->getConversationState('celtic_birthtime_pending', false);
 
             if ($waitingBirthTime) {
-                $message = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ครบ 10 ใบรอลูกอยู่แล้วนะคะ ✨\n\n"
-                    ."🕛 ขาดอย่างเดียวคือ *เวลาเกิด* ของลูก (บิลเลขที่ {$billRef})\n"
+                $message = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ครบ 10 ใบรอคุณอยู่แล้วนะคะ ✨\n\n"
+                    ."🕛 ขาดอย่างเดียวคือ *เวลาเกิด* ของคุณ (บิลเลขที่ {$billRef})\n"
                     ."   พิมพ์มาได้เลย เช่น *ตี 5* / *06:30* / *บ่าย 2*\n\n"
                     ."💡 จำไม่ได้ก็ไม่เป็นไรค่ะ — พิมพ์ว่า *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวัน\n"
                     .'   แล้วเปิดพื้นดวงให้ทันทีเลย 🃏';
             } else {
                 $message = $picked > 0
                 ? "🌙 หมอจันทรารอเปิดไพ่ต่อให้คุณ{$name}อยู่นะคะ ✨\n\n"
-                    ."บิล Celtic 99฿ ของลูก (เลขที่ {$billRef}) เปิดไพ่ไปแล้ว {$picked}/10 ใบ\n"
+                    ."บิล Celtic 99฿ ของคุณ (เลขที่ {$billRef}) เปิดไพ่ไปแล้ว {$picked}/10 ใบ\n"
                     ."เหลืออีกนิดเดียวเองค่ะ พิมพ์ \"พร้อม\" เพื่อเปิดใบต่อไปได้เลย 🃏\n\n"
                     .'(บิลนี้ใช้ได้เสมอ — กลับมาทำต่อเมื่อสะดวกได้เลยนะคะ 🙏)'
                 : "🌙 หมอจันทรารอเปิดไพ่ให้คุณ{$name}อยู่นะคะ ✨\n\n"
-                    ."บิล Celtic 99฿ ของลูก (เลขที่ {$billRef}) ยังไม่ได้เริ่มเปิดไพ่เลย\n"
+                    ."บิล Celtic 99฿ ของคุณ (เลขที่ {$billRef}) ยังไม่ได้เริ่มเปิดไพ่เลย\n"
                     ."ถ้าพร้อมแล้ว พิมพ์ \"เริ่มเปิดไพ่\" ได้เลยค่ะ 🃏\n\n"
                     .'(บิลนี้ใช้ได้เสมอ — กลับมาทำต่อเมื่อสะดวกได้เลยนะคะ 🙏)';
             }

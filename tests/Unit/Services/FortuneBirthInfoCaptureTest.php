@@ -108,7 +108,7 @@ class FortuneBirthInfoCaptureTest extends TestCase
         $this->assertSame('1978-06-27', $reading->birth_date?->format('Y-m-d'), 'วันเกิดต้องลงคอลัมน์จริง');
         $this->assertCount(1, $this->service->aiCalls, 'ข้อความที่มีแต่วันเกิด ไม่ต้องให้ AI ตอบ');
         $this->assertSame('celtic_awaiting_payment', $result['action']);
-        $this->assertStringContainsString('บันทึกข้อมูลเกิดของลูกลงบิลให้แล้ว', $result['message']);
+        $this->assertStringContainsString('บันทึกข้อมูลเกิดของคุณลงบิลให้แล้ว', $result['message']);
         $this->assertStringContainsString('27 มิถุนายน 2521', $result['message']);
     }
 
@@ -139,7 +139,7 @@ class FortuneBirthInfoCaptureTest extends TestCase
         $this->assertSame('1987-03-05', $reading->birth_date?->format('Y-m-d'));
         $this->assertCount(1, $this->service->aiCalls);
         $this->assertStringContainsString('ห้ามพูดเรื่องวันเกิด', $this->service->birthHints[0]);
-        $this->assertStringStartsWith('📝 แม่หมอบันทึกข้อมูลเกิดของลูกลงบิลให้แล้วค่ะ', $result['message']);
+        $this->assertStringStartsWith('📝 แม่หมอบันทึกข้อมูลเกิดของคุณลงบิลให้แล้วค่ะ', $result['message']);
         $this->assertStringContainsString('ไม่เป็นไรเลยค่ะลูก', $result['message']);
     }
 

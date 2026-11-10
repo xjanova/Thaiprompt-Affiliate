@@ -3824,7 +3824,7 @@ class FacebookWebhookController extends Controller
         $picked = $reading->getCelticPickedCount();
         $remain = max(0, 10 - $picked);
 
-        $summaryLine = '📸 แม่หมอ *เก็บรูปที่ลูกส่งมาไว้แล้ว* นะคะ ไม่หายไปไหน';
+        $summaryLine = '📸 แม่หมอ *เก็บรูปที่คุณส่งมาไว้แล้ว* นะคะ ไม่หายไปไหน';
 
         try {
             $captured = app(\App\Services\CelticCrossService::class)
@@ -3841,7 +3841,7 @@ class FacebookWebhookController extends Controller
             }
 
             if (! $captured['captured']) {
-                $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
             }
         } catch (\Throwable $e) {
             Log::warning('FB: Celtic pending image capture ล้มเหลว (non-blocking)', [
@@ -3849,7 +3849,7 @@ class FacebookWebhookController extends Controller
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
-            $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+            $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
         }
 
         $this->facebookService->sendMessage(

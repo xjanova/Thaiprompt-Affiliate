@@ -166,7 +166,7 @@ class AuspiciousTimingDirectiveTest extends TestCase
         // ธันวาคม 2569 ไม่มีวันแต่งงานที่ผ่านเกณฑ์ตำรา (วันพระ/เดือนอ้าย/วารห้าม) → ต้องเตือน ไม่ใช่ปล่อยให้เข้าใจว่าวัน ม.ค. คือ ธ.ค.
         $block = (new AuspiciousTimingDirective)->forCustomerText('ขอฤกษ์แต่งงานเดือนธันวาค่ะ', '', null, self::now());
         $this->assertStringContainsString('ช่วง 1 ธ.ค. 2569', $block);
-        $this->assertStringContainsString('เดือนธ.ค. ที่ลูกถาม *ไม่มีวันผ่านเกณฑ์ตำราเลย*', $block);
+        $this->assertStringContainsString('เดือนธ.ค. ที่ลูกค้าถาม *ไม่มีวันผ่านเกณฑ์ตำราเลย*', $block);
     }
 
     #[Test]

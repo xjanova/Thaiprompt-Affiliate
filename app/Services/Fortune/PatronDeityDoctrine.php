@@ -252,7 +252,7 @@ class PatronDeityDoctrine
             return '';
         }
 
-        $out = '🎯 องค์ที่เด่นเฉพาะ "เรื่องที่ลูกถามรอบนี้" ('.implode(' + ', $hit['topics']).") — *เสริม ไม่ใช่แทนองค์ประธาน*\n";
+        $out = '🎯 องค์ที่เด่นเฉพาะ "เรื่องที่ลูกค้าถามรอบนี้" ('.implode(' + ', $hit['topics']).") — *เสริม ไม่ใช่แทนองค์ประธาน*\n";
 
         foreach ($hit['deities'] as $name) {
             $out .= $this->rosterLine((string) $name, 'องค์เฉพาะเรื่อง');

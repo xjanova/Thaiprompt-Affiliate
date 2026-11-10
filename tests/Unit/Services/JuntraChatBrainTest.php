@@ -219,7 +219,7 @@ class JuntraChatBrainTest extends TestCase
         (new JuntraChatService($ai))->send('jw7', 's9', 'ช่วงนี้เครียดเรื่องงานมากเลยค่ะ ทำยังไงดี', webMemory: true);
 
         $system = $ai->calls[0]['system'];
-        $this->assertStringContainsString('สิ่งที่แม่หมอจำได้เกี่ยวกับลูกคนนี้', $system);
+        $this->assertStringContainsString('สิ่งที่แม่หมอจำได้เกี่ยวกับลูกค้าคนนี้', $system);
         $this->assertStringContainsString('แมว', $system);
         $this->assertStringNotContainsString('CUSTOMER_TIMELINE', $system, 'หัว timeline นับจากบิลแชทเพจ — ไม่ใช่ของลูกค้าเว็บ');
         Bus::assertDispatched(ExtractCustomerPersonaJob::class);

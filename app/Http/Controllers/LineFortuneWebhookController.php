@@ -2428,7 +2428,7 @@ class LineFortuneWebhookController extends Controller
         $picked = $reading->getCelticPickedCount();
         $remain = max(0, 10 - $picked);
 
-        $summaryLine = '📸 แม่หมอ *เก็บรูปที่ลูกส่งมาไว้แล้ว* นะคะ ไม่หายไปไหน';
+        $summaryLine = '📸 แม่หมอ *เก็บรูปที่คุณส่งมาไว้แล้ว* นะคะ ไม่หายไปไหน';
 
         try {
             $base64 = $cachedBase64 ?: (empty($messageId) ? null : $this->downloadLineImageAsBase64($messageId));
@@ -2449,10 +2449,10 @@ class LineFortuneWebhookController extends Controller
                 }
 
                 if (! $captured['captured']) {
-                    $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                    $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
                 }
             } else {
-                $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
             }
         } catch (\Throwable $e) {
             Log::warning('LINE: Celtic pending image capture ล้มเหลว (non-blocking)', [
@@ -2460,7 +2460,7 @@ class LineFortuneWebhookController extends Controller
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
-            $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+            $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
         }
 
         $this->lineService->sendMessageWithReplyFallback(
