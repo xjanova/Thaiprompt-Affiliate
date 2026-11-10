@@ -13,6 +13,9 @@
  * ภาพถ่ายละเอียดสูง (4:3 ราว 5 MP) ให้บัตรกว้าง ≥ 1000 px เมื่อเต็มกรอบ — server ปรับบัตรเป็น 1000 px ก่อน OCR
  * ห้ามเลือกรูปจากคลัง (กันใช้รูปบัตรของคนอื่น) · ไฟล์ภาพที่ไม่ได้ใช้ถูกลบทันที
  * ออกจากหน้า/พับแอป = ปิดกล้องและหยุดลูปถ่าย · กันแคปหน้าจอ
+ *
+ * เอกสารอื่น (ใบขับขี่ / หนังสือเดินทาง / บัตรต่างประเทศ — 2026-11-10): ตัวตรวจในเครื่องตั้งตามผังบัตรประชาชนไทย
+ * (รูปหน้าอยู่ขวา) ใช้กับเอกสารอื่นไม่ได้ → ปิดถ่ายอัตโนมัติ ใช้ตัวสแกนเอกสาร (ถ้ามี) หรือกดถ่ายเอง · server ตรวจทุกข้อเหมือนเดิม
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,6 +32,7 @@ import { CameraPermissionPanel, useAppActive, useTimers } from '@/components/eky
 import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useEkycStore } from '@/stores/ekycStore';
+import { EKYC_DOC_SHORT, type EkycDocType } from '@/services/api/ekycApi';
 import {
   detectFacesInImage,
   isDocumentScannerAvailable,
@@ -45,6 +49,17 @@ const CAM = DARK_THEME.colors;
 const CAM_GRAD = DARK_THEME.gradients;
 /** สัดส่วนบัตรประชาชน (ISO ID-1: 85.6 × 54 มม.) */
 const CARD_RATIO = 85.6 / 54;
+/** สัดส่วนหน้าข้อมูลหนังสือเดินทาง (ICAO TD3: 125 × 88 มม.) */
+const PASSPORT_RATIO = 125 / 88;
+
+/** คำแนะนำด้านล่างจอตามชนิดเอกสาร */
+const DOC_TIP: Record<EkycDocType, string> = {
+  thai_id: 'วางบัตรบนพื้นเรียบสีเข้ม เลี่ยงไฟที่ส่องตรงบัตร ไม่ใช้นิ้วบังตัวเลข ระบบรับเฉพาะบัตรจริง ไม่รับรูปถ่ายหน้าจอ',
+  thai_dl: 'ถ่ายด้านหน้าใบขับขี่ที่มีรูปและเลขประจำตัวประชาชน วางบนพื้นเรียบสีเข้ม เลี่ยงแสงสะท้อน',
+  passport: 'เปิดหน้าที่มีรูป วางราบ ให้เห็นแถบตัวอักษร <<< 2 บรรทัดด้านล่างครบ เลี่ยงแสงสะท้อนบนแผ่นเคลือบ',
+  foreign_id: 'ถ่ายด้านที่มีรูป ถ้าบัตรมีแถบ <<< อยู่ด้านหลัง ให้ถ่ายด้านนั้นแทน ระบบอ่านได้อัตโนมัติ',
+  foreign_dl: 'ถ่ายด้านหน้าที่มีรูปให้ชัดทั้งใบ เจ้าหน้าที่จะตรวจข้อมูลให้',
+};
 
 /** path สี่เหลี่ยมมุมโค้ง (สำหรับเจาะรูกลางม่าน) */
 const roundedRectPath = (x: number, y: number, w: number, h: number, r: number): string =>
@@ -86,10 +101,13 @@ export default function EkycCaptureScreen() {
   const appActive = useAppActive();
   const focused = useIsFocused();
   const session = useEkycStore((s) => s.session);
+  const docType = useEkycStore((s) => s.docType);
   const [permission, requestPermission, getPermission] = useCameraPermissions();
 
+  const docName = EKYC_DOC_SHORT[docType];
   const scannerAvailable = isDocumentScannerAvailable();
-  const detectorAvailable = isFaceDetectionAvailable();
+  // ตัวตรวจในเครื่องรู้จักผังบัตรประชาชนไทยอย่างเดียว (เดาตำแหน่งบัตรจากรูปหน้าทางขวา)
+  const detectorAvailable = docType === 'thai_id' && isFaceDetectionAvailable();
   const analyzerAvailable = detectorAvailable && isCardAnalyzerAvailable();
   // ตรวจภาพในเครื่องได้ = ใช้กล้องในแอป (เช็คเต็มกรอบ/แสง/ความคมก่อนถ่าย) · ตัวสแกนของ Google เลือกได้จากปุ่มขวา
   const [mode, setMode] = useState<Mode>(detectorAvailable || !scannerAvailable ? 'camera' : 'scanner');
@@ -390,7 +408,7 @@ export default function EkycCaptureScreen() {
   // ---------- ส่วนแสดงผล ----------
   // กรอบราว 80% ของความกว้าง: บัตรเต็มกรอบที่ระยะ ~13–15 ซม. (ใกล้กว่านี้กล้องหลายรุ่นโฟกัสไม่ได้) ยังได้บัตร > 1,200 px
   const frameW = Math.min(stage.w * 0.8, 400);
-  const frameH = frameW / CARD_RATIO;
+  const frameH = frameW / (docType === 'passport' ? PASSPORT_RATIO : CARD_RATIO);
   const frameX = (stage.w - frameW) / 2;
   const frameY = Math.max(spacing.xl, stage.h * 0.4 - frameH / 2);
   frameRef.current = { x: frameX, y: frameY, w: frameW, h: frameH };
@@ -400,7 +418,7 @@ export default function EkycCaptureScreen() {
   const fit = !!verdict?.fit;
 
   const cameraStatus = (): string => {
-    if (!detectorAvailable) return 'วางบัตรให้เต็มกรอบ แล้วกดปุ่มถ่าย';
+    if (!detectorAvailable) return `วาง${docName}ให้เต็มกรอบ แล้วกดปุ่มถ่าย`;
     if (busy) return 'กำลังตรวจภาพ…';
     if (!verdict) return HINT_TEXT.NO_CARD;
     // ไฟฉายทำให้บัตรเคลือบสะท้อนแสง
@@ -415,7 +433,11 @@ export default function EkycCaptureScreen() {
     return HINT_TEXT[verdict.hint];
   };
   const status =
-    mode === 'scanner' ? (busy ? 'กำลังเปิดตัวสแกนบัตร…' : 'กดปุ่มทอง ระบบจะจับขอบบัตรและถ่ายให้เอง') : cameraStatus();
+    mode === 'scanner'
+      ? busy
+        ? 'กำลังเปิดตัวสแกนเอกสาร…'
+        : `กดปุ่มทอง ระบบจะจับขอบ${docName}และถ่ายให้เอง`
+      : cameraStatus();
   const statusSpinning = (mode === 'camera' && detectorAvailable && cameraReady) || busy;
 
   const corner = (pos: 'tl' | 'tr' | 'bl' | 'br') => {
@@ -454,8 +476,8 @@ export default function EkycCaptureScreen() {
     <View style={[styles.root, { backgroundColor: CAM.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <CameraTopBar
-        title="ถ่ายบัตรประชาชน"
-        subtitle="ขั้นที่ 2 จาก 4 · ด้านหน้าบัตร"
+        title={`ถ่าย${docName}`}
+        subtitle={docType === 'passport' ? 'ขั้นที่ 2 จาก 4 · หน้าที่มีรูป' : 'ขั้นที่ 2 จาก 4 · ด้านหน้าบัตร'}
         onBack={leave}
         right={<CameraPill icon="cpu" label="AI ทำงานในเครื่อง" />}
       />
@@ -547,7 +569,7 @@ export default function EkycCaptureScreen() {
               permission={permission}
               request={requestPermission}
               refresh={getPermission}
-              reason="ใช้กล้องหลังถ่ายบัตรประชาชนด้านหน้า รูปส่งไปตรวจบนเซิร์ฟเวอร์ไทยพร้อมเท่านั้น"
+              reason={`ใช้กล้องหลังถ่าย${docName} รูปส่งไปตรวจบนเซิร์ฟเวอร์ไทยพร้อมเท่านั้น`}
             />
           </View>
         )}
@@ -557,7 +579,7 @@ export default function EkycCaptureScreen() {
         <View style={[styles.info, { backgroundColor: withAlpha(CAM.card, 0.9), borderColor: CAM.border }]}>
           <Icon name={notice ? 'warning-circle' : 'info'} size={18} color={CAM.gold} />
           <Text style={[typography.bodySm, styles.flex, { color: CAM.text }]}>
-            {notice || 'วางบัตรบนพื้นเรียบสีเข้ม เลี่ยงไฟที่ส่องตรงบัตร ไม่ใช้นิ้วบังตัวเลข ระบบรับเฉพาะบัตรจริง ไม่รับรูปถ่ายหน้าจอ'}
+            {notice || DOC_TIP[docType]}
           </Text>
         </View>
 
@@ -579,7 +601,7 @@ export default function EkycCaptureScreen() {
             onPress={onShutter}
             disabled={busy || needPermission || (mode === 'camera' && !cameraReady)}
             accessibilityRole="button"
-            accessibilityLabel={mode === 'scanner' ? 'สแกนบัตรประชาชน' : 'ถ่ายรูปบัตรประชาชน'}
+            accessibilityLabel={mode === 'scanner' ? `สแกน${docName}` : `ถ่ายรูป${docName}`}
             style={({ pressed }) => [
               styles.shutterRing,
               { borderColor: CAM.goldLight, opacity: busy || needPermission ? 0.5 : pressed ? 0.85 : 1 },

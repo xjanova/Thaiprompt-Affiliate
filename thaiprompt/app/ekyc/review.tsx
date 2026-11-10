@@ -11,6 +11,8 @@
  *   (ระหว่างบันทึกข้อมูลที่แก้ก็เช่นกัน — ข้อมูลที่แก้ไว้ยังอยู่)
  * - "อ่านบัตรอีกครั้ง" → กลับไปถ่ายบัตรใหม่ให้ AI อ่านใหม่
  * - กันกดซ้ำทุกปุ่ม · ไม่ setState หลังออกจากหน้า · กันแคปหน้าจอ (มีรูปบัตรบนจอ)
+ * - เอกสารต่างประเทศ (2026-11-10): แสดง/แก้ชื่อภาษาอังกฤษ (name_en) · วันเกิดกรอกเป็น ค.ศ. · เลขเอกสารตรวจด้วยแถบ <<< (MRZ)
+ *   เอกสารที่ AI ยังอ่านเองไม่ได้ (DOC_MANUAL_REVIEW) → ไม่ต้องถ่ายวน กรอกเองแล้วเจ้าหน้าที่ตรวจ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,11 +28,14 @@ import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useEkycStore } from '@/stores/ekycStore';
 import {
+  cleanLatinName,
   cleanThaiName,
   correctEkycIdCard,
   EKYC_APP_OUTDATED_MESSAGE,
+  EKYC_DOC_SHORT,
   formatThaiDate,
   isSessionUsable,
+  isThaiDocument,
   parseThaiBirthDate,
   retryAfterSeconds,
   uploadEkycIdCard,
@@ -55,6 +60,9 @@ export default function EkycReviewScreen() {
   const session = useEkycStore((s) => s.session);
   const card = useEkycStore((s) => s.card);
   const corrections = useEkycStore((s) => s.corrections);
+  const docType = useEkycStore((s) => s.docType);
+  const thaiDoc = isThaiDocument(docType);
+  const docName = EKYC_DOC_SHORT[docType];
 
   const initialPhase: Phase = card?.result && card.sessionId === session?.session_id
     ? card.result.status === 'ok' ? 'ready' : 'retake'
@@ -107,7 +115,7 @@ export default function EkycReviewScreen() {
       setPhase('error');
       return false;
     }
-    if (keep.name_th || keep.birth_date) useEkycStore.getState().setCorrections(keep);
+    if (keep.name_th || keep.name_en || keep.birth_date) useEkycStore.getState().setCorrections(keep);
     return true;
   }, [mountedRef]);
 
@@ -125,12 +133,12 @@ export default function EkycReviewScreen() {
     uploadingRef.current = true;
     setPhase('uploading');
     setErrorText(null);
-    let res = await uploadEkycIdCard(sid, uri);
+    let res = await uploadEkycIdCard(sid, uri, state.docType);
     // ต่อไม่ติดเลย (การเชื่อมต่อเก่าถูกปิด/เน็ตมือถือสลับ) → ลองส่งซ้ำเองหนึ่งครั้ง
     // ส่งรูปบัตรซ้ำในรอบเดิมปลอดภัย (server แทนที่รูปเดิม) · หมดเวลา (TIMEOUT) ไม่ลองซ้ำเอง
     if (!res.success && res.code === 'NETWORK_ERROR' && mountedRef.current) {
       await new Promise<void>((resolve) => setTimeout(resolve, 700));
-      if (mountedRef.current) res = await uploadEkycIdCard(sid, uri);
+      if (mountedRef.current) res = await uploadEkycIdCard(sid, uri, state.docType);
     }
     uploadingRef.current = false;
     if (!mountedRef.current) return;
@@ -187,34 +195,41 @@ export default function EkycReviewScreen() {
 
   const result = card?.result ?? null;
   const fields = result?.fields;
-  const nameShown = corrections.name_th ?? fields?.name_th ?? null;
+  // เอกสารไทย = ชื่อภาษาไทย · เอกสารต่างประเทศ = ชื่อภาษาอังกฤษตามเอกสาร
+  const nameShown = thaiDoc
+    ? (corrections.name_th ?? fields?.name_th ?? null)
+    : (corrections.name_en ?? fields?.name_en ?? null);
   const birthShown = corrections.birth_date ?? fields?.birth_date ?? null;
-  const edited = !!(corrections.name_th || corrections.birth_date);
+  const edited = !!(corrections.name_th || corrections.name_en || corrections.birth_date);
 
   const openEdit = () => {
     setNameDraft(nameShown ?? '');
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthShown ?? '');
     setDayDraft(m ? String(Number(m[3])) : '');
     setMonthDraft(m ? String(Number(m[2])) : '');
-    setYearDraft(m ? String(Number(m[1]) + 543) : '');
+    // เอกสารไทยกรอกปี พ.ศ. · เอกสารต่างประเทศกรอกปี ค.ศ. ตามที่พิมพ์บนเอกสาร
+    setYearDraft(m ? String(Number(m[1]) + (thaiDoc ? 543 : 0)) : '');
     setEditErrors({});
     setEditOpen(true);
   };
 
   const saveEdit = () => {
     const errs: { name?: string; birth?: string } = {};
-    const name = cleanThaiName(nameDraft);
-    if (!name) errs.name = 'ใส่ชื่อ-นามสกุลภาษาไทยตามบัตร';
-    const birth = parseThaiBirthDate(dayDraft, monthDraft, yearDraft);
-    if (!birth) errs.birth = 'วันเกิดไม่ถูกต้อง ใส่ วัน / เดือน (1–12) / ปี พ.ศ.';
+    const name = thaiDoc ? cleanThaiName(nameDraft) : cleanLatinName(nameDraft);
+    if (!name) errs.name = thaiDoc ? 'ใส่ชื่อ-นามสกุลภาษาไทยตามบัตร' : 'ใส่ชื่อ-นามสกุลภาษาอังกฤษตามเอกสาร (A–Z)';
+    const yearNum = Number(yearDraft.trim());
+    const yearBE = thaiDoc || !Number.isInteger(yearNum) ? yearDraft : String(yearNum + 543);
+    const birth = parseThaiBirthDate(dayDraft, monthDraft, yearBE);
+    if (!birth) errs.birth = `วันเกิดไม่ถูกต้อง ใส่ วัน / เดือน (1–12) / ปี ${thaiDoc ? 'พ.ศ.' : 'ค.ศ.'}`;
     if (errs.name || errs.birth) {
       setEditErrors(errs);
       resultHaptic('warning');
       return;
     }
     const next = { ...corrections };
-    if (name && name !== fields?.name_th) next.name_th = name;
-    else delete next.name_th;
+    const nameKey = thaiDoc ? 'name_th' : 'name_en';
+    if (name && name !== fields?.[nameKey]) next[nameKey] = name;
+    else delete next[nameKey];
     if (birth && birth !== fields?.birth_date) next.birth_date = birth;
     else delete next.birth_date;
     useEkycStore.getState().setCorrections(next);
@@ -269,6 +284,11 @@ export default function EkycReviewScreen() {
   const aiRead = result ? result.ai_available : true;
   const reasons = (result?.reason_items ?? []).filter((r) => r.code !== 'EXPIRY_LIFELONG');
   const lifelong = (result?.reasons ?? []).includes('EXPIRY_LIFELONG');
+  const docManual = (result?.reasons ?? []).includes('DOC_MANUAL_REVIEW');
+  const idLabel = docType === 'passport' ? 'เลขหนังสือเดินทาง' : thaiDoc ? 'เลขประจำตัวประชาชน' : 'เลขเอกสาร';
+  const idNote: CheckNote | null = thaiDoc
+    ? triNote(result?.checks.checksum ?? null, 'เลข 13 หลักถูกต้องตามหลักตรวจสอบ', 'เลขบัตรไม่ผ่านหลักตรวจสอบ', 'ยังไม่ทราบ เจ้าหน้าที่จะตรวจให้')
+    : triNote(result?.checks.checksum ?? null, 'แถบ <<< ถูกต้องตามหลักตรวจสอบ', 'แถบ <<< ไม่ผ่านหลักตรวจสอบ', 'ยังไม่ทราบ เจ้าหน้าที่จะตรวจให้');
   const cardReal = result?.checks.card_real ?? null;
 
   const bottom =
@@ -358,7 +378,7 @@ export default function EkycReviewScreen() {
                   // ภาพจากตัวสแกน (ตัดขอบแล้ว) แสดงเต็ม · ภาพจากกล้องแนวตั้ง ครอบกลางภาพเป็นรูปทรงบัตร (กรอบบัตรอยู่กลางภาพ)
                   if (w > 0 && h > 0 && mountedRef.current) setAspect(Math.max(1.3, Math.min(1.75, w / h)));
                 }}
-                accessibilityLabel="รูปบัตรประชาชนที่ถ่าย"
+                accessibilityLabel={`รูป${docName}ที่ถ่าย`}
               />
             )}
             {phase === 'uploading' && (
@@ -439,7 +459,13 @@ export default function EkycReviewScreen() {
         )}
 
         {phase === 'ready' && result && !aiRead && (
-          <InfoNote icon="info">ระบบอ่านบัตรอัตโนมัติไม่พร้อมชั่วคราว กรอกชื่อและวันเกิดเองได้ เจ้าหน้าที่จะตรวจให้</InfoNote>
+          <InfoNote icon="info">
+            {docManual
+              ? `${docName}แบบนี้ AI ยังอ่านเองไม่ได้ ไม่ต้องถ่ายใหม่ กรอกชื่อและวันเกิดตามเอกสาร แล้วไปขั้นถัดไป เจ้าหน้าที่จะตรวจให้`
+              : result.manual_review
+                ? 'AI อ่านบัตรใบนี้ไม่ชัด ไม่ต้องถ่ายใหม่แล้ว กรอกชื่อและวันเกิดตามบัตร แล้วไปขั้นถัดไป เจ้าหน้าที่จะตรวจจากรูปบัตรให้'
+                : 'ระบบอ่านบัตรอัตโนมัติไม่พร้อมชั่วคราว กรอกชื่อและวันเกิดเองได้ เจ้าหน้าที่จะตรวจให้'}
+          </InfoNote>
         )}
 
         {phase === 'ready' && result && (
@@ -458,17 +484,11 @@ export default function EkycReviewScreen() {
                 <Text style={[typography.micro, { color: colors.textStrong }]}>{aiRead ? 'แก้ได้ถ้าผิด' : 'กรอกเอง'}</Text>
               </Pressable>
             </View>
-            {valueRow(
-              'เลขบัตรประชาชน',
-              fields?.id_number_masked ?? null,
-              triNote(result.checks.checksum, 'เลข 13 หลักถูกต้องตามหลักตรวจสอบ', 'เลขบัตรไม่ผ่านหลักตรวจสอบ', 'ยังไม่ทราบ เจ้าหน้าที่จะตรวจให้'),
-              null,
-              true
-            )}
-            {valueRow('ชื่อ-นามสกุล', nameShown, null, openEdit)}
+            {valueRow(idLabel, fields?.id_number_masked ?? null, idNote, null, true)}
+            {valueRow(thaiDoc ? 'ชื่อ-นามสกุล' : 'ชื่อ-นามสกุล (ภาษาอังกฤษ)', nameShown, null, openEdit)}
             {valueRow('วันเกิด', formatThaiDate(birthShown), null, openEdit)}
             {valueRow(
-              'วันบัตรหมดอายุ',
+              thaiDoc ? 'วันบัตรหมดอายุ' : 'วันหมดอายุ',
               lifelong && !fields?.expiry_date ? 'ตลอดชีพ' : formatThaiDate(fields?.expiry_date),
               triNote(result.checks.not_expired, 'บัตรยังไม่หมดอายุ', 'บัตรหมดอายุแล้ว', 'ยังไม่ทราบวันหมดอายุ เจ้าหน้าที่จะตรวจให้'),
               null
@@ -477,7 +497,7 @@ export default function EkycReviewScreen() {
               <View style={[styles.editedNote, { backgroundColor: colors.goldSoft }]}>
                 <Icon name="info" size={16} color={colors.goldDeep} />
                 <Text style={[typography.caption, styles.flex, { color: colors.text }]}>
-                  คุณแก้ข้อมูลเองแล้ว เจ้าหน้าที่จะตรวจทานอีกครั้ง ผลอาจไม่อนุมัติทันที
+                  คุณแก้ข้อมูลเองแล้ว ถ้าแก้แค่ตัวอักษรในชื่อที่ AI อ่านเพี้ยนเล็กน้อย ยังอนุมัติอัตโนมัติได้ แก้มากกว่านั้นเจ้าหน้าที่จะตรวจทานอีกครั้ง
                 </Text>
               </View>
             )}
@@ -486,7 +506,7 @@ export default function EkycReviewScreen() {
               disabled={saving}
               accessibilityRole="button"
               accessibilityLabel="อ่านบัตรอีกครั้ง"
-              accessibilityHint="กลับไปถ่ายบัตรใหม่ให้ AI อ่านอีกครั้ง"
+              accessibilityHint={`กลับไปถ่าย${docName}ใหม่ให้ AI อ่านอีกครั้ง`}
               style={({ pressed }) => [styles.rescan, { borderTopColor: colors.divider, opacity: pressed || saving ? 0.6 : 1 }]}
             >
               <Icon name="scan" size={18} color={colors.goldDeep} />
@@ -510,21 +530,32 @@ export default function EkycReviewScreen() {
         onClose={() => setEditOpen(false)}
       >
         <Field
-          label="ชื่อ-นามสกุล (ภาษาไทย)"
+          label={thaiDoc ? 'ชื่อ-นามสกุล (ภาษาไทย)' : 'ชื่อ-นามสกุล (ภาษาอังกฤษตามเอกสาร)'}
           value={nameDraft}
           onChangeText={(v) => {
             setNameDraft(v);
             if (editErrors.name) setEditErrors((e) => ({ ...e, name: undefined }));
           }}
-          placeholder="เช่น นาย ณัฐ ใจงาม"
+          placeholder={thaiDoc ? 'เช่น นาย ณัฐ ใจงาม' : 'เช่น HANAKO TANAKA'}
+          autoCapitalize={thaiDoc ? undefined : 'characters'}
           maxLength={100}
           error={editErrors.name}
         />
-        <Text style={[typography.caption, styles.birthLabel, { color: colors.textMuted }]}>วันเกิด (ปี พ.ศ.)</Text>
+        <Text style={[typography.caption, styles.birthLabel, { color: colors.textMuted }]}>
+          {thaiDoc ? 'วันเกิด (ปี พ.ศ.)' : 'วันเกิด (ปี ค.ศ. ตามเอกสาร)'}
+        </Text>
         <View style={styles.row}>
           <Field label="วัน" value={dayDraft} onChangeText={setDayDraft} keyboardType="number-pad" maxLength={2} placeholder="12" containerStyle={styles.flex} />
           <Field label="เดือน" value={monthDraft} onChangeText={setMonthDraft} keyboardType="number-pad" maxLength={2} placeholder="1" containerStyle={styles.flex} />
-          <Field label="ปี พ.ศ." value={yearDraft} onChangeText={setYearDraft} keyboardType="number-pad" maxLength={4} placeholder="2538" containerStyle={styles.flex} />
+          <Field
+            label={thaiDoc ? 'ปี พ.ศ.' : 'ปี ค.ศ.'}
+            value={yearDraft}
+            onChangeText={setYearDraft}
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholder={thaiDoc ? '2538' : '1995'}
+            containerStyle={styles.flex}
+          />
         </View>
         {!!editErrors.birth && <Text style={[typography.caption, { color: colors.danger }]}>{editErrors.birth}</Text>}
       </FormSheet>

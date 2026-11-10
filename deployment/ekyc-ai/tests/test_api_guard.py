@@ -56,6 +56,12 @@ def test_id_card_requires_image_file(bare_client):
     assert r.status_code == 422 and r.json()['error'] == 'MISSING_FILE'
 
 
+def test_id_card_rejects_unknown_doc_type(bare_client):
+    r = bare_client.post('/v1/id-card', headers=AUTH, files={'image': ('a.jpg', JPG, 'image/jpeg')},
+                         data={'doc_type': 'library_card'})
+    assert r.status_code == 422 and r.json()['error'] == 'BAD_DOC_TYPE' and r.json()['field'] == 'doc_type'
+
+
 def _face_req(client, frames, labels, card=JPG, extra=None):
     files = [('card_image', ('card.jpg', card, 'image/jpeg'))]
     files += [('frames[]', (f'f{i}.jpg', f, 'image/jpeg')) for i, f in enumerate(frames)]

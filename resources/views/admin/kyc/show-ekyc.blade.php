@@ -248,13 +248,20 @@
         <div class="tp-card" style="padding:18px;">
             <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:14px;">
                 <div>
+                    <div style="font-size:12px; color:var(--ink2);">เอกสารที่ใช้</div>
+                    <div style="font-weight:800; font-size:15px; margin-top:3px;">{{ $ekyc['document_label'] ?: '-' }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:2px;">ประเทศผู้ออก: {{ $ekyc['document_country'] ?: '-' }}</div>
+                </div>
+                <div>
                     <div style="font-size:12px; color:var(--ink2);">ชื่อตามบัตร</div>
                     <div style="font-weight:800; font-size:15px; margin-top:3px;">{{ $kyc->name_th ?: '-' }}</div>
-                    @if(isset($corrections['name_th']))
-                        <div style="font-size:11.5px; color:#b7791f; margin-top:3px;">
-                            ✎ ผู้ใช้แก้เอง (AI อ่านได้: {{ $corrections['name_th']['ocr'] ?? '-' }})
-                        </div>
-                    @endif
+                    @foreach(['name_th', 'name_en'] as $nameField)
+                        @if(isset($corrections[$nameField]))
+                            <div style="font-size:11.5px; color:#b7791f; margin-top:3px;">
+                                ✎ ผู้ใช้แก้เอง{{ ($corrections[$nameField]['minor'] ?? false) ? ' เล็กน้อย' : '' }} (AI อ่านได้: {{ $corrections[$nameField]['ocr'] ?? '-' }})
+                            </div>
+                        @endif
+                    @endforeach
                     @if($kyc->name_en)
                         <div style="font-size:12px; color:var(--ink2); margin-top:2px;">{{ $kyc->name_en }}</div>
                     @endif

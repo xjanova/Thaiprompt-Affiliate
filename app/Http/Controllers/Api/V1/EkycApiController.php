@@ -65,11 +65,17 @@ class EkycApiController extends Controller
             return $bad;
         }
 
+        // ชนิดเอกสาร (แอปรุ่นเก่าไม่ส่ง = บัตรประชาชนไทย)
+        $docType = (string) ($request->input('doc_type') ?: EkycService::DOC_THAI_ID);
+        if (! array_key_exists($docType, (array) config('ekyc.documents', []))) {
+            return $this->fail('VALIDATION_ERROR', 'ไม่รองรับเอกสารชนิดนี้', 422, ['field' => 'doc_type']);
+        }
+
         /** @var User $user */
         $user = $request->user();
 
-        return $this->run(function () use ($user, $id, $request) {
-            $result = $this->ekyc->submitIdCard($user, $id, $request->file('image'));
+        return $this->run(function () use ($user, $id, $request, $docType) {
+            $result = $this->ekyc->submitIdCard($user, $id, $request->file('image'), $docType);
 
             return $this->ok($result, $result['status'] === 'retake' ? 'กรุณาถ่ายรูปบัตรใหม่อีกครั้ง' : 'อ่านข้อมูลบัตรแล้ว');
         });
@@ -82,11 +88,16 @@ class EkycApiController extends Controller
     {
         $data = $this->validateOrFail($request, [
             'name_th' => ['nullable', 'string', 'min:2', 'max:120', 'regex:/^[\p{Thai}\s.]+$/u'],
+            // ชื่อภาษาอังกฤษตามหนังสือเดินทาง/เอกสารต่างประเทศ (ตัวอักษรละติน รวมตัวมีเครื่องหมาย เช่น é ü)
+            'name_en' => ['nullable', 'string', 'min:2', 'max:120', "regex:/^[\p{Latin}\s.'\-]+$/u"],
             'birth_date' => ['nullable', 'date_format:Y-m-d', 'after:1900-01-01', 'before:today'],
         ], [
             'name_th.min' => 'กรุณากรอกชื่อ-นามสกุลภาษาไทยให้ครบ',
             'name_th.max' => 'ชื่อยาวเกินไป',
             'name_th.regex' => 'กรุณากรอกชื่อ-นามสกุลเป็นภาษาไทยตามบัตร',
+            'name_en.min' => 'กรุณากรอกชื่อ-นามสกุลภาษาอังกฤษให้ครบ',
+            'name_en.max' => 'ชื่อยาวเกินไป',
+            'name_en.regex' => 'กรุณากรอกชื่อ-นามสกุลเป็นตัวอักษรภาษาอังกฤษตามเอกสาร',
             'birth_date.date_format' => 'รูปแบบวันเกิดไม่ถูกต้อง',
             'birth_date.after' => 'วันเกิดไม่ถูกต้อง',
             'birth_date.before' => 'วันเกิดไม่ถูกต้อง',
@@ -95,7 +106,7 @@ class EkycApiController extends Controller
             return $data;
         }
 
-        if (($data['name_th'] ?? null) === null && ($data['birth_date'] ?? null) === null) {
+        if (($data['name_th'] ?? null) === null && ($data['name_en'] ?? null) === null && ($data['birth_date'] ?? null) === null) {
             return $this->fail('VALIDATION_ERROR', 'กรุณาระบุข้อมูลที่ต้องการแก้ไข', 422);
         }
 

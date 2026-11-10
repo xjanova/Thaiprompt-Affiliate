@@ -142,6 +142,111 @@ class EkycHardeningTest extends TestCase
     }
 
     // =====================================================
+    // อ่านบัตรไม่ได้ซ้ำ = ไม่ติดตาย → กรอกเอง → รอแอดมินตรวจ (2026-11-10)
+    // =====================================================
+
+    /**
+     * ผลอ่านบัตรแบบที่เจอบน prod: เจอกรอบแต่อ่านตัวหนังสือไม่ได้เลย
+     *
+     * @return array<string, mixed>
+     */
+    private function unreadableCard(): array
+    {
+        return $this->goodCard([
+            'quality' => ['blur' => 0.08, 'glare' => 0.93, 'complete' => false],
+            'field_confidence' => ['id_number' => 0, 'name_th' => 0, 'birth_date' => 0, 'expiry_date' => 0],
+            'ocr_confidence' => 0.0,
+            'id_checksum_ok' => false,
+            'card_face_found' => false,
+            'card_real_score' => 0.53,
+            'reasons' => ['GLARE', 'CARD_INCOMPLETE', 'OCR_LOW', 'NO_CARD_FACE'],
+        ], ['id_number' => null, 'name_th' => null, 'name_en' => null, 'birth_date' => null, 'expiry_date' => null, 'issue_date' => null]);
+    }
+
+    public function test_unreadable_card_twice_lets_the_user_through_to_admin_review(): void
+    {
+        $this->fakeAi($this->unreadableCard(), $this->goodFace(['match' => ['cosine' => 0.0], 'reasons' => ['NO_CARD_FACE']]));
+        $user = $this->ekycUser();
+        [$sid, $challenges] = $this->openSession();
+
+        // ครั้งแรก: ยังให้ถ่ายใหม่ (มีคำแนะนำ)
+        $this->postCard($sid)->assertOk()
+            ->assertJsonPath('data.status', 'retake')
+            ->assertJsonPath('data.manual_review', false);
+
+        // ครั้งที่สอง: ปล่อยผ่าน — แอปทุกรุ่นเห็น ai_available=false แล้วเปิดช่องกรอกเอง
+        $this->postCard($sid)->assertOk()
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.ai_available', false)
+            ->assertJsonPath('data.manual_review', true)
+            ->assertJsonPath('data.checks.checksum', null);
+
+        $this->patchJson('/api/v1/ekyc/sessions/'.$sid.'/id-card', ['name_th' => 'นาย ณัฐ ใจงาม', 'birth_date' => '1995-01-12'])
+            ->assertOk()->assertJsonPath('data.corrected', true);
+
+        $this->postFace($sid, array_merge(['neutral'], $challenges))->assertOk()
+            ->assertJsonPath('data.decision', 'review');
+
+        $kyc = KycVerification::where('ekyc_session_id', $sid)->firstOrFail();
+        $this->assertSame('pending', $kyc->status, 'รอแอดมินอนุมัติ ไม่ใช่อนุมัติเอง');
+        $this->assertContains('CARD_UNREADABLE', $kyc->ai_reasons);
+        $this->assertTrue($kyc->extracted_data['card']['manual_fallback']);
+        $this->assertSame('pending', $user->fresh()->kyc_status);
+
+        // แอดมินยังอนุมัติได้ตามปกติ
+        $admin = User::factory()->create();
+        app(EkycService::class)->adminDecide($kyc->fresh(), $admin, 'approved');
+        $this->assertSame('approved', $user->fresh()->kyc_status);
+    }
+
+    public function test_misread_checksum_or_expiry_in_fallback_goes_to_review_not_another_retake(): void
+    {
+        $this->fakeAi($this->goodCard(['id_checksum_ok' => false, 'reasons' => ['ID_CHECKSUM_FAIL']], [
+            'id_number' => self::BAD_ID,
+            'expiry_date' => now()->subDay()->toDateString(),
+        ]));
+        $this->ekycUser();
+        [$sid, $challenges] = $this->openSession();
+
+        $this->postCard($sid)->assertOk()->assertJsonPath('data.status', 'retake');
+        $this->postCard($sid)->assertOk()
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.manual_review', true)
+            ->assertJsonPath('data.checks.checksum', null)
+            ->assertJsonPath('data.checks.not_expired', null);
+
+        $res = $this->postFace($sid, array_merge(['neutral'], $challenges))->assertOk()
+            ->assertJsonPath('data.decision', 'review');
+        $this->assertNotContains('ID_CHECKSUM_FAIL', (array) $res->json('data.reasons'));
+        $this->assertNotContains('EXPIRED', (array) $res->json('data.reasons'));
+    }
+
+    public function test_fallback_can_start_on_the_first_failure_when_configured(): void
+    {
+        config(['ekyc.manual_fallback_after_failures' => 0]);
+        $this->fakeAi($this->unreadableCard());
+        $this->ekycUser();
+        [$sid] = $this->openSession();
+
+        $this->postCard($sid)->assertOk()->assertJsonPath('data.status', 'ok')->assertJsonPath('data.manual_review', true);
+    }
+
+    public function test_repeated_ai_timeouts_stop_looping_and_fall_back_to_manual_entry(): void
+    {
+        $this->fakeAi(fn () => Http::response(['ok' => false, 'error' => 'TIMEOUT'], 504));
+        $this->ekycUser();
+        [$sid] = $this->openSession();
+
+        $this->postCard($sid)->assertStatus(503)->assertJsonPath('code', 'EKYC_AI_BUSY');
+        $this->postCard($sid)->assertStatus(503)->assertJsonPath('code', 'EKYC_AI_BUSY');
+
+        // ครั้งที่สาม: ไม่ให้วนรอต่อ → ไปต่อแบบตัวอ่านบัตรไม่พร้อม (กรอกเอง → แอดมินตรวจ)
+        $this->postCard($sid)->assertOk()
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.ai_available', false);
+    }
+
+    // =====================================================
     // เพดานส่งรูปบัตร + ค่า "ไม่ทราบ"
     // =====================================================
 
@@ -430,6 +535,20 @@ class EkycHardeningTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('code', 'EKYC_CONSENT_OUTDATED');
         $this->startSession()->assertCreated();
+    }
+
+    public function test_legacy_consent_still_works_for_the_thai_id_card_only(): void
+    {
+        $this->fakeAi($this->goodCard());
+        $this->ekycUser();
+        // แอปรุ่นเก่า (ข้อความยินยอมพูดถึงบัตรประชาชนอย่างเดียว) ยังเริ่มรอบได้
+        $sid = $this->postJson('/api/v1/ekyc/sessions', ['consent' => true, 'consent_version' => '2026-10-04'])
+            ->assertCreated()->json('data.session_id');
+
+        $this->post('/api/v1/ekyc/sessions/'.$sid.'/id-card', ['image' => $this->cardFile(), 'doc_type' => 'passport'],
+            ['Accept' => 'application/json'])
+            ->assertStatus(422)->assertJsonPath('code', 'EKYC_CONSENT_OUTDATED');
+        $this->postCard($sid)->assertOk()->assertJsonPath('data.status', 'ok');
     }
 
     public function test_id_hash_uses_its_own_key_when_set(): void

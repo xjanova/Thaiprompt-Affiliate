@@ -24,7 +24,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
-from .config import SERVICE_VERSION, load_settings, validate_settings  # ต้องมาก่อน cv2
+from .config import DOC_TYPES, SERVICE_VERSION, load_settings, validate_settings  # ต้องมาก่อน cv2
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -230,13 +230,17 @@ async def id_card(request: Request):
     form = await request.form(max_files=2, max_fields=8)
     try:
         data = await _read_upload(form.get('image'), 'image')
+        raw_type = form.get('doc_type')
+        doc_type = str(raw_type).strip().lower() if raw_type and not isinstance(raw_type, UploadFile) else 'thai_id'
+        if doc_type not in DOC_TYPES:
+            raise ApiError(422, 'BAD_DOC_TYPE', f'doc_type must be one of {",".join(DOC_TYPES)}', 'doc_type')
     finally:
         await form.close()
-    return await _run(request, _id_card_job, request.app.state.engine, data)
+    return await _run(request, _id_card_job, request.app.state.engine, data, doc_type)
 
 
-def _id_card_job(engine, data: bytes):
-    return engine.id_card(data)
+def _id_card_job(engine, data: bytes, doc_type: str = 'thai_id'):
+    return engine.id_card(data, doc_type)
 
 
 def _collect(form, base: str) -> list:

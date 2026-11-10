@@ -110,6 +110,11 @@ def find_card_quad(img: np.ndarray) -> np.ndarray | None:
             qw, qh = _quad_sides(quad)
             if min(qw, qh) < 1:
                 continue
+            # กรอบที่กินเกือบเต็มทั้งกว้างและสูงของภาพ = ขอบภาพเอง ไม่ใช่บัตร
+            # (prod 2026-11-10: รูปแนวตั้ง 3:4 สัดส่วน 1.33 ผ่านเกณฑ์ 1.25–2.0 → ทั้งรูปถูกบีบเป็นบัตร อ่านได้ 0%)
+            xs, ys = quad[:, 0], quad[:, 1]
+            if (xs.max() - xs.min()) >= 0.96 * ws and (ys.max() - ys.min()) >= 0.96 * hs:
+                continue
             ratio = max(qw, qh) / min(qw, qh)
             if not (1.25 <= ratio <= 2.0):
                 continue
@@ -192,9 +197,41 @@ def locate_card(img: np.ndarray) -> CardView:
     return CardView(small, False, False, False, native_gray=native, to_src=np.diag([1.0 / k, 1.0 / k, 1.0]))
 
 
-def orient_by_face(view: CardView, detect_faces, min_score: float) -> CardView:
+# กรอบนำสายตาของแอป (หน้าถ่ายบัตร): บัตรกว้างราว 80% ของจอแนวตั้ง กลางกรอบอยู่ราว 40% ของความสูงพรีวิว
+# ภาพที่ได้จากกล้องกว้าง/สูงกว่าพรีวิวเล็กน้อย → ลองหลายขนาด/ตำแหน่ง (วัดกับรูปจริงบน prod 2026-11-10:
+# กว้าง 0.80–0.92 กลาง y 0.45 อ่านเลขบัตรผ่าน checksum ได้เท่ากับหรือดีกว่าการหาขอบบัตร)
+GUIDE_CROPS = ((0.92, 0.45), (0.80, 0.45), (0.92, 0.38))
+
+
+def guide_crops(img: np.ndarray) -> list[CardView]:
     """
-    เลือกทิศ 0° หรือ 180° โดยดูว่ารูปหน้าบนบัตรอยู่ครึ่งขวา (ด้านหน้าบัตรประชาชนไทย)
+    ตัดบัตรตาม "กรอบนำสายตา" ของแอป — ใช้เมื่อหาขอบบัตรไม่เจอในรูปแนวตั้ง (ผู้ใช้ถือบัตรให้อยู่ในกรอบแล้ว)
+    คืนรายการ CardView แบบ precropped (ยังไม่แก้ทิศ — ให้ orient_by_face ตัดสิน)
+    """
+    h, w = img.shape[:2]
+    if h <= w:
+        return []
+    out = []
+    for wf, cy in GUIDE_CROPS:
+        cw = wf * w
+        ch = cw / CARD_RATIO
+        x0 = (w - cw) / 2.0
+        y0 = min(max(0.0, cy * h - ch / 2.0), max(0.0, h - ch))
+        xa, ya = int(round(x0)), int(round(y0))
+        crop = img[ya:ya + int(round(ch)), xa:xa + int(round(cw))]
+        if crop.size == 0 or min(crop.shape[:2]) < 64:
+            continue
+        ch_px, cw_px = crop.shape[:2]
+        to_src = np.array([[cw_px / CARD_W, 0.0, xa], [0.0, ch_px / CARD_H, ya], [0.0, 0.0, 1.0]])
+        out.append(CardView(cv2.resize(crop, (CARD_W, CARD_H), interpolation=cv2.INTER_AREA), False, True, True,
+                            native_gray=native_center_crop(crop, None), to_src=to_src))
+    return out
+
+
+def orient_by_face(view: CardView, detect_faces, min_score: float, face_side: str = 'right') -> CardView:
+    """
+    เลือกทิศ 0° หรือ 180° โดยดูว่ารูปหน้าบนบัตรอยู่ฝั่งที่ถูก
+    face_side: 'right' = บัตรประชาชนไทยด้านหน้า / 'left' = ใบขับขี่ไทย, หน้าข้อมูลหนังสือเดินทาง / 'any'
     detect_faces(img) → np.ndarray แถวละหน้า [x,y,w,h, 10 ค่า landmark, score]
     """
     card_like = view.quad_found or view.precropped
@@ -207,8 +244,14 @@ def orient_by_face(view: CardView, detect_faces, min_score: float) -> CardView:
                 cands.append((rot, im, f))
     if not cands:
         return view
-    right = [c for c in cands if card_like and c[2][0] + c[2][2] / 2 > 0.5 * c[1].shape[1]]
-    # ไม่มีหน้าครึ่งขวาในทั้งสองทิศ → ไม่หมุน ใช้หน้าที่ใหญ่สุดในทิศเดิม
+    def on_side(c) -> bool:
+        if face_side == 'any':
+            return True
+        cx = c[2][0] + c[2][2] / 2
+        return cx > 0.5 * c[1].shape[1] if face_side == 'right' else cx < 0.5 * c[1].shape[1]
+
+    right = [c for c in cands if card_like and on_side(c)]
+    # ไม่มีหน้าฝั่งที่ถูกในทั้งสองทิศ → ไม่หมุน ใช้หน้าที่ใหญ่สุดในทิศเดิม
     pool = right or [c for c in cands if c[0] == 0]
     if not pool:
         return view

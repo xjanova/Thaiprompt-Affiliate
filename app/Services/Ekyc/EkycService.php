@@ -56,6 +56,16 @@ class EkycService
     /** แถวที่รอแอดมินตรวจ แต่ผู้ใช้ขอถ่ายใหม่เอง (status = superseded) — นับเป็น 1 สิทธิ์ถ่ายใหม่ */
     public const STEP_RETAKEN = 'retaken';
 
+    /** ชนิดเอกสาร (ตรงกับ config ekyc.documents และ doc_type ของบริการ AI) */
+    public const DOC_THAI_ID = 'thai_id';
+
+    public const DOC_THAI_DL = 'thai_dl';
+
+    public const DOC_PASSPORT = 'passport';
+
+    /** เอกสารที่มีเลขประจำตัวประชาชนไทย 13 หลัก (ใช้ checksum + hash เดียวกัน → บัตร/ใบขับขี่ของคนเดียวกันจับซ้ำได้) */
+    public const THAI_DOCS = [self::DOC_THAI_ID, self::DOC_THAI_DL];
+
     /** เหตุผลจาก AI ที่ไม่ขวางการอนุมัติอัตโนมัติ */
     private const BENIGN_REASONS = ['EXPIRY_LIFELONG'];
 
@@ -72,7 +82,10 @@ class EkycService
     private const AI_BUSY_ERRORS = ['HTTP_503', 'HTTP_504'];
 
     /** เหตุผลจากรอบอ่านบัตรที่ต้องถ่ายบัตรใหม่ */
-    private const CARD_RETAKE_REASONS = ['NO_CARD', 'BLURRY', 'GLARE', 'CARD_INCOMPLETE', 'NO_CARD_FACE', 'ID_CHECKSUM_FAIL', 'EXPIRED'];
+    private const CARD_RETAKE_REASONS = ['NO_CARD', 'BLURRY', 'GLARE', 'CARD_INCOMPLETE', 'NO_CARD_FACE', 'ID_CHECKSUM_FAIL', 'MRZ_CHECK_FAIL', 'EXPIRED'];
+
+    /** เหตุผลด้านคุณภาพรูปเท่านั้น — เอกสารที่ระบบยังอ่านอัตโนมัติไม่ได้ ถ่ายใหม่เฉพาะกรณีนี้ */
+    private const CARD_QUALITY_REASONS = ['NO_CARD', 'BLURRY', 'GLARE', 'CARD_INCOMPLETE', 'NO_CARD_FACE'];
 
     /** รหัสเหตุผล → ข้อความไทย (แอดมิน + แอป) */
     public const REASON_LABELS = [
@@ -103,6 +116,9 @@ class EkycService
         'AI_UNAVAILABLE' => 'ระบบ AI ไม่พร้อม ส่งให้เจ้าหน้าที่ตรวจ',
         'ATTEMPTS_EXHAUSTED' => 'ลองครบจำนวนครั้งแล้ว ส่งให้เจ้าหน้าที่ตรวจ',
         'CARD_IMAGE_MISSING' => 'ไม่พบรูปบัตรของรอบนี้',
+        'CARD_UNREADABLE' => 'AI อ่านบัตรไม่ได้ ผู้ใช้กรอกข้อมูลเอง ให้เจ้าหน้าที่ตรวจจากรูปบัตร',
+        'DOC_MANUAL_REVIEW' => 'เอกสารชนิดนี้ระบบยังอ่านอัตโนมัติไม่ได้ ให้เจ้าหน้าที่ตรวจจากรูป',
+        'MRZ_CHECK_FAIL' => 'อ่านแถบ <<< ของหนังสือเดินทางไม่ผ่านการตรวจสอบ',
         'ADMIN_REJECTED' => 'เจ้าหน้าที่ปฏิเสธการยืนยันตัวตน',
         'ADMIN_RETAKE' => 'เจ้าหน้าที่ขอให้ถ่ายใหม่',
         'REPLAY_SUSPECTED' => 'ภาพใบหน้าซ้ำกับการยืนยันครั้งก่อน ต้องให้เจ้าหน้าที่ตรวจ',
@@ -204,6 +220,8 @@ class EkycService
             'required_for' => $this->enforced() ? self::REQUIRED_FOR : [],
             // ข้อความยินยอม PDPA เวอร์ชันปัจจุบัน (แอปส่งกลับมาตอนเริ่มรอบ)
             'consent_version' => (string) config('ekyc.consent_version', ''),
+            // เอกสารที่เลือกได้ + อ่านอัตโนมัติได้ไหม (แอปใช้ทำปุ่มเลือกเอกสาร)
+            'documents' => self::documentOptions(),
             // หน้าโปรไฟล์ของเจ้าของบัญชี (เห็นเฉพาะตัวเอง) — ชื่อตามบัตร + เลขบัตรแบบปิดบางส่วน
             'name_th' => $approvedRow?->name_th,
             'id_number_masked' => $approvedRow
@@ -255,8 +273,8 @@ class EkycService
         if (! self::isAccepted($consent) || $version === '' || ! preg_match('/^[\w.\-]{1,20}$/', $version)) {
             throw EkycException::consentRequired();
         }
-        // ยินยอมกับข้อความเวอร์ชันที่ใช้อยู่เท่านั้น (แอปเก่าที่แสดงข้อความเดิม = ต้องอัปเดตก่อน)
-        if ($version !== (string) config('ekyc.consent_version', '')) {
+        // ยินยอมกับข้อความเวอร์ชันที่ใช้อยู่ หรือรุ่นเก่าที่ยังรับ (รุ่นเก่า = ใช้ได้เฉพาะบัตรประชาชนไทย ดู submitIdCard)
+        if ($version !== (string) config('ekyc.consent_version', '') && ! self::isLegacyConsent($version)) {
             throw EkycException::consentOutdated();
         }
 
@@ -372,11 +390,18 @@ class EkycService
      *
      * @throws EkycException
      */
-    public function submitIdCard(User $user, string $sessionId, UploadedFile $image): array
+    public function submitIdCard(User $user, string $sessionId, UploadedFile $image, string $docType = self::DOC_THAI_ID): array
     {
+        if (! array_key_exists($docType, (array) config('ekyc.documents', []))) {
+            $docType = self::DOC_THAI_ID;
+        }
         $kyc = $this->findSession($user, $sessionId);
         $this->assertOpen($kyc, [self::STEP_CONSENTED, self::STEP_CARD]);
         $this->assertNotVerified($user);
+        // ยินยอมด้วยข้อความรุ่นเก่า (พูดถึงบัตรประชาชนอย่างเดียว) → ส่งเอกสารอื่นไม่ได้
+        if ($docType !== self::DOC_THAI_ID && self::isLegacyConsent((string) $kyc->consent_version)) {
+            throw EkycException::consentOutdated();
+        }
 
         // เพดานส่งรูปบัตร: ต่อรอบ (เริ่มใหม่ได้) + ต่อวัน — อ่านบัตร 1 ใบใช้ AI ~10 วิ กันคนเดียวยิงจนคิว AI เต็ม
         $uploads = (int) (((array) ($kyc->extracted_data ?? []))['card_uploads'] ?? 0);
@@ -390,14 +415,40 @@ class EkycService
 
         $jpeg = $this->images->normalize($image, EkycImages::CARD_MAX_EDGE, EkycImages::CARD_MIN_EDGE);
 
-        $result = $this->ai->idCard($jpeg);
+        $result = $this->ai->idCard($jpeg, $docType);
         // คิว AI เต็ม/ตรวจไม่ทัน = ให้ส่งใหม่ (ไม่ใช่ผ่านขั้นบัตรไปแบบไม่มีข้อมูลแล้วตกไปคิวแอดมิน) — ไม่นับเพดาน
+        // แต่ตรวจไม่ทันติดกันหลายครั้ง (รูปเดิมใช้เวลาเกิน timeout ทุกครั้ง — prod 2026-11-09 ผู้ใช้ติดวน 504)
+        // → ไปต่อแบบ "ตัวอ่านบัตรไม่พร้อม" = ผู้ใช้กรอกเอง แล้วรอแอดมินตรวจ
+        $busyKey = 'ekyc-card-busy:'.$user->id.':'.now()->toDateString();
         if (self::isAiBusy($result)) {
-            throw EkycException::aiBusy();
+            if (RateLimiter::attempts($busyKey) < max(1, (int) config('ekyc.card_busy_fallback_after', 2))) {
+                RateLimiter::hit($busyKey, 86400);
+
+                throw EkycException::aiBusy();
+            }
+            $result = ['available' => false, 'data' => [], 'error' => (string) $result['error'], 'ms' => (int) $result['ms']];
         }
+        RateLimiter::clear($busyKey);
         RateLimiter::hit($dayKey, 86400);
 
-        $card = $this->parseCard($result);
+        $card = $this->parseCard($result, $docType);
+
+        // เอกสารที่ระบบยังอ่านอัตโนมัติไม่ได้ (ใบขับขี่ต่างประเทศ / บัตรต่างประเทศไม่มี MRZ) → ไม่ต้องถ่ายวน
+        // ผู้ใช้กรอกเอง → แอดมินตรวจจากรูป (ยังถ่ายใหม่ได้ถ้ารูปเบลอ/ไม่เจอเอกสาร/ไม่เจอรูปหน้า)
+        $docManual = in_array('DOC_MANUAL_REVIEW', $card['reasons'], true);
+
+        // อ่านบัตรไม่ได้ (เบลอ/แสงสะท้อน/ไม่เจอบัตร/อ่านเลขบัตรไม่ได้) — ครั้งแรกให้ถ่ายใหม่พร้อมคำแนะนำ
+        // ครั้งถัดไปในวันเดียวกัน = ไม่บังคับถ่ายวนอีก ให้ไปต่อ (ผู้ใช้กรอกเอง → รอแอดมินตรวจ ไม่อนุมัติอัตโนมัติ)
+        $manual = $docManual && ! $this->cardNeedsRetake($card);
+        if (! $manual && $this->cardNeedsRetake($card)) {
+            $failKey = 'ekyc-card-fail:'.$user->id.':'.now()->toDateString();
+            if (RateLimiter::attempts($failKey) >= max(0, (int) config('ekyc.manual_fallback_after_failures', 1))) {
+                $card = $this->toManualCard($card);
+                $manual = true;
+            } else {
+                RateLimiter::hit($failKey, 86400);
+            }
+        }
 
         $cardPath = $this->images->newPath((int) $user->id, $sessionId, 'card');
         $this->images->putEncrypted($cardPath, $jpeg);
@@ -429,11 +480,15 @@ class EkycService
                 // บัตรใบใหม่ = ผลอ่านใหม่ — การแก้ไขของใบเดิมไม่ใช้แล้ว
                 $extracted['corrections'] = [];
 
+                $extracted['document'] = $card['document'];
+
                 $locked->forceFill([
                     'id_card_image' => $cardPath,
                     'card_face_path' => $facePath,
+                    'document_type' => $card['document']['type'],
+                    'document_country' => $card['document']['country'],
                     'id_number_encrypted' => $idNumber,
-                    'id_number_hash' => $idNumber !== null ? self::idHash($idNumber) : null,
+                    'id_number_hash' => $idNumber !== null ? self::documentHash($card['document']['type'], $card['document']['country'], $idNumber) : null,
                     'id_last4' => $idNumber !== null ? substr($idNumber, -4) : null,
                     'name_th' => $card['fields']['name_th'],
                     'name_en' => $card['fields']['name_en'],
@@ -466,9 +521,14 @@ class EkycService
         $reasons = array_values(array_unique($reasons));
 
         return [
-            'status' => $this->cardNeedsRetake($card) ? 'retake' : 'ok',
-            // false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ผู้ใช้กรอกเอง → เจ้าหน้าที่ตรวจ) — แอปไม่ต้องโชว์ "อ่านสำเร็จ 0%"
-            'ai_available' => $card['available'],
+            'status' => ! $manual && $this->cardNeedsRetake($card) ? 'retake' : 'ok',
+            // false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม/อ่านไม่ได้ (ผู้ใช้กรอกเอง → เจ้าหน้าที่ตรวจ) — แอปไม่ต้องโชว์ "อ่านสำเร็จ 0%"
+            // แอปทุกรุ่นที่ออกไปแล้วรู้จักค่านี้ → เปิดช่องกรอกชื่อ/วันเกิดเอง แล้วไปขั้นใบหน้าต่อได้
+            'ai_available' => $card['available'] && ! $manual,
+            // true = AI อ่านบัตรไม่ได้ซ้ำ ปล่อยให้ไปต่อแบบรอเจ้าหน้าที่ตรวจ (แอปรุ่นใหม่ใช้แสดงข้อความ)
+            'manual_review' => $manual,
+            // ชนิดเอกสารที่ระบบใช้อ่านจริง + ประเทศผู้ออก (หนังสือเดินทาง) — แอปใช้เลือกช่องกรอกชื่อไทย/อังกฤษ
+            'document' => ['type' => $card['document']['type'], 'country' => $card['document']['country']],
             'fields' => $this->fieldsPayload($kyc),
             // true / false / null (null = อ่านไม่ได้/ไม่ทราบ → แอปแสดงเป็นกลาง ไม่ใช่ตัวแดง)
             'checks' => [
@@ -505,7 +565,7 @@ class EkycService
             $extracted = (array) ($locked->extracted_data ?? []);
             $corrections = (array) ($extracted['corrections'] ?? []);
 
-            foreach (['name_th', 'birth_date'] as $field) {
+            foreach (['name_th', 'name_en', 'birth_date'] as $field) {
                 if (! array_key_exists($field, $data) || $data[$field] === null) {
                     continue;
                 }
@@ -513,14 +573,19 @@ class EkycService
                 $new = $field === 'birth_date'
                     ? Carbon::parse((string) $data[$field])->toDateString()
                     : self::cleanName((string) $data[$field]);
-                $current = $field === 'birth_date' ? $locked->birth_date?->toDateString() : $locked->name_th;
+                $current = $field === 'birth_date' ? $locked->birth_date?->toDateString() : $locked->{$field};
                 $original = array_key_exists($field, $corrections) ? ($corrections[$field]['ocr'] ?? null) : $current;
 
                 if ($new === $original) {
                     // แก้กลับเป็นค่าที่ AI อ่านได้ = ไม่นับว่าแก้
                     unset($corrections[$field]);
                 } elseif ($new !== $current || isset($corrections[$field])) {
-                    $corrections[$field] = ['ocr' => $original, 'user' => $new];
+                    $corrections[$field] = [
+                        'ocr' => $original,
+                        'user' => $new,
+                        // แก้ชื่อที่ AI อ่านเพี้ยนไม่กี่ตัว (ด↔ค, ตกวรรณยุกต์) = ไม่ขวางการอนุมัติอัตโนมัติ
+                        'minor' => $field !== 'birth_date' && self::isMinorNameFix($original, $new),
+                    ];
                 }
 
                 $locked->{$field} = $new;
@@ -617,8 +682,9 @@ class EkycService
             $face = $this->parseFace($faceResult, count($jpegs));
 
             $cardInfo = (array) (($kyc->extracted_data ?? [])['card'] ?? []);
-            $corrected = ! empty(($kyc->extracted_data ?? [])['corrections'] ?? []);
+            $corrected = self::hasMajorCorrection((array) (($kyc->extracted_data ?? [])['corrections'] ?? []));
             $idNumber = self::plainId($kyc);
+            $thaiDoc = in_array($kyc->document_type ?? self::DOC_THAI_ID, self::THAI_DOCS, true);
 
             // ลายนิ้วมือภาพของทุกเฟรม — ซ้ำกับรอบก่อนๆ (บัญชีไหนก็ได้) = เอาภาพนิ่งชุดเดิมมาเรียงตามคำสั่งใหม่
             $frameHashes = array_map(fn (string $jpeg) => $this->images->dhash($jpeg), $jpegs);
@@ -627,7 +693,12 @@ class EkycService
                 'card_available' => (bool) ($cardInfo['available'] ?? false),
                 'face_available' => $face['available'],
                 'id_present' => $idNumber !== null,
-                'checksum_ok' => $idNumber !== null ? KycAutoCheckService::validThaiIdChecksum($idNumber) && ($cardInfo['id_checksum_ok'] ?? true) !== false : null,
+                // บัตร/ใบขับขี่ไทย = checksum 13 หลัก · หนังสือเดินทาง/MRZ = check digit ทุกช่องผ่าน (AI ยืนยัน)
+                'checksum_ok' => $idNumber !== null
+                    ? ($thaiDoc
+                        ? KycAutoCheckService::validThaiIdChecksum($idNumber) && ($cardInfo['id_checksum_ok'] ?? true) !== false
+                        : ($cardInfo['id_checksum_ok'] ?? null) === true)
+                    : null,
                 'expiry' => $kyc->card_expiry,
                 'lifelong' => (bool) ($cardInfo['lifelong'] ?? false),
                 'birth_date' => $kyc->birth_date,
@@ -1020,6 +1091,11 @@ class EkycService
             'reasons' => $reasons,
             'reason_texts' => self::reasonTexts($reasons),
             'corrections' => (array) ($extracted['corrections'] ?? []),
+            // ชนิดเอกสาร + ประเทศผู้ออก (แถวเก่าก่อน 2026-11-10 = บัตรประชาชนไทย)
+            'document_type' => $kyc->document_type ?? self::DOC_THAI_ID,
+            'document_label' => (string) (config('ekyc.documents.'.($kyc->document_type ?? self::DOC_THAI_ID).'.label') ?? ''),
+            'document_country' => $kyc->document_country ?? 'THA',
+            'name_en' => $kyc->name_en,
             'id_masked' => $plainId !== null ? self::maskId($plainId) : ($kyc->id_last4 ? '•••••••••'.$kyc->id_last4 : null),
             // เช็คสด ณ ตอนเปิดหน้า (ไม่ใช่ป้ายที่ AI ติดไว้ตอนตัดสิน)
             'duplicate_now' => $kyc->user !== null && $this->isDuplicateId($kyc->user, $kyc->id_number_hash, $plainId),
@@ -1132,6 +1208,103 @@ class EkycService
     /**
      * HMAC ของเลขบัตร (กุญแจ = app key) — ไว้หาบัตรซ้ำโดยไม่ต้องเก็บเลขเปล่า
      */
+    /**
+     * hash สำหรับจับเอกสารซ้ำข้ามบัญชี
+     * - บัตรประชาชน/ใบขับขี่ไทย = idHash(เลข 13 หลัก) แบบเดิม → คนเดียวกันใช้บัตรหรือใบขับขี่ก็จับซ้ำกันได้
+     * - หนังสือเดินทาง/เอกสารต่างประเทศ = ประเทศผู้ออก + เลขเอกสาร (เลขซ้ำกันได้ข้ามประเทศ)
+     */
+    public static function documentHash(?string $docType, ?string $country, string $number): string
+    {
+        if ($docType === null || in_array($docType, self::THAI_DOCS, true)) {
+            return self::idHash($number);
+        }
+        $key = trim((string) config('ekyc.hash_key', ''));
+        $norm = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $number));
+
+        return hash_hmac('sha256', 'ekyc-doc:'.strtoupper((string) $country).':'.$norm, $key !== '' ? $key : (string) config('app.key'));
+    }
+
+    /**
+     * รายการเอกสารสำหรับแอป: [{type, label, hint, auto}] — auto: true | 'mrz' (เฉพาะที่มีแถบ MRZ) | false
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    /**
+     * ข้อความยินยอมรุ่นเก่าที่ยังรับ (config ekyc.legacy_consent_versions) — ใช้ได้กับบัตรประชาชนไทยเท่านั้น
+     */
+    public static function isLegacyConsent(string $version): bool
+    {
+        return $version !== '' && in_array($version, (array) config('ekyc.legacy_consent_versions', []), true);
+    }
+
+    public static function documentOptions(): array
+    {
+        $out = [];
+        foreach ((array) config('ekyc.documents', []) as $type => $row) {
+            $out[] = [
+                'type' => (string) $type,
+                'label' => (string) ($row['label'] ?? $type),
+                'hint' => (string) ($row['hint'] ?? ''),
+                'auto' => $row['auto'] ?? false,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * ผู้ใช้แก้ชื่อที่ AI อ่านเพี้ยนเล็กน้อย: ต่างกันไม่เกิน N ตัวอักษร (config ekyc.minor_name_fix_max_chars)
+     * และไม่เกิน 20% ของความยาวชื่อ — เปลี่ยนเป็นชื่ออื่นทั้งชื่อ = ไม่ใช่การแก้เล็กน้อย
+     */
+    public static function isMinorNameFix(?string $ocr, ?string $user): bool
+    {
+        $max = max(0, (int) config('ekyc.minor_name_fix_max_chars', 2));
+        if ($max === 0 || $ocr === null || $user === null || trim($ocr) === '' || trim($user) === '') {
+            return false;
+        }
+        $a = preg_split('//u', mb_strtolower(preg_replace('/\s+/u', ' ', trim($ocr)) ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $b = preg_split('//u', mb_strtolower(preg_replace('/\s+/u', ' ', trim($user)) ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $dist = self::editDistance($a, $b);
+
+        return $dist <= $max && $dist <= (int) floor(0.2 * max(count($a), count($b)));
+    }
+
+    /**
+     * มีการแก้ข้อมูลที่ต้องให้แอดมินตรวจไหม (แก้วันเกิด / แก้ชื่อมากกว่าเล็กน้อย)
+     *
+     * @param  array<string, mixed>  $corrections
+     */
+    public static function hasMajorCorrection(array $corrections): bool
+    {
+        foreach ($corrections as $c) {
+            if (! is_array($c) || ! ($c['minor'] ?? false)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Levenshtein ระดับตัวอักษร Unicode (levenshtein() ของ PHP นับเป็นไบต์ — ภาษาไทย 1 ตัว = 3 ไบต์)
+     *
+     * @param  array<int, string>  $a
+     * @param  array<int, string>  $b
+     */
+    private static function editDistance(array $a, array $b): int
+    {
+        $prev = range(0, count($b));
+        foreach ($a as $i => $ca) {
+            $cur = [$i + 1];
+            foreach ($b as $j => $cb) {
+                $cur[] = min($prev[$j + 1] + 1, $cur[$j] + 1, $prev[$j] + ($ca === $cb ? 0 : 1));
+            }
+            $prev = $cur;
+        }
+
+        return $prev[count($b)];
+    }
+
     public static function idHash(string $idNumber): string
     {
         // กุญแจแยก (EKYC_HASH_KEY) — หมุน APP_KEY แล้ว hash เดิมยังใช้หาบัตรซ้ำได้ · ไม่ตั้ง = APP_KEY (แบบเดิม)
@@ -1145,6 +1318,12 @@ class EkycService
      */
     public static function maskId(string $idNumber): string
     {
+        if (preg_match('/[A-Za-z]/', $idNumber)) {
+            // เลขหนังสือเดินทาง (มีตัวอักษร) — โชว์แค่ 3 ตัวท้าย
+            $n = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $idNumber));
+
+            return str_repeat('•', max(3, strlen($n) - 3)).substr($n, -3);
+        }
         $d = preg_replace('/\D/', '', $idNumber);
         if (strlen($d) !== 13) {
             return strlen($d) >= 4 ? '•••••••••'.substr($d, -4) : '•••••';
@@ -1251,20 +1430,39 @@ class EkycService
      * @param  array{available: bool, data: array<string, mixed>, error: string|null, ms: int}  $result
      * @return array<string, mixed>
      */
-    private function parseCard(array $result): array
+    private function parseCard(array $result, string $docType = self::DOC_THAI_ID): array
     {
         $d = $result['available'] ? (array) $result['data'] : [];
         $fields = (array) ($d['fields'] ?? []);
-
-        $id = preg_replace('/\D/', '', (string) ($fields['id_number'] ?? ''));
-        $id = strlen($id) === 13 ? $id : null;
+        $doc = (array) ($d['document'] ?? []);
+        $thaiDoc = in_array($docType, self::THAI_DOCS, true);
 
         $reasons = self::cleanReasons($d['reasons'] ?? []);
         $lifelong = in_array('EXPIRY_LIFELONG', $reasons, true);
 
-        $checksumOk = $id !== null ? KycAutoCheckService::validThaiIdChecksum($id) && ($d['id_checksum_ok'] ?? true) !== false : null;
-        if ($id !== null && $checksumOk === false && ! in_array('ID_CHECKSUM_FAIL', $reasons, true)) {
-            $reasons[] = 'ID_CHECKSUM_FAIL';
+        if ($thaiDoc) {
+            $id = preg_replace('/\D/', '', (string) ($fields['id_number'] ?? ''));
+            $id = strlen($id) === 13 ? $id : null;
+            $checksumOk = $id !== null ? KycAutoCheckService::validThaiIdChecksum($id) && ($d['id_checksum_ok'] ?? true) !== false : null;
+            if ($id !== null && $checksumOk === false && ! in_array('ID_CHECKSUM_FAIL', $reasons, true)) {
+                $reasons[] = 'ID_CHECKSUM_FAIL';
+            }
+            $country = 'THA';
+        } else {
+            // เลขหนังสือเดินทาง/เอกสาร: ตัวอักษร A-Z + ตัวเลข 5-20 ตัว · ผ่านเฉพาะเมื่อ AI ยืนยัน check digit ของ MRZ
+            $id = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) ($fields['id_number'] ?? '')));
+            $id = strlen($id) >= 5 && strlen($id) <= 20 ? $id : null;
+            $checksumOk = $id !== null ? ($d['id_checksum_ok'] ?? false) === true : null;
+            $country = is_string($doc['country'] ?? null) && preg_match('/^[A-Z]{1,3}$/', $doc['country']) ? $doc['country'] : null;
+            // AI รุ่นเก่าไม่รู้จัก doc_type (อ่านแบบบัตรไทย) / เอกสารที่ไม่มี MRZ → แอดมินตรวจ
+            if (! isset($d['document']['mrz']) || ! is_array($d['document']['mrz']) || ! ($d['document']['mrz']['valid'] ?? false)) {
+                if ($docType !== self::DOC_PASSPORT && ! in_array('DOC_MANUAL_REVIEW', $reasons, true)) {
+                    $reasons[] = 'DOC_MANUAL_REVIEW';
+                }
+                if ($docType === self::DOC_PASSPORT && $result['available'] && ! isset($d['doc_type'])) {
+                    $reasons[] = 'DOC_MANUAL_REVIEW';
+                }
+            }
         }
 
         $expiry = self::cleanDate($fields['expiry_date'] ?? null);
@@ -1298,8 +1496,17 @@ class EkycService
             'card_face_box' => $d['card_face_box'] ?? null,
             'card_real_score' => self::score($d['card_real_score'] ?? null),
             'lifelong' => $lifelong,
-            'reasons' => $reasons,
+            'reasons' => array_values(array_unique($reasons)),
             'model_version' => is_string($d['model_version'] ?? null) ? mb_substr($d['model_version'], 0, 60) : null,
+            // ไม่มีเลขเอกสาร/ชื่อ (เก็บในคอลัมน์ของมันเอง) — ชนิด/ประเทศ/เพศจาก MRZ เท่านั้น
+            'document' => [
+                'type' => $docType,
+                'country' => $country,
+                'nationality' => is_string($doc['nationality'] ?? null) && preg_match('/^[A-Z]{1,3}$/', $doc['nationality']) ? $doc['nationality'] : null,
+                'sex' => in_array($doc['sex'] ?? null, ['M', 'F', 'X'], true) ? $doc['sex'] : null,
+                'mrz_format' => is_string($doc['mrz']['format'] ?? null) ? mb_substr($doc['mrz']['format'], 0, 4) : null,
+                'mrz_valid' => isset($doc['mrz']['valid']) ? (bool) $doc['mrz']['valid'] : null,
+            ],
         ];
     }
 
@@ -1325,6 +1532,8 @@ class EkycService
             'issue_date' => $card['fields']['issue_date'],
             'reasons' => $card['reasons'],
             'model_version' => $card['model_version'],
+            // true = AI อ่านบัตรไม่ได้ซ้ำ ผู้ใช้กรอกเอง (แอดมินต้องเทียบกับรูปบัตร)
+            'manual_fallback' => (bool) ($card['manual_fallback'] ?? false),
         ];
     }
 
@@ -1406,11 +1615,46 @@ class EkycService
             return false;
         }
 
+        if (in_array('DOC_MANUAL_REVIEW', $card['reasons'], true)) {
+            return array_intersect(self::CARD_QUALITY_REASONS, $card['reasons']) !== [];
+        }
+
         if (! $card['card_detected'] || $card['fields']['id_number'] === null) {
             return true;
         }
 
         return array_intersect(self::CARD_RETAKE_REASONS, $card['reasons']) !== [] || ! $this->cardQualityOk($card);
+    }
+
+    /**
+     * แปลงผลอ่านบัตรที่ "ต้องถ่ายใหม่" ให้เป็นเคสกรอกเอง + รอแอดมินตรวจ
+     *
+     * - เลขบัตรที่ไม่ผ่าน checksum / วันหมดอายุที่อ่านได้ว่าหมดแล้ว = อาจเป็น AI อ่านผิด → ทิ้งค่า (ถือว่าอ่านไม่ได้)
+     *   ไม่งั้นขั้นใบหน้า decide() จะตีเป็น "ถ่ายใหม่" อีกรอบ ผู้ใช้ติดวนเหมือนเดิม — แอดมินดูจากรูปบัตรจริงแทน
+     * - ติดรหัส CARD_UNREADABLE ไว้ = ขวางการอนุมัติอัตโนมัติเสมอ (ผลสุดท้ายอย่างดีที่สุดคือ review → pending)
+     *
+     * @param  array<string, mixed>  $card
+     * @return array<string, mixed>
+     */
+    private function toManualCard(array $card): array
+    {
+        $reasons = $card['reasons'];
+
+        if ($card['checksum_ok'] === false) {
+            $card['fields']['id_number'] = null;
+            $card['checksum_ok'] = null;
+        }
+        if (in_array('EXPIRED', $reasons, true)) {
+            $card['fields']['expiry_date'] = null;
+        }
+
+        $reasons = array_values(array_diff($reasons, ['ID_CHECKSUM_FAIL', 'MRZ_CHECK_FAIL', 'EXPIRED']));
+        $reasons[] = 'CARD_UNREADABLE';
+
+        $card['reasons'] = array_values(array_unique($reasons));
+        $card['manual_fallback'] = true;
+
+        return $card;
     }
 
     /**

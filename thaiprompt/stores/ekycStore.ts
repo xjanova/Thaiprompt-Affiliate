@@ -11,6 +11,7 @@ import {
   createEkycSession,
   getEkycStatus,
   type EkycCorrections,
+  type EkycDocType,
   type EkycFaceResult,
   type EkycFrame,
   type EkycIdCardResult,
@@ -35,6 +36,8 @@ export interface EkycCard {
 
 interface EkycStore {
   from: KycGateContext | null;
+  /** เอกสารที่ผู้ใช้เลือกถ่าย (ค่าเริ่มต้น = บัตรประชาชนไทย) */
+  docType: EkycDocType;
   session: EkycSession | null;
   card: EkycCard | null;
   corrections: EkycCorrections;
@@ -48,6 +51,8 @@ interface EkycStore {
   statusLoading: boolean;
 
   setFrom: (from: KycGateContext | null) => void;
+  /** เปลี่ยนชนิดเอกสาร: รูป/ผลอ่านเดิมใช้ไม่ได้แล้ว (ลบไฟล์ชั่วคราวทิ้ง) */
+  setDocType: (docType: EkycDocType) => void;
   /** เริ่มรอบใหม่ (ยินยอม PDPA แล้ว) */
   startSession: () => Promise<ApiResult<EkycSession>>;
   setCard: (uri: string) => void;
@@ -66,6 +71,7 @@ interface EkycStore {
 
 export const useEkycStore = create<EkycStore>((set, get) => ({
   from: null,
+  docType: 'thai_id',
   session: null,
   card: null,
   corrections: {},
@@ -78,6 +84,13 @@ export const useEkycStore = create<EkycStore>((set, get) => ({
   statusLoading: false,
 
   setFrom: (from) => set({ from }),
+
+  setDocType: (docType) => {
+    if (get().docType === docType) return;
+    const card = get().card;
+    if (card) dropTempFile(card.uri);
+    set({ docType, card: null, corrections: {} });
+  },
 
   startSession: async () => {
     const result = await createEkycSession();
@@ -142,7 +155,16 @@ export const useEkycStore = create<EkycStore>((set, get) => ({
     const { card, frames } = get();
     dropTempFiles([...(card ? [card.uri] : []), ...frames.map((f) => f.uri)]);
     // from ล้างด้วย: ขั้นตอนถัดไปที่เปิดจากที่อื่น (แจ้งเตือน/โปรไฟล์) ต้องไม่ได้ปุ่ม "กลับไป…" ของรอบก่อน
-    set({ from: null, session: null, card: null, corrections: {}, frames: [], decision: null, startedAt: null });
+    set({
+      from: null,
+      docType: 'thai_id',
+      session: null,
+      card: null,
+      corrections: {},
+      frames: [],
+      decision: null,
+      startedAt: null,
+    });
   },
 
   resetAll: () => {

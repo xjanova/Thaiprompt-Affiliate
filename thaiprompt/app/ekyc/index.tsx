@@ -5,6 +5,7 @@
  * - ต้องติ๊กยินยอมก่อนเสมอ (ข้อมูลชีวภาพ — PDPA) แล้วปุ่ม "เริ่มยืนยันตัวตน" จึงกดได้ → POST /ekyc/sessions
  * - ยืนยันแล้ว → บอกว่าเรียบร้อย · รอเจ้าหน้าที่ตรวจ / ยังตรวจคำขอก่อนหน้าอยู่ → พาไปหน้าผล · ลองครบโควตาวันนี้ → ปุ่มปิดพร้อมเหตุผล
  * - ?from=checkout|rider|seller|withdraw → ข้อความหัวหน้า + ปุ่มกลับไปทำต่อในหน้าผล
+ * - เลือกเอกสาร (2026-11-10): รายการจาก server (status.documents) · เอกสารที่ AI ยังอ่านเองไม่ได้ บอกชัดว่าเจ้าหน้าที่ตรวจ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,7 +20,13 @@ import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { useEkycStore } from '@/stores/ekycStore';
-import { EKYC_APP_OUTDATED_MESSAGE, getEkycStatus, isSessionUsable } from '@/services/api/ekycApi';
+import {
+  DEFAULT_EKYC_DOCUMENTS,
+  EKYC_APP_OUTDATED_MESSAGE,
+  getEkycStatus,
+  isSessionUsable,
+  type EkycDocumentOption,
+} from '@/services/api/ekycApi';
 import { APP_UPDATE_ROUTE, isAppUpdateSupported } from '@/services/appUpdate';
 import { goResultForCode } from '@/services/ekyc/flow';
 import { isKycGateContext, KYC_GATE_COPY, type KycGateContext } from '@/services/ekyc/kycGate';
@@ -34,7 +41,7 @@ const SUBTITLE: Record<KycGateContext, string> = {
 };
 
 const STEPS: { icon: 'identification-card' | 'scan-smiley' | 'cpu'; title: string; text: string; gold?: boolean }[] = [
-  { icon: 'identification-card', title: '1. ถ่ายบัตรประชาชน', text: 'AI จับขอบบัตรและถ่ายให้เอง อ่านข้อมูลบนบัตรอัตโนมัติ' },
+  { icon: 'identification-card', title: '1. ถ่ายบัตรหรือเอกสาร', text: 'AI จับขอบบัตรและถ่ายให้เอง อ่านข้อมูลบนบัตรอัตโนมัติ' },
   { icon: 'scan-smiley', title: '2. ถ่ายใบหน้า', text: 'ทำตามคำสั่งสั้นๆ เช่น กระพริบตา หันหน้า เพื่อยืนยันว่าเป็นคนจริง' },
   { icon: 'cpu', title: '3. AI ตรวจและอนุมัติ', text: 'เทียบใบหน้ากับรูปในบัตร ส่วนใหญ่ผ่านทันทีภายในไม่กี่วินาที', gold: true },
 ];
@@ -49,6 +56,7 @@ export default function EkycIntroScreen() {
 
   const from: KycGateContext = isKycGateContext(params.from) ? params.from : 'profile';
   const status = useEkycStore((s) => s.status);
+  const docType = useEkycStore((s) => s.docType);
   const [consent, setConsent] = useState(false);
   const [starting, setStarting] = useState(false);
   const [legacyOnly, setLegacyOnly] = useState(false);
@@ -138,6 +146,15 @@ export default function EkycIntroScreen() {
 
   const verified = !!status?.verified;
   const blocked = !verified && !!status && !status.can_start && status.kyc_status !== 'pending';
+  const documents = status?.documents ?? DEFAULT_EKYC_DOCUMENTS;
+
+  /** ป้ายบอกว่าเอกสารนี้อนุมัติเองได้ไหม */
+  const autoBadge = (doc: EkycDocumentOption): { text: string; color: string } =>
+    doc.auto === true
+      ? { text: 'AI อนุมัติได้ทันที', color: colors.success }
+      : doc.auto === 'mrz'
+        ? { text: 'AI อนุมัติได้ถ้ามีแถบ <<<', color: colors.info }
+        : { text: 'เจ้าหน้าที่ตรวจให้', color: colors.textMuted };
 
   const hero = (
     <View style={styles.heroRow}>
@@ -197,6 +214,44 @@ export default function EkycIntroScreen() {
         ))}
       </Card3D>
 
+      {!verified && !legacyOnly && documents.length > 1 && (
+        <Card3D padding={0} radius={22}>
+          <Text style={[typography.h3, styles.docTitle, { color: colors.textStrong }]}>ใช้เอกสารอะไรยืนยัน</Text>
+          {documents.map((doc) => {
+            const selected = doc.type === docType;
+            const badge = autoBadge(doc);
+            return (
+              <Pressable
+                key={doc.type}
+                onPress={() => useEkycStore.getState().setDocType(doc.type)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={`${doc.label} ${badge.text}`}
+                style={({ pressed }) => [
+                  styles.docRow,
+                  { borderTopColor: colors.divider, opacity: pressed ? 0.75 : 1 },
+                  selected && { backgroundColor: colors.goldSoft },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.radio,
+                    { borderColor: selected ? colors.gold : colors.textFaint },
+                  ]}
+                >
+                  {selected && <View style={[styles.radioDot, { backgroundColor: colors.gold }]} />}
+                </View>
+                <View style={styles.flex}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{doc.label}</Text>
+                  {!!doc.hint && <Text style={[typography.caption, { color: colors.textMuted }]}>{doc.hint}</Text>}
+                  <Text style={[typography.micro, { color: badge.color }]}>{badge.text}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </Card3D>
+      )}
+
       <InfoNote icon="lock" title="ข้อมูลของคุณปลอดภัย">
         <View style={styles.noteBody}>
           <Text style={[typography.bodySm, { color: colors.text }]}>
@@ -214,7 +269,7 @@ export default function EkycIntroScreen() {
           onPress={() => setConsent((v) => !v)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: consent }}
-          accessibilityLabel="ยินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบัตรประชาชนและใบหน้าเพื่อยืนยันตัวตน"
+          accessibilityLabel="ยินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบนเอกสารยืนยันตัวตนและใบหน้าเพื่อยืนยันตัวตน"
           style={[
             styles.consent,
             {
@@ -234,7 +289,8 @@ export default function EkycIntroScreen() {
             {consent && <Icon name="check" size={18} color={colors.goldLight} weight="bold" />}
           </View>
           <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
-            ข้าพเจ้ายินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบัตรประชาชนและข้อมูลชีวภาพ (ใบหน้า) เพื่อยืนยันตัวตนและป้องกันการทุจริต{' '}
+            ข้าพเจ้ายินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบนเอกสารยืนยันตัวตนที่เลือก (บัตรประชาชน ใบขับขี่ หรือหนังสือเดินทาง)
+            และข้อมูลชีวภาพ (ใบหน้า) เพื่อยืนยันตัวตนและป้องกันการทุจริต{' '}
             <Text
               onPress={() => router.push('/privacy' as never)}
               accessibilityRole="link"
@@ -311,6 +367,33 @@ const styles = StyleSheet.create({
   link: {
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  docTitle: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 56,
+    borderTopWidth: 1,
+  },
+  radio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   warn: {
     flexDirection: 'row',

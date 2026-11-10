@@ -218,6 +218,12 @@ def parse_english_name_line(text: str) -> tuple[str, dict] | None:
             rest = rest[1:]
         words = [w for w in rest if re.fullmatch(r"[A-Za-z][A-Za-z'\-]*", w)]
         return ('last', {'last': ' '.join(words) or None}) if words else None
+    key0 = toks[0].rstrip('.').lower()
+    if key0 in EN_TITLES and len(toks) >= 3:
+        # ใบขับขี่: "Mr. Somchai Jaidee" (ไม่มีป้าย Name / Last name) — คำสุดท้าย = นามสกุล
+        words = [w for w in toks[1:] if re.fullmatch(r"[A-Za-z][A-Za-z'\-]*", w)]
+        if len(words) >= 2:
+            return ('full', {'title': EN_TITLES[key0], 'first': ' '.join(words[:-1]), 'last': words[-1]})
     if _fuzzy_word(toks[0], 'name', 0.7):
         rest = toks[1:]
         title = None
@@ -354,9 +360,11 @@ def _pick_date(hits: list[_DateHit]) -> tuple[date | None, float, bool, bool]:
     return best.d, best.conf, False, False
 
 
-def extract_fields(boxes: list[Box], width: float, height: float, today: date) -> dict:
+def extract_fields(boxes: list[Box], width: float, height: float, today: date, layout: str = 'thai_id') -> dict:
     """
     boxes: กล่อง OCR บนภาพบัตรที่ตัด/ปรับมุมแล้ว (แนวนอน)
+    layout: 'thai_id' (บัตรประชาชน — ใช้ตำแหน่งช่องเป็นตัวช่วยเมื่ออ่านป้ายไม่ได้)
+            'thai_dl' (ใบขับขี่สมาร์ทการ์ด — รูปอยู่ซ้าย ต้องเจอป้ายกำกับเท่านั้น ไม่เดาจากตำแหน่ง)
     คืน dict: fields, field_confidence, name_parts, id_checksum_ok, lifelong, reasons
     """
     W, H = float(width), float(height)
@@ -407,6 +415,9 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
         elif kind == 'last' and 'last' not in en_parts:
             en_parts.update(val)
             en_confs.append(b.conf)
+        elif kind == 'full' and not en_parts:
+            en_parts.update(val)
+            en_confs.append(b.conf)
     name_en = None
     if en_parts.get('first') or en_parts.get('last'):
         name_en = ' '.join(x for x in (en_parts.get('title'), en_parts.get('first'), en_parts.get('last')) if x)
@@ -422,15 +433,16 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
             hits.append(h)
 
     birth_labels = [b for b in norm if _has(b.text, 'เกิด', 'birth')]
-    issue_labels = [b for b in norm if _has(b.text, 'ออกบัตร', 'issue')]
-    expiry_labels = [b for b in norm if _has(b.text, 'หมดอายุ', 'expir')]
+    issue_labels = [b for b in norm if _has(b.text, 'ออกบัตร', 'วันออก', 'issue')]
+    # 'อายุ' = "วันบัตรหมดอายุ" (บัตรประชาชน) / "วันสิ้นอายุ" (ใบขับขี่ — OCR มักตกไม้โท เป็น "สินอายุ")
+    expiry_labels = [b for b in norm if _has(b.text, 'อายุ', 'expir')]
 
     def same_line(a: Box, b: Box) -> bool:
         return abs(a.cy - b.cy) <= 0.6 * max(a.h, b.h)
 
     birth_hits = [h for h in hits if h.kind != 'life' and (
         _has(h.box.text, 'เกิด', 'birth') or any(same_line(h.box, lb) and h.box.x0 >= lb.x0 for lb in birth_labels))]
-    if not birth_hits:
+    if not birth_hits and layout == 'thai_id':
         birth_hits = [h for h in hits if h.kind != 'life' and 0.30 * H <= h.box.cy <= 0.75 * H
                       and h.box.cx < 0.75 * W]
         # เลือกเฉพาะกลุ่มที่อยู่สูงสุด (วันเกิดอยู่เหนือวันออก/หมดอายุ)
@@ -453,9 +465,18 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
                 out.append(h)
         return out
 
-    issue_hits = nearest_col(issue_labels)
-    expiry_hits = [h for h in nearest_col(expiry_labels) if h not in issue_hits]
-    if not issue_hits and not expiry_hits and bottom:
+    def on_label_line(label_boxes: list[Box]) -> list[_DateHit]:
+        # วันที่อยู่บรรทัดเดียวกับป้าย และอยู่ทางขวาของป้าย (หรืออยู่ในกล่องเดียวกับป้าย)
+        return [h for h in hits if id(h) not in used and (h.d is None or h.d != birth) and any(
+            same_line(h.box, lb) and h.box.x1 >= lb.x0 for lb in label_boxes)]
+
+    if layout == 'thai_dl':
+        issue_hits = on_label_line(issue_labels)
+        expiry_hits = [h for h in on_label_line(expiry_labels) if h not in issue_hits]
+    else:
+        issue_hits = nearest_col(issue_labels)
+        expiry_hits = [h for h in nearest_col(expiry_labels) if h not in issue_hits]
+    if not issue_hits and not expiry_hits and bottom and layout == 'thai_id':
         # ไม่เจอป้ายกำกับ → แบ่งตามคอลัมน์ ซ้าย = วันออกบัตร, ขวา = วันหมดอายุ
         xs = sorted(h.box.cx for h in bottom)
         if len(xs) >= 2 and xs[-1] - xs[0] > 0.12 * W:
@@ -491,6 +512,16 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
     if issue:
         issue_conf = 0.5 * issue_ocr + 0.5 * (1.0 if issue_agree else 0.5)
 
+    license_no = None
+    if layout == 'thai_dl':
+        for b in lines:
+            m = re.search(r'(?:ฉบับ[ก-๙]{0,3}|No\.?)\s*:?\s*([0-9OoIl|]{7,9})', b.text)
+            if m:
+                cand = _fix_digit_token(m.group(1))
+                if cand.isdigit() and cand != (id_number or '')[:len(cand)]:
+                    license_no = cand
+                    break
+
     reasons: list[str] = []
     if id_number and not checksum:
         reasons.append('ID_CHECKSUM_FAIL')
@@ -517,6 +548,7 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
             'expiry_date': expiry.isoformat() if expiry else None,
             'issue_date': issue.isoformat() if issue else None,
         },
+        'license_no': license_no,
         'field_confidence': fc,
         'ocr_confidence': ocr_confidence,
         'id_checksum_ok': checksum,
@@ -528,3 +560,67 @@ def extract_fields(boxes: list[Box], width: float, height: float, today: date) -
         },
         'reasons': reasons,
     }
+
+
+def merge_results(results: list[dict], today: date) -> dict:
+    """
+    รวมผลจาก OCR หลายตัว (Tesseract + EasyOCR / หลายมุมภาพ) แบบรายช่อง:
+    - เลขบัตร: เลือกตัวที่ checksum ผ่านก่อน แล้วค่อยดูความมั่นใจ
+    - ช่องอื่น: เลือกค่าที่ความมั่นใจสูงสุด (ความมั่นใจรวมหลักฐานตรวจไขว้ไทย/อังกฤษแล้ว)
+    """
+    results = [r for r in results if r]
+    if not results:
+        raise ValueError('no results')
+    if len(results) == 1:
+        return results[0]
+
+    def best(key: str) -> dict:
+        have = [r for r in results if r['fields'].get(key) or (key == 'expiry_date' and r['lifelong'])]
+        return max(have, key=lambda r: r['field_confidence'][key]) if have else results[0]
+
+    id_src = max(results, key=lambda r: (bool(r['fields']['id_number']), r['id_checksum_ok'],
+                                         r['field_confidence']['id_number']))
+    th_src, en_src, b_src, e_src, i_src = (best(k) for k in ('name_th', 'name_en', 'birth_date', 'expiry_date',
+                                                              'issue_date'))
+    fields = {
+        'id_number': id_src['fields']['id_number'],
+        'name_th': th_src['fields']['name_th'],
+        'name_en': en_src['fields']['name_en'],
+        'birth_date': b_src['fields']['birth_date'],
+        'expiry_date': e_src['fields']['expiry_date'],
+        'issue_date': i_src['fields']['issue_date'],
+    }
+    fc = {
+        'id_number': id_src['field_confidence']['id_number'],
+        'name_th': th_src['field_confidence']['name_th'],
+        'birth_date': b_src['field_confidence']['birth_date'],
+        'expiry_date': e_src['field_confidence']['expiry_date'],
+        'name_en': en_src['field_confidence']['name_en'],
+        'issue_date': i_src['field_confidence']['issue_date'],
+    }
+    lifelong = bool(e_src['lifelong'] and not fields['expiry_date'])
+    checksum = bool(id_src['id_checksum_ok'])
+    reasons: list[str] = []
+    if fields['id_number'] and not checksum:
+        reasons.append('ID_CHECKSUM_FAIL')
+    if lifelong:
+        reasons.append('EXPIRY_LIFELONG')
+    elif fields['expiry_date'] and date.fromisoformat(fields['expiry_date']) < today:
+        reasons.append('EXPIRED')
+    return {
+        'fields': fields,
+        'license_no': next((r.get('license_no') for r in results if r.get('license_no')), None),
+        'field_confidence': fc,
+        'ocr_confidence': round((fc['id_number'] + fc['name_th'] + fc['birth_date'] + fc['expiry_date']) / 4.0, 3),
+        'id_checksum_ok': checksum,
+        'lifelong': lifelong,
+        'name_parts': {'th': th_src['name_parts']['th'], 'en': en_src['name_parts']['en']},
+        'reasons': reasons,
+    }
+
+
+def complete(res: dict) -> bool:
+    """ได้ครบทุกช่องบังคับ: เลขบัตร (checksum ผ่าน), ชื่อไทย, วันเกิด, วันหมดอายุ/ตลอดชีพ"""
+    f = res['fields']
+    return bool(f['id_number'] and res['id_checksum_ok'] and f['name_th'] and f['birth_date']
+                and (f['expiry_date'] or res['lifelong']))

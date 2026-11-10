@@ -179,7 +179,7 @@ trait BuildsEkycFixtures
 
     protected function startSession(): TestResponse
     {
-        return $this->postJson('/api/v1/ekyc/sessions', ['consent' => true, 'consent_version' => '2026-10-04']);
+        return $this->postJson('/api/v1/ekyc/sessions', ['consent' => true, 'consent_version' => (string) config('ekyc.consent_version')]);
     }
 
     /**
