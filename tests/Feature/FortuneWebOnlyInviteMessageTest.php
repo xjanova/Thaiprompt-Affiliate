@@ -49,6 +49,15 @@ class FortuneWebOnlyInviteMessageTest extends TestCase
         // CI โหลด schema dump ที่ไม่มีข้อมูล → ชุดข้อความชวน web ที่ migration seed ไว้หายไป ต้องรันซ้ำเอง
         $this->runDataMigration('2026_11_03_151100_seed_fortune_web_only_invite_messages.php');
         $this->runDataMigration('2026_11_03_160100_retire_old_web_only_invite_copy.php');
+
+        // 🎉 (2026-11-11) เทสต์นี้ล็อกชุด web 9 ข้อเดิม — ตัดหมวด "เชิญมาเว็บ" + การปิดหมวดของ
+        //    migration 2026_11_11_120000 ออก (เครื่องที่ dump เก่ากว่าจะรัน migration นั้นจริง แต่ CI ไม่มีข้อมูลนี้)
+        //    หมวดเชิญมาเว็บมีเทสต์ของตัวเอง: FortuneWebInviteCampaignTest
+        FortuneInviteMessage::withTrashed()
+            ->where('category', FortuneInviteMessage::CATEGORY_WEB_INVITE)
+            ->forceDelete();
+        FortuneTellingSetting::getSettings()->update(['invite_disabled_categories' => []]);
+        FortuneTellingSetting::clearSettingsCache();
     }
 
     protected function tearDown(): void

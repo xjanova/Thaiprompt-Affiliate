@@ -273,15 +273,15 @@ class FortuneFbWebOnlyPreflight extends Command
             $rows = FortuneInviteMessage::query()
                 ->where('mode', FortuneInviteMessage::MODE_WEB)
                 ->where('is_active', true)
-                ->get(['id', 'message']);
+                ->get(['id', 'message', 'category']);
         } catch (\Throwable $e) {
             $this->fail_($label, 'ตรวจไม่ได้: '.$e->getMessage());
 
             return;
         }
 
-        $safe = $rows->filter(fn ($r) => FortuneInviteMessage::isWebSafeText($r->message));
-        $unsafe = $rows->reject(fn ($r) => FortuneInviteMessage::isWebSafeText($r->message));
+        $safe = $rows->filter(fn ($r) => FortuneInviteMessage::isWebSafeText($r->message, $r->allowsFreeWord()));
+        $unsafe = $rows->reject(fn ($r) => FortuneInviteMessage::isWebSafeText($r->message, $r->allowsFreeWord()));
 
         if ($safe->count() < self::MIN_WEB_INVITES) {
             $this->fail_(

@@ -222,8 +222,8 @@ class FortuneSettingsController extends Controller
             $status['web_invites'] = \App\Models\FortuneInviteMessage::query()
                 ->where('mode', \App\Models\FortuneInviteMessage::MODE_WEB)
                 ->where('is_active', true)
-                ->get(['message'])
-                ->filter(fn ($r) => \App\Models\FortuneInviteMessage::isWebSafeText($r->message))
+                ->get(['message', 'category'])
+                ->filter(fn ($r) => \App\Models\FortuneInviteMessage::isWebSafeText($r->message, $r->allowsFreeWord()))
                 ->count();
         } catch (\Throwable $e) {
             // ปล่อย null
