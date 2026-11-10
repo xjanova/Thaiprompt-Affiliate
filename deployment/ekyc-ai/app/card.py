@@ -228,9 +228,10 @@ def guide_crops(img: np.ndarray) -> list[CardView]:
     return out
 
 
-def orient_by_face(view: CardView, detect_faces, min_score: float) -> CardView:
+def orient_by_face(view: CardView, detect_faces, min_score: float, face_side: str = 'right') -> CardView:
     """
-    เลือกทิศ 0° หรือ 180° โดยดูว่ารูปหน้าบนบัตรอยู่ครึ่งขวา (ด้านหน้าบัตรประชาชนไทย)
+    เลือกทิศ 0° หรือ 180° โดยดูว่ารูปหน้าบนบัตรอยู่ฝั่งที่ถูก
+    face_side: 'right' = บัตรประชาชนไทยด้านหน้า / 'left' = ใบขับขี่ไทย, หน้าข้อมูลหนังสือเดินทาง / 'any'
     detect_faces(img) → np.ndarray แถวละหน้า [x,y,w,h, 10 ค่า landmark, score]
     """
     card_like = view.quad_found or view.precropped
@@ -243,8 +244,14 @@ def orient_by_face(view: CardView, detect_faces, min_score: float) -> CardView:
                 cands.append((rot, im, f))
     if not cands:
         return view
-    right = [c for c in cands if card_like and c[2][0] + c[2][2] / 2 > 0.5 * c[1].shape[1]]
-    # ไม่มีหน้าครึ่งขวาในทั้งสองทิศ → ไม่หมุน ใช้หน้าที่ใหญ่สุดในทิศเดิม
+    def on_side(c) -> bool:
+        if face_side == 'any':
+            return True
+        cx = c[2][0] + c[2][2] / 2
+        return cx > 0.5 * c[1].shape[1] if face_side == 'right' else cx < 0.5 * c[1].shape[1]
+
+    right = [c for c in cands if card_like and on_side(c)]
+    # ไม่มีหน้าฝั่งที่ถูกในทั้งสองทิศ → ไม่หมุน ใช้หน้าที่ใหญ่สุดในทิศเดิม
     pool = right or [c for c in cands if c[0] == 0]
     if not pool:
         return view

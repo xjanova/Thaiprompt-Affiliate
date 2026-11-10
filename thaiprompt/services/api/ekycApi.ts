@@ -3,8 +3,11 @@
  *
  *   GET   /ekyc/status                         → สถานะยืนยันตัวตนของฉัน
  *   POST  /ekyc/sessions {consent, consent_version} → { session_id, challenges[3], expires_at, attempts_left }
- *   POST  /ekyc/sessions/{id}/id-card  multipart image → ผลอ่านบัตร (status ok | retake)
- *   PATCH /ekyc/sessions/{id}/id-card  {name_th?, birth_date?} → ผู้ใช้แก้ข้อมูลที่ AI อ่านผิด (ผลสุดท้ายอย่างน้อย = ส่งเจ้าหน้าที่)
+ *   POST  /ekyc/sessions/{id}/id-card  multipart image + doc_type → ผลอ่านบัตร (status ok | retake)
+ *   PATCH /ekyc/sessions/{id}/id-card  {name_th?, name_en?, birth_date?} → ผู้ใช้แก้ข้อมูลที่ AI อ่านผิด
+ *
+ * เอกสาร (2026-11-10): บัตรประชาชนไทย / ใบขับขี่ไทย / หนังสือเดินทางทุกประเทศ / บัตรต่างประเทศ
+ *   server ส่งรายการที่รองรับมาใน GET /ekyc/status → documents[] · server รุ่นก่อน = บัตรประชาชนไทยอย่างเดียว
  *   POST  /ekyc/sessions/{id}/face     multipart frames[] + labels[] → ผลตัดสิน approved | review | retake | rejected
  *
  * error ที่หน้าจอต้องแยกจัดการ (ส่วนเพิ่ม 2026-10-04 รอบ 2)
@@ -53,6 +56,41 @@ export interface EkycReasonItem {
   tone: 'fail' | 'warn';
 }
 
+/** ชนิดเอกสารยืนยันตัวตน (ต้องตรงกับ config/ekyc.php documents) */
+export type EkycDocType = 'thai_id' | 'thai_dl' | 'passport' | 'foreign_id' | 'foreign_dl';
+
+export const EKYC_DOC_TYPES: readonly EkycDocType[] = ['thai_id', 'thai_dl', 'passport', 'foreign_id', 'foreign_dl'];
+
+/** เอกสาร 1 ชนิดที่เลือกได้ในแอป */
+export interface EkycDocumentOption {
+  type: EkycDocType;
+  label: string;
+  hint: string;
+  /** true = อนุมัติอัตโนมัติได้ · 'mrz' = ได้ถ้ามีแถบ <<< · false = เจ้าหน้าที่ตรวจเสมอ */
+  auto: boolean | 'mrz';
+}
+
+/** server รุ่นก่อน (ไม่ส่ง documents) รองรับบัตรประชาชนไทยอย่างเดียว */
+export const DEFAULT_EKYC_DOCUMENTS: EkycDocumentOption[] = [
+  { type: 'thai_id', label: 'บัตรประชาชนไทย', hint: 'ด้านหน้าบัตร ที่มีรูปและเลข 13 หลัก', auto: true },
+];
+
+/** เอกสารไทย (เลข 13 หลัก + ชื่อภาษาไทย) */
+export const isThaiDocument = (type: EkycDocType | null | undefined): boolean =>
+  !type || type === 'thai_id' || type === 'thai_dl';
+
+/** ชื่อเอกสารสั้นๆ ใช้ในหัวข้อ/ปุ่ม */
+export const EKYC_DOC_SHORT: Record<EkycDocType, string> = {
+  thai_id: 'บัตรประชาชน',
+  thai_dl: 'ใบขับขี่',
+  passport: 'หนังสือเดินทาง',
+  foreign_id: 'บัตรประชาชน',
+  foreign_dl: 'ใบขับขี่',
+};
+
+export const isEkycDocType = (value: unknown): value is EkycDocType =>
+  typeof value === 'string' && (EKYC_DOC_TYPES as readonly string[]).includes(value);
+
 export interface EkycStatus {
   kyc_status: KycStatusValue;
   verified: boolean;
@@ -76,6 +114,8 @@ export interface EkycStatus {
   name_th: string | null;
   /** เลขบัตรแบบปิดบัง (ถ้า server ส่งมา) */
   id_number_masked: string | null;
+  /** เอกสารที่ใช้ยืนยันได้ (ลำดับ = ลำดับปุ่ม) */
+  documents: EkycDocumentOption[];
 }
 
 export interface EkycSession {
@@ -116,6 +156,8 @@ export interface EkycIdCardResult {
   ai_available: boolean;
   /** true = AI อ่านบัตรไม่ได้ซ้ำ ระบบให้ไปต่อแบบกรอกเอง แล้วเจ้าหน้าที่ตรวจจากรูปบัตร */
   manual_review: boolean;
+  /** เอกสารที่ server ตรวจ (server รุ่นก่อน = บัตรประชาชนไทย) · country = ISO 3 ตัวอักษร */
+  document: { type: EkycDocType; country: string | null };
   reasons: string[];
   reason_items: EkycReasonItem[];
 }
@@ -142,6 +184,8 @@ export interface EkycFaceResult {
 
 export interface EkycCorrections {
   name_th?: string;
+  /** ชื่อภาษาอังกฤษตามเอกสาร (หนังสือเดินทาง/บัตรต่างประเทศ) */
+  name_en?: string;
   /** YYYY-MM-DD (ค.ศ.) */
   birth_date?: string;
 }
@@ -274,7 +318,25 @@ export const normalizeEkycStatus = (raw: any): EkycStatus => {
     ),
     name_th: str(raw?.name_th),
     id_number_masked: str(raw?.id_number_masked),
+    documents: documentList(raw?.documents),
   };
+};
+
+/** รายการเอกสารจาก server · ชนิดที่แอปรุ่นนี้ไม่รู้จักตัดทิ้ง · ว่าง = บัตรประชาชนไทยอย่างเดียว */
+const documentList = (raw: unknown): EkycDocumentOption[] => {
+  const out: EkycDocumentOption[] = [];
+  for (const row of Array.isArray(raw) ? raw : []) {
+    const type = (row as any)?.type;
+    if (!isEkycDocType(type) || out.some((d) => d.type === type)) continue;
+    const auto = (row as any)?.auto;
+    out.push({
+      type,
+      label: str((row as any)?.label) ?? EKYC_DOC_SHORT[type],
+      hint: str((row as any)?.hint) ?? '',
+      auto: auto === 'mrz' ? 'mrz' : bool(auto),
+    });
+  }
+  return out.length > 0 ? out : DEFAULT_EKYC_DOCUMENTS;
 };
 
 export const normalizeEkycSession = (raw: any): EkycSession => {
@@ -321,6 +383,10 @@ export const normalizeEkycIdCard = (raw: any): EkycIdCardResult => {
     ai_available: raw?.ai_available === undefined || raw?.ai_available === null ? true : bool(raw.ai_available),
     // server รุ่นก่อนไม่ส่งช่องนี้ = false
     manual_review: raw?.manual_review === true,
+    document: {
+      type: isEkycDocType(raw?.document?.type) ? raw.document.type : 'thai_id',
+      country: str(raw?.document?.country),
+    },
     reasons: reasonList(raw?.reasons),
     reason_items: buildReasonItems(raw?.reasons, raw?.reason_texts),
   };
@@ -416,6 +482,9 @@ const REASON_TEXT: Record<string, string> = {
   DUPLICATE_ID: 'บัตรนี้เคยใช้ยืนยันกับบัญชีอื่นแล้ว เจ้าหน้าที่จะตรวจสอบให้',
   USER_CORRECTED: 'มีการแก้ข้อมูลบัตรเอง เจ้าหน้าที่จะตรวจทานอีกครั้ง',
   AI_UNAVAILABLE: 'ระบบ AI ไม่ว่างชั่วคราว ส่งให้เจ้าหน้าที่ตรวจแทนแล้ว',
+  CARD_UNREADABLE: 'AI อ่านบัตรไม่ชัด เจ้าหน้าที่จะตรวจจากรูปบัตรให้',
+  MRZ_CHECK_FAIL: 'อ่านแถบตัวอักษร <<< ด้านล่างได้ไม่ครบ',
+  DOC_MANUAL_REVIEW: 'เอกสารชนิดนี้เจ้าหน้าที่จะตรวจให้',
 };
 
 /** เหตุผลที่แปลว่า "ไม่ผ่าน" จริง (ที่เหลือ = ระดับกลาง/ให้เจ้าหน้าที่ดู) */
@@ -426,6 +495,7 @@ const FAIL_REASONS = new Set([
   'CARD_INCOMPLETE',
   'OCR_LOW',
   'ID_CHECKSUM_FAIL',
+  'MRZ_CHECK_FAIL',
   'EXPIRED',
   'NO_CARD_FACE',
   'NO_FACE',
@@ -493,6 +563,7 @@ const CARD_REASONS = new Set([
   'CARD_INCOMPLETE',
   'OCR_LOW',
   'ID_CHECKSUM_FAIL',
+  'MRZ_CHECK_FAIL',
   'EXPIRED',
   'NO_CARD_FACE',
   'ID_UNREADABLE',
@@ -574,6 +645,16 @@ export const cleanThaiName = (value: string): string | null => {
   return /[฀-๿]/.test(name) ? name : null;
 };
 
+/**
+ * ชื่อภาษาอังกฤษตามหนังสือเดินทาง/บัตรต่างประเทศ (ตัวอักษรละติน ช่องว่าง . ' -) · ไม่ถูกต้อง = null
+ * ตรงกับ server: /^[\p{Latin}\s.'\-]+$/u (แอปใช้ช่วง Latin Extended แทน \p{} เพื่อให้ Hermes ทุกรุ่นอ่านได้)
+ */
+export const cleanLatinName = (value: string): string | null => {
+  const name = value.replace(/\s+/g, ' ').trim();
+  if (name.length < 2 || name.length > 100) return null;
+  return /^[A-Za-z\u00C0-\u024F\s.'\-]+$/.test(name) && /[A-Za-z\u00C0-\u024F]/.test(name) ? name : null;
+};
+
 // =====================================================
 // API
 // =====================================================
@@ -596,10 +677,15 @@ export const createEkycSession = async (): Promise<ApiResult<EkycSession>> =>
     normalizeEkycSession
   );
 
-/** POST /ekyc/sessions/{id}/id-card — รูปบัตรด้านหน้า (jpeg) */
-export const uploadEkycIdCard = async (sessionId: string, uri: string): Promise<ApiResult<EkycIdCardResult>> => {
+/** POST /ekyc/sessions/{id}/id-card — รูปเอกสารด้านหน้า (jpeg) + ชนิดเอกสาร */
+export const uploadEkycIdCard = async (
+  sessionId: string,
+  uri: string,
+  docType: EkycDocType = 'thai_id'
+): Promise<ApiResult<EkycIdCardResult>> => {
   const form = new FormData();
   form.append('image', fileFromUri(uri, 'id-card') as unknown as Blob);
+  form.append('doc_type', docType);
   return mapResult(
     await apiUpload<any>(`${BASE}/sessions/${encodeURIComponent(sessionId)}/id-card`, form, {
       timeout: EKYC_UPLOAD_TIMEOUT,
@@ -616,6 +702,7 @@ export const correctEkycIdCard = async (
 ): Promise<ApiResult<EkycIdCardResult | null>> => {
   const body: Record<string, string> = {};
   if (corrections.name_th) body.name_th = corrections.name_th;
+  if (corrections.name_en) body.name_en = corrections.name_en;
   if (corrections.birth_date) body.birth_date = corrections.birth_date;
   const result = await apiPatch<any>(`${BASE}/sessions/${encodeURIComponent(sessionId)}/id-card`, body, {
     fallbackMessage: 'บันทึกการแก้ไขไม่สำเร็จ ลองใหม่อีกครั้งนะ',

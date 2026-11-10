@@ -7,7 +7,10 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   buildReasonItems,
+  cleanLatinName,
   cleanThaiName,
+  DEFAULT_EKYC_DOCUMENTS,
+  isThaiDocument,
   formatThaiDate,
   framesMatchChallenges,
   isCardReason,
@@ -57,7 +60,30 @@ describe('normalizeEkycStatus', () => {
       required_for: ['order', 'rider', 'seller'],
       name_th: null,
       id_number_masked: null,
+      // server รุ่นก่อน (ไม่ส่ง documents) = บัตรประชาชนไทยอย่างเดียว
+      documents: DEFAULT_EKYC_DOCUMENTS,
     });
+  });
+
+  it('รายการเอกสารจาก server: ตัดชนิดที่ไม่รู้จัก/ซ้ำ · auto แปลงเป็น true/false/mrz', () => {
+    const s = normalizeEkycStatus({
+      kyc_status: 'none',
+      documents: [
+        { type: 'thai_id', label: 'บัตรประชาชนไทย', hint: 'ด้านหน้า', auto: true },
+        { type: 'passport', label: 'หนังสือเดินทาง', auto: 1 },
+        { type: 'foreign_id', label: 'บัตรต่างประเทศ', auto: 'mrz' },
+        { type: 'foreign_dl', label: '', auto: false },
+        { type: 'library_card', label: 'บัตรห้องสมุด', auto: true },
+        { type: 'passport', label: 'ซ้ำ', auto: true },
+      ],
+    });
+    expect(s.documents).toEqual([
+      { type: 'thai_id', label: 'บัตรประชาชนไทย', hint: 'ด้านหน้า', auto: true },
+      { type: 'passport', label: 'หนังสือเดินทาง', hint: '', auto: true },
+      { type: 'foreign_id', label: 'บัตรต่างประเทศ', hint: '', auto: 'mrz' },
+      { type: 'foreign_dl', label: 'ใบขับขี่', hint: '', auto: false },
+    ]);
+    expect(normalizeEkycStatus({ documents: [{ type: 'nope' }] }).documents).toEqual(DEFAULT_EKYC_DOCUMENTS);
   });
 
   it('can_retake / processing / ข้อความไทยจาก server / ข้อความเจ้าหน้าที่', () => {
@@ -154,6 +180,21 @@ describe('normalizeEkycIdCard', () => {
     expect(r.ocr_confidence).toBeCloseTo(0.98);
     // server รุ่นก่อนไม่ส่ง ai_available = ตัวอ่านทำงานปกติ
     expect(r.ai_available).toBe(true);
+    // server รุ่นก่อนไม่ส่ง document = บัตรประชาชนไทย
+    expect(r.document).toEqual({ type: 'thai_id', country: null });
+  });
+
+  it('เอกสารที่ server ตรวจ (หนังสือเดินทาง) · ชนิดแปลกปลอม = บัตรประชาชนไทย', () => {
+    const r = normalizeEkycIdCard({ status: 'ok', document: { type: 'passport', country: 'JPN' } });
+    expect(r.document).toEqual({ type: 'passport', country: 'JPN' });
+    expect(normalizeEkycIdCard({ document: { type: 'x', country: '' } }).document).toEqual({ type: 'thai_id', country: null });
+  });
+
+  it('เหตุผลใหม่: MRZ ไม่ผ่าน = ปัญหารูปบัตร · เอกสารที่เจ้าหน้าที่ตรวจ = ระดับกลาง', () => {
+    expect(reasonTone('MRZ_CHECK_FAIL')).toBe('fail');
+    expect(isCardReason('MRZ_CHECK_FAIL')).toBe(true);
+    expect(reasonTone('DOC_MANUAL_REVIEW')).toBe('warn');
+    expect(reasonText('DOC_MANUAL_REVIEW')).toBe('เอกสารชนิดนี้เจ้าหน้าที่จะตรวจให้');
   });
 
   it('ผลตรวจบัตร 3 สถานะ: null/ไม่ส่ง = ไม่ทราบ (ไม่ใช่ไม่ผ่าน) · ตัวอ่านไม่พร้อม', () => {
@@ -347,6 +388,23 @@ describe('วันที่ไทย', () => {
     expect(cleanThaiName('  นาย   ณัฐ  ใจงาม ')).toBe('นาย ณัฐ ใจงาม');
     expect(cleanThaiName('John')).toBeNull();
     expect(cleanThaiName('ก')).toBeNull();
+  });
+
+  it('ชื่ออังกฤษตามเอกสารต่างประเทศ', () => {
+    expect(cleanLatinName('  hanako   TANAKA ')).toBe('hanako TANAKA');
+    expect(cleanLatinName("Anne-Marie O'Neil Jr.")).toBe("Anne-Marie O'Neil Jr.");
+    expect(cleanLatinName('José Müller')).toBe('José Müller');
+    expect(cleanLatinName('นาย ณัฐ')).toBeNull();
+    expect(cleanLatinName('John 007')).toBeNull();
+    expect(cleanLatinName("- '")).toBeNull();
+    expect(cleanLatinName('J')).toBeNull();
+  });
+
+  it('เอกสารไทย = บัตรประชาชน/ใบขับขี่ไทย', () => {
+    expect(isThaiDocument('thai_id')).toBe(true);
+    expect(isThaiDocument('thai_dl')).toBe(true);
+    expect(isThaiDocument('passport')).toBe(false);
+    expect(isThaiDocument(null)).toBe(true);
   });
 });
 

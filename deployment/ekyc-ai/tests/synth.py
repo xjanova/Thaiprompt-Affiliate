@@ -235,3 +235,82 @@ def jpeg(img: np.ndarray, q: int = 90) -> bytes:
     ok, buf = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, q])
     assert ok
     return buf.tobytes()
+
+
+# ---------------------------------------------------------------------------
+# ใบขับขี่ไทย (สมาร์ทการ์ด) — รูปอยู่ซ้าย ข้อความอยู่ขวา (ข้อมูลสมมติ)
+# ---------------------------------------------------------------------------
+def render_dl(spec: CardSpec | None = None, width: int = 1600, license_no: str = '62001234') -> np.ndarray:
+    spec = spec or CardSpec()
+    font_path, bold_path = find_font(), find_font(bold=True)
+    if not font_path:
+        raise RuntimeError('no Thai font found')
+    W = width
+    H = round(W / 1.586)
+    base = np.zeros((H, W, 3), np.uint8)
+    base[...] = (238, 236, 228)
+    img = Image.fromarray(cv2.cvtColor(base, cv2.COLOR_BGR2RGB))
+    dr = ImageDraw.Draw(img)
+
+    def T(x, y, text, size, bold=False, color=(25, 25, 40)):
+        f = ImageFont.truetype(bold_path if (bold and bold_path) else font_path, max(8, round(H * size)))
+        dr.text((round(W * x), round(H * y)), text, font=f, fill=color)
+
+    blue = (20, 40, 110)
+    T(0.20, 0.03, 'ใบอนุญาตขับรถยนต์ส่วนบุคคล', 0.056, True, blue)
+    T(0.20, 0.10, 'Private Car Driving Licence', 0.042, True, blue)
+    T(0.36, 0.19, f'ฉบับที่ {license_no}', 0.046, True)
+    T(0.36, 0.27, f'วันออกใบอนุญาต {spec.issue_th}', 0.042)
+    T(0.36, 0.33, f'Date of Issue {spec.issue_en}', 0.038)
+    T(0.36, 0.40, f'วันสิ้นอายุ {spec.expiry_th}', 0.042)
+    T(0.36, 0.46, f'Date of Expiry {spec.expiry_en}', 0.038)
+    T(0.36, 0.54, f'{spec.title_th} {spec.first_th} {spec.last_th}', 0.054, True)
+    T(0.36, 0.62, f'{spec.title_en} {spec.first_en} {spec.last_en}', 0.046, True)
+    T(0.36, 0.70, f'เกิดวันที่ {spec.birth_th}', 0.042)
+    T(0.36, 0.76, f'Date of Birth {spec.birth_en}', 0.038)
+    T(0.36, 0.84, f'เลขประจำตัวประชาชน {fmt_id(spec.id13)}', 0.042, True)
+    out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    face = spec.face if spec.face is not None else astronaut_portrait()
+    x0, y0, x1, y1 = round(W * 0.04), round(H * 0.22), round(W * 0.31), round(H * 0.80)
+    out[y0:y1, x0:x1] = cv2.resize(face, (x1 - x0, y1 - y0)) if face is not None else 150
+    return out
+
+
+# ---------------------------------------------------------------------------
+# หน้าข้อมูลหนังสือเดินทาง + MRZ (ประเทศ/บุคคลสมมติ)
+# ---------------------------------------------------------------------------
+MONO_CANDIDATES = [
+    os.environ.get('EKYC_TEST_MONO_FONT', ''),
+    '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
+    r'C:\Windows\Fonts\consola.ttf',
+    r'C:\Windows\Fonts\cour.ttf',
+]
+
+
+def find_mono_font() -> str | None:
+    return next((p for p in MONO_CANDIDATES if p and os.path.isfile(p)), None)
+
+
+def render_passport(mrz_lines: tuple[str, ...], width: int = 1500) -> np.ndarray:
+    mono = find_mono_font()
+    if not mono:
+        raise RuntimeError('no monospace font found')
+    W = width
+    H = round(W / 1.42)
+    img = Image.new('RGB', (W, H), (226, 232, 238))
+    dr = ImageDraw.Draw(img)
+    sans = ImageFont.truetype(find_font() or mono, round(H * 0.04))
+    dr.text((round(W * 0.33), round(H * 0.05)), 'PASSPORT', font=sans, fill=(30, 40, 90))
+    for i, t in enumerate(('Surname', 'Given names', 'Nationality', 'Date of birth', 'Date of expiry')):
+        dr.text((round(W * 0.33), round(H * (0.14 + 0.09 * i))), t, font=sans, fill=(60, 60, 80))
+    size = round(W * 0.95 / (max(len(x) for x in mrz_lines) * 0.6))
+    mf = ImageFont.truetype(mono, size)
+    y = H - round(len(mrz_lines) * size * 1.25) - round(H * 0.04)
+    for ln in mrz_lines:
+        dr.text((round(W * 0.03), y), ln, font=mf, fill=(15, 15, 15))
+        y += round(size * 1.25)
+    out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    face = astronaut_portrait()
+    x0, y0, x1, y1 = round(W * 0.04), round(H * 0.12), round(W * 0.28), round(H * 0.62)
+    out[y0:y1, x0:x1] = cv2.resize(face, (x1 - x0, y1 - y0)) if face is not None else 150
+    return out

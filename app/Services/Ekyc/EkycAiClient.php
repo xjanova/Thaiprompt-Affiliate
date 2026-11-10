@@ -43,12 +43,13 @@ class EkycAiClient
      * @param  string  $jpeg  ไบต์รูปบัตร (JPEG ที่ normalize แล้ว)
      * @return array{available: bool, data: array<string, mixed>, error: string|null, ms: int}
      */
-    public function idCard(string $jpeg): array
+    public function idCard(string $jpeg, string $docType = 'thai_id'): array
     {
-        return $this->send('/v1/id-card', function (PendingRequest $request, string $url) use ($jpeg) {
+        return $this->send('/v1/id-card', function (PendingRequest $request, string $url) use ($jpeg, $docType) {
+            // doc_type: thai_id | thai_dl | passport | foreign_id | foreign_dl | other (AI รุ่นเก่าไม่รู้จัก = อ่านแบบบัตรประชาชน)
             return $request
                 ->attach('image', $jpeg, 'card.jpg', ['Content-Type' => 'image/jpeg'])
-                ->post($url);
+                ->post($url, ['doc_type' => $docType]);
         });
     }
 

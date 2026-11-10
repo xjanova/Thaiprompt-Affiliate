@@ -40,6 +40,7 @@
 | onnxruntime 1.30 | MIT |
 | mediapipe 1.0.1 | Apache-2.0 |
 | easyocr 1.7.2 | Apache-2.0 |
+| tesseract-ocr 5 + tesseract-ocr-tha / -eng (แพ็กเกจ Debian bookworm, ข้อมูลภาษา tessdata) | **Apache-2.0** — เรียกเป็น process แยก ไม่ต่อเน็ต |
 | torch 2.14 (CPU) / torchvision 0.29 | BSD-3 (+ Apache-2.0 ส่วนประกอบ) / BSD-3 |
 | numpy, scipy, scikit-image, shapely, networkx, sympy, imageio, tifffile | BSD |
 | pillow | MIT-CMU (HPND) |

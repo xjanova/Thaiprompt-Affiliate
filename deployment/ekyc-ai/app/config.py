@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-SERVICE_VERSION = '1.0.0'
+SERVICE_VERSION = '1.1.0'
 
 # จำกัดจำนวนพิกเซลที่ OpenCV ยอมถอดรหัส (กัน decompression bomb) — ต้องตั้งก่อน import cv2
 os.environ.setdefault('OPENCV_IO_MAX_IMAGE_PIXELS', str(25_000_000))
@@ -36,6 +36,11 @@ def _b(name: str, default: bool) -> bool:
     return v.strip().lower() in ('1', 'true', 'yes', 'on')
 
 
+# ชนิดเอกสารที่รับ — อ่านอัตโนมัติได้: thai_id, thai_dl, passport (MRZ ทุกประเทศ), foreign_id (เฉพาะที่มี MRZ)
+# ที่เหลือ (ใบขับขี่ต่างประเทศ ฯลฯ) = เก็บรูป + ตรวจหน้า แล้วส่งแอดมินตรวจ
+DOC_TYPES = ('thai_id', 'thai_dl', 'passport', 'foreign_id', 'foreign_dl', 'other')
+
+
 @dataclass(frozen=True)
 class Settings:
     # --- ความปลอดภัย / ขีดจำกัด ---
@@ -48,7 +53,9 @@ class Settings:
     request_timeout_s: float = 23.0      # backend ตั้ง timeout 25 วิ — ตอบ 504 ก่อนเล็กน้อย
     workers: int = 2              # จำนวนเธรดประมวลผลพร้อมกัน
     max_queue: int = 4            # คิวรอเพิ่มได้อีกกี่งาน (เกิน = 503 BUSY)
-    torch_threads: int = 2
+    torch_threads: int = 4        # threads ของ EasyOCR (torch) ต่อหนึ่งงาน — workers × torch_threads ≈ --cpus
+    tess_threads: int = 2         # OpenMP threads ต่อการเรียก tesseract หนึ่งครั้ง
+    tess_timeout_s: float = 12.0  # เกินนี้ = ข้าม tesseract ใช้ EasyOCR อย่างเดียว
 
     # --- กล้องหน้า: ภาพเป็นแบบกระจก (mirrored) หรือไม่ ---
     frames_mirrored: bool = True
@@ -91,7 +98,9 @@ def load_settings() -> Settings:
         request_timeout_s=_f('EKYC_REQUEST_TIMEOUT', 23.0),
         workers=max(1, _i('EKYC_WORKERS', 2)),
         max_queue=max(0, _i('EKYC_MAX_QUEUE', 4)),
-        torch_threads=max(1, _i('EKYC_TORCH_THREADS', 2)),
+        torch_threads=max(1, _i('EKYC_TORCH_THREADS', 4)),
+        tess_threads=max(1, _i('EKYC_TESS_THREADS', 2)),
+        tess_timeout_s=_f('EKYC_TESS_TIMEOUT', 12.0),
         frames_mirrored=_b('EKYC_FRAMES_MIRRORED', True),
         blink_ear_ratio=_f('EKYC_BLINK_EAR_RATIO', 0.70),
         blink_blendshape=_f('EKYC_BLINK_BLENDSHAPE', 0.50),

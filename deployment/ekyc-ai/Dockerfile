@@ -29,11 +29,13 @@ ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
     EKYC_MODEL_DIR=/opt/ekyc/models \
     MPLBACKEND=Agg MPLCONFIGDIR=/opt/ekyc/mpl \
     GLOG_minloglevel=2 TF_CPP_MIN_LOG_LEVEL=2 \
-    OMP_NUM_THREADS=2 MKL_NUM_THREADS=2
+    OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 
 # libEGL/libGLESv2: libmediapipe.so ลิงก์ไว้ (ไม่ได้ใช้ GPU จริง) · libgomp: OpenMP ของ onnxruntime/torch
+# tesseract-ocr 5 + ภาษาไทย/อังกฤษ (Apache-2.0, แพ็กเกจ Debian) — OCR ตัวหลักของบัตรไทย + อ่าน MRZ หนังสือเดินทาง
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libegl1 libgles2 libgl1 libglib2.0-0 libgomp1 \
+      tesseract-ocr tesseract-ocr-tha tesseract-ocr-eng \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin ekyc
 

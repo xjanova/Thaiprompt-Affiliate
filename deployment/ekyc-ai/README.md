@@ -49,7 +49,8 @@ docker build -t thaiprompt/ekyc-ai:1.0.0 deployment/ekyc-ai
 
 ```bash
 docker run -d --name ekyc-ai --restart unless-stopped \
-  -p 127.0.0.1:8003:8003 --memory 3g --cpus 2 \
+  -p 127.0.0.1:8003:8003 --memory 3g --cpus 8 \
+  -e EKYC_WORKERS=2 -e EKYC_TORCH_THREADS=4 -e EKYC_TESS_THREADS=2 \
   -e EKYC_AI_KEY=<คีย์จากข้อ 1.1> \
   thaiprompt/ekyc-ai:1.0.0
 ```
@@ -59,7 +60,8 @@ docker run -d --name ekyc-ai --restart unless-stopped \
 ```bash
 umask 077; printf 'EKYC_AI_KEY=%s\n' '<คีย์>' > /home/admin/.ekyc-ai.env
 docker run -d --name ekyc-ai --restart unless-stopped \
-  -p 127.0.0.1:8003:8003 --memory 3g --cpus 2 \
+  -p 127.0.0.1:8003:8003 --memory 3g --cpus 8 \
+  -e EKYC_WORKERS=2 -e EKYC_TORCH_THREADS=4 -e EKYC_TESS_THREADS=2 \
   --env-file /home/admin/.ekyc-ai.env \
   --security-opt no-new-privileges --cap-drop ALL --pids-limit 256 \
   thaiprompt/ekyc-ai:1.0.0
@@ -87,6 +89,35 @@ docker run -d --name ekyc-ai ... thaiprompt/ekyc-ai:1.0.1     # คำสั่�
 ```
 
 ระหว่างสลับ container (~1 นาที) backend จะได้ connection refused → ต้องส่งเคสเข้าคิวแอดมิน (`review`) ตามสัญญา ไม่ใช่ปฏิเสธผู้ใช้
+
+### 1.6 อัปเกรด 1.0.0 → 1.1.0 บน prod (Tesseract + หลายเอกสาร + เพิ่ม CPU) — 2026-11-10
+
+prod ตอนนี้: image `1.0.0` · `--cpus 4 --memory 3g` · คีย์อยู่ใน `/home/admin/ekyc-ai/ekyc.env` · เครื่อง 24 คอร์ แรมว่าง ~3.5 GB
+(1.1.0 ยังเป็นโมเดลชุดเดียวกัน + Tesseract ~60 MB · 2 workers ใช้โมเดลชุดเดียวกัน แรมเพิ่มไม่มาก → `--memory 3g` พอ)
+
+ต้อง deploy โค้ด Laravel (migration `document_type`) ก่อนหรือพร้อมกัน — Laravel รุ่นเก่าคุย AI 1.1.0 ได้ (ไม่ส่ง `doc_type` = บัตรประชาชน)
+
+```bash
+# 1) build image ใหม่จากโค้ดที่ deploy แล้ว (ตัวเดิมยังรับงานอยู่ระหว่าง build ~10–20 นาที)
+cd /home/admin/ekyc-ai && rm -rf src-1.1.0 && mkdir src-1.1.0
+git -C /home/admin/domains/main.thaiprompt.online/public_html archive HEAD deployment/ekyc-ai | tar -x -C src-1.1.0
+cd src-1.1.0/deployment/ekyc-ai && nice -n 15 docker build -t thaiprompt/ekyc-ai:1.1.0 .
+
+# 2) สลับ (เก็บตัวเดิมไว้ย้อนกลับ) — ช่วงสลับ ~1 นาที เคสที่เข้ามาไปคิวแอดมิน
+docker stop ekyc-ai && docker rename ekyc-ai ekyc-ai-1.0.0
+docker run -d --name ekyc-ai --restart unless-stopped \
+  -p 127.0.0.1:8003:8003 --memory 3g --cpus 8 \
+  -e EKYC_WORKERS=2 -e EKYC_TORCH_THREADS=4 -e EKYC_TESS_THREADS=2 \
+  --env-file /home/admin/ekyc-ai/ekyc.env \
+  --security-opt no-new-privileges --cap-drop ALL --pids-limit 256 \
+  thaiprompt/ekyc-ai:1.1.0
+
+# 3) ตรวจ: version 1.1.0 · model_version มี +tesseract5-tha-eng
+sleep 60; curl -s 127.0.0.1:8003/health
+
+# ย้อนกลับ: docker rm -f ekyc-ai && docker rename ekyc-ai-1.0.0 ekyc-ai && docker start ekyc-ai
+# ใช้ได้ดีแล้วสักวันสองวัน: docker rm ekyc-ai-1.0.0
+```
 
 ---
 
@@ -330,6 +361,20 @@ RAM (RSS) — เริ่มโปรเซส 73 MB → หลังโหล�
 คำขอ `/v1/id-card` ใช้ CPU แค่ ~20 วิ แต่ใช้เวลาจริง **148 วิ** (โดนแย่ง CPU) → ได้ 504 แต่ผลถูกต้องเมื่อทำเสร็จ
 ส่วน `/v1/face/verify` 2 เฟรมใช้ 6 วิ — บน prod ต้องให้ VM มี CPU ว่างพอ (PHP-FPM/MySQL/queue อยู่ VM เดียวกัน)
 ถ้าเจอ 504 บ่อย: เพิ่ม vCPU ให้ VM หรือ `--cpus 3` + `EKYC_TORCH_THREADS=3`
+
+**(2026-11-10) ค่าแนะนำบน prod (24 คอร์, load ~2.5)**: `--cpus 8` + `EKYC_WORKERS=2` + `EKYC_TORCH_THREADS=4`
+(2 งานพร้อมกัน × 4 threads = 8 คอร์) + `EKYC_TESS_THREADS=2` — Tesseract อ่านบัตรไทยจบเองเกือบทุกใบ (~1–3 วิ)
+EasyOCR วิ่งเฉพาะใบที่ Tesseract อ่านไม่ครบ จึงแทบไม่ชน timeout 23 วิอีก · RAM ยังพอใน 3g (tesseract ~100 MB/งาน)
+
+### เอกสารที่รองรับ (`doc_type` ใน `/v1/id-card`)
+
+| doc_type | อ่านอัตโนมัติ | วิธีตรวจ |
+|---|---|---|
+| `thai_id` (ค่าเริ่มต้น) | ✅ | เลข 13 หลัก + checksum, ชื่อไทย, วันเกิด/หมดอายุ ไทย↔อังกฤษ |
+| `thai_dl` ใบขับขี่ไทยแบบสมาร์ทการ์ด | ✅ | เลข 13 หลักบนใบขับขี่ + checksum, ป้ายกำกับ เกิด/วันออก/วันสิ้นอายุ |
+| `passport` หนังสือเดินทางทุกประเทศ (ICAO) | ✅ | MRZ 2 บรรทัด + check digit ทุกช่อง + composite |
+| `foreign_id` บัตรประชาชนต่างประเทศ | เฉพาะที่มี MRZ ด้านที่ถ่าย | ไม่มี MRZ → `DOC_MANUAL_REVIEW` (แอดมินตรวจ) |
+| `foreign_dl`, `other` | ❌ | `DOC_MANUAL_REVIEW` — ผู้ใช้กรอกเอง แอดมินตรวจจากรูป |
 
 ## 7. ทดสอบบนเครื่อง dev
 
