@@ -81,8 +81,21 @@ class Engine:
 
     # ------------------------------------------------------------------ บัตร
     def _card_view(self, img: np.ndarray) -> C.CardView:
-        view = C.locate_card(img)
-        return C.orient_by_face(view, lambda im: self.face.detect(im, max_side=1000), self.s.card_face_score)
+        detect = lambda im: self.face.detect(im, max_side=1000)  # noqa: E731
+        view = C.orient_by_face(C.locate_card(img), detect, self.s.card_face_score)
+        if view.quad_found or view.precropped:
+            return view
+        # หาขอบบัตรไม่เจอในรูปแนวตั้ง → ลองตัดตามกรอบนำสายตาของแอป ใช้อันแรกที่เจอรูปหน้าบนบัตรครึ่งขวา
+        # (ไม่งั้น OCR ทั้งรูป ตัวหนังสือบนบัตรเล็กเกิน + ตำแหน่งช่องข้อมูลเพี้ยน → อ่านได้ 0%)
+        for cand in C.guide_crops(img):
+            g = C.orient_by_face(cand, detect, self.s.card_face_score)
+            if g.face is None:
+                continue
+            cx = (float(g.face[0]) + float(g.face[2]) / 2) / g.image.shape[1]
+            fw = float(g.face[2]) / g.image.shape[1]
+            if cx > 0.5 and 0.04 <= fw <= 0.40:
+                return g
+        return view
 
     def _unreadable_card(self, data: bytes, code: str) -> dict:
         """

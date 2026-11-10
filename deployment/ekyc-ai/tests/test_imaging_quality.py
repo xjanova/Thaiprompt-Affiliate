@@ -107,6 +107,33 @@ def test_card_cut_by_frame_is_incomplete():
     assert not (v.quad_found and v.complete)
 
 
+def test_photo_border_is_never_taken_as_the_card():
+    # รูปแนวตั้ง 3:4 (สัดส่วน 1.33 อยู่ในช่วงสัดส่วนบัตร) ที่ขอบรูปมีเส้นตัดชัด — ห้ามถือว่าทั้งรูปคือบัตร
+    rng = np.random.default_rng(5)
+    img = cv2.GaussianBlur(rng.integers(90, 170, (2000, 1500, 3), dtype=np.uint8), (0, 0), 8)
+    cv2.rectangle(img, (3, 3), (1496, 1996), (250, 250, 250), 14)
+    assert C.find_card_quad(img) is None
+    v = C.locate_card(J(img))
+    assert not v.quad_found
+
+
+@needs_font
+def test_guide_crops_follow_the_app_frame_in_portrait_photos():
+    card = synth.render_card()
+    scene, true_quad = synth.place_in_scene(card, scene_w=1500, scene_h=2000, fill=0.86, tilt=0.0)
+    crops = C.guide_crops(J(scene))
+    assert crops and all(c.precropped and c.image.shape[:2] == (C.CARD_H, C.CARD_W) for c in crops)
+    # กรอบแรก (กว้าง 92%) ต้องครอบบัตรเกือบทั้งใบ และ to_src คืนพิกัดในภาพเดิมถูก
+    c = crops[0]
+    corners = np.array([[0, 0, 1], [C.CARD_W - 1, C.CARD_H - 1, 1]], dtype=np.float64).T
+    src = c.to_src @ corners
+    (x0, y0), (x1, y1) = (src[:2] / src[2]).T
+    assert 0 <= x0 < true_quad[:, 0].min() and x1 > true_quad[:, 0].max() - 30
+    assert 0 <= y0 and y1 <= 2000
+    # รูปแนวนอนไม่ใช้กรอบนำสายตา
+    assert C.guide_crops(J(cv2.rotate(scene, cv2.ROTATE_90_CLOCKWISE))) == []
+
+
 def test_no_card_in_plain_photo():
     rng = np.random.default_rng(3)
     img = cv2.GaussianBlur(rng.integers(0, 255, (900, 900, 3), dtype=np.uint8), (0, 0), 6)

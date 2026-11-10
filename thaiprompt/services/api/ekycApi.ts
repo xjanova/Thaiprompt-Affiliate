@@ -114,6 +114,8 @@ export interface EkycIdCardResult {
   ocr_confidence: number;
   /** false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ผู้ใช้กรอกชื่อ/วันเกิดเอง เจ้าหน้าที่ตรวจให้) */
   ai_available: boolean;
+  /** true = AI อ่านบัตรไม่ได้ซ้ำ ระบบให้ไปต่อแบบกรอกเอง แล้วเจ้าหน้าที่ตรวจจากรูปบัตร */
+  manual_review: boolean;
   reasons: string[];
   reason_items: EkycReasonItem[];
 }
@@ -317,6 +319,8 @@ export const normalizeEkycIdCard = (raw: any): EkycIdCardResult => {
     ocr_confidence: score01(raw?.ocr_confidence) ?? 0,
     // server รุ่นก่อนไม่ส่งช่องนี้ = ตัวอ่านบัตรทำงานปกติ
     ai_available: raw?.ai_available === undefined || raw?.ai_available === null ? true : bool(raw.ai_available),
+    // server รุ่นก่อนไม่ส่งช่องนี้ = false
+    manual_review: raw?.manual_review === true,
     reasons: reasonList(raw?.reasons),
     reason_items: buildReasonItems(raw?.reasons, raw?.reason_texts),
   };

@@ -75,6 +75,15 @@ return [
     'max_card_uploads_per_session' => (int) env('EKYC_MAX_CARD_UPLOADS_PER_SESSION', 6),
     'max_card_uploads_per_day' => (int) env('EKYC_MAX_CARD_UPLOADS_PER_DAY', 20),
 
+    // ===== ไม่ให้ผู้ใช้ติดตายที่ขั้นบัตร (2026-11-10) =====
+
+    // AI อ่านบัตรไม่ได้ (ต้องถ่ายใหม่) มาแล้วกี่ครั้งในวันนั้น ครั้งถัดไปจะปล่อยให้กรอกเอง → รอแอดมินตรวจ
+    // 1 = ครั้งแรกให้ถ่ายใหม่พร้อมคำแนะนำ ครั้งที่สองปล่อยผ่าน · 0 = ปล่อยผ่านตั้งแต่ครั้งแรก
+    'manual_fallback_after_failures' => (int) env('EKYC_MANUAL_FALLBACK_AFTER_FAILURES', 1),
+
+    // AI ตอบ "ไม่ว่าง/ตรวจไม่ทัน" (503/504) ติดกันกี่ครั้ง แล้วครั้งถัดไปไปต่อแบบตัวอ่านบัตรไม่พร้อม (กรอกเอง → แอดมินตรวจ)
+    'card_busy_fallback_after' => (int) env('EKYC_CARD_BUSY_FALLBACK_AFTER', 2),
+
     // รอบที่ค้างสถานะ "กำลังตรวจ" นานเกินนี้ (นาที) = ถือว่าค้าง เริ่มรอบใหม่ทับได้
     'processing_stale_minutes' => 5,
 

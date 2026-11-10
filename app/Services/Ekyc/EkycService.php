@@ -103,6 +103,7 @@ class EkycService
         'AI_UNAVAILABLE' => 'ระบบ AI ไม่พร้อม ส่งให้เจ้าหน้าที่ตรวจ',
         'ATTEMPTS_EXHAUSTED' => 'ลองครบจำนวนครั้งแล้ว ส่งให้เจ้าหน้าที่ตรวจ',
         'CARD_IMAGE_MISSING' => 'ไม่พบรูปบัตรของรอบนี้',
+        'CARD_UNREADABLE' => 'AI อ่านบัตรไม่ได้ ผู้ใช้กรอกข้อมูลเอง ให้เจ้าหน้าที่ตรวจจากรูปบัตร',
         'ADMIN_REJECTED' => 'เจ้าหน้าที่ปฏิเสธการยืนยันตัวตน',
         'ADMIN_RETAKE' => 'เจ้าหน้าที่ขอให้ถ่ายใหม่',
         'REPLAY_SUSPECTED' => 'ภาพใบหน้าซ้ำกับการยืนยันครั้งก่อน ต้องให้เจ้าหน้าที่ตรวจ',
@@ -392,12 +393,34 @@ class EkycService
 
         $result = $this->ai->idCard($jpeg);
         // คิว AI เต็ม/ตรวจไม่ทัน = ให้ส่งใหม่ (ไม่ใช่ผ่านขั้นบัตรไปแบบไม่มีข้อมูลแล้วตกไปคิวแอดมิน) — ไม่นับเพดาน
+        // แต่ตรวจไม่ทันติดกันหลายครั้ง (รูปเดิมใช้เวลาเกิน timeout ทุกครั้ง — prod 2026-11-09 ผู้ใช้ติดวน 504)
+        // → ไปต่อแบบ "ตัวอ่านบัตรไม่พร้อม" = ผู้ใช้กรอกเอง แล้วรอแอดมินตรวจ
+        $busyKey = 'ekyc-card-busy:'.$user->id.':'.now()->toDateString();
         if (self::isAiBusy($result)) {
-            throw EkycException::aiBusy();
+            if (RateLimiter::attempts($busyKey) < max(1, (int) config('ekyc.card_busy_fallback_after', 2))) {
+                RateLimiter::hit($busyKey, 86400);
+
+                throw EkycException::aiBusy();
+            }
+            $result = ['available' => false, 'data' => [], 'error' => (string) $result['error'], 'ms' => (int) $result['ms']];
         }
+        RateLimiter::clear($busyKey);
         RateLimiter::hit($dayKey, 86400);
 
         $card = $this->parseCard($result);
+
+        // อ่านบัตรไม่ได้ (เบลอ/แสงสะท้อน/ไม่เจอบัตร/อ่านเลขบัตรไม่ได้) — ครั้งแรกให้ถ่ายใหม่พร้อมคำแนะนำ
+        // ครั้งถัดไปในวันเดียวกัน = ไม่บังคับถ่ายวนอีก ให้ไปต่อ (ผู้ใช้กรอกเอง → รอแอดมินตรวจ ไม่อนุมัติอัตโนมัติ)
+        $manual = false;
+        if ($this->cardNeedsRetake($card)) {
+            $failKey = 'ekyc-card-fail:'.$user->id.':'.now()->toDateString();
+            if (RateLimiter::attempts($failKey) >= max(0, (int) config('ekyc.manual_fallback_after_failures', 1))) {
+                $card = $this->toManualCard($card);
+                $manual = true;
+            } else {
+                RateLimiter::hit($failKey, 86400);
+            }
+        }
 
         $cardPath = $this->images->newPath((int) $user->id, $sessionId, 'card');
         $this->images->putEncrypted($cardPath, $jpeg);
@@ -466,9 +489,12 @@ class EkycService
         $reasons = array_values(array_unique($reasons));
 
         return [
-            'status' => $this->cardNeedsRetake($card) ? 'retake' : 'ok',
-            // false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ผู้ใช้กรอกเอง → เจ้าหน้าที่ตรวจ) — แอปไม่ต้องโชว์ "อ่านสำเร็จ 0%"
-            'ai_available' => $card['available'],
+            'status' => ! $manual && $this->cardNeedsRetake($card) ? 'retake' : 'ok',
+            // false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม/อ่านไม่ได้ (ผู้ใช้กรอกเอง → เจ้าหน้าที่ตรวจ) — แอปไม่ต้องโชว์ "อ่านสำเร็จ 0%"
+            // แอปทุกรุ่นที่ออกไปแล้วรู้จักค่านี้ → เปิดช่องกรอกชื่อ/วันเกิดเอง แล้วไปขั้นใบหน้าต่อได้
+            'ai_available' => $card['available'] && ! $manual,
+            // true = AI อ่านบัตรไม่ได้ซ้ำ ปล่อยให้ไปต่อแบบรอเจ้าหน้าที่ตรวจ (แอปรุ่นใหม่ใช้แสดงข้อความ)
+            'manual_review' => $manual,
             'fields' => $this->fieldsPayload($kyc),
             // true / false / null (null = อ่านไม่ได้/ไม่ทราบ → แอปแสดงเป็นกลาง ไม่ใช่ตัวแดง)
             'checks' => [
@@ -1325,6 +1351,8 @@ class EkycService
             'issue_date' => $card['fields']['issue_date'],
             'reasons' => $card['reasons'],
             'model_version' => $card['model_version'],
+            // true = AI อ่านบัตรไม่ได้ซ้ำ ผู้ใช้กรอกเอง (แอดมินต้องเทียบกับรูปบัตร)
+            'manual_fallback' => (bool) ($card['manual_fallback'] ?? false),
         ];
     }
 
@@ -1411,6 +1439,37 @@ class EkycService
         }
 
         return array_intersect(self::CARD_RETAKE_REASONS, $card['reasons']) !== [] || ! $this->cardQualityOk($card);
+    }
+
+    /**
+     * แปลงผลอ่านบัตรที่ "ต้องถ่ายใหม่" ให้เป็นเคสกรอกเอง + รอแอดมินตรวจ
+     *
+     * - เลขบัตรที่ไม่ผ่าน checksum / วันหมดอายุที่อ่านได้ว่าหมดแล้ว = อาจเป็น AI อ่านผิด → ทิ้งค่า (ถือว่าอ่านไม่ได้)
+     *   ไม่งั้นขั้นใบหน้า decide() จะตีเป็น "ถ่ายใหม่" อีกรอบ ผู้ใช้ติดวนเหมือนเดิม — แอดมินดูจากรูปบัตรจริงแทน
+     * - ติดรหัส CARD_UNREADABLE ไว้ = ขวางการอนุมัติอัตโนมัติเสมอ (ผลสุดท้ายอย่างดีที่สุดคือ review → pending)
+     *
+     * @param  array<string, mixed>  $card
+     * @return array<string, mixed>
+     */
+    private function toManualCard(array $card): array
+    {
+        $reasons = $card['reasons'];
+
+        if ($card['checksum_ok'] === false) {
+            $card['fields']['id_number'] = null;
+            $card['checksum_ok'] = null;
+        }
+        if (in_array('EXPIRED', $reasons, true)) {
+            $card['fields']['expiry_date'] = null;
+        }
+
+        $reasons = array_values(array_diff($reasons, ['ID_CHECKSUM_FAIL', 'EXPIRED']));
+        $reasons[] = 'CARD_UNREADABLE';
+
+        $card['reasons'] = array_values(array_unique($reasons));
+        $card['manual_fallback'] = true;
+
+        return $card;
     }
 
     /**
