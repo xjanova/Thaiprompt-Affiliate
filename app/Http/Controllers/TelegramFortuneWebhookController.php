@@ -1368,7 +1368,7 @@ class TelegramFortuneWebhookController extends Controller
     {
         $picked = $reading->getCelticPickedCount();
         $remain = max(0, 10 - $picked);
-        $summaryLine = '📸 แม่หมอเก็บรูปที่ลูกส่งมาไว้แล้วนะคะ ไม่หายไปไหน';
+        $summaryLine = '📸 แม่หมอเก็บรูปที่คุณส่งมาไว้แล้วนะคะ ไม่หายไปไหน';
 
         try {
             $base64 = $cachedBase64 ?: $this->telegram->downloadFileAsBase64($fileId);
@@ -1380,14 +1380,14 @@ class TelegramFortuneWebhookController extends Controller
                 }
 
                 if (empty($captured['captured'])) {
-                    $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                    $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
                 }
             } else {
-                $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
             }
         } catch (\Throwable $e) {
             Log::warning('Telegram: Celtic pending image ล้ม (non-blocking)', ['reading_id' => $reading->id, 'error' => $e->getMessage()]);
-            $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+            $summaryLine = '📸 รูปที่คุณส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
         }
 
         $this->telegram->sendQuickReplies(

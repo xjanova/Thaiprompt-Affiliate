@@ -1215,7 +1215,7 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringContainsString('ทิ้งร่างดุทั้งหมด', $call['system']);
         $this->assertStringContainsString('ยังไม่ได้ขอให้ดู → ยังไม่ใส่ป้าย', $call['system']);
         $this->assertStringContainsString('น้ำเสียงแม่หมอจันทราร่างห้องคุณไสย', $call['user']);
-        $this->assertStringContainsString('ลูก: รู้สึกเหมือนโดนของ', $call['user']);
+        $this->assertStringContainsString('ลูกค้า: รู้สึกเหมือนโดนของ', $call['user']);
     }
 
     public function test_an_unknown_persona_is_refused(): void
@@ -1251,7 +1251,7 @@ class JuntraServerChatApiTest extends TestCase
         ])->assertOk();
 
         $system = end($this->aiCalls)['system'];
-        $this->assertStringContainsString('พื้นดวงจริงของลูก', $system);
+        $this->assertStringContainsString('พื้นดวงจริงของลูกค้า', $system);
         $this->assertStringContainsString('ราศี: ตุลย์', $system);
         Bus::assertDispatched(ExtractCustomerPersonaJob::class, fn ($job) => $job->platform === 'web' && $job->userId === 'jw42');
 

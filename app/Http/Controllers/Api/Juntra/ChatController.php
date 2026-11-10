@@ -62,7 +62,7 @@ class ChatController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'แม่หมอกำลังพักสายตา · ลองใหม่อีกครู่นะคะลูก',
+                'message' => 'แม่หมอกำลังพักสายตา · ลองใหม่อีกครู่นะคะ',
             ], 503);
         }
     }

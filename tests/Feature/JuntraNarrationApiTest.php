@@ -68,10 +68,10 @@ class JuntraNarrationApiTest extends TestCase
     private function goodThree(): array
     {
         return [
-            ['anchor' => 'birth', 'tone' => null, 'energy' => null, 'say' => '{calm} ลูกเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยนนะ'],
-            ['anchor' => 'graph', 'tone' => null, 'energy' => null, 'say' => 'ดวงลูกช่วงนี้ขึ้นลงนิดหน่อย แต่ปลายทางสว่าง'],
-            ['anchor' => 'card:1', 'tone' => 'good', 'energy' => 4, 'say' => 'ใบแรกคู่รัก ลูกเคยมีความสัมพันธ์ที่ดีมาก่อน'],
-            ['anchor' => 'card:2', 'tone' => 'caution', 'energy' => 2, 'say' => '{softly} หอคอยกลับหัว ช่วงวันที่ 15 ระวังคำพูดนะลูก'],
+            ['anchor' => 'birth', 'tone' => null, 'energy' => null, 'say' => '{calm} คุณเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยนนะ'],
+            ['anchor' => 'graph', 'tone' => null, 'energy' => null, 'say' => 'ดวงคุณช่วงนี้ขึ้นลงนิดหน่อย แต่ปลายทางสว่าง'],
+            ['anchor' => 'card:1', 'tone' => 'good', 'energy' => 4, 'say' => 'ใบแรกคู่รัก คุณเคยมีความสัมพันธ์ที่ดีมาก่อน'],
+            ['anchor' => 'card:2', 'tone' => 'caution', 'energy' => 2, 'say' => '{softly} หอคอยกลับหัว ช่วงวันที่ 15 ระวังคำพูดนะคะ'],
             ['anchor' => 'card:3', 'tone' => 'good', 'energy' => 5, 'say' => 'ดวงดาวพาความหวังกลับมา ใส่สีชมพูไว้นะ'],
             ['anchor' => 'summary', 'tone' => 'good', 'energy' => 4, 'say' => '{warmly} คำตอบคือใช่ ความรักครั้งนี้ไปต่อได้ ใจเย็นไว้'],
         ];
@@ -100,7 +100,7 @@ class JuntraNarrationApiTest extends TestCase
 
         $card2 = $res->json('data.chapters.3');
         // แท็ก {softly} ของ AI รอดตัวกรองขาออก แล้วกลายเป็น [softly] ของ ElevenLabs
-        $this->assertSame('[softly] หอคอยกลับหัว ช่วงวันที่ 15 ระวังคำพูดนะลูก', $card2['say']);
+        $this->assertSame('[softly] หอคอยกลับหัว ช่วงวันที่ 15 ระวังคำพูดนะคะ', $card2['say']);
         $this->assertSame(['caution', 2], [$card2['tone'], $card2['energy']]);
         // ฟันธง "ใช่" → โทนสรุปเป็น good เสมอ ไม่ว่า AI ส่งอะไร
         $this->assertSame('good', $res->json('data.chapters.5.tone'));
@@ -126,15 +126,15 @@ class JuntraNarrationApiTest extends TestCase
     public function test_a_wrong_chapter_is_rewritten_once_with_the_reason(): void
     {
         $bad = $this->goodThree();
-        $bad[2]['say'] = 'ใบแรกคือหอคอย ลูกเคยผ่านเรื่องหนักมา';
+        $bad[2]['say'] = 'ใบแรกคือหอคอย คุณเคยผ่านเรื่องหนักมา';
         $this->aiScript = [
             $this->aiJson($bad),
-            $this->aiJson([['anchor' => 'card:1', 'tone' => 'good', 'energy' => 4, 'say' => 'คู่รักตั้งตรง ลูกเคยมีความสัมพันธ์ที่ดี']]),
+            $this->aiJson([['anchor' => 'card:1', 'tone' => 'good', 'energy' => 4, 'say' => 'คู่รักตั้งตรง คุณเคยมีความสัมพันธ์ที่ดี']]),
         ];
 
         $res = $this->narrate()->assertOk();
         $this->assertSame(['passed' => 6, 'rewritten' => 1, 'extractive' => 0], $res->json('data.fidelity'));
-        $this->assertSame('คู่รักตั้งตรง ลูกเคยมีความสัมพันธ์ที่ดี', $res->json('data.chapters.2.say'));
+        $this->assertSame('คู่รักตั้งตรง คุณเคยมีความสัมพันธ์ที่ดี', $res->json('data.chapters.2.say'));
 
         $this->assertCount(2, $this->aiCalls);
         $this->assertStringContainsString('card:1', $this->aiCalls[1]['user']);
@@ -166,7 +166,7 @@ class JuntraNarrationApiTest extends TestCase
 
         $res = $this->narrate()->assertOk();
         $this->assertSame(['passed' => 0, 'rewritten' => 0, 'extractive' => 6], $res->json('data.fidelity'));
-        $this->assertSame('[calm] มาดูภาพรวมของดวงลูกช่วงนี้กันก่อนนะ ว่าขึ้นลงอย่างไร', $res->json('data.chapters.1.say'));
+        $this->assertSame('[calm] มาดูภาพรวมของดวงคุณช่วงนี้กันก่อนนะ ว่าขึ้นลงอย่างไร', $res->json('data.chapters.1.say'));
         $this->assertStringContainsString('หอคอยกลับหัว', $res->json('data.chapters.3.say'));
         $this->assertSame('extractive', FortuneVoiceUsage::sole()->provider);
     }

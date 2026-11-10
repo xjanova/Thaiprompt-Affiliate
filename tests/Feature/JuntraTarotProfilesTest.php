@@ -34,7 +34,7 @@ class JuntraTarotProfilesTest extends TestCase
     /** @var array<int,string> คำตอบที่โมเดลจะให้ทีละครั้ง (ว่าง = ใช้) */
     private array $replies = [];
 
-    private string $reply = "## 🎯 ฟันธง\nผล: ใช่\nไพ่หนุนค่ะลูก\n\n## 🃏 ใบที่ 1 · ตัวคุณ\nใจลูกเปิดรับ";
+    private string $reply = "## 🎯 ฟันธง\nผล: ใช่\nไพ่หนุนค่ะ\n\n## 🃏 ใบที่ 1 · ตัวคุณ\nใจคุณเปิดรับ";
 
     protected function setUp(): void
     {
@@ -71,7 +71,7 @@ class JuntraTarotProfilesTest extends TestCase
 
             return $next !== null
                 ? ['response' => $next, 'provider' => 'anthropic', 'model' => 'claude-haiku-5-5', 'tokens_used' => 300]
-                : ['response' => "สวัสดีค่ะลูก\n".$this->reply, 'provider' => 'openai', 'model' => 'gpt-5.6-luna', 'tokens_used' => 900];
+                : ['response' => "สวัสดีค่ะ\n".$this->reply, 'provider' => 'openai', 'model' => 'gpt-5.6-luna', 'tokens_used' => 900];
         });
         $ai->shouldNotReceive('chatWithCustomSystemPrompt');
         $this->app->instance(FortuneAIService::class, $ai);
@@ -134,7 +134,7 @@ class JuntraTarotProfilesTest extends TestCase
         $this->read(['spread_key' => 'three', 'cards' => $cards])->assertOk();
         $this->assertStringNotContainsString('PERSONA OVERRIDE', end($this->overrides));
         $this->assertStringEndsWith('ขึ้นต้นคำตอบด้วยหัวข้อแรกทันที', end($this->overrides));
-        $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
     }
 
     /** 🪬 (2026-11-04, owner) คุณไสย = แม่หมออีกร่าง ดุดัน เคร่งขรึม — พรอมต์ทำนายเดิม + บล็อกบุคลิกท้ายสุด ยังเรียก "ลูก" */
@@ -146,9 +146,9 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringStartsWith('[⚠️ WEB TAROT OVERRIDE', $override);
         $this->assertStringContainsString('KUNSAI ROOM OVERRIDE', $override);
         $this->assertStringContainsString('ดุดัน เคร่งขรึม ตรงไปตรงมา', $override);
-        $this->assertStringContainsString('ห้ามโทษลูกว่าทำตัวเองให้โดนของ', $override);
+        $this->assertStringContainsString('ห้ามโทษลูกค้าว่าทำตัวเองให้โดนของ', $override);
         $this->assertStringNotContainsString('PERSONA OVERRIDE — บุษบา', $override);
-        $this->assertStringContainsString('เรียกลูกค้าว่า "ลูก"', end($this->calls)['prompt']);
+        $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
 
         $this->read(['spread_key' => 'celtic', 'question' => 'งานจะรุ่งไหม', 'cards' => $this->deck(10)])->assertOk();
         $this->assertStringNotContainsString('KUNSAI ROOM OVERRIDE', end($this->overrides));
@@ -253,7 +253,7 @@ class JuntraTarotProfilesTest extends TestCase
         $this->read(['spread_key' => 'celtic', 'cards' => $cards, 'birth_date' => '1990-06-27'])->assertOk();
         $this->read(['spread_key' => 'love', 'cards' => $this->loveCards(), 'birth_date' => '1990-06-27'])->assertOk();
 
-        $this->assertStringContainsString('🌠 ดวงดาวจากวันเกิดของลูก', $this->calls[0]['prompt']);
+        $this->assertStringContainsString('🌠 ดวงดาวจากวันเกิดของคุณ', $this->calls[0]['prompt']);
         $this->assertStringContainsString('## 🌠 ดวงดาววันเกิด', $this->calls[0]['prompt']);
         $this->assertStringNotContainsString('ดวงดาวจากวันเกิด', $this->calls[1]['prompt']);
     }

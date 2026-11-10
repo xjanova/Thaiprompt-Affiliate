@@ -132,7 +132,7 @@ class JuntraRegularGreetingService
         return $lines === [] ? 'ไม่มีข้อมูลเพิ่ม' : implode("\n", $lines);
     }
 
-    /** ตัวเลขที่พูดต้องมาจากข้อมูลที่ให้ · บุษบาไม่เรียก "ลูก" */
+    /** ตัวเลขที่พูดต้องมาจากข้อมูลที่ให้ · 🗣️ (2026-11-10, owner) ทุกตัวละครห้ามเรียกลูกค้าว่า "ลูก" (เดิมคุมแค่บุษบา) */
     private function safe(string $persona, string $greeting, array $facts): bool
     {
         $allowed = array_map('strval', array_filter([$facts['visits'] ?? null, $facts['days_away'] ?? null, $facts['days_to_birthday'] ?? null], 'is_int'));
@@ -146,7 +146,7 @@ class JuntraRegularGreetingService
         // ชื่อเรียกของลูกค้าเองอาจมีคำว่า "ลูก" (เช่น ลูกหมี) — ตัดชื่อออกก่อนตรวจ
         $withoutName = ! empty($facts['name']) ? str_replace($facts['name'], '', $greeting) : $greeting;
 
-        return ! ($persona === 'busaba' && preg_match('/ลูก(?!ค้า|ของ)/u', $withoutName));
+        return ! preg_match('/ลูก(?!ค้า|ของ)/u', $withoutName);
     }
 
     private function record(string $persona, string $userRef, string $provider, int $chars, bool $success): void

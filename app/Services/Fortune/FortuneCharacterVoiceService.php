@@ -37,7 +37,7 @@ class FortuneCharacterVoiceService
             'label' => 'แม่หมอจันทรา',
             'brief' => 'หญิงวัย 50+ น้ำเสียงนุ่ม อบอุ่น ขลัง น่าเชื่อถือ',
             'default_voice' => 'hpp4J3VqNfWAUOO0d1Us', // Bella — หญิง สุภาพ อบอุ่น
-            'sample_text' => '[softly] สวัสดีจ้ะลูก แม่หมอจันทรารออยู่ตรงนี้แล้วนะ... [calm] ตั้งจิตให้สงบ นึกถึงเรื่องที่ค้างอยู่ในใจ แล้วค่อย ๆ เล่าให้แม่หมอฟัง ไพ่จะบอกทางให้เราเองจ้ะ',
+            'sample_text' => '[softly] สวัสดีค่ะ แม่หมอจันทรารออยู่ตรงนี้แล้วนะคะ... [calm] ตั้งจิตให้สงบ นึกถึงเรื่องที่ค้างอยู่ในใจ แล้วค่อย ๆ เล่าให้แม่หมอฟัง ไพ่จะบอกทางให้คุณเองค่ะ',
         ],
         'busaba' => [
             'label' => 'น้องบุษบา',
@@ -50,7 +50,7 @@ class FortuneCharacterVoiceService
             'label' => 'แม่หมอโหมดคุณไสย',
             'brief' => 'หญิงวัย 50+ เสียงต่ำ ลึกลับ ขลัง เยือกเย็น จริงจัง',
             'default_voice' => 'Z3R5wn05IrDiVCyEkUrK', // Arabella — หญิง ลึกลับ มีอารมณ์
-            'sample_text' => '[whispers] ลูกเอ๋ย... สิ่งที่ตามลูกมา มันไม่ใช่เรื่องบังเอิญ [softly] ตั้งสติไว้ แม่หมอจะเปิดไพ่ดูให้ ว่าใครทำ ทำด้วยอะไร และจะแก้อย่างไร [sighs] อย่าเพิ่งกลัวนะลูก',
+            'sample_text' => '[whispers] ฟังแม่หมอนะคะ... สิ่งที่ตามคุณมา มันไม่ใช่เรื่องบังเอิญ [softly] ตั้งสติไว้ แม่หมอจะเปิดไพ่ดูให้ ว่าใครทำ ทำด้วยอะไร และจะแก้อย่างไร [sighs] อย่าเพิ่งกลัวนะคะ',
         ],
     ];
 
@@ -78,15 +78,20 @@ class FortuneCharacterVoiceService
 
     protected FortuneVoiceStorageService $storage;
 
+    /** 🔊 (2026-11-10) ปรับความดังทุกคลิปให้เท่ากัน (ไม่มี ffmpeg = ข้ามเงียบ ๆ) */
+    protected VoiceLoudnessNormalizer $normalizer;
+
     public function __construct(
         ?FortuneTellingSetting $settings = null,
         ?ElevenLabsTtsProvider $provider = null,
         ?FortuneVoiceStorageService $storage = null,
+        ?VoiceLoudnessNormalizer $normalizer = null,
     ) {
         // ค่ากลางเสมอ — เสียงตัวละครไม่ผูกกับเพจสาขา
         $this->settings = $settings ?? FortuneTellingSetting::getGlobalSettings();
         $this->provider = $provider ?? new ElevenLabsTtsProvider($this->settings);
         $this->storage = $storage ?? new FortuneVoiceStorageService($this->settings);
+        $this->normalizer = $normalizer ?? new VoiceLoudnessNormalizer;
     }
 
     public function provider(): ElevenLabsTtsProvider
@@ -436,6 +441,13 @@ class FortuneCharacterVoiceService
                 $clip->update(['status' => FortuneCharacterVoiceClip::STATUS_FAILED, 'error' => $this->short($result['error'])]);
 
                 return $clip;
+            }
+
+            // 🔊 ปรับความดังให้เท่าคลิปห้อง (-19 LUFS) ก่อนเก็บ — ล้ม/ไม่มี ffmpeg = เก็บไฟล์เดิม ไม่ทำให้คลิปล้ม
+            try {
+                $this->normalizer->normalizeFile($tempPath, false);
+            } catch (\Throwable $e) {
+                Log::warning('🔊 ข้ามการปรับความดังเสียงตัวละคร', ['clip_id' => $clip->id, 'error' => mb_substr($e->getMessage(), 0, 200)]);
             }
 
             $relative = 'fortune-voice/characters/'.$clip->persona.'/'.$clip->text_hash.'.mp3';

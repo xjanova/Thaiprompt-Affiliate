@@ -18,7 +18,7 @@ class NarrationFidelityTest extends TestCase
 ไพ่หนุนให้เดินหน้า
 
 ## 🃏 ใบที่ 1 · อดีต
-ไพ่คู่รักตั้งตรง ลูกเคยมีความสัมพันธ์ที่ดีมาก่อน
+ไพ่คู่รักตั้งตรง คุณเคยมีความสัมพันธ์ที่ดีมาก่อน
 
 ## 🃏 ใบที่ 2 · ปัจจุบัน
 ไพ่หอคอยกลับหัว ตอนนี้กำลังผ่านแรงสั่นคลอน ช่วงวันที่ 15 ระวังคำพูด
@@ -27,7 +27,7 @@ class NarrationFidelityTest extends TestCase
 ไพ่ดวงดาวตั้งตรง ความหวังกลับมา สีมงคลคือสีชมพู ทิศมงคลคือทิศตะวันออก
 
 ## 🌠 ดวงดาววันเกิด
-ลูกเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยน
+คุณเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยน
 
 ## 🧭 คำแนะนำ
 ใจเย็น สื่อสารตรง ๆ
@@ -106,15 +106,15 @@ TXT;
 
     public function test_a_faithful_chapter_passes(): void
     {
-        $this->assertSame([], $this->check('card:2', '[softly] ใบที่สองหอคอยกลับหัว ช่วงวันที่ 15 ลูกระวังคำพูดไว้นะ', $this->ctx(self::THREE, 'card', 2)));
+        $this->assertSame([], $this->check('card:2', '[softly] ใบที่สองหอคอยกลับหัว ช่วงวันที่ 15 คุณระวังคำพูดไว้นะ', $this->ctx(self::THREE, 'card', 2)));
         $this->assertSame([], $this->check('card:3', 'ดวงดาวมาแล้ว ความหวังกลับมา ลองใส่สีชมพู หันไปทางทิศตะวันออก', $this->ctx(self::THREE, 'card', 3)));
         $this->assertSame([], $this->check('summary', '[warmly] คำตอบคือใช่จ้ะ ความรักครั้งนี้ไปต่อได้ แค่ใจเย็นไว้', $this->ctx(self::THREE)));
-        $this->assertSame([], $this->check('birth', 'ลูกเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยนนะ', $this->ctx(self::THREE, 'birth')));
+        $this->assertSame([], $this->check('birth', 'คุณเกิดวันพุธ ราศีมีน ธาตุน้ำ ใจอ่อนโยนนะ', $this->ctx(self::THREE, 'birth')));
     }
 
     public function test_another_cards_name_in_a_card_chapter_is_caught(): void
     {
-        $reasons = $this->check('card:1', 'ใบแรกคือหอคอย ลูกเคยผ่านเรื่องดี ๆ มา', $this->ctx(self::THREE, 'card', 1));
+        $reasons = $this->check('card:1', 'ใบแรกคือหอคอย คุณเคยผ่านเรื่องดี ๆ มา', $this->ctx(self::THREE, 'card', 1));
         $this->assertNotEmpty($reasons);
         $this->assertStringContainsString('หอคอย', $reasons[0]);
     }
@@ -128,7 +128,7 @@ TXT;
     public function test_a_wrong_month_is_caught(): void
     {
         $ctx = $this->ctx(self::YEAR, 'month', 2);
-        $this->assertSame([], $this->check('month:2', 'กุมภาพันธ์ เงินรั่ว ใช้จ่ายระวังนะลูก', $ctx));
+        $this->assertSame([], $this->check('month:2', 'กุมภาพันธ์ เงินรั่ว ใช้จ่ายระวังนะคะ', $ctx));
         $this->assertNotEmpty($this->check('month:2', 'เดือนมีนาเงินรั่ว ระวังไว้', $ctx));
         // บทอื่นพูดเดือนที่ไม่มีในคำทำนาย
         $this->assertNotEmpty($this->check('summary', 'ปีนี้ดี โดยเฉพาะเดือนสิงหา', $this->ctx(self::YEAR)));
@@ -137,12 +137,12 @@ TXT;
     public function test_invented_numbers_directions_colours_and_birth_facts_are_caught(): void
     {
         $ctx = $this->ctx(self::THREE, 'card', 3);
-        $this->assertNotEmpty($this->check('card:3', 'เลขมงคลของลูกคือ 9 นะ', $ctx));
-        $this->assertNotEmpty($this->check('card:3', 'เลขมงคลของลูกคือ ๙ นะ', $ctx));
+        $this->assertNotEmpty($this->check('card:3', 'เลขมงคลของคุณคือ 9 นะ', $ctx));
+        $this->assertNotEmpty($this->check('card:3', 'เลขมงคลของคุณคือ ๙ นะ', $ctx));
         $this->assertNotEmpty($this->check('card:3', 'หันไปทางทิศเหนือจะดี', $ctx));
         $this->assertNotEmpty($this->check('card:3', 'ใส่สีแดงจะเสริมดวง', $ctx));
-        $this->assertNotEmpty($this->check('birth', 'ลูกเกิดวันศุกร์ ราศีมีน', $this->ctx(self::THREE, 'birth')));
-        $this->assertNotEmpty($this->check('birth', 'ลูกราศีเมษ ธาตุไฟ', $this->ctx(self::THREE, 'birth')));
+        $this->assertNotEmpty($this->check('birth', 'คุณเกิดวันศุกร์ ราศีมีน', $this->ctx(self::THREE, 'birth')));
+        $this->assertNotEmpty($this->check('birth', 'คุณราศีเมษ ธาตุไฟ', $this->ctx(self::THREE, 'birth')));
         // ราคาไม่เคยผ่าน
         $this->assertNotEmpty($this->check('summary', 'เปิดไพ่เพิ่มแค่ 99 บาท', $this->ctx(self::THREE)));
     }
@@ -150,12 +150,12 @@ TXT;
     public function test_a_flipped_verdict_is_caught(): void
     {
         $ctx = $this->ctx(self::THREE);
-        $this->assertNotEmpty($this->check('summary', 'คำตอบคือไม่ใช่นะลูก ความรักนี้ยังไม่ไปไหน', $ctx));
+        $this->assertNotEmpty($this->check('summary', 'คำตอบคือไม่ใช่นะคะ ความรักนี้ยังไม่ไปไหน', $ctx));
         $this->assertNotEmpty($this->check('summary', 'ไม่ใช่ค่ะ ยังไม่ถึงเวลา', $ctx));
 
         $decision = "## 🎯 ฟันธง\nผล: เลือกทางเลือกที่ 2\n## 🔀 ทางเลือกที่ 1 · งานเดิม\nมั่นคง\n## 🔀 ทางเลือกที่ 2 · งานใหม่\nเติบโต\n## ✅ ไพ่เลือกทาง\nเลือก: ทางเลือกที่ 2";
         $dctx = $this->ctx($decision);
-        $this->assertSame([], $this->check('summary', 'ไพ่เลือกทางเลือกที่ 2 งานใหม่ให้ลูกเติบโต', $dctx));
+        $this->assertSame([], $this->check('summary', 'ไพ่เลือกทางเลือกที่ 2 งานใหม่ให้คุณเติบโต', $dctx));
         $this->assertNotEmpty($this->check('summary', 'ไพ่เลือกทางเลือกที่ 1 งานเดิมมั่นคงกว่า', $dctx));
     }
 
@@ -163,8 +163,8 @@ TXT;
     {
         $cards = [1 => ['name' => 'ดวงจันทร์', 'reversed' => false]];
         $ctx = $this->ctx(self::KUNSAI, null, null, 'kunsai', $cards);
-        $this->assertSame([], $this->check('summary', 'แม่หมอส่องแล้ว ไม่พบของ ใจลูกกังวลไปเอง', $ctx));
-        $this->assertNotEmpty($this->check('summary', 'ลูกโดนของจริง ต้องรีบแก้', $ctx));
+        $this->assertSame([], $this->check('summary', 'แม่หมอส่องแล้ว ไม่พบของ ใจคุณกังวลไปเอง', $ctx));
+        $this->assertNotEmpty($this->check('summary', 'คุณโดนของจริง ต้องรีบแก้', $ctx));
 
         $unclear = str_replace('พบของ: ไม่ใช่', 'พบของ: ไม่ชัด', self::KUNSAI);
         $this->assertNotEmpty($this->check('summary', 'ไม่พบของแน่นอน', $this->ctx($unclear, null, null, 'kunsai', $cards)));

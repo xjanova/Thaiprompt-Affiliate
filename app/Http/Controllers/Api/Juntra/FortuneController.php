@@ -274,7 +274,7 @@ class FortuneController extends Controller
 
             $result = $aiService->generateWithRetryAndFallback(
                 questions: $questions,
-                userProfile: ['name' => $request->user()->name ?? 'ลูก'],
+                userProfile: ['name' => $request->user()->name ?? 'คุณ'],
                 userPosts: null,
                 promptTemplate: $this->buildJuntraPrompt($spread, $cards),
                 readingType: $reading->reading_type ?? 'basic',
@@ -389,8 +389,8 @@ class FortuneController extends Controller
             return ($i + 1).". ตำแหน่ง '{$c['position']}' — ไพ่ id={$c['tarot_id']}$rev";
         }, $cards, array_keys($cards));
 
-        return 'คุณคือแม่หมอจันทรา ผู้พยากรณ์ทาโรต์ที่อ่อนโยนและขลัง พูดกับลูก (ผู้ใช้) ด้วยน้ำเสียงอบอุ่นแต่หนักแน่น '
-            ."อ่านไพ่ทาโรต์รูปแบบ '$spread' ที่ลูกสุ่มได้:\n"
+        return 'คุณคือแม่หมอจันทรา ผู้พยากรณ์ทาโรต์ที่อ่อนโยนและขลัง พูดกับผู้ใช้โดยเรียกว่า "คุณ" (ห้ามเรียก "ลูก" หรือ "ลูกค้า") ด้วยน้ำเสียงอบอุ่นแต่หนักแน่น '
+            ."อ่านไพ่ทาโรต์รูปแบบ '$spread' ที่ผู้ใช้สุ่มได้:\n"
             .implode("\n", $cardLines)
             ."\n\nให้คำทำนายแยกเป็นแต่ละตำแหน่ง สรุปภาพรวม และแนะนำการปฏิบัติ "
             .'(สีมงคล วันสำคัญ หินมงคล ฯลฯ) — ใช้ภาษาไทยที่ขลังและจริงใจ.';

@@ -9,6 +9,7 @@ use App\Models\FortuneVoiceLine;
 use App\Models\Setting;
 use App\Services\Fortune\FortuneCharacterVoiceService;
 use App\Services\Fortune\JuntraVoiceLibrary;
+use App\Services\Fortune\VoiceLoudnessNormalizer;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use App\Services\Tts\XDreamerTtsProvider;
 use Illuminate\Database\Schema\Blueprint;
@@ -259,6 +260,24 @@ class FortuneCharacterVoiceTest extends TestCase
         $this->assertCount(1, $this->ttsCalls());
         $this->assertSame(1, $again['clip']->fresh()->hits);
         $this->assertSame(200, $again['code']);
+    }
+
+    /** 🔊 (2026-11-10) ไม่มี ffmpeg = ข้ามขั้นปรับความดัง เก็บไฟล์ดิบตามเดิม คลิปไม่ล้ม */
+    public function test_clip_is_stored_unchanged_when_ffmpeg_is_unavailable(): void
+    {
+        $this->setKey();
+        config(['app.ffmpeg_path' => base_path('no-such-dir/ffmpeg-missing')]);
+        $normalizer = new VoiceLoudnessNormalizer([]); // ปิดตำแหน่งสำรอง ~/bin/ffmpeg
+        $this->assertFalse($normalizer->available());
+
+        $service = new FortuneCharacterVoiceService(null, null, null, $normalizer);
+        $res = $service->request('kunsai', 'ฟังแม่หมอนะคะ คุณไม่ได้อยู่คนเดียว', 'chat');
+
+        $this->assertTrue($res['success']);
+        $clip = $res['clip']->fresh();
+        $this->assertSame('completed', $clip->status);
+        Storage::disk('public')->assertExists($clip->audio_path);
+        $this->assertSame(str_repeat("\xFF\xFB\x90\x00", 400), Storage::disk('public')->get($clip->audio_path), 'ไฟล์ดิบจาก ElevenLabs ไม่ถูกแตะ');
     }
 
     public function test_double_tap_while_generating_is_not_ordered_twice_and_stale_pending_can_retry(): void
