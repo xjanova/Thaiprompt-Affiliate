@@ -1042,7 +1042,7 @@ class ProcessCommentEngagement implements ShouldQueue
             $inviteMessage = null;
         }
 
-        if ($dmMessage === null || ! \App\Models\FortuneInviteMessage::isWebSafeText($dmMessage)) {
+        if ($dmMessage === null || ! \App\Models\FortuneInviteMessage::isWebSafeText($dmMessage, (bool) $inviteMessage?->allowsFreeWord())) {
             $inviteMessage = null;
             $dmMessage = WebHandoffCopy::pickInvite($name, null, false, WebHandoffCopy::detectTopic($commentText));
         }

@@ -65,6 +65,25 @@ class FortuneInviteMessage extends Model
         self::MODE_WEB,
     ];
 
+    /**
+     * 🎉 (2026-11-11) หมวด "เชิญมาเว็บ" — ฉลองเปิดระบบดูดวงผ่านเว็บใหม่ (ชุด mode='web')
+     *
+     * เจ้าของสั่ง: "เปลี่ยนคำ dm เชิญชวนให้มาดูดวงฟรีบนเว็บเรา ... ดูฟรี รีบเลย สมัครฟรี
+     * ... ปิดหมวดอื่นก่อน เพิ่มเป็นหมวด เชิญมาเว็บ 150 รูปแบบ"
+     * ข้อความมาจาก FortuneWebInviteCampaignSeeder (seed ผ่าน migration 2026_11_11_120000)
+     */
+    public const CATEGORY_WEB_INVITE = 'เชิญมาเว็บ';
+
+    /**
+     * หมวดที่เจ้าของอนุญาตให้ใช้คำว่า "ฟรี" ใน DM ชวนที่บอทส่งเอง (ชุด web)
+     *
+     * คำเรื่องเงิน/LINE/ลิงก์ดิบยังห้ามเหมือนเดิม — ปลดแค่คำว่า "ฟรี" (REPLY_FORBIDDEN_REGEX)
+     * หมวดอื่นของชุด web ยังห้าม "ฟรี" ตามกติกา 2026-11-03
+     */
+    public const FREE_WORD_CATEGORIES = [
+        self::CATEGORY_WEB_INVITE,
+    ];
+
     /** URL ดิบ (http/https, www., m.me, โดเมนเว็บจันทรา) — ห้ามอยู่ในข้อความชุด web */
     public const RAW_URL_REGEX = '#(https?://|www\.|m\.me/|จันทรา\.online|juntra)#iu';
 
@@ -290,13 +309,16 @@ class FortuneInviteMessage extends Model
         $rounds = $hasWindow ? [true, false] : [false];
 
         foreach ($rounds as $applyWindow) {
+            // 🔄 (2026-11-11) หมุนให้ทั่วกอง — ข้อความที่ส่งน้อยสุดมาก่อน แล้วสุ่มในกลุ่มเดียวกัน
+            //    กองใหญ่ (หมวดเชิญมาเว็บ 150 แบบ) วนครบทุกข้อก่อนจะซ้ำ = คนเดิมแทบไม่เจอข้อความซ้ำ
             $candidates = $base([self::MODE_WEB], $applyWindow)
+                ->orderBy('send_count')
                 ->inRandomOrder()
                 ->limit(self::WEB_PICK_CANDIDATES)
                 ->get();
 
             foreach ($candidates as $row) {
-                if (self::isWebSafeText((string) $row->message)) {
+                if (self::isWebSafeText((string) $row->message, $row->allowsFreeWord())) {
                     return $row;
                 }
 
@@ -319,9 +341,11 @@ class FortuneInviteMessage extends Model
      * ห้าม: คำเรื่องเงิน/LINE/ฟรี (WebHandoffCopy::FORBIDDEN_REGEX), URL ดิบ,
      * และ placeholder ลิงก์ ({{web_link}} / {{line_link}}) — ลิงก์ต้องอยู่ในปุ่มเท่านั้น
      *
+     * @param  bool  $allowFree  true = ยอมให้มีคำว่า "ฟรี" (เฉพาะหมวดใน FREE_WORD_CATEGORIES — ดู allowsFreeWord())
+     *
      * @example FortuneInviteMessage::isWebSafeText('แม่หมอรออยู่ในห้องค่ะ 🌙'); // true
      */
-    public static function isWebSafeText(?string $text): bool
+    public static function isWebSafeText(?string $text, bool $allowFree = false): bool
     {
         $text = trim((string) $text);
 
@@ -329,7 +353,11 @@ class FortuneInviteMessage extends Model
             return false;
         }
 
-        if (preg_match(\App\Services\Fortune\WebHandoffCopy::FORBIDDEN_REGEX, $text)) {
+        $forbidden = $allowFree
+            ? \App\Services\Fortune\WebHandoffCopy::REPLY_FORBIDDEN_REGEX
+            : \App\Services\Fortune\WebHandoffCopy::FORBIDDEN_REGEX;
+
+        if (preg_match($forbidden, $text)) {
             return false;
         }
 
@@ -338,6 +366,14 @@ class FortuneInviteMessage extends Model
         }
 
         return ! preg_match(self::RAW_URL_REGEX, $text);
+    }
+
+    /**
+     * 🎉 (2026-11-11) ข้อความนี้อยู่ในหมวดที่ใช้คำว่า "ฟรี" ได้ไหม (FREE_WORD_CATEGORIES)
+     */
+    public function allowsFreeWord(): bool
+    {
+        return in_array((string) $this->category, self::FREE_WORD_CATEGORIES, true);
     }
 
     /**
@@ -682,6 +718,16 @@ class FortuneInviteMessage extends Model
             if ($row['text'] === (string) $this->message) {
                 $fallback = \App\Services\Fortune\WebHandoffCopy::NAME_FALLBACK['invite_'.$n] ?? $fallback;
                 break;
+            }
+        }
+
+        // 🎉 (2026-11-11) หมวดเชิญมาเว็บเขียน "คุณ{name}" เสมอ (เจ้าของ: เรียกลูกค้าว่า "คุณ")
+        //    ไม่มีชื่อ → เหลือ "คุณ" เฉย ๆ (ไม่ใช่ "คุณเจ้าชะตา") · ชื่อขึ้นต้น "คุณ" อยู่แล้ว → ตัดออก กัน "คุณคุณ"
+        if ($this->allowsFreeWord()) {
+            $fallback = '';
+
+            if ($display !== null && str_contains((string) $this->message, 'คุณ{name}')) {
+                $display = trim((string) preg_replace('/^คุณ\s*/u', '', $display));
             }
         }
 

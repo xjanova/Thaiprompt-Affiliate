@@ -6953,7 +6953,7 @@ class FacebookWebhookController extends Controller
 
         if ($invite !== null) {
             $text = trim((string) $invite->render((string) ($name ?? ''), $userId, 'facebook'));
-            if ($text !== '' && \App\Models\FortuneInviteMessage::isWebSafeText($text)) {
+            if ($text !== '' && \App\Models\FortuneInviteMessage::isWebSafeText($text, $invite->allowsFreeWord())) {
                 return ['text' => $text, 'invite' => $invite];
             }
         }
