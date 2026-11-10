@@ -119,6 +119,37 @@ sleep 60; curl -s 127.0.0.1:8003/health
 # ใช้ได้ดีแล้วสักวันสองวัน: docker rm ekyc-ai-1.0.0
 ```
 
+**สิ่งที่เจอตอนขึ้นจริง (2026-11-10) — ใช้คำสั่งในข้อ 1.7 แทนข้างบน:**
+- กฎ iptables ของ Docker บนเครื่อง prod หาย (ไม่มี chain `DOCKER` ในตาราง nat — น่าจะโดนไฟร์วอลล์ล้างกฎ)
+  → คอนเทนเนอร์ใหม่ที่ใช้ `-p` สตาร์ทไม่ขึ้น ("Unable to enable DNAT rule") และ `docker build` ปกติหา DNS ไม่เจอ
+  → build ด้วย `--network host` และรันด้วย `--network host -e EKYC_HOST=127.0.0.1` (ฟังเฉพาะ localhost เหมือนเดิม)
+  → แก้ถาวร (ต้องใช้ root): `systemctl restart docker` หลังไฟร์วอลล์โหลดกฎ — คอนเทนเนอร์ที่มี `-p` (เช่น valhalla) จะสตาร์ทใหม่ไม่ได้จนกว่าจะแก้
+- `/health` ต้องส่ง header `X-Ekyc-Key` (ค่า `EKYC_AI_KEY` ใน ekyc.env)
+
+### 1.7 อัปเกรด → 1.1.1 (MRZ หนังสือเดินทางทน OCR เพี้ยนของ Tesseract 5.3 บน Debian)
+
+1.1.0 อ่าน MRZ หนังสือเดินทางสังเคราะห์บน prod ไม่ผ่าน (ตัวขยะหน้าบรรทัด, J → `I3`, ตกตัวท้ายบรรทัด) → 1.1.1 ซ่อมแนวบรรทัดโดยให้ check digit ตัดสิน
+
+```bash
+cd /home/admin/ekyc-ai && rm -rf src-1.1.1 && mkdir src-1.1.1
+git -C /home/admin/domains/main.thaiprompt.online/public_html archive HEAD deployment/ekyc-ai | tar -x -C src-1.1.1
+cd src-1.1.1/deployment/ekyc-ai && nice -n 15 docker build --network host -t thaiprompt/ekyc-ai:1.1.1 .
+
+docker stop ekyc-ai && docker rename ekyc-ai ekyc-ai-1.1.0
+docker run -d --name ekyc-ai --restart unless-stopped \
+  --network host -e EKYC_HOST=127.0.0.1 --memory 3g --cpus 8 \
+  -e EKYC_WORKERS=2 -e EKYC_TORCH_THREADS=4 -e EKYC_TESS_THREADS=2 \
+  --env-file /home/admin/ekyc-ai/ekyc.env \
+  --security-opt no-new-privileges --cap-drop ALL --pids-limit 256 \
+  thaiprompt/ekyc-ai:1.1.1
+docker update --restart no ekyc-ai-1.1.0
+
+K=$(grep '^EKYC_AI_KEY=' /home/admin/ekyc-ai/ekyc.env | cut -d= -f2-)
+curl -s -H "X-Ekyc-Key: $K" 127.0.0.1:8003/health    # service_version 1.1.1
+
+# ย้อนกลับ: docker rm -f ekyc-ai && docker rename ekyc-ai-1.1.0 ekyc-ai && docker update --restart unless-stopped ekyc-ai && docker start ekyc-ai
+```
+
 ---
 
 ## 2. API

@@ -108,7 +108,11 @@ def _names(field: str) -> tuple[str | None, str | None]:
         # ฟิลเลอร์ '<' ที่ OCR อ่านเป็น K/L เดี่ยวๆ แทรกระหว่างชื่อ — ชื่อจริงใน MRZ ไม่มีคำตัวอักษรเดียว K/L
         if not n:
             return n
-        toks = [t for t in n.split(' ') if t not in ('K', 'L', 'KK', 'LL', 'KL', 'LK')]
+        # ฟิลเลอร์ยาวที่อ่านเพี้ยนปน R/E (เช่น 'KKKKKKKKKKKRKRKK') — ชื่อจริงไม่มี K ติดกัน 3 ตัว
+        def is_filler(t: str) -> bool:
+            return (t in ('K', 'L', 'KK', 'LL', 'KL', 'LK') or 'KKK' in t
+                    or (len(t) >= 4 and set(t) <= set('KLRE') and t.count('K') >= 2))
+        toks = [t for t in n.split(' ') if not is_filler(t)]
         return ' '.join(toks) or None
     return drop_noise(sur), drop_noise(giv)
 
@@ -130,8 +134,12 @@ class Mrz:
 
     @property
     def valid(self) -> bool:
-        """เลขเอกสาร + วันเกิด + วันหมดอายุ + composite ผ่านครบ และรหัสประเทศถูกต้อง"""
-        return (all(self.checks.get(k) for k in ('document_number', 'birth_date', 'expiry_date', 'composite'))
+        """
+        เลขเอกสาร + วันเกิด + วันหมดอายุ + composite ผ่านครบ และรหัสประเทศถูกต้อง
+        composite = None คือ OCR ตกตัวสุดท้ายของบรรทัด (อ่านไม่ได้ ไม่ใช่ผิด) — ยอมได้เมื่อสามช่องหลักผ่าน check digit ครบ
+        """
+        return (all(self.checks.get(k) for k in ('document_number', 'birth_date', 'expiry_date'))
+                and self.checks.get('composite') is not False
                 and self.issuing_country in COUNTRY_CODES and self.nationality in COUNTRY_CODES
                 and self.birth_date is not None and self.expiry_date is not None)
 
@@ -165,6 +173,16 @@ def _fix_country(code: str, other: str) -> str:
     hits = [c for c in COUNTRY_CODES if near(code, c)]
     return hits[0] if len(hits) == 1 else code
 
+
+def _fix_countries(iss: str, nat: str) -> tuple[str, str]:
+    """
+    ซ่อมรหัสประเทศผู้ออก + สัญชาติ ทีละช่องแล้ววนกลับ — ช่องที่ซ่อมได้ก่อนช่วยเป็นตัวอ้างอิงให้อีกช่อง
+    (เช่น ผู้ออก 'IPN' + สัญชาติ '3PN' → สัญชาติมีรหัสใกล้เพียง 'JPN' → ผู้ออกต่างจาก 'JPN' หนึ่งตัว → 'JPN')
+    """
+    for _ in range(2):
+        nat = _fix_country(nat, iss)
+        iss = _fix_country(iss, nat)
+    return iss, nat
 
 def _repair_shift(l1: str, nat: str) -> str:
     """
@@ -207,6 +225,27 @@ def _repair_tail(l2: str, core: int, n: int) -> str:
     return head + body + comp
 
 
+def _repair_nat_shift(l2: str) -> str:
+    """
+    บรรทัดล่าง TD3/TD2: OCR แตกตัวอักษรหนึ่งตัวในช่องสัญชาติเป็นสองตัว (เช่น 'JPN' → 'I3PN') ทำให้วันเกิด/วันหมดอายุเลื่อน
+    → ลองลบทีละตัวในช่องสัญชาติ ใช้เมื่อวันเกิดกลับมาผ่าน check digit (ไม่เดาลอยๆ)
+    """
+    if len(l2) < 21 or _cd_ok(_digits(l2[13:19]), _digits(l2[19])):
+        return l2
+    for i in range(10, 14):
+        t = l2[:i] + l2[i + 1:]
+        if _cd_ok(_digits(t[13:19]), _digits(t[19])):
+            return t
+    return l2
+
+
+def _comp_check(src: str, raw: str) -> bool | None:
+    """composite check digit — ตัวท้ายบรรทัดเป็นฟิลเลอร์ (OCR ตกตัวสุดท้าย) = None (อ่านไม่ได้) แทน False (ผิด)"""
+    if raw in '<KL':
+        return None
+    return _cd_ok(src, _digits(raw))
+
+
 def _fit(line: str, n: int) -> str:
     """ปรับความยาวบรรทัดให้พอดี n (OCR ตกฟิลเลอร์ท้ายบรรทัด/เกินมาหนึ่งสองตัว)"""
     if len(line) >= n:
@@ -220,7 +259,7 @@ def _sex(c: str) -> str | None:
 
 
 def parse_td3(l1: str, l2: str, today: date) -> Mrz:
-    l2 = _fit(_repair_tail(l2, 28, 44), 44)
+    l2 = _fit(_repair_tail(_repair_nat_shift(l2), 28, 44), 44)
     l1 = _fit(_repair_shift(l1, _alpha(l2[10:13])), 44)
     doc = l2[0:9]
     doc_cd = _digits(l2[9])
@@ -231,7 +270,6 @@ def parse_td3(l1: str, l2: str, today: date) -> Mrz:
     exp_cd = _digits(l2[27])
     opt = l2[28:42]
     opt_cd = _digits(l2[42]) if l2[42] != '<' else '<'
-    comp = _digits(l2[43])
     comp_src = doc + doc_cd + dob + dob_cd + exp + exp_cd + opt + opt_cd
     sur, giv = _names(l1[5:44])
     checks = {
@@ -239,17 +277,17 @@ def parse_td3(l1: str, l2: str, today: date) -> Mrz:
         'birth_date': _cd_ok(dob, dob_cd),
         'expiry_date': _cd_ok(exp, exp_cd),
         'optional': _cd_ok(opt, opt_cd),
-        'composite': _cd_ok(comp_src, comp),
+        'composite': _comp_check(comp_src, l2[43]),
     }
     iss, nat = _alpha(l1[2:5]).replace('<', ''), nat.replace('<', '')
-    iss, nat = _fix_country(iss, nat), _fix_country(nat, iss)
+    iss, nat = _fix_countries(iss, nat)
     return Mrz('TD3', l1[0], iss, nat, doc.replace('<', ''),
                sur, giv, _yymmdd(dob, 'birth', today), _yymmdd(exp, 'expiry', today), _sex(l2[20]),
                opt.strip('<') or None, checks)
 
 
 def parse_td2(l1: str, l2: str, today: date) -> Mrz:
-    l2 = _fit(_repair_tail(l2, 28, 36), 36)
+    l2 = _fit(_repair_tail(_repair_nat_shift(l2), 28, 36), 36)
     l1 = _fit(_repair_shift(l1, _alpha(l2[10:13])), 36)
     doc = l2[0:9]
     doc_cd = _digits(l2[9])
@@ -259,16 +297,15 @@ def parse_td2(l1: str, l2: str, today: date) -> Mrz:
     exp = _digits(l2[21:27])
     exp_cd = _digits(l2[27])
     opt = l2[28:35]
-    comp = _digits(l2[35])
     sur, giv = _names(l1[5:36])
     checks = {
         'document_number': _cd_ok(doc, doc_cd),
         'birth_date': _cd_ok(dob, dob_cd),
         'expiry_date': _cd_ok(exp, exp_cd),
-        'composite': _cd_ok(doc + doc_cd + dob + dob_cd + exp + exp_cd + opt, comp),
+        'composite': _comp_check(doc + doc_cd + dob + dob_cd + exp + exp_cd + opt, l2[35]),
     }
     iss, nat = _alpha(l1[2:5]).replace('<', ''), nat.replace('<', '')
-    iss, nat = _fix_country(iss, nat), _fix_country(nat, iss)
+    iss, nat = _fix_countries(iss, nat)
     return Mrz('TD2', l1[0], iss, nat, doc.replace('<', ''),
                sur, giv, _yymmdd(dob, 'birth', today), _yymmdd(exp, 'expiry', today), _sex(l2[20]),
                opt.strip('<') or None, checks)
@@ -293,17 +330,16 @@ def parse_td1(l1: str, l2: str, l3: str, today: date) -> Mrz:
     exp_cd = _digits(l2[14])
     nat = _alpha(l2[15:18])
     opt2 = l2[18:29]
-    comp = _digits(l2[29])
     comp_src = l1[5:30] + l2[0:7] + l2[8:15] + l2[18:29]
     sur, giv = _names(l3)
     checks = {
         'document_number': _cd_ok(full_doc, doc_cd),
         'birth_date': _cd_ok(dob, dob_cd),
         'expiry_date': _cd_ok(exp, exp_cd),
-        'composite': _cd_ok(comp_src, comp),
+        'composite': _comp_check(comp_src, l2[29]),
     }
     iss, nat = _alpha(l1[2:5]).replace('<', ''), nat.replace('<', '')
-    iss, nat = _fix_country(iss, nat), _fix_country(nat, iss)
+    iss, nat = _fix_countries(iss, nat)
     return Mrz('TD1', l1[0], iss, nat, full_doc.replace('<', ''),
                sur, giv, _yymmdd(dob, 'birth', today), _yymmdd(exp, 'expiry', today), _sex(l2[7]),
                (opt1 + opt2).strip('<') or None, checks)
@@ -325,14 +361,27 @@ def find_mrz(lines: list[str], today: date) -> Mrz | None:
 
     for i in range(len(cand)):
         a = cand[i]
-        b = cand[i + 1] if i + 1 < len(cand) else None
+        nxt = cand[i + 1] if i + 1 < len(cand) else None
         c = cand[i + 2] if i + 2 < len(cand) else None
-        if b and a[:1] == 'P' and len(a) >= 40:
-            take(parse_td3(a, b, today))
-        if b and c and len(a) <= 33 and a[:1] in 'IAC':
-            take(parse_td1(a, b, c, today))
-        if b and 33 < len(a) < 40 and a[:1] in 'IACPV':
-            take(parse_td2(a, b, today))
-        if b and len(a) >= 40 and a[:1] in 'IACV':
-            take(parse_td3(a, b, today))   # วีซ่า/เอกสารเดินทางอื่นแบบ 44 ตัว
+        if nxt and c and len(a) <= 33 and a[:1] in 'IAC':
+            take(parse_td1(a, nxt, c, today))
+        # บรรทัดล่างของ TD3/TD2 ขึ้นต้นด้วยเลขเอกสาร (ไม่มีตัวนำ) — OCR มักเก็บจุด/ขอบกระดาษมาเป็นตัวขยะ 1-2 ตัวหน้าบรรทัด
+        # ทำให้ทุกช่องเลื่อน → ลองตัดตัวหน้า แล้วให้ check digit เป็นตัวตัดสิน (แนวผิด = check digit ไม่ผ่าน)
+        for b in _lead_variants(nxt):
+            # หนังสือเดินทาง: OCR มักตกฟิลเลอร์ท้ายบรรทัดบน (เหลือ ~30 ตัว) → ลอง TD3 เสมอ ให้ check digit ตัดสิน
+            if a[:1] == 'P' and (len(a) >= 40 or len(b) >= 36):
+                take(parse_td3(a, b, today))
+            if 33 < len(a) < 40 and a[:1] in 'IACPV':
+                take(parse_td2(a, b, today))
+            if len(a) >= 40 and a[:1] in 'IACV':
+                take(parse_td3(a, b, today))   # วีซ่า/เอกสารเดินทางอื่นแบบ 44 ตัว
+            if best is not None and best.valid:
+                return best
     return best
+
+
+def _lead_variants(line: str | None) -> list[str]:
+    """บรรทัดเดิม + ตัดตัวหน้า 1 และ 2 ตัว (เฉพาะที่ยังยาวพอเป็นบรรทัด MRZ)"""
+    if not line:
+        return []
+    return [line[k:] for k in range(3) if len(line) - k >= 25]
