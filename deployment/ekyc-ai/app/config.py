@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-SERVICE_VERSION = '1.1.0'
+SERVICE_VERSION = '1.1.1'
 
 # จำกัดจำนวนพิกเซลที่ OpenCV ยอมถอดรหัส (กัน decompression bomb) — ต้องตั้งก่อน import cv2
 os.environ.setdefault('OPENCV_IO_MAX_IMAGE_PIXELS', str(25_000_000))

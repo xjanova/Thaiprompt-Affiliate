@@ -66,3 +66,29 @@ def test_birth_century_and_expiry():
 
 def test_no_mrz_in_normal_text():
     assert M.find_mrz(['บัตรประจำตัวประชาชน', 'Name Mr. Somchai', '12 Jan. 1995'], TODAY) is None
+
+
+def test_prod_tesseract_output_with_stray_lead_char_and_lost_fillers():
+    """ข้อความดิบจาก Tesseract 5.3 (Debian) บน prod กับหนังสือเดินทางสังเคราะห์ (2026-11-10):
+    ตัวขยะหน้าบรรทัดล่าง + ฟิลเลอร์ '<' หาย + J อ่านเป็น I + ฟิลเลอร์บรรทัดบนอ่านเป็น K"""
+    l1, l2 = make_td3(country='JPN', doc='TK1234567', dob='880305', exp='330305', sex='F',
+                      sur='TANAKA', given='HANAKO')
+    m = M.find_mrz(['P<JPNTANAKA<<HANAKOK<<<<<<<KKKKKKKKKKKKKKLKK', '7 ' + l2[:28] + '<<<<<K' + l2[43]], TODAY)
+    assert m is not None and m.valid
+    assert (m.issuing_country, m.nationality, m.document_number) == ('JPN', 'JPN', 'TK1234567')
+    assert (m.surname, m.given_names, m.sex) == ('TANAKA', 'HANAKO', 'F')
+
+
+def test_long_misread_filler_is_not_a_given_name():
+    sur, giv = M._names('TANAKA<<HANAKO<KKKKKKKKKKKRKRKK')
+    assert (sur, giv) == ('TANAKA', 'HANAKO')
+    assert M._names('LEE<<KERRY<ANN')[1] == 'KERRY ANN'
+
+
+def test_prod_tesseract_split_letter_in_nationality_and_short_top_line():
+    """J ในสัญชาติแตกเป็น 'I3' / อ่านเป็น '3' + บรรทัดบนเหลือ 30 ตัว (ข้อความดิบจาก prod 2026-11-10, ข้อมูลสังเคราะห์)"""
+    m = M.find_mrz(['P<IPNTANAKA<<HANAKO<<<<<<<K<KKKKKKKKKKKRKRKKK', 'TK12345671I3PN8803056F3303056<<<<<<KKKK<'], TODAY)
+    assert m is not None and m.valid and (m.issuing_country, m.nationality) == ('JPN', 'JPN')
+    assert (m.surname, m.given_names) == ('TANAKA', 'HANAKO')
+    m = M.find_mrz(['P<JPNTANAKA<<HANAKO<<<<<<KKKK<', 'TK123456713PN8803056F3303056<<<<<<<<<<O'], TODAY)
+    assert m is not None and m.valid and m.nationality == 'JPN' and m.birth_date == date(1988, 3, 5)
