@@ -273,8 +273,8 @@ class EkycService
         if (! self::isAccepted($consent) || $version === '' || ! preg_match('/^[\w.\-]{1,20}$/', $version)) {
             throw EkycException::consentRequired();
         }
-        // ยินยอมกับข้อความเวอร์ชันที่ใช้อยู่เท่านั้น (แอปเก่าที่แสดงข้อความเดิม = ต้องอัปเดตก่อน)
-        if ($version !== (string) config('ekyc.consent_version', '')) {
+        // ยินยอมกับข้อความเวอร์ชันที่ใช้อยู่ หรือรุ่นเก่าที่ยังรับ (รุ่นเก่า = ใช้ได้เฉพาะบัตรประชาชนไทย ดู submitIdCard)
+        if ($version !== (string) config('ekyc.consent_version', '') && ! self::isLegacyConsent($version)) {
             throw EkycException::consentOutdated();
         }
 
@@ -398,6 +398,10 @@ class EkycService
         $kyc = $this->findSession($user, $sessionId);
         $this->assertOpen($kyc, [self::STEP_CONSENTED, self::STEP_CARD]);
         $this->assertNotVerified($user);
+        // ยินยอมด้วยข้อความรุ่นเก่า (พูดถึงบัตรประชาชนอย่างเดียว) → ส่งเอกสารอื่นไม่ได้
+        if ($docType !== self::DOC_THAI_ID && self::isLegacyConsent((string) $kyc->consent_version)) {
+            throw EkycException::consentOutdated();
+        }
 
         // เพดานส่งรูปบัตร: ต่อรอบ (เริ่มใหม่ได้) + ต่อวัน — อ่านบัตร 1 ใบใช้ AI ~10 วิ กันคนเดียวยิงจนคิว AI เต็ม
         $uploads = (int) (((array) ($kyc->extracted_data ?? []))['card_uploads'] ?? 0);
@@ -1225,6 +1229,14 @@ class EkycService
      *
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * ข้อความยินยอมรุ่นเก่าที่ยังรับ (config ekyc.legacy_consent_versions) — ใช้ได้กับบัตรประชาชนไทยเท่านั้น
+     */
+    public static function isLegacyConsent(string $version): bool
+    {
+        return $version !== '' && in_array($version, (array) config('ekyc.legacy_consent_versions', []), true);
+    }
+
     public static function documentOptions(): array
     {
         $out = [];

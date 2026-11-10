@@ -93,7 +93,7 @@ class EkycFlowTest extends TestCase
         $this->assertSame('approved', $kyc->status);
         $this->assertSame('approved', $kyc->ai_decision);
         $this->assertSame(KycVerification::METHOD_EKYC, $kyc->method);
-        $this->assertSame('2026-10-04', $kyc->consent_version);
+        $this->assertSame(config('ekyc.consent_version'), $kyc->consent_version);
         $this->assertSame(self::VALID_ID, $kyc->id_number_encrypted);
         $this->assertSame('0121', $kyc->id_last4);
         $this->assertSame(EkycService::idHash(self::VALID_ID), $kyc->id_number_hash);

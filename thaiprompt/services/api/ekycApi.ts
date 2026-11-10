@@ -32,8 +32,11 @@ import { apiGet, apiPatch, apiPost, apiUpload, fileFromUri, isThaiText, num, typ
 // ค่าคงที่ / ชนิดข้อมูล
 // =====================================================
 
-/** รุ่นข้อความยินยอม PDPA (ต้องตรงกับ server) */
-export const EKYC_CONSENT_VERSION = '2026-10-04';
+/**
+ * รุ่นข้อความยินยอม PDPA (ต้องตรงกับ server config ekyc.consent_version)
+ * 2026-11-10 = ข้อมูลบนเอกสารยืนยันตัวตน (บัตรประชาชน / ใบขับขี่ / หนังสือเดินทาง) + ใบหน้า
+ */
+export const EKYC_CONSENT_VERSION = '2026-11-10';
 
 /** คำสั่งท่าทางที่ server สุ่มได้ */
 export type EkycChallenge = 'blink' | 'turn_left' | 'turn_right' | 'smile' | 'nod';

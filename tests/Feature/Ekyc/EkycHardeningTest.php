@@ -537,6 +537,20 @@ class EkycHardeningTest extends TestCase
         $this->startSession()->assertCreated();
     }
 
+    public function test_legacy_consent_still_works_for_the_thai_id_card_only(): void
+    {
+        $this->fakeAi($this->goodCard());
+        $this->ekycUser();
+        // แอปรุ่นเก่า (ข้อความยินยอมพูดถึงบัตรประชาชนอย่างเดียว) ยังเริ่มรอบได้
+        $sid = $this->postJson('/api/v1/ekyc/sessions', ['consent' => true, 'consent_version' => '2026-10-04'])
+            ->assertCreated()->json('data.session_id');
+
+        $this->post('/api/v1/ekyc/sessions/'.$sid.'/id-card', ['image' => $this->cardFile(), 'doc_type' => 'passport'],
+            ['Accept' => 'application/json'])
+            ->assertStatus(422)->assertJsonPath('code', 'EKYC_CONSENT_OUTDATED');
+        $this->postCard($sid)->assertOk()->assertJsonPath('data.status', 'ok');
+    }
+
     public function test_id_hash_uses_its_own_key_when_set(): void
     {
         config(['ekyc.hash_key' => '']);

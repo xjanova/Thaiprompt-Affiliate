@@ -269,7 +269,7 @@ export default function EkycIntroScreen() {
           onPress={() => setConsent((v) => !v)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: consent }}
-          accessibilityLabel="ยินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบัตรประชาชนและใบหน้าเพื่อยืนยันตัวตน"
+          accessibilityLabel="ยินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบนเอกสารยืนยันตัวตนและใบหน้าเพื่อยืนยันตัวตน"
           style={[
             styles.consent,
             {
@@ -289,7 +289,8 @@ export default function EkycIntroScreen() {
             {consent && <Icon name="check" size={18} color={colors.goldLight} weight="bold" />}
           </View>
           <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
-            ข้าพเจ้ายินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบัตรประชาชนและข้อมูลชีวภาพ (ใบหน้า) เพื่อยืนยันตัวตนและป้องกันการทุจริต{' '}
+            ข้าพเจ้ายินยอมให้ไทยพร้อมเก็บและใช้ข้อมูลบนเอกสารยืนยันตัวตนที่เลือก (บัตรประชาชน ใบขับขี่ หรือหนังสือเดินทาง)
+            และข้อมูลชีวภาพ (ใบหน้า) เพื่อยืนยันตัวตนและป้องกันการทุจริต{' '}
             <Text
               onPress={() => router.push('/privacy' as never)}
               accessibilityRole="link"
