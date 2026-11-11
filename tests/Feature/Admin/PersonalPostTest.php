@@ -187,6 +187,26 @@ XML;
         $this->assertFalse($drafts->contains('source_title', 'ข่าวเก่ามาก'));
     }
 
+    /**
+     * งานเตรียมโพสต์ใน CLI ต้องไม่ตั้งเพดานเวลาให้ทั้งโปรเซส
+     * (2026-11-11 เคยตั้ง set_time_limit(600) → ชุดเทสต์ทั้งหมดใน CI ตายที่ 99%)
+     */
+    public function test_prepare_in_cli_leaves_process_time_limit_alone(): void
+    {
+        $this->fakeFeeds();
+        $this->openAiKey();
+        $before = ini_get('max_execution_time');
+
+        $this->serviceWithFakeAi()->prepareDay(now());
+        (new PreparePersonalPostsJob('image', now()->toDateString(), PersonalPostDraft::first()->id))
+            ->handle($this->serviceWithFakeAi());
+
+        $this->assertSame($before, ini_get('max_execution_time'));
+        foreach (PersonalPostDraft::all() as $d) {
+            @unlink(storage_path('app/public/'.$d->image_path));
+        }
+    }
+
     public function test_prepare_day_keeps_posted_slot_and_falls_back_when_ai_fails(): void
     {
         $this->fakeFeeds();

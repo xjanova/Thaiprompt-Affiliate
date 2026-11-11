@@ -160,7 +160,11 @@ class PersonalPostPrepService
      */
     public function generate(PersonalPostDraft $draft, bool $text = true, bool $image = true): bool
     {
-        @set_time_limit(600);
+        // ⚠️ ขยายเวลาเฉพาะตอนรันในเว็บ (php-fpm หลังตอบกลับ) — CLI ไม่มีเพดานอยู่แล้ว
+        //   ถ้าเรียกใน CLI จะกลายเป็นเพดาน 600 วิ ของทั้งโปรเซส (ชุดเทสต์ทั้งหมดใน CI ตายกลางทาง)
+        if (PHP_SAPI !== 'cli') {
+            @set_time_limit(600);
+        }
         $draft->update(['status' => PersonalPostDraft::STATUS_GENERATING, 'error' => null]);
 
         try {
