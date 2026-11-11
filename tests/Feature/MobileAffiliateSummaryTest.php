@@ -115,5 +115,56 @@ class MobileAffiliateSummaryTest extends TestCase
     public function test_requires_authentication(): void
     {
         $this->getJson('/api/v1/mobile/affiliate')->assertUnauthorized();
+        $this->getJson('/api/v1/mobile/affiliate/referrals')->assertUnauthorized();
+    }
+
+    public function test_direct_referrals_list_comes_from_mlm_tree(): void
+    {
+        // /mobile/affiliate/referrals เดิมค้น users.sponsor_id (ว่างทุกคนบน prod) → รายการว่างเสมอ
+        $me = $this->makeMember('ME-0001');
+        $childNew = $this->makeMember('CH-0001', $me, ['joined_at' => now()->subDays(5)]);
+        $childOld = $this->makeMember('CH-0002', $me, ['joined_at' => now()->subDays(90)]);
+        $this->makeMember('GC-0001', $childNew); // หลาน — ไม่ใช่ลูกตรง
+        $this->makeMember('OT-0001'); // คนนอกสาย
+
+        Sanctum::actingAs($me->user);
+
+        $response = $this->getJson('/api/v1/mobile/affiliate/referrals')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.pagination.total', 2)
+            ->assertJsonStructure([
+                'data' => [
+                    'referrals' => [['id', 'name', 'email', 'avatar', 'rank', 'totalReferrals', 'isActive', 'joinedAt', 'daysAgo']],
+                    'pagination' => ['total', 'currentPage', 'lastPage', 'perPage'],
+                ],
+            ]);
+
+        // เรียงคนที่เพิ่งเข้าร่วมก่อน · id เป็น user_id (แอปใช้เรียกผังย่อย /mobile/mlm/tree/{userId}/children)
+        $rows = $response->json('data.referrals');
+        $this->assertSame([$childNew->user_id, $childOld->user_id], array_column($rows, 'id'));
+        $this->assertSame(1, $rows[0]['totalReferrals']);
+        $this->assertTrue($rows[0]['isActive']);
+        $this->assertFalse($rows[1]['isActive']);
+        $this->assertSame(now()->subDays(5)->format('Y-m-d'), $rows[0]['joinedAt']);
+    }
+
+    public function test_direct_referrals_paginates_and_rejects_zero_per_page(): void
+    {
+        $me = $this->makeMember('ME-0001');
+        foreach (range(1, 3) as $i) {
+            $this->makeMember('CH-000'.$i, $me);
+        }
+        Sanctum::actingAs($me->user);
+
+        $this->getJson('/api/v1/mobile/affiliate/referrals?per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.referrals')
+            ->assertJsonPath('data.pagination.lastPage', 2);
+
+        // per_page=0 เดิม paginate(0) → หารศูนย์ → 500
+        $this->getJson('/api/v1/mobile/affiliate/referrals?per_page=0')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 3);
     }
 }
