@@ -51,6 +51,7 @@ describe('normalizeEkycStatus', () => {
       method: 'ekyc',
       can_start: true,
       can_retake: false,
+      can_request_review: false,
       processing: false,
       attempts_left: 2,
       last_decision: 'review',
@@ -107,6 +108,8 @@ describe('normalizeEkycStatus', () => {
   it('ยืนยันแล้ว = ถ่ายใหม่ไม่ได้ ไม่มีงานค้าง', () => {
     const s = normalizeEkycStatus({ verified: true, can_retake: true, processing: true });
     expect(s.can_retake).toBe(false);
+    expect(normalizeEkycStatus({ verified: true, can_request_review: true }).can_request_review).toBe(false);
+    expect(normalizeEkycStatus({ can_request_review: true }).can_request_review).toBe(true);
     expect(s.processing).toBe(false);
   });
 

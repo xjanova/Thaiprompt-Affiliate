@@ -76,6 +76,7 @@ class EkycService
     private const RETAKEABLE_REVIEW_REASONS = [
         'BORDERLINE_MATCH', 'LOW_MATCH', 'NO_MATCH_SCORE', 'LOW_LIVENESS', 'LOW_REAL', 'MULTIPLE_FACES', 'FACES_INCONSISTENT',
         'OCR_LOW', 'ID_UNREADABLE', 'EXPIRY_UNKNOWN', 'EXPIRY_LIFELONG', 'USER_CORRECTED', 'AI_UNAVAILABLE', 'CARD_IMAGE_MISSING',
+        'FACE_MISMATCH_REVIEW',
     ];
 
     /** error จากบริการ AI ที่แปลว่า "คิวเต็ม/ตรวจไม่ทันชั่วคราว" → ให้แอปลองซ้ำ ไม่ใช่ส่งแอดมินตรวจ */
@@ -124,6 +125,8 @@ class EkycService
         'REPLAY_SUSPECTED' => 'ภาพใบหน้าซ้ำกับการยืนยันครั้งก่อน ต้องให้เจ้าหน้าที่ตรวจ',
         'PRIOR_REJECTED' => 'เคยถูกเจ้าหน้าที่ปฏิเสธการยืนยันตัวตน ต้องให้เจ้าหน้าที่ตรวจ',
         'FACES_INCONSISTENT' => 'ยืนยันไม่ได้ว่าใบหน้าทุกช่วงเป็นคนเดียวกัน',
+        'FACE_MISMATCH_REVIEW' => 'ใบหน้าไม่ตรงกับรูปบนบัตรซ้ำ ส่งให้เจ้าหน้าที่ตรวจแทนการถ่ายใหม่',
+        'USER_SKIPPED_FACE' => 'ผู้ใช้ขอให้เจ้าหน้าที่ตรวจแทนการถ่ายใหม่',
     ];
 
     /** ป้ายคำสั่ง (ภาษาไทย) */
@@ -210,6 +213,8 @@ class EkycService
             'can_start' => $this->canStart($user, $verified, $attemptsLeft),
             // รอแอดมินตรวจด้วยเหตุผลด้านคุณภาพภาพ → ขอถ่ายใหม่เองได้ (รอบใหม่จะแทนที่เคสที่รอตรวจ)
             'can_retake' => $pending !== null && $attemptsLeft > 0 && $this->isRetakeableReview($pending),
+            // AI ให้ถ่ายใหม่ → กด "ข้ามขั้นตอนนี้ ให้เจ้าหน้าที่ตรวจ" ได้ (POST /ekyc/request-review)
+            'can_request_review' => ! $verified && $pending === null && $last !== null && $this->canRequestReview($last),
             // มีรอบที่กำลังตรวจอยู่ (เช่นเน็ตหลุดระหว่างส่ง) — แอปถามสถานะซ้ำจนกว่าจะได้ผล
             'processing' => ! $verified && $this->hasProcessingSession($user),
             'attempts_left' => $attemptsLeft,
@@ -824,7 +829,84 @@ class EkycService
             'reason_texts' => self::reasonTexts($reasons),
             'kyc_status' => $user->isKycVerified() ? 'approved' : self::publicStatus($user),
             'attempts_left' => $this->attemptsLeft($user),
+            // ถ่ายใหม่ได้ = ข้ามไปให้เจ้าหน้าที่ตรวจได้ด้วย (แอปโชว์ปุ่มคู่กับปุ่มถ่ายใหม่)
+            'can_request_review' => $decision === 'retake' && $this->canRequestReview($kyc),
         ];
+    }
+
+    /**
+     * POST /ekyc/request-review — ผู้ใช้กด "ข้ามขั้นตอนนี้ ให้เจ้าหน้าที่ตรวจ" หลัง AI ให้ถ่ายใหม่
+     *
+     * ใช้ได้กับผลล่าสุดที่ AI ตัดสินว่าให้ถ่ายใหม่เท่านั้น (แอดมินขอให้ถ่ายใหม่ = ต้องถ่ายใหม่จริง)
+     * รูปบัตร + เฟรมใบหน้าที่ดีที่สุดของรอบนั้นยังอยู่ → ย้ายแถวเดิมเป็นรอแอดมินตรวจ + ติดป้าย USER_SKIPPED_FACE
+     * (ai_decision คง 'retake' ไว้ให้แอดมินเห็นว่า AI ว่าอย่างไร · กดซ้ำ/พร้อมกัน = ทำครั้งเดียว)
+     *
+     * @return array<string, mixed> เหมือน GET /ekyc/status
+     *
+     * @throws EkycException
+     */
+    public function requestReview(User $user): array
+    {
+        $user->refresh();
+        if ($user->isKycVerified()) {
+            throw EkycException::alreadyVerified();
+        }
+        if ($this->hasPendingEkycReview($user)) {
+            throw EkycException::pendingReview();
+        }
+        if ($this->hasProcessingSession($user)) {
+            throw EkycException::processing();
+        }
+
+        $last = $this->lastDecidedRow($user);
+        if ($last === null || ! $this->canRequestReview($last)) {
+            throw EkycException::nothingToReview();
+        }
+
+        $kyc = DB::transaction(function () use ($user, $last) {
+            /** @var User $lockedUser */
+            $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            /** @var KycVerification $locked */
+            $locked = KycVerification::query()->whereKey($last->id)->lockForUpdate()->firstOrFail();
+            if (! $this->canRequestReview($locked)) {
+                throw EkycException::nothingToReview();
+            }
+
+            $reasons = array_values((array) ($locked->ai_reasons ?? []));
+            if (! in_array('USER_SKIPPED_FACE', $reasons, true)) {
+                $reasons[] = 'USER_SKIPPED_FACE';
+            }
+            $locked->forceFill([
+                'status' => 'pending',
+                'ai_reasons' => $reasons,
+                'submitted_at' => now(),
+            ])->save();
+
+            if ($lockedUser->kyc_status !== 'approved') {
+                $lockedUser->forceFill(['kyc_status' => 'pending', 'kyc_verified_at' => null])->save();
+            }
+
+            return $locked;
+        });
+
+        Log::info('eKYC: user requested admin review', ['kyc_id' => $kyc->id, 'user_id' => $user->id]);
+        $this->notifyAdmins($kyc);
+
+        return $this->status($user);
+    }
+
+    /**
+     * แถวนี้ผู้ใช้ขอให้เจ้าหน้าที่ตรวจแทนการถ่ายใหม่ได้ไหม
+     * — AI ให้ถ่ายใหม่ (แอดมินยังไม่แตะ) + รูปบัตรและเฟรมใบหน้ายังอยู่ (ถูกลบตาม retention แล้ว = ต้องถ่ายใหม่)
+     */
+    private function canRequestReview(KycVerification $row): bool
+    {
+        return $row->isEkyc()
+            && $row->status === KycVerification::STATUS_RETAKE
+            && $row->ai_decision === 'retake'
+            && $row->reviewed_by === null
+            && $this->images->exists($row->id_card_image)
+            && $this->images->exists($row->best_frame_path);
     }
 
     /**
@@ -887,12 +969,21 @@ class EkycService
         }
         // คนละคน = AI ยืนยันด้วยรหัส DIFFERENT_PEOPLE เท่านั้น
         // (same_person = false เกิดจากไม่เจอหน้า/เจอหลายหน้าได้ด้วย — กรณีนั้นส่งตรวจ ไม่ใช่ให้ถ่ายใหม่)
-        if (in_array('DIFFERENT_PEOPLE', $reasons, true)) {
-            $clear = true;
-        }
+        // ใบหน้าไม่ตรงบัตร/คนละคน: ให้ถ่ายใหม่ได้ face_mismatch_retakes ครั้ง แล้วส่งแอดมินตรวจ
+        // (หน้าตาเปลี่ยนจากรูปบนบัตร/แสง/มุมกล้อง AI ไม่ชัวร์ — ให้คนตัดสิน ไม่ใช่ให้ผู้ใช้ถ่ายวนจนหมดสิทธิ์)
+        $mismatch = in_array('DIFFERENT_PEOPLE', $reasons, true);
         if ($cosine !== null && $cosine < $this->threshold('retake_match')) {
             $add('LOW_MATCH');
-            $clear = true;
+            $mismatch = true;
+        }
+        if ($mismatch) {
+            if ((int) ($in['retakes_today'] ?? 0) >= max(0, (int) config('ekyc.face_mismatch_retakes', 1))) {
+                // ไม่ให้ถ่ายใหม่ด้วยเหตุนี้แล้ว → ไหลลงด่านอนุมัติ (LOW_MATCH/DIFFERENT_PEOPLE ขวางอยู่ = ส่งแอดมิน
+                // พร้อมป้ายอื่นๆ ครบ เช่นบัตรซ้ำ/ภาพซ้ำ) · ถ้ามีเหตุอื่นที่ต้องถ่ายใหม่ ($clear) ยังถ่ายใหม่ตามเดิม
+                $add('FACE_MISMATCH_REVIEW');
+            } else {
+                $clear = true;
+            }
         }
 
         if ($clear) {

@@ -35,4 +35,9 @@ Route::prefix('ekyc')->name('api.v1.ekyc.')->controller(EkycApiController::class
     Route::post('/sessions/{id}/face', 'face')
         ->middleware('throttle:6,1,api-ekyc-face')
         ->name('sessions.face');
+
+    // AI ให้ถ่ายใหม่ → ผู้ใช้ขอให้เจ้าหน้าที่ตรวจแทน (ใช้รูปบัตร + ใบหน้ารอบล่าสุด ไม่อัปโหลดใหม่)
+    Route::post('/request-review', 'requestReview')
+        ->middleware('throttle:6,1,api-ekyc-request-review')
+        ->name('request-review');
 });

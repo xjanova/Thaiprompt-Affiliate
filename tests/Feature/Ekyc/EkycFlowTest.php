@@ -347,7 +347,11 @@ class EkycFlowTest extends TestCase
 
     public function test_attempt_limit_turns_the_last_failure_into_review_then_blocks(): void
     {
-        $this->fakeAi(null, $this->goodFace(['match' => ['cosine' => 0.05, 'score' => 0.1], 'reasons' => ['LOW_MATCH']]));
+        // ทำท่าไม่ผ่าน (หน้าไม่ตรงบัตรถ่ายใหม่ได้แค่ 1 ครั้ง ดู test_face_mismatch_retake_once_then_admin_review)
+        $this->fakeAi(null, $this->goodFace([
+            'liveness' => ['passed' => false, 'score' => 0.4, 'challenges' => ['blink' => false, 'turn_left' => true, 'turn_right' => true, 'smile' => true, 'nod' => true]],
+            'reasons' => ['CHALLENGE_FAILED:blink'],
+        ]));
         $user = $this->ekycUser();
 
         $this->runFullFlow()->assertJsonPath('data.decision', 'retake')->assertJsonPath('data.attempts_left', 2);
@@ -365,6 +369,77 @@ class EkycFlowTest extends TestCase
 
         $this->travel(1)->days();
         $this->getJson('/api/v1/ekyc/status')->assertJsonPath('data.attempts_left', 3);
+    }
+
+    public function test_face_mismatch_retake_once_then_admin_review(): void
+    {
+        $this->fakeAi(null, $this->goodFace(['match' => ['cosine' => 0.05, 'score' => 0.1], 'reasons' => ['LOW_MATCH']]));
+        $user = $this->ekycUser();
+
+        $this->runFullFlow()->assertJsonPath('data.decision', 'retake')->assertJsonPath('data.can_request_review', true);
+
+        // ครั้งที่ 2 หน้าไม่ตรงอีก → แอดมินตัดสิน (หน้าตาเปลี่ยนจากรูปบนบัตร AI ไม่ชัวร์)
+        $res = $this->runFullFlow()->assertJsonPath('data.decision', 'review')->assertJsonPath('data.kyc_status', 'pending');
+        $this->assertContains('FACE_MISMATCH_REVIEW', (array) $res->json('data.reasons'));
+        $this->assertSame('pending', $user->fresh()->kyc_status);
+    }
+
+    public function test_user_can_skip_retake_and_wait_for_admin_review(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->fakeAi(null, $this->goodFace(['match' => ['cosine' => 0.05, 'score' => 0.1], 'reasons' => ['LOW_MATCH']]));
+        $user = $this->ekycUser();
+
+        // ยังไม่เคยสแกนหน้า = ไม่มีอะไรให้ส่งตรวจ
+        $this->getJson('/api/v1/ekyc/status')->assertJsonPath('data.can_request_review', false);
+        $this->postJson('/api/v1/ekyc/request-review')->assertStatus(409)->assertJsonPath('code', 'EKYC_NOTHING_TO_REVIEW');
+
+        $this->runFullFlow()->assertJsonPath('data.decision', 'retake');
+        $this->getJson('/api/v1/ekyc/status')->assertJsonPath('data.can_request_review', true);
+
+        $this->postJson('/api/v1/ekyc/request-review')->assertOk()
+            ->assertJsonPath('data.kyc_status', 'pending')
+            ->assertJsonPath('data.last_decision', 'review')
+            ->assertJsonPath('data.can_request_review', false)
+            ->assertJsonPath('data.can_retake', false);
+
+        $kyc = KycVerification::where('user_id', $user->id)->latest('id')->firstOrFail();
+        $this->assertSame('pending', $kyc->status);
+        $this->assertSame('retake', $kyc->ai_decision, 'เก็บผล AI เดิมไว้ให้แอดมินเห็น');
+        $this->assertContains('USER_SKIPPED_FACE', $kyc->ai_reasons);
+        $this->assertContains('LOW_MATCH', $kyc->ai_reasons);
+        $this->assertSame('pending', $user->fresh()->kyc_status);
+        $this->assertTrue(Notification::where('user_id', $admin->id)->where('type', 'kyc')->exists(), 'แอดมินต้องได้แจ้งเตือน');
+
+        // กดซ้ำ = รอตรวจอยู่แล้ว · เริ่มรอบใหม่เองไม่ได้ (รอแอดมินตัดสิน)
+        $this->postJson('/api/v1/ekyc/request-review')->assertStatus(409)->assertJsonPath('code', 'EKYC_PENDING_REVIEW');
+        $this->startSession()->assertStatus(409)->assertJsonPath('code', 'EKYC_PENDING_REVIEW');
+
+        // แอดมินอนุมัติได้ตามปกติ
+        app(EkycService::class)->adminDecide($kyc, $admin, 'approved');
+        $this->assertTrue($user->fresh()->isKycVerified());
+    }
+
+    public function test_request_review_is_refused_after_admin_retake_or_when_images_are_gone(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->fakeAi(null, $this->goodFace(['match' => ['cosine' => 0.40, 'score' => 0.62]]));
+        $user = $this->ekycUser();
+        $this->runFullFlow()->assertJsonPath('data.decision', 'review');
+        $kyc = KycVerification::where('user_id', $user->id)->latest('id')->firstOrFail();
+
+        // แอดมินขอให้ถ่ายใหม่ = ต้องถ่ายใหม่จริง ข้ามไม่ได้
+        app(EkycService::class)->adminDecide($kyc, $admin, 'retake', 'รูปมืด');
+        $this->getJson('/api/v1/ekyc/status')->assertJsonPath('data.can_request_review', false);
+        $this->postJson('/api/v1/ekyc/request-review')->assertStatus(409)->assertJsonPath('code', 'EKYC_NOTHING_TO_REVIEW');
+
+        // AI ให้ถ่ายใหม่แต่รูปถูกลบตาม retention แล้ว → ต้องถ่ายใหม่
+        $this->fakeAi(null, $this->goodFace(['match' => ['cosine' => 0.05, 'score' => 0.1], 'reasons' => ['LOW_MATCH']]));
+        $other = $this->ekycUser();
+        $this->runFullFlow()->assertJsonPath('data.decision', 'retake');
+        $row = KycVerification::where('user_id', $other->id)->latest('id')->firstOrFail();
+        Storage::disk('local')->delete($row->best_frame_path);
+        $this->postJson('/api/v1/ekyc/request-review')->assertStatus(409)->assertJsonPath('code', 'EKYC_NOTHING_TO_REVIEW');
     }
 
     // =====================================================

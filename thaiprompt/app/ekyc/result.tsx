@@ -22,7 +22,7 @@ import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { useEkycStore } from '@/stores/ekycStore';
-import { getEkycStatus, retakeTarget, type EkycReasonItem } from '@/services/api/ekycApi';
+import { getEkycStatus, requestEkycReview, retakeTarget, type EkycReasonItem } from '@/services/api/ekycApi';
 import { isKycGateContext, KYC_GATE_COPY } from '@/services/ekyc/kycGate';
 import { restartEkycSession } from '@/services/ekyc/flow';
 import { decisionForCode, isWaitCode, waitWhileProcessing } from '@/services/ekyc/outcome';
@@ -48,6 +48,8 @@ const REASON_HELP: Record<string, string> = {
   DUPLICATE_ID: 'เจ้าหน้าที่จะตรวจสอบความเป็นเจ้าของบัตร',
   USER_CORRECTED: 'เจ้าหน้าที่ตรวจทานข้อมูลที่แก้',
   AI_UNAVAILABLE: 'ไม่ต้องทำอะไรเพิ่ม รอผลได้เลย',
+  FACE_MISMATCH_REVIEW: 'ไม่ต้องทำอะไรเพิ่ม เจ้าหน้าที่จะเทียบใบหน้าให้',
+  USER_SKIPPED_FACE: 'ไม่ต้องทำอะไรเพิ่ม รอผลได้เลย',
 };
 
 export default function EkycResultScreen() {
@@ -64,6 +66,8 @@ export default function EkycResultScreen() {
   const startedAt = useEkycStore((s) => s.startedAt);
   const [loaded, setLoaded] = useState(!!decision);
   const [retrying, setRetrying] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const skippingRef = useRef(false);
   const [waitState, setWaitState] = useState<'idle' | 'waiting' | 'timeout'>('idle');
   const retryingRef = useRef(false);
   const waitingRef = useRef(false);
@@ -156,6 +160,8 @@ export default function EkycResultScreen() {
   const canRetry = attemptsLeft > 0 && (status ? status.can_start || !!fromSubmit : true);
   // รอเจ้าหน้าที่: ถ่ายใหม่ได้เฉพาะเมื่อ server บอก can_retake (เริ่มรอบใหม่แล้ว server ยกเลิกคิวตรวจเดิมให้)
   const canRetakeReview = !!status?.can_retake;
+  // AI ให้ถ่ายใหม่ → ข้ามไปให้เจ้าหน้าที่ตรวจจากรูปเดิมได้ (server บอกเอง · server รุ่นเก่าไม่ส่ง = ซ่อนปุ่ม)
+  const canRequestReview = fromSubmit ? !!fromSubmit.can_request_review : !!status?.can_request_review;
   const seconds = fromSubmit && startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 1000)) : null;
 
   useEffect(() => {
@@ -197,6 +203,44 @@ export default function EkycResultScreen() {
     useEkycStore.getState().setDecision(null);
     router.replace((outcome.kind === 'face' ? '/ekyc/face' : '/ekyc/capture') as never);
   };
+
+  /** ส่งให้เจ้าหน้าที่ตรวจแทนการถ่ายใหม่ (ถามยืนยันก่อน — ส่งแล้วต้องรอผล ถ่ายใหม่เองไม่ได้) */
+  const sendToStaff = async () => {
+    if (skippingRef.current) return;
+    skippingRef.current = true;
+    setSkipping(true);
+    const res = await requestEkycReview();
+    skippingRef.current = false;
+    if (!mountedRef.current) return;
+    setSkipping(false);
+    const store = useEkycStore.getState();
+    if (res.success) {
+      store.setStatus(res.data);
+      store.setDecision(null);
+      resultHaptic('success');
+      return;
+    }
+    // รู้ผลแล้ว (ยืนยันแล้ว / ส่งตรวจไปแล้ว) → แสดงผลนั้น
+    const known = decisionForCode(res.code);
+    if (known) {
+      store.setDecision(known);
+      store.loadStatus(true).catch(() => {});
+      return;
+    }
+    resultHaptic('error');
+    store.loadStatus(true).catch(() => {});
+    Alert.alert('ส่งให้เจ้าหน้าที่ไม่สำเร็จ', res.message || 'ลองใหม่อีกครั้งนะ');
+  };
+
+  const confirmSendToStaff = () =>
+    Alert.alert(
+      'ให้เจ้าหน้าที่ตรวจแทน?',
+      'ใช้รูปบัตรและใบหน้าที่ถ่ายไปแล้ว เจ้าหน้าที่จะเทียบให้และแจ้งผลทางการแจ้งเตือน ระหว่างรอจะถ่ายใหม่เองไม่ได้',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'ส่งให้เจ้าหน้าที่', onPress: () => void sendToStaff() },
+      ]
+    );
 
   // ---------- หัว ----------
   const heroCircle = (icon: IconName, tone: 'gold' | 'warn' | 'danger') => (
@@ -379,16 +423,31 @@ export default function EkycResultScreen() {
           canRetry ? `ลองได้อีก ${attemptsLeft} ครั้งวันนี้` : 'วันนี้ลองครบแล้ว เจ้าหน้าที่จะตรวจให้'
         )}
         bottom={
-          <View style={styles.row}>
-            <Button3D title="ไว้ก่อน" variant="secondary" size="lg" onPress={exit} />
-            {canRetry && (
+          <View style={styles.stack}>
+            <View style={styles.row}>
+              <Button3D title="ไว้ก่อน" variant="secondary" size="lg" onPress={exit} disabled={skipping} />
+              {canRetry && (
+                <Button3D
+                  title={target === 'card' ? 'ถ่ายบัตรใหม่' : 'ถ่ายหน้าใหม่'}
+                  icon="camera"
+                  size="lg"
+                  loading={retrying}
+                  disabled={skipping}
+                  onPress={() => retry(target)}
+                  style={styles.flex}
+                />
+              )}
+            </View>
+            {canRequestReview && (
               <Button3D
-                title={target === 'card' ? 'ถ่ายบัตรใหม่' : 'ถ่ายหน้าใหม่'}
-                icon="camera"
+                title="ข้ามขั้นตอนนี้ ให้เจ้าหน้าที่ตรวจ"
+                icon="seal-check"
+                variant="ghost"
                 size="lg"
-                loading={retrying}
-                onPress={() => retry(target)}
-                style={styles.flex}
+                fullWidth
+                loading={skipping}
+                disabled={retrying}
+                onPress={confirmSendToStaff}
               />
             )}
           </View>
@@ -406,6 +465,11 @@ export default function EkycResultScreen() {
         <InfoNote icon="info" title="เคล็ดลับให้ผ่านในครั้งเดียว">
           ถ่ายในที่สว่าง ถอดหมวก แว่นดำ และหน้ากาก ทำท่าช้าๆ ตามคำสั่ง ให้เห็นใบหน้าคุณคนเดียวตลอด
         </InfoNote>
+        {canRequestReview && (
+          <InfoNote icon="seal-check" title="หน้าตาเปลี่ยนไปจากรูปบนบัตร?">
+            AI อาจเทียบไม่แม่น กด "ข้ามขั้นตอนนี้ ให้เจ้าหน้าที่ตรวจ" ได้ เจ้าหน้าที่จะดูจากรูปที่ถ่ายไปแล้ว
+          </InfoNote>
+        )}
       </EkycShell>
     );
   }
@@ -455,6 +519,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  stack: {
+    gap: spacing.sm,
   },
   hero: {
     alignItems: 'center',

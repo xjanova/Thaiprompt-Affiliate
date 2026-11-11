@@ -50,6 +50,10 @@ return [
     // ต่ำกว่าค่านี้ = คนละคนชัดเจน → ให้ถ่ายใหม่
     'retake_match' => (float) env('EKYC_RETAKE_MATCH', 0.15),
 
+    // ใบหน้าไม่ตรงบัตร (LOW_MATCH ต่ำกว่า retake_match / DIFFERENT_PEOPLE) ให้ถ่ายใหม่ได้กี่ครั้งต่อวัน
+    // ครบแล้ว = ส่งแอดมินตรวจแทน (หน้าตาเปลี่ยนจากรูปบนบัตร AI ตัดสินเองไม่ชัวร์) · 0 = ส่งแอดมินตั้งแต่ครั้งแรก
+    'face_mismatch_retakes' => (int) env('EKYC_FACE_MISMATCH_RETAKES', 1),
+
     // ผ่านการทำตามคำสั่ง (กะพริบตา/หันหน้า/ยิ้ม/พยักหน้า) อย่างน้อยเท่านี้
     'min_liveness' => (float) env('EKYC_MIN_LIVENESS', 0.80),
 

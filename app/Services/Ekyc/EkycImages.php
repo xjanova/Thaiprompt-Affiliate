@@ -301,6 +301,22 @@ class EkycImages
     }
 
     /**
+     * มีไฟล์จริงไหม (ไม่ถอดรหัส — ใช้เช็คเร็วๆ เช่นตอนถามสถานะ)
+     */
+    public function exists(?string $path): bool
+    {
+        if (! $this->safePath($path)) {
+            return false;
+        }
+
+        try {
+            return $this->disk()->exists($path);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * ลบไฟล์แบบไม่โยน error
      *
      * @param  array<int, string|null>  $paths

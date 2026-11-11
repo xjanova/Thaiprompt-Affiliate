@@ -155,6 +155,20 @@ class EkycApiController extends Controller
     }
 
     /**
+     * POST /ekyc/request-review — ข้ามการถ่ายใหม่ ให้เจ้าหน้าที่ตรวจจากรูปรอบล่าสุด
+     */
+    public function requestReview(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $this->run(fn () => $this->ok(
+            $this->ekyc->requestReview($user),
+            'ส่งข้อมูลให้เจ้าหน้าที่ตรวจแล้ว จะแจ้งผลให้ทราบโดยเร็ว',
+        ));
+    }
+
+    /**
      * ตรวจไฟล์รูป (ชนิด/ขนาด) → EKYC_BAD_IMAGE ภาษาไทย · ผ่าน = null
      */
     private function imageErrors(Request $request, string $field): ?JsonResponse

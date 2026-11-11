@@ -189,3 +189,37 @@ def test_card_real_score_survives_jpeg_and_noise():
     for img in (noisy, J(sc, 70)):
         real, dbg = _real(img)
         assert real >= 0.9, dbg
+
+
+def _face_row(x, y, w, h, score):
+    return np.array([x, y, w, h] + [0.0] * 10 + [score], dtype=np.float32)
+
+
+def test_orient_prefers_upright_face_over_larger_upside_down_box():
+    # prod 2026-11-11: หน้าเดียวกันตอนกลับหัว YuNet เจอด้วยกรอบใหญ่กว่า แต่คะแนนต่ำกว่า → ต้องเลือกทิศตั้งตรง
+    img = np.full((C.CARD_H, C.CARD_W, 3), 200, np.uint8)
+    img[0, 0] = (0, 0, 0)  # ให้ภาพสองทิศต่างกัน เพื่อรู้ว่า detect ถูกเรียกด้วยทิศไหน
+    view = C.CardView(img, True, False, True)
+
+    def detect(im):
+        if im[0, 0, 0] == 0:   # ทิศเดิม (ตั้งตรง): หน้าจริงฝั่งขวา + รูปเงาเล็ก
+            return np.array([_face_row(820, 250, 90, 110, 0.93), _face_row(600, 400, 20, 24, 0.70)])
+        return np.array([_face_row(60, 250, 110, 130, 0.61)])   # กลับหัว: กรอบใหญ่กว่า คะแนนต่ำ
+
+    for side in ('any', 'right'):
+        v = C.orient_by_face(view, detect, 0.6, side)
+        assert v.rotation == 0 and float(v.face[2]) == 90.0, side
+
+
+def test_orient_turns_an_upside_down_card():
+    img = np.full((C.CARD_H, C.CARD_W, 3), 200, np.uint8)
+    img[0, 0] = (0, 0, 0)
+    view = C.CardView(img, True, False, True)
+
+    def detect(im):
+        if im[0, 0, 0] == 0:   # ภาพที่ส่งมากลับหัว: หน้าถูกเจอแบบคะแนนต่ำ
+            return np.array([_face_row(60, 250, 100, 120, 0.80)])
+        return np.array([_face_row(840, 250, 90, 110, 0.94)])
+
+    v = C.orient_by_face(view, detect, 0.6, 'any')
+    assert v.rotation == 180 and float(v.face[14]) > 0.9
