@@ -103,6 +103,14 @@ class EkycException extends RuntimeException
     /**
      * รอบนี้ตัดสินผลไปแล้ว — แอปดูผลจาก GET /ekyc/status
      */
+    /**
+     * ไม่มีผลที่ AI ให้ถ่ายใหม่ให้ส่งเจ้าหน้าที่ตรวจ (ยังไม่เคยสแกนหน้า / แอดมินขอให้ถ่ายใหม่ / รูปถูกลบแล้ว)
+     */
+    public static function nothingToReview(): self
+    {
+        return new self('EKYC_NOTHING_TO_REVIEW', 'ไม่มีผลการยืนยันที่ส่งให้เจ้าหน้าที่ตรวจได้ กรุณาเริ่มยืนยันตัวตนใหม่', 409);
+    }
+
     public static function sessionDone(): self
     {
         return new self('EKYC_SESSION_DONE', 'รอบยืนยันตัวตนนี้ตรวจเสร็จแล้ว', 409);

@@ -9,6 +9,7 @@
  * เอกสาร (2026-11-10): บัตรประชาชนไทย / ใบขับขี่ไทย / หนังสือเดินทางทุกประเทศ / บัตรต่างประเทศ
  *   server ส่งรายการที่รองรับมาใน GET /ekyc/status → documents[] · server รุ่นก่อน = บัตรประชาชนไทยอย่างเดียว
  *   POST  /ekyc/sessions/{id}/face     multipart frames[] + labels[] → ผลตัดสิน approved | review | retake | rejected
+ *   POST  /ekyc/request-review         AI ให้ถ่ายใหม่ → ขอให้เจ้าหน้าที่ตรวจจากรูปเดิมแทน → สถานะแบบ GET /ekyc/status
  *
  * error ที่หน้าจอต้องแยกจัดการ (ส่วนเพิ่ม 2026-10-04 รอบ 2)
  *   503 EKYC_AI_BUSY        (id-card / face) ระบบตรวจคิวเต็ม — data.retry_after_seconds · รอบไม่เปลี่ยน ส่งคำขอเดิมซ้ำได้
@@ -103,6 +104,8 @@ export interface EkycStatus {
   can_start: boolean;
   /** ผลล่าสุดรอเจ้าหน้าที่ตรวจ แต่ยังถ่ายใหม่ได้ (เริ่มรอบใหม่แล้ว server ยกเลิกคิวตรวจเดิมให้) */
   can_retake: boolean;
+  /** ผลล่าสุด AI ให้ถ่ายใหม่ → ข้ามไปให้เจ้าหน้าที่ตรวจจากรูปเดิมได้ (POST /ekyc/request-review) */
+  can_request_review: boolean;
   /** server ยังตรวจคำขอก่อนหน้าอยู่ (ห้ามเริ่มรอบใหม่ — รอแล้วถามสถานะใหม่) */
   processing: boolean;
   attempts_left: number;
@@ -181,6 +184,8 @@ export interface EkycFaceResult {
   message: string | null;
   kyc_status: KycStatusValue;
   attempts_left: number;
+  /** ผล retake ที่ข้ามไปให้เจ้าหน้าที่ตรวจได้ (server รุ่นเก่าไม่ส่ง = false) */
+  can_request_review?: boolean;
   /** submit = คำตอบของ POST face จริง · status = สรุปจากสถานะ/รหัส error (ไม่มีคะแนน ไม่บอกเวลาที่ใช้) */
   source: 'submit' | 'status';
 }
@@ -310,6 +315,7 @@ export const normalizeEkycStatus = (raw: any): EkycStatus => {
     method,
     can_start: verified ? false : raw?.can_start === undefined ? kyc_status !== 'pending' : bool(raw?.can_start),
     can_retake: verified ? false : bool(raw?.can_retake),
+    can_request_review: verified ? false : bool(raw?.can_request_review),
     processing: verified ? false : bool(raw?.processing),
     attempts_left: Math.max(0, Math.round(num(raw?.attempts_left, 0))),
     last_decision: decisionOf(raw?.last_decision),
@@ -411,6 +417,7 @@ export const normalizeEkycFace = (raw: any): EkycFaceResult => {
     message: staffMessage(raw?.message),
     kyc_status: normalizeKycStatusValue(raw?.kyc_status),
     attempts_left: Math.max(0, Math.round(num(raw?.attempts_left, 0))),
+    can_request_review: bool(raw?.can_request_review),
     source: 'submit',
   };
 };
@@ -488,6 +495,8 @@ const REASON_TEXT: Record<string, string> = {
   CARD_UNREADABLE: 'AI อ่านบัตรไม่ชัด เจ้าหน้าที่จะตรวจจากรูปบัตรให้',
   MRZ_CHECK_FAIL: 'อ่านแถบตัวอักษร <<< ด้านล่างได้ไม่ครบ',
   DOC_MANUAL_REVIEW: 'เอกสารชนิดนี้เจ้าหน้าที่จะตรวจให้',
+  FACE_MISMATCH_REVIEW: 'ใบหน้ายังไม่ตรงกับรูปบนบัตร เจ้าหน้าที่จะตรวจให้แทนการถ่ายใหม่',
+  USER_SKIPPED_FACE: 'คุณขอให้เจ้าหน้าที่ตรวจแทนการถ่ายใหม่',
 };
 
 /** เหตุผลที่แปลว่า "ไม่ผ่าน" จริง (ที่เหลือ = ระดับกลาง/ให้เจ้าหน้าที่ดู) */
@@ -721,6 +730,15 @@ export const framesMatchChallenges = (frames: EkycFrame[], challenges: EkycChall
   frames.length === challenges.length + 1 &&
   frames[0]?.label === 'neutral' &&
   challenges.every((c, i) => frames[i + 1]?.label === c);
+
+/** POST /ekyc/request-review — ข้ามการถ่ายใหม่ ให้เจ้าหน้าที่ตรวจจากรูปบัตร + ใบหน้ารอบล่าสุด (ไม่อัปโหลดใหม่) */
+export const requestEkycReview = async (): Promise<ApiResult<EkycStatus>> =>
+  mapResult(
+    await apiPost<any>(`${BASE}/request-review`, {}, {
+      fallbackMessage: 'ส่งให้เจ้าหน้าที่ตรวจไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+    }),
+    normalizeEkycStatus
+  );
 
 /** POST /ekyc/sessions/{id}/face — เฟรม jpeg + ป้ายตามลำดับ */
 export const submitEkycFace = async (sessionId: string, frames: EkycFrame[]): Promise<ApiResult<EkycFaceResult>> => {

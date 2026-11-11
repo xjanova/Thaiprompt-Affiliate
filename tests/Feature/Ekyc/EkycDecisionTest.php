@@ -126,11 +126,41 @@ class EkycDecisionTest extends TestCase
 
     public function test_last_allowed_failure_goes_to_review_instead_of_retake(): void
     {
-        $this->assertSame('retake', $this->decide(['cosine' => 0.05, 'retakes_today' => 1])['decision']);
+        $fail = ['challenges' => ['blink' => false, 'smile' => true, 'nod' => true]];
+        $this->assertSame('retake', $this->decide($fail + ['retakes_today' => 1])['decision']);
 
-        $result = $this->decide(['cosine' => 0.05, 'retakes_today' => 2]);
+        $result = $this->decide($fail + ['retakes_today' => 2]);
         $this->assertSame('review', $result['decision']);
         $this->assertContains('ATTEMPTS_EXHAUSTED', $result['reasons']);
+    }
+
+    public function test_face_mismatch_is_retaken_once_then_goes_to_review(): void
+    {
+        // หน้าไม่ตรงบัตร / คนละคน: ถ่ายใหม่ได้ 1 ครั้ง (face_mismatch_retakes) แล้วให้แอดมินตัดสิน
+        foreach ([
+            ['cosine' => 0.05],
+            ['same_person' => false, 'reasons' => ['DIFFERENT_PEOPLE']],
+        ] as $override) {
+            $this->assertSame('retake', $this->decide($override)['decision'], json_encode($override));
+
+            $result = $this->decide($override + ['retakes_today' => 1]);
+            $this->assertSame('review', $result['decision'], json_encode($override));
+            $this->assertContains('FACE_MISMATCH_REVIEW', $result['reasons']);
+            $this->assertNotContains('ATTEMPTS_EXHAUSTED', $result['reasons']);
+        }
+        $this->assertContains('LOW_MATCH', $this->decide(['cosine' => 0.05, 'retakes_today' => 1])['reasons']);
+
+        // มีเหตุอื่นที่ต้องถ่ายใหม่ด้วย (ทำท่าไม่ผ่าน) → ยังถ่ายใหม่ตามเดิม
+        $this->assertSame('retake', $this->decide([
+            'cosine' => 0.05, 'retakes_today' => 1, 'challenges' => ['blink' => false, 'smile' => true, 'nod' => true],
+        ])['decision']);
+
+        // ป้ายอื่นต้องติดครบให้แอดมินเห็น (เช่นบัตรซ้ำ)
+        $this->assertContains('DUPLICATE_ID', $this->decide(['cosine' => 0.05, 'retakes_today' => 1, 'duplicate' => true])['reasons']);
+
+        // 0 = ส่งแอดมินตั้งแต่ครั้งแรก
+        config(['ekyc.face_mismatch_retakes' => 0]);
+        $this->assertSame('review', $this->decide(['cosine' => 0.05])['decision']);
     }
 
     public function test_masking_and_reason_texts(): void
