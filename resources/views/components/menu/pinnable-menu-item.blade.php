@@ -41,11 +41,15 @@
     'isPinned' => null,
     'badge' => null,
     'showInPinnedSection' => false, // แสดงใน Pinned Section (สีเข้มกว่า)
+    'accent' => null, // สีพื้นเมนูพิเศษ (hex เช่น #1877F2) — จาก config/menus.php key 'accent'
 ])
 
 @php
     // สร้าง unique ID สำหรับ Alpine x-data
     $uniqueId = 'menu_' . md5($menuKey);
+
+    // 🎨 รับเฉพาะ hex ปลอดภัย (#RGB / #RRGGBB) — กันค่าแปลกหลุดเข้า style attribute
+    $accentColor = (is_string($accent) && preg_match('/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/', $accent)) ? $accent : null;
 
     // เช็คว่าเป็น Font Awesome icon หรือ emoji
     $isFontAwesome = str_starts_with($icon, 'fa');
@@ -149,6 +153,10 @@
         :class="{
             'ring-2 ring-amber-400/50': isPinned && !{{ $showInPinnedSection ? 'true' : 'false' }}
         }"
+        @if($accentColor && ! $isActive && ! $showInPinnedSection)
+            {{-- สีพื้นเป็นค่าจาก config ต้องใช้ inline style (Tailwind สร้างคลาสสีไดนามิกไม่ได้) --}}
+            style="background: {{ $accentColor }}; color: #fff; box-shadow: 0 4px 14px {{ $accentColor }}55;"
+        @endif
     >
         {{-- Icon --}}
         @if($icon)

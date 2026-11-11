@@ -331,6 +331,28 @@ Schedule::command('fortune:content:publish')
     });
 
 // ════════════════════════════════════════════════════════════════
+// 📘 (2026-11-11) เตรียมโพสต์เฟซบุ๊กส่วนตัวของเจ้าของ วันละ 4 โพสต์
+// ════════════════════════════════════════════════════════════════
+// ดึงเทรนด์ Google TH + ข่าวเทค → AI เขียนบทความ + สร้างภาพ (OpenAI gpt-image)
+// ระบบไม่โพสต์ให้ — เจ้าของเปิดหน้า admin.personal-posts.index แล้วกดโพสต์เอง
+// 05:30 = เทรนด์ของเช้าวันนั้นสดแล้ว และพร้อมก่อนเจ้าของตื่น · รอบ 12:30 เติมช่องที่ล้มตอนเช้า
+Schedule::command('personal-posts:prepare')
+    ->dailyAt('05:30')
+    ->timezone('Asia/Bangkok')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('personal-posts-prepare')
+    ->runInBackground();
+
+Schedule::command('personal-posts:prepare')
+    ->dailyAt('12:30')
+    ->timezone('Asia/Bangkok')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('personal-posts-prepare-retry')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🔁 (2026-11-07) รีโพสจากเพจหลักลงเพจสาขา — ตารางเหลื่อมเวลา (เช่น +30 นาที)
 // ════════════════════════════════════════════════════════════════
 // แต่ละรอบเติมช่องที่ยังว่างในอีก N ชม.ข้างหน้า (ตั้งเวลาใน Facebook ไว้ล่วงหน้า)
