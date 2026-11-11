@@ -137,6 +137,47 @@ class JuntraTarotProfilesTest extends TestCase
         $this->assertStringContainsString('เรียกลูกค้าว่า "คุณ"', end($this->calls)['prompt']);
     }
 
+    /** 🌸 (2026-11-11, owner) "ไพ่ 1 ใบ ไม่ถึง 9 ใบเป็นของ บุษบาทั้งหมด" — เว็บส่ง persona=busaba มากับไพ่ที่ขายในห้องบุษบา */
+    public function test_small_spreads_sold_in_busabas_room_are_written_by_busaba(): void
+    {
+        $this->read(['spread_key' => 'love', 'persona' => 'busaba', 'cards' => $this->loveCards(), 'question' => 'เขาจะกลับมาไหม'])->assertOk();
+
+        $override = end($this->overrides);
+        $this->assertStringStartsWith('[⚠️ WEB TAROT OVERRIDE', $override);
+        $this->assertStringContainsString('PERSONA OVERRIDE — บุษบา', $override);
+        $this->assertStringContainsString('• แบบไพ่นี้ — ความรัก 5 ใบ: บุษบา', $override);
+        $this->assertStringContainsString('ไม่ใช่ตัดเนื้อหา', $override);
+        $this->assertStringEndsWith('ภาษา: ตอบภาษาเดียวกับคำถามของลูกค้า', $override);
+        $prompt = end($this->calls)['prompt'];
+        $this->assertStringContainsString('ความรู้ในหัวของบุษบาเอง', $prompt);
+        $this->assertStringNotContainsString('ความรู้ในหัวของแม่หมอเอง', $prompt);
+        $this->assertStringContainsString('ห้ามเอ่ยถึง "ตำราที่แนบมา"', $prompt);
+        // กฎ/ความยาวของแพ็กเกจยังครบ — บุษบากระชับแต่ไม่ลดของที่ลูกค้าจ่าย
+        $this->assertStringContainsString('ห้ามเข้าข้างลูกค้า', $prompt);
+        $this->assertSame(2400, end($this->calls)['config']['max_tokens']);
+
+        // ทุกแบบที่ไม่ถึง 9 ใบมีวิธีเล่าของบุษบาเอง
+        foreach (['single', 'three', 'quick', 'love', 'career', 'decision'] as $key) {
+            $p = JuntraSpreadProfiles::forPersona(JuntraSpreadProfiles::get($key), 'busaba');
+            $this->assertSame('busaba', JuntraSpreadProfiles::persona($p), $key);
+            $this->assertStringNotContainsString('อ่านตามกฎของแพ็กเกจด้านล่างในน้ำเสียงบุษบา', JuntraSpreadProfiles::personaOverride($p), $key);
+        }
+
+        // ไม่ส่ง persona (แอพ/เว็บรุ่นเก่า) → แม่หมอเหมือนเดิมทุกไบต์
+        $this->read(['spread_key' => 'love', 'cards' => $this->loveCards()])->assertOk();
+        $this->assertStringNotContainsString('PERSONA OVERRIDE', end($this->overrides));
+        $this->assertStringContainsString('ความรู้ในหัวของแม่หมอเอง', end($this->calls)['prompt']);
+
+        // Celtic / 12 เดือนเป็นของแม่หมอ · คุณไสยเป็นของห้องคุณไสย — ส่ง busaba มาก็ไม่เปลี่ยน
+        foreach (['celtic', 'year', 'kunsai'] as $key) {
+            $p = JuntraSpreadProfiles::forPersona(JuntraSpreadProfiles::get($key), 'busaba');
+            $this->assertNotSame('busaba', JuntraSpreadProfiles::persona($p), $key);
+        }
+        // ค่าแปลกไม่ทำให้คำทำนายพัง
+        $this->read(['spread_key' => 'single', 'persona' => 'hacker', 'cards' => [$this->card(1, 'คำตอบ', 'The Sun', 'พระอาทิตย์')]])->assertOk();
+        $this->assertStringNotContainsString('PERSONA OVERRIDE', end($this->overrides));
+    }
+
     /** 🪬 (2026-11-04, owner) คุณไสย = แม่หมออีกร่าง ดุดัน เคร่งขรึม — พรอมต์ทำนายเดิม + บล็อกบุคลิกท้ายสุด ยังเรียก "ลูก" */
     public function test_kunsai_is_read_by_the_stern_form_of_mae_mor(): void
     {

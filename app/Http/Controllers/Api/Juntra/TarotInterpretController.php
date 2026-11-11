@@ -60,6 +60,8 @@ class TarotInterpretController extends Controller
             'months.*' => 'nullable|string|max:40',
             'birth_date' => 'nullable|date_format:Y-m-d|before:today|after:1900-01-01',
             'customer_name' => 'nullable|string|max:80',
+            // 🌸 (2026-11-11) ผู้พยากรณ์ของห้องที่ขายไพ่ชุดนี้บนเว็บ (busaba · maemor · kunsai) — ค่าแปลกไม่ปัดตก แค่ไม่ใช้
+            'persona' => 'nullable|string|max:32',
             'cards.*.name_th' => 'nullable|string|max:128',
             'cards.*.card_name_th' => 'nullable|string|max:128',
             'cards.*.name_en' => 'nullable|string|max:128',
@@ -78,6 +80,8 @@ class TarotInterpretController extends Controller
         //    (แพ็กเกจที่ไม่รู้จัก / juntraweb รุ่นเก่า → ทางเดิมด้านล่าง ไม่พัง)
         $profile = JuntraSpreadProfiles::get($data['spread_key'] ?? null);
         if ($profile !== null) {
+            // 🌸 (2026-11-11) ไพ่ไม่ถึง 9 ใบที่ขายในห้องบุษบา → บุษบาเขียนคำทำนาย (ตรงกับหน้าตา/เสียงบนเว็บ)
+            $profile = JuntraSpreadProfiles::forPersona($profile, $data['persona'] ?? null);
             return $this->profileReading($profile, $data, $cards, $ai, $kb);
         }
 

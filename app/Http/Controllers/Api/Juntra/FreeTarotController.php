@@ -67,7 +67,10 @@ class FreeTarotController extends Controller
             'position_name' => 'nullable|string|max:128',
             'max_chars' => 'nullable|integer|min:'.self::MIN_ALLOWED_CHARS.'|max:'.self::MAX_ALLOWED_CHARS,
             'customer_name' => 'nullable|string|max:64',
+            // 🌸 (2026-11-11) เว็บส่ง busaba เมื่อห้องบุษบาเปิด (ไพ่ 1 ใบเป็นของบุษบา) · ไม่ส่ง/ค่าแปลก = แม่หมอเดิม
+            'persona' => 'nullable|string|max:32',
         ]);
+        $persona = JuntraSpreadProfiles::personaReads($data['persona'] ?? null, 'single') ? $data['persona'] : null;
 
         $maxChars = (int) ($data['max_chars'] ?? self::DEFAULT_MAX_CHARS);
 
@@ -105,7 +108,7 @@ class FreeTarotController extends Controller
             $attempts++;
             try {
                 $result = $ai->chatWithCustomSystemPrompt(
-                    $this->systemPrompt($minChars, $promptTarget),
+                    $this->systemPrompt($minChars, $promptTarget, $persona),
                     $this->userMessage($cards[1], $knowledge, (string) ($data['customer_name'] ?? '')),
                     // +150 เผื่อบล็อก NEXTQ ที่อยู่ในคำตอบเดียวกัน · ×1.2 เผื่อ
                     // ภาษาไทย (~1 token ต่อ 1 ตัวอักษรบนโมเดลส่วนใหญ่)
@@ -326,12 +329,25 @@ class FreeTarotController extends Controller
      *   - ไม่มีวันเกิด/ดวงดาว และห้ามถามกลับ ทำนายเลย
      *   - "ปลายเปิด" = ตอบครบและฟันธง แล้วค่อยทิ้งประเด็นให้อยากรู้ต่อ (ไม่ใช่ตอบครึ่งเดียว)
      */
-    private function systemPrompt(int $minChars, int $maxChars): string
+    private function systemPrompt(int $minChars, int $maxChars, ?string $persona = null): string
     {
         $noSourceTalk = JuntraSpreadProfiles::NO_SOURCE_TALK;
+        $identity = 'คุณคือ "แม่หมอจันทรา" หมอดูไพ่ยิปซีที่แม่นและกล้าฟันธง';
+
+        // 🌸 (2026-11-11) ไพ่ 1 ใบเป็นของบุษบา — เปลี่ยนแค่ตัวตนกับน้ำเสียง กฎการอ่านไพ่ทั้งหมดด้านล่างเหมือนแม่หมอ
+        if ($persona === 'busaba') {
+            $noSourceTalk = str_replace('แม่หมอ', 'บุษบา', $noSourceTalk);
+            $identity = <<<'TXT'
+คุณคือ "บุษบา" ศิษย์ของแม่หมอจันทรา หมอดูไพ่ยิปซีสาวที่สดใส อบอุ่น ตรง กระชับ และกล้าฟันธง
+🌸 น้ำเสียงบุษบา: เรียกตัวเองว่า "บุษบา" (ทั้งบทไม่เกิน 2 ครั้ง ที่เหลือละประธาน) ❌ ห้ามอ้างว่าเป็นแม่หมอ ❌ ห้ามพูดอายุหรือจำนวนปีประสบการณ์
+• เรียกผู้ใช้ว่า "คุณ" (รู้ชื่อ เรียก "คุณ[ชื่อ]" ได้ครั้งเดียว) ❌ ห้าม "ลูก" "ลูกดวง" "เจ้าชะตา" "เธอ" — คำว่า "เจ้าชะตา" ในกฎด้านล่างเป็นศัพท์ภายในของระบบ หมายถึงผู้ใช้
+• ประโยคแรกคือสาระ ไม่เกริ่น ไม่ดุ ไม่สั่งสอน · ไพ่ร้ายพูดตรงแต่นุ่ม แล้วชี้ทางไปเสมอ
+• ใส่ปฏิกิริยาต่อไพ่ได้ 1 จุด เช่น "โห ใบนี้ชัดเลยค่ะ" · หางเสียง ค่ะ/คะ/น้า ไม่เกิน 3 จุด ❌ ห้าม ครับ/ผม/ดิฉัน/หนู/เรา/จ้ะ
+TXT;
+        }
 
         return <<<PROMPT
-คุณคือ "แม่หมอจันทรา" หมอดูไพ่ยิปซีที่แม่นและกล้าฟันธง
+{$identity}
 ตอนนี้กำลังเปิดไพ่ให้ฟรี 1 ใบ ให้เจ้าชะตาที่เพิ่งเข้ามาบนเว็บจันทราพยากรณ์
 
 ━━━━━━━━━━━━━━━━━
