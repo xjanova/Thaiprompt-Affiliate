@@ -222,6 +222,32 @@ class JuntraPaidParityTest extends TestCase
         $this->assertCount(2, $res->getData(true)['data']['next_questions']);
     }
 
+    /** 🌸 (2026-11-11) ไพ่ 1 ใบเป็นของบุษบา — เว็บส่ง persona=busaba ตอนห้องบุษบาเปิด · ไม่ส่ง/ค่าอื่น = แม่หมอเดิม */
+    public function test_ไพ่ฟรีจากห้องบุษบา_บุษบาเป็นคนเขียน(): void
+    {
+        $prompts = [];
+        $ai = Mockery::mock(FortuneAIService::class);
+        $ai->shouldReceive('chatWithCustomSystemPrompt')->times(3)->andReturnUsing(function (string $system) use (&$prompts) {
+            $prompts[] = $system;
+
+            return ['response' => $this->good(), 'model' => 'gpt-6-luna'];
+        });
+
+        $this->assertSame(200, $this->free($ai, ['persona' => 'busaba'])->getStatusCode());
+        $this->free($ai);
+        $this->free($ai, ['persona' => 'kunsai']);
+
+        [$busaba, $maemor, $unknown] = $prompts;
+        $this->assertStringStartsWith('คุณคือ "บุษบา"', $busaba);
+        $this->assertStringNotContainsString('คุณคือ "แม่หมอจันทรา"', $busaba);
+        $this->assertStringContainsString('ความรู้ในหัวของบุษบาเอง', $busaba);
+        $this->assertStringContainsString('🃏 กฎเหล็ก: ทำนายจาก "หน้าไพ่" 100%', $busaba, 'กฎการอ่านไพ่เหมือนแม่หมอทุกข้อ');
+
+        $this->assertStringStartsWith('คุณคือ "แม่หมอจันทรา"', $maemor);
+        $this->assertStringNotContainsString('บุษบา', $maemor);
+        $this->assertSame($maemor, $unknown, 'persona ที่ไม่อ่านไพ่ 1 ใบ = แม่หมอเดิมทุกไบต์');
+    }
+
     // ─────────────────────────────────────────────────────────────
 
     /**
@@ -287,11 +313,11 @@ class JuntraPaidParityTest extends TestCase
         return app(DeepReadingController::class)($request, $ai ?? Mockery::mock(FortuneAIService::class));
     }
 
-    private function free(FortuneAIService $ai): \Illuminate\Http\JsonResponse
+    private function free(FortuneAIService $ai, array $extra = []): \Illuminate\Http\JsonResponse
     {
         $request = Request::create('/api/v1/juntra/server/fortune/tarot/free', 'POST', [
             'card' => ['name_en' => 'The Sun', 'name_th' => 'พระอาทิตย์', 'is_reversed' => false, 'meaning' => 'ความสำเร็จ'],
-        ]);
+        ] + $extra);
 
         return app(FreeTarotController::class)($request, $ai, Mockery::mock(FortuneKnowledgeService::class));
     }

@@ -470,12 +470,18 @@ TXT,
         if (! is_string($persona) || isset($profile['persona'])) {
             return $profile;
         }
-        if (! in_array($profile['key'] ?? null, self::PERSONA_SPREADS[$persona] ?? [], true)) {
+        if (! self::personaReads($persona, (string) ($profile['key'] ?? ''))) {
             return $profile;
         }
         $profile['persona'] = $persona;
 
         return $profile;
+    }
+
+    /** ผู้พยากรณ์คนนี้อ่านไพ่ชุดนี้ได้ไหม (PERSONA_SPREADS) — ใช้กับไพ่ฟรี 1 ใบด้วย (นับเป็น single) */
+    public static function personaReads(?string $persona, string $spreadKey): bool
+    {
+        return is_string($persona) && in_array($spreadKey, self::PERSONA_SPREADS[$persona] ?? [], true);
     }
 
     /** บล็อกตัวละครของคำทำนาย ('' = แม่หมอ ไม่ต้องลบล้างอะไร) */
