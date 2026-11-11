@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
 use App\Services\Kyc\KycDocumentStorage;
+use App\Services\ReferralShareService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,7 +40,13 @@ class MobileApiController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users', new NotReservedEmailDomain],
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'referral_code' => 'nullable|string|exists:users,referral_code',
+            // รับทั้ง member_code (รหัสที่หน้า "ชวนเพื่อน" แชร์) และ users.referral_code รหัสเก่า
+            'referral_code' => ['nullable', 'string', 'max:50', function ($attribute, $value, $fail) {
+                if (! app(ReferralShareService::class)->sponsorFromCode($value)
+                    && ! User::where('referral_code', trim((string) $value))->exists()) {
+                    $fail('ไม่พบรหัสแนะนำนี้ ตรวจสอบอีกครั้งนะ');
+                }
+            }],
         ], [
             'name.required' => 'กรุณากรอกชื่อ',
             'email.required' => 'กรุณากรอกอีเมล',
@@ -60,13 +67,13 @@ class MobileApiController extends Controller
         try {
             DB::beginTransaction();
 
-            // หา sponsor จาก referral code
+            // หา sponsor จาก referral code — รับทั้ง member_code (รหัสที่หน้า "ชวนเพื่อน" แชร์) และรหัสเก่า
             $sponsorId = null;
+            $sponsorMember = null;
             if ($request->referral_code) {
-                $sponsor = User::where('referral_code', $request->referral_code)->first();
-                if ($sponsor) {
-                    $sponsorId = $sponsor->id;
-                }
+                $sponsorMember = app(ReferralShareService::class)->sponsorFromCode($request->referral_code);
+                $sponsorId = $sponsorMember?->user_id
+                    ?? User::where('referral_code', trim((string) $request->referral_code))->value('id');
             }
 
             // สร้าง referral code ใหม่
@@ -89,6 +96,10 @@ class MobileApiController extends Controller
 
             DB::commit();
 
+            // ต่อสายงานให้เลย (เหมือนสมัครผ่าน LINE ในแอป) — มีรหัสแนะนำของตัวเองไปชวนเพื่อนได้ทันที
+            // ล้มก็ไม่กระทบการสมัคร หน้า "ชวนเพื่อน" จะต่อสายให้อีกรอบ
+            app(ReferralShareService::class)->enroll($user, $sponsorMember);
+
             return response()->json([
                 'success' => true,
                 'message' => 'สมัครสมาชิกสำเร็จ',
@@ -99,7 +110,7 @@ class MobileApiController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'role' => $user->role,
-                        'referralCode' => $user->referral_code,
+                        'referralCode' => app(ReferralShareService::class)->codeFor($user),
                         'avatar' => $user->avatar,
                         'permissions' => [],
                         'createdAt' => $user->created_at->toISOString(),
@@ -163,8 +174,8 @@ class MobileApiController extends Controller
                 'bank_account' => $user->bank_account,
                 'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode' => $code = app(ReferralShareService::class)->codeFor($user),
+                'referralLink' => app(ReferralShareService::class)->linkFor($code),
                 'wallet_address' => $user->wallet?->wallet_address ?? null,
                 'createdAt' => $user->created_at->toISOString(),
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" + สถานะ KYC แบบที่แอปใช้ (none|pending|approved|rejected)
@@ -233,7 +244,7 @@ class MobileApiController extends Controller
                 'bank_account' => $user->bank_account,
                 'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
-                'referralCode' => $user->referral_code,
+                'referralCode' => app(ReferralShareService::class)->codeFor($user),
                 // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (แอปเก็บโปรไฟล์จากคำตอบนี้ด้วย)
                 'verified' => $user->isKycVerified(),
                 // 🎓 (2026-10-13) ป้าย "ผ่านการอบรม" ต่อบทบาท (แอปเก็บโปรไฟล์จากคำตอบนี้ — ต้องมีให้ครบเหมือน GET)
@@ -412,8 +423,8 @@ class MobileApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode' => $code = app(ReferralShareService::class)->ensureCodeFor($user),
+                'referralLink' => app(ReferralShareService::class)->linkFor($code),
             ],
         ]);
     }
@@ -482,8 +493,8 @@ class MobileApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode' => $code = app(ReferralShareService::class)->ensureCodeFor($user),
+                'referralLink' => app(ReferralShareService::class)->linkFor($code),
                 'totalReferrals' => $totalReferrals,
                 'activeReferrals' => $activeReferrals,
                 'pendingReferrals' => 0,
@@ -653,7 +664,7 @@ class MobileApiController extends Controller
                             'name' => $user->name,
                             'email' => $user->email,
                             'role' => $user->role,
-                            'referralCode' => $user->referral_code,
+                            'referralCode' => app(ReferralShareService::class)->codeFor($user),
                             'avatar' => $user->avatar ?? $pictureUrl,
                             'lineDisplayName' => $displayName,
                             'linePictureUrl' => $pictureUrl,
@@ -665,13 +676,13 @@ class MobileApiController extends Controller
             // User ใหม่ - สร้างบัญชี
             DB::beginTransaction();
 
-            // หา sponsor จาก referral code
+            // หา sponsor จาก referral code — รับทั้ง member_code (รหัสที่หน้า "ชวนเพื่อน" แชร์) และรหัสเก่า
             $sponsorId = null;
+            $sponsorMember = null;
             if ($request->referral_code) {
-                $sponsor = User::where('referral_code', $request->referral_code)->first();
-                if ($sponsor) {
-                    $sponsorId = $sponsor->id;
-                }
+                $sponsorMember = app(ReferralShareService::class)->sponsorFromCode($request->referral_code);
+                $sponsorId = $sponsorMember?->user_id
+                    ?? User::where('referral_code', trim((string) $request->referral_code))->value('id');
             }
 
             // สร้าง referral code
@@ -701,6 +712,10 @@ class MobileApiController extends Controller
 
             DB::commit();
 
+            // ต่อสายงานให้เลย (เหมือนสมัครผ่าน LINE ในแอป) — มีรหัสแนะนำของตัวเองไปชวนเพื่อนได้ทันที
+            // ล้มก็ไม่กระทบการสมัคร หน้า "ชวนเพื่อน" จะต่อสายให้อีกรอบ
+            app(ReferralShareService::class)->enroll($user, $sponsorMember);
+
             return response()->json([
                 'success' => true,
                 'message' => 'สร้างบัญชีและเข้าสู่ระบบด้วย LINE สำเร็จ',
@@ -712,7 +727,7 @@ class MobileApiController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'role' => $user->role,
-                        'referralCode' => $user->referral_code,
+                        'referralCode' => app(ReferralShareService::class)->codeFor($user),
                         'avatar' => $pictureUrl,
                         'lineDisplayName' => $displayName,
                         'linePictureUrl' => $pictureUrl,
@@ -2033,8 +2048,8 @@ class MobileApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode' => $code = app(ReferralShareService::class)->ensureCodeFor($user),
+                'referralLink' => app(ReferralShareService::class)->linkFor($code),
                 'statistics' => [
                     'directReferrals' => $directReferrals,
                     'totalTeamMembers' => $totalTeamMembers,
