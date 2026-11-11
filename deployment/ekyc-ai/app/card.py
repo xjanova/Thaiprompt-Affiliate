@@ -255,7 +255,16 @@ def orient_by_face(view: CardView, detect_faces, min_score: float, face_side: st
     pool = right or [c for c in cands if c[0] == 0]
     if not pool:
         return view
-    rot, im, f = max(pool, key=lambda c: (float(c[2][2] * c[2][3]), float(c[2][14])))
+    # หน้าหลักของแต่ละทิศ = หน้าที่ใหญ่สุด (ตัดรูปเงาเล็กๆ บนบัตรทิ้ง)
+    main_by_rot: dict[int, tuple] = {}
+    for c in pool:
+        cur = main_by_rot.get(c[0])
+        if cur is None or (float(c[2][2] * c[2][3]), float(c[2][14])) > (float(cur[2][2] * cur[2][3]),
+                                                                           float(cur[2][14])):
+            main_by_rot[c[0]] = c
+    # เลือกทิศจากคะแนนตรวจจับ ไม่ใช่ขนาดกรอบ: หน้าเดียวกันตอนกลับหัว YuNet ยังเจอแต่คะแนนต่ำกว่า
+    # และกรอบมักใหญ่กว่านิดหน่อย — เลือกตามขนาดจึงหยิบหน้ากลับหัวมาเทียบ (prod 2026-11-11: cos 0.05 แทน 0.61)
+    rot, im, f = max(main_by_rot.values(), key=lambda c: (float(c[2][14]), -c[0]))
     to_src = view.to_src
     if rot == 180:   # จุด (u,v) บนภาพที่หมุน 180° = (W−1−u, H−1−v) บนภาพก่อนหมุน
         H, W = view.image.shape[:2]
