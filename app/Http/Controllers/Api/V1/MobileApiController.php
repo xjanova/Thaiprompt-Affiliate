@@ -2023,11 +2023,11 @@ class MobileApiController extends Controller
     {
         $user = Auth::user();
 
-        // ดึงข้อมูล affiliate
-        $affiliate = \App\Models\Affiliate::where('user_id', $user->id)->first();
+        // ⚠️ (2026-11-11) เดิม query ตาราง affiliates ตรงนี้ (แล้วไม่ได้ใช้ค่า) — prod ไม่มีตารางนี้แล้ว
+        // → SQLSTATE 1146 → endpoint นี้ 500 ทุกครั้ง · สายงานจริงอยู่ที่ mlm_members.unilevel_sponsor_id
 
-        // ดึงสถิติ
-        $directReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
+        // ดึงสถิติ (ผัง MLM ก่อน — บน prod ไม่มี user คนไหนมี users.sponsor_id แล้ว)
+        $directReferrals = $this->countDirectReferrals($user->id);
         $totalTeamMembers = $this->countTotalTeam($user->id);
 
         // ดึงรายได้
@@ -2074,12 +2074,21 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายชื่อลูกทีมโดยตรง
+     *
+     * ⚠️ (2026-11-11) ใช้ผัง MLM จริง (mlm_members.unilevel_sponsor_id) ก่อน — บน prod users.sponsor_id
+     * ว่างทุกคน เดิมเลยได้รายการว่างเสมอ · fallback users.sponsor_id เฉพาะ user ที่ยังไม่เป็นสมาชิก MLM
      */
     public function getDirectReferrals(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $page = $request->get('page', 1);
-        $perPage = min($request->get('per_page', 20), 50);
+        // กัน per_page=0 / ติดลบ / ไม่ใช่ตัวเลข (เดิม paginate(0) หารศูนย์ → 500)
+        $perPage = max(1, min((int) $request->query('per_page', 20) ?: 20, 50));
+
+        $member = \App\Models\MlmMember::where('user_id', $user->id)->first();
+
+        if ($member) {
+            return $this->mlmDirectReferralsResponse($member, $perPage);
+        }
 
         $referrals = \App\Models\User::where('sponsor_id', $user->id)
             ->with('currentRank:id,name,name_th,icon,color')
@@ -2112,6 +2121,57 @@ class MobileApiController extends Controller
                     'currentPage' => $referrals->currentPage(),
                     'lastPage' => $referrals->lastPage(),
                     'perPage' => $referrals->perPage(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * รายชื่อลูกทีมตรงจากผัง MLM (shape เดียวกับ legacy — แอปใช้ TeamMember เดิม)
+     *
+     * isActive = เข้าร่วมภายใน 30 วัน (ความหมายเดียวกับ activeMembers ในหน้าสรุป)
+     */
+    private function mlmDirectReferralsResponse(\App\Models\MlmMember $member, int $perPage): JsonResponse
+    {
+        $since = now()->subDays(30);
+
+        $children = \App\Models\MlmMember::where('unilevel_sponsor_id', $member->id)
+            ->with(['user.currentRank:id,name,name_th,icon,color'])
+            ->withCount('unilevelChildren')
+            ->orderByRaw('COALESCE(joined_at, created_at) DESC')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'referrals' => $children->getCollection()->map(function ($child) use ($since) {
+                    $childUser = $child->user;
+                    $rank = $childUser?->currentRank;
+                    $joined = $child->joined_at ?? $child->created_at;
+
+                    return [
+                        'id' => $child->user_id,
+                        'name' => $childUser->name ?? 'Unknown',
+                        'email' => $childUser->email ?? null,
+                        'avatar' => $childUser->avatar ?? null,
+                        'rank' => $rank ? [
+                            'name' => $rank->name,
+                            'nameTh' => $rank->name_th ?? $rank->name,
+                            'icon' => $rank->icon,
+                            'color' => $rank->color,
+                        ] : null,
+                        'totalReferrals' => (int) $child->unilevel_children_count,
+                        'isActive' => $joined ? $joined->gte($since) : false,
+                        'joinedAt' => $joined?->format('Y-m-d'),
+                        'daysAgo' => $joined ? (int) $joined->diffInDays(now()) : null,
+                    ];
+                })->values(),
+                'pagination' => [
+                    'total' => $children->total(),
+                    'currentPage' => $children->currentPage(),
+                    'lastPage' => $children->lastPage(),
+                    'perPage' => $children->perPage(),
                 ],
             ],
         ]);
@@ -2378,9 +2438,40 @@ class MobileApiController extends Controller
      */
     private function countActiveMembers(int $userId): int
     {
+        $since = now()->subDays(30);
+        $member = \App\Models\MlmMember::where('user_id', $userId)->first();
+
+        if ($member) {
+            // ลูกทีมตรงในผัง MLM ที่เข้าร่วมภายใน 30 วัน (ใช้ joined_at ถ้ามี ไม่งั้นใช้ created_at)
+            return \App\Models\MlmMember::where('unilevel_sponsor_id', $member->id)
+                ->where(function ($q) use ($since) {
+                    $q->where('joined_at', '>=', $since)
+                        ->orWhere(fn ($q2) => $q2->whereNull('joined_at')->where('created_at', '>=', $since));
+                })
+                ->count();
+        }
+
+        // fallback: user ที่ยังไม่เป็นสมาชิก MLM
         return \App\Models\User::where('sponsor_id', $userId)
-            ->where('created_at', '>=', now()->subDays(30))
+            ->where('created_at', '>=', $since)
             ->count();
+    }
+
+    /**
+     * นับลูกทีมตรง (ชั้นที่ 1)
+     *
+     * ใช้ผัง MLM จริง (mlm_members.unilevel_sponsor_id) ก่อน — แหล่งเดียวกับ countTotalTeam / ผังทีม
+     * fallback users.sponsor_id เฉพาะ user ที่ยังไม่เป็นสมาชิก MLM
+     */
+    private function countDirectReferrals(int $userId): int
+    {
+        $member = \App\Models\MlmMember::where('user_id', $userId)->first();
+
+        if ($member) {
+            return \App\Models\MlmMember::where('unilevel_sponsor_id', $member->id)->count();
+        }
+
+        return \App\Models\User::where('sponsor_id', $userId)->count();
     }
 
     /**
