@@ -59,8 +59,8 @@ class AuthController extends Controller
             'data' => [
                 'user' => array_merge($user->toArray(), [
                     'wallet_address' => $walletAddress,
-                    'referralCode' => $user->referral_code,
-                    'referralLink' => url('/register?ref='.$user->referral_code),
+                    'referralCode' => $code = app(\App\Services\ReferralShareService::class)->codeFor($user),
+                    'referralLink' => app(\App\Services\ReferralShareService::class)->linkFor($code),
                     'is_super_admin' => $user->is_super_admin ?? false,
                 ]),
                 'token' => $token,
@@ -146,8 +146,8 @@ class AuthController extends Controller
             'success' => true,
             'data' => array_merge($user->toArray(), [
                 'wallet_address' => $walletAddress,
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode' => $code = app(\App\Services\ReferralShareService::class)->codeFor($user),
+                'referralLink' => app(\App\Services\ReferralShareService::class)->linkFor($code),
                 'is_super_admin' => $user->is_super_admin ?? false,
 
                 // SSO-link state for juntra (and any other federated client)
