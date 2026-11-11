@@ -43,8 +43,11 @@ class PreparePersonalPostsJob
 
     public function handle(PersonalPostPrepService $service): void
     {
-        @set_time_limit(1200);
-        @ignore_user_abort(true);
+        // ⚠️ ขยายเวลาเฉพาะในเว็บ — CLI (cron/เทสต์) ไม่มีเพดาน ถ้าตั้งจะกลายเป็นเพดานของทั้งโปรเซส
+        if (PHP_SAPI !== 'cli') {
+            @set_time_limit(1200);
+            @ignore_user_abort(true);
+        }
 
         try {
             if ($this->mode === 'day') {
