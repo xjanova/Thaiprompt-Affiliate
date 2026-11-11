@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -132,6 +135,10 @@ class LineRegistrationSession extends Model
         $sponsorUserId = null;
         $sponsorMlmMemberId = null;
 
+        // รหัสที่ผู้ใช้พิมพ์มาเอง (ก่อนกรอง) — เก็บไว้บอกหน้าเว็บว่า "รหัสเชิญนี้ใช้ไม่ได้"
+        $rawReferralCode = $referralCode !== null ? trim($referralCode) : null;
+        $referralCode = self::normalizeReferralCode($referralCode);
+
         if ($referralCode) {
             // ค้นหาจาก MlmMember.member_code
             $member = MlmMember::where('member_code', $referralCode)
@@ -142,18 +149,16 @@ class LineRegistrationSession extends Model
                 $sponsorMlmMemberId = $member->id;
                 $sponsorUserId = $member->user_id;
             } else {
-                // ค้นหาจาก Affiliate.referral_code
-                $affiliate = Affiliate::where('referral_code', $referralCode)->first();
-                if ($affiliate) {
-                    $sponsorUserId = $affiliate->user_id;
-                    // ค้นหา MLM member ของ user นี้
-                    $mlmMember = MlmMember::where('user_id', $sponsorUserId)->first();
-                    if ($mlmMember) {
-                        $sponsorMlmMemberId = $mlmMember->id;
-                    }
+                // ค้นหาจาก Affiliate.referral_code (ระบบเก่า)
+                $affiliateSponsor = self::findLegacyAffiliateSponsor($referralCode);
+                if ($affiliateSponsor) {
+                    [$sponsorUserId, $sponsorMlmMemberId] = $affiliateSponsor;
                 }
             }
         }
+
+        // ผู้ใช้ส่งรหัสเชิญมา แต่หาเจ้าของไม่เจอ (หรือรูปแบบผิด) → สมัครต่อได้ตามปกติ ใต้ sponsor default
+        $referralNotFound = $rawReferralCode !== null && $rawReferralCode !== '' && ! $sponsorUserId;
 
         // ✅ FALLBACK: ถ้าไม่มี sponsor → ใช้ Super Admin เป็น default
         // สำคัญ: ต้องมี sponsor เสมอเพื่อต่อสายงาน MLM
@@ -204,8 +209,60 @@ class LineRegistrationSession extends Model
             'status' => self::STATUS_PENDING,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
+            'metadata' => $referralNotFound ? ['referral_not_found' => true] : null,
             'expires_at' => now()->addHours(24), // หมดอายุใน 24 ชั่วโมง
         ]);
+    }
+
+    /**
+     * กรองรหัสเชิญให้เหลือเฉพาะรูปแบบที่เป็นไปได้
+     *
+     * member_code ทั้งหมดบน prod เป็น [A-Za-z0-9_-] ยาวไม่เกิน 13 ตัว (เช็ค 2026-11-11, 1,206 รหัส)
+     * อะไรที่นอกรูปแบบนี้ (ช่องว่าง, ภาษาไทย, ยาวเกิน 64) ไม่มีทางตรงกับใคร → ถือว่าไม่มีรหัส
+     *
+     * @param  string|null  $code  รหัสที่รับมาจาก URL
+     * @return string|null รหัสที่ใช้ค้นได้ หรือ null ถ้าว่าง/รูปแบบผิด
+     */
+    public static function normalizeReferralCode(?string $code): ?string
+    {
+        $code = $code !== null ? trim($code) : '';
+
+        return preg_match('/^[A-Za-z0-9_-]{1,64}$/', $code) === 1 ? $code : null;
+    }
+
+    /**
+     * หา sponsor จากตาราง affiliates (ระบบเก่า)
+     *
+     * ⚠️ prod ไม่มีตาราง affiliates แล้ว — เดิมเรียกตรง ๆ แล้วได้ SQLSTATE 1146
+     * ทำให้ลิงก์เชิญที่รหัสไม่ตรง member_code ขึ้นหน้า 500 (2026-11-11)
+     * ตอนนี้เช็คตารางก่อน และถ้า query พังก็แค่ถือว่าไม่เจอ sponsor
+     *
+     * @param  string  $referralCode  รหัสที่ผ่าน normalizeReferralCode แล้ว
+     * @return array{0: int, 1: int|null}|null [sponsor_user_id, sponsor_mlm_member_id] หรือ null ถ้าไม่เจอ
+     */
+    protected static function findLegacyAffiliateSponsor(string $referralCode): ?array
+    {
+        try {
+            if (! Schema::hasTable('affiliates')) {
+                return null;
+            }
+
+            $affiliate = Affiliate::where('referral_code', $referralCode)->first();
+            if (! $affiliate || ! $affiliate->user_id) {
+                return null;
+            }
+
+            // ค้นหา MLM member ของ user นี้
+            $mlmMemberId = MlmMember::where('user_id', $affiliate->user_id)->value('id');
+
+            return [(int) $affiliate->user_id, $mlmMemberId ? (int) $mlmMemberId : null];
+        } catch (QueryException $e) {
+            Log::warning('LineRegistrationSession: legacy affiliate lookup failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

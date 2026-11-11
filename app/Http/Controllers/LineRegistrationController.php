@@ -37,6 +37,11 @@ class LineRegistrationController extends Controller
     {
         $referralCode = $request->query('ref') ?? $request->query('referral_code');
 
+        // ?ref[]=x ส่งมาเป็น array — createSession รับแค่ string (เดิม TypeError → หน้า 500)
+        if (! is_string($referralCode)) {
+            $referralCode = is_null($referralCode) ? null : '';
+        }
+
         // สร้าง session ใหม่
         $session = LineRegistrationSession::createSession(
             $referralCode,
@@ -66,6 +71,8 @@ class LineRegistrationController extends Controller
             'session' => $session,
             'lineSettings' => $lineSettings,
             'sponsor' => $sponsor,
+            // รหัสเชิญที่ส่งมาหาเจ้าของไม่เจอ → หน้าเว็บบอกเป็นภาษาไทย แต่ยังสมัครต่อได้
+            'referralNotFound' => (bool) ($session->metadata['referral_not_found'] ?? false),
             'qrCodeUrl' => $this->getLineOaQrCodeUrl($lineSettings),
             'addFriendUrl' => $this->getLineOaAddFriendUrl($lineSettings),
             'signupRewards' => $signupRewards,
