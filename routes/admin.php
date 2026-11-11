@@ -3127,3 +3127,18 @@ Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
 // 🎓 ห้องเรียน (2026-10-13) — คอร์ส/บทเรียน/คลังข้อสอบ/สถิติ (admin.classroom.*)
 // ========================================
 require __DIR__.'/admin_classroom.php';
+
+// ========================================
+// 📘 (2026-11-11) โพสต์เฟซบุ๊กส่วนตัว — เตรียมบทความ+ภาพวันละ 4 โพสต์ เจ้าของกดโพสต์เอง (admin.personal-posts.*)
+// ========================================
+Route::prefix('personal-posts')->name('personal-posts.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\PersonalPostController::class, 'index'])->name('index');
+    Route::get('/status', [\App\Http\Controllers\Admin\PersonalPostController::class, 'status'])->name('status');
+    Route::post('/settings', [\App\Http\Controllers\Admin\PersonalPostController::class, 'saveSettings'])->name('settings');
+    Route::post('/prepare', [\App\Http\Controllers\Admin\PersonalPostController::class, 'prepare'])->name('prepare');
+    Route::post('/{draft}/regenerate', [\App\Http\Controllers\Admin\PersonalPostController::class, 'regenerate'])->name('regenerate');
+    Route::post('/{draft}/caption', [\App\Http\Controllers\Admin\PersonalPostController::class, 'updateCaption'])->name('caption');
+    Route::post('/{draft}/posted', [\App\Http\Controllers\Admin\PersonalPostController::class, 'markPosted'])->name('posted');
+    Route::post('/{draft}/skip', [\App\Http\Controllers\Admin\PersonalPostController::class, 'skip'])->name('skip');
+    Route::get('/{draft}/image', [\App\Http\Controllers\Admin\PersonalPostController::class, 'downloadImage'])->name('image');
+});

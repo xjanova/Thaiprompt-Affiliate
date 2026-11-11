@@ -42,6 +42,17 @@ return [
     */
 
     'admin' => [
+        // 📘 (2026-11-11) เจ้าของสั่ง: แยกเมนูไว้บนสุด ระบายสีฟ้า FB — โพสต์ส่วนตัวที่ระบบเตรียมไว้วันละ 4 โพสต์
+        [
+            'id' => 'personal-posts',
+            'label' => 'โพสต์เฟซบุ๊กส่วนตัว',
+            'icon' => 'fab fa-facebook',
+            'route' => 'admin.personal-posts.index',
+            'order' => -1,
+            'permissions' => [],
+            'accent' => '#1877F2',
+        ],
+
         [
             'id' => 'dashboard',
             'label' => 'แดชบอร์ด',

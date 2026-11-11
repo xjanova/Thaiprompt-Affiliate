@@ -213,18 +213,22 @@
                     </div>
                 @else
                     {{-- เมนูเดี่ยว (ลิงก์ตรง) + ปุ่มปักหมุด --}}
-                    @php $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon]; @endphp
+                    @php
+                        $gPinData = ['label' => $glabel, 'url' => $gurl, 'icon' => $gicon];
+                        // 🎨 เมนูระบายสี (key 'accent' ใน config/menus.php) — รับเฉพาะ hex กันค่าแปลกเข้า style
+                        $gAccent = (is_string($group['accent'] ?? null) && preg_match('/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/', $group['accent'])) ? $group['accent'] : null;
+                    @endphp
                     <div class="tp-mrow" style="position:relative;">
                         <a href="{{ $gurl ?? '#' }}"
                            @if($gExternal) target="_blank" rel="noopener" @else @click="if (isMobile) closeDrawer()" @endif
                            class="tp-card" @if($gActive) data-tpactive @endif
-                           style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:var(--ink); {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
-                            <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
+                           style="display:flex; align-items:center; gap:12px; padding:10px 34px 10px 12px; border-radius:15px; text-decoration:none; color:{{ $gAccent ? '#fff' : 'var(--ink)' }}; {{ $gAccent ? "background:{$gAccent};" : '' }} {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
+                            <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px; {{ $gAccent ? 'background:rgba(255,255,255,.18); color:#fff;' : '' }}">
                                 @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
                             </span>
                             <span style="line-height:1.15; flex:1; min-width:0;">
                                 <span style="display:block; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $glabel }}</span>
-                                <span style="display:block; font-size:10px; color:var(--ink2); font-weight:500; letter-spacing:.2px;">{{ $gen }}</span>
+                                <span style="display:block; font-size:10px; color:{{ $gAccent ? 'rgba(255,255,255,.8)' : 'var(--ink2)' }}; font-weight:500; letter-spacing:.2px;">{{ $gen }}</span>
                             </span>
                             @if($gbadge)<span class="tp-pill tp-pill-gold" style="font-size:9px; padding:2px 7px;">{{ $gbadge }}</span>@endif
                         </a>

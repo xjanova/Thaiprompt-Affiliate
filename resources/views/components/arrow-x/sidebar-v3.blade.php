@@ -174,6 +174,7 @@
                         :dashboardType="$type"
                         :isActive="$isSingleActive"
                         :badge="$menu['badge'] ?? null"
+                        :accent="$menu['accent'] ?? null"
                     />
                 @endif
             @endforeach
