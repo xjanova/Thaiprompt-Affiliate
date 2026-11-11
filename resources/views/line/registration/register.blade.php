@@ -226,6 +226,17 @@
                     </div>
                 </div>
 
+                {{-- รหัสเชิญในลิงก์หาเจ้าของไม่เจอ → บอกตรง ๆ แต่ยังสมัครต่อได้ (เดิมขึ้นหน้า 500) --}}
+                @if($referralNotFound ?? false)
+                <div class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4" role="alert" data-testid="referral-not-found">
+                    <i class="fas fa-exclamation-triangle mt-0.5 text-amber-400"></i>
+                    <div class="text-sm">
+                        <p class="font-semibold text-amber-200">ไม่พบรหัสเชิญนี้ในระบบ</p>
+                        <p class="mt-1 text-amber-100/80">ลิงก์เชิญอาจพิมพ์ผิดหรือหมดอายุ คุณยังสมัครต่อได้ตามปกติ หรือขอลิงก์ใหม่จากผู้แนะนำของคุณ</p>
+                    </div>
+                </div>
+                @endif
+
                 {{-- ✨ Sponsor Info (บังคับแสดงเสมอ - สำคัญสำหรับการต่อสายงาน) --}}
                 @if($sponsor)
                 <div class="mb-8 relative overflow-hidden">
@@ -456,7 +467,8 @@
                             <h3 class="text-xl font-bold text-white mb-2">กรุณาเริ่มใหม่</h3>
                             <p class="text-slate-400 mb-4">Session การสมัครหมดอายุแล้ว กรุณาเริ่มใหม่อีกครั้ง</p>
 
-                            <a href="{{ route('line.registration.register') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
+                            {{-- ใช้รหัสที่ผ่านการกรองแล้วจาก session (request('ref') อาจเป็น array/ขยะ → เดิมพังทั้งหน้า) --}}
+                            <a href="{{ route('line.registration.register', array_filter(['ref' => $session->referral_code])) }}"
                                class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all">
                                 <i class="fas fa-redo mr-2"></i>
                                 เริ่มใหม่
