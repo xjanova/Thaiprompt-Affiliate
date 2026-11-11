@@ -6775,15 +6775,30 @@ class FacebookWebhookController extends Controller
         }
 
         $outcome = $result['outcome'] ?? $relay::UNVERIFIED;
-        $message = $relay::customerMessage($result);
-        if ($outcome === $relay::UNVERIFIED || $message === null) {
+        if ($outcome === $relay::UNVERIFIED || $relay::customerMessage($result) === null) {
             return false;
         }
+
+        // 🧾 (2026-11-11) สอนใช้เว็บให้ถูก: ส่งรูปวิธีเติมเครดิตบนเว็บตามหลังผลตรวจ — สัปดาห์ละครั้งต่อคน (กันรำคาญ)
+        $withGuide = in_array($outcome, $relay::GUIDE_OUTCOMES, true)
+            && Cache::add('fbweb:topup_guide:'.$senderId, 1, now()->addDays($relay::GUIDE_COOLDOWN_DAYS));
+        $message = $relay::customerMessage($result, $withGuide);
 
         try {
             $this->facebookService->sendMessage($senderId, $message);
         } catch (\Throwable $e) {
             Log::warning('🌐 FB web-only: ส่งผลตรวจสลิปให้ลูกค้าไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        if ($withGuide) {
+            try {
+                if (! $this->facebookService->sendImage($senderId, asset($relay::GUIDE_IMAGE_PATH))) {
+                    Cache::forget('fbweb:topup_guide:'.$senderId); // ส่งไม่ถึง = รอบหน้าลองใหม่
+                }
+            } catch (\Throwable $e) {
+                Cache::forget('fbweb:topup_guide:'.$senderId);
+                Log::warning('🌐 FB web-only: ส่งรูปสอนเติมเครดิตไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
         }
 
         // เติมแล้ว = ไม่ต้องรบกวนแอดมิน · ที่เหลือ (รอตรวจ/ซ้ำ/ไม่เจอบัญชี/ผิดบัญชี/เก่า) = เข้าคิว + แจ้งแอดมิน

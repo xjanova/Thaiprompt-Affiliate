@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=block" rel="stylesheet">
+<style>
+  :root { --gold:#f3c969; --gold2:#e8a93a; --ink:#f6eefc; --dim:#cbb8de; --bg1:#1b0b2e; --bg2:#2c1046; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:1080px; height:1350px; }
+  body { font-family:'Prompt',sans-serif; color:var(--ink); overflow:hidden;
+         background: radial-gradient(900px 600px at 85% 8%, #4b1a6e 0%, transparent 60%),
+                     radial-gradient(700px 500px at 0% 100%, #3a1257 0%, transparent 60%),
+                     linear-gradient(180deg, var(--bg2), var(--bg1)); }
+  .stars { position:absolute; inset:0; background-image:
+      radial-gradient(2px 2px at 120px 90px, #fff8 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 640px 60px, #fff6 50%, transparent 51%),
+      radial-gradient(2px 2px at 980px 300px, #fff5 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 60px 700px, #fff5 50%, transparent 51%),
+      radial-gradient(2px 2px at 1010px 1100px, #fff6 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 420px 1290px, #fff5 50%, transparent 51%); }
+  .wrap { position:relative; padding:52px 64px 0; }
+  .head { display:flex; gap:28px; align-items:center; }
+  .portrait { width:230px; height:280px; border-radius:28px; overflow:hidden; flex:none;
+              border:3px solid #f3c96988; box-shadow:0 0 50px #b15cff55; }
+  .portrait img { width:100%; height:100%; object-fit:cover; object-position:50% 18%; }
+  .moons { color:var(--gold); font-size:28px; letter-spacing:12px; margin-bottom:10px; }
+  h1 { font-size:66px; line-height:1.18; font-weight:800;
+       background:linear-gradient(180deg,#fff1c7,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; color:transparent; }
+  .sub { font-size:29px; color:var(--dim); margin-top:14px; line-height:1.45; }
+  .sub b { color:#fff; font-weight:600; }
+
+  .steps { margin-top:30px; display:flex; flex-direction:column; gap:18px; }
+  .step { display:flex; gap:26px; align-items:flex-start; padding:22px 30px; border-radius:26px;
+          background:linear-gradient(180deg,#ffffff12,#ffffff08); border:1px solid #f3c96933; }
+  .num { flex:none; width:74px; height:74px; border-radius:50%; display:grid; place-items:center;
+         font-size:40px; font-weight:800; color:#2a0f40;
+         background:linear-gradient(180deg,#ffe39a,var(--gold2)); box-shadow:0 6px 22px #e8a93a55; }
+  .st { font-size:36px; font-weight:700; color:#fff; line-height:1.3; }
+  .sd { font-size:26px; color:var(--dim); margin-top:6px; line-height:1.5; }
+  .sd b { color:var(--gold); font-weight:600; }
+  .amt { display:inline-flex; align-items:baseline; gap:2px; margin-top:12px; padding:8px 22px; border-radius:16px;
+         background:#12061f; border:2px dashed #f3c96999; font-size:44px; font-weight:800; color:#fff; }
+  .amt .sat { color:#2a0f40; background:var(--gold); border-radius:10px; padding:0 8px; margin-left:2px; }
+  .amt-note { display:inline-block; margin-left:16px; font-size:24px; color:var(--gold); vertical-align:middle; }
+  .chip { display:inline-block; padding:2px 14px; border-radius:999px; background:#ffffff1a; border:1px solid #ffffff33; color:#fff; font-weight:600; }
+
+  .warn { margin-top:20px; padding:20px 30px; border-radius:24px; background:#e8a93a1f; border:2px solid #f3c96977; }
+  .warn .t { font-size:31px; font-weight:700; color:var(--gold); }
+  .warn .d { font-size:26px; color:var(--ink); margin-top:6px; line-height:1.5; }
+  .foot { position:absolute; left:64px; right:64px; bottom:40px; display:flex; justify-content:space-between; align-items:center; }
+  .brand { font-size:30px; color:var(--dim); font-weight:500; }
+  .pill { padding:16px 34px; border-radius:999px; font-size:30px; font-weight:700; color:#2a0f40;
+          background:linear-gradient(180deg,#ffe7a6,var(--gold2)); box-shadow:0 10px 30px #e8a93a55; }
+</style></head>
+<body><div class="stars"></div>
+<div class="wrap">
+  <div class="head">
+    <div class="portrait"><img src="maemor.webp" alt=""></div>
+    <div>
+      <div class="moons">☾ ✦ ☽</div>
+      <h1>เติมเครดิตบนเว็บ<br>ง่าย ๆ 3 ขั้น</h1>
+      <div class="sub">ทำบนเว็บได้เลย <b>ไม่ต้องส่งรูปมาที่แชทเพจ</b><br>ระบบเช็คให้เองอัตโนมัติค่ะ</div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div>
+      <div class="st">เลือกไพ่ในห้องแม่หมอบนเว็บ</div>
+      <div class="sd">การ์ด <b>เติมเครดิต</b> จะขึ้นในแชทบนเว็บ พร้อมยอดที่ต้องใช้</div>
+    </div></div>
+
+    <div class="step"><div class="num">2</div><div>
+      <div class="st">ใช้ยอดตามการ์ดให้ตรงทุกหลัก</div>
+      <div><span class="amt">39.<span class="sat">92</span></span><span class="amt-note">← รวมเศษสตางค์</span></div>
+      <div class="sd">กด <span class="chip">💾 บันทึกรูป</span> ในการ์ด → เปิดแอปธนาคาร → สแกน → เลือกรูปจากอัลบั้ม <b>ยอดขึ้นเองครบ</b></div>
+    </div></div>
+
+    <div class="step"><div class="num">3</div><div>
+      <div class="st">รอสักครู่ เครดิตเข้าเอง</div>
+      <div class="sd">ไม่กี่นาทีระบบเติมให้อัตโนมัติ <b>เปิดไพ่ต่อได้เลย</b> ไม่ต้องรอแอดมิน</div>
+    </div></div>
+  </div>
+
+  <div class="warn">
+    <div class="t">ใช้ยอดไม่ตรงการ์ด?</div>
+    <div class="d">กดปุ่ม <span class="chip">🧾</span> ในการ์ดเดิมบนเว็บ แล้วแนบรูปหลักฐานที่นั่น<br>
+      <b>ไม่ต้องเปิดรายการใหม่ และไม่ต้องทำรายการซ้ำนะคะ</b></div>
+  </div>
+</div>
+<div class="foot"><div class="brand">จันทรา.online</div><div class="pill">👆 แตะปุ่มด้านล่างเข้าห้อง</div></div>
+</body></html>
