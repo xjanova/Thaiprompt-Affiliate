@@ -51,6 +51,27 @@ class JuntraChatSlipRelay
     /** ตรวจไม่ได้/ไม่ใช่สลิป/ปิดอยู่ — ผู้เรียกถอยไปทางเดิม (เก็บหลักฐาน + แจ้งแอดมิน) */
     public const UNVERIFIED = 'unverified';
 
+    /**
+     * 🧾 (2026-11-11) รูปสอนเติมเครดิตบนเว็บ ส่งตามข้อความผลตรวจ (ไม่เกินครั้งละ GUIDE_COOLDOWN_DAYS ต่อคน)
+     * ในรูปจงใจไม่มี QR และไม่มีคำเรื่องเงินที่ FB แบน — ต้นฉบับ HTML: resources/design/web-topup-guide/
+     * (เปลี่ยนรูป = เปลี่ยน ?v= เพราะ FB แคชรูปตาม URL)
+     */
+    public const GUIDE_IMAGE_PATH = 'images/fortune/web-topup-guide.jpg?v=1';
+
+    public const GUIDE_COOLDOWN_DAYS = 7;
+
+    /** ผลที่สอนวิธีใช้เว็บต่อได้ (ผิดบัญชี/เก่าเกิน = ไม่ใช่เรื่องใช้เว็บผิด ไม่ส่งรูปสอน) */
+    public const GUIDE_OUTCOMES = [self::CREDITED, self::REVIEW, self::PARKED, self::NO_USER, self::DUPLICATE];
+
+    /** ⚠️ ข้อความทั้งหมดต้องไม่มีคำในด่าน FB_WEB_ONLY_MONEY_PATTERN (ล็อกด้วยเทสต์) */
+    public const DO_NOT_REPEAT = '⚠️ ไม่ต้องทำรายการซ้ำ และไม่ต้องส่งรูปเดิมมาอีกนะคะ เครดิตจะเข้าเองเมื่อทีมงานยืนยันเสร็จ'
+        .' (บนเว็บจะขึ้นว่า "ได้รับหลักฐานจากแชทเพจแล้ว")';
+
+    public const NEXT_TIME_TIP = '💡 ครั้งหน้าไม่ต้องส่งรูปมาที่แชทนี้นะคะ เลือกไพ่ในห้องแม่หมอบนเว็บ แล้วใช้ยอดตามการ์ดให้ตรงทุกหลัก (รวมเศษสตางค์)'
+        .' เครดิตเข้าเองภายในไม่กี่นาทีค่ะ';
+
+    public const GUIDE_SUFFIX = ' — แม่หมอส่งรูปวิธีทำไว้ให้ด้านล่างแล้ว';
+
     public function __construct(
         protected SlipOkService $slipok,
         protected SlipUsageRegistry $registry,
@@ -266,9 +287,20 @@ class JuntraChatSlipRelay
      *    บล็อกทั้งข้อความที่มีคำอย่าง "บาท/฿/สลิป/โอนแล้ว" → ข้อความทุกอันที่นี่ต้องไม่มีคำเหล่านั้น
      *    (ล็อกด้วยเทสต์ JuntraChatSlipRelayTest)
      *
+     * @param  bool  $withGuide  ผู้เรียกจะส่งรูปสอน (GUIDE_IMAGE_PATH) ตามหลังข้อความนี้
      * @return string|null null = ใช้ทางเดิมของผู้เรียก
      */
-    public static function customerMessage(array $result): ?string
+    public static function customerMessage(array $result, bool $withGuide = false): ?string
+    {
+        $text = self::outcomeMessage($result);
+        if ($text !== null && $withGuide && str_contains($text, self::NEXT_TIME_TIP)) {
+            $text = str_replace(self::NEXT_TIME_TIP, self::NEXT_TIME_TIP.self::GUIDE_SUFFIX, $text);
+        }
+
+        return $text;
+    }
+
+    private static function outcomeMessage(array $result): ?string
     {
         $fmt = fn ($v) => number_format((float) $v, 2);
 
@@ -282,17 +314,27 @@ class JuntraChatSlipRelay
                     $text .= ' · ส่วนที่เกินมา '.$fmt($over).' ทีมงานจะเติมให้หรือคืนให้นะคะ';
                 }
 
-                return $text.' แตะปุ่มด้านล่างเข้าห้องแม่หมอได้เลยค่ะ 🌙';
+                return $text.' แตะปุ่มด้านล่างเข้าห้องแม่หมอได้เลยค่ะ 🌙'
+                    ."\n\n".self::NEXT_TIME_TIP;
 
+                // 🧾 (2026-11-11) เคสจริง: ข้อความเดิมบอกแค่ "ทีมงานกำลังเติมให้" → ลูกค้าคิดว่ายังไม่เข้า
+                //    เปิดเว็บเห็นรายการค้างแล้วจ่ายซ้ำอีกรอบ — ต้องบอกให้ชัดว่า "ไม่ต้องทำซ้ำ" และรออะไรอยู่
             case self::REVIEW:
             case self::PARKED:
-                return 'แม่หมอได้รับแล้วนะคะ 🙏 เช็คแล้วเป็นรายการจริง ทีมงานกำลังเติมเครดิตเข้ากระเป๋าบนเว็บให้ค่ะ';
+                return 'แม่หมอได้รับแล้วนะคะ 🙏 เช็คแล้วเป็นรายการจริง ทีมงานกำลังยืนยันและเติมเครดิตเข้ากระเป๋าบนเว็บให้ค่ะ'
+                    ."\n\n".self::DO_NOT_REPEAT
+                    ."\n\n".self::NEXT_TIME_TIP;
 
             case self::NO_USER:
-                return 'แม่หมอได้รับแล้วนะคะ 🙏 แต่ยังหาบัญชีบนเว็บที่ผูกกับเฟซบุ๊กนี้ไม่เจอ ทีมงานจะเติมเครดิตให้เองค่ะ';
+                return 'แม่หมอได้รับแล้วนะคะ 🙏 แต่ยังหาบัญชีบนเว็บที่ผูกกับเฟซบุ๊กนี้ไม่เจอ ทีมงานจะเติมเครดิตให้เองค่ะ'
+                    ."\n\n".self::DO_NOT_REPEAT
+                    ."\n\nครั้งหน้าเข้าเว็บจากปุ่มด้านล่างนะคะ บัญชีบนเว็บจะผูกกับเฟซบุ๊กนี้ให้เอง"
+                    ."\n\n".self::NEXT_TIME_TIP;
 
             case self::DUPLICATE:
-                return 'รายการนี้เคยใช้เติมเครดิตไปแล้วค่ะ 🙏 ถ้าเป็นรายการใหม่ ส่งรูปใบใหม่มาได้เลยนะคะ';
+                return 'รายการนี้เคยใช้เติมเครดิตไปแล้วค่ะ 🙏 ลองเปิดดูยอดในกระเป๋าบนเว็บก่อนนะคะ'
+                    .' ถ้ายอดยังไม่ขึ้น แม่หมอแจ้งทีมงานให้เช็คแล้วค่ะ · ถ้าเป็นรายการใหม่อีกครั้ง ส่งรูปใบใหม่มาได้เลยนะคะ'
+                    ."\n\n".self::NEXT_TIME_TIP;
 
             case self::WRONG_ACCOUNT:
                 return 'รายการนี้ไม่ได้เข้าบัญชีของแม่หมอค่ะ 🙏 แม่หมอส่งให้ทีมงานดูอีกครั้งแล้วนะคะ';

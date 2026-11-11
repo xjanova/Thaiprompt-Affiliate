@@ -377,11 +377,45 @@ class JuntraChatSlipRelayTest extends TestCase
         ];
 
         foreach ($outcomes as $r) {
-            $text = JuntraChatSlipRelay::customerMessage($r);
-            $this->assertNotNull($text, $r['outcome']);
-            $this->assertFalse(FacebookWebhookService::containsMoneyText($text), $r['outcome'].': '.$text);
+            foreach ([false, true] as $withGuide) {
+                $text = JuntraChatSlipRelay::customerMessage($r, $withGuide);
+                $this->assertNotNull($text, $r['outcome']);
+                $this->assertFalse(FacebookWebhookService::containsMoneyText($text), $r['outcome'].': '.$text);
+            }
         }
 
         $this->assertNull(JuntraChatSlipRelay::customerMessage(['outcome' => 'unverified']));
+        $this->assertNull(JuntraChatSlipRelay::customerMessage(['outcome' => 'unverified'], true));
+    }
+
+    /**
+     * 🧾 (2026-11-11) เคสจริง: ข้อความ "ทีมงานกำลังเติมให้" อย่างเดียว → ลูกค้าคิดว่ายังไม่เข้า แล้วจ่ายซ้ำบนเว็บ
+     */
+    public function test_waiting_messages_tell_the_customer_not_to_repeat_and_how_to_use_the_web(): void
+    {
+        foreach (['review', 'parked', 'no_user'] as $outcome) {
+            $text = JuntraChatSlipRelay::customerMessage(['outcome' => $outcome, 'amount' => 39.92]);
+            $this->assertStringContainsString('ไม่ต้องทำรายการซ้ำ', $text, $outcome);
+            $this->assertStringContainsString('ได้รับหลักฐานจากแชทเพจแล้ว', $text, $outcome.': ตรงกับข้อความบนหน้าเว็บ');
+        }
+
+        foreach (JuntraChatSlipRelay::GUIDE_OUTCOMES as $outcome) {
+            $plain = JuntraChatSlipRelay::customerMessage(['outcome' => $outcome, 'amount' => 39.92, 'credited' => 39.92]);
+            $guided = JuntraChatSlipRelay::customerMessage(['outcome' => $outcome, 'amount' => 39.92, 'credited' => 39.92], true);
+            $this->assertStringContainsString('ครั้งหน้าไม่ต้องส่งรูปมาที่แชทนี้', $plain, $outcome);
+            $this->assertStringNotContainsString('ส่งรูปวิธีทำไว้ให้ด้านล่าง', $plain, $outcome.': ไม่ส่งรูป = ห้ามอ้างถึงรูป');
+            $this->assertStringContainsString('ส่งรูปวิธีทำไว้ให้ด้านล่าง', $guided, $outcome);
+        }
+
+        // ผิดบัญชี/เก่าเกิน ไม่ใช่เรื่องใช้เว็บผิด — ไม่สอน ไม่อ้างรูป
+        $this->assertNotContains('wrong_account', JuntraChatSlipRelay::GUIDE_OUTCOMES);
+        $this->assertStringNotContainsString('ด้านล่างแล้ว', JuntraChatSlipRelay::customerMessage(['outcome' => 'wrong_account'], true));
+    }
+
+    public function test_the_guide_image_exists_and_is_never_taken_for_a_payment_image(): void
+    {
+        $path = strtok(JuntraChatSlipRelay::GUIDE_IMAGE_PATH, '?');
+        $this->assertFileExists(public_path($path));
+        $this->assertSame(0, preg_match(FacebookWebhookService::FB_WEB_ONLY_MONEY_URL_PATTERN, asset(JuntraChatSlipRelay::GUIDE_IMAGE_PATH)));
     }
 }
