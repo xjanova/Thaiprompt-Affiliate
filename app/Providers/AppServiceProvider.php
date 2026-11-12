@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Events\NewTransactionCreated;
+use App\Http\Controllers\Auth\SocialAccessTokenController;
+use App\Http\Controllers\Auth\SocialOAuthController;
+use App\Http\Middleware\BindFreshSocialAuthorization;
 use App\Listeners\SendNewTransactionFcmNotification;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
@@ -12,7 +15,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
 use Laravel\Passport\Http\Controllers\AuthorizationController;
 use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
@@ -331,20 +333,24 @@ class AppServiceProvider extends ServiceProvider
             'prefix' => config('passport.path', 'oauth'),
             'as' => 'passport.',
         ], function () {
-            Route::post('/token', [AccessTokenController::class, 'issueToken'])
+            Route::post('/token', [SocialAccessTokenController::class, 'issueToken'])
                 ->middleware('throttle')
                 ->name('token');
 
             Route::get('/authorize', [AuthorizationController::class, 'authorize'])
-                ->middleware('web')
+                ->middleware(['web', BindFreshSocialAuthorization::class])
                 ->name('authorizations.authorize');
+
+            Route::get('/social/authorize', [SocialOAuthController::class, 'start'])
+                ->middleware(['web', 'throttle:30,1'])
+                ->name('social.authorize');
 
             // ลอกนิพจน์นี้จาก vendor ตรงๆ ห้ามย่อ — โปรเจกต์ไม่มี config/passport.php
             // แต่ PassportServiceProvider mergeConfigFrom config ของตัวเองที่ตั้ง
             // 'guard' => 'web' ไว้ → ผลลัพธ์จริงคือ 'auth:web' (ไม่ใช่ 'auth' เฉยๆ)
             $guard = config('passport.guard');
 
-            Route::middleware(['web', $guard ? 'auth:'.$guard : 'auth'])->group(function () {
+            Route::middleware(['web', $guard ? 'auth:'.$guard : 'auth', BindFreshSocialAuthorization::class])->group(function () {
                 Route::post('/authorize', [ApproveAuthorizationController::class, 'approve'])
                     ->name('authorizations.approve');
 

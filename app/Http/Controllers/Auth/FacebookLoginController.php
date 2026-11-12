@@ -104,9 +104,12 @@ class FacebookLoginController extends Controller
         $referer = $request->headers->get('referer', '');
         Session::put('facebook_login_origin', str_contains($referer, '/register') ? 'register' : 'login');
 
-        return Socialite::driver('facebook')
-            ->scopes($setting->getScopes())
-            ->redirect();
+        $driver = Socialite::driver('facebook')->scopes($setting->getScopes());
+        if (app(\App\Services\Auth\FreshSocialOAuth::class)->active($request)) {
+            $driver->with(['auth_type' => 'reauthenticate']);
+        }
+
+        return $driver->redirect();
     }
 
     /**
@@ -114,6 +117,10 @@ class FacebookLoginController extends Controller
      */
     public function callback(Request $request): RedirectResponse|View
     {
+        $bridge = app(\App\Services\Auth\FreshSocialOAuth::class);
+        if ($bridge->active($request) && ! $bridge->acceptCallback($request, 'facebook')) {
+            return $bridge->deny($request);
+        }
         // 🔗 (2026-08-28) เส้น "เชื่อมเพจด้วย Facebook" ของหลังบ้าน ใช้ redirect_uri ตัวเดียวกับที่นี่
         //    (เป็น URI เดียวที่ whitelist ไว้ในแอป — เพิ่มตัวใหม่ต้องไปแก้ตั้งค่าบน developers.facebook.com)
         //    แยกออกจากล็อกอินลูกค้าด้วย state ที่ขึ้นต้นด้วย pageconnect:
@@ -135,7 +142,10 @@ class FacebookLoginController extends Controller
         $errorRoute = $errorOrigin === 'register' ? 'register' : 'login';
 
         // ผิดพลาด → แอปกลับหน้าเข้าสู่ระบบของแอป · เว็บกลับหน้าเดิม (login/register)
-        $fail = function (string $message) use ($mobile, $mobileLogin, $errorRoute): RedirectResponse {
+        $fail = function (string $message) use ($mobile, $mobileLogin, $errorRoute, $bridge, $request): RedirectResponse {
+            if ($bridge->active($request)) {
+                return $bridge->deny($request);
+            }
             if ($mobile) {
                 Session::forget(['facebook_login_origin', 'facebook_login_referral', 'facebook_login_redirect']);
 
@@ -195,6 +205,10 @@ class FacebookLoginController extends Controller
             ]);
 
             return $fail('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่');
+        }
+
+        if ($bridge->active($request)) {
+            return $bridge->complete($request, 'facebook', $user);
         }
 
         // Login user — เฉพาะเว็บ

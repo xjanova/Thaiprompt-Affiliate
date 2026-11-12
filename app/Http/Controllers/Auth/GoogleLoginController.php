@@ -127,12 +127,19 @@ class GoogleLoginController extends Controller
      */
     public function callback(Request $request): RedirectResponse|View
     {
+        $bridge = app(\App\Services\Auth\FreshSocialOAuth::class);
+        if ($bridge->active($request) && ! $bridge->acceptCallback($request, 'google')) {
+            return $bridge->deny($request);
+        }
         // ข้อมูลการล็อกอินจากแอป อ่านจาก session เท่านั้น (ใช้ครั้งเดียว)
         $mobile = $this->mobileLogin->pull('google');
         $origin = Session::pull('google_login_origin', 'login');
         $errorRoute = $origin === 'register' ? 'register' : 'login';
 
-        $fail = function (string $message) use ($mobile, $errorRoute): RedirectResponse {
+        $fail = function (string $message) use ($mobile, $errorRoute, $bridge, $request): RedirectResponse {
+            if ($bridge->active($request)) {
+                return $bridge->deny($request);
+            }
             Session::forget(['google_login_redirect', 'google_login_referral']);
 
             if ($mobile) {
@@ -220,6 +227,10 @@ class GoogleLoginController extends Controller
             Session::forget(['google_login_redirect', 'google_login_referral']);
 
             return $this->mobileLogin->authorize($user, $mobile['token'], $mobile['state'], 'google');
+        }
+
+        if ($bridge->active($request)) {
+            return $bridge->complete($request, 'google', $user);
         }
 
         Auth::login($user, true);
