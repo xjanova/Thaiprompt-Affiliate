@@ -11,6 +11,7 @@ use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
@@ -61,6 +62,7 @@ class JuntraChatSlipRelayTest extends TestCase
             'services.juntra.server_client_ids' => [],
             'services.juntra.url' => self::JUNTRA,
             'services.juntra.chat_slip_relay' => true,
+            'services.juntra.chat_slip_ping_token' => str_repeat('t', 32),
         ]);
 
         Storage::fake('local');
@@ -157,7 +159,54 @@ class JuntraChatSlipRelayTest extends TestCase
         $this->assertSame(1, $row->ping_attempts);
 
         Http::assertSent(fn (HttpRequest $r) => $r->url() === self::JUNTRA.'/api/server/chat-slips/ping'
+            && $r->hasHeader('Authorization', 'Bearer '.str_repeat('t', 32))
             && $r->data() === ['trans_ref' => self::REF]);
+    }
+
+    public function test_token_ว่างหรือสั้นไม่ยิงกริ่งและไม่นับความพยายาม_แต่ยังพักสลิป(): void
+    {
+        $this->fakeHttp();
+        foreach ([null, '', str_repeat('s', 31)] as $token) {
+            config(['services.juntra.chat_slip_ping_token' => $token]);
+
+            $this->assertSame(JuntraChatSlipRelay::PARKED, $this->relay()['outcome']);
+            $row = JuntraChatSlip::where('trans_ref', self::REF)->firstOrFail();
+            $this->assertSame(JuntraChatSlip::PARKED, $row->status);
+            $this->assertSame(0, $row->ping_attempts);
+        }
+
+        Http::assertNotSent(fn (HttpRequest $r) => str_starts_with($r->url(), self::JUNTRA));
+        $this->assertSame(1, SlipVerification::where('trans_ref', self::REF)->count());
+    }
+
+    public function test_กริ่งโดนปฏิเสธยังพักสลิปและเก็บเลขอ้างอิงให้ตัวกวาด(): void
+    {
+        $this->fakeHttp(pingStatus: 401);
+
+        $this->assertSame(JuntraChatSlipRelay::PARKED, $this->relay()['outcome']);
+        $row = JuntraChatSlip::where('trans_ref', self::REF)->firstOrFail();
+        $this->assertSame(JuntraChatSlip::PARKED, $row->status);
+        $this->assertSame(1, $row->ping_attempts);
+        $this->assertSame('juntraweb', SlipVerification::where('trans_ref', self::REF)->value('consumed_by_platform'));
+    }
+
+    public function test_กริ่งล่มไม่เผย_token_ใน_log_และลองใหม่กับแถวเดิมได้(): void
+    {
+        $token = config('services.juntra.chat_slip_ping_token');
+        $this->fakeHttp(onPing: fn () => throw new \Illuminate\Http\Client\ConnectionException('Authorization: Bearer '.$token));
+        Log::spy();
+
+        $this->assertSame(JuntraChatSlipRelay::PARKED, $this->relay()['outcome']);
+        $row = JuntraChatSlip::firstOrFail();
+        $this->assertSame(1, $row->ping_attempts);
+        $this->assertSame(JuntraChatSlipRelay::PARKED, $this->relay()['outcome']);
+        $this->assertSame(JuntraChatSlip::PARKED, $row->fresh()->status);
+        $this->assertSame(2, $row->fresh()->ping_attempts);
+        $this->assertSame(1, JuntraChatSlip::count());
+        Log::shouldHaveReceived('warning')->twice()->withArgs(
+            fn (string $message, array $context) => ! str_contains($message.json_encode($context), $token)
+                && $context['exception'] === \Illuminate\Http\Client\ConnectionException::class
+        );
     }
 
     public function test_the_outcome_comes_from_what_the_web_reported_back(): void
