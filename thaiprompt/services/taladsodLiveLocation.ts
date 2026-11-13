@@ -15,7 +15,7 @@ import { AppState, type AppStateStatus, type NativeEventSubscription } from 'rea
 import * as Location from 'expo-location';
 import { useAuthStore } from '@/stores/authStore';
 import { sendFmShopLocation } from '@/services/api/taladsodSellerApi';
-import { getCurrentCoords } from '@/services/location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords } from '@/services/location';
 
 export type ShopLiveStopReason = 'shop_closed' | 'not_mobile' | 'not_seller' | 'permission' | 'logout' | 'manual';
 
@@ -117,7 +117,8 @@ const sendNow = async (): Promise<void> => {
       return;
     }
 
-    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000 });
+    // ตำแหน่งร้านที่ลูกค้าเห็น + จุดรับของของไรเดอร์ → ไม่ส่งตำแหน่งเก่าของเครื่อง (รอบหน้าลองใหม่)
+    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
     if (!state.active) return;
     if (!coords) {
       emit({ lastError: 'ยังหาตำแหน่งไม่ได้ ลองเปิด GPS หรือออกไปที่โล่งนะ' });

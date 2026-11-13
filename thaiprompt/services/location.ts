@@ -6,8 +6,9 @@
  *   - หยุดเมื่อส่งสำเร็จ / ส่งไม่สำเร็จ / คืนงาน / งานถูกยกเลิก (stopJobTracking / stopJobTrackingFor)
  *   - สถานะว่ากำลังติดตามงานไหน เก็บใน AsyncStorage (ไม่ใช่ตัวแปรในหน่วยความจำ)
  *     → แอปถูกปิดแล้วเปิดใหม่ก็ยังรู้ว่าต้องหยุด/ติดตามต่อ และหยุด task ที่ค้างได้เสมอ
- *   - มีสิทธิ์ "อนุญาตตลอดเวลา" → ใช้ background task + foreground service (มีแจ้งเตือนค้างบนเครื่อง)
- *     ไม่มี → ส่งตำแหน่งเฉพาะตอนเปิดแอปอยู่ (ยังรับงานได้ตามปกติ)
+ *   - Android: ใช้ background task + foreground service (มีแจ้งเตือนค้างบนเครื่อง) เสมอ — สิทธิ์ "ขณะใช้แอป" ก็พอ
+ *     (service เริ่มตอนแอปอยู่หน้าจอ → สลับไป Google Maps/ล็อกจอ พิกัดยังส่งต่อ)
+ *   - iOS: มีสิทธิ์ "อนุญาตตลอดเวลา" → background task · ไม่มี → ส่งตำแหน่งเฉพาะตอนเปิดแอปอยู่ (ยังรับงานได้ตามปกติ)
  *   - ตอนออนไลน์แต่ยังไม่มีงาน: ส่งตำแหน่งครั้งเดียวตอนเปิดหน้าไรเดอร์/รายการงาน (pingRiderLocation) ไม่ติดตามเบื้องหลัง
  *
  * ตำแหน่งส่งผ่าน POST /rider/location เท่านั้น (throttle 40/นาที → ห้ามถี่กว่า ~10 วินาที)
@@ -22,6 +23,9 @@ import { Platform } from 'react-native';
 import { stopGpsSharing as apiStopGpsSharing } from './api';
 import { getCurrentJob, sendRiderLocation, type RiderLocationBody } from './api/riderApi';
 import { palette } from '@/theme/tokens';
+import { BROWSE_FIX_MAX_AGE_MS, pickFix } from './locationFix';
+
+export { BROWSE_FIX_MAX_AGE_MS, FRESH_FIX_MAX_AGE_MS, RECENT_FIX_MAX_AGE_MS, isCoarseFix } from './locationFix';
 
 // =====================================================
 // ค่าคงที่
@@ -64,6 +68,10 @@ export interface Coords {
   latitude: number;
   longitude: number;
   accuracy?: number;
+  /** อายุของพิกัด (มิลลิวินาที) — ไม่รู้เวลาที่วัด = undefined */
+  ageMs?: number;
+  /** true = ตำแหน่งล่าสุดของเครื่อง (หา GPS ใหม่ไม่ทัน) */
+  fromCache?: boolean;
 }
 
 // =====================================================
@@ -192,11 +200,15 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T | null> =>
 /**
  * ตำแหน่งปัจจุบันแบบไม่ค้าง (มี timeout และถอยไปใช้ตำแหน่งล่าสุดของเครื่อง)
  * ไม่มีสิทธิ์ → null (ไม่เปิดกล่องขอสิทธิ์เอง)
+ *
+ * @param options.maxAgeMs ตำแหน่งล่าสุดของเครื่องที่ยอมใช้แทน ต้องไม่เก่ากว่านี้ (ค่าเริ่มต้น 5 นาที = แค่ดูรายการ/ค้นหา)
+ *   งานที่ผูกกับเงินหรือหมุด (ส่งมอบของ, ปักหมุดร้าน/ที่อยู่, รับงาน) ต้องส่ง FRESH_FIX_MAX_AGE_MS / RECENT_FIX_MAX_AGE_MS
+ *   — พิกัดเก่าเกิน = null ให้หน้าจอบอกผู้ใช้ว่า "ยังหาตำแหน่งไม่เจอ" ดีกว่าส่งพิกัดผิดที่ขึ้นไป
  */
 export const getCurrentCoords = async (
-  options: { accuracy?: 'high' | 'balanced'; timeoutMs?: number } = {}
+  options: { accuracy?: 'high' | 'balanced'; timeoutMs?: number; maxAgeMs?: number } = {}
 ): Promise<Coords | null> => {
-  const { accuracy = 'balanced', timeoutMs = 8000 } = options;
+  const { accuracy = 'balanced', timeoutMs = 8000, maxAgeMs = BROWSE_FIX_MAX_AGE_MS } = options;
   try {
     const fg = await Location.getForegroundPermissionsAsync();
     if (fg.status !== 'granted') return null;
@@ -207,18 +219,9 @@ export const getCurrentCoords = async (
       }),
       timeoutMs
     );
-    const position = fresh || (await withTimeout(Location.getLastKnownPositionAsync({ maxAge: 5 * 60_000 }), 2000));
-    if (!position) return null;
+    const lastKnown = fresh ? null : await withTimeout(Location.getLastKnownPositionAsync({ maxAge: maxAgeMs }), 2000);
 
-    const { latitude, longitude } = position.coords;
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || (latitude === 0 && longitude === 0)) {
-      return null;
-    }
-    return {
-      latitude,
-      longitude,
-      accuracy: typeof position.coords.accuracy === 'number' ? position.coords.accuracy : undefined,
-    };
+    return pickFix(fresh, lastKnown, Date.now(), maxAgeMs);
   } catch {
     return null;
   }
@@ -423,7 +426,13 @@ export const startJobTracking = (jobId: number): Promise<TrackingMode | 'none'> 
     }
 
     const current = await getJobTrackingState();
-    const wantMode: TrackingMode = perms.background ? 'background' : 'foreground';
+    // 🛰️ (2026-11-13) Android: foreground service (มีแจ้งเตือนค้าง) ที่เริ่มตอนแอปอยู่หน้าจอ ใช้ได้ด้วยสิทธิ์ "ขณะใช้แอป"
+    //    ไม่ต้องมีสิทธิ์ "ตลอดเวลา" (expo-location: startLocationUpdatesAsync + foregroundService ไม่ตรวจสิทธิ์เบื้องหลัง)
+    //    เดิมไรเดอร์ที่ให้สิทธิ์แค่ "ขณะใช้แอป" ตกไปโหมดจับเวลาในแอป → กด "นำทาง" ไป Google Maps แล้วพิกัดหยุดส่ง
+    //    เซิร์ฟเวอร์นับว่า GPS หาย: 2 นาทีเตือน, 10 นาทีปลดงาน + นับยกเลิก + ปิดรับงาน ทั้งที่กำลังขี่ไปรับของ
+    //    เริ่ม service ไม่ได้ (เช่นแอปอยู่เบื้องหลัง) → ถอยไปโหมดจับเวลาในแอปเหมือนเดิม แล้วลองใหม่ตอนกลับเข้าแอป
+    const canUseService = perms.background || Platform.OS === 'android';
+    const wantMode: TrackingMode = canUseService ? 'background' : 'foreground';
 
     // ติดตามงานเดิมในโหมดเดิมอยู่แล้ว → แค่ตรวจว่าตัวติดตามยังทำงาน
     if (current && current.jobId === jobId && current.mode === wantMode) {

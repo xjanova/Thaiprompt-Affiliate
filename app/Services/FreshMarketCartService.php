@@ -300,15 +300,16 @@ class FreshMarketCartService
      *
      * @throws FreshMarketException CART_EMPTY + ข้อผิดพลาดของ createOrderFromItems
      */
-    public function checkout(User $user, int $sellerId, array $data): FreshMarketOrder
+    public function checkout(User $user, int $sellerId, array $data, ?float $maxGrandTotal = null): FreshMarketOrder
     {
         ['items' => $items, 'cart_item_ids' => $cartItemIds] = $this->checkoutLines($user, $sellerId);
 
         unset($data['items'], $data['apply_default_options']);
 
+        // $maxGrandTotal = ยอดที่ผู้ซื้อเห็นตอนกดยืนยัน (null = ไม่ตรวจ) — เกิน = PRICE_CHANGED ไม่สร้างออเดอร์ ไม่ตัดเงิน
         return $this->market->createOrderFromItems($user, $sellerId, $items, array_merge($data, [
             'cart_item_ids' => $cartItemIds,
-        ]));
+        ]), $maxGrandTotal);
     }
 
     /**

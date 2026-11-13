@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
+use App\Models\EarningsLedger;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMessage;
@@ -11,6 +12,7 @@ use App\Models\OrderTrackingHistory;
 use App\Models\ShippingProvider;
 use App\Models\User;
 use App\Models\VendorStore;
+use App\Services\OrderDistributionService;
 use App\Services\Shop\OrderChatIdempotency;
 use App\Services\Shop\OrderChatNotifier;
 use App\Services\Shop\SellerOrderService;
@@ -38,6 +40,13 @@ class SellerOrderApiController extends Controller
 
     /** ออเดอร์สถานะนี้ปิดแชท (เหมือนฝั่งผู้ซื้อ OrderApiController::sendMessage) */
     private const CHAT_CLOSED_STATUSES = ['cancelled', 'refunded'];
+
+    /**
+     * ยอดที่จ่ายจริงของออเดอร์ในหน้ารายการปัจจุบัน (order_id => net_amount) — เติมใน index()
+     *
+     * @var array<int, float>
+     */
+    private array $paidOut = [];
 
     public function __construct(private readonly SellerOrderService $service) {}
 
@@ -70,6 +79,17 @@ class SellerOrderApiController extends Controller
         $orders = $query->paginate($perPage);
         // 🎓 ป้ายผ่านการอบรมผู้ซื้อของทุกแถวในหน้านี้ — query เดียว (กัน N+1 ใน presentListItem)
         \App\Services\Classroom\TrainingBadge::prime($orders->getCollection()->pluck('user_id'));
+        // 💰 ยอดที่ร้านได้รับจริงของออเดอร์ที่แบ่งเงินแล้ว — query เดียวทั้งหน้า (ออเดอร์ที่ยังไม่แบ่ง = null ดูยอดประมาณการในหน้ารายละเอียด)
+        $this->paidOut = EarningsLedger::query()
+            ->where('source_type', 'Order')
+            ->whereIn('source_id', $orders->getCollection()->pluck('id'))
+            ->where('user_id', $sellerId)
+            ->where('earning_type', EarningsLedger::TYPE_SELLER_SALE)
+            ->where('status', '!=', EarningsLedger::STATUS_CANCELLED)
+            ->orderBy('id')
+            ->pluck('net_amount', 'source_id')
+            ->map(fn ($amount) => round((float) $amount, 2))
+            ->all();
 
         return response()->json([
             'success' => true,
@@ -624,12 +644,30 @@ class SellerOrderApiController extends Controller
                 'product_image' => ShopPresenter::imageUrl($first->product_image),
             ] : null,
             'seller_total' => round((float) $items->sum('total'), 2),
+            // seller_earning = ค่าสินค้าหลังหัก GP (ยังไม่ใช่เงินที่เข้าร้าน) · net_payout = ยอดที่ร้านได้รับจริงหลังแบ่งเงิน (ยังไม่แบ่ง = null)
             'seller_earning' => round((float) $items->sum('seller_earning'), 2),
+            'net_payout' => $this->paidOut[(int) $order->id] ?? null,
             'is_multi_seller' => $order->isMultiSeller(),
             'unread_messages' => (int) ($order->unread_customer_messages_count ?? 0),
             'last_message_at' => $order->last_message_at?->toISOString(),
             'created_at' => $order->created_at?->toISOString(),
         ];
+    }
+
+    /**
+     * ยอดที่ร้านได้รับจริงของออเดอร์ (ล้ม = null ไม่ให้หน้ารายละเอียดออเดอร์พังเพราะตัวเลขเสริม)
+     *
+     * @return array<string, mixed>|null
+     */
+    private function payoutFor(Order $order, int $sellerId): ?array
+    {
+        try {
+            return app(OrderDistributionService::class)->sellerPayoutFor($order, $sellerId);
+        } catch (\Throwable $e) {
+            Log::warning('SellerOrderApi: payout preview failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**
@@ -687,6 +725,9 @@ class SellerOrderApiController extends Controller
                 // ค่าส่งของออเดอร์ร้านเดียว (ลูกค้าจ่าย) — ออเดอร์หลายร้านไม่แสดง
                 'shipping_fee' => $single ? round((float) $order->shipping_fee, 2) : null,
                 'order_total' => $single ? round((float) $order->total_amount, 2) : null,
+                // 💰 ยอดที่ร้านได้รับจริง (หักโบนัสไรเดอร์/ค่าส่งที่ร้านออกแทน/VAT/ค่าแนะนำ + ค่าส่งพัสดุที่ร้านได้)
+                //    final = true: จ่ายแล้วตามนี้ · false: ประมาณการจากอัตราปัจจุบัน · null: ออเดอร์ยกเลิก/คำนวณไม่ได้
+                'payout' => $this->payoutFor($order, $sellerId),
             ],
             'tracking' => [
                 'tracking_number' => $single ? $order->tracking_number : null,

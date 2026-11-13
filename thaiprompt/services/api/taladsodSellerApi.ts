@@ -274,7 +274,14 @@ export interface FmSellerOrder {
   } | null;
   gp_rate: number | null;
   platform_fee: number;
+  /** ค่าสินค้าหลังหัก GP (ออเดอร์ที่ยังไม่ปิด ยังไม่หักต้นทุนไรเดอร์ที่ร้านออก) */
   seller_earning: number;
+  /** ยอดที่ร้านได้รับจริง = seller_earning − โบนัสไรเดอร์ − ค่าส่งที่ร้านออกแทน (ปิดออเดอร์แล้ว = ยอดที่จ่ายจริง) */
+  seller_net: number;
+  seller_net_final: boolean;
+  /** โบนัสที่ร้านเติมให้ไรเดอร์ / ค่าส่งที่ร้านออกแทนลูกค้า (ล็อกไว้ตอนสั่ง) */
+  rider_bonus_amount: number;
+  delivery_subsidy_amount: number;
   created_at: string | null;
   accepted_at: string | null;
   ready_at: string | null;
@@ -521,6 +528,11 @@ export const normalizeOrder = (raw: any): FmSellerOrder => ({
   items_count: num(raw?.items_count),
   platform_fee: num(raw?.platform_fee),
   seller_earning: num(raw?.seller_earning),
+  // server รุ่นเก่าไม่ส่ง seller_net → ใช้ seller_earning ตามเดิม
+  seller_net: typeof raw?.seller_net === 'number' ? raw.seller_net : num(raw?.seller_earning),
+  seller_net_final: raw?.seller_net_final === true,
+  rider_bonus_amount: num(raw?.rider_bonus_amount),
+  delivery_subsidy_amount: num(raw?.delivery_subsidy_amount),
   allowed_actions: Array.isArray(raw?.allowed_actions) ? raw.allowed_actions.filter((a: unknown) => typeof a === 'string') : [],
   items: (Array.isArray(raw?.items) ? raw.items : []).map((item: any) => ({
     ...(item as FmOrderItem),

@@ -263,6 +263,21 @@ class ShopCheckoutService
         }
         $grandTotal = round($grandTotal, 2);
 
+        // 💰 (2026-11-13) ยอดที่ผู้ซื้อเห็นตอนกดยืนยัน (แอปส่ง expected_total) — คิดได้มากกว่านั้น = ไม่สั่ง ไม่ตัดเงิน
+        //    เดิมเปิดหน้าชำระค้างข้ามชั่วโมงเร่งด่วน / ร้านปิดส่งฟรี / ร้านแก้ราคา แล้วกดยืนยัน = กระเป๋าถูกตัดยอดใหม่ที่ไม่เคยเห็น
+        //    ถูกลงไม่ขวาง (ผู้ซื้อได้ประโยชน์) · ไม่ส่งมา (แอปรุ่นเก่า/เว็บ) = ไม่ตรวจ
+        if (isset($input['expected_total']) && is_numeric($input['expected_total'])) {
+            $expected = round(max(0.0, (float) $input['expected_total']), 2);
+            if ($grandTotal > $expected + 0.004) {
+                throw ShopException::make(
+                    ShopException::PRICE_CHANGED,
+                    'ยอดชำระเปลี่ยนเป็น ฿'.number_format($grandTotal, 2).' (ยอดที่ยืนยันไว้ ฿'.number_format($expected, 2).')',
+                    409,
+                    ['total' => $grandTotal, 'expected_total' => $expected]
+                );
+            }
+        }
+
         // 🪙 TPIX: เพดานต่อรายการ/ต่อวัน ตรวจก่อนสร้างออเดอร์ (ออเดอร์แยกตามร้าน = ใบเสนอยอดละร้าน)
         if ($paymentMethod === PaymentMethod::TPIX) {
             // สินค้า Lazada ต้องใช้เงินบาทซื้อจาก Lazada มาส่ง → จ่ายด้วย TPIX ไม่ได้ (เจ้าของสั่ง 2026-10-13)

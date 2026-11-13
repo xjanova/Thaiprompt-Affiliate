@@ -47,7 +47,8 @@ import {
 } from '@/services/api/riderApi';
 import { normalizeRiderHandoverData, personPhotoUri } from '@/services/api/handoverApi';
 import { isVerifiedFlag } from '@/components/people/VerifiedBadge';
-import { calculateDistance, getCurrentCoords, type Coords } from '@/services/location';
+import { calculateDistance, FRESH_FIX_MAX_AGE_MS, getCurrentCoords, type Coords } from '@/services/location';
+import { chooseHandoverFix, withinGeofence } from '@/services/locationFix';
 import { deviceTimeFor, lastClockOffset, parseIsoMs, serverNowMs } from '@/utils/serverClock';
 import { takePhoto } from './photo';
 import {
@@ -427,12 +428,16 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
     [job.dropoff?.latitude, job.dropoff?.longitude]
   );
 
-  /** พิกัดสด (ไม่มีสิทธิ์/ปิด GPS → ขอเปิดก่อน) */
+  /**
+   * พิกัดสด (ไม่มีสิทธิ์/ปิด GPS → ขอเปิดก่อน)
+   * ต้องเป็นตำแหน่งตอนนี้จริง: ตำแหน่งล่าสุดของเครื่องที่เก่าเกิน 30 วิ ไม่ใช้
+   * (เดิมยอมถึง 5 นาที → GPS ในอาคารหาไม่ทัน ส่งพิกัดตอนยังอยู่บนถนน แล้วโดนปฏิเสธว่าห่างจุดส่ง ทั้งที่ยืนหน้าห้อง)
+   */
   const freshCoords = useCallback(async (): Promise<Coords | null> => {
-    let coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000 });
+    let coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
     if (coords) return coords;
     if (!(await ensureLocation())) return null;
-    coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000 });
+    coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
     return coords;
   }, [ensureLocation]);
 
@@ -618,25 +623,31 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
           locationMissing();
           return;
         }
-        // 2) ห่างจุดส่งเกินชัดเจน → บอกเลย (เผื่อความคลาดเคลื่อน GPS ให้แล้ว server ตรวจซ้ำอีกที)
+        // 2) ห่างจุดส่งเกินรัศมี → บอกเลย ไม่ต้องเปิดกล้อง
+        //    กติกาเดียวกับเซิร์ฟเวอร์ (ตัดที่รัศมีพอดี ไม่มีส่วนเผื่อ) — เดิมแอปเผื่อให้อีก 30 ม.+
+        //    ไรเดอร์ที่ห่าง 170 ม. ถ่ายรูปได้ แล้วเซิร์ฟเวอร์ปฏิเสธ รูปถูกทิ้ง ต้องขยับแล้วถ่ายใหม่
         const distance = distanceToDropoff(before);
-        const slack = Math.max(before.accuracy ?? 0, 30);
-        if (distance !== null && distance > geofence + slack) {
+        if (!withinGeofence(distance, geofence)) {
           alertError({ code: 'TOO_FAR_FROM_DROPOFF', message: '', data: { distance_m: distance } });
           return;
         }
         // 3) ถ่ายรูป
         const uri = await takePhoto();
         if (!mountedRef.current || !uri) return;
-        // 4) พิกัดหลังถ่าย (ไรเดอร์อาจขยับ) — หาไม่ได้ใช้ของก่อนถ่าย
-        const after = (await getCurrentCoords({ accuracy: 'high', timeoutMs: 5000 })) ?? before;
+        // 4) พิกัดหลังถ่าย (ไรเดอร์อาจขยับ) — หาไม่ได้/GPS แกว่งออกนอกรัศมี ใช้ของก่อนถ่ายที่ตรวจแล้วว่าอยู่ในรัศมี
+        const afterCoords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 5000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
         if (!mountedRef.current) return;
+        const picked = chooseHandoverFix(
+          { coords: before, distanceM: distance },
+          afterCoords ? { coords: afterCoords, distanceM: distanceToDropoff(afterCoords) } : null,
+          geofence
+        );
         const photo: PendingPhoto = {
           kind,
           uri,
-          latitude: after.latitude,
-          longitude: after.longitude,
-          distanceM: distanceToDropoff(after),
+          latitude: picked.coords.latitude,
+          longitude: picked.coords.longitude,
+          distanceM: picked.distanceM,
           takenAt: new Date().toISOString(),
         };
         // รูปใหม่แทนรูปค้างเดิม → ลบไฟล์เดิม · เริ่มนับการส่งอัตโนมัติใหม่

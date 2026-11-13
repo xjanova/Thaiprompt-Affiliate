@@ -310,12 +310,17 @@ class Rider extends Model
      */
     public function scopeNearby($query, $latitude, $longitude, $radiusKm = 5)
     {
-        // Haversine formula สำหรับคำนวณระยะทาง
+        // ระยะทางเส้นตรงบนผิวโลก (กม.)
+        // LEAST/GREATEST: พิกัดซ้อนกันพอดี ค่าใน acos() เกิน 1 เล็กน้อยจากเศษทศนิยม → MySQL คืน NULL
+        // แล้วไรเดอร์ที่ยืนอยู่ตรงจุดนั้นจะหายจากผลลัพธ์ (NULL <= รัศมี เป็นเท็จ)
         return $query->selectRaw('*,
-            (6371 * acos(cos(radians(?)) * cos(radians(last_latitude)) *
+            (6371 * acos(LEAST(1, GREATEST(-1,
+            cos(radians(?)) * cos(radians(last_latitude)) *
             cos(radians(last_longitude) - radians(?)) +
-            sin(radians(?)) * sin(radians(last_latitude)))) AS distance_km',
+            sin(radians(?)) * sin(radians(last_latitude)))))) AS distance_km',
             [$latitude, $longitude, $latitude])
+            ->whereNotNull('last_latitude')
+            ->whereNotNull('last_longitude')
             ->having('distance_km', '<=', $radiusKm)
             ->orderBy('distance_km');
     }

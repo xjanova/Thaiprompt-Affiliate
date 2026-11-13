@@ -236,6 +236,79 @@ class CartRiderQuoteTest extends TestCase
     }
 
     // =====================================================
+    // ยอดที่ผู้ซื้อกดยืนยัน ต้องไม่ถูกตัดมากกว่าที่เห็น (2026-11-13)
+    // =====================================================
+
+    public function test_checkout_rejects_when_total_rose_above_what_the_buyer_confirmed(): void
+    {
+        config(['services.valhalla.enabled' => true, 'services.valhalla.url' => 'http://127.0.0.1:8002']);
+        $shape = Polyline::encode([[self::STORE_LAT, self::STORE_LNG], [self::STORE_LAT + 0.01, self::STORE_LNG + 0.01]], 6);
+        Http::fake(['127.0.0.1:8002/route' => Http::response(['trip' => [
+            'summary' => ['length' => 5.0, 'time' => 780],
+            'legs' => [['shape' => $shape]],
+        ]])]);
+
+        // ร้านส่งฟรี → ผู้ซื้อเห็นยอด 300
+        [$seller, $store] = $this->makeSellerWithStore(['rider_delivery_enabled' => true, 'rider_free_delivery' => true]);
+        $product = $this->makeProduct($seller, $store, ['price' => 300]);
+        $buyer = $this->makeBuyer(1000);
+        $address = $this->makeAddress($buyer, true);
+
+        Sanctum::actingAs($buyer);
+        $this->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1])->assertOk();
+        $seen = $this->getJson('/api/v1/cart?address_id='.$address->id.'&delivery_method=rider')->assertOk()->json('data');
+        $this->assertEquals(300, $seen['summary']['grand_total']);
+        $this->assertTrue($seen['stores'][0]['has_physical'], 'ของต้องจัดส่ง → แอปบังคับมีที่อยู่บนจอก่อนสั่ง');
+
+        // ระหว่างผู้ซื้อเปิดหน้าชำระค้าง ร้านปิดส่งฟรี → ยอดจริงเป็น 360
+        $store->forceFill(['rider_free_delivery' => false])->save();
+
+        $this->postJson('/api/v1/cart/checkout', [
+            'address_id' => $address->id, 'payment_method' => 'wallet', 'delivery_method' => 'rider',
+            'expected_total' => 300,
+        ])->assertStatus(409)
+            ->assertJsonPath('code', 'PRICE_CHANGED');
+
+        // ไม่สร้างออเดอร์ ไม่ตัดเงิน
+        $this->assertSame(0, Order::where('user_id', $buyer->id)->count());
+        $this->assertEqualsWithDelta(1000.0, (float) \App\Models\Wallet::where('user_id', $buyer->id)->value('balance'), 0.001);
+
+        // ผู้ซื้อเห็นยอดใหม่แล้วยืนยัน → สั่งได้ ตัดตามยอดที่ยืนยัน
+        $this->postJson('/api/v1/cart/checkout', [
+            'address_id' => $address->id, 'payment_method' => 'wallet', 'delivery_method' => 'rider',
+            'expected_total' => 360,
+        ])->assertCreated();
+
+        $this->assertEquals(360, (float) Order::where('user_id', $buyer->id)->firstOrFail()->total_amount);
+        $this->assertEqualsWithDelta(640.0, (float) \App\Models\Wallet::where('user_id', $buyer->id)->value('balance'), 0.001);
+    }
+
+    public function test_checkout_without_expected_total_or_with_a_higher_one_still_works(): void
+    {
+        Http::fake();
+        [$seller, $store] = $this->makeSellerWithStore(['rider_delivery_enabled' => true]);
+        $buyer = $this->makeBuyer(1000);
+        $address = $this->makeAddress($buyer, true);
+        Sanctum::actingAs($buyer);
+
+        // แอปรุ่นเก่า/เว็บ ไม่ส่งยอด → ไม่ตรวจ
+        $first = $this->makeProduct($seller, $store, ['price' => 100]);
+        $this->postJson('/api/v1/cart/items', ['product_id' => $first->id, 'quantity' => 1])->assertOk();
+        $this->postJson('/api/v1/cart/checkout', ['address_id' => $address->id, 'payment_method' => 'wallet', 'delivery_method' => 'parcel'])
+            ->assertCreated();
+
+        // ยอดจริงถูกกว่าที่ส่งมา → ไม่ขวาง ตัดตามยอดจริง
+        $second = $this->makeProduct($seller, $store, ['price' => 100]);
+        $this->postJson('/api/v1/cart/items', ['product_id' => $second->id, 'quantity' => 1])->assertOk();
+        $this->postJson('/api/v1/cart/checkout', [
+            'address_id' => $address->id, 'payment_method' => 'wallet', 'delivery_method' => 'parcel',
+            'expected_total' => 5000,
+        ])->assertCreated();
+
+        $this->assertSame(2, Order::where('user_id', $buyer->id)->count());
+    }
+
+    // =====================================================
     // ออเดอร์ → งานไรเดอร์
     // =====================================================
 

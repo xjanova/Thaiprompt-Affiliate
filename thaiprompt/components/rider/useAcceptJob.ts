@@ -15,7 +15,13 @@ import { router } from 'expo-router';
 import { resultHaptic, formatBaht } from '@/components/ui';
 import { num } from '@/services/api/client';
 import { acceptRiderJob, type RiderJobDetail } from '@/services/api/riderApi';
-import { getCurrentCoords, pingRiderLocation, startJobTracking, type TrackingMode } from '@/services/location';
+import {
+  getCurrentCoords,
+  pingRiderLocation,
+  RECENT_FIX_MAX_AGE_MS,
+  startJobTracking,
+  type TrackingMode,
+} from '@/services/location';
 import type { RiderPermissionFlow } from './useRiderPermissionFlow';
 
 export interface UseAcceptJobOptions {
@@ -45,7 +51,8 @@ export const useAcceptJob = ({ flow, onGone, onAccepted }: UseAcceptJobOptions) 
 
   const attempt = useCallback(
     async (jobId: number, retry: number): Promise<void> => {
-      const coords = await getCurrentCoords({ timeoutMs: 6000 });
+      // เซิร์ฟเวอร์ใช้พิกัดนี้ตัดสินว่าอยู่ใกล้จุดรับของไหม → ต้องไม่ใช่ตำแหน่งเก่า (เก่าเกิน 60 วิ = ไม่ส่ง ให้เซิร์ฟเวอร์ใช้ตำแหน่งล่าสุดที่รู้)
+      const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 6000, maxAgeMs: RECENT_FIX_MAX_AGE_MS });
       const result = await acceptRiderJob(
         jobId,
         coords ? { latitude: coords.latitude, longitude: coords.longitude } : undefined

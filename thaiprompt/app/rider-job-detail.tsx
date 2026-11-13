@@ -53,6 +53,7 @@ import {
 } from '@/services/api/riderApi';
 import { addNotificationReceivedListener } from '@/services/notifications';
 import {
+  FRESH_FIX_MAX_AGE_MS,
   getCurrentCoords,
   getJobTrackingState,
   isLocationServiceEnabled,
@@ -674,7 +675,8 @@ export default function RiderJobDetailScreen() {
     actionBusyRef.current = true;
     setSheetBusy(true);
     try {
-      const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 6000 });
+      // พิกัดตอนส่งของต้องเป็นตำแหน่งตอนนี้จริง — ตำแหน่งล่าสุดของเครื่องที่เก่าเกิน 30 วิ ไม่ส่ง (เซิร์ฟเวอร์จะใช้ตำแหน่งล่าสุดที่รู้แทน)
+      const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
       const result = await deliverRiderJob(job.id, {
         photoUri,
         latitude: coords?.latitude,
@@ -692,7 +694,8 @@ export default function RiderJobDetailScreen() {
         setTrackingMode('none');
         const earned = result.data?.earnings;
         const payload = {
-          amount: num(earned?.rider_earnings, num(job.rider_earnings)),
+          // ยอดที่ได้จริง = ส่วนแบ่งค่าส่ง + โบนัสร้าน (rider_total จาก server) — เดิมใช้ rider_earnings = ขาดโบนัส
+          amount: num(earned?.rider_total, riderTotalOf(done ?? job)),
           walletBalance: earned && typeof earned.wallet_balance === 'number' ? earned.wallet_balance : null,
           settled: earned?.settled !== false,
           message: result.message,
@@ -834,7 +837,10 @@ export default function RiderJobDetailScreen() {
         amount,
         walletBalance: null,
         settled: true,
-        message: 'ส่งมอบสำเร็จ ลูกค้ายืนยันรับของแล้ว ระบบโอนรายได้เข้ากระเป๋าให้อัตโนมัติ',
+        // งานเก็บเงินปลายทาง: ค่าส่งอยู่ในเงินสดที่เก็บมา ระบบ "หัก" ส่วนที่ต้องนำส่งจากกระเป๋า — ห้ามบอกว่าเงินเข้ากระเป๋า
+        message: done.is_cod
+          ? 'ส่งมอบสำเร็จ ลูกค้ายืนยันรับของแล้ว ค่าส่งของคุณอยู่ในเงินสดที่เก็บมา ระบบหักส่วนที่ต้องนำส่งจากกระเป๋าให้อัตโนมัติ'
+          : 'ส่งมอบสำเร็จ ลูกค้ายืนยันรับของแล้ว ระบบโอนรายได้เข้ากระเป๋าให้อัตโนมัติ',
         jobNumber: done.job_number,
       })
     );
@@ -1050,7 +1056,11 @@ export default function RiderJobDetailScreen() {
           <View style={styles.heroTop}>
             <View style={styles.heroHead}>
               <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
-                {job.status === 'completed' ? 'ค่าส่งที่คุณได้รับ' : 'ค่าส่งที่คุณจะได้รับ'}
+                {job.status === 'completed'
+                  ? 'ค่าส่งที่คุณได้รับ'
+                  : job.status === 'cancelled' || job.status === 'failed'
+                    ? 'ค่าส่งของงานนี้ (ไม่ได้รับ — งานไม่สำเร็จ)'
+                    : 'ค่าส่งที่คุณจะได้รับ'}
               </Text>
               {job.status === 'completed' && (
                 <Pill
@@ -1177,7 +1187,9 @@ export default function RiderJobDetailScreen() {
             </View>
           )}
           <View style={[styles.feeRow, styles.feeTotal, { borderTopColor: colors.divider }]}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>คุณได้รับ</Text>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+              {job.status === 'cancelled' || job.status === 'failed' ? 'ยอดของงาน (ไม่ได้รับ)' : 'คุณได้รับ'}
+            </Text>
             <PriceText amount={riderTotal} size="lg" tone="gold" />
           </View>
           {handoverRequired && !job.is_cod && (
@@ -1225,7 +1237,8 @@ export default function RiderJobDetailScreen() {
                 <View style={styles.trackRow}>
                   <IconTile icon="broadcast" tone="warning" size={36} />
                   <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
-                    แชร์ตำแหน่งเฉพาะตอนเปิดแอปไว้ — ถ้าปิดหน้าจอ ลูกค้าจะเห็นตำแหน่งล่าสุดเท่านั้น
+                    แชร์ตำแหน่งเฉพาะตอนเปิดแอปไว้ — ถ้าปิดหน้าจอหรือสลับไปแอปอื่น ตำแหน่งจะหยุดส่ง
+                    และถ้าหยุดส่งนานก่อนรับของ ระบบจะคืนงานนี้ให้ไรเดอร์คนอื่น
                   </Text>
                 </View>
                 <Button3D

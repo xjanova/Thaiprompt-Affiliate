@@ -339,6 +339,20 @@ export default function MerchantOrderDetailScreen() {
   const shipping = detail.shipping;
   const totals = detail.totals;
   const isRider = order.delivery_method === 'rider';
+  // ยอดที่ร้านได้รับจริง (server คิดให้) — แถวที่เป็น 0 ไม่แสดง · บวก = เงินเข้า, ลบ = ถูกหัก
+  const payout = detail.totals.payout ?? null;
+  const payoutRows = payout
+    ? [
+        { label: 'ค่าธรรมเนียม GP', amount: -toNumber(payout.platform_fee) },
+        { label: 'ภาษีมูลค่าเพิ่ม (VAT)', amount: -toNumber(payout.vat_amount) },
+        { label: 'ค่าแนะนำ', amount: -toNumber(payout.referral_amount) },
+        { label: 'ค่าส่งพัสดุที่ร้านได้รับ', amount: toNumber(payout.shipping_income) },
+        { label: 'ส่วนลดคูปองของร้าน', amount: -toNumber(payout.store_discount_deduction) },
+        { label: 'ค่าส่งที่ร้านออกแทนลูกค้า', amount: -toNumber(payout.delivery_subsidy) },
+        { label: 'คูปองค่าส่งของร้าน', amount: -toNumber(payout.store_shipping_discount) },
+        { label: 'โบนัสที่ร้านเติมให้ไรเดอร์', amount: -toNumber(payout.rider_bonus) },
+      ].filter((row) => row.amount !== 0)
+    : [];
   const hasLatLng =
     !!shipping &&
     shipping.latitude !== null &&
@@ -618,31 +632,60 @@ export default function MerchantOrderDetailScreen() {
       </Card3D>
 
       {/* ---------- ยอด ---------- */}
+      {/* 💰 (2026-11-13) มี payout จาก server → แสดง "ยอดที่ร้านได้รับจริง" ทีละบรรทัด (ทุกบรรทัดบวกลบกันลงตัว)
+          เดิมโชว์ "รายรับสุทธิ" = ค่าสินค้าหลัง GP ซึ่งไม่หักโบนัสไรเดอร์/ค่าส่งที่ร้านออกแทน และไม่รวมค่าส่งพัสดุ */}
       <Card3D variant="inset" padding={spacing.lg} style={styles.block}>
-        <View style={styles.rowBetween}>
-          <Text style={[typography.body, { color: colors.text }]}>ยอดสินค้าของร้าน</Text>
-          <PriceText amount={totals.items_total} size="sm" tone="strong" />
-        </View>
-        {toNumber(totals.discount) > 0 && (
-          <View style={[styles.rowBetween, styles.gapTopSm]}>
-            <Text style={[typography.body, { color: colors.text }]}>ส่วนลด</Text>
-            <PriceText amount={-toNumber(totals.discount)} size="sm" tone="success" />
-          </View>
+        {payout ? (
+          <>
+            <View style={styles.rowBetween}>
+              <Text style={[typography.body, { color: colors.text }]}>ยอดสินค้าของร้าน</Text>
+              <PriceText amount={payout.items_gross} size="sm" tone="strong" />
+            </View>
+            {payoutRows.map((row) => (
+              <View key={row.label} style={[styles.rowBetween, styles.gapTopSm]}>
+                <Text style={[typography.body, styles.flex, { color: colors.text }]}>{row.label}</Text>
+                <PriceText amount={row.amount} size="sm" tone={row.amount > 0 ? 'success' : 'default'} signed={row.amount > 0} />
+              </View>
+            ))}
+            <View style={[styles.rowBetween, styles.total, { borderTopColor: colors.divider }]}>
+              <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>
+                {payout.final ? 'ร้านได้รับจริง' : 'ร้านจะได้รับ (ประมาณการ)'}
+              </Text>
+              <PriceText amount={payout.net_payout} size="lg" tone="success" />
+            </View>
+            {isRider && toNumber(totals.shipping_fee) > 0 && (
+              <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>
+                ค่าส่งที่ลูกค้าจ่าย {formatBaht(totals.shipping_fee, { decimals: 2 })} เป็นของไรเดอร์ ไม่นับเป็นรายได้ร้าน
+              </Text>
+            )}
+            {!payout.final && (
+              <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>
+                ยอดจริงสรุปตอนออเดอร์สำเร็จ ตามอัตราค่าธรรมเนียม ณ วันนั้น
+              </Text>
+            )}
+          </>
+        ) : (
+          <>
+            <View style={styles.rowBetween}>
+              <Text style={[typography.body, { color: colors.text }]}>ยอดสินค้าของร้าน</Text>
+              <PriceText amount={totals.items_total} size="sm" tone="strong" />
+            </View>
+            <View style={[styles.rowBetween, styles.gapTopSm]}>
+              <Text style={[typography.body, { color: colors.text }]}>ค่าธรรมเนียม GP</Text>
+              <PriceText amount={-toNumber(totals.gp_amount)} size="sm" tone="default" />
+            </View>
+            {totals.shipping_fee !== null && totals.shipping_fee !== undefined && (
+              <View style={[styles.rowBetween, styles.gapTopSm]}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>ค่าส่งที่ลูกค้าจ่าย</Text>
+                <PriceText amount={totals.shipping_fee} size="xs" tone="muted" />
+              </View>
+            )}
+            <View style={[styles.rowBetween, styles.total, { borderTopColor: colors.divider }]}>
+              <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>ค่าสินค้าหลังหัก GP</Text>
+              <PriceText amount={totals.seller_earning} size="lg" tone="success" />
+            </View>
+          </>
         )}
-        <View style={[styles.rowBetween, styles.gapTopSm]}>
-          <Text style={[typography.body, { color: colors.text }]}>ค่าธรรมเนียม GP</Text>
-          <PriceText amount={-toNumber(totals.gp_amount)} size="sm" tone="default" />
-        </View>
-        {totals.shipping_fee !== null && totals.shipping_fee !== undefined && (
-          <View style={[styles.rowBetween, styles.gapTopSm]}>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>ค่าส่งที่ลูกค้าจ่าย</Text>
-            <PriceText amount={totals.shipping_fee} size="xs" tone="muted" />
-          </View>
-        )}
-        <View style={[styles.rowBetween, styles.total, { borderTopColor: colors.divider }]}>
-          <Text style={[typography.h3, { color: colors.textStrong }]}>รายรับสุทธิของร้าน</Text>
-          <PriceText amount={totals.seller_earning} size="lg" tone="success" />
-        </View>
         {totals.order_total !== null && totals.order_total !== undefined && (
           <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>
             ยอดที่ลูกค้าจ่ายทั้งออเดอร์ {formatBaht(totals.order_total, { decimals: 2 })}

@@ -411,7 +411,17 @@ export interface DeliverJobInput {
 
 export interface DeliverJobResponse {
   job: RiderJobDetail;
-  earnings: { rider_earnings: number; cod_amount: number; settled: boolean; wallet_balance: number };
+  earnings: {
+    /** ส่วนแบ่งจากค่าส่ง (ยังไม่รวมโบนัสร้าน) */
+    rider_earnings: number;
+    /** โบนัสที่ร้านเติม — server รุ่นเก่าไม่ส่งมา */
+    shop_bonus?: number;
+    /** ที่ไรเดอร์ได้จริงจากงานนี้ = rider_earnings + shop_bonus (ยอดเดียวกับที่เข้ากระเป๋า) — server รุ่นเก่าไม่ส่งมา */
+    rider_total?: number;
+    cod_amount: number;
+    settled: boolean;
+    wallet_balance: number;
+  };
 }
 
 export interface FailJobInput {
@@ -428,7 +438,11 @@ export interface RiderEarningsResponse {
   from: string | null;
   to: string | null;
   completed_jobs: number;
+  /** ทุกบาทที่ได้ในช่วงนี้ = ส่วนแบ่งค่าส่ง + โบนัสจากร้าน (ตรงกับเงินที่เข้ากระเป๋า) */
   gross_earnings: number;
+  /** แยกส่วน — server รุ่นเก่าไม่ส่งมา */
+  delivery_earnings?: number;
+  shop_bonus_earnings?: number;
   cod_jobs: number;
   cod_collected: number;
   cod_remitted: number;
@@ -445,6 +459,9 @@ export interface RiderEarningsResponse {
     job_type_text: string;
     completed_at: string | null;
     rider_earnings: number;
+    /** โบนัสจากร้าน + ยอดที่ได้จริงของงาน — server รุ่นเก่าไม่ส่งมา */
+    shop_bonus?: number;
+    rider_total?: number;
     total_fee: number;
     cod_amount: number;
     settled: boolean;

@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -464,6 +464,8 @@ export default function RiderScreen() {
   const docsDone = Math.max(0, docsRequired - docsMissing);
   const canReapply = !!rider.can_reapply;
   const onlineBlock = rider.online_block_reason;
+  /** บล็อกเพราะยังไม่ยืนยันตัวตน (eKYC) — แก้ได้เองในแอป */
+  const needsKyc = onlineBlock?.code === 'KYC_REQUIRED';
 
   const statusLook = (() => {
     switch (rider.status) {
@@ -557,7 +559,9 @@ export default function RiderScreen() {
             <Text style={[typography.bodySm, { color: heroSub }]}>ส่งงานนี้ให้เสร็จ แล้วระบบจะเปิดรับงานถัดไปให้เอง</Text>
           )}
           {isApproved && !isBusy && isOnline && (
-            <Text style={[typography.bodySm, { color: heroSub }]}>ระบบจะแจ้งเตือนทันทีเมื่อมีงานใกล้คุณ</Text>
+            <Text style={[typography.bodySm, { color: heroSub }]}>
+              ระบบจะแจ้งเตือนเมื่อมีงานใกล้คุณ · เปิดหน้านี้หรือหน้างานใกล้ฉันค้างไว้ ถ้าไม่ได้เปิดแอปเกิน 15 นาที ระบบจะปิดรับงานให้เอง
+            </Text>
           )}
           {isApproved && !isBusy && !isOnline && !onlineBlock && (
             <Text style={[typography.bodySm, { color: heroSub }]}>พร้อมเมื่อไหร่ กดเริ่มรับงานได้เลย</Text>
@@ -590,12 +594,14 @@ export default function RiderScreen() {
       )}
       {isApproved && !isBusy && !isOnline && (
         <Button3D
-          title="เริ่มรับงาน"
-          icon="power"
+          // ยังไม่ยืนยันตัวตน: ปุ่มต้องกดได้ → server ตอบ KYC_REQUIRED แล้วแผ่น "ยืนยันตัวตนก่อนเริ่มรับงาน" พาไปทำต่อ
+          // (เดิมปุ่มถูกปิดตาย เห็นแค่ข้อความ ไม่มีทางไปยืนยันตัวตนจากหน้านี้)
+          title={needsKyc ? 'ยืนยันตัวตนเพื่อเริ่มรับงาน' : 'เริ่มรับงาน'}
+          icon={needsKyc ? 'identification-card' : 'power'}
           variant="primary"
           size="lg"
           fullWidth
-          disabled={!rider.can_go_online}
+          disabled={!rider.can_go_online && !needsKyc}
           onPress={handleGoOnline}
           loadingText="กำลังเปิดรับงาน..."
           style={styles.block}
@@ -777,7 +783,9 @@ export default function RiderScreen() {
           description={
             bgGranted
               ? 'ทำงานเฉพาะช่วงมีงาน และหยุดเองเมื่อจบงาน'
-              : 'ไม่บังคับ — ถ้าไม่เปิด ตำแหน่งจะอัปเดตเฉพาะตอนเปิดแอปไว้'
+              : Platform.OS === 'android'
+                ? 'ไม่บังคับ — ช่วงมีงาน แอปส่งตำแหน่งต่อให้เองผ่านแจ้งเตือนที่ค้างบนเครื่อง (อย่าปัดแอปทิ้ง)'
+                : 'ไม่บังคับ — ถ้าไม่เปิด ตำแหน่งจะหยุดส่งเมื่อปิดหน้าจอหรือสลับแอป และระบบอาจคืนงานให้คนอื่น'
           }
           granted={bgGranted}
           optional

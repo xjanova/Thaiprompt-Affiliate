@@ -1411,6 +1411,8 @@ export interface FmCheckoutInput {
   delivery_notes?: string;
   /** ล็อกเรียกไรเดอร์คนโปรด (เฉพาะไรเดอร์ส่ง) — ไม่มีสิทธิ์ = 422 RIDER_LOCK_NOT_ALLOWED */
   preferred_rider_id?: number;
+  /** ยอดรวม (สินค้า + ค่าส่ง) ที่ผู้ซื้อเห็นตอนกดยืนยัน — server คิดได้มากกว่านี้ = 409 PRICE_CHANGED (ไม่ตัดเงิน) */
+  expected_total?: number;
 }
 
 /**
@@ -1431,6 +1433,9 @@ export const placeFmOrderFromCart = async (input: FmCheckoutInput): Promise<ApiR
   }
   const notes = (input.delivery_notes || '').trim();
   if (notes) body.delivery_notes = notes.slice(0, 500);
+  if (typeof input.expected_total === 'number' && Number.isFinite(input.expected_total) && input.expected_total >= 0) {
+    body.expected_total = Math.round(input.expected_total * 100) / 100;
+  }
   return mapResult(await withThai(apiPost<any>(`${BASE}/orders`, body, { timeout: 30000 })), normalizeFmOrder);
 };
 

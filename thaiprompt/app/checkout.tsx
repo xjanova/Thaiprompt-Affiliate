@@ -194,6 +194,8 @@ export default function CheckoutScreen() {
   // ---------- ข้อมูลฟอร์ม ----------
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressesChecked, setAddressesChecked] = useState(false);
+  /** โหลดรายการที่อยู่ไม่สำเร็จ (เน็ตสะดุด) — ห้ามสั่งซื้อทั้งที่จอยังไม่แสดงที่อยู่ที่จะส่ง */
+  const [addressesFailed, setAddressesFailed] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [addressSheet, setAddressSheet] = useState(false);
   const [delivery, setDelivery] = useState<DeliveryMethod>('parcel');
@@ -256,6 +258,7 @@ export default function CheckoutScreen() {
     const res = await getAddresses();
     if (!mountedRef.current) return;
     setAddressesChecked(true);
+    setAddressesFailed(!res.success);
     if (!res.success) return;
     const list = Array.isArray(res.data) ? res.data : [];
     setAddresses(list);
@@ -484,6 +487,8 @@ export default function CheckoutScreen() {
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
   const grandTotal = quote?.summary.grand_total ?? 0;
   const availableItems = (quote?.items ?? []).filter((i) => i.is_available);
+  /** มีสินค้าที่ต้องจัดส่ง (ไม่ใช่สินค้าดิจิทัลล้วน) → ต้องมีที่อยู่ที่ผู้ซื้อเห็นและเลือกแล้ว */
+  const needsShippingAddress = (quote?.stores ?? []).some((store) => store.has_physical === true);
   const walletShort = payment === 'wallet' && walletBalance !== null && walletBalance < grandTotal;
 
   // 🪙 ยอดเหรียญโดยประมาณของยอดชำระ (รายการราคาเหรียญคงที่ไม่แปลงจากบาท) — ยอดจริงออกหลังกดสั่งซื้อ
@@ -547,6 +552,12 @@ export default function CheckoutScreen() {
         ]);
         return;
       }
+      case 'PRICE_CHANGED':
+        // ยอดที่ server จะตัดมากกว่ายอดบนจอ → ยังไม่ได้ตัดเงิน โหลดยอดล่าสุดให้ดูก่อนยืนยันใหม่
+        idemRef.current = null;
+        fetchQuote();
+        Alert.alert('ยอดชำระเปลี่ยน', `${res.message} ยังไม่ได้ตัดเงิน ตรวจยอดล่าสุดบนจอแล้วกดยืนยันอีกครั้งนะ`);
+        return;
       case 'COUPON_INVALID':
         setCouponError(res.message);
         setAppliedCoupon(null);
@@ -652,6 +663,8 @@ export default function CheckoutScreen() {
         ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(lockRiderId ? { preferred_rider_id: lockRiderId } : {}),
+        // 💰 ยอดที่ผู้ซื้อเห็นและกดยืนยัน — server คิดได้มากกว่านี้ (ราคา/ค่าส่งเปลี่ยนระหว่างเปิดหน้าค้าง) = 409 PRICE_CHANGED ไม่ตัดเงิน
+        expected_total: grandTotal,
       },
       idemRef.current.key
     );
@@ -707,6 +720,22 @@ export default function CheckoutScreen() {
     }
     if (availableItems.length === 0) {
       Alert.alert('ตะกร้าว่าง', 'ยังไม่มีสินค้าที่สั่งได้');
+      return;
+    }
+    // 📍 มีของที่ต้องจัดส่งแต่จอยังไม่มีที่อยู่ที่เลือก → ห้ามสั่ง
+    //    (เดิมสั่งได้ แล้ว server ใช้ที่อยู่หลัก/สร้างที่อยู่จากโปรไฟล์เอง = ของไปที่อยู่ที่ผู้ซื้อไม่เห็นบนจอ)
+    if (needsShippingAddress && !selectedAddressId) {
+      if (addressesFailed) {
+        Alert.alert('โหลดที่อยู่จัดส่งไม่สำเร็จ', 'เช็กอินเทอร์เน็ตแล้วโหลดใหม่ก่อนสั่งซื้อนะ จะได้เห็นว่าของจะส่งไปที่ไหน', [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'โหลดใหม่', onPress: () => loadAddresses() },
+        ]);
+      } else {
+        Alert.alert('เลือกที่อยู่จัดส่งก่อนนะ', 'ยังไม่มีที่อยู่จัดส่งสำหรับออเดอร์นี้', [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'เพิ่มที่อยู่', onPress: () => router.push('/addresses/edit' as never) },
+        ]);
+      }
       return;
     }
     if ((quote.summary.unavailable_count ?? 0) > 0) {

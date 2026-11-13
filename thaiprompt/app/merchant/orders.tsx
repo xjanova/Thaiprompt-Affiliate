@@ -101,7 +101,12 @@ const OrderRow: React.FC<{ order: SellerOrderListItem; openChat?: boolean }> = (
         </Text>
         <View style={styles.amounts}>
           <PriceText amount={order.seller_total} size="md" tone="gold" />
-          <Text style={[typography.micro, { color: colors.success }]}>รับสุทธิ {formatBaht(order.seller_earning)}</Text>
+          {/* แบ่งเงินแล้ว = ยอดที่ร้านได้รับจริง · ยังไม่แบ่ง = ค่าสินค้าหลัง GP (ยังไม่หักต้นทุนไรเดอร์/ยังไม่รวมค่าส่งพัสดุ) */}
+          <Text style={[typography.micro, { color: colors.success }]}>
+            {typeof order.net_payout === 'number'
+              ? `ได้รับจริง ${formatBaht(order.net_payout)}`
+              : `ค่าสินค้าหลัง GP ${formatBaht(order.seller_earning)}`}
+          </Text>
         </View>
       </View>
     </Card3D>

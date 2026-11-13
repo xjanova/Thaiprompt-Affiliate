@@ -218,8 +218,9 @@ body{-webkit-tap-highlight-color:transparent;font-family:-apple-system,Roboto,sa
 .leaflet-control-attribution{font-size:10px;}
 body.dark.raster .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9);}
 body.glinvert .leaflet-gl-layer{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9);}
+#pickhint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:1000;max-width:88%;padding:7px 14px;border-radius:999px;font:600 13px/1.3 sans-serif;text-align:center;background:rgba(4,44,83,.94);color:#fff;display:none;pointer-events:none;}
 </style></head>
-<body><div id="map"></div>
+<body><div id="map"></div><div id="pickhint"></div>
 <script>
 (function(){
   var RN=window.ReactNativeWebView;
@@ -409,13 +410,28 @@ body.glinvert .leaflet-gl-layer{filter:invert(1) hue-rotate(180deg) brightness(.
     loadCss(ML_CSS,ML_CSS_SRI,0);
     loadScript(ML_JS,ML_SRI,0,function(){loadScript(MLL_JS,MLL_SRI,0,ok,fail);},fail);
   }
+  var pickHintTimer=null;
+  function pickHint(text){
+    var el=document.getElementById('pickhint');if(!el)return;
+    clearTimeout(pickHintTimer);
+    if(!text){el.style.display='none';return;}
+    el.textContent=text;el.style.display='block';
+    pickHintTimer=setTimeout(function(){el.style.display='none';},4000);
+  }
   function init(){
     if(!window.L){post({type:'error',reason:'leaflet'});return;}
     try{
       map=L.map('map',{zoomControl:false,attributionControl:true});
       map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
       map.setView([13.7563,100.5018],12);
-      map.on('click',function(e){if(opts.pickable)post({type:'pick',lat:e.latlng.lat,lng:e.latlng.lng});});
+      // 🎯 (2026-11-13) ปักหมุดได้เมื่อซูมใกล้พอเท่านั้น — ที่ซูม 12 หนึ่งจุดบนจอ ≈ 38 ม. แตะพลาดนิดเดียวหมุดคลาดเป็นร้อยเมตร
+      //    (หมุดร้าน = จุดคิดค่าส่งและจุดที่ไรเดอร์มารับของ) → ซูมไกลอยู่ แตะครั้งแรก = ซูมเข้าไปตรงนั้นก่อน แล้วแตะอีกครั้งเพื่อปัก
+      map.on('click',function(e){
+        if(!opts.pickable)return;
+        if(map.getZoom()<15){map.setView(e.latlng,17);pickHint('ซูมเข้าแล้ว แตะอีกครั้งเพื่อปักหมุดให้ตรงจุด');return;}
+        pickHint('');
+        post({type:'pick',lat:e.latlng.lat,lng:e.latlng.lng});
+      });
       window.addEventListener('resize',function(){map&&map.invalidateSize();});
       document.addEventListener('click',function(ev){
         var t=ev.target,a=t&&t.closest?t.closest('a'):null;

@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords, isCoarseFix } from '@/services/location';
 import { router, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { Text } from '@/components/ui/Text';
@@ -357,16 +358,26 @@ export default function StoreSettingsScreen() {
         Alert.alert('ยังไม่ได้อนุญาตตำแหน่ง', 'แตะบนแผนที่เพื่อปักหมุดเองได้เลย หรือเปิดสิทธิ์ตำแหน่งในการตั้งค่าเครื่องแล้วลองใหม่');
         return;
       }
-      const position =
-        (await withTimeout(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }), LOCATION_TIMEOUT_MS)) ||
-        (await Location.getLastKnownPositionAsync().catch(() => null));
+      // หมุดร้าน = จุดตั้งต้นคิดค่าส่งของทุกออเดอร์ และจุดที่ไรเดอร์มารับของ → ต้องเป็นตำแหน่งตอนนี้จริง
+      // (เดิมถอยไปใช้ตำแหน่งล่าสุดของเครื่องแบบไม่จำกัดอายุ)
+      const position = await getCurrentCoords({
+        accuracy: 'high',
+        timeoutMs: LOCATION_TIMEOUT_MS,
+        maxAgeMs: FRESH_FIX_MAX_AGE_MS,
+      });
       if (!mountedRef.current) return;
       if (!position) {
-        Alert.alert('หาตำแหน่งไม่เจอ', 'ออกไปที่โล่งหรือเปิด GPS แล้วลองใหม่ หรือแตะบนแผนที่เพื่อปักหมุดเอง');
+        Alert.alert('ยังจับตำแหน่งตอนนี้ไม่ได้', 'ออกไปที่โล่งหรือเปิด GPS รอสักครู่แล้วลองใหม่ หรือแตะบนแผนที่เพื่อปักหมุดเอง');
         return;
       }
-      setPin({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-      resultHaptic('success');
+      setPin({ latitude: position.latitude, longitude: position.longitude });
+      resultHaptic(isCoarseFix(position.accuracy) ? 'warning' : 'success');
+      if (isCoarseFix(position.accuracy)) {
+        Alert.alert(
+          'สัญญาณ GPS ยังไม่แม่น',
+          `ตำแหน่งที่ได้คลาดเคลื่อนได้ราว ${Math.round(position.accuracy ?? 0)} เมตร ค่าส่งของทุกออเดอร์และจุดที่ไรเดอร์มารับของจะอิงหมุดนี้ ซูมแผนที่แล้วแตะปักหมุดให้ตรงหน้าร้านก่อนบันทึกนะ`
+        );
+      }
     } catch {
       if (mountedRef.current) Alert.alert('หาตำแหน่งไม่สำเร็จ', 'เปิด GPS แล้วลองใหม่อีกครั้งนะ');
     } finally {

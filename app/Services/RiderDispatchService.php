@@ -816,7 +816,12 @@ class RiderDispatchService
                     return false;
                 }
 
-                if (! $rider->matchesJob((string) $job->job_type, (float) $job->distance_km, (float) $job->rider_earnings)) {
+                // ค่าตอบแทนขั้นต่ำที่ไรเดอร์ตั้ง เทียบกับที่ไรเดอร์ได้จริงจากงานนี้ = ส่วนแบ่งค่าส่ง + โบนัสที่ร้านเติม
+                // (เดิมเทียบแค่ส่วนแบ่งค่าส่ง → ร้านเติมโบนัสแล้วงานก็ยังไม่ถูกเสนอให้ไรเดอร์ที่ตั้งขั้นต่ำไว้)
+                $riderPay = round((float) $job->rider_earnings + max(0.0, (float) $job->shop_bonus), 2);
+                // รัศมีรับงานที่ไรเดอร์ตั้ง = ระยะ "จากตำแหน่งไรเดอร์ถึงจุดรับของ" (ตรงกับป้ายในแอป "รับงานไม่เกิน N กม. จากตำแหน่งคุณ")
+                // (เดิมเทียบกับระยะร้าน→ลูกค้า → ตั้ง 3 กม. แล้วไม่ได้รับแจ้งงานของร้านที่อยู่ห่าง 500 ม. แต่ส่งไกล 4 กม.)
+                if (! $rider->matchesJob((string) $job->job_type, (float) $rider->getAttribute('distance_to_pickup_km'), $riderPay)) {
                     return false;
                 }
 

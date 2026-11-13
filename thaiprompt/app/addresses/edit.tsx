@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Switch, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import * as Location from 'expo-location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords, isCoarseFix } from '@/services/location';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { createAddress, getAddresses, updateAddress, type AddressInput } from '@/services/api/shopApi';
@@ -167,20 +168,30 @@ export default function AddressEditScreen() {
         return;
       }
 
-      const position =
-        (await withTimeout(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }), LOCATION_TIMEOUT_MS)) ||
-        (await Location.getLastKnownPositionAsync().catch(() => null));
+      // หมุดนี้ใช้คิดค่าส่งและเป็นจุดที่ไรเดอร์มาส่งของ → ต้องเป็นตำแหน่งตอนนี้จริง
+      // (เดิมถอยไปใช้ตำแหน่งล่าสุดของเครื่องแบบไม่จำกัดอายุ = ปักในอาคารแล้วได้ตำแหน่งเมื่อชั่วโมงก่อนคนละเขต)
+      const position = await getCurrentCoords({
+        accuracy: 'high',
+        timeoutMs: LOCATION_TIMEOUT_MS,
+        maxAgeMs: FRESH_FIX_MAX_AGE_MS,
+      });
       if (!mountedRef.current) return;
       if (!position) {
-        Alert.alert('หาตำแหน่งไม่เจอ', 'ออกไปที่โล่งหรือเปิด GPS แล้วลองใหม่นะ');
+        Alert.alert('ยังจับตำแหน่งตอนนี้ไม่ได้', 'ออกไปที่โล่งหรือเปิด GPS รอสักครู่แล้วลองใหม่นะ');
         return;
       }
 
-      const latitude = Math.round(position.coords.latitude * 1e7) / 1e7;
-      const longitude = Math.round(position.coords.longitude * 1e7) / 1e7;
+      const latitude = Math.round(position.latitude * 1e7) / 1e7;
+      const longitude = Math.round(position.longitude * 1e7) / 1e7;
       setCoords({ latitude, longitude });
       setDirty(true);
-      resultHaptic('success');
+      resultHaptic(isCoarseFix(position.accuracy) ? 'warning' : 'success');
+      if (isCoarseFix(position.accuracy)) {
+        Alert.alert(
+          'สัญญาณ GPS ยังไม่แม่น',
+          `ตำแหน่งที่ได้คลาดเคลื่อนได้ราว ${Math.round(position.accuracy ?? 0)} เมตร ค่าส่งและจุดส่งของจะอิงหมุดนี้ ลองออกไปที่โล่งแล้วกด "ใช้ตำแหน่งปัจจุบัน" อีกครั้ง หรือเปิดแผนที่ตรวจหมุดก่อนบันทึกนะ`
+        );
+      }
 
       // เติมช่องที่ยังว่างจากชื่อสถานที่ (ถ้าเครื่องแปลงได้)
       try {

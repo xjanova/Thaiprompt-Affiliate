@@ -130,6 +130,12 @@ class RiderEarningService
                 $rider->increment('completed_jobs');
                 $rider->increment('total_earnings', $earnings);
                 $locked->earnings_settled_at = now();
+
+                // โบนัสที่จ่ายจริงมาจากออเดอร์ (งานเก่าที่ไม่ได้คัดลอกค่าไว้) → บันทึกลงงาน
+                // ให้หน้ารายได้ (summary) รวมยอดได้ตรงกับเงินที่เข้ากระเป๋า โดยไม่ต้องเปิดออเดอร์ทีละใบ
+                if ($bonus > 0 && round((float) $locked->shop_bonus, 2) <= 0) {
+                    $locked->shop_bonus = $bonus;
+                }
             }
 
             $locked->save();
@@ -156,7 +162,7 @@ class RiderEarningService
      * สรุปรายได้ไรเดอร์ตามช่วงเวลา (ใช้กับ GET /api/v1/rider/earnings)
      *
      * @param  string  $period  today|week|month|all
-     * @return array{period: string, from: ?string, to: string, pending_release_amount: float, pending_release_jobs: int, completed_jobs: int, gross_earnings: float, cod_jobs: int, cod_collected: float, cod_remitted: float, unsettled_jobs: int, wallet_balance: float, total_earnings_all_time: float, daily: array<int, array{date: string, jobs: int, earnings: float}>}
+     * @return array{period: string, from: ?string, to: string, pending_release_amount: float, pending_release_jobs: int, completed_jobs: int, gross_earnings: float, delivery_earnings: float, shop_bonus_earnings: float, cod_jobs: int, cod_collected: float, cod_remitted: float, unsettled_jobs: int, wallet_balance: float, total_earnings_all_time: float, daily: array<int, array{date: string, jobs: int, earnings: float}>}
      */
     public function summary(Rider $rider, string $period = 'today'): array
     {
@@ -173,18 +179,34 @@ class RiderEarningService
             ->where('status', 'completed')
             ->when($from, fn ($q) => $q->where('completed_at', '>=', $from));
 
-        $rows = (clone $base)->get(['id', 'completed_at', 'rider_earnings', 'cod_amount']);
+        $rows = (clone $base)->get(['id', 'completed_at', 'rider_earnings', 'shop_bonus', 'cod_amount']);
 
+        // รวมเป็นสตางค์ (จำนวนเต็ม) — บวกทศนิยมทีละงานแล้วเศษเพี้ยนสะสมได้
+        $deliveryCents = 0;
+        $bonusCents = 0;
         $daily = [];
-        if ($period !== 'all') {
-            foreach ($rows as $row) {
-                $date = $row->completed_at?->toDateString() ?? now()->toDateString();
-                $daily[$date] ??= ['date' => $date, 'jobs' => 0, 'earnings' => 0.0];
-                $daily[$date]['jobs']++;
-                $daily[$date]['earnings'] = round($daily[$date]['earnings'] + (float) $row->rider_earnings, 2);
+        foreach ($rows as $row) {
+            $jobDelivery = self::cents($row->rider_earnings);
+            $jobBonus = self::cents(self::storedBonus($row));
+            $deliveryCents += $jobDelivery;
+            $bonusCents += $jobBonus;
+
+            if ($period === 'all') {
+                continue;
             }
-            ksort($daily);
+
+            $date = $row->completed_at?->toDateString() ?? now()->toDateString();
+            $daily[$date] ??= ['date' => $date, 'jobs' => 0, 'cents' => 0];
+            $daily[$date]['jobs']++;
+            // รายได้ต่อวัน = ส่วนแบ่งค่าส่ง + โบนัสจากร้าน (ยอดเดียวกับที่เข้ากระเป๋า)
+            $daily[$date]['cents'] += $jobDelivery + $jobBonus;
         }
+        ksort($daily);
+        $daily = array_map(fn (array $day) => [
+            'date' => $day['date'],
+            'jobs' => $day['jobs'],
+            'earnings' => round($day['cents'] / 100, 2),
+        ], $daily);
 
         $codRemitted = 0.0;
         $user = User::find($rider->user_id);
@@ -222,7 +244,11 @@ class RiderEarningService
             'pending_release_amount' => round((float) $awaiting->sum(fn (RiderJob $job) => (float) $job->rider_earnings + $this->bonusFor($job)), 2),
             'pending_release_jobs' => $awaiting->count(),
             'completed_jobs' => $rows->count(),
-            'gross_earnings' => round((float) $rows->sum(fn ($r) => (float) $r->rider_earnings), 2),
+            // gross_earnings = ทุกบาทที่ไรเดอร์ได้ในช่วงนี้ (ส่วนแบ่งค่าส่ง + โบนัสจากร้าน) — ตรงกับเงินเข้ากระเป๋าและ total_earnings
+            // (เดิมนับเฉพาะส่วนแบ่งค่าส่ง → หน้ารายได้โชว์น้อยกว่าที่ได้จริงทุกงานที่ร้านเติมโบนัส)
+            'gross_earnings' => round(($deliveryCents + $bonusCents) / 100, 2),
+            'delivery_earnings' => round($deliveryCents / 100, 2),
+            'shop_bonus_earnings' => round($bonusCents / 100, 2),
             'cod_jobs' => $rows->filter(fn ($r) => (float) $r->cod_amount > 0)->count(),
             'cod_collected' => round((float) $rows->sum(fn ($r) => (float) $r->cod_amount), 2),
             'cod_remitted' => $codRemitted,
@@ -326,6 +352,24 @@ class RiderEarningService
         } catch (\Throwable $e) {
             Log::warning('RiderEarning: notify earning failed', ['job_id' => $job->id, 'error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * โบนัสจากร้านที่บันทึกไว้บนงาน (rider_jobs.shop_bonus) — ไม่เปิดออเดอร์ต้นทาง ใช้รวมยอดหลายงานได้เร็ว
+     *
+     * งานที่เคลียร์เงินแล้วค่านี้ = โบนัสที่จ่ายจริงเสมอ (settle() บันทึกกลับเมื่อโบนัสมาจากออเดอร์)
+     */
+    public static function storedBonus(RiderJob $job): float
+    {
+        return round(max(0.0, (float) $job->shop_bonus), 2);
+    }
+
+    /**
+     * จำนวนเงิน (บาท) → สตางค์จำนวนเต็ม
+     */
+    private static function cents(mixed $amount): int
+    {
+        return (int) round(((float) $amount) * 100);
     }
 
     /**

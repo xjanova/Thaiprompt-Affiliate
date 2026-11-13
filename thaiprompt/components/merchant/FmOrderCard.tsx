@@ -249,8 +249,15 @@ export const FmOrderCard: React.FC<FmOrderCardProps> = ({ order, onAction, highl
             <PriceText amount={order.grand_total || order.total_amount} size="lg" tone="strong" />
           </View>
           <View style={styles.right}>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>ร้านได้รับ</Text>
-            <PriceText amount={order.seller_earning} size="md" tone="success" />
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {order.seller_net_final ? 'ร้านได้รับ' : 'ร้านจะได้รับ'}
+            </Text>
+            <PriceText amount={order.seller_net} size="md" tone="success" />
+            {order.rider_bonus_amount + order.delivery_subsidy_amount > 0 && (
+              <Text style={[typography.micro, { color: colors.textMuted }]}>
+                หักค่าไรเดอร์ที่ร้านออก {formatBaht(order.rider_bonus_amount + order.delivery_subsidy_amount)} แล้ว
+              </Text>
+            )}
           </View>
         </View>
 

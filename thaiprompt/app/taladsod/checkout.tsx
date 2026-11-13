@@ -67,7 +67,7 @@ import {
   type FmShopDetail,
 } from '@/services/api/taladsodApi';
 import { getAddresses, type Address } from '@/services/api/shopApi';
-import { formatDistance, formatDuration } from '@/services/location';
+import { calculateDistance, formatDistance, formatDuration } from '@/services/location';
 import {
   EscrowNotice,
   RiderChoiceBlock,
@@ -157,6 +157,8 @@ export default function TaladsodCheckoutScreen() {
   const attemptsRef = useRef(0);
   const placingRef = useRef(false);
   const defaultsAppliedRef = useRef(false);
+  /** ข้อความที่อยู่ที่เติมให้อัตโนมัติจากที่อยู่ที่บันทึกไว้ + พิกัดของที่อยู่นั้น (null = ผู้ซื้อพิมพ์เอง) */
+  const savedAddressRef = useRef<{ text: string; latitude: number; longitude: number } | null>(null);
 
   // ---------- โหลดข้อมูลตั้งต้น ----------
   const loadConfig = useCallback(async () => {
@@ -211,9 +213,28 @@ export default function TaladsodCheckoutScreen() {
 
   const chooseAddress = useCallback((a: Address) => {
     setSelectedAddressId(a.id);
+    const text = a.full_address || [a.address_line_1, a.district, a.province].filter(Boolean).join(' ');
     setPin({ latitude: Number(a.latitude), longitude: Number(a.longitude), source: 'saved' });
-    setAddressText(a.full_address || [a.address_line_1, a.district, a.province].filter(Boolean).join(' '));
+    setAddressText(text);
+    savedAddressRef.current = { text, latitude: Number(a.latitude), longitude: Number(a.longitude) };
     setAddressError(null);
+  }, []);
+
+  /**
+   * หมุดจุดส่งถูกย้าย (GPS / แตะแผนที่) — ถ้าย้ายไปไกลจากที่อยู่ที่บันทึกไว้เกิน 150 ม. แต่ข้อความยังเป็นของที่อยู่เดิม
+   * → ล้างข้อความให้กรอกใหม่ (ค่าส่งคิดตามหมุด แต่ไรเดอร์อ่านข้อความด้วย: เดิมค่าส่งคิดไปออฟฟิศ ไรเดอร์เห็นที่อยู่บ้าน)
+   * ขยับหมุดเล็กน้อยเพื่อให้ตรงประตูบ้าน ไม่ล้าง
+   */
+  const detachSavedAddressText = useCallback((latitude: number, longitude: number, currentText: string) => {
+    const saved = savedAddressRef.current;
+    if (!saved) return;
+    const movedM = calculateDistance(saved.latitude, saved.longitude, latitude, longitude) * 1000;
+    if (movedM <= 150) return;
+    savedAddressRef.current = null;
+    if (currentText.trim() === saved.text.trim()) {
+      setAddressText('');
+      setAddressError('หมุดจุดส่งย้ายไปที่ใหม่แล้ว บอกที่อยู่หรือจุดสังเกตของจุดนี้ให้ไรเดอร์หน่อยนะ');
+    }
   }, []);
 
   // ค่าเริ่มต้นครั้งแรก: ไรเดอร์ถ้าเปิดใช้ · จ่ายด้วยกระเป๋าถ้ามี · ที่อยู่หลักที่ปักหมุดแล้ว
@@ -260,6 +281,7 @@ export default function TaladsodCheckoutScreen() {
     selectionHaptic();
     setPin({ latitude: coords.latitude, longitude: coords.longitude, source: 'gps' });
     setSelectedAddressId(null);
+    detachSavedAddressText(coords.latitude, coords.longitude, addressText);
   };
 
   // ---------- ไรเดอร์คนโปรด ----------
@@ -427,6 +449,12 @@ export default function TaladsodCheckoutScreen() {
 
     resultHaptic('error');
     switch (code) {
+      case 'PRICE_CHANGED':
+        // ยอดที่ server จะตัดมากกว่ายอดบนจอ → ยังไม่ได้ตัดเงิน โหลดตะกร้า + ค่าส่งล่าสุดให้ดูก่อนยืนยันใหม่
+        useTaladsodCartStore.getState().refresh().catch(() => {});
+        setQuoteNonce((n) => n + 1);
+        Alert.alert('ยอดชำระเปลี่ยน', `${message} ยังไม่ได้ตัดเงิน ตรวจยอดล่าสุดบนจอแล้วกดยืนยันอีกครั้งนะ`);
+        return;
       case 'SHOP_CLOSED':
         Alert.alert('ร้านเพิ่งปิด', 'ร้านปิดรับออเดอร์แล้ว ติดตามร้านไว้ ร้านเปิดเมื่อไหร่เราจะแจ้งทันที', [
           { text: 'ไว้ก่อน', style: 'cancel' },
@@ -560,6 +588,8 @@ export default function TaladsodCheckoutScreen() {
         buyer_longitude: deliveryType === 'rider' ? pin?.longitude : undefined,
         delivery_notes: notes.trim() || undefined,
         preferred_rider_id: lockRiderId ?? undefined,
+        // 💰 ยอดบนจอตอนกดยืนยัน (ยอดสินค้า + ค่าส่ง จาก server ทั้งคู่) — ราคา/ค่าส่งขึ้นระหว่างเปิดหน้าค้าง = ไม่ตัดเงิน
+        expected_total: feePending ? undefined : total,
       });
       if (!mountedRef.current) return;
       if (res.success && res.data.id > 0) {
@@ -826,6 +856,7 @@ export default function TaladsodCheckoutScreen() {
                     onPick={(c) => {
                       setPin({ ...c, source: 'map' });
                       setSelectedAddressId(null);
+                      detachSavedAddressText(c.latitude, c.longitude, addressText);
                     }}
                     openTargetId={null}
                     caption='แตะแผนที่หรือลากหมุด "จุดส่ง" เพื่อปรับจุดส่งให้ตรง'

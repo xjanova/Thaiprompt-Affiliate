@@ -220,12 +220,14 @@ class FreshMarketSeller extends Model
      */
     public function scopeNearby($query, float $lat, float $lng, float $radiusKm = 10)
     {
+        // LEAST/GREATEST: ผู้ซื้อยืนอยู่ที่พิกัดเดียวกับร้านพอดี ค่าใน acos() เกิน 1 เล็กน้อยจากเศษทศนิยม
+        // → MySQL คืน NULL แล้วร้านที่ใกล้ที่สุดหายจากผลค้นหา (NULL <= รัศมี เป็นเท็จ)
         return $query->selectRaw('*, (
-            6371 * acos(
+            6371 * acos(LEAST(1, GREATEST(-1,
                 cos(radians(?)) * cos(radians(latitude))
                 * cos(radians(longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(latitude))
-            )
+            )))
         ) AS distance_km', [$lat, $lng, $lat])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')

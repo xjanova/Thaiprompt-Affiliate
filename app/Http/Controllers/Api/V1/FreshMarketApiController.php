@@ -429,6 +429,8 @@ class FreshMarketApiController extends Controller
             // 🪙 tpix = จ่ายด้วยเหรียญ TPIX: ได้ใบเสนอยอด (ก้อน tpix) ยังไม่มีออเดอร์ — ได้เหรียญแล้วระบบสั่งด้วยกระเป๋าเงินให้
             'payment_method' => 'required|in:wallet,cod,escrow,tpix',
             'preferred_rider_id' => 'nullable|integer|min:1', // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์คนโปรด
+            // 💰 ยอดรวม (สินค้า + ค่าส่ง) ที่ผู้ซื้อเห็นตอนกดยืนยัน — server คิดได้มากกว่านี้ = 409 PRICE_CHANGED ไม่ตัดเงิน
+            'expected_total' => 'nullable|numeric|min:0|max:99999999',
         ];
 
         $rules += match ($mode) {
@@ -473,7 +475,12 @@ class FreshMarketApiController extends Controller
             ['channel' => 'api', 'client_app_build' => \App\Support\Rider\ClientAppBuild::fromRequest($request)]
         );
 
-        return $this->handle(function () use ($request, $data, $mode, $orderData) {
+        // เดิมด่าน PRICE_CHANGED ใช้กับ TPIX เท่านั้น (ตะกร้า/กระเป๋าเงินไม่เคยส่งยอดเข้ามา)
+        $maxGrandTotal = isset($data['expected_total']) && is_numeric($data['expected_total'])
+            ? round((float) $data['expected_total'] + 0.004, 2)
+            : null;
+
+        return $this->handle(function () use ($request, $data, $mode, $orderData, $maxGrandTotal) {
             $buyer = $request->user();
 
             if ($data['payment_method'] === 'tpix') {
@@ -506,9 +513,9 @@ class FreshMarketApiController extends Controller
                     return $this->error('MIXED_SELLERS', 'สั่งได้ทีละร้าน กรุณาแยกออเดอร์ตามร้าน', 422);
                 }
 
-                $order = $this->marketService->createOrderFromItems($buyer, $sellerId, $data['items'], $orderData);
+                $order = $this->marketService->createOrderFromItems($buyer, $sellerId, $data['items'], $orderData, $maxGrandTotal);
             } else {
-                $order = app(\App\Services\FreshMarketCartService::class)->checkout($buyer, (int) $data['seller_id'], $orderData);
+                $order = app(\App\Services\FreshMarketCartService::class)->checkout($buyer, (int) $data['seller_id'], $orderData, $maxGrandTotal);
             }
 
             return $this->ok($order->toApiArray('buyer'), 'สั่งซื้อสำเร็จ', 201);

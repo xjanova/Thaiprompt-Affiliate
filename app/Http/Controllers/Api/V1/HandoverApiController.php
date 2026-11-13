@@ -150,17 +150,25 @@ class HandoverApiController extends Controller
                 return $data;
             }
 
+            $job = $this->findJob($id);
+            // งานเก็บเงินปลายทาง: ไรเดอร์ถือเงินสดอยู่ ระบบ "หัก" ส่วนที่ต้องนำส่งจากกระเป๋า — ห้ามบอกว่ารายได้เข้ากระเป๋า
+            $isCod = (float) $job->cod_amount > 0;
+
             $payload = $this->handovers->riderScan(
                 $rider,
-                $this->findJob($id),
+                $job,
                 isset($data['token']) ? (string) $data['token'] : null,
                 isset($data['code']) ? (string) $data['code'] : null,
                 $request->input('latitude'),
                 $request->input('longitude'),
             );
 
+            $doneMessage = $isCod
+                ? 'ส่งมอบสำเร็จ! ระบบหักเงินเก็บปลายทางที่ต้องนำส่งจากกระเป๋าเงินของคุณแล้ว (ค่าส่งของคุณอยู่ในเงินสดที่เก็บมา)'
+                : 'ส่งมอบสำเร็จ! รายได้เข้ากระเป๋าเงินของคุณแล้ว';
+
             return $this->ok($payload, $payload['handover']['status'] === 'completed'
-                ? 'ส่งมอบสำเร็จ! รายได้เข้ากระเป๋าเงินของคุณแล้ว'
+                ? $doneMessage
                 : 'ยืนยันฝั่งไรเดอร์แล้ว ให้ผู้รับสแกน QR บนมือถือของคุณ');
         }, ['job_id' => $id]);
     }
