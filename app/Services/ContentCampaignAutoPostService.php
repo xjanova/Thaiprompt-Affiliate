@@ -137,6 +137,10 @@ class ContentCampaignAutoPostService
         ?Carbon $date = null,
         bool $force = false
     ): array {
+        // 🛑 (2026-11-13) เพจที่เจ้าของสั่งหยุดโพสต์ ต้องหยุดตั้งแต่ก่อนสร้าง/ลบคอนเทนต์เดิม (รวม --force)
+        [$pageId] = $this->resolvePageCredentials();
+        (new \App\Support\FacebookPagePostingGuard)->assertAllowed((string) $pageId);
+
         $date = $date ?? now('Asia/Bangkok');
 
         // Normalize slot ผ่าน normalizer กลาง — กัน unique key เพี้ยนจากการแปลงคนละที่

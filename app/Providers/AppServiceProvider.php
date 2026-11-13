@@ -113,6 +113,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 🛑 (2026-11-13) ด่านกันโพสต์ลงเพจ Facebook ที่เจ้าของสั่งหยุด — เช็คทุกคำขอก่อนออกจากเครื่อง
+        //    (รวมรอบ retry และ worker ที่ถือค่าเก่า) ดู App\Support\FacebookPagePostingGuard
+        \Illuminate\Support\Facades\Http::globalRequestMiddleware(new \App\Support\FacebookPagePostingGuard);
+
         // ✅ ตรวจสอบและสร้าง storage directories ที่จำเป็น
         // แก้ปัญหา session storage error เมื่อ directory ไม่มีอยู่
         $this->ensureStorageDirectoriesExist();
