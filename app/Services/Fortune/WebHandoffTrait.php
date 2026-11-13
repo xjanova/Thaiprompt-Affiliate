@@ -134,6 +134,12 @@ trait WebHandoffTrait
             $sent = $this->deliverWebHandoff($platformUserId, $payload, $opts['sender'] ?? null);
         }
 
+        // 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 1 — นับเฉพาะกล่องที่มีลิงก์จริงและไม่ได้ส่งพลาด
+        //    (sent = null คือ ChannelManager เป็นคนส่งต่อ — นับว่าส่ง)
+        if (! $failClosed && $sent !== false) {
+            WebFunnelTracker::boxSent($platformUserId, $pageId, $source);
+        }
+
         Log::info('🌙 WebHandoff: พาลูกค้าไปห้องแม่หมอ', [
             'platform_user_id' => $platformUserId,
             'source' => $source,

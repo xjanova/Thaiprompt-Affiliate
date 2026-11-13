@@ -7,6 +7,7 @@ use App\Services\Fortune\FortuneLiveActivity;
 use App\Services\Fortune\JuntraChatService;
 use App\Services\Fortune\JuntraRegularGreetingService;
 use App\Services\Fortune\WebChatContinuityService;
+use App\Services\Fortune\WebFunnelTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -166,6 +167,9 @@ class ChatController extends Controller
                 'reason_code' => 'ai_unavailable',
             ], 503);
         }
+
+        // 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 3 — ลูกค้าที่มาจากลิงก์ในแชทเพจพิมพ์คุยกับแม่หมอ (ครั้งแรกของวัน)
+        WebFunnelTracker::chatted($userRef, $claimed);
 
         $payload = [
             'session_id' => $data['session_id'],

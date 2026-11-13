@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\FortuneMessengerSender;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneWebFunnelEvent;
 use App\Models\FortuneWebHandoff;
 use App\Models\LineBotConversation;
 use App\Services\FacebookRichMessageService;
@@ -297,6 +298,12 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertSame(['assistant', $res['message']], $history[1]);
 
         $this->assertSame($readingsBefore, FortuneReading::count(), 'ห้ามสร้างบิล/คำทำนายบน FB');
+
+        // 📈 ตัวนับ FB → เว็บ ขั้น 1 — กล่องที่มีลิงก์จริงนับ 1 แถว พร้อมสาขาและจุดที่ส่ง
+        $event = FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::BOX_SENT)->sole();
+        $this->assertSame(self::PSID, $event->platform_user_id);
+        $this->assertSame(5, $event->fortune_page_id);
+        $this->assertSame('web_only_gate', $event->source);
     }
 
     public function test_intent_ตัด_url_เลขยาว_และจำนวนเงิน(): void
@@ -351,6 +358,7 @@ class FortuneWebHandoffTest extends TestCase
         }
 
         $this->assertSame($readingsBefore, FortuneReading::count(), 'fail-closed ต้องไม่ตกไปออกบิล');
+        $this->assertSame(0, FortuneWebFunnelEvent::count(), 'ไม่มีลิงก์ = ไม่นับว่าได้กล่อง');
     }
 
     public function test_service_ลิงก์โยน_exception_ก็_fail_closed(): void

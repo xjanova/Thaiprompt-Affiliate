@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\FortuneRichMenuEditorController;
 use App\Http\Controllers\Admin\FortuneSavedQuestionsController;
 use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneSlipLogController;
+use App\Http\Controllers\Admin\FortuneWebFunnelController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
@@ -2906,6 +2907,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     // SLIP VERIFICATION LOGS — ประวัติการตรวจสลิป (SlipOK) audit
     // ========================================
     Route::get('slip-logs', [FortuneSlipLogController::class, 'index'])->name('slip-logs.index');
+
+    // 📈 (2026-11-14) ยอดเข้าห้องแม่หมอ — แชทเพจ FB → เว็บจันทรา ทีละขั้น (อ่านอย่างเดียว)
+    Route::get('web-funnel', [FortuneWebFunnelController::class, 'index'])->name('web-funnel.index');
     // 🖼️ (2026-06-03) สตรีมรูปสลิปที่ส่งไปตรวจ (auth admin เท่านั้น — PDPA) เพื่อ debug no_qr
     Route::get('slip-logs/{log}/image', [FortuneSlipLogController::class, 'image'])->name('slip-logs.image');
 

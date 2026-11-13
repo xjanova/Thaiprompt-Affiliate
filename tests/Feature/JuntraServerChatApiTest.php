@@ -629,6 +629,42 @@ class JuntraServerChatApiTest extends TestCase
     /* ───────────── 🌙 (2026-11-03 FB web-only) ความต่อเนื่องจากแชท FB + ตัวละคร ───────────── */
 
     /** ตารางที่ WebChatContinuityService อ่าน — สร้างขั้นต่ำบน sqlite (ตารางจริงบน MySQL มีคอลัมน์มากกว่านี้) */
+    /**
+     * 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 3 — ลูกค้าที่มาจากลิงก์ในแชทเพจพิมพ์คุย = 1 แถวต่อคนต่อวัน
+     *   ลูกค้าเว็บทั่วไปไม่นับ · AI ล่ม (503) ไม่นับ
+     */
+    public function test_chat_from_a_customer_who_came_from_the_fb_link_is_counted_once_a_day(): void
+    {
+        (require database_path('migrations/2026_11_14_000001_create_fortune_web_funnel_events_table.php'))->up();
+        DB::table('fortune_web_funnel_events')->insert([
+            'event' => 'link_opened', 'platform_user_id' => '7001', 'thaiprompt_user_id' => 77,
+            'fortune_page_id' => 2, 'source' => 'new_account', 'created_at' => now(),
+        ]);
+        $sendAs = fn (string $ref, ?int $tp, string $session) => $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', array_filter([
+            'user_ref' => $ref, 'session_id' => $session, 'text' => 'สวัสดีค่ะแม่หมอ', 'thaiprompt_user_id' => $tp,
+        ]));
+
+        // ลูกค้าเว็บทั่วไป (tp 88 ไม่เคยแตะลิงก์จากเพจ) → ไม่นับ
+        $sendAs('51', 88, $this->start('51'))->assertOk();
+        // AI ล่ม → ไม่นับ
+        $this->aiScript = [new \RuntimeException('down'), new \RuntimeException('down'), new \RuntimeException('down')];
+        $session = $this->start('50');
+        $failed = $sendAs('50', 77, $session);
+        if ($failed->status() === 503) {
+            $this->assertSame(0, DB::table('fortune_web_funnel_events')->where('event', 'chatted')->count());
+        }
+        $this->aiScript = [];
+
+        $sendAs('50', 77, $session)->assertOk();
+        $sendAs('50', 77, $session)->assertOk();
+
+        $rows = DB::table('fortune_web_funnel_events')->where('event', 'chatted')->get();
+        $this->assertCount(1, $rows);
+        $this->assertSame(77, (int) $rows[0]->thaiprompt_user_id);
+        $this->assertSame('50', $rows[0]->juntra_user_ref);
+        $this->assertSame(2, (int) $rows[0]->fortune_page_id, 'สาขาตามที่แตะลิงก์ล่าสุด');
+    }
+
     private function buildContinuitySchema(): void
     {
         Schema::table('users', function (Blueprint $table) {
