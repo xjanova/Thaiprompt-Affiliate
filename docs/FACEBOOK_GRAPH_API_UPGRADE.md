@@ -13,6 +13,16 @@ Facebook Login ตั้ง `usingGraphVersion()` ทั้งขา redirect �
 
 Migration `2026_11_13_000001_upgrade_facebook_graph_api_version` ปรับค่าแถวเดิม ค่าเริ่มต้นของคอลัมน์ และล้างแคช Facebook OAuth การ rollback คืนเฉพาะค่าเริ่มต้นของคอลัมน์ โดยไม่ลดเวอร์ชันแถวเดิมไปเป็นเวอร์ชันหมดอายุ
 
+## Mobile app
+
+แอป React Native/Expo ใน `thaiprompt/` ไม่เรียก Graph API หรือใช้ Facebook SDK โดยตรง ปุ่ม Facebook เรียก `/api/v1/auth/mobile/init` พร้อม `provider=facebook` แล้วเปิดเว็บผ่าน PKCE → `/mobile-login` → `/auth/facebook` → callback เดิมของเว็บ → `thaiprompt://auth?code=...&state=...` → `/api/v1/auth/mobile/exchange`
+
+ทั้งแอปและเว็บจึงใช้ `FacebookLoginController` และ `FacebookGraphApi::VERSION` ตัวเดียวกัน การเปลี่ยน Graph API เป็น v27.0 มีผลหลัง deploy backend โดยไม่ต้องออก APK/IPA ใหม่เพียงเพื่อเปลี่ยนเวอร์ชัน Graph API
+
+รูปโปรไฟล์จาก `graph.facebook.com` ตรวจ HTTPS และชื่อ host ใน `thaiprompt/utils/linking.ts` โดยไม่ผูกกับเลขเวอร์ชัน จึงรองรับ URL v27.0, URL ไม่มีเวอร์ชัน และรูปเก่าที่เก็บไว้ เทสต์ `kycGate.test.ts` ตรวจทั้งสามรูปแบบ
+
+ก่อนเปิดใช้จริง ให้ทดสอบ Facebook Login จาก Android/iOS จนแลก code เป็น token สำเร็จ รวมถึงยกเลิกล็อกอินและเปิดแอปกลับผ่าน deep link การ export JavaScript bundle และเทสต์จำลองยังไม่ยืนยันพฤติกรรมเบราว์เซอร์หรือ deep link บนเครื่องจริง
+
 ## ผลกระทบที่ตรวจ
 
 ตรวจ changelog v22.0–v27.0 เทียบจุดเรียกใน repository นี้ ไม่พบการเรียก Page ratings, Commerce Order Management, Rights Manager, legacy Page fields, `date_format`, root `?ids=`, video insights ที่ถูกยกเลิก หรือ Catalog `/batch` ที่ต้องย้าย endpoint
