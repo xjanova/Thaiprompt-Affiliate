@@ -73,10 +73,12 @@ export const saveAuthToken = async (token: string): Promise<void> => {
  * ลบ token จาก SecureStore
  */
 export const clearAuthToken = async (): Promise<void> => {
+  delete apiClient.defaults.headers.common['Authorization'];
   try {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA);
-    delete apiClient.defaults.headers.common['Authorization'];
+    await Promise.all([
+      SecureStore.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN),
+      SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA),
+    ]);
   } catch (error) {
     console.error('Error clearing auth token:', error);
   }
@@ -87,6 +89,12 @@ export const clearAuthToken = async (): Promise<void> => {
  */
 export const setAuthHeader = (token: string): void => {
   apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+};
+
+let authExpiredHandler: (() => void | Promise<void>) | null = null;
+
+export const setAuthExpiredHandler = (handler: (() => void | Promise<void>) | null): void => {
+  authExpiredHandler = handler;
 };
 
 // =====================================================
@@ -108,6 +116,7 @@ apiClient.interceptors.request.use(
     if (!config.headers['Authorization']) {
       const token = await loadAuthToken();
       if (token) {
+        setAuthHeader(token);
         config.headers['Authorization'] = `Bearer ${token}`;
       }
     }
@@ -152,9 +161,18 @@ apiClient.interceptors.response.use(
       }, 3000);
     }
 
-    if (error.response?.status === 401) {
-      // Token หมดอายุ - ล้างข้อมูล
-      await clearAuthToken();
+    const rejectedAuthorization = error.config?.headers?.Authorization;
+    if (
+      error.response?.status === 401 &&
+      typeof rejectedAuthorization === 'string' &&
+      rejectedAuthorization.startsWith('Bearer ') &&
+      rejectedAuthorization === apiClient.defaults.headers.common['Authorization']
+    ) {
+      if (authExpiredHandler) {
+        await authExpiredHandler();
+      } else {
+        await clearAuthToken();
+      }
     }
     return Promise.reject(error);
   }
