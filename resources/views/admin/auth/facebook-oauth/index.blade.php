@@ -165,12 +165,9 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Graph API Version
                     </label>
-                    <select name="graph_version"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                        @foreach (['v18.0', 'v19.0', 'v20.0', 'v21.0'] as $version)
-                            <option value="{{ $version }}" @selected(old('graph_version', $settings->graph_version) === $version)>{{ $version }}</option>
-                        @endforeach
-                    </select>
+                    <input name="graph_version" type="text" readonly
+                           value="{{ \App\Support\FacebookGraphApi::VERSION }}"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
 
                 {{-- Scopes --}}

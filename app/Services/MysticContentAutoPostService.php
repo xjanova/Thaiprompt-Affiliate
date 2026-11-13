@@ -6,9 +6,10 @@ use App\Models\AiGenProvider;
 use App\Models\FortuneMysticPost;
 use App\Models\FortuneMysticTopic;
 use App\Models\FortuneTellingSetting;
-use App\Services\Fortune\FortunePageContext;
 use App\Services\AiGen\CloudflareAiProvider;
 use App\Services\Fortune\FacebookContentPolicy;
+use App\Services\Fortune\FortunePageContext;
+use App\Support\FacebookGraphApi;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -577,14 +578,14 @@ class MysticContentAutoPostService
         $caption = $post->caption ?: 'คอนเทนต์สายมูประจำวัน';
 
         if (! empty($post->image_url)) {
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/photos";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/photos");
             $response = Http::timeout(60)->post($endpoint, [
                 'url' => $post->image_url,
                 'caption' => $caption,
                 'access_token' => $pageToken,
             ]);
         } else {
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/feed";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/feed");
             $response = Http::timeout(60)->post($endpoint, [
                 'message' => $caption,
                 'access_token' => $pageToken,
@@ -626,7 +627,7 @@ class MysticContentAutoPostService
             }
 
             $response = Http::timeout(30)->delete(
-                "https://graph.facebook.com/v21.0/{$fbPostId}",
+                FacebookGraphApi::url("/{$fbPostId}"),
                 ['access_token' => $pageToken]
             );
 

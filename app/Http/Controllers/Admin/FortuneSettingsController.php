@@ -11,6 +11,7 @@ use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
 use App\Services\FortuneConversationService;
 use App\Services\FortuneWebLinkService;
+use App\Support\FacebookGraphApi;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -1441,7 +1442,7 @@ class FortuneSettingsController extends Controller
                 $fbService = new \App\Services\FacebookWebhookService($settings);
                 // ทดสอบ API ด้วย Messaging Feature Review (ไม่ส่งข้อความจริง)
                 $testResponse = \Illuminate\Support\Facades\Http::timeout(15)
-                    ->get('https://graph.facebook.com/v21.0/me', [
+                    ->get(FacebookGraphApi::url('/me'), [
                         'fields' => 'id,name',
                         'access_token' => $settings->facebook_page_token,
                     ]);

@@ -506,7 +506,7 @@
                     </div>
                     <div class="tp-inset-sm" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:12px;">
                         <span class="tp-muted" style="font-size:13px;">Graph API Version</span>
-                        <span style="font-size:13px;color:var(--ink);">v21.0</span>
+                        <span style="font-size:13px;color:var(--ink);">{{ \App\Support\FacebookGraphApi::VERSION }}</span>
                     </div>
                 </div>
             </div>

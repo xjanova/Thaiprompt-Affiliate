@@ -13,6 +13,7 @@ import {
   validateToken,
   loadAuthToken,
   setAuthHeader,
+  setAuthExpiredHandler,
   getLineLoginUrl as apiGetLineLoginUrl,
   lineLoginCallback as apiLineLoginCallback,
   initWebAuth,
@@ -588,6 +589,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearSession: async (message?: string | null) => {
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      isOfflineMode: false,
+      error: message || null,
+    });
     try {
       await clearAuthToken();
       await clearStoredPushToken();
@@ -597,14 +606,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     resetSellerCache();
     resetFreshMarketSellerCache();
     clearBannerCache();
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      isOfflineMode: false,
-      error: message || null,
-    });
   },
 
   /**
@@ -659,6 +660,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 }));
 
 // F-platform: บัญชีถูกระงับ (403 ACCOUNT_SUSPENDED จาก API ใดก็ได้) → ออกจากระบบในเครื่อง + แสดงข้อความบนหน้า login
+setAuthExpiredHandler(() =>
+  useAuthStore.getState().clearSession('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง')
+);
+
 setAccountSuspendedHandler((message) => {
   const { isAuthenticated, clearSession } = useAuthStore.getState();
   if (isAuthenticated) {

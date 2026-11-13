@@ -8,6 +8,7 @@ use App\Models\FortuneHoroscopePost;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\FacebookContentPolicy;
 use App\Services\Fortune\PersonaBreakDetector;
+use App\Support\FacebookGraphApi;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
@@ -215,7 +216,7 @@ class FortuneHoroscopePublishService
     /**
      * โพสลง Facebook Page (text + image)
      *
-     * ใช้ Graph API v18.0 ตาม pattern จาก BotPlatformService
+     * ใช้เวอร์ชันกลางจาก FacebookGraphApi
      */
     protected function publishToFacebook(FortuneHoroscopePost $post, FortuneHoroscopeCampaign $campaign): array
     {
@@ -230,7 +231,7 @@ class FortuneHoroscopePublishService
 
         // ถ้ามีรูป ใช้ /photos endpoint (รูปแรก + caption)
         if (! empty($imageUrls)) {
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/photos";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/photos");
             $response = Http::timeout(60)->post($endpoint, [
                 'url' => $imageUrls[0],
                 'caption' => $post->post_content,
@@ -238,7 +239,7 @@ class FortuneHoroscopePublishService
             ]);
         } else {
             // ไม่มีรูป ใช้ /feed endpoint
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/feed";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/feed");
             $response = Http::timeout(60)->post($endpoint, [
                 'message' => $post->post_content,
                 'access_token' => $pageToken,

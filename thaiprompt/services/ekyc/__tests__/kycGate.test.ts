@@ -86,6 +86,8 @@ describe('รูปโปรไฟล์จาก CDN ของบัญชี�
     expect(isTrustedAvatarUrl('https://scontent.xx.fbcdn.net/v/t1.jpg')).toBe(true);
     expect(isTrustedAvatarUrl('https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=1')).toBe(true);
     // Socialite เก็บรูป Facebook เป็น graph.facebook.com
+    expect(isTrustedAvatarUrl('https://graph.facebook.com/v27.0/1234567890/picture?type=normal')).toBe(true);
+    expect(isTrustedAvatarUrl('https://graph.facebook.com/1234567890/picture?type=normal')).toBe(true);
     expect(isTrustedAvatarUrl('https://graph.facebook.com/v3.3/1234567890/picture?type=normal')).toBe(true);
   });
 

@@ -36,9 +36,10 @@ class PassportRouteLockdownTest extends TestCase
      */
     private const REQUIRED_ROUTES = [
         'passport.token' => ['POST', 'oauth/token', ['throttle']],
-        'passport.authorizations.authorize' => ['GET', 'oauth/authorize', ['web']],
-        'passport.authorizations.approve' => ['POST', 'oauth/authorize', ['web', 'auth:web']],
-        'passport.authorizations.deny' => ['DELETE', 'oauth/authorize', ['web', 'auth:web']],
+        'passport.authorizations.authorize' => ['GET', 'oauth/authorize', ['web', \App\Http\Middleware\BindFreshSocialAuthorization::class]],
+        'passport.authorizations.approve' => ['POST', 'oauth/authorize', ['web', 'auth:web', \App\Http\Middleware\BindFreshSocialAuthorization::class]],
+        'passport.authorizations.deny' => ['DELETE', 'oauth/authorize', ['web', 'auth:web', \App\Http\Middleware\BindFreshSocialAuthorization::class]],
+        'passport.social.authorize' => ['GET', 'oauth/social/authorize', ['web', 'throttle:30,1']],
     ];
 
     /**
@@ -149,7 +150,7 @@ class PassportRouteLockdownTest extends TestCase
      * ถ้าอัปเกรด Passport แล้วมันเพิ่มเส้นใหม่มา (เช่น device flow / userinfo)
      * เทสต์นี้จะแดงให้มาทบทวนก่อนว่าเส้นใหม่ปลอดภัยไหม
      */
-    public function test_only_the_four_allowlisted_oauth_routes_exist(): void
+    public function test_only_the_allowlisted_oauth_routes_exist(): void
     {
         $oauthRoutes = [];
         foreach (Route::getRoutes() as $route) {
@@ -163,6 +164,7 @@ class PassportRouteLockdownTest extends TestCase
         $this->assertSame([
             'DELETE oauth/authorize',
             'GET|HEAD oauth/authorize',
+            'GET|HEAD oauth/social/authorize',
             'POST oauth/authorize',
             'POST oauth/token',
         ], $oauthRoutes);

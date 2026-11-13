@@ -9,6 +9,7 @@ use App\Services\AiGen\CloudflareAiProvider;
 use App\Services\Fortune\DailyAstroBrief;
 use App\Services\Fortune\FacebookContentPolicy;
 use App\Services\Fortune\FortunePageContext;
+use App\Support\FacebookGraphApi;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -679,7 +680,7 @@ class DailyHoroscopeAutoPostService
 
         // ถ้ามีรูป → /photos endpoint
         if (! empty($post->image_url)) {
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/photos";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/photos");
             $response = Http::timeout(60)->post($endpoint, [
                 'url' => $post->image_url,
                 'caption' => $caption,
@@ -687,7 +688,7 @@ class DailyHoroscopeAutoPostService
             ]);
         } else {
             // text-only → /feed endpoint
-            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/feed";
+            $endpoint = FacebookGraphApi::url("/{$pageId}/feed");
             $response = Http::timeout(60)->post($endpoint, [
                 'message' => $caption,
                 'access_token' => $pageToken,
@@ -740,7 +741,7 @@ class DailyHoroscopeAutoPostService
                 return false;
             }
 
-            $endpoint = "https://graph.facebook.com/v21.0/{$fbPostId}";
+            $endpoint = FacebookGraphApi::url("/{$fbPostId}");
             $response = Http::timeout(30)->delete($endpoint, [
                 'access_token' => $pageToken,
             ]);

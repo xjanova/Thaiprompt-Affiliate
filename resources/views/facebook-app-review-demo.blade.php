@@ -445,7 +445,7 @@
                 <div class="hero-stat-label">Permissions</div>
             </div>
             <div class="hero-stat">
-                <div class="hero-stat-value">v21.0</div>
+                <div class="hero-stat-value">{{ \App\Support\FacebookGraphApi::VERSION }}</div>
                 <div class="hero-stat-label">Graph API</div>
             </div>
             <div class="hero-stat">
@@ -786,7 +786,7 @@
         <div class="section-label">Technical Details</div>
         <h2 class="section-title">Graph API Endpoints Used</h2>
         <p class="section-desc">
-            All API calls use Facebook Graph API v21.0 with proper authentication
+            All API calls use Facebook Graph API {{ \App\Support\FacebookGraphApi::VERSION }} with proper authentication
             via Page Access Token.
         </p>
 

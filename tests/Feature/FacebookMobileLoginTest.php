@@ -72,6 +72,7 @@ class FacebookMobileLoginTest extends TestCase
         $query = $this->queryOf($facebookUrl);
 
         $this->assertStringContainsString('facebook.com', $facebookUrl);
+        $this->assertSame('/v27.0/dialog/oauth', parse_url($facebookUrl, PHP_URL_PATH));
         $this->assertSame(self::APP_ID, $query['client_id']);
         $this->assertSame(self::WEB_CALLBACK, $query['redirect_uri']);
     }

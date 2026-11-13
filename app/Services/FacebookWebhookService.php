@@ -8,6 +8,7 @@ use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortunePageContext;
 use App\Services\Fortune\FortuneRecipient;
+use App\Support\FacebookGraphApi;
 use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\URL;
 /**
  * Facebook Webhook Service
  *
- * จัดการ Facebook Messenger Platform API (Graph API v21.0)
+ * จัดการ Facebook Messenger Platform API (เวอร์ชันกลางจาก FacebookGraphApi)
  * รับ webhook events, ส่ง messages, รูปภาพ, typing indicator
  *
  * รองรับ:
@@ -196,8 +197,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      * Graph API version
      */
     // public เพื่อให้ผู้เรียก Graph API นอก service นี้ (เช่น FacebookLoginController)
-    // อ้างเวอร์ชันจากจุดเดียว — bump ที่นี่ที่เดียวครบทุก call site
-    public const GRAPH_API_VERSION = 'v21.0';
+    // อ้างเวอร์ชันกลางจาก FacebookGraphApi โดยคง constant เดิมให้ผู้เรียกใช้งานได้
+    public const GRAPH_API_VERSION = FacebookGraphApi::VERSION;
 
     /**
      * ชุด TLD ที่ถือว่าเป็น "ลิงก์ภายนอก" เมื่อเขียนแบบไม่มี protocol (เช่น abc.online)
@@ -4451,9 +4452,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     protected function graphUrl(string $path): string
     {
-        $version = self::GRAPH_API_VERSION;
-
-        return "https://graph.facebook.com/{$version}{$path}";
+        return FacebookGraphApi::url($path);
     }
 
     // ============================================================

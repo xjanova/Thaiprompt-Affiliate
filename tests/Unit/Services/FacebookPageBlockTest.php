@@ -44,7 +44,7 @@ class FacebookPageBlockTest extends TestCase
 
         $this->assertSame($expected, $service->blockPageUser('123'));
         Http::assertSent(fn ($r) => $r->method() === 'POST'
-            && str_ends_with($r->url(), '/page-test/blocked') && $r['psid'] === '123');
+            && $r->url() === 'https://graph.facebook.com/v27.0/page-test/blocked' && $r['psid'] === '123');
         if (! $expected) {
             $this->assertNotEmpty($service->lastFetchError);
         }
@@ -58,6 +58,6 @@ class FacebookPageBlockTest extends TestCase
 
         $this->assertSame($expected, $this->service()->unblockPageUser('123'));
         Http::assertSent(fn ($r) => $r->method() === 'DELETE'
-            && str_ends_with($r->url(), '/page-test/blocked') && $r['psid'] === '123');
+            && $r->url() === 'https://graph.facebook.com/v27.0/page-test/blocked' && $r['psid'] === '123');
     }
 }

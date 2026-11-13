@@ -21,6 +21,9 @@ use App\Http\Controllers\Api\VideoWatchController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/oauth/social/providers', [\App\Http\Controllers\Auth\SocialOAuthController::class, 'providers'])
+    ->middleware('throttle:60,1')->name('api.oauth.social.providers');
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -1373,7 +1376,6 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
             ->name('statistics');
     });
 });
-
 
 // ============================================
 // Google Maps API (V1)

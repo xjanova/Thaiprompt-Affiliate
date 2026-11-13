@@ -4,6 +4,7 @@ namespace App\Services\Fortune;
 
 use App\Models\FortunePage;
 use App\Models\FortunePageRepost;
+use App\Support\FacebookGraphApi;
 use App\Support\SafeLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -32,7 +33,7 @@ use RuntimeException;
  */
 class FortuneRepostService
 {
-    public const GRAPH = 'https://graph.facebook.com/v21.0/';
+    public const GRAPH = FacebookGraphApi::BASE_URL.'/';
 
     public const TZ = 'Asia/Bangkok';
 
