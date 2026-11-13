@@ -107,6 +107,10 @@ trait DrivesMobileAppLogin
     {
         $provider = Mockery::mock(\Laravel\Socialite\Two\AbstractProvider::class);
         $provider->shouldReceive('user')->andReturn($user);
+        if ($driver === 'facebook') {
+            $provider->shouldReceive('usingGraphVersion')->with(\App\Support\FacebookGraphApi::VERSION)->andReturnSelf();
+            $provider->shouldReceive('fields')->with(['id', 'name', 'email'])->andReturnSelf();
+        }
         // ขาไป (หน้าอนุญาตของผู้ให้บริการ) ยังเรียกได้ระหว่าง mock
         $provider->shouldReceive('with')->andReturnSelf();
         $provider->shouldReceive('scopes')->andReturnSelf();

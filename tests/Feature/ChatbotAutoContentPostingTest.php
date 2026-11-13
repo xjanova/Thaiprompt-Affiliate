@@ -402,7 +402,7 @@ class ChatbotAutoContentPostingTest extends TestCase
 
         $this->postNow($post)->assertOk()->assertJsonPath('data.results.facebook.platform_post_id', self::FB_PAGE.'_555');
 
-        Http::assertSent(fn (Request $request) => $request->url() === 'https://graph.facebook.com/v21.0/'.self::FB_PAGE.'/feed'
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://graph.facebook.com/v27.0/'.self::FB_PAGE.'/feed'
             && $request['message'] === $post->generated_content
             && $request['access_token'] === self::FB_TOKEN);
     }

@@ -14,6 +14,7 @@ use App\Services\Auth\MobileAppLogin;
 use App\Services\Auth\SocialLoginGuard;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAffiliateService;
+use App\Support\FacebookGraphApi;
 use App\Support\LocalRedirect;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -104,7 +105,10 @@ class FacebookLoginController extends Controller
         $referer = $request->headers->get('referer', '');
         Session::put('facebook_login_origin', str_contains($referer, '/register') ? 'register' : 'login');
 
-        $driver = Socialite::driver('facebook')->scopes($setting->getScopes());
+        $driver = Socialite::driver('facebook')
+            ->usingGraphVersion(FacebookGraphApi::VERSION)
+            ->fields(['id', 'name', 'email'])
+            ->scopes($setting->getScopes());
         if (app(\App\Services\Auth\FreshSocialOAuth::class)->active($request)) {
             $driver->with(['auth_type' => 'reauthenticate']);
         }
@@ -171,7 +175,10 @@ class FacebookLoginController extends Controller
         }
 
         try {
-            $fbUser = Socialite::driver('facebook')->user();
+            $fbUser = Socialite::driver('facebook')
+                ->usingGraphVersion(FacebookGraphApi::VERSION)
+                ->fields(['id', 'name', 'email'])
+                ->user();
         } catch (Exception $e) {
             Log::error('Facebook OAuth: callback failed', [
                 'error' => $e->getMessage(),

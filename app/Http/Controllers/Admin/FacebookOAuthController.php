@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FacebookOAuthSetting;
+use App\Support\FacebookGraphApi;
 use Illuminate\Http\Request;
 
 /**
@@ -26,7 +27,7 @@ class FacebookOAuthController extends Controller
         $settings = FacebookOAuthSetting::first() ?? new FacebookOAuthSetting;
 
         // ค่า callback URL ที่แนะนำ (auto-build จาก app.url) — admin copy ไปใส่ FB Console
-        $suggestedRedirectUri = rtrim(config('app.url'), '/') . '/auth/facebook/callback';
+        $suggestedRedirectUri = rtrim(config('app.url'), '/').'/auth/facebook/callback';
 
         return view('admin.auth.facebook-oauth.index', [
             'settings' => $settings,
@@ -44,13 +45,15 @@ class FacebookOAuthController extends Controller
             'app_id' => ['nullable', 'string', 'max:100'],
             'app_secret' => ['nullable', 'string', 'max:191'],
             'redirect_uri' => ['nullable', 'string', 'max:500'],
-            'graph_version' => ['nullable', 'string', 'max:10'],
+            'graph_version' => ['nullable', 'string', 'in:'.FacebookGraphApi::VERSION],
             'scopes' => ['nullable', 'string'], // textarea, comma-separated
             'is_enabled' => ['boolean'],
             'auto_create_user' => ['boolean'],
             'auto_create_wallet' => ['boolean'],
             'auto_create_mlm_member' => ['boolean'],
         ]);
+
+        $validated['graph_version'] = FacebookGraphApi::VERSION;
 
         // Boolean fields ต้อง default false เมื่อไม่ได้ส่งมา
         foreach (['is_enabled', 'auto_create_user', 'auto_create_wallet', 'auto_create_mlm_member'] as $field) {
@@ -113,7 +116,7 @@ class FacebookOAuthController extends Controller
             'message' => 'Config พร้อมใช้งาน — ทดสอบ login ได้ที่หน้า /login',
             'redirect_uri' => $settings->getRedirectUri(),
             'scopes' => $settings->getScopes(),
-            'graph_version' => $settings->graph_version,
+            'graph_version' => FacebookGraphApi::VERSION,
         ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services\Chatbot;
 use App\Models\ChatbotAutoContentPost;
 use App\Models\ChatbotPlatformIntegration;
 use App\Services\AI\AiServiceFactory;
+use App\Support\FacebookGraphApi;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -56,7 +57,7 @@ class AutoContentService
     /** broadcast ของ LINE ส่งได้ครั้งละไม่เกิน 5 ข้อความ */
     protected const LINE_MAX_MESSAGES = 5;
 
-    protected const FACEBOOK_GRAPH = 'https://graph.facebook.com/v21.0';
+    protected const FACEBOOK_GRAPH = FacebookGraphApi::BASE_URL;
 
     /**
      * Generate content using AI

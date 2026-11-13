@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\FacebookGraphApi;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,10 @@ class FacebookOAuthSetting extends Model
      * ชื่อตาราง
      */
     protected $table = 'facebook_oauth_settings';
+
+    protected $attributes = [
+        'graph_version' => FacebookGraphApi::VERSION,
+    ];
 
     protected $fillable = [
         'app_id',
@@ -134,7 +139,7 @@ class FacebookOAuthSetting extends Model
             return $uri;
         }
 
-        return rtrim(config('app.url'), '/') . '/' . ltrim($uri, '/');
+        return rtrim(config('app.url'), '/').'/'.ltrim($uri, '/');
     }
 
     /**
