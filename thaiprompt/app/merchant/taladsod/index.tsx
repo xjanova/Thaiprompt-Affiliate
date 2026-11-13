@@ -41,7 +41,7 @@ import {
   subscribeShopLiveSharing,
   type ShopLiveState,
 } from '@/services/taladsodLiveLocation';
-import { getCurrentCoords } from '@/services/location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords } from '@/services/location';
 import { addNotificationReceivedListener } from '@/services/notifications';
 import {
   BannerSlider,
@@ -327,11 +327,11 @@ export default function TaladsodSellerScreen() {
       if (next) {
         if (!(await consent.ensure())) return;
         if (!mountedRef.current) return;
-        point = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000 });
+        point = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
       } else if (presence.location) {
         point = { latitude: presence.location.latitude, longitude: presence.location.longitude };
       } else {
-        point = await getCurrentCoords({ timeoutMs: 8_000 });
+        point = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
       }
       if (!mountedRef.current) return;
       if (!point) {

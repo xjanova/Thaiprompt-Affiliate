@@ -19,7 +19,7 @@ import { Button3D, Icon, LiveMap, Pill, resultHaptic, type LiveMapMarker } from 
 import { callPhone } from '@/components/shop';
 import { TrustSeals } from '@/components/badges/TrustSeals';
 import { useTheme, radii, spacing, typography } from '@/theme';
-import { getCurrentCoords } from '@/services/location';
+import { getCurrentCoords, RECENT_FIX_MAX_AGE_MS } from '@/services/location';
 import {
   getDeliveryRiderLocation,
   shareDeliveryLocation,
@@ -143,7 +143,8 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
   const sendMs = (info?.customer_send_interval_seconds || 30) * 1000;
 
   const sendLocation = useCallback(async () => {
-    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000 });
+    // ไรเดอร์ใช้ตำแหน่งนี้หาตัวผู้ซื้อ → ไม่ส่งตำแหน่งเก่าของเครื่อง (รอบหน้าลองใหม่)
+    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000, maxAgeMs: RECENT_FIX_MAX_AGE_MS });
     if (!coords || !mountedRef.current) return;
     const res = await shareDeliveryLocation(source, orderId, true, coords);
     if (!mountedRef.current) return;

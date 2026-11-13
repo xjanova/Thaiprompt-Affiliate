@@ -52,6 +52,31 @@ export interface SellerSummary {
   };
 }
 
+/**
+ * ยอดที่ร้านได้รับจริงจากออเดอร์ (ห้ามคำนวณเองในแอป — แสดงตามที่ server ส่ง)
+ * net_payout = items_gross − platform_fee − vat_amount − referral_amount + shipping_income
+ *              − store_discount_deduction − rider_cost_deduction
+ */
+export interface SellerOrderPayout {
+  /** true = จ่ายแล้วตามนี้ · false = ประมาณการจากอัตราปัจจุบัน (ยังไม่แบ่งเงิน) */
+  final: boolean;
+  items_gross: number;
+  platform_fee: number;
+  vat_amount: number;
+  referral_amount: number;
+  /** ค่าส่งพัสดุที่ร้านได้รับ (ออเดอร์ไรเดอร์ = 0 ค่าส่งเป็นของไรเดอร์) */
+  shipping_income: number;
+  store_discount_deduction: number;
+  /** โบนัสที่ร้านเติมให้ไรเดอร์ */
+  rider_bonus: number;
+  /** ค่าส่งที่ร้านออกแทนลูกค้า (ส่งฟรี) */
+  delivery_subsidy: number;
+  /** ส่วนลดค่าส่งจากคูปองของร้าน */
+  store_shipping_discount: number;
+  rider_cost_deduction: number;
+  net_payout: number;
+}
+
 export interface SellerOrderListItem {
   id: number;
   order_number: string;
@@ -67,7 +92,10 @@ export interface SellerOrderListItem {
   items_count: number;
   first_item: { product_name: string; product_image: string | null } | null;
   seller_total: number;
+  /** ค่าสินค้าหลังหัก GP — ยังไม่ใช่เงินที่เข้าร้าน (ไม่รวมค่าส่งพัสดุ ไม่หักต้นทุนไรเดอร์) */
   seller_earning: number;
+  /** ยอดที่ร้านได้รับจริงหลังแบ่งเงิน · null = ยังไม่แบ่งเงิน · server รุ่นเก่าไม่ส่ง */
+  net_payout?: number | null;
   is_multi_seller: boolean;
   /** ข้อความจากลูกค้าที่ร้านยังไม่อ่าน (แชทออเดอร์) */
   unread_messages?: number;
@@ -129,6 +157,8 @@ export interface SellerOrderDetail {
     /** null = ออเดอร์หลายร้าน (ไม่แสดงค่าส่ง/ยอดรวมทั้งออเดอร์) */
     shipping_fee: number | null;
     order_total: number | null;
+    /** ยอดที่ร้านได้รับจริง (server คิดด้วยสูตรเดียวกับตอนแบ่งเงิน) · null/ไม่มี = ออเดอร์ยกเลิก หรือ server รุ่นเก่า */
+    payout?: SellerOrderPayout | null;
   };
   tracking: {
     tracking_number: string | null;

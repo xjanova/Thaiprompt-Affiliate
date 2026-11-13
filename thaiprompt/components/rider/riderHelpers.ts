@@ -155,7 +155,11 @@ export const handoverErrorText = (
     }
     case 'LOCATION_REQUIRED':
     case 'INVALID_LOCATION':
-      return { title: 'ต้องใช้ตำแหน่ง GPS', message: 'เปิด GPS และอนุญาตตำแหน่ง เพื่อยืนยันว่าคุณอยู่ที่จุดส่ง แล้วลองใหม่นะ' };
+      return {
+        title: 'ยังจับตำแหน่งตอนนี้ไม่ได้',
+        message:
+          'เปิด GPS และอนุญาตตำแหน่ง เพื่อยืนยันว่าคุณอยู่ที่จุดส่ง ถ้าอยู่ในอาคารลองขยับไปใกล้หน้าต่างหรือที่โล่ง รอสักครู่แล้วลองใหม่นะ',
+      };
     case 'WAIT_NOT_OVER': {
       const at = clockOf(data.wait_until);
       return {

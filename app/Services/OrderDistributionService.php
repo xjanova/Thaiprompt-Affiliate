@@ -774,6 +774,193 @@ class OrderDistributionService
     }
 
     /**
+     * ยอดที่ร้าน "ได้รับจริง" จากออเดอร์นี้ (อ่านอย่างเดียว — ไม่ล็อก ไม่บันทึก) สำหรับแสดงในแอป/หน้าร้านของผู้ขาย
+     *
+     * ทำไมต้องมี (2026-11-13): แอปร้านโชว์ "รายรับสุทธิ" = ผลรวม order_items.seller_earning (ยอดสินค้า − GP)
+     * แต่เงินที่เข้าร้านจริง = ยอดสินค้า − GP − VAT − ค่าแนะนำ + ค่าส่งพัสดุที่ร้านได้
+     *                            − ส่วนลดคูปองร้านที่ยังไม่หัก − โบนัสไรเดอร์ − ค่าส่งที่ร้านออกแทนผู้ซื้อ − คูปองค่าส่งของร้าน
+     * ร้านตั้งโบนัส 10 + ส่งฟรี 35 บนออเดอร์ 200 (GP 10%) → จอขึ้น 180 แต่เงินเข้าจริง 135
+     *
+     * - แบ่งเงินแล้ว → อ่านจาก EarningsLedger ของออเดอร์ (ยอดที่จ่ายจริง · final = true)
+     * - ยังไม่แบ่ง → คิดด้วยสูตรเดียวกับ processOrderDistribution จากอัตราปัจจุบัน (ยอดประมาณการ · final = false)
+     *   ※ ส่วนนี้ต้องให้ผลเท่ากับ processSellerItems เสมอ — มีเทสต์เทียบกับ ledger จริง (SellerPayoutPreviewTest)
+     *
+     * @return array{final: bool, items_gross: float, platform_fee: float, vat_amount: float, referral_amount: float, shipping_income: float, store_discount_deduction: float, rider_bonus: float, delivery_subsidy: float, store_shipping_discount: float, rider_cost_deduction: float, net_payout: float}|null
+     *                                                                                                                                                                                                                                                                                                           null = ร้านทางการ / ออเดอร์ไม่มีสินค้าของร้านนี้ / ออเดอร์ยกเลิกหรือคืนเงิน
+     */
+    public function sellerPayoutFor(Order $order, int $sellerId): ?array
+    {
+        if (in_array($order->status, ['cancelled', 'refunded'], true)) {
+            return null;
+        }
+
+        $ledger = EarningsLedger::query()
+            ->where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->where('user_id', $sellerId)
+            ->where('earning_type', EarningsLedger::TYPE_SELLER_SALE)
+            ->where('status', '!=', EarningsLedger::STATUS_CANCELLED)
+            ->latest('id')
+            ->first();
+
+        if ($ledger) {
+            return $this->payoutFromLedger($ledger);
+        }
+
+        $officialSellerId = $this->officialSellerId();
+        if ($officialSellerId !== null && $sellerId === $officialSellerId) {
+            return null;
+        }
+
+        $items = OrderItem::where('order_id', $order->id)
+            ->with(['product' => fn ($q) => $q->withTrashed()])
+            ->orderBy('id')
+            ->get();
+
+        $engine = app(PricingEngine::class);
+        $noPv = $order->isPaidWithCoins();
+        $groups = $items
+            ->map(fn (OrderItem $item) => $this->computeItem($engine, $item, $officialSellerId, $noPv))
+            ->groupBy(fn (array $row) => (int) $row['item']->seller_id);
+
+        $rows = $groups->get($sellerId);
+        if (! $rows || $rows->isEmpty()) {
+            return null;
+        }
+
+        // ===== ลำดับเดียวกับ processOrderDistribution =====
+        $discount = self::splitDiscount(
+            (float) $order->discount_amount,
+            (float) $order->shipping_fee,
+            (float) $items->sum(fn (OrderItem $item) => (float) $item->discount_amount),
+            $order->product_discount !== null ? (float) $order->product_discount : null,
+            $order->shipping_discount !== null ? (float) $order->shipping_discount : null,
+            (float) $order->discount_amount > 0 ? $this->discountFundedBy($order) : 'platform'
+        );
+        $riderCosts = $this->riderCostsFor($order, $discount);
+
+        $shippingShares = self::allocateShippingShares(
+            $riderCosts['deferred_rider'] ? 0.0 : $discount['seller_shipping_base'],
+            $this->shippingWeights($groups)
+        );
+        $grossWeights = $groups->map(fn ($g) => round($g->sum(fn ($r) => $r['breakdown']->gross), 2))->all();
+        $discountDeductions = self::allocateShippingShares($discount['seller_deduction'], $grossWeights);
+        $riderDeductions = self::allocateShippingShares($riderCosts['total'], $grossWeights);
+
+        // ===== ลำดับเดียวกับ processSellerItems =====
+        $gross = round($rows->sum(fn ($r) => $r['breakdown']->gross), 2);
+        $gp = round($rows->sum(fn ($r) => $r['breakdown']->gp_amount), 2);
+        $vat = round($rows->sum(fn ($r) => $r['breakdown']->vat_amount), 2);
+        $pool = round($rows->sum(fn ($r) => $r['breakdown']->referral_pool_amount), 2);
+        $net = round($gross - $gp - $vat - $pool, 2);
+        if ($net < 0) {
+            $gp = round(max(0.0, $gp + $net), 2);
+            $net = 0.0;
+        }
+
+        $shippingShare = round(max(0.0, (float) ($shippingShares[$sellerId] ?? 0.0)), 2);
+        $discountDeduction = round(min(max(0.0, (float) ($discountDeductions[$sellerId] ?? 0.0)), $net + $shippingShare), 2);
+        $riderRequested = round(max(0.0, (float) ($riderDeductions[$sellerId] ?? 0.0)), 2);
+        $riderDeduction = min($riderRequested, round(max(0.0, $net + $shippingShare - $discountDeduction), 2));
+
+        return $this->payoutPayload(
+            false,
+            $gross,
+            $gp,
+            $vat,
+            $pool,
+            $shippingShare,
+            $discountDeduction,
+            $riderCosts,
+            $riderDeduction,
+            round($net + $shippingShare - $discountDeduction - $riderDeduction, 2),
+        );
+    }
+
+    /**
+     * ยอดที่จ่ายจริงจาก EarningsLedger (หลังแบ่งเงินแล้ว)
+     *
+     * @return array<string, mixed>
+     */
+    protected function payoutFromLedger(EarningsLedger $ledger): array
+    {
+        $breakdown = is_array($ledger->breakdown) ? $ledger->breakdown : [];
+        $calc = is_array($breakdown['calculations'] ?? null) ? $breakdown['calculations'] : [];
+        $rider = is_array($breakdown['rider_costs'] ?? null) ? $breakdown['rider_costs'] : [];
+
+        $shippingShare = round((float) ($calc['shipping_share'] ?? $breakdown['shipping_share'] ?? 0), 2);
+        $discountDeduction = round((float) ($calc['store_discount_deduction'] ?? 0), 2);
+        // ledger รุ่นเก่าไม่มี rider_cost_deduction → ส่วนหักอื่นที่เหลือจากส่วนลดร้าน
+        $riderDeduction = round((float) ($calc['rider_cost_deduction'] ?? max(0.0, (float) $ledger->other_deductions - $discountDeduction)), 2);
+
+        return $this->payoutPayload(
+            true,
+            round((float) ($calc['items_gross'] ?? ((float) $ledger->gross_amount - $shippingShare)), 2),
+            round((float) $ledger->platform_fee, 2),
+            round((float) $ledger->vat_amount, 2),
+            round((float) $ledger->mlm_commission, 2),
+            $shippingShare,
+            $discountDeduction,
+            [
+                'bonus' => (float) ($rider['rider_bonus'] ?? 0),
+                'subsidy' => (float) ($rider['delivery_subsidy'] ?? 0),
+                'shipping_discount' => (float) ($rider['store_shipping_discount'] ?? 0),
+            ],
+            $riderDeduction,
+            round((float) $ledger->net_amount, 2),
+        );
+    }
+
+    /**
+     * รูปเดียวของ "ยอดที่ร้านได้รับ" — ต้นทุนไรเดอร์ที่หักจริงแจกตามลำดับ: ค่าส่งที่ร้านออก → คูปองค่าส่งร้าน → โบนัสไรเดอร์
+     * (หักได้ไม่ครบเพราะเกินรายได้ร้าน = แพลตฟอร์มรับส่วนเกิน → แถวที่แสดงรวมกันเท่ายอดที่หักจริงเสมอ)
+     *
+     * @param  array<string, mixed>  $riderCosts  bonus, subsidy, shipping_discount (ยอดที่ล็อกบนออเดอร์)
+     * @return array<string, mixed>
+     */
+    protected function payoutPayload(
+        bool $final,
+        float $gross,
+        float $gp,
+        float $vat,
+        float $pool,
+        float $shippingShare,
+        float $discountDeduction,
+        array $riderCosts,
+        float $riderDeduction,
+        float $netPayout,
+    ): array {
+        $left = round(max(0.0, $riderDeduction), 2);
+        $take = function (float $want) use (&$left): float {
+            $got = round(min(max(0.0, $want), $left), 2);
+            $left = round($left - $got, 2);
+
+            return $got;
+        };
+
+        $subsidy = $take((float) ($riderCosts['subsidy'] ?? 0));
+        $shippingDiscount = $take((float) ($riderCosts['shipping_discount'] ?? 0));
+        $bonus = $take((float) ($riderCosts['bonus'] ?? 0));
+        // ออเดอร์หลายร้าน: ส่วนที่ปันมาอาจไม่ลงตัวกับลำดับข้างบน → เศษที่เหลือรวมเข้าโบนัสไรเดอร์ ให้ผลรวมเท่ายอดหักจริง
+        $bonus = round($bonus + $left, 2);
+
+        return [
+            'final' => $final,
+            'items_gross' => round($gross, 2),
+            'platform_fee' => round($gp, 2),
+            'vat_amount' => round($vat, 2),
+            'referral_amount' => round($pool, 2),
+            'shipping_income' => round($shippingShare, 2),
+            'store_discount_deduction' => round($discountDeduction, 2),
+            'rider_bonus' => $bonus,
+            'delivery_subsidy' => $subsidy,
+            'store_shipping_discount' => $shippingDiscount,
+            'rider_cost_deduction' => round($riderDeduction, 2),
+            'net_payout' => round($netPayout, 2),
+        ];
+    }
+
+    /**
      * ออเดอร์นี้แบ่งเงินแล้วหรือยัง
      *
      * มี EarningsLedger ของออเดอร์ หรือมีรายการเงินเข้ากระเป๋าแพลตฟอร์มจากการแบ่งเงิน

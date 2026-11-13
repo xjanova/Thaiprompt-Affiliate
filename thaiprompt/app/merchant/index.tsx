@@ -391,7 +391,7 @@ export default function MerchantScreen() {
                 <View style={[styles.kpiDivider, { backgroundColor: colors.headerGlassBorder }]} />
                 {/* เงินเข้าใช้เขียวสว่างของชุดสีโหมดมืด — การ์ดน้ำเงินนี้มืดเสมอทั้งสองโหมด */}
                 <View style={styles.flex}>
-                  <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>รายรับสุทธิเดือนนี้</Text>
+                  <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ค่าสินค้าหลังหัก GP เดือนนี้</Text>
                   <PriceText amount={sales.month_net_earning} size="md" style={{ color: DARK_THEME.colors.success }} />
                 </View>
               </View>

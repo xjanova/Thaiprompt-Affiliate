@@ -505,7 +505,10 @@ class RiderApiController extends Controller
             return $this->ok([
                 'job' => $job->toApiDetail($rider),
                 'earnings' => [
+                    // rider_earnings = ส่วนแบ่งค่าส่ง · rider_total = ที่ไรเดอร์ได้จริงจากงานนี้ (รวมโบนัสร้าน) ยอดเดียวกับที่เข้ากระเป๋า
                     'rider_earnings' => round((float) $job->rider_earnings, 2),
+                    'shop_bonus' => RiderEarningService::storedBonus($job),
+                    'rider_total' => round((float) $job->rider_earnings + RiderEarningService::storedBonus($job), 2),
                     'cod_amount' => round((float) $job->cod_amount, 2),
                     'settled' => $job->earnings_settled_at !== null,
                     'wallet_balance' => $rider->fresh()->walletBalance(),
@@ -582,7 +585,7 @@ class RiderApiController extends Controller
                 ->when($from, fn ($q) => $q->where('completed_at', '>=', $from))
                 ->orderByDesc('completed_at')
                 ->limit(20)
-                ->get(['id', 'job_number', 'job_type', 'completed_at', 'rider_earnings', 'cod_amount', 'total_fee', 'earnings_settled_at']);
+                ->get(['id', 'job_number', 'job_type', 'completed_at', 'rider_earnings', 'shop_bonus', 'cod_amount', 'total_fee', 'earnings_settled_at']);
 
             return $this->ok(array_merge($summary, [
                 'recent_jobs' => $recent->map(fn (RiderJob $job) => [
@@ -590,7 +593,10 @@ class RiderApiController extends Controller
                     'job_number' => (string) $job->job_number,
                     'job_type_text' => $job->job_type_text,
                     'completed_at' => $job->completed_at?->toIso8601String(),
+                    // rider_earnings = ส่วนแบ่งจากค่าส่ง · shop_bonus = โบนัสที่ร้านเติม · rider_total = ที่ไรเดอร์ได้จริงจากงานนี้
                     'rider_earnings' => round((float) $job->rider_earnings, 2),
+                    'shop_bonus' => RiderEarningService::storedBonus($job),
+                    'rider_total' => round((float) $job->rider_earnings + RiderEarningService::storedBonus($job), 2),
                     'total_fee' => round((float) $job->total_fee, 2),
                     'cod_amount' => round((float) $job->cod_amount, 2),
                     'settled' => $job->earnings_settled_at !== null,

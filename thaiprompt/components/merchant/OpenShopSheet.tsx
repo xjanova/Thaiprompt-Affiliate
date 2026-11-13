@@ -14,7 +14,7 @@ import { Text } from '@/components/ui/Text';
 import * as Location from 'expo-location';
 import { Button3D, Chip, Icon, resultHaptic } from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
-import { getCurrentCoords, type Coords } from '@/services/location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords, type Coords } from '@/services/location';
 import {
   FM_LIMITS,
   openFmShop,
@@ -102,7 +102,8 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
     const id = ++locateIdRef.current;
     setLocating(true);
     setLocateError(null);
-    const found = await getCurrentCoords({ accuracy: 'high', timeoutMs: 12_000 });
+    // จุดขายวันนี้ = จุดคิดค่าส่งและจุดที่ไรเดอร์มารับของ → ไม่ใช้ตำแหน่งเก่าของเครื่อง (เดิมยอมถึง 5 นาที)
+    const found = await getCurrentCoords({ accuracy: 'high', timeoutMs: 12_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
     if (!mountedRef.current || id !== locateIdRef.current) return;
     setLocating(false);
     if (!found) {

@@ -457,7 +457,9 @@ class MobileShopController extends Controller
             'promo_code' => 'nullable|string|max:50',
             'note' => 'nullable|string|max:500',
             'preferred_rider_id' => 'nullable|integer|min:1', // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์คนโปรด
+            'expected_total' => 'nullable|numeric|min:0|max:99999999', // ยอดที่ผู้ซื้อเห็นตอนกดยืนยัน (เกิน = 409 PRICE_CHANGED)
         ], [
+            'expected_total.numeric' => 'ยอดชำระไม่ถูกต้อง',
             'preferred_rider_id.integer' => 'ไรเดอร์ที่เลือกไม่ถูกต้อง',
             'preferred_rider_id.min' => 'ไรเดอร์ที่เลือกไม่ถูกต้อง',
             'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
@@ -479,6 +481,7 @@ class MobileShopController extends Controller
                 'coupon_code' => $request->input('coupon_code') ?? $request->input('promo_code'),
                 'note' => $request->input('note'),
                 'preferred_rider_id' => $request->input('preferred_rider_id'),
+                'expected_total' => $request->input('expected_total'),
                 'client_app_build' => \App\Support\Rider\ClientAppBuild::fromRequest($request), // ไรเดอร์รอบ 2: build แอปที่สั่ง
             ], $request->header('Idempotency-Key'));
 

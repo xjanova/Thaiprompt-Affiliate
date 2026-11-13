@@ -237,6 +237,8 @@ export interface CartStoreGroup {
   total: number;
   rider: CartRiderQuote;
   cod: { available: boolean; reason: string | null; limit: number | null };
+  /** ร้านนี้มีสินค้าที่ต้องจัดส่ง (ไม่ใช่ดิจิทัลล้วน) — server รุ่นเก่าไม่ส่ง */
+  has_physical?: boolean;
 }
 
 /** ค่าส่งไรเดอร์ของร้านหนึ่ง (fee = ที่ผู้ซื้อจ่ายจริง) — key ใหม่ของไรเดอร์รอบ 2 เป็นค่าว่างได้ (server เก่า) */
@@ -340,6 +342,8 @@ export interface CheckoutBody {
   note?: string;
   /** ล็อกเรียกไรเดอร์คนโปรด (เฉพาะส่งด้วยไรเดอร์) — ไม่มีสิทธิ์ = 422 RIDER_LOCK_NOT_ALLOWED */
   preferred_rider_id?: number;
+  /** ยอดรวมที่ผู้ซื้อเห็นตอนกดยืนยัน — server คิดได้มากกว่านี้ = 409 PRICE_CHANGED (ไม่ตัดเงิน) */
+  expected_total?: number;
 }
 
 export interface PaymentInstruction {

@@ -19,7 +19,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { ConsentSheet, resultHaptic, type ConsentReason, type IconName } from '@/components/ui';
-import { getCurrentCoords, isLocationServiceEnabled, type Coords } from '@/services/location';
+import { getCurrentCoords, isLocationServiceEnabled, RECENT_FIX_MAX_AGE_MS, type Coords } from '@/services/location';
 
 export type BuyerLocationReason = 'nearby' | 'delivery' | 'share' | 'riders';
 
@@ -136,7 +136,8 @@ export const useBuyerLocation = (): BuyerLocationFlow => {
 
   const readCoords = useCallback(async (): Promise<Coords | null> => {
     if (mountedRef.current) setLocating(true);
-    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 9000 });
+    // ผู้ซื้อกด "ใช้ตำแหน่งของฉัน" เอง (ใช้ปักหมุดจุดส่ง/คิดค่าส่งด้วย) → ไม่ใช้ตำแหน่งเก่าเกิน 60 วิ
+    const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 9000, maxAgeMs: RECENT_FIX_MAX_AGE_MS });
     if (mountedRef.current) setLocating(false);
     if (coords) {
       lastCoords = { coords, at: Date.now() };

@@ -634,6 +634,8 @@ class ShopCartService
                 'total' => $total,
                 'rider' => $group['rider'],
                 'cod' => $group['cod'],
+                // มีสินค้าที่ต้องจัดส่ง (ไม่ใช่ดิจิทัลล้วน) → แอปบังคับให้มีที่อยู่ที่ผู้ซื้อเลือกบนจอก่อนสั่ง
+                'has_physical' => (bool) $group['has_physical'],
             ];
         }
 

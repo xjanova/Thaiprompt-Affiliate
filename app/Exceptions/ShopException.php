@@ -17,6 +17,9 @@ class ShopException extends RuntimeException
 {
     public const CART_EMPTY = 'CART_EMPTY';
 
+    /** ยอดที่ server คิดได้มากกว่ายอดที่ผู้ซื้อกดยืนยัน (ราคา/ค่าส่งเปลี่ยนระหว่างเปิดหน้าชำระค้าง) — ไม่สร้างออเดอร์ ไม่ตัดเงิน */
+    public const PRICE_CHANGED = 'PRICE_CHANGED';
+
     public const CART_ITEM_NOT_FOUND = 'CART_ITEM_NOT_FOUND';
 
     public const PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND';

@@ -450,6 +450,46 @@ class FreshMarketOptionsCartTest extends TestCase
         $this->assertSame(1, WalletTransaction::where('reference_type', FreshMarketService::REF_PAYMENT)->count());
     }
 
+    public function test_cart_order_is_rejected_when_total_rose_above_what_the_buyer_confirmed(): void
+    {
+        Sanctum::actingAs($this->buyer);
+        $before = $this->balanceOf($this->buyer);
+
+        $this->postJson('/api/v1/fresh-market/cart/items', [
+            'listing_id' => $this->vegetable->id,
+            'quantity' => 2,
+        ])->assertCreated();
+        $seen = (float) $this->getJson('/api/v1/fresh-market/cart')->assertOk()->json('data.subtotal');
+
+        // ร้านขึ้นราคาระหว่างผู้ซื้อเปิดหน้าชำระค้าง
+        $this->vegetable->forceFill(['price' => (float) $this->vegetable->price + 15])->save();
+
+        $this->postJson('/api/v1/fresh-market/orders', [
+            'seller_id' => $this->seller->id,
+            'delivery_type' => 'pickup',
+            'payment_method' => 'wallet',
+            'expected_total' => $seen,
+        ])->assertStatus(409)->assertJsonPath('code', 'PRICE_CHANGED');
+
+        // ไม่สร้างออเดอร์ ไม่ตัดเงิน ตะกร้ายังอยู่
+        $this->assertSame(0, FreshMarketOrder::count());
+        $this->assertSame($before, $this->balanceOf($this->buyer));
+        $this->assertSame(1, FreshMarketCartItem::where('user_id', $this->buyer->id)->count());
+
+        // ผู้ซื้อเห็นยอดใหม่แล้วยืนยัน → สั่งได้ ตัดตามยอดใหม่
+        $now = (float) $this->getJson('/api/v1/fresh-market/cart')->assertOk()->json('data.subtotal');
+        $this->assertEqualsWithDelta($seen + 30, $now, 0.001);
+        $this->postJson('/api/v1/fresh-market/orders', [
+            'seller_id' => $this->seller->id,
+            'delivery_type' => 'pickup',
+            'payment_method' => 'wallet',
+            'expected_total' => $now,
+        ])->assertCreated();
+
+        $this->assertSame(1, FreshMarketOrder::count());
+        $this->assertEqualsWithDelta($before - $now, $this->balanceOf($this->buyer), 0.001);
+    }
+
     public function test_cart_update_merge_and_clear(): void
     {
         $cart = app(FreshMarketCartService::class);

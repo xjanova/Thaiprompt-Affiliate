@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { resultHaptic } from '@/components/ui';
 import { num } from '@/services/api/client';
 import { setRiderAvailability, updateRiderPermissions } from '@/services/api/riderApi';
-import { getCurrentCoords } from '@/services/location';
+import { getCurrentCoords, RECENT_FIX_MAX_AGE_MS } from '@/services/location';
 import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { guardKycRequired } from '@/services/ekyc/kycGate';
 import type { RiderPermissionFlow } from './useRiderPermissionFlow';
@@ -28,7 +28,7 @@ export const useRiderAvailability = (flow: RiderPermissionFlow) => {
           return false;
         }
 
-        const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000 });
+        const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 8000, maxAgeMs: RECENT_FIX_MAX_AGE_MS });
         const result = await setRiderAvailability(
           'online',
           coords ? { latitude: coords.latitude, longitude: coords.longitude } : undefined

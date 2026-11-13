@@ -848,6 +848,10 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             $data['gp_rate'] = $this->gp_rate !== null ? (float) $this->gp_rate : null;
             $data['platform_fee'] = (float) $this->platform_fee;
             $data['seller_earning'] = (float) $this->seller_earning;
+            // 💰 (2026-11-13) ยอดที่ร้านได้รับจริง — ออเดอร์เงินพักที่ยังไม่ปิด seller_earning ยังไม่หักโบนัสไรเดอร์/ค่าส่งที่ร้านออกแทน
+            //    (หักตอนปิดออเดอร์ใน FreshMarketService::sellerNetAfterRiderCosts แล้วเขียน seller_earning ใหม่)
+            //    เดิมการ์ดร้านโชว์ "ร้านได้รับ" สูงกว่าเงินที่เข้าจริงจนกว่าออเดอร์จะปิด
+            $data += $this->sellerNetPayload();
             $data['buyer'] = $buyer ? [
                 'id' => (int) $buyer->id,
                 'name' => $buyer->name,
@@ -933,6 +937,33 @@ class FreshMarketOrder extends Model implements RiderDeliverable
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /**
+     * ยอดที่ร้านได้รับจริงของออเดอร์นี้ (สูตรเดียวกับ FreshMarketService::sellerNetAfterRiderCosts)
+     *
+     * - ปิดออเดอร์แล้ว: seller_earning ถูกเขียนเป็นยอดสุทธิแล้ว → ใช้ตรงๆ (final)
+     * - ยังไม่ปิด + เงินพัก: seller_earning − โบนัสไรเดอร์ − ค่าส่งที่ร้านออกแทน (ไม่ติดลบ)
+     *
+     * @return array{seller_net: float, seller_net_final: bool, rider_bonus_amount: float, delivery_subsidy_amount: float}
+     */
+    public function sellerNetPayload(): array
+    {
+        $bonus = round(max(0.0, (float) $this->rider_bonus_amount), 2);
+        $subsidy = round(max(0.0, (float) $this->delivery_subsidy_amount), 2);
+        $final = $this->order_status === self::STATUS_COMPLETED;
+        $earning = round((float) $this->seller_earning, 2);
+
+        $net = (! $final && (bool) $this->settlement_deferred)
+            ? round(max(0.0, $earning - $bonus - $subsidy), 2)
+            : $earning;
+
+        return [
+            'seller_net' => $net,
+            'seller_net_final' => $final,
+            'rider_bonus_amount' => $bonus,
+            'delivery_subsidy_amount' => $subsidy,
+        ];
     }
 
     // ===== RiderDeliverable =====

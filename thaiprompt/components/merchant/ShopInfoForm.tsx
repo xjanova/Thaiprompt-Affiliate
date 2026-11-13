@@ -18,7 +18,7 @@ import * as Location from 'expo-location';
 import { Text } from '@/components/ui/Text';
 import { Button3D, Card3D, ConsentSheet, Icon, LiveMap, resultHaptic } from '@/components/ui';
 import { Field } from '@/components/shop';
-import { getCurrentCoords } from '@/services/location';
+import { FRESH_FIX_MAX_AGE_MS, getCurrentCoords } from '@/services/location';
 import type { FmShopInfoBody } from '@/services/api/taladsodSellerManageApi';
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { IconTile } from './MerchantUi';
@@ -201,7 +201,7 @@ export const ShopInfoForm: React.FC<ShopInfoFormProps> = ({ value, onChange, err
   const locate = async () => {
     setLocating(true);
     try {
-      const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000 });
+      const coords = await getCurrentCoords({ accuracy: 'high', timeoutMs: 10_000, maxAgeMs: FRESH_FIX_MAX_AGE_MS });
       if (!mountedRef.current) return;
       if (!coords) {
         Alert.alert('หาตำแหน่งไม่เจอ', 'เปิด GPS หรือออกไปที่โล่งแล้วลองใหม่ หรือปักหมุดเองบนแผนที่ก็ได้');
