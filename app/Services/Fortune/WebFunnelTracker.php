@@ -35,9 +35,6 @@ class WebFunnelTracker
     /** ค่าในแคชที่แปลว่า "ไม่ได้มาจาก FB" */
     private const NOT_FROM_FB = -1;
 
-    /** memo ต่อ process — Schema::hasTable ยิง information_schema ทุกครั้ง */
-    private static ?bool $hasJuntraAccounts = null;
-
     /**
      * ขั้น 1 — ส่งกล่องลิงก์เข้าห้องแม่หมอให้ลูกค้าในแชทเพจแล้ว
      *
@@ -207,12 +204,18 @@ class WebFunnelTracker
      */
     protected static function resolveThaipromptUser(string $userRef, ?int $claimedUserId): ?int
     {
-        self::$hasJuntraAccounts ??= Schema::hasTable('juntra_accounts');
-
-        if (ctype_digit($userRef) && self::$hasJuntraAccounts) {
-            $accountUserId = JuntraAccount::query()->where('juntra_user_id', (int) $userRef)->value('user_id');
-            if ($accountUserId !== null) {
-                return (int) $accountUserId;
+        // ไม่จำผล hasTable ไว้ใน static — ค่าค้างข้ามการเชื่อมต่อ DB (เช่น worker / ชุดเทส) แล้วคิวรีพังเงียบ
+        //   ผลทั้งก้อนถูกแคช 10 นาทีใน fromFacebook() อยู่แล้ว จึงไม่ได้ยิงทุกข้อความ
+        if (ctype_digit($userRef)) {
+            try {
+                if (Schema::hasTable('juntra_accounts')) {
+                    $accountUserId = JuntraAccount::query()->where('juntra_user_id', (int) $userRef)->value('user_id');
+                    if ($accountUserId !== null) {
+                        return (int) $accountUserId;
+                    }
+                }
+            } catch (\Throwable $e) {
+                self::warn('resolve_user', $e);
             }
         }
 
