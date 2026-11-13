@@ -49,6 +49,14 @@ class DailyHoroscopeAutoPostService
      */
     public function generateAndPublish(int $dayOfBirth, ?Carbon $date = null, bool $force = false): array
     {
+        // 🛑 (2026-11-13) เพจที่เจ้าของสั่งหยุดโพสต์ ต้องหยุดตั้งแต่ก่อนสร้าง/ลบคอนเทนต์เดิม (รวม --force)
+        //    ⚠️ ห้ามใช้ $this->settings — โหลดไว้ตอนสร้าง service จึงอาจเป็นแถวกลาง (เพจหลัก)
+        //       ต้องอ่านสดผ่าน FortunePageContext เหมือน publishToFacebook() จึงได้ไอดีของสาขาที่กำลังทำ
+        FortunePageContext::flushMemo();
+        (new \App\Support\FacebookPagePostingGuard)->assertAllowed(
+            (string) (FortuneTellingSetting::getSettings()?->facebook_page_id ?? '')
+        );
+
         $date = $date ?? now();
 
         // ตรวจ duplicate (idempotent)

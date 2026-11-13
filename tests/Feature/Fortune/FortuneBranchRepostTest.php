@@ -477,6 +477,33 @@ class FortuneBranchRepostTest extends TestCase
         $this->assertFalse($this->branch->fresh()->repost_enabled);
     }
 
+    /**
+     * 🛑 (2026-11-13) เพจที่เจ้าของสั่งหยุดโพสต์ — กดเปิดสวิตช์ต้องถูกปฏิเสธพร้อมเหตุผล
+     * ปลดการหยุดแล้ว (ธงหาย) จึงเปิดได้ตามปกติ
+     */
+    public function test_admin_toggle_on_refuses_while_owner_pause_is_active(): void
+    {
+        $this->branch->update([
+            'repost_enabled' => false,
+            'settings_override' => [\App\Support\FacebookPagePostingGuard::PAUSED_KEY => true],
+        ]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.fortune.reposts.toggle', $this->branch))
+            ->assertSessionHas('error', fn ($message) => str_contains((string) $message, 'ถูกสั่งหยุดโพสต์'));
+
+        $this->assertFalse($this->branch->fresh()->repost_enabled);
+
+        $this->branch->update(['settings_override' => null]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.fortune.reposts.toggle', $this->branch))
+            ->assertSessionHas('success');
+
+        $this->assertTrue($this->branch->fresh()->repost_enabled);
+    }
+
     public function test_admin_page_renders_and_saves_settings(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

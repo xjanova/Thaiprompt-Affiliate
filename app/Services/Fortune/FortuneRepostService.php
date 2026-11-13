@@ -67,6 +67,12 @@ class FortuneRepostService
         $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TZ);
         $report = ['ok' => false, 'message' => '', 'planned' => [], 'skipped' => []];
 
+        // 🛑 (2026-11-13) เพจที่เจ้าของสั่งหยุดโพสต์ — หยุดก่อนแตะ Graph แม้ $target ที่ส่งมาจะเป็น object เก่า
+        //    ที่ยังเห็นสวิตช์เปิดอยู่ (ดูแผนแบบ dry-run ยังทำได้ เพราะไม่โพสต์จริง)
+        if (! $dryRun) {
+            (new \App\Support\FacebookPagePostingGuard)->assertAllowed((string) $target->external_page_id);
+        }
+
         // ── 1. ตรวจความพร้อม ──────────────────────────────────────────
         if (! $force && ! $target->repost_enabled) {
             $report['message'] = 'สาขานี้ปิดรีโพสอยู่';

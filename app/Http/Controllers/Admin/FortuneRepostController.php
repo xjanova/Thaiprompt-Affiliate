@@ -247,6 +247,14 @@ class FortuneRepostController extends Controller
      */
     protected function readinessProblem(FortunePage $page): ?string
     {
+        // 🛑 (2026-11-13) เพจที่เจ้าของสั่งหยุดโพสต์ — ห้ามบอกว่า "เปิดแล้ว" ทั้งที่ด่านกลางจะกันทุกโพสต์
+        //    ต้องปลดการหยุดก่อน (เป็นการตัดสินใจของเจ้าของ) แล้วค่อยกลับมาเปิดสวิตช์
+        if ((new \App\Support\FacebookPagePostingGuard)->isPaused((string) $page->external_page_id)) {
+            return 'เพจนี้ถูกสั่งหยุดโพสต์ไว้ — ปลดการหยุดก่อนด้วยคำสั่ง '
+                .'php artisan fortune:facebook-posting-pause --page-id='.$page->external_page_id
+                .' --expected-name="ชื่อเพจบน Facebook" --resume แล้วค่อยเปิดสวิตช์';
+        }
+
         if (! $page->is_active) {
             return 'สาขานี้ปิดใช้งานอยู่ — เปิดสาขาในหน้า "สาขา / เพจแม่หมอ" ก่อน';
         }
