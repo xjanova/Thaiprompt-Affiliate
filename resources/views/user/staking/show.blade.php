@@ -1,520 +1,178 @@
-@extends('layouts.user-v4')
+{{--
+    รายละเอียดพูล Stake (ธีมโนวาเต็ม)
+    - $pool = พูลที่ไม่ใช่ฉบับร่าง (controller กรองแล้ว) · $myStake = Stake active ของสมาชิกในพูลนี้ (อาจ null)
+    - $recentStakes = ความเคลื่อนไหวล่าสุดในพูล — มีแค่จำนวน/สถานะ/เวลา ไม่มีตัวตนของสมาชิกคนอื่น
+      (เดิมดึงจาก API ที่ส่งชื่อผู้ใช้และ user id ของคนอื่นมาแสดง)
+    - รับรางวัล / ถอน Stake ส่งผ่าน route เว็บ user.staking.claim / user.staking.unstake (session + CSRF)
+    - พูลไม่มีค่าปรับถอนก่อนกำหนด → ถอน Stake ได้หลังวันปลดล็อกเท่านั้น (เซิร์ฟเวอร์ตรวจซ้ำ) · รับรางวัลได้ตลอด
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'รายละเอียด Staking Pool - TPIX')
+@section('title', 'พูล '.($pool->name ?: $pool->token->symbol).' - TPIX Staking')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/dex-staking.css') }}?v={{ filemtime(public_path('theme-nova/member/dex-staking.css')) }}">@endpush
+
+@php
+    $num = function ($n, int $d = 4) {
+        $s = number_format((float) $n, $d, '.', ',');
+
+        return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
+    };
+    $thDate = fn ($d) => $d ? $d->copy()->locale('th')->translatedFormat('j M Y · H:i') : '-';
+    $symbol = $pool->token->symbol;
+    $poolName = $pool->name ?: $symbol;
+    $statusPill = [
+        'active' => ['ok', 'check', 'เปิดรับ Stake'],
+        'paused' => ['warn', 'clock', 'หยุดรับชั่วคราว'],
+        'ended' => ['bad', 'x', 'ปิดพูลแล้ว'],
+    ][$pool->status] ?? ['warn', 'info', $pool->status];
+    $cap = (float) ($pool->pool_cap ?? 0);
+    $fill = $cap > 0 ? min(100, (float) $pool->total_staked / $cap * 100) : null;
+    $locked = $myStake && $myStake->unlock_at && $myStake->unlock_at->isFuture();
+    $stakeChip = ['active' => ['ok', 'Stake'], 'unstaked' => ['', 'ถอนแล้ว'], 'slashed' => ['bad', 'ถูกตัด']];
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Cyan-Blue-Indigo for Staking Pool Details) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div class="nvm-stack" x-data="nvmDxStakeActions({{ (int) $pool->id }})">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-layer-group"></i>
+<section class="nvm-ph" aria-labelledby="nvm-dx-sp-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.staking.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>พูล Stake ทั้งหมด</a>
+            <div class="nvm-eyebrow nvm-latin">Staking pool · {{ $symbol }}</div>
+            <h1 id="nvm-dx-sp-h">{{ $poolName }}</h1>
+            <p class="nvm-ph__lead">{{ $pool->description ?: 'Stake '.$symbol.' เพื่อรับรางวัลตามอัตรา APY ของพูล' }}</p>
+            <div class="nvm-pills">
+                <span class="nvm-pill nvm-pill--{{ $statusPill[0] }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $statusPill[1] }}"/></svg>{{ $statusPill[2] }}</span>
+                <span class="nvm-pill nvm-pill--gold">APY <span class="nvm-num">{{ $num($pool->apy, 2) }}%</span></span>
             </div>
+            @if($pool->status === 'active')
+                <div class="nvm-hero__actions">
+                    <a class="nvm-btn nvm-btn--gold" href="{{ route('user.staking.stake-form', $pool->id) }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>{{ $myStake ? 'Stake เพิ่ม' : 'Stake เลย' }}</a>
+                </div>
+            @endif
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/crystal.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-server text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-4xl font-bold text-white drop-shadow-lg" id="poolName">Loading...</h1>
-                        <p class="text-cyan-100 text-lg mt-1">ข้อมูลและสถิติ Staking Pool</p>
-                    </div>
+<div class="nvm-split">
+    <div class="nvm-stack">
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-dx-mine-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">My stake</small><h2 id="nvm-dx-mine-h">Stake ของฉันในพูลนี้</h2></div></div>
+            @if(! $myStake)
+                <div class="nvm-empty">
+                    <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+                    <b>คุณยังไม่ได้ Stake ในพูลนี้</b>
+                    @if($pool->status === 'active')
+                        <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.staking.stake-form', $pool->id) }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>เริ่ม Stake</a></div>
+                    @endif
                 </div>
-                <div class="flex gap-2">
-                    <a href="{{ route('user.staking.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
-                        <i class="fas fa-arrow-left mr-2"></i>กลับ
-                    </a>
-                    <a href="{{ route('user.staking.stake-form', $poolId ?? 0) }}" class="glass-fusion bg-white/20 px-6 py-3 hover:bg-white/30 rounded-lg transition-all" id="stakeBtn">
-                        <i class="fas fa-lock mr-2"></i>Stake ตอนนี้
-                    </a>
+            @else
+                <div class="nvm-status {{ $locked ? 'is-warn' : '' }}">
+                    <svg class="nvm-ico"><use href="#nvm-i-{{ $locked ? 'lock' : 'check' }}"/></svg>
+                    <span>{{ $locked ? 'อยู่ในช่วงล็อก' : 'ปลดล็อกแล้ว ถอนได้' }}<small>{{ $locked ? 'ปลดล็อก '.$thDate($myStake->unlock_at).' · ถอน Stake ได้หลังวันปลดล็อก รับรางวัลได้ตลอด' : 'ถอนพร้อมรับรางวัลสะสมได้ทันที' }}</small></span>
                 </div>
-            </div>
-        </div>
+                <div class="nvm-minis nvm-gap-t">
+                    <div class="nvm-mini"><small>จำนวนที่ Stake</small><b class="nvm-num">{{ $num($myStake->amount) }} {{ $symbol }}</b></div>
+                    <div class="nvm-mini"><small>รางวัลสะสม</small><b class="nvm-num is-in">{{ $num($myStake->rewards_earned) }}</b></div>
+                    <div class="nvm-mini"><small>รับรางวัลไปแล้ว</small><b class="nvm-num">{{ $num($myStake->rewards_claimed) }}</b></div>
+                    <div class="nvm-mini"><small>เริ่ม Stake</small><b class="nvm-num">{{ $thDate($myStake->staked_at ?? $myStake->created_at) }}</b></div>
+                </div>
+                <div class="nvm-filter__btns nvm-gap-t">
+                    <button type="button" class="nvm-btn nvm-btn--line" @click="ask('claim')" :disabled="busy"><svg class="nvm-ico"><use href="#nvm-i-gift"/></svg>รับรางวัล</button>
+                    <button type="button" class="nvm-btn nvm-btn--bad" @click="ask('unstake')" :disabled="busy || {{ $locked ? 'true' : 'false' }}" @if($locked) title="ถอนได้หลัง {{ $thDate($myStake->unlock_at) }}" @endif><svg class="nvm-ico"><use href="#nvm-i-out"/></svg>ถอน Stake</button>
+                </div>
+            @endif
+        </section>
+
+        <section class="nvm-card nvm-box" aria-labelledby="nvm-dx-rc-h">
+            <div class="nvm-sec-h"><div><small class="nvm-latin">Activity</small><h2 id="nvm-dx-rc-h">ความเคลื่อนไหวล่าสุดในพูล</h2></div></div>
+            @if($recentStakes->isEmpty())
+                <p class="nvm-help">ยังไม่มีรายการในพูลนี้</p>
+            @else
+                <ul class="nvm-txs">
+                    @foreach($recentStakes as $item)
+                        @php [$tone, $label] = $stakeChip[$item->status] ?? ['', $item->status]; @endphp
+                        <li class="nvm-tx">
+                            <span class="nvm-tx__ic {{ $item->status === 'active' ? 'is-in' : '' }}"><svg class="nvm-ico"><use href="#nvm-i-{{ $item->status === 'active' ? 'down' : 'up' }}"/></svg></span>
+                            <div class="nvm-tx__t"><b>สมาชิก</b><small>{{ $thDate($item->created_at) }}</small></div>
+                            <div class="nvm-tx__r">
+                                <span class="nvm-tx__amt nvm-num">{{ $num($item->amount) }} {{ $symbol }}</span>
+                                <span class="nvm-chip {{ $tone ? 'nvm-chip--'.$tone : '' }}">{{ $label }}</span>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </section>
     </div>
 
-    <div class="row">
-        <!-- Main Info -->
-        <div class="col-lg-8">
-            <!-- Pool Stats Card -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="row g-4">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <img src="" id="tokenLogo" width="80" height="80" class="rounded-circle mb-3" onerror="this.src='/images/default-token.png'">
-                                <h6 class="fw-bold mb-0" id="tokenSymbol">-</h6>
-                                <small class="text-muted">Token</small>
-                            </div>
-                        </div>
-                        <div class="col-md-9">
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <div class="border-start border-primary border-4 ps-3">
-                                        <small class="text-muted d-block">APY</small>
-                                        <h4 class="mb-0 text-success" id="poolAPY">-</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="border-start border-info border-4 ps-3">
-                                        <small class="text-muted d-block">Total Staked</small>
-                                        <h4 class="mb-0" id="totalStaked">-</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="border-start border-warning border-4 ps-3">
-                                        <small class="text-muted d-block">จำนวนผู้ Stake</small>
-                                        <h4 class="mb-0" id="stakerCount">-</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="border-start border-danger border-4 ps-3">
-                                        <small class="text-muted d-block">Min. Stake</small>
-                                        <h4 class="mb-0" id="minStake">-</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <aside class="nvm-card nvm-box" aria-labelledby="nvm-dx-pi-h">
+        <div class="nvm-sec-h"><div><small class="nvm-latin">Pool info</small><h2 id="nvm-dx-pi-h">ข้อมูลพูล</h2></div></div>
+        <dl class="nvm-kv">
+            <dt>เหรียญ</dt><dd>{{ $pool->token->name }} ({{ $symbol }})</dd>
+            <dt>APY</dt><dd class="nvm-num">{{ $num($pool->apy, 2) }}%</dd>
+            <dt>ระยะล็อก</dt><dd class="nvm-num">{{ number_format((int) $pool->lock_period_days) }} วัน</dd>
+            <dt>Stake ขั้นต่ำ</dt><dd class="nvm-num">{{ $num($pool->min_stake_amount) }} {{ $symbol }}</dd>
+            <dt>Stake สูงสุด</dt><dd class="nvm-num">{{ $pool->max_stake_amount ? $num($pool->max_stake_amount).' '.$symbol : 'ไม่จำกัด' }}</dd>
+            <dt>Stake รวมในพูล</dt><dd class="nvm-num">{{ $num($pool->total_staked, 2) }} {{ $symbol }}</dd>
+            <dt>ผู้ Stake</dt><dd class="nvm-num">{{ number_format((int) $pool->current_stakers) }}{{ $pool->max_stakers ? ' / '.number_format((int) $pool->max_stakers) : '' }}</dd>
+            <dt>รางวัลที่จ่ายแล้ว</dt><dd class="nvm-num">{{ $num($pool->total_rewards_distributed, 2) }}</dd>
+            @if($pool->ends_at)<dt>สิ้นสุดพูล</dt><dd class="nvm-num">{{ $thDate($pool->ends_at) }}</dd>@endif
+        </dl>
+        @if($fill !== null)
+            <div class="nvm-meter">
+                <div class="nvm-meter__row"><span>เต็มพูลแล้ว</span><b class="nvm-num">{{ $num($fill, 1) }}%</b></div>
+                <div class="nvm-meter__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ round($fill) }}" aria-label="สัดส่วนที่ Stake แล้วของพูล"><i class="nvm-dx-bar" style="--w: {{ round($fill, 1) }}%"></i></div>
+                <div class="nvm-meter__ticks"><span>0</span><span>เพดาน {{ $num($cap, 2) }}</span></div>
             </div>
-
-            <!-- Lock Periods -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="tp-card card-header border-0 py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-calendar-alt text-primary me-2"></i>
-                        ระยะเวลาการล็อก และ APY
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3" id="lockPeriods">
-                        <!-- Will be loaded via AJAX -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pool Description -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="tp-card card-header border-0 py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-info-circle text-primary me-2"></i>
-                        เกี่ยวกับ Pool นี้
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <p class="mb-3" id="poolDescription">Loading...</p>
-
-                    <h6 class="fw-bold mb-3">คุณสมบัติ</h6>
-                    <ul class="list-unstyled" id="poolFeatures">
-                        <li class="mb-2">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <span>Auto-compound รางวัล</span>
-                        </li>
-                        <li class="mb-2">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <span>รับรางวัลทุกบล็อก</span>
-                        </li>
-                        <li class="mb-2">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <span>ถอนได้ทุกเมื่อ (มีค่าปรับหากยังไม่ครบกำหนด)</span>
-                        </li>
-                    </ul>
-
-                    <div class="alert alert-warning border-0 mt-3">
-                        <h6 class="fw-bold mb-2">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            ข้อควรรู้
-                        </h6>
-                        <small>
-                            • การถอนก่อนครบกำหนดจะมีค่าปรับ <strong id="earlyWithdrawalPenalty">-</strong>%<br>
-                            • APY อาจเปลี่ยนแปลงตามปริมาณการ Stake<br>
-                            • รางวัลจ่ายเป็น Token เดียวกับที่ Stake
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Stakes -->
-            <div class="card border-0 shadow-sm">
-                <div class="tp-card card-header border-0 py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-history text-primary me-2"></i>
-                        ธุรกรรมล่าสุด
-                    </h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>ผู้ใช้</th>
-                                    <th>ประเภท</th>
-                                    <th class="text-end">จำนวน</th>
-                                    <th>เวลา</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentStakes">
-                                <tr>
-                                    <td colspan="4" class="text-center py-3">
-                                        <small class="text-muted">กำลังโหลด...</small>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- My Stake in this Pool -->
-            <div class="card border-0 shadow-sm mb-4" id="myStakeCard">
-                <div class="card-header bg-primary text-white py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-wallet me-2"></i>
-                        การ Stake ของฉัน
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div id="myStakeContent">
-                        <!-- No stake state -->
-                        <div class="text-center py-4" id="noStakeState">
-                            <i class="fas fa-lock-open text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3 mb-3">คุณยังไม่ได้ Stake ใน Pool นี้</p>
-                            <a href="{{ route('user.staking.stake-form', $poolId ?? 0) }}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-lock me-2"></i>Stake ตอนนี้
-                            </a>
-                        </div>
-
-                        <!-- Has stake state -->
-                        <div id="hasStakeState" style="display: none;">
-                            <div class="mb-3">
-                                <small class="text-muted d-block mb-1">จำนวนที่ Stake</small>
-                                <h4 class="mb-0" id="myStakedAmount">-</h4>
-                                <small class="text-muted" id="myStakedValue">≈ ฿0.00</small>
-                            </div>
-                            <hr>
-                            <div class="d-flex justify-content-between mb-2">
-                                <small class="text-muted">ระยะเวลาล็อก</small>
-                                <small class="fw-bold" id="myLockPeriod">-</small>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <small class="text-muted">เหลือเวลา</small>
-                                <small class="fw-bold" id="myTimeRemaining">-</small>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3">
-                                <small class="text-muted">APY ของคุณ</small>
-                                <small class="text-success fw-bold" id="myAPY">-</small>
-                            </div>
-
-                            <div class="bg-light rounded-3 p-3 mb-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <small class="text-muted d-block">รางวัลที่ได้รับ</small>
-                                        <h5 class="mb-0 text-success" id="myPendingRewards">-</h5>
-                                    </div>
-                                    <button class="btn btn-success btn-sm" id="claimBtn">
-                                        <i class="fas fa-hand-holding-usd me-1"></i>Claim
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary btn-sm" id="unstakeBtn">
-                                    <i class="fas fa-unlock me-2"></i>Unstake
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" id="addMoreBtn">
-                                    <i class="fas fa-plus me-2"></i>Stake เพิ่ม
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rewards Calculator -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="tp-card card-header border-0 py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-calculator text-primary me-2"></i>
-                        คำนวณรางวัล
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">จำนวนที่ต้องการ Stake</label>
-                        <input type="number" class="form-control" id="calcAmount" placeholder="0.0" step="0.01">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ระยะเวลา</label>
-                        <select class="form-select" id="calcLockPeriod">
-                            <option value="">เลือกระยะเวลา</option>
-                        </select>
-                    </div>
-
-                    <div class="bg-light rounded-3 p-3">
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">รายได้/วัน</small>
-                            <strong class="text-success" id="calcDaily">฿0.00</strong>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <small class="text-muted">รายได้/เดือน</small>
-                            <strong class="text-success" id="calcMonthly">฿0.00</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">รายได้/ปี</small>
-                            <strong class="text-success" id="calcYearly">฿0.00</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pool Stats -->
-            <div class="card border-0 shadow-sm">
-                <div class="tp-card card-header border-0 py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-chart-bar text-primary me-2"></i>
-                        สถิติ Pool
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <small class="text-muted">รางวัลจ่ายไปแล้ว</small>
-                        <small class="fw-bold" id="totalRewardsPaid">-</small>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <small class="text-muted">AVG Stake ต่อคน</small>
-                        <small id="avgStakePerUser">-</small>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <small class="text-muted">สร้างเมื่อ</small>
-                        <small id="poolCreatedAt">-</small>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <small class="text-muted">สถานะ</small>
-                        <small id="poolStatus">-</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        @endif
+        <p class="nvm-note"><svg class="nvm-ico"><use href="#nvm-i-info"/></svg>รางวัลคำนวณตามเวลาที่ Stake จริง อัตรา APY อาจเปลี่ยนได้ตามเงื่อนไขของพูล</p>
+    </aside>
 </div>
 
+@if($myStake)
+    <div class="nvm-modal" x-show="action" x-cloak x-transition.opacity role="dialog" aria-modal="true" aria-labelledby="nvm-dx-sc-h" @click.self="action = null" @keydown.escape.window="action = null">
+        <div class="nvm-card nvm-modal__box">
+            <h2 id="nvm-dx-sc-h" x-text="action === 'claim' ? 'รับรางวัล Stake' : 'ถอน Stake'"></h2>
+            <p x-show="action === 'claim'">รางวัลที่คำนวณได้ถึงตอนนี้จะเข้ายอด {{ $symbol }} ของคุณ</p>
+            <p x-show="action === 'unstake'">ถอน <b class="nvm-num">{{ $num($myStake->amount) }} {{ $symbol }}</b> พร้อมรางวัลที่ยังไม่ได้รับ</p>
+            <div class="nvm-filter__btns">
+                <button type="button" class="nvm-btn nvm-btn--line" @click="action = null" :disabled="busy">ยกเลิก</button>
+                <button type="button" class="nvm-btn" :class="action === 'unstake' ? 'nvm-btn--bad' : 'nvm-btn--gold'" @click="run()" :disabled="busy"><span x-text="busy ? 'กำลังทำรายการ...' : 'ยืนยัน'">ยืนยัน</span></button>
+            </div>
+        </div>
+    </div>
+@endif
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
+</div>
 @endsection
 
 @push('scripts')
+@include('user.dex.partials.nova-js')
 <script>
-$(document).ready(function() {
-    const poolId = {{ $poolId ?? 'null' }};
-    let poolData = null;
-    let myStake = null;
-
-    // Load pool data
-    loadPoolData();
-    loadMyStake();
-    loadRecentStakes();
-
-    function loadPoolData() {
-        $.ajax({
-            url: `/api/v1/tpix/staking/pools/${poolId}`,
-            success: function(response) {
-                poolData = response.data;
-                displayPoolData();
-            }
-        });
-    }
-
-    function displayPoolData() {
-        $('#poolName').html(`<i class="fas fa-lock me-2"></i>${poolData.token.name} Staking Pool`);
-        $('#tokenLogo').attr('src', poolData.token.logo_url);
-        $('#tokenSymbol').text(poolData.token.symbol);
-        $('#poolAPY').text(poolData.apy.toFixed(2) + '%');
-        $('#totalStaked').text(formatNumber(poolData.total_staked) + ' ' + poolData.token.symbol);
-        $('#stakerCount').text(poolData.staker_count.toLocaleString());
-        $('#minStake').text(formatNumber(poolData.min_stake_amount) + ' ' + poolData.token.symbol);
-
-        $('#poolDescription').text(poolData.description || 'Stake ' + poolData.token.symbol + ' และรับรางวัลทุกบล็อก');
-        $('#earlyWithdrawalPenalty').text(poolData.early_withdrawal_penalty_percent);
-
-        // Lock periods
-        displayLockPeriods();
-
-        // Stats
-        $('#totalRewardsPaid').text(formatNumber(poolData.total_rewards_paid) + ' ' + poolData.token.symbol);
-        $('#avgStakePerUser').text(formatNumber(poolData.avg_stake_per_user) + ' ' + poolData.token.symbol);
-        $('#poolCreatedAt').text(new Date(poolData.created_at).toLocaleDateString('th-TH'));
-        $('#poolStatus').html(`<span class="badge bg-success">${poolData.status}</span>`);
-    }
-
-    function displayLockPeriods() {
-        const periods = poolData.lock_periods || [
-            {days: 0, apy: poolData.apy * 0.5, label: 'Flexible'},
-            {days: 7, apy: poolData.apy * 0.7, label: '7 วัน'},
-            {days: 30, apy: poolData.apy * 0.9, label: '30 วัน'},
-            {days: 90, apy: poolData.apy, label: '90 วัน'},
-            {days: 180, apy: poolData.apy * 1.2, label: '180 วัน'},
-            {days: 365, apy: poolData.apy * 1.5, label: '365 วัน'}
-        ];
-
-        let html = '';
-        let selectHtml = '<option value="">เลือกระยะเวลา</option>';
-
-        periods.forEach(period => {
-            html += `
-                <div class="col-md-6">
-                    <div class="border rounded-3 p-3 text-center h-100">
-                        <h6 class="fw-bold mb-1">${period.label}</h6>
-                        <h4 class="text-success mb-0">${period.apy.toFixed(2)}%</h4>
-                        <small class="text-muted">APY</small>
-                    </div>
-                </div>
-            `;
-            selectHtml += `<option value="${period.days}" data-apy="${period.apy}">${period.label} - ${period.apy.toFixed(2)}% APY</option>`;
-        });
-
-        $('#lockPeriods').html(html);
-        $('#calcLockPeriod').html(selectHtml);
-    }
-
-    function loadMyStake() {
-        $.ajax({
-            url: `/api/v1/tpix/staking/my-stake/${poolId}`,
-            success: function(response) {
-                if (response.data) {
-                    myStake = response.data;
-                    displayMyStake();
-                }
-            }
-        });
-    }
-
-    function displayMyStake() {
-        $('#noStakeState').hide();
-        $('#hasStakeState').show();
-
-        $('#myStakedAmount').text(formatNumber(myStake.staked_amount) + ' ' + poolData.token.symbol);
-        $('#myStakedValue').text('≈ ฿' + formatNumber(myStake.staked_value_thb));
-        $('#myLockPeriod').text(myStake.lock_period_days + ' วัน');
-        $('#myTimeRemaining').text(calculateTimeRemaining(myStake.unlock_date));
-        $('#myAPY').text(myStake.apy.toFixed(2) + '%');
-        $('#myPendingRewards').text(formatNumber(myStake.pending_rewards) + ' ' + poolData.token.symbol);
-
-        // Bind buttons
-        $('#claimBtn').click(() => claimRewards());
-        $('#unstakeBtn').click(() => unstake());
-        $('#addMoreBtn').attr('href', '{{ route("user.staking.stake-form", $poolId ?? 0) }}');
-    }
-
-    function loadRecentStakes() {
-        $.ajax({
-            url: `/api/v1/tpix/staking/pools/${poolId}/recent`,
-            success: function(response) {
-                let html = '';
-                response.data.forEach(stake => {
-                    html += `
-                        <tr>
-                            <td><small>${stake.user.username || 'User #' + stake.user.id}</small></td>
-                            <td><span class="badge bg-${stake.type === 'stake' ? 'success' : 'danger'}">${stake.type}</span></td>
-                            <td class="text-end"><small>${formatNumber(stake.amount)}</small></td>
-                            <td><small>${timeAgo(stake.created_at)}</small></td>
-                        </tr>
-                    `;
-                });
-                $('#recentStakes').html(html || '<tr><td colspan="4" class="text-center"><small class="text-muted">ยังไม่มีธุรกรรม</small></td></tr>');
-            }
-        });
-    }
-
-    // Calculator
-    $('#calcAmount, #calcLockPeriod').on('input change', function() {
-        const amount = parseFloat($('#calcAmount').val()) || 0;
-        const selected = $('#calcLockPeriod option:selected');
-        const apy = parseFloat(selected.data('apy')) || 0;
-
-        if (amount > 0 && apy > 0) {
-            const yearlyReward = amount * (apy / 100);
-            $('#calcDaily').text('฿' + formatNumber(yearlyReward / 365));
-            $('#calcMonthly').text('฿' + formatNumber(yearlyReward / 12));
-            $('#calcYearly').text('฿' + formatNumber(yearlyReward));
-        }
-    });
-
-    function claimRewards() {
-        if (confirm('ต้องการเบิกรางวัลหรือไม่?')) {
-            $.post('/api/v1/tpix/staking/claim', {
-                pool_id: poolId,
-                _token: $('meta[name="csrf-token"]').attr('content')
-            }).done(() => {
-                alert('เบิกรางวัลสำเร็จ!');
-                loadMyStake();
-            });
-        }
-    }
-
-    function unstake() {
-        if (confirm('ต้องการ Unstake หรือไม่? (อาจมีค่าปรับหากยังไม่ครบกำหนด)')) {
-            $.post('/api/v1/tpix/staking/unstake', {
-                pool_id: poolId,
-                _token: $('meta[name="csrf-token"]').attr('content')
-            }).done(() => {
-                alert('Unstake สำเร็จ!');
+// รับรางวัล / ถอน Stake — ยืนยันในกล่องก่อนส่งทุกครั้ง
+function nvmDxStakeActions(poolId) {
+    return {
+        action: null,
+        busy: false,
+        ask(kind) { this.action = kind; },
+        async run() {
+            if (this.busy || ! this.action) return;
+            this.busy = true;
+            const url = this.action === 'claim' ? @js(route('user.staking.claim')) : @js(route('user.staking.unstake'));
+            try {
+                await window.nvmDxPost(url, { pool_id: poolId });
+                window.showNotification(this.action === 'claim' ? 'รับรางวัลสำเร็จ' : 'ถอน Stake สำเร็จ', 'success');
                 window.location.reload();
-            });
+            } catch (e) {
+                window.showNotification(e.message, 'error');
+                this.busy = false;
+                this.action = null;
+            }
         }
-    }
-
-    function calculateTimeRemaining(unlockDate) {
-        const now = new Date();
-        const unlock = new Date(unlockDate);
-        const diff = unlock - now;
-        if (diff <= 0) return 'ปลดล็อกแล้ว';
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        return days + ' วัน';
-    }
-
-    function timeAgo(date) {
-        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-        if (seconds < 60) return seconds + ' วินาทีที่แล้ว';
-        const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return minutes + ' นาทีที่แล้ว';
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return hours + ' ชั่วโมงที่แล้ว';
-        const days = Math.floor(hours / 24);
-        return days + ' วันที่แล้ว';
-    }
-
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-        });
-    }
-});
+    };
+}
 </script>
 @endpush

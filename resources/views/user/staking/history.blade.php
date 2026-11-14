@@ -1,533 +1,166 @@
-@extends('layouts.user-v4')
+{{--
+    ประวัติการ Stake (ธีมโนวาเต็ม)
+    - $stakes = Stake ทั้งหมดของสมาชิกเอง (แบ่งหน้า 20) · $filters = ตัวกรองจาก query string · $summary = ยอดรวม
+    - เดิมโหลดผ่าน jQuery จาก /api/v1/tpix/staking/history (ไม่มี session → 401) → ตอนนี้เรนเดอร์จากเซิร์ฟเวอร์
+--}}
+@extends('layouts.user-nova')
 
-@section('title', 'ประวัติ Staking - TPIX')
+@section('title', 'ประวัติการ Stake - TPIX Staking')
+
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/dex-staking.css') }}?v={{ filemtime(public_path('theme-nova/member/dex-staking.css')) }}">@endpush
+
+@php
+    $num = function ($n, int $d = 4) {
+        $s = number_format((float) $n, $d, '.', ',');
+
+        return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
+    };
+    $thDate = fn ($d) => $d ? $d->copy()->locale('th')->translatedFormat('j M Y · H:i') : '-';
+    $stakeChip = ['active' => ['ok', 'กำลัง Stake'], 'unstaked' => ['', 'ถอนแล้ว'], 'slashed' => ['bad', 'ถูกตัด']];
+    $poolLabel = fn ($stake) => $stake->pool ? ($stake->pool->name ?: ($stake->pool->token->symbol ?? '-')) : 'พูลที่ถูกลบ';
+    $symbolOf = fn ($stake) => $stake->pool?->token?->symbol ?? '';
+
+    $csvRows = $stakes->getCollection()->map(fn ($s) => [
+        $s->created_at?->format('Y-m-d H:i:s'),
+        $poolLabel($s),
+        (string) $s->amount,
+        $symbolOf($s),
+        (string) $s->rewards_earned,
+        $s->unlock_at?->format('Y-m-d H:i:s'),
+        $stakeChip[$s->status][1] ?? $s->status,
+    ])->values();
+    $hasFilter = $filters['status'] !== '' || $filters['period'] !== '' || $filters['sort'] !== 'date_desc';
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Premium Hero Header (Purple-Violet-Indigo for Staking History) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 dark:from-purple-800 dark:via-violet-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div class="nvm-stack">
 
-        {{-- Floating Icons --}}
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-history"></i>
-            </div>
+<section class="nvm-ph" aria-labelledby="nvm-dx-shs-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.staking.index') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>TPIX Staking</a>
+            <div class="nvm-eyebrow nvm-latin">Staking history</div>
+            <h1 id="nvm-dx-shs-h">ประวัติการ Stake</h1>
+            <p class="nvm-ph__lead">ทุกรายการ Stake ของคุณ ทั้งที่ยังเปิดอยู่และที่ถอนแล้ว</p>
         </div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
+    </div>
+</section>
 
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion p-4 rounded-2xl">
-                        <i class="fas fa-chart-bar text-4xl text-white drop-shadow-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติ Staking</h1>
-                        <p class="text-purple-100 text-lg mt-1">ดูประวัติการ Stake และ Unstake ทั้งหมด</p>
-                    </div>
-                </div>
-                <a href="{{ route('user.staking.index') }}" class="glass-fusion px-6 py-3 hover:bg-white/25 rounded-lg transition-all">
-                    <i class="fas fa-lock mr-2"></i>Stake Token
-                </a>
-            </div>
-        </div>
+<section class="nvm-kpis nvm-kpis--3" aria-label="สรุปการ Stake">
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">รายการทั้งหมด</div>
+        <div class="nvm-kpi__en nvm-latin">Total stakes</div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($summary->total ?? 0)) }}</div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">กำลัง Stake</div>
+        <div class="nvm-kpi__en nvm-latin">Active</div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($summary->active ?? 0)) }}</div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">รางวัลสะสม (รวมทุกเหรียญ)</div>
+        <div class="nvm-kpi__en nvm-latin">Rewards earned</div>
+        <div class="nvm-kpi__val nvm-num">{{ $num($summary->rewards ?? 0) }}</div>
+    </div>
+</section>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-dx-shsl-h" x-data="nvmDxCsv(@js($csvRows), 'tpix-staking-history.csv', ['วันที่', 'พูล', 'จำนวน', 'เหรียญ', 'รางวัล', 'ปลดล็อก', 'สถานะ'])">
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">History</small><h2 id="nvm-dx-shsl-h">รายการทั้งหมด</h2></div>
+        @if($stakes->isNotEmpty())
+            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออกหน้านี้ (CSV {{ number_format(count($csvRows)) }} แถว)</button>
+        @endif
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">Staked ทั้งหมด</small>
-                    <h4 class="mb-0" id="totalStaked">฿0.00</h4>
-                    <small class="text-muted" id="totalStakedTokens">0 Tokens</small>
-                </div>
-            </div>
+    <form method="GET" action="{{ route('user.staking.history') }}" class="nvm-filter">
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-hs-st">สถานะ</label>
+            <select id="nvm-dx-hs-st" name="status" class="nvm-input">
+                <option value="">ทุกสถานะ</option>
+                @foreach(['active' => 'กำลัง Stake', 'unstaked' => 'ถอนแล้ว', 'slashed' => 'ถูกตัด'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">รางวัลที่ได้รับ</small>
-                    <h4 class="mb-0 text-success" id="totalRewards">฿0.00</h4>
-                    <small class="text-muted" id="totalRewardsTokens">0 Tokens</small>
-                </div>
-            </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-hs-pd">ช่วงเวลา</label>
+            <select id="nvm-dx-hs-pd" name="period" class="nvm-input">
+                <option value="">ทุกช่วงเวลา</option>
+                @foreach(['today' => 'วันนี้', 'week' => '7 วันที่แล้ว', 'month' => '30 วันที่แล้ว', 'year' => 'ปีนี้'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['period'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">Active Stakes</small>
-                    <h4 class="mb-0" id="activeStakes">0</h4>
-                    <small class="text-muted" id="activePools">ใน 0 Pools</small>
-                </div>
-            </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-hs-so">เรียงตาม</label>
+            <select id="nvm-dx-hs-so" name="sort" class="nvm-input">
+                @foreach(['date_desc' => 'วันที่: ใหม่-เก่า', 'date_asc' => 'วันที่: เก่า-ใหม่', 'amount_desc' => 'จำนวน: มาก-น้อย', 'amount_asc' => 'จำนวน: น้อย-มาก'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['sort'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">AVG APY</small>
-                    <h4 class="mb-0 text-primary" id="avgAPY">0.00%</h4>
-                    <small class="text-muted" id="avgDuration">AVG: 0 วัน</small>
-                </div>
-            </div>
+        <div class="nvm-filter__btns">
+            <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>กรอง</button>
+            @if($hasFilter)<a class="nvm-btn nvm-btn--line" href="{{ route('user.staking.history') }}">ล้าง</a>@endif
         </div>
-    </div>
+    </form>
 
-    <!-- Filters -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <input type="text" class="form-control" id="searchToken" placeholder="ค้นหา Token...">
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="typeFilter">
-                        <option value="">ทุกประเภท</option>
-                        <option value="stake">Stake</option>
-                        <option value="unstake">Unstake</option>
-                        <option value="claim">Claim</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="statusFilter">
-                        <option value="">ทุกสถานะ</option>
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
-                        <option value="withdrawn">Withdrawn</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="timeFilter">
-                        <option value="all">ทุกช่วงเวลา</option>
-                        <option value="today">วันนี้</option>
-                        <option value="week">7 วันที่แล้ว</option>
-                        <option value="month">30 วันที่แล้ว</option>
-                        <option value="year">ปีนี้</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="sortBy">
-                        <option value="date_desc">วันที่: ใหม่-เก่า</option>
-                        <option value="date_asc">วันที่: เก่า-ใหม่</option>
-                        <option value="amount_desc">จำนวน: สูง-ต่ำ</option>
-                        <option value="amount_asc">จำนวน: ต่ำ-สูง</option>
-                    </select>
-                </div>
-                <div class="col-md-1">
-                    <button class="btn btn-outline-secondary w-100" id="exportBtn">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-            </div>
+    @if($stakes->isEmpty())
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            @if($hasFilter)
+                <b>ไม่พบรายการตามตัวกรอง</b>
+                ลองเปลี่ยนเงื่อนไขการค้นหา
+            @else
+                <b>ยังไม่มีประวัติการ Stake</b>
+                เริ่ม Stake ครั้งแรกเพื่อรับรางวัล
+                <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.staking.index') }}"><svg class="nvm-ico"><use href="#nvm-i-plus"/></svg>ดูพูล Stake</a></div>
+            @endif
         </div>
-    </div>
-
-    <!-- History Table -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="bg-light">
+    @else
+        <div class="nvm-table-wrap nvm-gap-t">
+            <table class="nvm-table">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>พูล</th>
+                        <th class="r">จำนวน</th>
+                        <th class="r">รางวัล</th>
+                        <th>ปลดล็อก</th>
+                        <th class="c">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($stakes as $stake)
+                        @php [$tone, $label] = $stakeChip[$stake->status] ?? ['', $stake->status]; @endphp
                         <tr>
-                            <th>วันที่ / เวลา</th>
-                            <th>ประเภท</th>
-                            <th>Pool</th>
-                            <th class="text-end">จำนวน</th>
-                            <th>Lock Period</th>
-                            <th class="text-end">APY</th>
-                            <th class="text-end">รางวัล</th>
-                            <th class="text-center">สถานะ</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTable">
-                        <tr>
-                            <td colspan="9" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="text-muted mt-2 mb-0">กำลังโหลดข้อมูล...</p>
+                            <td class="nvm-num">{{ $thDate($stake->created_at) }}</td>
+                            <td>
+                                @if($stake->pool)
+                                    <a class="nvm-link" href="{{ route('user.staking.show', $stake->pool_id) }}">{{ $poolLabel($stake) }}</a>
+                                @else
+                                    {{ $poolLabel($stake) }}
+                                @endif
                             </td>
+                            <td class="r nvm-num">{{ $num($stake->amount) }} {{ $symbolOf($stake) }}</td>
+                            <td class="r nvm-num">{{ $num($stake->rewards_earned) }}</td>
+                            <td class="nvm-num">{{ $stake->unlock_at ? $thDate($stake->unlock_at) : 'ไม่ล็อก' }}</td>
+                            <td class="c"><span class="nvm-chip {{ $tone ? 'nvm-chip--'.$tone : '' }}">{{ $label }}</span></td>
                         </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="p-3 border-top" id="paginationContainer" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted" id="paginationInfo">แสดง 0-0 จาก 0 รายการ</small>
-                    <div id="paginationButtons"></div>
-                </div>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-    </div>
+        @if($stakes->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $stakes->links() }}</div>
+        @endif
+    @endif
+</section>
 
-    <!-- Empty State -->
-    <div id="emptyState" class="text-center py-5" style="display: none;">
-        <i class="fas fa-history text-muted" style="font-size: 4rem;"></i>
-        <h5 class="mt-3">ยังไม่มีประวัติ Staking</h5>
-        <p class="text-muted">เริ่มต้น Stake Token เพื่อดูประวัติที่นี่</p>
-        <a href="{{ route('user.staking.index') }}" class="btn btn-primary">
-            <i class="fas fa-lock me-2"></i>Stake Token
-        </a>
-    </div>
 </div>
-
-<!-- Details Modal -->
-<div class="modal fade" id="detailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-info-circle me-2"></i>
-                    รายละเอียด Stake
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="detailsContent">
-                <!-- Content loaded via AJAX -->
-            </div>
-        </div>
-    </div>
-</div>
-
-
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
-@endpush
 @endsection
 
 @push('scripts')
-<script>
-$(document).ready(function() {
-    let allStakes = [];
-    let currentPage = 1;
-    let perPage = 20;
-
-    // Load history
-    loadHistory();
-
-    function loadHistory() {
-        $.ajax({
-            url: '/api/v1/tpix/staking/history',
-            success: function(response) {
-                allStakes = response.data;
-                displaySummary(response.summary);
-                filterAndDisplay();
-            },
-            error: function() {
-                $('#historyTable').html(`
-                    <tr>
-                        <td colspan="9" class="text-center py-4">
-                            <div class="alert alert-danger mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                ไม่สามารถโหลดข้อมูลได้
-                            </div>
-                        </td>
-                    </tr>
-                `);
-            }
-        });
-    }
-
-    function displaySummary(summary) {
-        $('#totalStaked').text('฿' + formatNumber(summary.total_staked_thb));
-        $('#totalStakedTokens').text(summary.total_staked_count + ' Tokens');
-
-        $('#totalRewards').text('฿' + formatNumber(summary.total_rewards_thb));
-        $('#totalRewardsTokens').text(formatNumber(summary.total_rewards_tokens) + ' Tokens');
-
-        $('#activeStakes').text(summary.active_stakes);
-        $('#activePools').text('ใน ' + summary.active_pools + ' Pools');
-
-        $('#avgAPY').text(summary.avg_apy.toFixed(2) + '%');
-        $('#avgDuration').text('AVG: ' + Math.round(summary.avg_duration_days) + ' วัน');
-    }
-
-    function filterAndDisplay() {
-        let filtered = allStakes;
-
-        // Search
-        const searchTerm = $('#searchToken').val().toLowerCase();
-        if (searchTerm) {
-            filtered = filtered.filter(s =>
-                s.pool.token.name.toLowerCase().includes(searchTerm) ||
-                s.pool.token.symbol.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Type filter
-        const type = $('#typeFilter').val();
-        if (type) {
-            filtered = filtered.filter(s => s.type === type);
-        }
-
-        // Status filter
-        const status = $('#statusFilter').val();
-        if (status) {
-            filtered = filtered.filter(s => s.status === status);
-        }
-
-        // Time filter
-        const timeFilter = $('#timeFilter').val();
-        if (timeFilter !== 'all') {
-            const now = new Date();
-            filtered = filtered.filter(s => {
-                const stakeDate = new Date(s.created_at);
-                switch(timeFilter) {
-                    case 'today': return stakeDate.toDateString() === now.toDateString();
-                    case 'week': return (now - stakeDate) <= 7 * 24 * 60 * 60 * 1000;
-                    case 'month': return (now - stakeDate) <= 30 * 24 * 60 * 60 * 1000;
-                    case 'year': return stakeDate.getFullYear() === now.getFullYear();
-                    default: return true;
-                }
-            });
-        }
-
-        // Sort
-        const sortBy = $('#sortBy').val();
-        filtered.sort((a, b) => {
-            switch(sortBy) {
-                case 'date_desc': return new Date(b.created_at) - new Date(a.created_at);
-                case 'date_asc': return new Date(a.created_at) - new Date(b.created_at);
-                case 'amount_desc': return b.amount - a.amount;
-                case 'amount_asc': return a.amount - b.amount;
-                default: return 0;
-            }
-        });
-
-        displayStakes(filtered);
-    }
-
-    function displayStakes(stakes) {
-        if (stakes.length === 0) {
-            $('#historyTable').html(`
-                <tr>
-                    <td colspan="9" class="text-center py-4">
-                        <p class="text-muted mb-0">ไม่พบข้อมูล</p>
-                    </td>
-                </tr>
-            `);
-            $('#paginationContainer').hide();
-            $('#emptyState').show();
-            return;
-        }
-
-        $('#emptyState').hide();
-        $('#paginationContainer').show();
-
-        // Pagination
-        const start = (currentPage - 1) * perPage;
-        const end = start + perPage;
-        const paginatedStakes = stakes.slice(start, end);
-
-        let html = '';
-        paginatedStakes.forEach(stake => {
-            const typeBadge = getTypeBadge(stake.type);
-            const statusBadge = getStatusBadge(stake.status);
-
-            html += `
-                <tr>
-                    <td>
-                        <div>${new Date(stake.created_at).toLocaleDateString('th-TH')}</div>
-                        <small class="text-muted">${new Date(stake.created_at).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'})}</small>
-                    </td>
-                    <td>${typeBadge}</td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <img src="${stake.pool.token.logo_url}" width="24" height="24" class="rounded-circle me-2" onerror="this.src='/images/default-token.png'">
-                            <small>${stake.pool.token.symbol}</small>
-                        </div>
-                    </td>
-                    <td class="text-end">
-                        <div class="fw-bold">${formatNumber(stake.amount)}</div>
-                        <small class="text-muted">฿${formatNumber(stake.amount_thb)}</small>
-                    </td>
-                    <td>
-                        <small>${stake.lock_period_days === 0 ? 'Flexible' : stake.lock_period_days + ' วัน'}</small>
-                    </td>
-                    <td class="text-end">
-                        <span class="badge bg-success">${stake.apy.toFixed(2)}%</span>
-                    </td>
-                    <td class="text-end">
-                        <div class="text-success fw-bold">${formatNumber(stake.rewards_earned)}</div>
-                        <small class="text-muted">${stake.pool.token.symbol}</small>
-                    </td>
-                    <td class="text-center">
-                        ${statusBadge}
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary view-details-btn" data-stake-id="${stake.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        $('#historyTable').html(html);
-
-        // Pagination info
-        $('#paginationInfo').text(`แสดง ${start + 1}-${Math.min(end, stakes.length)} จาก ${stakes.length} รายการ`);
-
-        // Generate pagination
-        generatePagination(stakes.length);
-
-        // Bind view button
-        $('.view-details-btn').click(function() {
-            const stakeId = $(this).data('stake-id');
-            showDetails(stakeId);
-        });
-    }
-
-    function getTypeBadge(type) {
-        const badges = {
-            'stake': '<span class="badge bg-primary">Stake</span>',
-            'unstake': '<span class="badge bg-danger">Unstake</span>',
-            'claim': '<span class="badge bg-success">Claim</span>'
-        };
-        return badges[type] || '<span class="badge bg-secondary">Unknown</span>';
-    }
-
-    function getStatusBadge(status) {
-        const badges = {
-            'active': '<span class="badge bg-success">Active</span>',
-            'completed': '<span class="badge bg-info">Completed</span>',
-            'withdrawn': '<span class="badge bg-secondary">Withdrawn</span>'
-        };
-        return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
-    }
-
-    function generatePagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / perPage);
-        let html = '<nav><ul class="pagination pagination-sm mb-0">';
-
-        // Previous
-        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${currentPage - 1}">ก่อนหน้า</a>
-        </li>`;
-
-        // Pages
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>`;
-            } else if (i === currentPage - 3 || i === currentPage + 3) {
-                html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
-            }
-        }
-
-        // Next
-        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${currentPage + 1}">ถัดไป</a>
-        </li>`;
-
-        html += '</ul></nav>';
-        $('#paginationButtons').html(html);
-
-        // Bind clicks
-        $('.page-link').click(function(e) {
-            e.preventDefault();
-            const page = parseInt($(this).data('page'));
-            if (page > 0 && page <= totalPages) {
-                currentPage = page;
-                filterAndDisplay();
-            }
-        });
-    }
-
-    function showDetails(stakeId) {
-        $.ajax({
-            url: `/api/v1/tpix/staking/stakes/${stakeId}`,
-            success: function(response) {
-                const stake = response.data;
-                let html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">ข้อมูล Stake</h6>
-                            <table class="table table-sm">
-                                <tr><td>Stake ID:</td><td class="fw-bold">#${stake.id}</td></tr>
-                                <tr><td>Pool:</td><td>${stake.pool.token.name} (${stake.pool.token.symbol})</td></tr>
-                                <tr><td>จำนวน:</td><td class="fw-bold">${formatNumber(stake.amount)} ${stake.pool.token.symbol}</td></tr>
-                                <tr><td>Lock Period:</td><td>${stake.lock_period_days === 0 ? 'Flexible' : stake.lock_period_days + ' วัน'}</td></tr>
-                                <tr><td>APY:</td><td class="text-success fw-bold">${stake.apy.toFixed(2)}%</td></tr>
-                                <tr><td>วันที่ Stake:</td><td>${new Date(stake.created_at).toLocaleDateString('th-TH')}</td></tr>
-                                <tr><td>วันที่ปลดล็อก:</td><td>${stake.unlock_date ? new Date(stake.unlock_date).toLocaleDateString('th-TH') : '-'}</td></tr>
-                                <tr><td>สถานะ:</td><td>${getStatusBadge(stake.status)}</td></tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">รางวัล</h6>
-                            <table class="table table-sm">
-                                <tr><td>รางวัลที่ได้รับ:</td><td class="text-success fw-bold">${formatNumber(stake.rewards_earned)} ${stake.pool.token.symbol}</td></tr>
-                                <tr><td>รางวัลรอเบิก:</td><td>${formatNumber(stake.pending_rewards)} ${stake.pool.token.symbol}</td></tr>
-                                <tr><td>มูลค่ารวม:</td><td class="fw-bold">฿${formatNumber(stake.total_value_thb)}</td></tr>
-                            </table>
-
-                            ${stake.transaction_hash ? `
-                                <h6 class="fw-bold mb-2 mt-3">Blockchain</h6>
-                                <a href="${stake.blockchain_explorer_url}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>
-                                    View on Explorer
-                                </a>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                $('#detailsContent').html(html);
-                $('#detailsModal').modal('show');
-            }
-        });
-    }
-
-    // Filters
-    $('#searchToken, #typeFilter, #statusFilter, #timeFilter, #sortBy').on('change input', filterAndDisplay);
-
-    // Export
-    $('#exportBtn').click(function() {
-        const csv = generateCSV(allStakes);
-        downloadCSV(csv, 'staking-history.csv');
-    });
-
-    function generateCSV(stakes) {
-        let csv = 'Date,Type,Pool,Amount,Lock Period,APY,Rewards,Status\n';
-        stakes.forEach(s => {
-            csv += `${new Date(s.created_at).toISOString()},${s.type},${s.pool.token.symbol},${s.amount},${s.lock_period_days},${s.apy},${s.rewards_earned},${s.status}\n`;
-        });
-        return csv;
-    }
-
-    function downloadCSV(content, filename) {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    }
-
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-        });
-    }
-});
-</script>
+@include('user.dex.partials.nova-csv')
 @endpush

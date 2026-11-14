@@ -1,495 +1,166 @@
-@extends('layouts.user-v4')
+{{--
+    ประวัติการแลกเปลี่ยน — TPIX DEX (ธีมโนวาเต็ม)
+    - $swaps = ประวัติของสมาชิกเอง (แบ่งหน้า 20) · $filters = ตัวกรองจาก query string · $summary = ยอดรวมทั้งหมด
+    - ตัวกรองเป็นฟอร์ม GET ธรรมดา · ปุ่มส่งออก CSV ทำจากแถวในหน้านี้ (ฝั่งเบราว์เซอร์) — ป้ายปุ่มบอกชัดว่าส่งออกเฉพาะหน้านี้
+--}}
+@extends('layouts.user-nova')
 
 @section('title', 'ประวัติการแลกเปลี่ยน - TPIX DEX')
 
+@push('styles')<link rel="stylesheet" href="{{ asset('theme-nova/member/dex-staking.css') }}?v={{ filemtime(public_path('theme-nova/member/dex-staking.css')) }}">@endpush
+
+@php
+    $num = function ($n, int $d = 6) {
+        $s = number_format((float) $n, $d, '.', ',');
+
+        return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
+    };
+    $thDate = fn ($d) => $d ? $d->copy()->locale('th')->translatedFormat('j M Y · H:i') : '-';
+    $swapChip = ['completed' => ['ok', 'สำเร็จ'], 'pending' => ['warn', 'รอดำเนินการ'], 'failed' => ['bad', 'ไม่สำเร็จ']];
+
+    $csvRows = $swaps->getCollection()->map(fn ($s) => [
+        $s->created_at?->format('Y-m-d H:i:s'),
+        $s->tokenIn->symbol ?? '',
+        (string) $s->amount_in,
+        $s->tokenOut->symbol ?? '',
+        (string) $s->amount_out,
+        (string) $s->fee,
+        $swapChip[$s->status][1] ?? $s->status,
+        $s->tx_hash,
+    ])->values();
+    $hasFilter = $filters['q'] !== '' || $filters['status'] !== '' || $filters['period'] !== '' || $filters['sort'] !== 'date_desc';
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-800 dark:via-amber-800 dark:to-yellow-800 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+<div class="nvm-stack">
+
+<section class="nvm-ph" aria-labelledby="nvm-dx-sh-h">
+    <div class="nvm-ph__in">
+        <div class="nvm-ph__txt">
+            <a class="nvm-ph__back" href="{{ route('user.dex.swap') }}"><svg class="nvm-ico"><use href="#nvm-i-arrow"/></svg>แลกเปลี่ยน Token</a>
+            <div class="nvm-eyebrow nvm-latin">Swap history</div>
+            <h1 id="nvm-dx-sh-h">ประวัติการแลกเปลี่ยน</h1>
+            <p class="nvm-ph__lead">ทุกรายการแลกเหรียญของคุณบน TPIX DEX พร้อมเลขธุรกรรม</p>
         </div>
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-history"></i></div>
-        </div>
-        <div class="relative z-10"><div class="flex items-center gap-4">
-            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-history text-4xl text-white drop-shadow-lg"></i></div>
-            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Swap History</h1>
-            <p class="text-white/80 text-lg mt-1">ประวัติการแลกเปลี่ยน</p></div>
-        </div></div>
+        <img class="nvm-ph__art" src="{{ asset('images/nova/deco/scroll.webp') }}" alt="" width="200" height="200">
     </div>
-                    <small class="text-muted">จำนวนครั้งทั้งหมด</small>
-                    <h4 class="mb-0" id="totalSwaps">0</h4>
-                    <small class="text-muted" id="swapsThisMonth">เดือนนี้: 0</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">ปริมาณทั้งหมด (THB)</small>
-                    <h4 class="mb-0" id="totalVolume">฿0.00</h4>
-                    <small class="text-muted" id="volumeThisMonth">เดือนนี้: ฿0.00</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <small class="text-muted">ค่าธรรมเนียมรวม</small>
-                    <h4 class="mb-0" id="totalFees">฿0.00</h4>
-                    <small class="text-muted" id="feesThisMonth">เดือนนี้: ฿0.00</small>
-                </div>
-            </div>
-        </div>
+</section>
+
+<section class="nvm-kpis nvm-kpis--3" aria-label="สรุปการแลกเปลี่ยน">
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">จำนวนรายการ</div>
+        <div class="nvm-kpi__en nvm-latin">Total swaps</div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($summary->total ?? 0)) }}</div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">เดือนนี้</div>
+        <div class="nvm-kpi__en nvm-latin">This month</div>
+        <div class="nvm-kpi__val nvm-num">{{ number_format((int) ($summary->this_month ?? 0)) }}</div>
+    </div>
+    <div class="nvm-card nvm-kpi">
+        <div class="nvm-kpi__lbl">ค่าธรรมเนียมรวม</div>
+        <div class="nvm-kpi__en nvm-latin">Fees paid</div>
+        <div class="nvm-kpi__val nvm-num">{{ $num($summary->fees ?? 0) }}</div>
+    </div>
+</section>
+
+<section class="nvm-card nvm-box" aria-labelledby="nvm-dx-shl-h" x-data="nvmDxCsv(@js($csvRows), 'tpix-swap-history.csv', ['วันที่', 'จ่าย', 'จำนวนจ่าย', 'รับ', 'จำนวนรับ', 'ค่าธรรมเนียม', 'สถานะ', 'เลขธุรกรรม'])">
+    <div class="nvm-sec-h">
+        <div><small class="nvm-latin">History</small><h2 id="nvm-dx-shl-h">รายการทั้งหมด</h2></div>
+        @if($swaps->isNotEmpty())
+            <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="download()"><svg class="nvm-ico"><use href="#nvm-i-down"/></svg>ส่งออกหน้านี้ (CSV {{ number_format(count($csvRows)) }} แถว)</button>
+        @endif
     </div>
 
-    <!-- Filters -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <input type="text" class="form-control" id="searchSwap" placeholder="ค้นหา Token...">
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="statusFilter">
-                        <option value="">ทุกสถานะ</option>
-                        <option value="completed">สำเร็จ</option>
-                        <option value="pending">กำลังดำเนินการ</option>
-                        <option value="failed">ล้มเหลว</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="timeFilter">
-                        <option value="all">ทุกช่วงเวลา</option>
-                        <option value="today">วันนี้</option>
-                        <option value="week">7 วันที่แล้ว</option>
-                        <option value="month">30 วันที่แล้ว</option>
-                        <option value="year">ปีนี้</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="sortBy">
-                        <option value="date_desc">วันที่: ใหม่-เก่า</option>
-                        <option value="date_asc">วันที่: เก่า-ใหม่</option>
-                        <option value="amount_desc">มูลค่า: สูง-ต่ำ</option>
-                        <option value="amount_asc">มูลค่า: ต่ำ-สูง</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-outline-secondary w-100" id="exportBtn">
-                        <i class="fas fa-download me-1"></i>ส่งออก
-                    </button>
-                </div>
-            </div>
+    <form method="GET" action="{{ route('user.dex.swap-history') }}" class="nvm-filter">
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-sh-q">ค้นหาเหรียญ</label>
+            <input id="nvm-dx-sh-q" type="search" name="q" maxlength="50" class="nvm-input" placeholder="เช่น TPIX" value="{{ $filters['q'] }}">
         </div>
-    </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-sh-st">สถานะ</label>
+            <select id="nvm-dx-sh-st" name="status" class="nvm-input">
+                <option value="">ทุกสถานะ</option>
+                @foreach(['completed' => 'สำเร็จ', 'pending' => 'รอดำเนินการ', 'failed' => 'ไม่สำเร็จ'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-sh-pd">ช่วงเวลา</label>
+            <select id="nvm-dx-sh-pd" name="period" class="nvm-input">
+                <option value="">ทุกช่วงเวลา</option>
+                @foreach(['today' => 'วันนี้', 'week' => '7 วันที่แล้ว', 'month' => '30 วันที่แล้ว', 'year' => 'ปีนี้'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['period'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="nvm-field">
+            <label class="nvm-label" for="nvm-dx-sh-so">เรียงตาม</label>
+            <select id="nvm-dx-sh-so" name="sort" class="nvm-input">
+                @foreach(['date_desc' => 'วันที่: ใหม่-เก่า', 'date_asc' => 'วันที่: เก่า-ใหม่', 'amount_desc' => 'จำนวนจ่าย: มาก-น้อย', 'amount_asc' => 'จำนวนจ่าย: น้อย-มาก'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['sort'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="nvm-filter__btns">
+            <button type="submit" class="nvm-btn nvm-btn--gold"><svg class="nvm-ico"><use href="#nvm-i-search"/></svg>กรอง</button>
+            @if($hasFilter)<a class="nvm-btn nvm-btn--line" href="{{ route('user.dex.swap-history') }}">ล้าง</a>@endif
+        </div>
+    </form>
 
-    <!-- Swap History Table -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="bg-light">
+    @if($swaps->isEmpty())
+        <div class="nvm-empty">
+            <img src="{{ asset('images/nova/wallet/empty.webp') }}" alt="" width="86" height="86" loading="lazy">
+            @if($hasFilter)
+                <b>ไม่พบรายการตามตัวกรอง</b>
+                ลองเปลี่ยนเงื่อนไขการค้นหา
+            @else
+                <b>ยังไม่มีประวัติการแลกเปลี่ยน</b>
+                เริ่มแลกเหรียญครั้งแรกได้เลย
+                <div><a class="nvm-btn nvm-btn--gold nvm-btn--sm" href="{{ route('user.dex.swap') }}"><svg class="nvm-ico"><use href="#nvm-i-swap"/></svg>แลกเปลี่ยน Token</a></div>
+            @endif
+        </div>
+    @else
+        <div class="nvm-table-wrap nvm-gap-t">
+            <table class="nvm-table">
+                <thead>
+                    <tr>
+                        <th>วันที่ / เวลา</th>
+                        <th>จ่าย</th>
+                        <th>รับ</th>
+                        <th class="r">ค่าธรรมเนียม</th>
+                        <th class="c">สถานะ</th>
+                        <th>เลขธุรกรรม</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($swaps as $swap)
+                        @php [$tone, $label] = $swapChip[$swap->status] ?? ['', $swap->status]; @endphp
                         <tr>
-                            <th>วันที่ / เวลา</th>
-                            <th>จาก</th>
-                            <th></th>
-                            <th>ไปยัง</th>
-                            <th class="text-end">มูลค่า (THB)</th>
-                            <th class="text-end">ค่าธรรมเนียม</th>
-                            <th class="text-center">สถานะ</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="swapHistoryTable">
-                        <!-- Loading state -->
-                        <tr>
-                            <td colspan="8" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="text-muted mt-2 mb-0">กำลังโหลดข้อมูล...</p>
+                            <td class="nvm-num">{{ $thDate($swap->created_at) }}</td>
+                            <td class="nvm-num">{{ $num($swap->amount_in) }} {{ $swap->tokenIn->symbol ?? '?' }}</td>
+                            <td class="nvm-num">{{ $num($swap->amount_out) }} {{ $swap->tokenOut->symbol ?? '?' }}</td>
+                            <td class="r nvm-num">{{ $num($swap->fee) }}</td>
+                            <td class="c"><span class="nvm-chip {{ $tone ? 'nvm-chip--'.$tone : '' }}">{{ $label }}</span></td>
+                            <td>
+                                <span class="nvm-dx-hash">{{ \Illuminate\Support\Str::limit($swap->tx_hash, 14, '…') }}</span>
+                                <button type="button" class="nvm-btn nvm-btn--line nvm-btn--sm" @click="nvmCopy(@js($swap->tx_hash), 'คัดลอกเลขธุรกรรมแล้ว')" aria-label="คัดลอกเลขธุรกรรม"><svg class="nvm-ico"><use href="#nvm-i-copy"/></svg></button>
                             </td>
                         </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="p-3 border-top" id="paginationContainer" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted" id="paginationInfo">แสดง 0-0 จาก 0 รายการ</small>
-                    <div id="paginationButtons"></div>
-                </div>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-    </div>
+        @if($swaps->hasPages())
+            <div class="nvm-pager nvm-gap-t">{{ $swaps->links() }}</div>
+        @endif
+    @endif
+</section>
 
-    <!-- Empty State -->
-    <div id="emptyState" class="text-center py-5" style="display: none;">
-        <i class="fas fa-exchange-alt text-muted" style="font-size: 4rem;"></i>
-        <h5 class="mt-3">ยังไม่มีประวัติการแลกเปลี่ยน</h5>
-        <p class="text-muted">เริ่มต้น Swap Token เพื่อดูประวัติที่นี่</p>
-        <a href="{{ route('user.dex.swap') }}" class="btn btn-primary">
-            <i class="fas fa-exchange-alt me-2"></i>แลกเปลี่ยน Token
-        </a>
-    </div>
 </div>
-
-<!-- Swap Details Modal -->
-<div class="modal fade" id="swapDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-info-circle me-2"></i>
-                    รายละเอียด Swap
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="swapDetailsContent">
-                <!-- Content loaded via AJAX -->
-            </div>
-        </div>
-    </div>
-</div>
-
 @endsection
 
 @push('scripts')
-<script>
-$(document).ready(function() {
-    let allSwaps = [];
-    let currentPage = 1;
-    let perPage = 20;
-
-    // Load swap history
-    loadSwapHistory();
-
-    function loadSwapHistory() {
-        $.ajax({
-            url: '/api/v1/tpix/dex/my-swaps',
-            method: 'GET',
-            success: function(response) {
-                allSwaps = response.data;
-                displaySummary(response.summary);
-                filterAndDisplay();
-            },
-            error: function() {
-                $('#swapHistoryTable').html(`
-                    <tr>
-                        <td colspan="8" class="text-center py-4">
-                            <div class="alert alert-danger mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง
-                            </div>
-                        </td>
-                    </tr>
-                `);
-            }
-        });
-    }
-
-    function displaySummary(summary) {
-        $('#totalSwaps').text(summary.total_swaps.toLocaleString());
-        $('#swapsThisMonth').text('เดือนนี้: ' + summary.swaps_this_month.toLocaleString());
-
-        $('#totalVolume').text('฿' + formatNumber(summary.total_volume));
-        $('#volumeThisMonth').text('เดือนนี้: ฿' + formatNumber(summary.volume_this_month));
-
-        $('#totalFees').text('฿' + formatNumber(summary.total_fees));
-        $('#feesThisMonth').text('เดือนนี้: ฿' + formatNumber(summary.fees_this_month));
-    }
-
-    function filterAndDisplay() {
-        let filtered = allSwaps;
-
-        // Search filter
-        const searchTerm = $('#searchSwap').val().toLowerCase();
-        if (searchTerm) {
-            filtered = filtered.filter(s =>
-                s.token_in.symbol.toLowerCase().includes(searchTerm) ||
-                s.token_out.symbol.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Status filter
-        const status = $('#statusFilter').val();
-        if (status) {
-            filtered = filtered.filter(s => s.status === status);
-        }
-
-        // Time filter
-        const timeFilter = $('#timeFilter').val();
-        if (timeFilter !== 'all') {
-            const now = new Date();
-            filtered = filtered.filter(s => {
-                const swapDate = new Date(s.created_at);
-                switch(timeFilter) {
-                    case 'today':
-                        return swapDate.toDateString() === now.toDateString();
-                    case 'week':
-                        return (now - swapDate) <= 7 * 24 * 60 * 60 * 1000;
-                    case 'month':
-                        return (now - swapDate) <= 30 * 24 * 60 * 60 * 1000;
-                    case 'year':
-                        return swapDate.getFullYear() === now.getFullYear();
-                    default:
-                        return true;
-                }
-            });
-        }
-
-        // Sort
-        const sortBy = $('#sortBy').val();
-        filtered.sort((a, b) => {
-            switch(sortBy) {
-                case 'date_desc': return new Date(b.created_at) - new Date(a.created_at);
-                case 'date_asc': return new Date(a.created_at) - new Date(b.created_at);
-                case 'amount_desc': return b.amount_in_thb - a.amount_in_thb;
-                case 'amount_asc': return a.amount_in_thb - b.amount_in_thb;
-                default: return 0;
-            }
-        });
-
-        displaySwaps(filtered);
-    }
-
-    function displaySwaps(swaps) {
-        if (swaps.length === 0) {
-            $('#swapHistoryTable').html(`
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <p class="text-muted mb-0">ไม่พบข้อมูล</p>
-                    </td>
-                </tr>
-            `);
-            $('#paginationContainer').hide();
-            $('#emptyState').show();
-            return;
-        }
-
-        $('#emptyState').hide();
-        $('#paginationContainer').show();
-
-        // Pagination
-        const start = (currentPage - 1) * perPage;
-        const end = start + perPage;
-        const paginatedSwaps = swaps.slice(start, end);
-
-        let html = '';
-        paginatedSwaps.forEach(swap => {
-            const statusBadge = getStatusBadge(swap.status);
-            const priceImpactClass = Math.abs(swap.price_impact) > 5 ? 'text-danger' : 'text-warning';
-
-            html += `
-                <tr>
-                    <td>
-                        <div>${new Date(swap.created_at).toLocaleDateString('th-TH')}</div>
-                        <small class="text-muted">${new Date(swap.created_at).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'})}</small>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <img src="${swap.token_in.logo_url}" width="24" height="24" class="rounded-circle me-2" onerror="this.src='/images/default-token.png'">
-                            <div>
-                                <div class="fw-bold">${formatNumber(swap.amount_in)}</div>
-                                <small class="text-muted">${swap.token_in.symbol}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <i class="fas fa-arrow-right text-primary"></i>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <img src="${swap.token_out.logo_url}" width="24" height="24" class="rounded-circle me-2" onerror="this.src='/images/default-token.png'">
-                            <div>
-                                <div class="fw-bold">${formatNumber(swap.amount_out)}</div>
-                                <small class="text-muted">${swap.token_out.symbol}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-end">
-                        <div>฿${formatNumber(swap.amount_in_thb)}</div>
-                        ${swap.price_impact ? `<small class="${priceImpactClass}">Impact: ${swap.price_impact.toFixed(2)}%</small>` : ''}
-                    </td>
-                    <td class="text-end">
-                        <div>฿${formatNumber(swap.fee_amount)}</div>
-                        <small class="text-muted">${swap.fee_percentage}%</small>
-                    </td>
-                    <td class="text-center">
-                        ${statusBadge}
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary view-swap-btn" data-swap-id="${swap.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        $('#swapHistoryTable').html(html);
-
-        // Update pagination info
-        $('#paginationInfo').text(`แสดง ${start + 1}-${Math.min(end, swaps.length)} จาก ${swaps.length} รายการ`);
-
-        // Generate pagination buttons
-        generatePagination(swaps.length);
-
-        // Bind view button
-        $('.view-swap-btn').click(function() {
-            const swapId = $(this).data('swap-id');
-            showSwapDetails(swapId);
-        });
-    }
-
-    function getStatusBadge(status) {
-        const badges = {
-            'completed': '<span class="badge bg-success">สำเร็จ</span>',
-            'pending': '<span class="badge bg-warning">กำลังดำเนินการ</span>',
-            'failed': '<span class="badge bg-danger">ล้มเหลว</span>'
-        };
-        return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
-    }
-
-    function generatePagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / perPage);
-        let html = '<nav><ul class="pagination pagination-sm mb-0">';
-
-        // Previous
-        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${currentPage - 1}">ก่อนหน้า</a>
-        </li>`;
-
-        // Pages
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>`;
-            } else if (i === currentPage - 3 || i === currentPage + 3) {
-                html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
-            }
-        }
-
-        // Next
-        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${currentPage + 1}">ถัดไป</a>
-        </li>`;
-
-        html += '</ul></nav>';
-        $('#paginationButtons').html(html);
-
-        // Bind pagination clicks
-        $('.page-link').click(function(e) {
-            e.preventDefault();
-            const page = parseInt($(this).data('page'));
-            if (page > 0 && page <= totalPages) {
-                currentPage = page;
-                filterAndDisplay();
-            }
-        });
-    }
-
-    function showSwapDetails(swapId) {
-        $.ajax({
-            url: `/api/v1/tpix/dex/swaps/${swapId}`,
-            success: function(response) {
-                const swap = response.data;
-                let html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">ข้อมูล Swap</h6>
-                            <table class="table table-sm">
-                                <tr>
-                                    <td>Swap ID:</td>
-                                    <td class="fw-bold">#${swap.id}</td>
-                                </tr>
-                                <tr>
-                                    <td>วันที่:</td>
-                                    <td>${new Date(swap.created_at).toLocaleString('th-TH')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Pool:</td>
-                                    <td>${swap.pool.pair}</td>
-                                </tr>
-                                <tr>
-                                    <td>Exchange Rate:</td>
-                                    <td>${swap.exchange_rate}</td>
-                                </tr>
-                                <tr>
-                                    <td>Price Impact:</td>
-                                    <td class="${Math.abs(swap.price_impact) > 5 ? 'text-danger' : ''}">${swap.price_impact.toFixed(2)}%</td>
-                                </tr>
-                                <tr>
-                                    <td>Slippage:</td>
-                                    <td>${swap.slippage_tolerance}%</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">Transaction</h6>
-                            <table class="table table-sm">
-                                <tr>
-                                    <td>TxHash:</td>
-                                    <td>
-                                        <a href="${swap.blockchain_tx_url}" target="_blank" class="text-decoration-none">
-                                            ${swap.blockchain_tx_hash ? swap.blockchain_tx_hash.substring(0, 10) + '...' : '-'}
-                                            <i class="fas fa-external-link-alt ms-1"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Gas Used:</td>
-                                    <td>${swap.gas_used || '0'} (฿0.00)</td>
-                                </tr>
-                                <tr>
-                                    <td>สถานะ:</td>
-                                    <td>${getStatusBadge(swap.status)}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                $('#swapDetailsContent').html(html);
-                $('#swapDetailsModal').modal('show');
-            }
-        });
-    }
-
-    // Filters
-    $('#searchSwap, #statusFilter, #timeFilter, #sortBy').on('change input', filterAndDisplay);
-
-    // Export
-    $('#exportBtn').click(function() {
-        const csvContent = generateCSV(allSwaps);
-        downloadCSV(csvContent, 'swap-history.csv');
-    });
-
-    function generateCSV(swaps) {
-        let csv = 'Date,From Token,Amount In,To Token,Amount Out,Value (THB),Fee,Status\n';
-        swaps.forEach(s => {
-            csv += `${new Date(s.created_at).toISOString()},${s.token_in.symbol},${s.amount_in},${s.token_out.symbol},${s.amount_out},${s.amount_in_thb},${s.fee_amount},${s.status}\n`;
-        });
-        return csv;
-    }
-
-    function downloadCSV(content, filename) {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    }
-
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-        });
-    }
-});
-</script>
+@include('user.dex.partials.nova-csv')
 @endpush
