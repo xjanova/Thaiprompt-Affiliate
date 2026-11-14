@@ -246,7 +246,9 @@ class JuntraChatSlipRelay
     public function ring(JuntraChatSlip $row): bool
     {
         $base = rtrim((string) config('services.juntra.url'), '/');
-        if ($base === '') {
+        $token = config('services.juntra.chat_slip_ping_token');
+        // ไม่มี token เฉพาะทางที่พร้อมใช้ = รอตัวกวาดทุกนาที ไม่นับเป็นการกดกริ่ง
+        if ($base === '' || ! is_string($token) || strlen($token) < 32) {
             return false;
         }
 
@@ -258,6 +260,7 @@ class JuntraChatSlipRelay
             $resp = Http::connectTimeout(3)
                 ->timeout(8)
                 ->acceptJson()
+                ->withToken($token)
                 ->post($base.'/api/server/chat-slips/ping', ['trans_ref' => $row->trans_ref]);
 
             if (! $resp->successful()) {
@@ -273,7 +276,8 @@ class JuntraChatSlipRelay
         } catch (\Throwable $e) {
             Log::warning('JuntraChatSlipRelay: กดกริ่งเว็บจันทราไม่ติด (สลิปยังพักอยู่)', [
                 'trans_ref' => $row->trans_ref,
-                'err' => $e->getMessage(),
+                // exception จาก HTTP อาจมี header จึงเก็บเฉพาะชนิด ไม่บันทึก token
+                'exception' => get_class($e),
             ]);
 
             return false;

@@ -332,6 +332,8 @@ return [
         // 🧾 (2026-11-10) สลิปที่ส่งในแชทเพจ (โหมด web-only ไม่มีบิลค้าง) → ตรวจ SlipOK แล้วส่งต่อให้เว็บจันทราเติมกระเป๋า
         //    false = กลับไปแบบเดิม: เก็บรูปเป็นหลักฐาน + แจ้งแอดมิน (ไม่ยิง SlipOK)
         'chat_slip_relay' => (bool) env('JUNTRA_CHAT_SLIP_RELAY', true),
+        // token กดกริ่งเฉพาะทาง ต้องตรงกับ THAIPROMPT_CHAT_SLIP_PING_TOKEN ฝั่ง juntraweb (อย่างน้อย 32 ตัว)
+        'chat_slip_ping_token' => env('JUNTRA_CHAT_SLIP_PING_TOKEN'),
         'server_client_ids' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('JUNTRA_SERVER_CLIENT_IDS', ''))
