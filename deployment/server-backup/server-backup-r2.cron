@@ -1,0 +1,10 @@
+# /etc/cron.d/server-backup-r2 — สำรองทั้งเครื่องขึ้น Cloudflare R2 (เข้ารหัส)
+# ทุกคืน 02:00 เวลาเครื่อง: NIGHTLY_COMPONENTS · วันที่ 10 และ 25 เพิ่มชุดเต็ม (ดู /etc/server-backup-r2/r2.conf)
+# ⚠️ เวลาเครื่องไม่เท่ากัน — 251 = Asia/Bangkok แต่ 252 = UTC และ cron ของ Ubuntu ไม่รองรับ CRON_TZ
+#    ⇒ ปลุกทุกต้นชั่วโมง แล้วรันจริงเฉพาะเมื่อ "เวลาไทย" เป็น 02 (สคริปต์เองก็ใช้เวลาไทย: BACKUP_TZ)
+# root เพราะต้องอ่าน DB ทั้งก้อน / /etc ทั้งหมด / ทุก /home
+# อยู่ใน /etc/cron.d โดยตั้งใจ — DirectAdmin เขียนทับ crontab ของ user admin (ดู /etc/cron.d/laravel-thaiprompt)
+# ที่มา: deployment/server-backup/ ใน repo Thaiprompt-Affiliate
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+0 * * * * root [ "$(TZ=Asia/Bangkok date +\%H)" = 02 ] && /usr/local/sbin/server-backup-r2 nightly >/dev/null 2>&1

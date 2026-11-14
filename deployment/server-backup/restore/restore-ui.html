@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>กู้คืนเครื่อง</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#ffffff; --ink:#172033; --muted:#5c6780; --line:#dde3ef; --accent:#2563eb; --accent-ink:#fff;
+          --ok:#15803d; --bad:#b91c1c; --warn:#a16207; --code:#0f172a; --code-ink:#d7e2f5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0b1020; --card:#131a2e; --ink:#e6ebf7; --muted:#97a3bf; --line:#26304a; --accent:#5b8cff; --accent-ink:#06102a;
+            --ok:#4ade80; --bad:#f87171; --warn:#facc15; --code:#070b16; --code-ink:#cbd8f0; }
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, "Noto Sans Thai", "Sarabun", sans-serif }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 80px }
+  h1 { font-size:24px; margin:0 0 4px } .sub { color:var(--muted); margin:0 0 20px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin:0 0 16px }
+  .card h2 { font-size:17px; margin:0 0 12px; display:flex; gap:10px; align-items:center }
+  .num { width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:inline-grid; place-items:center; font-size:14px; flex:none }
+  .done .num { background:var(--ok) }
+  label { display:block; font-weight:600; margin:12px 0 4px }
+  .hint { color:var(--muted); font-size:13px; font-weight:400 }
+  input, textarea, select { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); font:inherit }
+  textarea { min-height:110px; font-family:ui-monospace, Consolas, monospace; font-size:12px }
+  button { border:0; border-radius:9px; padding:11px 18px; font:inherit; font-weight:600; cursor:pointer; background:var(--accent); color:var(--accent-ink); min-height:44px }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line) }
+  button.danger { background:var(--bad); color:#fff }
+  button:disabled { opacity:.5; cursor:not-allowed }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px } @media (max-width:640px){ .grid2 { grid-template-columns:1fr } }
+  .msg { margin-top:12px; padding:10px 12px; border-radius:9px; display:none; white-space:pre-wrap }
+  .msg.err { display:block; background:color-mix(in srgb, var(--bad) 12%, transparent); color:var(--bad) }
+  .msg.ok { display:block; background:color-mix(in srgb, var(--ok) 12%, transparent); color:var(--ok) }
+  .msg.warn { display:block; background:color-mix(in srgb, var(--warn) 14%, transparent); color:var(--warn) }
+  .snaps { display:grid; gap:8px; margin-top:8px }
+  .snap { display:flex; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; cursor:pointer }
+  .snap input { width:auto } .snap b { min-width:120px } .snap span { color:var(--muted); font-size:13px }
+  .facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin:6px 0 4px }
+  .fact { background:var(--bg); border-radius:10px; padding:10px } .fact small { color:var(--muted); display:block } .fact b { font-size:15px; overflow-wrap:anywhere }
+  .steps { display:grid; gap:6px; margin-top:8px }
+  .step { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:start; padding:10px 12px; border:1px solid var(--line); border-radius:10px }
+  .step input { width:auto; margin-top:4px } .step small { color:var(--muted); display:block }
+  .badge { font-size:12px; padding:2px 9px; border-radius:20px; background:var(--bg); color:var(--muted); white-space:nowrap }
+  .badge.ok { color:var(--ok) } .badge.fail { color:var(--bad) } .badge.running { color:var(--accent) }
+  pre { background:var(--code); color:var(--code-ink); border-radius:10px; padding:12px; height:380px; overflow:auto; font-size:12px; white-space:pre-wrap; overflow-wrap:anywhere; margin:10px 0 0 }
+  .hidden { display:none }
+  .test { background:var(--warn); color:#111; padding:8px 12px; border-radius:9px; margin-bottom:14px; font-weight:600 }
+</style>
+</head>
+<body>
+<main>
+  <h1>♻️ กู้คืนเครื่องจากชุดสำรอง</h1>
+  <p class="sub">ทำตามทีละขั้นจากบนลงล่าง ข้อมูลลับอยู่ในหน่วยความจำของเครื่องนี้เท่านั้น และกด “ล้างกุญแจและปิด” เมื่อเสร็จ</p>
+  <div id="testbar" class="test hidden"></div>
+
+  <section class="card" id="c1">
+    <h2><span class="num">1</span> เชื่อมต่อชุดสำรอง</h2>
+    <div id="r2fields">
+      <div class="grid2">
+        <div><label>Cloudflare Account ID</label><input id="acct" autocomplete="off" placeholder="32 ตัวอักษร 0-9a-f"></div>
+        <div><label>Bucket</label><input id="bucket" value="thaiprompt-backup" autocomplete="off"></div>
+        <div><label>R2 Access Key ID</label><input id="kid" autocomplete="off"></div>
+        <div><label>R2 Secret Access Key</label><input id="sec" type="password" autocomplete="off"></div>
+      </div>
+      <p class="hint">ถ้าเครื่องใหม่ใช้ IP ต่างจากเดิม ให้สร้าง token ใหม่ใน Cloudflare (R2 → Manage API tokens → Object Read only, bucket thaiprompt-backup) แล้วลบทิ้งหลังกู้เสร็จ</p>
+    </div>
+    <label>ลูกกุญแจ (backup-private.pem) <span class="hint">— เลือกไฟล์ หรือวางเนื้อไฟล์</span></label>
+    <input type="file" id="pemfile" accept=".pem,.key,.txt">
+    <textarea id="pem" placeholder="-----BEGIN PRIVATE KEY-----&#10;…&#10;-----END PRIVATE KEY-----" autocomplete="off" spellcheck="false"></textarea>
+    <div class="row"><button id="connect">เชื่อมต่อ</button></div>
+    <div class="msg" id="m1"></div>
+  </section>
+
+  <section class="card hidden" id="c2">
+    <h2><span class="num">2</span> เลือกเครื่องและชุดสำรอง</h2>
+    <label>เครื่อง</label><select id="server"></select>
+    <label>ชุด <span class="hint">— full/day10, full/day25 = ชุดเต็ม (มีเว็บทั้งหมด) · daily/… = รายคืน (ฐานข้อมูล + ตั้งค่า)</span></label>
+    <div class="snaps" id="snaps"></div>
+    <div class="row"><button id="plan" disabled>อ่านชุดนี้</button></div>
+    <div class="msg" id="m2"></div>
+  </section>
+
+  <section class="card hidden" id="c3">
+    <h2><span class="num">3</span> ตรวจและเลือกขั้นตอน</h2>
+    <div class="facts" id="facts"></div>
+    <div class="msg" id="m3w"></div>
+    <div id="dabox" class="hidden">
+      <label>DirectAdmin License key <span class="hint">— ดูที่ my.directadmin.com (license ผูกกับ IP — ย้าย IP ต้องเปลี่ยนที่นั่นก่อน)</span></label>
+      <input id="dalic" autocomplete="off">
+    </div>
+    <div id="tpixbox" class="hidden">
+      <label>Token อ่าน bucket tpix-chain-backup <span class="hint">— เว้นว่าง = ใช้ token เดิมที่สำรองไว้ใน /etc (ใช้ได้ถ้า IP เดิม)</span></label>
+      <div class="grid2"><input id="tkid" placeholder="Access Key ID" autocomplete="off"><input id="tsec" type="password" placeholder="Secret Access Key" autocomplete="off"></div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="row">
+      <button id="run">เริ่มกู้คืน</button>
+      <button class="ghost" id="all">เลือกทั้งหมด</button>
+      <span class="hint">ขั้นที่ล้มจะหยุดรอ แก้แล้วกดเริ่มใหม่จากขั้นนั้นได้ (ติ๊กเฉพาะขั้นที่เหลือ)</span>
+    </div>
+    <div class="msg" id="m3"></div>
+  </section>
+
+  <section class="card hidden" id="c4">
+    <h2><span class="num">4</span> กำลังกู้คืน</h2>
+    <div class="row" style="margin-top:0"><span id="now" class="hint"></span></div>
+    <pre id="log"></pre>
+    <div class="row">
+      <button class="ghost" id="cancel">หยุดหลังขั้นนี้</button>
+      <button class="danger" id="wipe">ล้างกุญแจและปิดหน้าเว็บ</button>
+    </div>
+    <div class="msg" id="m4"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let ST = {}, chosen = { server: "", snapshot: "" }, logFrom = 0, poll = null;
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((j.error || ("HTTP " + r.status)) + (j.detail ? "\n" + j.detail : ""));
+  return j;
+}
+function msg(id, kind, text) { const m = $(id); m.className = "msg " + (kind || ""); m.textContent = text || ""; }
+function show(id) { $(id).classList.remove("hidden"); }
+function busy(btn, on, label) { btn.disabled = on; if (label) btn.textContent = on ? "กำลังทำ…" : label; }
+function fmtBytes(b) { b = +b || 0; const u = ["B","KB","MB","GB","TB"]; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return b.toFixed(i ? 1 : 0) + " " + u[i]; }
+
+$("pemfile").onchange = async (e) => { const f = e.target.files[0]; if (f) $("pem").value = await f.text(); };
+
+$("connect").onclick = async () => {
+  const b = $("connect"); busy(b, true, "เชื่อมต่อ"); msg("m1");
+  try {
+    const j = await api("/api/connect", { account_id: $("acct").value, bucket: $("bucket").value, key_id: $("kid").value, secret: $("sec").value, private_key: $("pem").value });
+    $("sec").value = ""; $("pem").value = ""; $("pemfile").value = "";
+    msg("m1", "ok", "✓ เชื่อมต่อแล้ว · ลายนิ้วมือลูกกุญแจ " + j.fingerprint + " · พบ " + j.servers.length + " เครื่อง");
+    $("c1").classList.add("done");
+    $("server").innerHTML = j.servers.map(s => `<option>${s}</option>`).join("");
+    show("c2"); loadSnaps();
+  } catch (e) { msg("m1", "err", e.message); }
+  busy(b, false, "เชื่อมต่อ");
+};
+
+$("server").onchange = loadSnaps;
+async function loadSnaps() {
+  chosen.server = $("server").value; chosen.snapshot = ""; $("plan").disabled = true;
+  $("snaps").innerHTML = "<span class='hint'>กำลังโหลด…</span>"; msg("m2");
+  try {
+    const j = await api("/api/snapshots?server=" + encodeURIComponent(chosen.server));
+    if (!j.snapshots.length) { $("snaps").innerHTML = ""; return msg("m2", "warn", "เครื่องนี้ยังไม่มีชุดสำรอง"); }
+    $("snaps").innerHTML = j.snapshots.map((s, i) => {
+      const when = s.finished ? new Date(s.finished).toLocaleString("th-TH") : "ไม่มีสรุปรอบ";
+      const fail = +s.failures ? ` · ⚠️ ล้ม ${s.failures} รายการ` : "";
+      return `<label class="snap"><input type="radio" name="snap" value="${s.slot}"><b>${s.slot}</b><span>${when} · ${s.components || ""} · ${s.files || "?"} ไฟล์ ${fmtBytes(s.bytes)}${fail}</span></label>`;
+    }).join("");
+    document.querySelectorAll("input[name=snap]").forEach(r => r.onchange = () => { chosen.snapshot = r.value; $("plan").disabled = false; });
+  } catch (e) { $("snaps").innerHTML = ""; msg("m2", "err", e.message); }
+}
+
+$("plan").onclick = async () => {
+  const b = $("plan"); busy(b, true, "อ่านชุดนี้"); msg("m2");
+  try {
+    const j = await api("/api/plan", chosen);
+    const i = j.info;
+    const facts = [["ชื่อเครื่องเดิม", i.hostname], ["ระบบ", i.os_pretty], ["IP เดิม", i.primary_ip], ["โปรไฟล์", i.host_profile],
+      ["สำรองเมื่อ", i.created ? new Date(i.created).toLocaleString("th-TH") : "-"], ["ฐานข้อมูล", i.db_count], ["เว็บ", i.site_count],
+      ["home ผู้ใช้", i.home_count], ["แพ็กเกจ", i.package_count], ["container", i.container_count]];
+    $("facts").innerHTML = facts.map(([k, v]) => `<div class="fact"><small>${k}</small><b>${v || "-"}</b></div>`).join("");
+    const warns = [];
+    if (+i.site_count === 0 && i.host_profile === "directadmin") warns.push("ชุดนี้ไม่มีไฟล์เว็บ (ชุดรายคืน) — ถ้าจะกู้ทั้งเครื่องให้เลือก full/day10 หรือ full/day25 แล้วค่อยกู้ฐานข้อมูลจากชุดรายคืนล่าสุดซ้ำ");
+    warns.push("หลังกู้: ชี้ DNS/Cloudflare ของทุกโดเมนมาที่ IP ใหม่ (ถ้า IP เปลี่ยน)");
+    msg("m3w", "warn", warns.join("\n"));
+    $("dabox").classList.toggle("hidden", !j.steps.includes("directadmin"));
+    $("tpixbox").classList.toggle("hidden", !j.steps.includes("tpix-chain"));
+    $("steps").innerHTML = j.steps.map(s => {
+      const [t, d] = ST.steps[s] || [s, ""];
+      return `<label class="step"><input type="checkbox" value="${s}" checked><div><b>${t}</b><small>${d}</small></div><span class="badge" id="b-${s}">รอ</span></label>`;
+    }).join("");
+    $("c2").classList.add("done"); show("c3"); $("c3").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { msg("m2", "err", e.message); }
+  busy(b, false, "อ่านชุดนี้");
+};
+
+$("all").onclick = () => document.querySelectorAll("#steps input").forEach(c => c.checked = true);
+
+$("run").onclick = async () => {
+  const steps = [...document.querySelectorAll("#steps input:checked")].map(c => c.value);
+  if (!steps.length) return msg("m3", "err", "เลือกอย่างน้อย 1 ขั้น");
+  const live = !ST.test_mode;
+  if (live && !confirm("ยืนยันกู้คืน " + steps.length + " ขั้น ลงเครื่องนี้?\nไฟล์/ฐานข้อมูลที่ชื่อซ้ำบนเครื่องนี้จะถูกเขียนทับ")) return;
+  msg("m3");
+  try {
+    await api("/api/run", { ...chosen, steps, da_license: $("dalic").value, tpix_key_id: $("tkid").value, tpix_secret: $("tsec").value });
+    $("tsec").value = "";
+    show("c4"); $("c4").scrollIntoView({ behavior: "smooth" }); startPoll();
+  } catch (e) { msg("m3", "err", e.message); }
+};
+
+function paint(results) {
+  for (const [s, r] of Object.entries(results || {})) {
+    const b = $("b-" + s); if (!b) continue;
+    b.className = "badge " + r; b.textContent = { ok: "✓ เสร็จ", fail: "✖ ล้ม", running: "⏳ กำลังทำ", pending: "รอ" }[r] || r;
+    const cb = b.parentElement.querySelector("input"); if (r === "ok" && cb) cb.checked = false;
+  }
+}
+function startPoll() {
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    try {
+      const j = await api("/api/log?from=" + logFrom);
+      if (j.text) { const pre = $("log"); const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30; pre.textContent += j.text; if (atEnd) pre.scrollTop = pre.scrollHeight; }
+      logFrom = j.next; paint(j.results);
+      $("now").textContent = j.running ? "กำลังทำ: " + ((ST.steps[j.current] || [j.current])[0] || "…") : "ไม่มีงานค้าง";
+      $("run").disabled = j.running;
+      if (!j.running) { clearInterval(poll); const failed = Object.values(j.results || {}).includes("fail");
+        msg("m4", failed ? "err" : "ok", failed ? "มีขั้นที่ล้ม — อ่าน log ด้านบน แก้แล้วกดเริ่มใหม่ (ขั้นที่เสร็จแล้วถูกเอาติ๊กออกให้)" : "✓ ทำครบทุกขั้นที่เลือก — ตรวจผลในขั้น “ตรวจผล” แล้วกดล้างกุญแจ"); }
+    } catch (e) { /* เครือข่ายสะดุด — ลองรอบหน้า */ }
+  }, 1500);
+}
+
+$("cancel").onclick = async () => { await api("/api/cancel", {}); msg("m4", "warn", "จะหยุดหลังขั้นที่กำลังทำจบ"); };
+$("wipe").onclick = async () => {
+  if (!confirm("ลบลูกกุญแจและคีย์ R2 ออกจากเครื่องนี้ แล้วปิดหน้าเว็บ?")) return;
+  try { await api("/api/wipe", {}); document.body.innerHTML = "<main><div class='card'><h2>✓ ลบกุญแจแล้ว หน้าเว็บปิดตัว</h2><p class='hint'>ถ้าสร้าง token R2 ชั่วคราวไว้ อย่าลืมลบใน Cloudflare</p></div></main>"; }
+  catch (e) { msg("m4", "err", e.message); }
+};
+
+(async () => {
+  ST = await api("/api/state");
+  if (ST.test_mode || ST.source_dir) { const t = $("testbar"); t.textContent = "🧪 โหมดทดสอบ" + (ST.source_dir ? " · อ่านจากโฟลเดอร์ " + ST.source_dir : "") + (ST.test_mode ? " · เขียนลงโฟลเดอร์ทดสอบ ไม่แตะระบบจริง" : ""); show("testbar"); }
+  if (ST.source_dir) $("r2fields").classList.add("hidden");
+  if (ST.running) { show("c4"); startPoll(); }
+})();
+</script>
+</body>
+</html>
