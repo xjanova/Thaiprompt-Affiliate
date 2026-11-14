@@ -20,7 +20,7 @@ class WebFunnelReport
 
     /** ชื่อไทยของจุดที่ส่งกล่อง (source) — ตัวที่ไม่รู้จักแสดงรหัสเดิม */
     public const SOURCE_LABELS = [
-        'button:WEB_ROOM' => 'กดปุ่ม 🌙 เข้าห้องแม่หมอ',
+        'button:WEB_ROOM' => 'กดปุ่ม 🌙 เข้าห้องดูดวง',
         'button:WEB_ROOM_HOWTO' => 'กดปุ่ม ❓ เข้ายังไงคะ',
         'button:INVITE_FREE_WEB' => 'กดปุ่มชวนดูฟรีบนเว็บ',
         'button:INVITE_READ_NOW' => 'กดปุ่มดูดวงเลย (ข้อความชวน)',
@@ -98,7 +98,7 @@ class WebFunnelReport
 
         $out['funnel'] = [
             ['key' => 'box', 'label' => 'ได้กล่องลิงก์เข้าห้องแม่หมอ', 'hint' => 'คนในแชทเพจที่บอทส่งกล่องลิงก์ให้', 'people' => $gotBox],
-            ['key' => 'pressed', 'label' => 'ในนั้น กดปุ่มขอเข้าห้องเอง', 'hint' => 'กดปุ่ม 🌙 เข้าห้องแม่หมอ / เมนู / ปุ่มในข้อความชวน', 'people' => $pressed, 'sub' => true],
+            ['key' => 'pressed', 'label' => 'ในนั้น กดปุ่มขอเข้าห้องเอง', 'hint' => 'กดปุ่ม 🌙 เข้าห้องดูดวง / เมนู / ปุ่มในข้อความชวน', 'people' => $pressed, 'sub' => true],
             ['key' => 'opened', 'label' => 'แตะลิงก์ เข้าเว็บได้', 'hint' => 'ระบบล็อกอินให้แล้วส่งไปเว็บจันทรา · บัญชีใหม่ '.$newAccounts.' คน', 'people' => $opened],
             ['key' => 'chatted', 'label' => 'คุยกับแม่หมอบนเว็บ', 'hint' => 'พิมพ์อย่างน้อย 1 ข้อความในห้องแชท', 'people' => $chatted],
             ['key' => 'paid', 'label' => 'ซื้อคำทำนาย', 'hint' => 'บิลที่จ่ายแล้ว (เว็บส่งมาหลังพ้นช่วงคืนเงิน)', 'people' => $paidPeople],

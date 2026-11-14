@@ -81,7 +81,7 @@ class WebFortuneGatewayController extends Controller
     /** ข้อความในปุ่มที่ส่งเข้าแชท (ห้ามพูดถึงเงินเด็ดขาด — FB แบนเพจที่มีสลิปในแชท) */
     public const RESEND_TEXT = 'แม่หมอเปิดห้องรอไว้ให้แล้วนะคะ 🌙 กดปุ่มด้านล่างเพื่อเข้ามาคุยกับแม่หมอต่อได้เลยค่ะ';
 
-    public const RESEND_BUTTON_TITLE = '🔮 เข้าห้องแม่หมอ';
+    public const RESEND_BUTTON_TITLE = '🔮 เข้าห้องดูดวง';
 
     /** cache ผลเช็คคอลัมน์ users.fortune_origin_page_id (T14 เพิ่ม — ก่อน migrate ต้องไม่พัง) */
     protected static ?bool $hasOriginPageColumn = null;

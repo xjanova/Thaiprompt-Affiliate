@@ -28,7 +28,7 @@ final class WebHandoffCopy
     // payload ของปุ่ม (ฝั่ง webhook ต้องรู้จักทุกตัว — T6)
     // ------------------------------------------------------------
 
-    /** ปุ่มหลัก "เข้าห้องแม่หมอ" (postback / quick reply) → ตอบด้วยกล่องลิงก์ใหม่ทุกครั้ง */
+    /** ปุ่มหลัก "เข้าห้องดูดวง" (postback / quick reply) → ตอบด้วยกล่องลิงก์ใหม่ทุกครั้ง */
     public const PAYLOAD_WEB_ROOM = 'WEB_ROOM';
 
     /** ปุ่ม "เข้ายังไงคะ" → ส่งคำอธิบาย 2 บรรทัด + กล่องลิงก์ใหม่ */
@@ -44,7 +44,7 @@ final class WebHandoffCopy
     // ป้ายปุ่ม (≤ 20 ตัวอักษร)
     // ------------------------------------------------------------
 
-    public const LABEL_WEB_ROOM = '🌙 เข้าห้องแม่หมอ';
+    public const LABEL_WEB_ROOM = '🌙 เข้าห้องดูดวง';
 
     public const LABEL_WEB_ROOM_ALT = '🕯️ ไปนั่งคุยกัน';
 
@@ -98,8 +98,8 @@ final class WebHandoffCopy
         self::KIND_READING => 'เรื่องนี้แม่หมออยากเปิดไพ่ให้ละเอียดค่ะ 🌙 ห้องแม่หมอเปิดรอไว้แล้ว แตะปุ่มด้านล่างได้เลยนะคะ',
         self::KIND_PRICE => 'รายละเอียดแพ็กเกจทั้งหมดแม่หมอวางไว้ในห้องแล้วค่ะ เข้าไปดูได้สบาย ๆ เลยนะคะ 🌙',
         self::KIND_CANNOT => 'ไม่ยากเลยค่ะ{name} แตะปุ่มด้านล่าง ระบบพาเข้าห้องให้เองเลย ถ้าติดตรงไหน พิมพ์บอกแม่หมอตรงนี้ได้ เดี๋ยวช่วยค่ะ',
-        self::KIND_ROOM => 'อยากคุยกับแม่หมอ หรือเปิดไพ่ฟรี แตะปุ่มด้านล่างเข้าห้องแม่หมอได้เลยค่ะ 🌙 ระบบพาเข้าให้เอง ไม่ต้องสมัครอะไรเลยนะคะ',
-        self::KIND_HOWTO => "1) แตะปุ่ม 🌙 เข้าห้องแม่หมอ ด้านล่างนี้\n2) รอแป๊บเดียว ระบบพาเข้าห้องให้เอง ไม่ต้องตั้งรหัส ไม่ต้องกรอกอะไรเลยค่ะ",
+        self::KIND_ROOM => 'อยากคุยกับแม่หมอ หรือเปิดไพ่ฟรี แตะปุ่มด้านล่างเข้าห้องดูดวงได้เลยค่ะ 🌙 ระบบพาเข้าให้เอง ไม่ต้องสมัครอะไรเลยนะคะ',
+        self::KIND_HOWTO => "1) แตะปุ่ม 🌙 เข้าห้องดูดวง ด้านล่างนี้\n2) รอแป๊บเดียว ระบบพาเข้าห้องให้เอง ไม่ต้องตั้งรหัส ไม่ต้องกรอกอะไรเลยค่ะ",
         self::KIND_SLIP_FORWARDED => 'แม่หมอส่งเรื่องให้ทีมดูให้แล้วค่ะ 🙏 ระหว่างนี้ห้องแม่หมอเปิดรอไว้นะคะ',
         self::KIND_PAID_CTA => 'ถ้าอยากให้แม่หมอเปิดไพ่เรื่องอื่นอีก แม่หมอรออยู่ในห้องนะคะ 🌙',
         self::KIND_CANNOT_ESCALATED => 'แม่หมอแจ้งทีมให้ช่วยดูแล้วนะคะ 🙏 เดี๋ยวมีคนทักกลับมาช่วยตรงนี้ค่ะ ระหว่างนี้ลองแตะปุ่มด้านล่างอีกครั้งได้นะคะ',
@@ -135,11 +135,26 @@ final class WebHandoffCopy
         self::KIND_PAID_CTA => 'อยากเปิดไพ่เรื่องอื่นอีก 👆 แตะที่รูปนี้ เลือกห้องดูดวงได้เลยค่ะ',
     ];
 
+    // ------------------------------------------------------------
+    // 🎁 (2026-11-14 เจ้าของสั่ง) คนมาครั้งแรก — "วันนี้มีสิทธิ์ดูดวงฟรี กดได้เลย"
+    //    คนมาครั้งแรก = PSID นี้ยังไม่มีบัญชีในระบบ (ตัวค้นเดียวกับตอนแตะลิงก์ ⇒ แตะแล้วได้บัญชีใหม่)
+    //    เว็บจันทราแจกไพ่ฟรี 1 ใบต่อบัญชีจริง (juntraweb FreeReadingPolicy) และหน้าเลือกห้อง
+    //    ของคนมาครั้งแรกมีปุ่ม "ดูดวงฟรีเลย" รออยู่ — ถ้อยคำนี้จึงเป็นเรื่องจริง ไม่ใช่คำโฆษณาลอย ๆ
+    //    ใช้เฉพาะกล่องที่ตอบลูกค้า (ลูกค้าทัก/กดก่อน) — DM ชวนที่บอทส่งเองยังห้ามคำว่า "ฟรี" ตามเดิม
+    // ------------------------------------------------------------
+
+    public const CARD_TITLE_FIRST_VISIT = '🎁 วันนี้คุณมีสิทธิ์ดูดวงฟรี!';
+
+    public const CARD_SUBTITLE_FIRST_VISIT = '👆 กดได้เลยค่ะ แตะที่รูปนี้ เปิดไพ่ฟรีได้ทันที ไม่ต้องสมัคร';
+
+    /** ป้ายปุ่มลิงก์ของคนมาครั้งแรก (≤ 20 ตัวอักษร) */
+    public const LABEL_FIRST_VISIT = '🎁 ดูดวงฟรี กดเลย';
+
     /** หัว/คำโปรยของ generic template สูงสุด */
     public const CARD_TEXT_MAX = 80;
 
     /** สร้างลิงก์ไม่ได้ (fail-closed) — ส่งพร้อม quick reply WEB_ROOM และแจ้งแอดมิน */
-    public const FAIL_CLOSED = 'ห้องแม่หมอกำลังจัดเตรียมอยู่สักครู่นะคะ 🙏 อีกเดี๋ยวลองแตะ 🌙 เข้าห้องแม่หมอ อีกครั้งได้เลยค่ะ';
+    public const FAIL_CLOSED = 'ห้องแม่หมอกำลังจัดเตรียมอยู่สักครู่นะคะ 🙏 อีกเดี๋ยวลองแตะ 🌙 เข้าห้องดูดวง อีกครั้งได้เลยค่ะ';
 
     /** รับสลิประดับ B (บิลค้างก่อน T0) — สั้น ไม่ขาย */
     public const SLIP_RECEIVED = 'แม่หมอได้รับแล้วนะคะ กำลังเช็คให้อยู่ค่ะ 🙏';
@@ -192,7 +207,7 @@ final class WebHandoffCopy
         5 => ['text' => 'คืนนี้แม่หมอเปิดห้องรับเจ้าชะตาอยู่ค่ะ 🕯️ ถ้าใจยังค้างเรื่องไหน เข้ามานั่งคุยกันได้นะคะ', 'window' => self::WINDOW_EVENING, 'continuity' => false, 'topic' => null],
         // 🔐 (รีวิว) เดิมสัญญา "ไพ่ประจำวันวางรอในห้อง" แต่ห้องแม่หมอไม่มีไพ่ประจำวัน — ดู RETIRED_INVITES
         6 => ['text' => 'อรุณสวัสดิ์ค่ะ{name} ☀️ เช้านี้ใจเป็นยังไงบ้างคะ แม่หมอเปิดห้องรอแล้ว แวะมาคุยกันได้นะคะ', 'window' => self::WINDOW_MORNING, 'continuity' => false, 'topic' => null],
-        7 => ['text' => 'แตะทีเดียวก็เข้าห้องแม่หมอได้เลยค่ะ ไม่ต้องตั้งรหัส ไม่ต้องกรอกอะไรเลย 🌙', 'window' => self::WINDOW_ANY, 'continuity' => false, 'topic' => null],
+        7 => ['text' => 'แตะทีเดียวก็เข้าห้องดูดวงได้เลยค่ะ ไม่ต้องตั้งรหัส ไม่ต้องกรอกอะไรเลย 🌙', 'window' => self::WINDOW_ANY, 'continuity' => false, 'topic' => null],
         8 => ['text' => 'แม่หมอไม่ได้หายไปไหนนะคะ{name} แค่ย้ายมานั่งห้องที่สงบกว่า 🌙 เรื่องที่เราคุยกันไว้ แม่หมอเก็บไว้ให้ครบ เข้ามาคุยต่อได้เลยค่ะ', 'window' => self::WINDOW_ANY, 'continuity' => true, 'topic' => null],
         9 => ['text' => 'เมื่อกี้ที่{name}เล่ามา แม่หมอฟังอยู่นะคะ ขอไปนั่งคุยต่อในห้องแม่หมอได้ไหมคะ จะได้ดูให้ละเอียด ✨', 'window' => self::WINDOW_ANY, 'continuity' => true, 'topic' => null],
     ];
@@ -278,12 +293,20 @@ final class WebHandoffCopy
         return self::CARD_SUBTITLES[$kind] ?? self::CARD_SUBTITLES[self::KIND_READING];
     }
 
-    /** ข้อความของกล่อง/การ์ดตามชนิด (การ์ด = หัว — คำโปรย) — ใช้บันทึกบทสนทนา */
-    public static function boxText(string $kind, ?string $name = null): string
+    /**
+     * ข้อความของกล่อง/การ์ดตามชนิด (การ์ด = หัว — คำโปรย) — ใช้บันทึกบทสนทนา
+     *
+     * @param  bool  $firstVisit  🎁 คนมาครั้งแรก — การ์ดเป็นชุด "วันนี้มีสิทธิ์ดูดวงฟรี" (กล่องข้อความไม่เปลี่ยน มีแต่ป้ายปุ่ม)
+     */
+    public static function boxText(string $kind, ?string $name = null, bool $firstVisit = false): string
     {
-        return self::usesCard($kind)
-            ? self::CARD_TITLE.' — '.self::cardSubtitle($kind)
-            : self::reply($kind, $name);
+        if (! self::usesCard($kind)) {
+            return self::reply($kind, $name);
+        }
+
+        return $firstVisit
+            ? self::CARD_TITLE_FIRST_VISIT.' — '.self::CARD_SUBTITLE_FIRST_VISIT
+            : self::CARD_TITLE.' — '.self::cardSubtitle($kind);
     }
 
     /**
@@ -381,7 +404,7 @@ final class WebHandoffCopy
     }
 
     /**
-     * quick reply ของ DM ชวน: [🌙 เข้าห้องแม่หมอ] [🔕 พัก 7 วัน] [🚫 ไม่ต้องส่งอีก]
+     * quick reply ของ DM ชวน: [🌙 เข้าห้องดูดวง] [🔕 พัก 7 วัน] [🚫 ไม่ต้องส่งอีก]
      *
      * @return array<int, array{content_type:string,title:string,payload:string}>
      */
@@ -395,7 +418,7 @@ final class WebHandoffCopy
     }
 
     /**
-     * quick reply ปุ่มเดียว "🌙 เข้าห้องแม่หมอ" (ใช้กับข้อความ fail-closed)
+     * quick reply ปุ่มเดียว "🌙 เข้าห้องดูดวง" (ใช้กับข้อความ fail-closed)
      *
      * @return array<int, array{content_type:string,title:string,payload:string}>
      */
@@ -482,6 +505,10 @@ final class WebHandoffCopy
         foreach ([self::LABEL_WEB_ROOM, self::LABEL_WEB_ROOM_ALT, self::LABEL_HOWTO, self::LABEL_SNOOZE, self::LABEL_OPTOUT, self::LABEL_ENTER_READING] as $i => $label) {
             $lines['label_'.$i] = $label;
         }
+        // กล่องของคนมาครั้งแรกเป็น "คำตอบ" (ลูกค้ากด/ทักก่อน) ⇒ ใช้กฎ reply_ ที่พูด "ฟรี" ได้
+        $lines['reply_first_visit_title'] = self::CARD_TITLE_FIRST_VISIT;
+        $lines['reply_first_visit_subtitle'] = self::CARD_SUBTITLE_FIRST_VISIT;
+        $lines['reply_first_visit_label'] = self::LABEL_FIRST_VISIT;
 
         return $lines;
     }

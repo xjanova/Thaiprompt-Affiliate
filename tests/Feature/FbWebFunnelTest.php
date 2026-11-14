@@ -169,7 +169,7 @@ class FbWebFunnelTest extends TestCase
         $bySource = collect($r['sources'])->keyBy('source');
         $this->assertSame([2, 1, 1], [$bySource['button:WEB_ROOM']['boxes'], $bySource['button:WEB_ROOM']['people'], $bySource['button:WEB_ROOM']['opened']]);
         $this->assertSame(0, $bySource['gesture_emoji']['opened']);
-        $this->assertSame('กดปุ่ม 🌙 เข้าห้องแม่หมอ', $bySource['button:WEB_ROOM']['label']);
+        $this->assertSame('กดปุ่ม 🌙 เข้าห้องดูดวง', $bySource['button:WEB_ROOM']['label']);
 
         $this->assertSame([['reason' => 'used', 'label' => 'ลิงก์ถูกใช้ไปแล้ว (แตะซ้ำ)', 'count' => 1]], $r['dead']);
     }
@@ -208,7 +208,7 @@ class FbWebFunnelTest extends TestCase
             ->assertOk()
             ->assertSee('ยอดเข้าห้องแม่หมอ')
             ->assertSee('แตะลิงก์ เข้าเว็บได้')
-            ->assertSee('กดปุ่ม 🌙 เข้าห้องแม่หมอ')
+            ->assertSee('กดปุ่ม 🌙 เข้าห้องดูดวง')
             ->assertSee('ลิงก์ถูกใช้ไปแล้ว (แตะซ้ำ)')
             ->assertSee('แม่หมอจันทรา')
             ->assertSee('39.00');
