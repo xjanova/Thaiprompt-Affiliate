@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Juntra\Server;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCommission;
+use App\Services\Fortune\WebFunnelTracker;
 use App\Services\Juntra\JuntraAffiliateException;
 use App\Services\Juntra\JuntraAffiliateService;
 use App\Services\Juntra\JuntraMlmReadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * 🌙 /api/v1/juntra/server/affiliate/* (2026-09-21) — ผังแม่หมอสำหรับลูกค้าเว็บ/แอพจันทราทุกคน
@@ -95,6 +97,19 @@ class AffiliateController extends Controller
             $result = $this->affiliate->recordBill($data);
         } catch (JuntraAffiliateException $e) {
             return $this->failure($e);
+        }
+
+        // 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 4 — ลูกค้าที่มาจากลิงก์ในแชทเพจซื้อคำทำนาย
+        //    บิลใหม่ที่จ่ายจริงเท่านั้น (ไม่นับบิลซ้ำ / ยกเลิก / บิลย้อนหลังก่อนเปิดระบบ)
+        if (! $result['duplicate'] && $result['status'] === 'paid' && ! $result['reading']?->isJuntraHistoryBill()) {
+            WebFunnelTracker::paid(
+                (string) $data['user_ref'],
+                isset($data['thaiprompt_user_id']) ? (int) $data['thaiprompt_user_id'] : null,
+                (int) $data['bill_id'],
+                (float) $data['amount'],
+                ! empty($data['paid_at']) ? Carbon::parse($data['paid_at']) : null,
+                $result['reading']?->fortune_page_id !== null ? (int) $result['reading']->fortune_page_id : null,
+            );
         }
 
         return response()->json([

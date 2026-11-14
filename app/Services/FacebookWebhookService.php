@@ -4718,7 +4718,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         if ($this->messengerProfileIsWebOnly()) {
             return "🌙 สวัสดีค่ะ แม่หมอจันทรายินดีต้อนรับนะคะ\n\n"
                 ."เรื่องไหนที่ค้างอยู่ในใจ แม่หมอเปิดห้องส่วนตัวรอไว้แล้ว คุยกันได้ยาว ๆ เงียบ ๆ สองคนค่ะ\n\n"
-                .'แตะ 🌙 เข้าห้องแม่หมอ ได้เลยนะคะ ✨';
+                .'แตะ 🌙 เข้าห้องดูดวง ได้เลยนะคะ ✨';
         }
 
         return "🔮 ยินดีต้อนรับสู่ \"แม่หมอจันทรา\"\n\nหมอดูเชี่ยวชาญโหราศาสตร์ไทย-สากล ทำนายแม่นยำด้วยระบบหลักล้าน 💎\n\nกดปุ่มด้านล่างเพื่อเริ่มได้เลย ✨";
@@ -4739,7 +4739,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         return [
             [
                 'type' => 'postback',
-                'title' => '🌙 เข้าห้องแม่หมอ',
+                'title' => '🌙 เข้าห้องดูดวง',
                 'payload' => self::WEB_ROOM_PAYLOAD,
             ],
             [

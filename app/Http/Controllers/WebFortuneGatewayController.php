@@ -7,6 +7,7 @@ use App\Models\FortuneWebHandoff;
 use App\Models\User;
 use App\Services\FacebookWebhookService;
 use App\Services\Fortune\FortunePageContext;
+use App\Services\Fortune\WebFunnelTracker;
 use App\Services\FortuneAffiliateService;
 use App\Services\FortuneWebLinkService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -80,7 +81,7 @@ class WebFortuneGatewayController extends Controller
     /** ข้อความในปุ่มที่ส่งเข้าแชท (ห้ามพูดถึงเงินเด็ดขาด — FB แบนเพจที่มีสลิปในแชท) */
     public const RESEND_TEXT = 'แม่หมอเปิดห้องรอไว้ให้แล้วนะคะ 🌙 กดปุ่มด้านล่างเพื่อเข้ามาคุยกับแม่หมอต่อได้เลยค่ะ';
 
-    public const RESEND_BUTTON_TITLE = '🔮 เข้าห้องแม่หมอ';
+    public const RESEND_BUTTON_TITLE = '🔮 เข้าห้องดูดวง';
 
     /** cache ผลเช็คคอลัมน์ users.fortune_origin_page_id (T14 เพิ่ม — ก่อน migrate ต้องไม่พัง) */
     protected static ?bool $hasOriginPageColumn = null;
@@ -277,6 +278,16 @@ class WebFortuneGatewayController extends Controller
             'page' => $payload['pg'] ?? null,
             'handoff' => isset($payload['h']),
         ]);
+
+        // 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 2 — แตะลิงก์แล้วเข้าได้จริง (LINE ไม่นับ)
+        if ($isFacebook) {
+            WebFunnelTracker::linkOpened(
+                (string) $payload['u'],
+                (int) $user->id,
+                is_numeric($payload['pg'] ?? null) ? (int) $payload['pg'] : null,
+                $user->wasRecentlyCreated || ($user->created_at !== null && $user->created_at->gt(now()->subMinutes(2))),
+            );
+        }
 
         return $this->redirectToSso($ssoUrl, $payload);
     }
@@ -767,12 +778,42 @@ class WebFortuneGatewayController extends Controller
 
     protected function toExpired(string $token, string $reason)
     {
+        $this->countDeadLink($token, $reason);
+
         $params = ['reason' => $reason];
         if ($token !== '') {
             $params['tk'] = $token;
         }
 
         return redirect()->route('web-fortune.expired', $params);
+    }
+
+    /**
+     * 📈 (2026-11-14) ตัวนับ FB → เว็บ — ลูกค้าแตะลิงก์แต่เข้าไม่ได้ (เหตุผลเก็บไว้ดูว่าตันตรงไหน)
+     *
+     * ลิงก์+เหตุผลเดียวกันนับครั้งเดียวใน 1 ชม. (ตัวพรีวิวลิงก์ของแอปแชท/กดรีเฟรช ไม่ทำให้ยอดเฟ้อ)
+     * อ่าน PSID จาก token ที่ลายเซ็นถูกเท่านั้น (หมดอายุก็อ่านได้) · ห้าม throw
+     */
+    protected function countDeadLink(string $token, string $reason): void
+    {
+        try {
+            if (! Cache::add('wff:dead:'.sha1($token).':'.$reason, 1, now()->addHour())) {
+                return;
+            }
+
+            $payload = $token !== '' ? app(FortuneWebLinkService::class)->verifyToken($token, true) : null;
+            if ($payload !== null && ($payload['p'] ?? null) !== 'facebook') {
+                return;
+            }
+
+            WebFunnelTracker::linkDead(
+                $payload !== null ? (string) $payload['u'] : null,
+                is_numeric($payload['pg'] ?? null) ? (int) $payload['pg'] : null,
+                $reason,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('📈 WebFunnel: นับลิงก์ที่ใช้ไม่ได้ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

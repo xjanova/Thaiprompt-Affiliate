@@ -340,6 +340,14 @@ class FortunePdpaDeletionService
             }
         });
 
+        // ── 📈 (2026-11-14) ตัวนับเส้นทาง FB → เว็บ: รหัสลูกค้า (PSID / users.id) — ลบทั้งสองทางเหมือน handoff ──
+        $counts['web_funnel_events'] = $this->deleteWhere('fortune_web_funnel_events', function ($q) use ($handoffIds, $userIds) {
+            $q->whereIn('platform_user_id', $handoffIds);
+            if (! empty($userIds)) {
+                $q->orWhereIn('thaiprompt_user_id', $userIds);
+            }
+        });
+
         // ── referrals: เฉพาะแถวที่ลูกค้าเป็น "ผู้ถูกชวน" (มี IP/UA ของลูกค้า) — เก็บแถวที่เป็นผู้ชวน ──
         //   สร้างเงื่อนไขเฉพาะคอลัมน์ที่มีจริง (ต้องมีอย่างน้อย 1 เงื่อนไข ไม่งั้นข้าม — กันลบทั้งตาราง)
         if (Schema::hasTable('fortune_referrals')) {

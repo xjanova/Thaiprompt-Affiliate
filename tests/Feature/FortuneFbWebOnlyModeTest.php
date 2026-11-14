@@ -55,6 +55,18 @@ class FortuneFbWebOnlyModeTest extends TestCase
         parent::setUp();
         Cache::flush();
         Http::fake();
+        $this->existingCustomer();
+    }
+
+    /**
+     * ลูกค้าเดิม (มีบัญชีผูก PSID แล้ว) — ได้กล่องตามชนิดเจตนา (ราคา/ดูดวง/ห้อง)
+     *
+     * 🎁 (2026-11-14) PSID ที่ยังไม่มีบัญชีได้กล่อง "วันนี้มีสิทธิ์ดูดวงฟรี" ใบเดียวกันทุกชนิด
+     * ไฟล์นี้ล็อกการแยกชนิดกล่อง จึงตั้งเป็นลูกค้าเดิม · กล่องคนมาครั้งแรกเทสแยกใน FortuneWebHandoffTest
+     */
+    private function existingCustomer(): void
+    {
+        \App\Models\User::factory()->create()->forceFill(['facebook_psid' => self::PSID])->save();
     }
 
     protected function tearDown(): void

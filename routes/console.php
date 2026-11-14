@@ -595,6 +595,14 @@ Schedule::command('fortune:prune-saved-questions --failed-hours=48 --replied-day
     ->name('fortune-prune-saved-questions')
     ->runInBackground();
 
+// 6.3) (2026-11-14) ตัวนับเส้นทาง FB → เว็บจันทรา — ลบแถวเก่ากว่า 400 วัน (FortuneWebFunnelEvent::prunable)
+Schedule::command('model:prune', ['--model' => [\App\Models\FortuneWebFunnelEvent::class]])
+    ->dailyAt('03:50')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-prune-web-funnel')
+    ->runInBackground();
+
 // 7) Crypto Scan Deposits — สแกน blockchain หา deposits ใหม่ (TPIX)
 Schedule::command('crypto:scan-deposits')
     ->everyMinute()

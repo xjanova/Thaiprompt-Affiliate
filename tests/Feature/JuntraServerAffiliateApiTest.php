@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FortuneCommission;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneWebFunnelEvent;
 use App\Models\JuntraAccount;
 use App\Models\MlmMember;
 use App\Models\User;
@@ -570,6 +571,38 @@ class JuntraServerAffiliateApiTest extends TestCase
             'thaiprompt_user_id' => $thaipromptUserId,
             'referral_code' => $referral,
         ], fn ($v) => $v !== null));
+    }
+
+    /**
+     * 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 4 — บิลของลูกค้าที่มาจากลิงก์ในแชทเพจนับ "ซื้อคำทำนาย"
+     *   บิลละครั้ง (ส่งซ้ำไม่นับ) · ลูกค้าเว็บทั่วไป/บิลย้อนหลัง ไม่นับ · ลงวันตามเวลาที่จ่ายจริง
+     */
+    public function test_paid_bill_of_a_customer_from_the_fb_link_is_counted_once(): void
+    {
+        // ลูกค้าเว็บทั่วไป (ไม่เคยแตะลิงก์จากเพจ) → ไม่นับ
+        $this->bill(9201, 921, 39)->assertStatus(201);
+        $this->assertSame(0, FortuneWebFunnelEvent::count());
+
+        // ลูกค้าคนเดียวกันเคยแตะลิงก์จากเพจ (สาขา 3) → บิลถัดไปนับ
+        $tpUser = (int) JuntraAccount::where('juntra_user_id', 921)->value('user_id');
+        FortuneWebFunnelEvent::query()->insert([
+            'event' => FortuneWebFunnelEvent::LINK_OPENED, 'platform_user_id' => '7001', 'thaiprompt_user_id' => $tpUser,
+            'fortune_page_id' => 3, 'source' => 'new_account', 'created_at' => now()->subHour(),
+        ]);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $paidAt = now()->subMinutes(20)->startOfMinute();
+        $payload = ['bill_id' => 9202, 'user_ref' => 921, 'name' => 'ลูกค้า 921', 'amount' => 99.5,
+            'product' => 'tarot_celtic', 'paid_at' => $paidAt->toIso8601String()];
+        $this->postJson('/api/v1/juntra/server/affiliate/bills', $payload)->assertStatus(201);
+        $this->postJson('/api/v1/juntra/server/affiliate/bills', $payload)->assertOk();
+
+        $paid = FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::PAID)->sole();
+        $this->assertSame($tpUser, $paid->thaiprompt_user_id);
+        $this->assertSame('bill:9202', $paid->source);
+        $this->assertSame('99.50', (string) $paid->amount);
+        $this->assertSame('921', $paid->juntra_user_ref);
+        $this->assertTrue($paid->created_at->equalTo($paidAt), 'ลงวันตามเวลาที่จ่ายจริง');
     }
 
     private function assertCommission(int $billId, int $recipientId, int $level, string $amount, string $rate): void

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\FortuneMessengerSender;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneWebFunnelEvent;
 use App\Models\FortuneWebHandoff;
 use App\Models\LineBotConversation;
 use App\Services\FacebookRichMessageService;
@@ -113,7 +114,7 @@ class FortuneWebHandoffTest extends TestCase
         }
 
         foreach ([WebHandoffCopy::LABEL_WEB_ROOM, WebHandoffCopy::LABEL_WEB_ROOM_ALT, WebHandoffCopy::LABEL_HOWTO,
-            WebHandoffCopy::LABEL_SNOOZE, WebHandoffCopy::LABEL_OPTOUT] as $label) {
+            WebHandoffCopy::LABEL_SNOOZE, WebHandoffCopy::LABEL_OPTOUT, WebHandoffCopy::LABEL_FIRST_VISIT] as $label) {
             $this->assertLessThanOrEqual(20, mb_strlen($label), "ป้ายปุ่ม {$label} ยาวเกิน 20");
         }
 
@@ -235,6 +236,50 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertArrayNotHasKey('pg', $token);
     }
 
+    /**
+     * 🎁 (2026-11-14 เจ้าของสั่ง) คนมาครั้งแรก — การ์ด/ปุ่มบอก "วันนี้มีสิทธิ์ดูดวงฟรี กดได้เลย"
+     */
+    public function test_กล่องของคนมาครั้งแรก_บอกสิทธิ์ดูดวงฟรี_ลิงก์เดิม(): void
+    {
+        $rich = new FacebookRichMessageService($this->webOnly());
+
+        $card = $rich->buildWebHandoffBox(self::PSID, WebHandoffCopy::KIND_ROOM, null, 3, null, true)['attachment']['payload']['elements'][0];
+        $this->assertSame(WebHandoffCopy::CARD_TITLE_FIRST_VISIT, $card['title']);
+        $this->assertSame(WebHandoffCopy::CARD_SUBTITLE_FIRST_VISIT, $card['subtitle']);
+        $this->assertStringContainsString('ฟรี', $card['title']);
+        $this->assertStringContainsString('กดได้เลย', $card['subtitle']);
+        $this->assertStringContainsString('แตะที่รูป', $card['subtitle'], 'ยังต้องบอกให้แตะที่การ์ดรูป');
+        $this->assertLessThanOrEqual(WebHandoffCopy::CARD_TEXT_MAX, mb_strlen($card['title']));
+        $this->assertLessThanOrEqual(WebHandoffCopy::CARD_TEXT_MAX, mb_strlen($card['subtitle']));
+        $this->assertSame(WebHandoffCopy::LABEL_FIRST_VISIT, $card['buttons'][0]['title']);
+        $this->assertLessThanOrEqual(20, mb_strlen(WebHandoffCopy::LABEL_FIRST_VISIT), 'ป้ายปุ่ม FB ≤ 20');
+        $this->assertSame($card['default_action']['url'], $card['buttons'][0]['url']);
+        $this->assertSame(3, $this->tokenFromUrl($card['buttons'][0]['url'])['pg'], 'ลิงก์ต่อคนเหมือนเดิม');
+
+        // กล่องข้อความ (ทำไม่เป็น) — ข้อความเดิม เปลี่ยนแค่ป้ายปุ่มลิงก์ ปุ่ม "เข้ายังไงคะ" ยังอยู่
+        $box = $rich->buildWebHandoffBox(self::PSID, WebHandoffCopy::KIND_CANNOT, null, null, null, true);
+        $this->assertSame(WebHandoffCopy::reply(WebHandoffCopy::KIND_CANNOT), $box['attachment']['payload']['text']);
+        $this->assertSame(WebHandoffCopy::LABEL_FIRST_VISIT, $box['attachment']['payload']['buttons'][0]['title']);
+        $this->assertSame(WebHandoffCopy::PAYLOAD_WEB_ROOM_HOWTO, $box['attachment']['payload']['buttons'][1]['payload']);
+    }
+
+    public function test_send_web_handoff_คนใหม่ได้กล่องดูดวงฟรี_คนที่มีบัญชีแล้วได้กล่องปกติ(): void
+    {
+        $fcs = new FortuneConversationService($this->webOnly());
+
+        // ยังไม่มีบัญชี = มาครั้งแรก (แตะลิงก์แล้วได้บัญชีใหม่ ⇒ ไพ่ฟรีบนเว็บยังไม่เคยใช้)
+        $res = $fcs->sendWebHandoff(self::PSID, null, ['kind' => WebHandoffCopy::KIND_ROOM, 'source' => 'button:WEB_ROOM']);
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM, null, true), $res['message']);
+        $this->assertSame(WebHandoffCopy::LABEL_FIRST_VISIT, WebHandoffCopy::buttonsOf($res['fb_template'])[0]['title']);
+
+        // มีบัญชีแล้ว (เคยแตะลิงก์/เคยเป็นลูกค้า) — ไม่สัญญาของฟรี
+        $user = \App\Models\User::factory()->create();
+        $user->forceFill(['facebook_psid' => '61550000000099'])->save();
+        $res2 = $fcs->sendWebHandoff('61550000000099', null, ['kind' => WebHandoffCopy::KIND_ROOM, 'source' => 'button:WEB_ROOM']);
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM), $res2['message']);
+        $this->assertSame(WebHandoffCopy::LABEL_ENTER_READING, WebHandoffCopy::buttonsOf($res2['fb_template'])[0]['title']);
+    }
+
     public function test_ปิดทั้งสองสวิตช์หรือไม่มี_psid_กล่องคืน_null(): void
     {
         $rich = new FacebookRichMessageService($this->settings(['facebook_web_only' => false, 'enable_web_fortune_button' => false]));
@@ -275,7 +320,8 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertFalse($res['fail_closed']);
         $this->assertNull($res['sent'], 'ไม่ได้ขอ deliver = ให้ ChannelManager ส่ง');
         $this->assertNull($res['reading']);
-        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_READING), $res['message']);
+        // PSID นี้ยังไม่มีบัญชี = มาครั้งแรก ⇒ การ์ดชุด "วันนี้มีสิทธิ์ดูดวงฟรี"
+        $this->assertSame(WebHandoffCopy::boxText(WebHandoffCopy::KIND_READING, null, true), $res['message']);
 
         $handoff = FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->firstOrFail();
         $this->assertSame('facebook', $handoff->platform);
@@ -297,6 +343,12 @@ class FortuneWebHandoffTest extends TestCase
         $this->assertSame(['assistant', $res['message']], $history[1]);
 
         $this->assertSame($readingsBefore, FortuneReading::count(), 'ห้ามสร้างบิล/คำทำนายบน FB');
+
+        // 📈 ตัวนับ FB → เว็บ ขั้น 1 — กล่องที่มีลิงก์จริงนับ 1 แถว พร้อมสาขาและจุดที่ส่ง
+        $event = FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::BOX_SENT)->sole();
+        $this->assertSame(self::PSID, $event->platform_user_id);
+        $this->assertSame(5, $event->fortune_page_id);
+        $this->assertSame('web_only_gate', $event->source);
     }
 
     public function test_intent_ตัด_url_เลขยาว_และจำนวนเงิน(): void
@@ -324,7 +376,7 @@ class FortuneWebHandoffTest extends TestCase
         // 🔐 (รีวิว) กดปุ่ม = ไม่มีหัวข้อ (null) — ห้องเว็บต้องไม่ทักว่า "รับเรื่องที่ลูกทักมาในเพจ"
         $this->assertNull(FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->value('intent_topic'));
         $this->assertNull(FortuneWebHandoff::where('nonce', $res['handoff_nonce'])->value('intent_text'));
-        $this->assertSame([['assistant', WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM)]], $this->historyFor(self::PSID));
+        $this->assertSame([['assistant', WebHandoffCopy::boxText(WebHandoffCopy::KIND_ROOM, null, true)]], $this->historyFor(self::PSID));
     }
 
     public function test_สร้างลิงก์ไม่ได้_fail_closed_พร้อม_quick_reply_และแจ้งแอดมินครั้งเดียว(): void
@@ -351,6 +403,7 @@ class FortuneWebHandoffTest extends TestCase
         }
 
         $this->assertSame($readingsBefore, FortuneReading::count(), 'fail-closed ต้องไม่ตกไปออกบิล');
+        $this->assertSame(0, FortuneWebFunnelEvent::count(), 'ไม่มีลิงก์ = ไม่นับว่าได้กล่อง');
     }
 
     public function test_service_ลิงก์โยน_exception_ก็_fail_closed(): void

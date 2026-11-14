@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\WebFortuneGatewayController;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneWebFunnelEvent;
 use App\Models\FortuneWebHandoff;
 use App\Models\User;
 use App\Services\FortuneWebLinkService;
@@ -184,6 +185,13 @@ class WebFortuneGatewayTest extends TestCase
         if (Schema::hasColumn('users', 'fortune_origin_page_id')) {
             $this->assertSame(7, (int) $user->fresh()->fortune_origin_page_id);
         }
+
+        // 📈 ตัวนับ FB → เว็บ ขั้น 2 — แตะลิงก์เข้าได้ นับพร้อม PSID + users.id + สาขา (บัญชีใหม่)
+        $event = FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::LINK_OPENED)->sole();
+        $this->assertSame(self::PSID, $event->platform_user_id);
+        $this->assertSame((int) $user->id, $event->thaiprompt_user_id);
+        $this->assertSame(7, $event->fortune_page_id);
+        $this->assertSame('new_account', $event->source);
     }
 
     public function test_post_keeps_explicit_to_path(): void
@@ -239,6 +247,15 @@ class WebFortuneGatewayTest extends TestCase
         $response = $this->post('/web-fortune/go', ['tk' => $token]);
         $response->assertRedirect(route('web-fortune.expired', ['reason' => 'used', 'tk' => $token]));
         $this->assertGuest();
+
+        // 📈 แตะได้ 1 ครั้ง (รีเฟรช session เดิมไม่นับซ้ำ) · แตะซ้ำจากเครื่องอื่น = ลิงก์ตัน "used" 1 ครั้ง
+        //    กดซ้ำอีกรอบใน 1 ชม. ก็ยังนับ 1 (ตัวพรีวิวลิงก์/รีเฟรชไม่ทำให้ยอดเฟ้อ)
+        $this->freshBrowser();
+        $this->post('/web-fortune/go', ['tk' => $token]);
+        $this->assertSame(1, FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::LINK_OPENED)->count());
+        $dead = FortuneWebFunnelEvent::where('event', FortuneWebFunnelEvent::LINK_DEAD)->sole();
+        $this->assertSame('used', $dead->source);
+        $this->assertSame(self::PSID, $dead->platform_user_id);
     }
 
     // ============================================================

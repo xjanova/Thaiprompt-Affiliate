@@ -1124,6 +1124,7 @@ class FacebookRichMessageService
      * @param  string|null  $handoffNonce  nonce ของ handoff — มี = ปลายทาง /chat/continue/{nonce}, ไม่มี = /chat
      * @param  int|null  $pageId  fortune_page_id สาขาต้นทาง
      * @param  string|null  $name  ชื่อลูกค้า (ใส่ในข้อความเฉพาะชนิดที่มี {name})
+     * @param  bool  $firstVisit  🎁 คนมาครั้งแรก (ยังไม่มีบัญชี) — การ์ด/ปุ่มบอก "วันนี้มีสิทธิ์ดูดวงฟรี กดได้เลย"
      * @return array|null payload ของ message (ส่งผ่าน sendButtonTemplate)
      *
      * @example
@@ -1135,7 +1136,8 @@ class FacebookRichMessageService
         string $kind = \App\Services\Fortune\WebHandoffCopy::KIND_READING,
         ?string $handoffNonce = null,
         ?int $pageId = null,
-        ?string $name = null
+        ?string $name = null,
+        bool $firstVisit = false
     ): ?array {
         $copy = \App\Services\Fortune\WebHandoffCopy::class;
 
@@ -1159,8 +1161,8 @@ class FacebookRichMessageService
                         'template_type' => 'generic',
                         'image_aspect_ratio' => 'horizontal',
                         'elements' => [[
-                            'title' => mb_substr($copy::CARD_TITLE, 0, $copy::CARD_TEXT_MAX),
-                            'subtitle' => mb_substr($copy::cardSubtitle($kind), 0, $copy::CARD_TEXT_MAX),
+                            'title' => mb_substr($firstVisit ? $copy::CARD_TITLE_FIRST_VISIT : $copy::CARD_TITLE, 0, $copy::CARD_TEXT_MAX),
+                            'subtitle' => mb_substr($firstVisit ? $copy::CARD_SUBTITLE_FIRST_VISIT : $copy::cardSubtitle($kind), 0, $copy::CARD_TEXT_MAX),
                             'image_url' => asset($copy::CARD_IMAGE_PATH),
                             'default_action' => [
                                 'type' => 'web_url',
@@ -1168,7 +1170,7 @@ class FacebookRichMessageService
                             ],
                             'buttons' => [[
                                 'type' => 'web_url',
-                                'title' => $copy::LABEL_ENTER_READING,
+                                'title' => $firstVisit ? $copy::LABEL_FIRST_VISIT : $copy::LABEL_ENTER_READING,
                                 'url' => $url,
                             ]],
                         ]],
@@ -1179,7 +1181,7 @@ class FacebookRichMessageService
 
         $buttons = [[
             'type' => 'web_url',
-            'title' => $copy::LABEL_WEB_ROOM,
+            'title' => $firstVisit ? $copy::LABEL_FIRST_VISIT : $copy::LABEL_WEB_ROOM,
             'url' => $url,
         ]];
 

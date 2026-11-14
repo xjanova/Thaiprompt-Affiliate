@@ -162,7 +162,7 @@ class FbWebOnlyChannelEgressTest extends TestCase
         $buttons = WebHandoffCopy::buttonsOf($payload);
         $this->assertNotEmpty($buttons, "{$why}: กล่องต้องมีปุ่ม");
         $this->assertSame('web_url', $buttons[0]['type'] ?? null, "{$why}: ปุ่มแรกต้องเป็น web_url");
-        $this->assertContains($buttons[0]['title'] ?? null, [WebHandoffCopy::LABEL_WEB_ROOM, WebHandoffCopy::LABEL_ENTER_READING]);
+        $this->assertContains($buttons[0]['title'] ?? null, [WebHandoffCopy::LABEL_WEB_ROOM, WebHandoffCopy::LABEL_ENTER_READING, WebHandoffCopy::LABEL_FIRST_VISIT]);
 
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
         $this->assertDoesNotMatchRegularExpression('/TIER_|PAY_METHOD|STRIPE|บาท|฿|ค่าครู|โอน/u', $json, "{$why}: ห้ามมีปุ่ม/คำเรื่องเงิน");
@@ -206,6 +206,8 @@ class FbWebOnlyChannelEgressTest extends TestCase
     {
         $settings = $this->settings(true);
         $sender = $this->recordingSender();
+        // ลูกค้าเดิม (มีบัญชีแล้ว) — PSID ที่ยังไม่มีบัญชีได้กล่อง "ดูดวงฟรี" ใบเดียวกันทุกชนิด (เทสแยกใน FortuneWebHandoffTest)
+        \App\Models\User::factory()->create()->forceFill(['facebook_psid' => self::PSID])->save();
 
         $this->assertTrue($this->manager($settings)->fb($sender, self::PSID, $this->tierResult()));
         $this->assertWebHandoffOnly($sender, 'tier_choice');

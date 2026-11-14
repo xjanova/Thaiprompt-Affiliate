@@ -539,6 +539,7 @@ return [
                 // ═══ งานประจำวัน — สิ่งที่แอดมินเปิดทุกวัน ═══
                 ['label' => '🧾 ศูนย์รวมบิลดูดวง', 'route' => 'admin.fortune.bills.index', 'description' => 'บิลทุกแพคเกจ ทุกช่องทาง ที่เดียว — Deep 39 / Celtic 99 / ฟรี · กรอง Facebook-LINE · ยืนยัน/ยกเลิก/อนุมัติ/คืนเงิน ครบในหน้าเดียว'],
                 ['label' => '📊 Dashboard', 'route' => 'admin.fortune.dashboard', 'description' => 'สถิติภาพรวม กราฟ รายได้'],
+                ['label' => '🌙 ยอดเข้าห้องแม่หมอ (FB → เว็บ)', 'route' => 'admin.fortune.web-funnel.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-indigo-500 to-purple-600', 'description' => 'ลูกค้าจากแชทเพจ ได้กล่องลิงก์ → แตะเข้าเว็บ → คุยกับแม่หมอ → ซื้อคำทำนาย นับทีละขั้น รายวัน แยกสาขา'],
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],

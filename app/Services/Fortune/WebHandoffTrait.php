@@ -98,7 +98,10 @@ trait WebHandoffTrait
         $box = null;
         try {
             $box = (new FacebookRichMessageService($this->settings))
-                ->buildWebHandoffBox($platformUserId, $kind, $nonce, $pageId, is_string($name) ? $name : null);
+                ->buildWebHandoffBox(
+                    $platformUserId, $kind, $nonce, $pageId, is_string($name) ? $name : null,
+                    $this->isFirstWebVisit($platformUserId),
+                );
         } catch (\Throwable $e) {
             Log::error('🌙 WebHandoff: ประกอบกล่องไม่สำเร็จ', [
                 'platform_user_id' => $platformUserId,
@@ -134,6 +137,12 @@ trait WebHandoffTrait
             $sent = $this->deliverWebHandoff($platformUserId, $payload, $opts['sender'] ?? null);
         }
 
+        // 📈 (2026-11-14) ตัวนับ FB → เว็บ ขั้น 1 — นับเฉพาะกล่องที่มีลิงก์จริงและไม่ได้ส่งพลาด
+        //    (sent = null คือ ChannelManager เป็นคนส่งต่อ — นับว่าส่ง)
+        if (! $failClosed && $sent !== false) {
+            WebFunnelTracker::boxSent($platformUserId, $pageId, $source);
+        }
+
         Log::info('🌙 WebHandoff: พาลูกค้าไปห้องแม่หมอ', [
             'platform_user_id' => $platformUserId,
             'source' => $source,
@@ -154,6 +163,28 @@ trait WebHandoffTrait
             'fail_closed' => $failClosed,
             'sent' => $sent,
         ];
+    }
+
+    /**
+     * 🎁 (2026-11-14) ลูกค้าคนนี้มาครั้งแรกไหม — PSID นี้ยังไม่มีบัญชีในระบบ
+     *
+     * ใช้ตัวค้นเดียวกับทางเข้าเว็บ (FortuneAffiliateService::findExistingUser) ⇒ "ครั้งแรก" ที่นี่
+     * = แตะลิงก์แล้วได้บัญชีใหม่ = ยังไม่เคยรับไพ่ฟรีบนเว็บแน่นอน
+     * ค้นไม่ได้ (DB ล่ม ฯลฯ) ⇒ false — ไม่สัญญาของฟรีถ้าไม่แน่ใจ
+     */
+    protected function isFirstWebVisit(string $platformUserId): bool
+    {
+        try {
+            return app(\App\Services\FortuneAffiliateService::class)
+                ->findExistingUser($platformUserId, FortuneBotMode::FB_WEB_ONLY_PLATFORM) === null;
+        } catch (\Throwable $e) {
+            Log::warning('🌙 WebHandoff: เช็คคนมาครั้งแรกไม่ได้ — ใช้กล่องปกติ', [
+                'platform_user_id' => $platformUserId,
+                'error' => mb_substr($e->getMessage(), 0, 200),
+            ]);
+
+            return false;
+        }
     }
 
     /**

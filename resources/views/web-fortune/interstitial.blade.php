@@ -20,7 +20,7 @@
             @endphp
 
             <h1 class="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-700 to-amber-600 dark:from-purple-300 dark:to-amber-300 bg-clip-text text-transparent">
-                {{ $autoSubmit ? 'กำลังพาไปหาแม่หมอ…' : 'เข้าห้องแม่หมอ' }}
+                {{ $autoSubmit ? 'กำลังพาไปหาแม่หมอ…' : 'เข้าห้องดูดวง' }}
             </h1>
 
             @if ($switchFromName !== null)
@@ -31,7 +31,7 @@
                 </div>
             @elseif (! $autoSubmit)
                 <p class="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                    แตะปุ่มด้านล่างเพื่อเข้าห้องแม่หมอจันทราได้เลยค่ะ
+                    แตะปุ่มด้านล่างเพื่อเข้าห้องดูดวงได้เลยค่ะ
                 </p>
             @else
                 <p class="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
@@ -53,7 +53,7 @@
                 @endif
                 <button id="wf-go-button" type="submit"
                         class="w-full min-h-[48px] px-6 py-3 rounded-2xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 dark:from-purple-500 dark:to-indigo-500 shadow-lg shadow-purple-500/30 transition disabled:opacity-60 disabled:cursor-wait focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-700">
-                    🔮 เข้าห้องแม่หมอ
+                    🔮 เข้าห้องดูดวง
                 </button>
             </form>
 
